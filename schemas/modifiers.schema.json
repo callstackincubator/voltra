@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://voltra.dev/schemas/modifiers.json",
+  "title": "Voltra UI Modifiers Schema",
+  "description": "Schema defining all available Voltra UI modifiers and their arguments",
+  "type": "object",
+  "required": ["version", "modifiers"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version for compatibility tracking",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "modifiers": {
+      "type": "array",
+      "description": "Array of all modifier definitions",
+      "items": {
+        "$ref": "#/definitions/modifier"
+      }
+    }
+  },
+  "definitions": {
+    "argumentType": {
+      "enum": ["string", "number", "boolean"]
+    },
+    "argument": {
+      "type": "object",
+      "required": ["type", "optional"],
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/argumentType"
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether this argument is optional"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description"
+        },
+        "default": {
+          "description": "Default value for the argument",
+          "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }]
+        },
+        "enum": {
+          "type": "array",
+          "description": "Allowed string values",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "modifier": {
+      "type": "object",
+      "required": ["name", "category", "description", "swiftAvailability"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The modifier name as used in code",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9]*$"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["layout", "style", "text", "effect", "gauge"],
+          "description": "Category for organization"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what the modifier does"
+        },
+        "swiftAvailability": {
+          "type": "string",
+          "description": "Minimum OS versions required (e.g., 'iOS 13.0, macOS 10.15')"
+        },
+        "args": {
+          "type": "object",
+          "description": "Arguments schema (mutually exclusive with argsUnion)",
+          "additionalProperties": {
+            "$ref": "#/definitions/argument"
+          }
+        },
+        "argsUnion": {
+          "type": "array",
+          "description": "Union of multiple argument schemas (for modifiers with multiple signatures)",
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/definitions/argument"
+            }
+          }
+        }
+      },
+      "oneOf": [{ "required": ["args"] }, { "required": ["argsUnion"] }]
+    }
+  }
+}

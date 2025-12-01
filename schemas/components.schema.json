@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://voltra.dev/schemas/components.json",
+  "title": "Voltra UI Components Schema",
+  "description": "Schema defining all available Voltra UI components and their parameters",
+  "type": "object",
+  "required": ["version", "components"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version for compatibility tracking",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "components": {
+      "type": "array",
+      "description": "Array of all component definitions",
+      "items": {
+        "$ref": "#/definitions/component"
+      }
+    }
+  },
+  "definitions": {
+    "parameterType": {
+      "enum": ["string", "number", "boolean", "object", "array"]
+    },
+    "parameter": {
+      "type": "object",
+      "required": ["type", "optional"],
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/parameterType"
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Whether this parameter is optional"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description"
+        },
+        "default": {
+          "description": "Default value for the parameter",
+          "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }]
+        },
+        "enum": {
+          "type": "array",
+          "description": "Allowed string values",
+          "items": {
+            "type": "string"
+          }
+        },
+        "jsonEncoded": {
+          "type": "boolean",
+          "description": "Whether this parameter contains JSON-encoded data"
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "required": ["name", "description", "swiftAvailability", "parameters"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The component name as used in code",
+          "pattern": "^[A-Z][a-zA-Z0-9]*$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what the component does"
+        },
+        "swiftAvailability": {
+          "type": "string",
+          "description": "Minimum OS versions required (e.g., 'iOS 13.0, macOS 10.15')"
+        },
+        "hasChildren": {
+          "type": "boolean",
+          "description": "Whether this component can contain children"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Component-specific parameters schema",
+          "additionalProperties": {
+            "$ref": "#/definitions/parameter"
+          }
+        }
+      }
+    }
+  }
+}

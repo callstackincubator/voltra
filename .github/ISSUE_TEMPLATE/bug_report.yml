@@ -1,0 +1,55 @@
+name: Bug Report
+description: Report a reproducible bug in Voltra
+labels: [bug]
+body:
+  - type: input
+    id: library-version
+    attributes:
+      label: Library Version
+      description: What version of Voltra are you using?
+      placeholder: e.g. 1.2.3
+    validations:
+      required: true
+  - type: input
+    id: react-native-version
+    attributes:
+      label: React Native Version
+      description: What version of React Native are you using?
+      placeholder: e.g. 0.80.0
+    validations:
+      required: true
+  - type: input
+    id: react-version
+    attributes:
+      label: React Version
+      description: What version of React are you using?
+      placeholder: e.g. 19.0.0
+    validations:
+      required: true
+  - type: input
+    id: expo-version
+    attributes:
+      label: Expo Version
+      description: What version of Expo are you using?
+      placeholder: e.g. 53.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: minimal-repro
+    attributes:
+      label: Minimal Reproduction
+      description: Please provide a minimal, complete, and verifiable example that reproduces the issue. Link to a GitHub repo or Snack if possible.
+      placeholder: |
+        1. Steps to reproduce
+        2. Expected behavior
+        3. Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Additional Information (Optional)
+      description: Any additional information, context, or screenshots that might help us understand the problem.
+      placeholder: You can leave this blank if not applicable.
+    validations:
+      required: false

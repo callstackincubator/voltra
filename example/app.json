@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Voltra Example",
+    "slug": "voltra-example",
+    "scheme": "voltraexample",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/voltra-icon.jpg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/voltra-splash.jpg",
+      "resizeMode": "cover",
+      "backgroundColor": "#8232FF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.callstackincubator.voltraexample",
+      "appleTeamId": "PJL7DA2X5F"
+    },
+    "plugins": [
+      [
+        "../app.plugin.js",
+        {
+          "groupIdentifier": "group.callstackincubator.voltraexample",
+          "enablePushNotifications": true
+        }
+      ],
+      "expo-router",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.2"
+          }
+        }
+      ]
+    ]
+  }
+}

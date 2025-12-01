@@ -1,0 +1,540 @@
+{
+  "version": "1.0.0",
+  "components": [
+    {
+      "name": "Text",
+      "description": "Display text content",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {}
+    },
+    {
+      "name": "Button",
+      "description": "Interactive button component",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "optional": true,
+          "description": "Text content for the button"
+        }
+      }
+    },
+    {
+      "name": "Label",
+      "description": "Label with optional icon",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "optional": true,
+          "description": "Text content for the label"
+        },
+        "systemImage": {
+          "type": "string",
+          "optional": true,
+          "description": "SF Symbol name for the label icon"
+        }
+      }
+    },
+    {
+      "name": "Image",
+      "description": "Display images from various sources",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "imageSourceKind": {
+          "type": "string",
+          "optional": true,
+          "enum": ["system", "asset", "uri", "app-group"],
+          "description": "Image source type"
+        },
+        "imageSourceValue": {
+          "type": "string",
+          "optional": true,
+          "description": "Image source identifier or path"
+        }
+      }
+    },
+    {
+      "name": "SymbolView",
+      "description": "Display SF Symbols with advanced configuration",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "name": {
+          "type": "string",
+          "optional": true,
+          "description": "SF Symbol name"
+        },
+        "type": {
+          "type": "string",
+          "optional": true,
+          "enum": ["monochrome", "hierarchical", "palette", "multicolor"],
+          "description": "Symbol rendering type"
+        },
+        "scale": {
+          "type": "string",
+          "optional": true,
+          "enum": ["default", "unspecified", "small", "medium", "large"],
+          "description": "Symbol scale"
+        },
+        "weight": {
+          "type": "string",
+          "optional": true,
+          "enum": [
+            "unspecified",
+            "ultraLight",
+            "thin",
+            "light",
+            "regular",
+            "medium",
+            "semibold",
+            "bold",
+            "heavy",
+            "black"
+          ],
+          "description": "Symbol weight"
+        },
+        "size": {
+          "type": "number",
+          "optional": true,
+          "default": 24,
+          "description": "Symbol size in points"
+        },
+        "tintColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Tint color for the symbol"
+        },
+        "colors": {
+          "type": "string",
+          "optional": true,
+          "description": "Pipe-separated colors for palette type"
+        },
+        "resizeMode": {
+          "type": "string",
+          "optional": true,
+          "description": "Image resize mode"
+        },
+        "animationSpec": {
+          "type": "string",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "JSON-encoded animation specification"
+        }
+      }
+    },
+    {
+      "name": "Toggle",
+      "description": "Toggle switch control",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "defaultValue": {
+          "type": "boolean",
+          "optional": true,
+          "default": false,
+          "description": "Initial toggle state"
+        }
+      }
+    },
+    {
+      "name": "Slider",
+      "description": "Slider control for numeric input",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "minimumLabel": {
+          "type": "string",
+          "optional": true,
+          "description": "Label for minimum value"
+        },
+        "maximumLabel": {
+          "type": "string",
+          "optional": true,
+          "description": "Label for maximum value"
+        },
+        "minimumValue": {
+          "type": "number",
+          "optional": true,
+          "default": 0,
+          "description": "Minimum slider value"
+        },
+        "maximumValue": {
+          "type": "number",
+          "optional": true,
+          "default": 100,
+          "description": "Maximum slider value"
+        },
+        "defaultValue": {
+          "type": "number",
+          "optional": true,
+          "default": 0,
+          "description": "Initial slider value"
+        }
+      }
+    },
+    {
+      "name": "ProgressView",
+      "description": "Progress indicator (determinate or timer-based)",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "defaultValue": {
+          "type": "number",
+          "optional": true,
+          "description": "Current progress value"
+        },
+        "maximumValue": {
+          "type": "number",
+          "optional": true,
+          "default": 100,
+          "description": "Maximum progress value"
+        },
+        "timerEndDateInMilliseconds": {
+          "type": "number",
+          "optional": true,
+          "description": "Legacy: End time for timer-based progress"
+        },
+        "endAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "End time in milliseconds since epoch"
+        },
+        "startAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "Start time in milliseconds since epoch"
+        },
+        "mode": {
+          "type": "string",
+          "optional": true,
+          "enum": ["bar", "circular"],
+          "default": "bar",
+          "description": "Progress view style"
+        }
+      }
+    },
+    {
+      "name": "Gauge",
+      "description": "Gauge indicator for progress visualization",
+      "swiftAvailability": "iOS 16.0, macOS 13.0",
+      "parameters": {
+        "defaultValue": {
+          "type": "number",
+          "optional": true,
+          "description": "Current gauge value (0-1 range)"
+        },
+        "endAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "End time in milliseconds since epoch"
+        },
+        "startAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "Start time in milliseconds since epoch"
+        },
+        "showValueLabel": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Show the value label"
+        },
+        "hideValueLabel": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Hide the value label"
+        }
+      }
+    },
+    {
+      "name": "Timer",
+      "description": "Flexible countdown/stopwatch component",
+      "swiftAvailability": "iOS 16.0, macOS 13.0",
+      "parameters": {
+        "endAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "End time in milliseconds since epoch"
+        },
+        "startAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "Start time in milliseconds since epoch"
+        },
+        "durationMs": {
+          "type": "number",
+          "optional": true,
+          "description": "Duration in milliseconds"
+        },
+        "mode": {
+          "type": "string",
+          "optional": true,
+          "enum": ["text", "bar", "circular"],
+          "default": "text",
+          "description": "Display mode"
+        },
+        "direction": {
+          "type": "string",
+          "optional": true,
+          "enum": ["up", "down"],
+          "default": "down",
+          "description": "Count direction"
+        },
+        "autoHideOnEnd": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Hide timer when complete"
+        },
+        "textStyle": {
+          "type": "string",
+          "optional": true,
+          "enum": ["timer", "relative"],
+          "default": "timer",
+          "description": "Text formatting style"
+        },
+        "textTemplates": {
+          "type": "string",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "JSON-encoded TextTemplates object with running/completed templates"
+        },
+        "modeOrderedModifiers": {
+          "type": "string",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "JSON-encoded mode-specific modifiers map"
+        },
+        "modeTrackColors": {
+          "type": "string",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "JSON-encoded track colors map"
+        },
+        "modeTintColors": {
+          "type": "string",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "JSON-encoded tint colors map"
+        }
+      }
+    },
+    {
+      "name": "LinearGradient",
+      "description": "Linear gradient background with children",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {
+        "colors": {
+          "type": "string",
+          "optional": true,
+          "description": "Pipe-separated color list (e.g., '#ff0000|#00ff00|#0000ff')"
+        },
+        "stops": {
+          "type": "string",
+          "optional": true,
+          "description": "Pipe-separated gradient stops (e.g., 'red@0|orange@0.5|yellow@1')"
+        },
+        "startPoint": {
+          "type": "string",
+          "optional": true,
+          "description": "Start point (e.g., 'topLeading', 'center', or 'x,y')"
+        },
+        "endPoint": {
+          "type": "string",
+          "optional": true,
+          "description": "End point (e.g., 'bottomTrailing', 'center', or 'x,y')"
+        },
+        "dither": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Enable dithering (system-controlled)"
+        }
+      }
+    },
+    {
+      "name": "VStack",
+      "description": "Vertical stack container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {
+        "spacing": {
+          "type": "number",
+          "optional": true,
+          "description": "Spacing between children"
+        },
+        "alignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["leading", "center", "trailing"],
+          "description": "Horizontal alignment"
+        }
+      }
+    },
+    {
+      "name": "HStack",
+      "description": "Horizontal stack container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {
+        "spacing": {
+          "type": "number",
+          "optional": true,
+          "description": "Spacing between children"
+        },
+        "alignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["top", "center", "bottom"],
+          "description": "Vertical alignment"
+        }
+      }
+    },
+    {
+      "name": "ZStack",
+      "description": "Depth-based stack container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {
+        "alignment": {
+          "type": "string",
+          "optional": true,
+          "description": "Child alignment"
+        }
+      }
+    },
+    {
+      "name": "ScrollView",
+      "description": "Scrollable container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {
+        "axis": {
+          "type": "string",
+          "optional": true,
+          "enum": ["vertical", "horizontal"],
+          "default": "vertical",
+          "description": "Scroll axis"
+        },
+        "showsIndicators": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Show scroll indicators"
+        }
+      }
+    },
+    {
+      "name": "List",
+      "description": "List container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "NavigationView",
+      "description": "Navigation container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "Form",
+      "description": "Form container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "GroupBox",
+      "description": "Grouped content container",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "DisclosureGroup",
+      "description": "Collapsible disclosure group",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {
+        "isExpanded": {
+          "type": "boolean",
+          "optional": true,
+          "default": false,
+          "description": "Initial expanded state"
+        }
+      }
+    },
+    {
+      "name": "HSplitView",
+      "description": "Horizontal split view",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "VSplitView",
+      "description": "Vertical split view",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "Picker",
+      "description": "Picker control",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "GlassContainer",
+      "description": "iOS 26+ Liquid Glass container",
+      "swiftAvailability": "iOS 26.0",
+      "hasChildren": true,
+      "parameters": {
+        "spacing": {
+          "type": "number",
+          "optional": true,
+          "description": "Spacing between glass elements"
+        }
+      }
+    },
+    {
+      "name": "GlassView",
+      "description": "iOS 26+ Liquid Glass view wrapper",
+      "swiftAvailability": "iOS 26.0",
+      "hasChildren": true,
+      "parameters": {
+        "effect": {
+          "type": "string",
+          "optional": true,
+          "description": "Glass effect style"
+        },
+        "tint": {
+          "type": "string",
+          "optional": true,
+          "description": "Glass tint color"
+        },
+        "interactive": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Enable interactive glass"
+        }
+      }
+    },
+    {
+      "name": "Spacer",
+      "description": "Flexible space",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "minLength": {
+          "type": "number",
+          "optional": true,
+          "description": "Minimum length"
+        }
+      }
+    },
+    {
+      "name": "Divider",
+      "description": "Visual divider",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {}
+    }
+  ]
+}

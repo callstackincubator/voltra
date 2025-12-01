@@ -1,0 +1,452 @@
+{
+  "version": "1.0.0",
+  "modifiers": [
+    {
+      "name": "frame",
+      "category": "layout",
+      "description": "Sets the frame dimensions of the view",
+      "swiftAvailability": "iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0",
+      "args": {
+        "width": {
+          "type": "number",
+          "optional": true,
+          "description": "Fixed width"
+        },
+        "height": {
+          "type": "number",
+          "optional": true,
+          "description": "Fixed height"
+        },
+        "maxWidth": {
+          "type": "string",
+          "optional": true,
+          "enum": ["infinity"],
+          "description": "Maximum width constraint"
+        }
+      }
+    },
+    {
+      "name": "padding",
+      "category": "layout",
+      "description": "Adds padding around the view",
+      "swiftAvailability": "iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0",
+      "args": {
+        "all": {
+          "type": "number",
+          "optional": true,
+          "description": "Uniform padding on all edges"
+        },
+        "top": {
+          "type": "number",
+          "optional": true,
+          "description": "Padding on top edge"
+        },
+        "bottom": {
+          "type": "number",
+          "optional": true,
+          "description": "Padding on bottom edge"
+        },
+        "leading": {
+          "type": "number",
+          "optional": true,
+          "description": "Padding on leading edge"
+        },
+        "trailing": {
+          "type": "number",
+          "optional": true,
+          "description": "Padding on trailing edge"
+        }
+      }
+    },
+    {
+      "name": "offset",
+      "category": "layout",
+      "description": "Offsets the view by the specified x and y values",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "x": {
+          "type": "number",
+          "optional": true,
+          "default": 0,
+          "description": "Horizontal offset"
+        },
+        "y": {
+          "type": "number",
+          "optional": true,
+          "default": 0,
+          "description": "Vertical offset"
+        }
+      }
+    },
+    {
+      "name": "foregroundStyle",
+      "category": "style",
+      "description": "Sets the foreground color of the view",
+      "swiftAvailability": "iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0",
+      "args": {
+        "color": {
+          "type": "string",
+          "optional": false,
+          "description": "Color name or hex value"
+        }
+      }
+    },
+    {
+      "name": "background",
+      "category": "style",
+      "description": "Sets the background color of the view",
+      "swiftAvailability": "iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0",
+      "args": {
+        "color": {
+          "type": "string",
+          "optional": false,
+          "description": "Color name or hex value"
+        }
+      }
+    },
+    {
+      "name": "backgroundStyle",
+      "category": "style",
+      "description": "Sets the background style of the view (alias for background)",
+      "swiftAvailability": "iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0",
+      "args": {
+        "color": {
+          "type": "string",
+          "optional": false,
+          "description": "Color name or hex value"
+        }
+      }
+    },
+    {
+      "name": "tint",
+      "category": "style",
+      "description": "Sets the tint color of the view",
+      "swiftAvailability": "iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0",
+      "args": {
+        "color": {
+          "type": "string",
+          "optional": false,
+          "description": "Color name or hex value"
+        }
+      }
+    },
+    {
+      "name": "opacity",
+      "category": "style",
+      "description": "Sets the opacity of the view",
+      "swiftAvailability": "iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0",
+      "args": {
+        "value": {
+          "type": "number",
+          "optional": false,
+          "description": "Opacity value between 0 and 1"
+        }
+      }
+    },
+    {
+      "name": "cornerRadius",
+      "category": "style",
+      "description": "Applies corner radius to the view",
+      "swiftAvailability": "iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0",
+      "args": {
+        "radius": {
+          "type": "number",
+          "optional": false,
+          "description": "Corner radius value"
+        }
+      }
+    },
+    {
+      "name": "font",
+      "category": "text",
+      "description": "Sets the font of text",
+      "swiftAvailability": "iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0",
+      "args": {
+        "size": {
+          "type": "number",
+          "optional": false,
+          "description": "Font size"
+        },
+        "weight": {
+          "type": "string",
+          "optional": true,
+          "description": "Font weight (e.g., 'bold', 'regular')"
+        }
+      }
+    },
+    {
+      "name": "fontWeight",
+      "category": "text",
+      "description": "Sets the font weight",
+      "swiftAvailability": "iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0",
+      "args": {
+        "weight": {
+          "type": "string",
+          "optional": false,
+          "description": "Font weight (e.g., 'bold', 'semibold', 'regular')"
+        }
+      }
+    },
+    {
+      "name": "italic",
+      "category": "text",
+      "description": "Applies italic styling to text",
+      "swiftAvailability": "iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0",
+      "args": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether italic is enabled"
+        }
+      }
+    },
+    {
+      "name": "lineLimit",
+      "category": "text",
+      "description": "Limits the number of lines of text",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "value": {
+          "type": "number",
+          "optional": false,
+          "description": "Maximum number of lines"
+        }
+      }
+    },
+    {
+      "name": "lineSpacing",
+      "category": "text",
+      "description": "Sets the spacing between lines of text",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "value": {
+          "type": "number",
+          "optional": false,
+          "description": "Line spacing value"
+        }
+      }
+    },
+    {
+      "name": "kerning",
+      "category": "text",
+      "description": "Sets the spacing between characters",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "value": {
+          "type": "number",
+          "optional": false,
+          "description": "Kerning value"
+        }
+      }
+    },
+    {
+      "name": "multilineTextAlignment",
+      "category": "text",
+      "description": "Sets text alignment for multiline text",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "value": {
+          "type": "string",
+          "optional": false,
+          "enum": ["leading", "center", "right"],
+          "description": "Text alignment"
+        }
+      }
+    },
+    {
+      "name": "underline",
+      "category": "text",
+      "description": "Applies underline to text",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether underline is enabled"
+        },
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Underline color"
+        }
+      }
+    },
+    {
+      "name": "strikethrough",
+      "category": "text",
+      "description": "Applies strikethrough to text",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether strikethrough is enabled"
+        },
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Strikethrough color"
+        }
+      }
+    },
+    {
+      "name": "shadow",
+      "category": "effect",
+      "description": "Applies a shadow to the view",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Shadow color"
+        },
+        "opacity": {
+          "type": "number",
+          "optional": true,
+          "default": 1.0,
+          "description": "Shadow opacity"
+        },
+        "radius": {
+          "type": "number",
+          "optional": true,
+          "default": 3.0,
+          "description": "Shadow blur radius"
+        },
+        "x": {
+          "type": "number",
+          "optional": true,
+          "default": 0,
+          "description": "Horizontal shadow offset"
+        },
+        "y": {
+          "type": "number",
+          "optional": true,
+          "default": 0,
+          "description": "Vertical shadow offset"
+        }
+      }
+    },
+    {
+      "name": "scaleEffect",
+      "category": "effect",
+      "description": "Scales the view",
+      "swiftAvailability": "iOS 13.0",
+      "argsUnion": [
+        {
+          "value": {
+            "type": "number",
+            "optional": false,
+            "description": "Uniform scale factor"
+          }
+        },
+        {
+          "x": {
+            "type": "number",
+            "optional": true,
+            "default": 1.0,
+            "description": "Horizontal scale factor"
+          },
+          "y": {
+            "type": "number",
+            "optional": true,
+            "default": 1.0,
+            "description": "Vertical scale factor"
+          }
+        }
+      ]
+    },
+    {
+      "name": "rotationEffect",
+      "category": "effect",
+      "description": "Rotates the view",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "degrees": {
+          "type": "number",
+          "optional": false,
+          "description": "Rotation angle in degrees"
+        }
+      }
+    },
+    {
+      "name": "border",
+      "category": "effect",
+      "description": "Adds a border to the view",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "width": {
+          "type": "number",
+          "optional": true,
+          "default": 1.0,
+          "description": "Border width"
+        },
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Border color"
+        },
+        "cornerRadius": {
+          "type": "number",
+          "optional": true,
+          "description": "Corner radius for the border"
+        }
+      }
+    },
+    {
+      "name": "clipped",
+      "category": "effect",
+      "description": "Clips the view to its bounds",
+      "swiftAvailability": "iOS 13.0",
+      "args": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether clipping is enabled"
+        }
+      }
+    },
+    {
+      "name": "glassEffect",
+      "category": "effect",
+      "description": "Applies iOS 26+ Liquid Glass effect",
+      "swiftAvailability": "iOS 26.0",
+      "args": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the effect is enabled"
+        },
+        "shape": {
+          "type": "string",
+          "optional": true,
+          "enum": ["rect", "roundedRect", "capsule", "circle"],
+          "description": "Shape to clip the glass effect to"
+        },
+        "cornerRadius": {
+          "type": "number",
+          "optional": true,
+          "description": "Corner radius for rect/roundedRect shapes"
+        }
+      }
+    },
+    {
+      "name": "gaugeStyle",
+      "category": "gauge",
+      "description": "Sets the style of a gauge",
+      "swiftAvailability": "iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0",
+      "args": {
+        "style": {
+          "type": "string",
+          "optional": false,
+          "enum": ["accessoryCircular", "accessoryLinear", "linearCapacity", "automatic"],
+          "description": "The gauge style to apply"
+        }
+      }
+    }
+  ]
+}

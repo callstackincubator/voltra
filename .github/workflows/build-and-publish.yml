@@ -1,0 +1,68 @@
+name: Build and Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run linter
+        run: npm run lint:libOnly
+
+      - name: Update version
+        run: ./scripts/update-version.sh
+
+      - name: Build project
+        run: npm run prepare
+
+      - name: Pack npm tarball
+        run: npm pack
+        id: pack
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: '*.tgz'
+
+  publish:
+    name: Publish to NPM
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' }} # only on manual trigger
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: .
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish package
+        run: npm publish *.tgz
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

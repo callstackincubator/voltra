@@ -1,0 +1,15 @@
+This directory contains auto-generated component props type files.
+DO NOT EDIT MANUALLY.
+
+Generated from: data/components.json
+Schema version: 1.0.0
+
+To regenerate these files, run:
+  npm run generate
+
+Users should create component files manually using createVoltraComponent with these types.
+Example:
+  import { createVoltraComponent } from './internal/voltraComponent'
+  import type { ButtonProps } from './props/Button'
+
+  export const Button = createVoltraComponent<ButtonProps>('Button')

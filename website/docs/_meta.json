@@ -1,0 +1,17 @@
+[
+  {
+    "type": "dir",
+    "name": "introduction",
+    "label": "Introduction"
+  },
+  {
+    "type": "dir",
+    "name": "components",
+    "label": "Components"
+  },
+  {
+    "type": "file",
+    "name": "comparisons",
+    "label": "Comparisons"
+  }
+]

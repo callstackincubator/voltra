@@ -1,0 +1,314 @@
+//
+//  Modifiers.swift
+//  VoltraUI
+//
+//  Created by Wesley de Groot on 25/07/2024.
+//  https://x.com/saul_sharma
+//
+//  https://github.com/saulsharma/voltra
+//  MIT LICENCE
+
+import SwiftUI
+
+extension View {
+    /// Apply type-safe modifiers to the view
+    ///
+    /// - Parameter component: The component with modifiers to apply
+    /// - Returns: The modified view
+    public func voltraUIModifiers(_ component: VoltraUIComponent) -> some View {
+        if let modifiers = component.modifiers, !modifiers.isEmpty {
+            return AnyView(self.applyModifiers(modifiers))
+        }
+        return AnyView(self)
+    }
+
+    /// Apply a standalone modifier list to the view
+    ///
+    /// - Parameter modifiers: The modifiers to apply
+    /// - Returns: The modified view
+    public func voltraUIModifiers(_ modifiers: [VoltraUIModifier]) -> some View {
+        AnyView(self.applyModifiers(modifiers))
+    }
+
+    private func applyModifiers(_ modifiers: [VoltraUIModifier]) -> AnyView {
+        let helper = VoltraUIHelper()
+        var tempView = AnyView(self)
+
+        for modifier in modifiers {
+            switch modifier.name {
+            case "tint":
+                if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *),
+                   let colorName = modifier.args?["color"]?.toString(),
+                   let color = helper.translateColor(colorName) {
+                    tempView = AnyView(tempView.tint(color))
+                }
+
+            case "gaugeStyle":
+                if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *),
+                   let styleName = modifier.args?["style"]?.toString()?.lowercased() {
+                    switch styleName {
+                    case "accessorycircular":
+                        tempView = AnyView(tempView.gaugeStyle(.accessoryCircular))
+                    case "accessorylinear":
+                        tempView = AnyView(tempView.gaugeStyle(.accessoryLinear))
+                    case "linearcapacity":
+                        tempView = AnyView(tempView.gaugeStyle(.linearCapacity))
+                    case "automatic":
+                        if #available(iOS 17.0, *) {
+                            tempView = AnyView(tempView.gaugeStyle(.automatic))
+                        }
+                    default:
+                        break
+                    }
+                }
+
+            case "frame":
+                if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *) {
+                    let w = modifier.args?["width"]?.toDouble() ?? modifier.args?["width"]?.toInt().map(Double.init)
+                    let h = modifier.args?["height"]?.toDouble() ?? modifier.args?["height"]?.toInt().map(Double.init)
+                    let maxWidth = modifier.args?["maxWidth"]?.toString() == "infinity"
+
+                    if w != nil || h != nil || maxWidth {
+                        tempView = AnyView(tempView.frame(
+                            minWidth: 0,
+                            idealWidth: w.map { CGFloat($0) },
+                            maxWidth: maxWidth ? .infinity : w.map { CGFloat($0) },
+                            minHeight: 0,
+                            idealHeight: h.map { CGFloat($0) },
+                            maxHeight: h.map { CGFloat($0) },
+                            alignment: .center
+                        ))
+                    }
+                }
+
+            case "foregroundStyle":
+                if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *),
+                   let colorName = modifier.args?["color"]?.toString(),
+                   let color = helper.translateColor(colorName) {
+                    tempView = AnyView(tempView.foregroundStyle(color))
+                }
+
+            case "backgroundStyle", "background":
+                if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *),
+                   let colorName = modifier.args?["color"]?.toString(),
+                   let color = helper.translateColor(colorName) {
+                    tempView = AnyView(tempView.background(color))
+                }
+
+            case "fontWeight":
+                if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *),
+                   let weightStr = modifier.args?["weight"]?.toString(),
+                   let weight = helper.translateFontWeight(weightStr) {
+                    tempView = AnyView(tempView.fontWeight(weight))
+                }
+
+            case "italic":
+                if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *) {
+                    // default enabled unless explicitly false
+                    let enabled = modifier.args?["enabled"]?.toBool() ?? true
+                    if enabled {
+                        tempView = AnyView(tempView.italic())
+                    }
+                }
+
+            case "font":
+                if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *),
+                   let size = modifier.args?["size"]?.toDouble() ?? modifier.args?["size"]?.toInt().map(Double.init) {
+                    if let weightStr = modifier.args?["weight"]?.toString(),
+                       let weight = helper.translateFontWeight(weightStr) {
+                        tempView = AnyView(tempView.font(.system(size: CGFloat(size), weight: weight)))
+                    } else {
+                        tempView = AnyView(tempView.font(.system(size: CGFloat(size))))
+                    }
+                }
+
+            case "padding":
+                if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *) {
+                    if let length = modifier.args?["all"]?.toInt() ?? modifier.args?["all"]?.toDouble().map(Int.init) {
+                        tempView = AnyView(tempView.padding(CGFloat(length)))
+                    } else {
+                        let top = modifier.args?["top"]?.toDouble()
+                        let bottom = modifier.args?["bottom"]?.toDouble()
+                        let leading = modifier.args?["leading"]?.toDouble()
+                        let trailing = modifier.args?["trailing"]?.toDouble()
+                        var v = tempView
+                        if let t = top { v = AnyView(v.padding(.top, CGFloat(t))) }
+                        if let b = bottom { v = AnyView(v.padding(.bottom, CGFloat(b))) }
+                        if let l = leading { v = AnyView(v.padding(.leading, CGFloat(l))) }
+                        if let r = trailing { v = AnyView(v.padding(.trailing, CGFloat(r))) }
+                        tempView = AnyView(v)
+                    }
+                }
+
+            case "opacity":
+                if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *),
+                   let opacity = modifier.args?["value"]?.toDouble() ?? modifier.args?["value"]?.toInt().map(Double.init) {
+                    tempView = AnyView(tempView.opacity(opacity))
+                }
+
+            case "cornerRadius":
+                if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *) {
+                    if let r = modifier.args?["radius"]?.toDouble() {
+                        tempView = AnyView(tempView.cornerRadius(CGFloat(r)))
+                    } else if let ri = modifier.args?["radius"]?.toInt() {
+                        tempView = AnyView(tempView.cornerRadius(CGFloat(ri)))
+                    }
+                }
+
+            case "border":
+                if #available(iOS 13.0, *) {
+                    let width = modifier.args?["width"]?.toDouble() ?? modifier.args?["width"]?.toInt().map(Double.init) ?? 1.0
+                    let colorName = modifier.args?["color"]?.toString()
+                    let corner = modifier.args?["cornerRadius"]?.toDouble()
+                    let color = (colorName.flatMap { helper.translateColor($0) }) ?? Color.primary.opacity(0.25)
+                    var newView = AnyView(tempView.overlay(
+                        Group {
+                            if let c = corner {
+                                RoundedRectangle(cornerRadius: CGFloat(c)).stroke(color, lineWidth: CGFloat(width))
+                            } else {
+                                Rectangle().stroke(color, lineWidth: CGFloat(width))
+                            }
+                        }
+                    ))
+                    if let c = corner {
+                        newView = AnyView(newView.clipShape(RoundedRectangle(cornerRadius: CGFloat(c))))
+                    }
+                    tempView = newView
+                }
+
+            case "shadow":
+                if #available(iOS 13.0, *) {
+                    let colorName = modifier.args?["color"]?.toString()
+                    let opacity = modifier.args?["opacity"]?.toDouble() ?? 1.0
+                    let radius = modifier.args?["radius"]?.toDouble() ?? 3.0
+                    let x = modifier.args?["x"]?.toDouble() ?? 0.0
+                    let y = modifier.args?["y"]?.toDouble() ?? 0.0
+                    let color = (colorName.flatMap { helper.translateColor($0) } ?? Color.black).opacity(opacity)
+                    tempView = AnyView(tempView.shadow(color: color, radius: CGFloat(radius), x: CGFloat(x), y: CGFloat(y)))
+                }
+
+            case "offset":
+                if #available(iOS 13.0, *) {
+                    let x = modifier.args?["x"]?.toDouble() ?? 0.0
+                    let y = modifier.args?["y"]?.toDouble() ?? 0.0
+                    tempView = AnyView(tempView.offset(x: CGFloat(x), y: CGFloat(y)))
+                }
+
+            case "scaleEffect":
+                if #available(iOS 13.0, *) {
+                    if let value = modifier.args?["value"]?.toDouble() ?? modifier.args?["value"]?.toInt().map(Double.init) {
+                        tempView = AnyView(tempView.scaleEffect(CGFloat(value)))
+                    } else {
+                        let x = modifier.args?["x"]?.toDouble() ?? 1.0
+                        let y = modifier.args?["y"]?.toDouble() ?? 1.0
+                        tempView = AnyView(tempView.scaleEffect(x: CGFloat(x), y: CGFloat(y)))
+                    }
+                }
+
+            case "rotationEffect":
+                if #available(iOS 13.0, *) {
+                    if let deg = modifier.args?["degrees"]?.toDouble() ?? modifier.args?["degrees"]?.toInt().map(Double.init) {
+                        tempView = AnyView(tempView.rotationEffect(.degrees(deg)))
+                    }
+                }
+
+            case "clipped":
+                if #available(iOS 13.0, *) {
+                    let enabled = modifier.args?["enabled"]?.toBool() ?? true
+                    if enabled { tempView = AnyView(tempView.clipped()) }
+                }
+
+            case "multilineTextAlignment":
+                if #available(iOS 13.0, *) {
+                    let v = modifier.args?["value"]?.toString()?.lowercased()
+                    let alignment: TextAlignment
+                    switch v {
+                    case "center": alignment = .center
+                    case "right": alignment = .trailing
+                    default: alignment = .leading
+                    }
+                    tempView = AnyView(tempView.multilineTextAlignment(alignment))
+                }
+
+            case "lineLimit":
+                if #available(iOS 13.0, *) {
+                    if let n = modifier.args?["value"]?.toInt() ?? modifier.args?["value"]?.toDouble().map(Int.init) {
+                        tempView = AnyView(tempView.lineLimit(n))
+                    }
+                }
+
+            case "lineSpacing":
+                if #available(iOS 13.0, *) {
+                    if let n = modifier.args?["value"]?.toDouble() ?? modifier.args?["value"]?.toInt().map(Double.init) {
+                        tempView = AnyView(tempView.lineSpacing(CGFloat(n)))
+                    }
+                }
+
+            case "kerning":
+                if #available(iOS 13.0, *) {
+                    if let n = modifier.args?["value"]?.toDouble() ?? modifier.args?["value"]?.toInt().map(Double.init) {
+                        tempView = AnyView(tempView.kerning(CGFloat(n)))
+                    }
+                }
+
+            case "underline":
+                if #available(iOS 13.0, *) {
+                    let enabled = modifier.args?["enabled"]?.toBool() ?? true
+                    if enabled {
+                        if let colorName = modifier.args?["color"]?.toString(), let color = helper.translateColor(colorName) {
+                            tempView = AnyView(tempView.underline(true, color: color))
+                        } else {
+                            tempView = AnyView(tempView.underline(true))
+                        }
+                    }
+                }
+
+            case "strikethrough":
+                if #available(iOS 13.0, *) {
+                    let enabled = modifier.args?["enabled"]?.toBool() ?? true
+                    if enabled {
+                        if let colorName = modifier.args?["color"]?.toString(), let color = helper.translateColor(colorName) {
+                            tempView = AnyView(tempView.strikethrough(true, color: color))
+                        } else {
+                            tempView = AnyView(tempView.strikethrough(true))
+                        }
+                    }
+                }
+
+            case "glassEffect":
+                // iOS 26+ Liquid Glass.
+                // Args (subset, conservative to ensure build on earlier SDKs is unaffected at compile time):
+                //   shape?: "rect" | "roundedRect" | "capsule" | "circle"
+                //   cornerRadius?: number (used when shape is rect/roundedRect)
+                //   interactive?: boolean (reserved; no-op for now)
+                if #available(iOS 26.0, *) {
+                    // Optional gate for debugging/fallbacks: when enabled is false, skip applying the effect.
+                    let enabled = modifier.args?["enabled"]?.toBool() ?? true
+                    if !enabled { break }
+                    var newView = AnyView(tempView.glassEffect())
+
+                    // Optional shaping
+                    let shapeStr = modifier.args?["shape"]?.toString()?.lowercased()
+                    let corner = modifier.args?["cornerRadius"]?.toDouble()
+                    switch shapeStr {
+                    case "circle":
+                        newView = AnyView(newView.clipShape(Circle()))
+                    case "capsule":
+                        newView = AnyView(newView.clipShape(Capsule()))
+                    case "roundedrect", "rect":
+                        if let c = corner { newView = AnyView(newView.clipShape(RoundedRectangle(cornerRadius: CGFloat(c)))) }
+                    default:
+                        break
+                    }
+
+                    tempView = newView
+                }
+
+            default:
+                break
+            }
+        }
+
+        return tempView
+    }
+}

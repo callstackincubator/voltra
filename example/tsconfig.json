@@ -1,0 +1,12 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["expo-router"],
+    "paths": {
+      "~/*": ["./*"],
+      "voltra": ["../src/index"],
+      "voltra/*": ["../src/*"]
+    }
+  }
+}
