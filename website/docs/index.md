@@ -7,8 +7,8 @@ hero:
       light: /logo-light.svg
       dark: /logo-dark.svg
     alt: Voltra
-  name: Use JSX to build Live Activities
-  tagline: 'XYZ'
+  name: 100% JSX. 0% Native.
+  tagline: 'Build dynamic iOS Live Activities and interact with the Dynamic Island directly from React Native. No Swift, no Xcode, no hassle.'
   actions:
     - theme: brand
       text: Get Started
@@ -17,13 +17,13 @@ hero:
     text: Beta
     type: info
 features:
-  - title: F1
-    details: F1
-    icon: <img src="/icons/speed-fast.svg" />
-  - title: F2ś
-    details: F2
-    icon: <img src="/icons/device-phone.svg" />
-  - title: F3
-    details: F3
-    icon: <img src="/icons/cloud.svg" />
+  - title: SwiftUI primitives in JSX
+    details: Compose Live Activities using VStack, HStack, Text, SymbolView, and LinearGradient directly in JSX. Your React components render as native SwiftUI primitives.
+    icon: <img src="/icons/card-id.svg" />
+  - title: Dynamic Island support
+    details: Define minimal, compact, and expanded presentations for the Dynamic Island using the same JSX components. Full control over Live Activity regions.
+    icon: <img src="/icons/subscriptions.svg" />
+  - title: Push-to-update from JS servers
+    details: Stream real-time updates to Live Activities via push notifications from any JavaScript runtime. Keep activities current without app interaction.
+    icon: <img src="/icons/radio-signal.svg" />
 ---

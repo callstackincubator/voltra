@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "components",
+    "label": "Components"
+  },
+  {
+    "type": "file",
+    "name": "styling",
+    "label": "Styling"
+  },
+  {
+    "type": "file",
+    "name": "events",
+    "label": "Events"
+  },
+  {
+    "type": "file",
+    "name": "server-side-updates",
+    "label": "Server-side Updates"
+  }
+]
