@@ -20,12 +20,12 @@ When a user interacts with a button or toggle in your Live Activity, Voltra auto
 
 ### Listening for events
 
-To handle interactions, subscribe to Voltra UI events using the `addVoltraUIEventListener` function:
+To handle interactions, subscribe to Voltra UI events using the `addVoltraListener` function with the `'interaction'` event type:
 
 ```typescript
-import { addVoltraUIEventListener } from 'voltra'
+import { addVoltraListener } from 'voltra'
 
-const subscription = addVoltraUIEventListener((event) => {
+const subscription = addVoltraListener('interaction', (event) => {
   console.log('Component interacted:', event.identifier)
   console.log('Component type:', event.componentType)
 
@@ -119,7 +119,7 @@ Here's a complete example showing how to handle interactions:
 
 ```typescript
 import { useEffect } from 'react'
-import { useVoltra, addVoltraUIEventListener } from 'voltra'
+import { useVoltra, addVoltraListener } from 'voltra'
 
 function MyLiveActivity() {
   const { start, update } = useVoltra(
@@ -139,7 +139,7 @@ function MyLiveActivity() {
   )
 
   useEffect(() => {
-    const subscription = addVoltraUIEventListener((event) => {
+    const subscription = addVoltraListener('interaction', (event) => {
       switch (event.identifier) {
         case 'play-button':
           // Start playback

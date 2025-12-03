@@ -17,12 +17,12 @@ Voltra emits events whenever a Live Activity's state changes. This allows you to
 
 ### Listening for state changes
 
-Use `addActivityUpdatesListener` to subscribe to state change events:
+Use `addVoltraListener` with the `'stateChange'` event type to subscribe to state change events:
 
 ```typescript
-import { addActivityUpdatesListener, ActivityState } from 'voltra'
+import { addVoltraListener } from 'voltra'
 
-const subscription = addActivityUpdatesListener((event) => {
+const subscription = addVoltraListener('stateChange', (event) => {
   console.log('Activity ID:', event.activityID)
   console.log('Activity name:', event.activityName)
   console.log('New state:', event.activityState)
@@ -65,13 +65,46 @@ To enable server-side updates for your Live Activities, you need to obtain push 
 
 ### Activity push tokens
 
-Activity push tokens are used to update existing Live Activities via push notifications. Listen for these tokens using `addActivityTokenListener`.
+Activity push tokens are used to update existing Live Activities via push notifications. Listen for these tokens using `addVoltraListener` with the `'activityTokenReceived'` event type:
+
+```typescript
+import { addVoltraListener } from 'voltra'
+
+const subscription = addVoltraListener('activityTokenReceived', (event) => {
+  console.log('Activity ID:', event.activityID)
+  console.log('Activity name:', event.activityName)
+  console.log('Push token:', event.activityPushToken)
+
+  // Send the token to your server
+  sendTokenToServer({
+    activityID: event.activityID,
+    activityPushToken: event.activityPushToken,
+  })
+})
+
+subscription.remove()
+```
 
 For more information about using push tokens for server-side updates, see the [server-side updates guide](./server-side-updates.md).
 
 ### Push-to-start tokens
 
-Push-to-start tokens (available on iOS 17.2+) allow you to start Live Activities remotely via push notifications. Listen for these tokens using `addActivityPushToStartTokenListener`.
+Push-to-start tokens (available on iOS 17.2+) allow you to start Live Activities remotely via push notifications. Listen for these tokens using `addVoltraListener` with the `'activityPushToStartTokenReceived'` event type:
+
+```typescript
+import { addVoltraListener } from 'voltra'
+
+const subscription = addVoltraListener('activityPushToStartTokenReceived', (event) => {
+  console.log('Push-to-start token:', event.activityPushToStartToken)
+
+  // Send the token to your server
+  sendTokenToServer({
+    activityPushToStartToken: event.activityPushToStartToken,
+  })
+})
+
+subscription.remove()
+```
 
 For more information about using push tokens for starting Live Activity remotely, see the [server-side updates guide](./server-side-updates.md).
 
@@ -81,12 +114,12 @@ When users interact with buttons or toggles in your Live Activity, Voltra emits 
 
 ### Listening for interactions
 
-Subscribe to interaction events using `addVoltraUIEventListener`:
+Subscribe to interaction events using `addVoltraListener` with the `'interaction'` event type:
 
 ```typescript
-import { addVoltraUIEventListener } from 'voltra'
+import { addVoltraListener } from 'voltra'
 
-const subscription = addVoltraUIEventListener((event) => {
+const subscription = addVoltraListener('interaction', (event) => {
   console.log('Component interacted:', event.identifier)
   console.log('Component type:', event.componentType)
 
@@ -115,11 +148,11 @@ Always clean up your event subscriptions to prevent memory leaks. If you're usin
 
 ```typescript
 import { useEffect } from 'react'
-import { addActivityUpdatesListener } from 'voltra'
+import { addVoltraListener } from 'voltra'
 
 function MyComponent() {
   useEffect(() => {
-    const subscription = addActivityUpdatesListener((event) => {
+    const subscription = addVoltraListener('stateChange', (event) => {
       // Handle event
     })
 

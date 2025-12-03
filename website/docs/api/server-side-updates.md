@@ -146,10 +146,10 @@ ActivityKit enforces a strict payload size limit of approximately 4 KB. Keep you
 To send push notifications to a specific Live Activity, you need to obtain its push token. Listen for push tokens in your app:
 
 ```tsx
-import { addActivityTokenListener } from 'voltra'
+import { addVoltraListener } from 'voltra'
 
 useEffect(() => {
-  const subscription = addActivityTokenListener(({ activityID, activityName, activityPushToken }) => {
+  const subscription = addVoltraListener('activityTokenReceived', ({ activityID, activityName, activityPushToken }) => {
     // Send the token to your server
     // Associate it with the activityID and user/session
     sendTokenToServer({ activityID, activityPushToken })
