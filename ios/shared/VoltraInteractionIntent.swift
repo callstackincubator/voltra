@@ -28,8 +28,8 @@ public struct VoltraInteractionIntent: LiveActivityIntent {
     public func perform() async throws -> some IntentResult {
         print("User interacted with component: \(componentId)")
         
-        VoltraUIEventLogger.writeEvent([
-            "name": "voltraui_event",
+        VoltraEventLogger.writeEvent([
+            "name": "voltra_event",
             "source": activityId,
             "timestamp": Date().timeIntervalSince1970,
             "identifier": componentId,

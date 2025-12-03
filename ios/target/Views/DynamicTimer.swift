@@ -1,6 +1,6 @@
 //
 //  DynamicTimer.swift
-//  VoltraUI
+//  Voltra
 //
 //  Flexible countdown/stopwatch view backed by SwiftUI system timer renderers.
 //
@@ -8,17 +8,17 @@
 import SwiftUI
 
 public struct DynamicTimer: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
-    private let helper = VoltraUIHelper()
+    private let component: VoltraComponent
+    private let helper = VoltraHelper()
 
     private var params: TimerParameters? {
         component.parameters(TimerParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -60,13 +60,13 @@ public struct DynamicTimer: View {
         return try? JSONDecoder().decode(TextTemplates.self, from: data)
     }
 
-    private var modeOrderedModifiers: [String: [VoltraUIModifier]] {
+    private var modeOrderedModifiers: [String: [VoltraModifier]] {
         guard let raw = params?.modeOrderedModifiers,
               let data = raw.data(using: .utf8) else { return [:] }
 
         do {
-            let decoded = try JSONDecoder().decode([String: [VoltraUIModifier]].self, from: data)
-            var lowered: [String: [VoltraUIModifier]] = [:]
+            let decoded = try JSONDecoder().decode([String: [VoltraModifier]].self, from: data)
+            var lowered: [String: [VoltraModifier]] = [:]
             for (key, value) in decoded {
                 lowered[key.lowercased()] = value
             }
@@ -104,8 +104,8 @@ public struct DynamicTimer: View {
         return lowered
     }
 
-    private func mergedModifiers(for variantKey: String?) -> [VoltraUIModifier] {
-        var result: [VoltraUIModifier] = []
+    private func mergedModifiers(for variantKey: String?) -> [VoltraModifier] {
+        var result: [VoltraModifier] = []
         if let base = component.modifiers {
             result.append(contentsOf: base)
         }
@@ -274,14 +274,14 @@ public struct DynamicTimer: View {
     }
 
     private func applyModifiers<Content: View>(_ content: Content, variantKey: String?) -> AnyView {
-        var view = AnyView(content.voltraUIModifiers(component))
+        var view = AnyView(content.voltraModifiers(component))
 
         if let defaults = modeOrderedModifiers["default"], !defaults.isEmpty {
-            view = AnyView(view.voltraUIModifiers(defaults))
+            view = AnyView(view.voltraModifiers(defaults))
         }
 
         if let key = variantKey?.lowercased(), let extras = modeOrderedModifiers[key], !extras.isEmpty {
-            view = AnyView(view.voltraUIModifiers(extras))
+            view = AnyView(view.voltraModifiers(extras))
         }
 
         return view

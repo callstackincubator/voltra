@@ -1,11 +1,11 @@
 import SwiftUI
 import WidgetKit
 
-struct VoltraUIContentBuilder {
-    static func build(components: [VoltraUIComponent], source: String, activityId: String? = nil) -> AnyView {
+struct VoltraContentBuilder {
+    static func build(components: [VoltraComponent], source: String, activityId: String? = nil) -> AnyView {
         // Detect whether any node in the payload applies a glassEffect ordered modifier.
         let usesGlass: Bool = {
-            func hasGlass(_ node: VoltraUIComponent) -> Bool {
+            func hasGlass(_ node: VoltraComponent) -> Bool {
                 if let mods = node.modifiers, mods.contains(where: { $0.name == "glassEffect" }) { return true }
                 if let kids = node.children {
                     switch kids {
@@ -24,7 +24,7 @@ struct VoltraUIContentBuilder {
 
         let tint: Color? = {
             guard let root = components.first else { return nil }
-            let helper = VoltraUIHelper()
+            let helper = VoltraHelper()
             if let modifiers = root.modifiers {
                 if let bgMod = modifiers.first(where: { $0.name == "backgroundStyle" || $0.name == "background" }),
                    let colorName = bgMod.args?["color"]?.toString(),
@@ -38,9 +38,9 @@ struct VoltraUIContentBuilder {
         let base: AnyView = {
             // Use pre-parsed components directly
             return AnyView(
-                VoltraUI(components: components, callback: { component in
-                    VoltraUIEventLogger.writeEvent([
-                        "name": "voltraui_event",
+                Voltra(components: components, callback: { component in
+                    VoltraEventLogger.writeEvent([
+                        "name": "voltra_event",
                         "source": source,
                         "timestamp": Date().timeIntervalSince1970,
                         "identifier": component.id,
@@ -48,8 +48,8 @@ struct VoltraUIContentBuilder {
                     ])
                 }, activityId: activityId)
                 .onAppear {
-                    VoltraUIEventLogger.writeEvent([
-                        "name": "voltraui_onAppear",
+                    VoltraEventLogger.writeEvent([
+                        "name": "voltra_onAppear",
                         "source": source,
                         "timestamp": Date().timeIntervalSince1970,
                     ])

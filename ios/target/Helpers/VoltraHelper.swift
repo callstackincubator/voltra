@@ -1,20 +1,10 @@
-//
-//  VoltraUIHelper.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 25/07/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 // swiftlint:disable cyclomatic_complexity function_body_length
-/// VoltraUIHelper
+/// VoltraHelper
 ///
-/// VoltraUIHelper helps to translate Strings to native SwiftUI .context
-public class VoltraUIHelper {
+/// VoltraHelper helps to translate Strings to native SwiftUI .context
+public class VoltraHelper {
 
     /// Translate string colors to native ``Color``.
     ///

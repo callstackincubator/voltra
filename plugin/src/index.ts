@@ -19,7 +19,7 @@ const withVoltra: VoltraConfigPlugin = (config, props) => {
       ...config.ios?.infoPlist,
       NSSupportsLiveActivities: true,
       NSSupportsLiveActivitiesFrequentUpdates: false,
-      ...(props?.groupIdentifier ? { VoltraUI_AppGroupIdentifier: props.groupIdentifier } : {}),
+      ...(props?.groupIdentifier ? { Voltra_AppGroupIdentifier: props.groupIdentifier } : {}),
       // Ensure the main app has a URL scheme set so widgetURL can open it (optional feature)
       ...(function ensureURLScheme(existing: Record<string, any>) {
         const scheme =

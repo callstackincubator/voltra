@@ -1,6 +1,6 @@
 import Foundation
 
-public enum VoltraUIRegion: String, Codable, Hashable, CaseIterable {
+public enum VoltraRegion: String, Codable, Hashable, CaseIterable {
   case lockScreen
   case islandExpandedCenter
   case islandExpandedLeading

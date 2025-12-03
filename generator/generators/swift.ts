@@ -27,18 +27,14 @@ const generateSwiftEnum = (data: ModifiersData): string => {
 
   return `//
 //  VoltraModifierType.swift
-//  VoltraUI
 //
-//  🤖 AUTO-GENERATED from data/modifiers.json
+//  AUTO-GENERATED from data/modifiers.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
 //  Schema version: ${version}
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
 
 import Foundation
 
-/// All available Voltra UI modifier types
+/// All available Voltra modifier types
 /// This enum provides exhaustive type checking for modifiers
 public enum VoltraModifierType: String, Codable, CaseIterable {
 ${cases}
@@ -67,20 +63,16 @@ const generateSwiftHelpers = (data: ModifiersData): string => {
 
   return `//
 //  VoltraModifierType+Helpers.swift
-//  VoltraUI
 //
-//  🤖 AUTO-GENERATED from data/modifiers.json
+//  AUTO-GENERATED from data/modifiers.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
 //  Schema version: ${version}
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
 
 import Foundation
 
-// MARK: - VoltraUIModifier Extensions
+// MARK: - VoltraModifier Extensions
 
-extension VoltraUIModifier {
+extension VoltraModifier {
     /// Typed modifier name (returns nil if the modifier name is not recognized)
     public var type: VoltraModifierType? {
         VoltraModifierType(rawValue: name)
@@ -104,14 +96,14 @@ extension VoltraUIModifier {
 
 // MARK: - Array Extensions
 
-extension Array where Element == VoltraUIModifier {
+extension Array where Element == VoltraModifier {
     /// Filter modifiers by type
-    public func filter(type: VoltraModifierType) -> [VoltraUIModifier] {
+    public func filter(type: VoltraModifierType) -> [VoltraModifier] {
         filter { $0.type == type }
     }
     
     /// Filter modifiers by category
-    public func filter(category: ModifierCategory) -> [VoltraUIModifier] {
+    public func filter(category: ModifierCategory) -> [VoltraModifier] {
         filter { $0.category == category }
     }
     

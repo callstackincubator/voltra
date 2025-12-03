@@ -1,6 +1,6 @@
 import { Platform } from 'react-native'
 
-import VoltraUIModule from './VoltraUIModule'
+import VoltraModule from './VoltraModule'
 
 function assertIOS(name: string): boolean {
   const isIOS = Platform.OS === 'ios'
@@ -11,11 +11,11 @@ function assertIOS(name: string): boolean {
 }
 
 /**
- * End all VoltraUI instances.
+ * End all Voltra instances.
  */
-export async function endAllVoltraUI(): Promise<void> {
-  if (!assertIOS('endAllVoltraUI')) return Promise.resolve()
-  return VoltraUIModule.endAllVoltraUI?.()
+export async function endAllVoltra(): Promise<void> {
+  if (!assertIOS('endAllVoltra')) return Promise.resolve()
+  return VoltraModule.endAllVoltra?.()
 }
 
 /**
@@ -23,7 +23,7 @@ export async function endAllVoltraUI(): Promise<void> {
  */
 export async function endAllLiveActivities(): Promise<void> {
   if (!assertIOS('endAllLiveActivities')) return Promise.resolve()
-  return VoltraUIModule.endAllLiveActivities?.()
+  return VoltraModule.endAllLiveActivities?.()
 }
 
 /**
@@ -44,12 +44,12 @@ export function isGlassSupported(): boolean {
 }
 
 /**
- * Debug: list current VoltraUI Live Activity IDs (if any).
+ * Debug: list current Voltra Live Activity IDs (if any).
  */
 export async function listLiveActivityIds(): Promise<string[]> {
   if (!assertIOS('listLiveActivityIds')) return Promise.resolve([])
   try {
-    return (await (VoltraUIModule as any).listVoltraUIActivityIds?.()) ?? []
+    return (await (VoltraModule as any).listVoltraActivityIds?.()) ?? []
   } catch {
     return []
   }

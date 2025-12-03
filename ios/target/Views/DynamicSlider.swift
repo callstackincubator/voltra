@@ -1,30 +1,20 @@
-//
-//  DynamicSlider.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 public struct DynamicSlider: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
     @State
     private var state: Double
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     // Type-safe parameter access
     private var params: SliderParameters? {
         component.parameters(SliderParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         let params = component.parameters(SliderParameters.self)
         self.state = params?.defaultValue ?? 0
         self.component = component
@@ -36,7 +26,7 @@ public struct DynamicSlider: View {
             var newComponent = component
             newComponent.state = .double(newState)
 
-            voltraUIEnvironment.callback(newComponent)
+            voltraEnvironment.callback(newComponent)
         })) {
             Text("\(component.props?["title"] as? String ?? "")")
         } minimumValueLabel: {
@@ -44,7 +34,7 @@ public struct DynamicSlider: View {
         } maximumValueLabel: {
             Text("\(params?.maximumLabel ?? "")")
         }
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
 #else
         EmptyView()
 #endif

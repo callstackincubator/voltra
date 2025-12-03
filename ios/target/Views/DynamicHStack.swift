@@ -1,26 +1,16 @@
-//
-//  DynamicHStack.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 public struct DynamicHStack: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: HStackParameters? {
         component.parameters(HStackParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -41,15 +31,15 @@ public struct DynamicHStack: View {
             if let children = component.children {
                 switch children {
                 case .component(let component):
-                    AnyView(voltraUIEnvironment.buildView(for: [component]))
+                    AnyView(voltraEnvironment.buildView(for: [component]))
                 case .components(let components):
-                    AnyView(voltraUIEnvironment.buildView(for: components))
+                    AnyView(voltraEnvironment.buildView(for: components))
                 case .text:
                     // HStack shouldn't have text children, ignore
                     EmptyView()
                 }
             }
         }
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
     }
 }

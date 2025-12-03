@@ -1,18 +1,8 @@
-//
-//  VoltraUIComponent.swift
-//  VoltraUI
-//
-//  Created by Saul Sharma.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import Foundation
 import SwiftUI
 
 /// This struct constructs a UI Component from JSON.
-public struct VoltraUIComponent: Codable {
+public struct VoltraComponent: Codable {
     /// Type of component
     ///
     /// This is the equivalent of a SwiftUI View
@@ -43,7 +33,7 @@ public struct VoltraUIComponent: Codable {
     // MARK: - Computed Properties
 
     /// Component children - can be a single component, array of components, or text string
-    public var children: VoltraUIChildren? {
+    public var children: VoltraChildren? {
         guard let childrenValue = _childrenValue else { return nil }
 
         switch childrenValue {
@@ -52,21 +42,21 @@ public struct VoltraUIComponent: Codable {
             let dictAny = dict.mapValues { $0.toAny() } as? [String: Any]
             guard let dictAny = dictAny,
                   let data = try? JSONSerialization.data(withJSONObject: dictAny),
-                  let component = try? JSONDecoder().decode(VoltraUIComponent.self, from: data) else {
+                  let component = try? JSONDecoder().decode(VoltraComponent.self, from: data) else {
                 return nil
             }
             return .component(component)
 
         case .array(let array):
             // Array of components
-            let components = try? array.compactMap { jsonValue -> VoltraUIComponent? in
+            let components = try? array.compactMap { jsonValue -> VoltraComponent? in
                 guard case .dictionary(let dict) = jsonValue else { return nil }
                 let dictAny = dict.mapValues { $0.toAny() } as? [String: Any]
                 guard let dictAny = dictAny,
                       let data = try? JSONSerialization.data(withJSONObject: dictAny) else {
                     return nil
                 }
-                return try? JSONDecoder().decode(VoltraUIComponent.self, from: data)
+                return try? JSONDecoder().decode(VoltraComponent.self, from: data)
             }
             guard let components = components, !components.isEmpty else { return nil }
             return .components(components)
@@ -82,7 +72,7 @@ public struct VoltraUIComponent: Codable {
     }
     
     /// Type-safe modifiers to apply (from props.modifiers)
-    public var modifiers: [VoltraUIModifier]? {
+    public var modifiers: [VoltraModifier]? {
         guard let modifiersArray = props?["modifiers"] as? [[String: Any]] else {
             return nil
         }
@@ -102,7 +92,7 @@ public struct VoltraUIComponent: Codable {
                 }
                 return nil
             }
-            return VoltraUIModifier(name: name, args: args)
+            return VoltraModifier(name: name, args: args)
         }
     }
     
@@ -176,7 +166,7 @@ public struct VoltraUIComponent: Codable {
     }
 }
 
-extension VoltraUIComponent: Hashable {
+extension VoltraComponent: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(type)
         hasher.combine(id)
@@ -184,7 +174,7 @@ extension VoltraUIComponent: Hashable {
         // Components with same type and id are considered equal
     }
     
-    public static func == (lhs: VoltraUIComponent, rhs: VoltraUIComponent) -> Bool {
+    public static func == (lhs: VoltraComponent, rhs: VoltraComponent) -> Bool {
         return lhs.type == rhs.type && lhs.id == rhs.id
         // Note: props comparison is omitted for performance
     }
@@ -291,13 +281,13 @@ private enum JSONValue: Codable {
 }
 
 /// Represents the different types of children a component can have
-public enum VoltraUIChildren {
-    case component(VoltraUIComponent)
-    case components([VoltraUIComponent])
+public enum VoltraChildren {
+    case component(VoltraComponent)
+    case components([VoltraComponent])
     case text(String)
 }
 
-public struct VoltraUIModifier: Codable, Hashable {
+public struct VoltraModifier: Codable, Hashable {
     public let name: String
     public let args: [String: AnyCodable]?
 }

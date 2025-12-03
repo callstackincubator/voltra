@@ -1,13 +1,3 @@
-//
-//  DynamicSymbolView.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 import UIKit
 
@@ -289,21 +279,21 @@ private struct SymbolUIViewRepresentable: UIViewRepresentable {
     }
 }
 
-/// VoltraUI: SymbolView
+/// Voltra: SymbolView
 ///
 /// Dynamic rendering for SF Symbols with Expo Symbols API parity.
 public struct DynamicSymbolView: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
-    private let colorHelper = VoltraUIHelper()
+    private let component: VoltraComponent
+    private let colorHelper = VoltraHelper()
 
     private var params: SymbolViewParameters? {
         component.parameters(SymbolViewParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -442,6 +432,6 @@ public struct DynamicSymbolView: View {
 
     public var body: some View {
         SymbolUIViewRepresentable(configuration: symbolConfiguration)
-            .voltraUIModifiers(component)
+            .voltraModifiers(component)
     }
 }

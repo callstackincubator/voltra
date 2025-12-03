@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import ActivityKit
 
-struct VoltraUIDeepLinkResolver {
+struct VoltraDeepLinkResolver {
     static func deepLinkScheme() -> String? {
         if let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]] {
             for t in types {
@@ -15,7 +15,7 @@ struct VoltraUIDeepLinkResolver {
     }
 
     static func resolve(
-        _ attributes: VoltraUIAttributes,
+        _ attributes: VoltraAttributes,
     ) -> URL? {
         if let raw = attributes.deepLinkUrl, !raw.isEmpty {
             if raw.contains("://"), let url = URL(string: raw) { return url }

@@ -1,5 +1,5 @@
 import { assertRunningOnApple } from './utils'
-import VoltraUIModule from './VoltraUIModule'
+import VoltraModule from './VoltraModule'
 
 export type EventSubscription = {
   remove: () => void
@@ -44,5 +44,5 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
     return noopSubscription
   }
 
-  return VoltraUIModule.addListener(event, listener)
+  return VoltraModule.addListener(event, listener)
 }

@@ -4,7 +4,7 @@ import { addVoltraListener } from 'voltra'
 export const useVoltraEvents = (): void => {
   useEffect(() => {
     const subscription = addVoltraListener('interaction', (event) => {
-      console.log('VoltraUI event:', event)
+      console.log('Voltra event:', event)
     })
 
     return () => subscription.remove()

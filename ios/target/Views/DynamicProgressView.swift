@@ -1,26 +1,16 @@
-//
-//  DynamicProgressView.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 public struct DynamicProgressView: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: ProgressViewParameters? {
         component.parameters(ProgressViewParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -37,11 +27,11 @@ public struct DynamicProgressView: View {
                 if mode == "circular" {
                     view
                         .progressViewStyle(CircularProgressViewStyle())
-                        .voltraUIModifiers(component)
+                        .voltraModifiers(component)
                 } else {
                     view
                         .progressViewStyle(LinearProgressViewStyle())
-                        .voltraUIModifiers(component)
+                        .voltraModifiers(component)
                 }
             } else {
                 // Fallback: static determinate progress
@@ -52,7 +42,7 @@ public struct DynamicProgressView: View {
                         total: params?.maximumValue ?? 100
                     )
                     .progressViewStyle(CircularProgressViewStyle())
-                    .voltraUIModifiers(component)
+                    .voltraModifiers(component)
                 } else {
                     ProgressView(
                         "\(component.props?["title"] as? String ?? "")",
@@ -60,7 +50,7 @@ public struct DynamicProgressView: View {
                         total: params?.maximumValue ?? 100
                     )
                     .progressViewStyle(LinearProgressViewStyle())
-                    .voltraUIModifiers(component)
+                    .voltraModifiers(component)
                 }
             }
         } else {
@@ -72,7 +62,7 @@ public struct DynamicProgressView: View {
                     total: params?.maximumValue ?? 100
                 )
                 .progressViewStyle(CircularProgressViewStyle())
-                .voltraUIModifiers(component)
+                .voltraModifiers(component)
             } else {
                 ProgressView(
                     "\(component.props?["title"] as? String ?? "")",
@@ -80,7 +70,7 @@ public struct DynamicProgressView: View {
                     total: params?.maximumValue ?? 100
                 )
                 .progressViewStyle(LinearProgressViewStyle())
-                .voltraUIModifiers(component)
+                .voltraModifiers(component)
             }
         }
     }

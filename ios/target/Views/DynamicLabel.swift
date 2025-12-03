@@ -1,26 +1,16 @@
-//
-//  DynamicLabel.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 public struct DynamicLabel: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
     
     private var params: LabelParameters? {
         component.parameters(LabelParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -30,10 +20,10 @@ public struct DynamicLabel: View {
                 params?.title ?? "Label",
                 systemImage: systemImage
             )
-            .voltraUIModifiers(component)
+            .voltraModifiers(component)
         } else {
             DynamicText(component)
-                .voltraUIModifiers(component)
+                .voltraModifiers(component)
         }
     }
 }

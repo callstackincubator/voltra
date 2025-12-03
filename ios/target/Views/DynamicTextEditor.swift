@@ -1,23 +1,13 @@
-//
-//  DynamicTextEditor.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 public struct DynamicTextEditor: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    var voltraEnvironment
 
     @State
     private var state: String
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private struct TextEditorParameters: ComponentParameters {
         let defaultValue: String?
@@ -27,7 +17,7 @@ public struct DynamicTextEditor: View {
         component.parameters(TextEditorParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
         let params = component.parameters(TextEditorParameters.self)
         self.state = params?.defaultValue ?? ""
@@ -39,12 +29,12 @@ public struct DynamicTextEditor: View {
             var newComponent = component
             newComponent.state = .string(state)
 
-            voltraUIEnvironment.callback(newComponent)
+            voltraEnvironment.callback(newComponent)
         }))
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
 #else
         DynamicTextField(component)
-            .voltraUIModifiers(component)
+            .voltraModifiers(component)
 #endif
     }
 }

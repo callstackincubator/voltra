@@ -16,7 +16,7 @@ fileprivate enum StaticWidgetStore {
   static func readJson(key: String) -> Data? {
     guard let group = groupIdentifier(),
           let defaults = UserDefaults(suiteName: group),
-          let jsonString = defaults.string(forKey: "VoltraUI_Widget_JSON_\(key)")
+          let jsonString = defaults.string(forKey: "Voltra_Widget_JSON_\(key)")
     else { return nil }
     return jsonString.data(using: .utf8)
   }
@@ -24,7 +24,7 @@ fileprivate enum StaticWidgetStore {
   static func readDeepLinkUrl(key: String) -> String? {
     guard let group = groupIdentifier(),
           let defaults = UserDefaults(suiteName: group) else { return nil }
-    return defaults.string(forKey: "VoltraUI_Widget_DeepLinkURL_\(key)")
+    return defaults.string(forKey: "Voltra_Widget_DeepLinkURL_\(key)")
   }
 }
 
@@ -106,7 +106,7 @@ public struct VoltraSlotWidget1: Widget {
   public init() {}
   
   public var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "VoltraUIWidgetSlot1", provider: VoltraSlotProvider(slotId: slotId)) { entry in
+    StaticConfiguration(kind: "VoltraWidgetSlot1", provider: VoltraSlotProvider(slotId: slotId)) { entry in
       VoltraSlotWidgetView(entry: entry)
     }
     .configurationDisplayName("Voltra Widget — Slot 1")
@@ -121,7 +121,7 @@ public struct VoltraSlotWidget2: Widget {
   public init() {}
   
   public var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "VoltraUIWidgetSlot2", provider: VoltraSlotProvider(slotId: slotId)) { entry in
+    StaticConfiguration(kind: "VoltraWidgetSlot2", provider: VoltraSlotProvider(slotId: slotId)) { entry in
       VoltraSlotWidgetView(entry: entry)
     }
     .configurationDisplayName("Voltra Widget — Slot 2")
@@ -136,7 +136,7 @@ public struct VoltraSlotWidget3: Widget {
   public init() {}
   
   public var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "VoltraUIWidgetSlot3", provider: VoltraSlotProvider(slotId: slotId)) { entry in
+    StaticConfiguration(kind: "VoltraWidgetSlot3", provider: VoltraSlotProvider(slotId: slotId)) { entry in
       VoltraSlotWidgetView(entry: entry)
     }
     .configurationDisplayName("Voltra Widget — Slot 3")
@@ -151,9 +151,9 @@ fileprivate func buildStaticContentView(data: Data, source: String) -> AnyView {
   let normalized = normalizeJsonData(data) ?? (try? JSONSerialization.data(withJSONObject: [])) ?? Data("[]".utf8)
   let sanitized = sanitizeWidgetJson(normalized)
 
-  if let components = try? JSONDecoder().decode([VoltraUIComponent].self, from: sanitized) {
+  if let components = try? JSONDecoder().decode([VoltraComponent].self, from: sanitized) {
     return AnyView(
-      VoltraUI(components: components, callback: nil, activityId: nil)
+      Voltra(components: components, callback: nil, activityId: nil)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     )
   } else {
@@ -188,7 +188,7 @@ fileprivate func deepLinkScheme() -> String? {
 }
 
 fileprivate func extractRootIdentifier(_ data: Data) -> String? {
-  if let comps = try? JSONDecoder().decode([VoltraUIComponent].self, from: data), let first = comps.first {
+  if let comps = try? JSONDecoder().decode([VoltraComponent].self, from: data), let first = comps.first {
     return first.id ?? first.type
   }
   return nil

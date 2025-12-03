@@ -5,8 +5,8 @@ package = JSON.parse(File.read(File.join(__dir__, '..', 'package.json')))
 Pod::Spec.new do |s|
   s.name           = 'Voltra'
   s.version        = package['version']
-  s.summary        = 'Voltra · Live Activities and Widgets from React Native'
-  s.description    = 'Voltra converts React Native JSX into VoltraUI JSON to render SwiftUI surfaces like Live Activities, widgets, and Dynamic Island layouts.'
+  s.summary        = package['description']
+  s.description    = 'Build dynamic iOS Live Activities and interact with the Dynamic Island directly from React Native. No Swift, no Xcode, no hassle.'
   s.license        = package['license']
   s.author         = package['author']
   s.homepage       = package['homepage']
@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
     :ios => '17.0',
   }
   s.swift_version  = '5.9'
-  s.source         = { git: 'https://github.com/saulsharma/voltra' }
+  s.source         = { git: 'https://github.com/callstackincubator/voltra' }
   s.static_framework = true
 
   # Swift/Objective-C compatibility

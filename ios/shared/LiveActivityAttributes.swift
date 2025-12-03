@@ -8,10 +8,10 @@
 import ActivityKit
 import Foundation
 
-public struct VoltraUIAttributes: ActivityAttributes {
+public struct VoltraAttributes: ActivityAttributes {
   public struct ContentState: Codable, Hashable {
     public var uiJsonData: String
-    public let regions: [VoltraUIRegion: [VoltraUIComponent]]
+    public let regions: [VoltraRegion: [VoltraComponent]]
 
     private enum CodingKeys: String, CodingKey {
       case uiJsonData
@@ -22,8 +22,8 @@ public struct VoltraUIAttributes: ActivityAttributes {
       self.regions = ContentState.parseRegions(from: uiJsonData)
     }
 
-    private static func parseRegions(from jsonString: String) -> [VoltraUIRegion: [VoltraUIComponent]] {
-      var regions: [VoltraUIRegion: [VoltraUIComponent]] = [:]
+    private static func parseRegions(from jsonString: String) -> [VoltraRegion: [VoltraComponent]] {
+      var regions: [VoltraRegion: [VoltraComponent]] = [:]
 
       guard let data = jsonString.data(using: .utf8),
             let root = try? JSONSerialization.jsonObject(with: data) else {
@@ -33,7 +33,7 @@ public struct VoltraUIAttributes: ActivityAttributes {
       // If it's already an array, use it for all regions
       if root is [Any] {
         if let components = parseComponents(from: jsonString) {
-          for region in VoltraUIRegion.allCases {
+          for region in VoltraRegion.allCases {
             regions[region] = components
           }
         }
@@ -45,7 +45,7 @@ public struct VoltraUIAttributes: ActivityAttributes {
       }
 
       // Extract components for each region with fallbacks
-      for region in VoltraUIRegion.allCases {
+      for region in VoltraRegion.allCases {
         if let jsonString = selectJsonString(from: dict, region: region),
            let components = parseComponents(from: jsonString) {
           regions[region] = components
@@ -55,12 +55,12 @@ public struct VoltraUIAttributes: ActivityAttributes {
       return regions
     }
 
-    private static func parseComponents(from jsonString: String) -> [VoltraUIComponent]? {
+    private static func parseComponents(from jsonString: String) -> [VoltraComponent]? {
       guard let data = jsonString.data(using: .utf8) else { return nil }
-      return try? JSONDecoder().decode([VoltraUIComponent].self, from: data)
+      return try? JSONDecoder().decode([VoltraComponent].self, from: data)
     }
 
-    private static func selectJsonString(from dict: [String: Any], region: VoltraUIRegion) -> String? {
+    private static func selectJsonString(from dict: [String: Any], region: VoltraRegion) -> String? {
       func tryPaths(_ paths: [[String]]) -> String? {
         for path in paths {
           if let fragment = extract(dict, path: path),

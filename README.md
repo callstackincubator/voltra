@@ -16,7 +16,7 @@ Voltra turns React Native JSX into SwiftUI so you can ship custom Live Activitie
 
 - **Familiar Styling**: Use React Native style props and ordered SwiftUI modifiers in one place.
 
-- **Type-Safe & Developer-Friendly**: The VoltraUI schema, hooks, and examples ship with TypeScript definitions, tests, and docs so AI coding agents stay productive.
+- **Type-Safe & Developer-Friendly**: The Voltra schema, hooks, and examples ship with TypeScript definitions, tests, and docs so AI coding agents stay productive.
 
 - **Works With Your Setup**: Compatible with Expo Dev Client and bare React Native projects. The config plugin automatically wires iOS extension targets for you.
 

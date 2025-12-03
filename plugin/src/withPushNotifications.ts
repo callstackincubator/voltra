@@ -9,7 +9,7 @@ export const withPushNotifications: ConfigPlugin = (config) =>
       return mod
     }),
     (mod) => {
-      mod.modResults['VoltraUI_EnablePushNotifications'] = true
+      mod.modResults['Voltra_EnablePushNotifications'] = true
       return mod
     }
   )

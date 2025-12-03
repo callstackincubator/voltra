@@ -1,6 +1,6 @@
 {
   "platforms": ["apple", "web"],
   "apple": {
-    "modules": ["VoltraUIModule"]
+    "modules": ["VoltraModule"]
   }
 }

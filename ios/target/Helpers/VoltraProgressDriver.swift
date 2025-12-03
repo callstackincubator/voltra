@@ -1,6 +1,6 @@
 //
 //  VoltraProgressDriver.swift
-//  VoltraUI
+//  Voltra
 //
 //  Centralised helpers for time-driven progress behaviour shared by Timer,
 //  ProgressView, and Gauge implementations.

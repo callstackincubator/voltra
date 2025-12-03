@@ -1,23 +1,13 @@
-//
-//  DynamicSecureField.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 public struct DynamicSecureField: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    var voltraEnvironment
 
     @State
     private var state: String
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private struct SecureFieldParameters: ComponentParameters {
         let defaultValue: String?
@@ -27,7 +17,7 @@ public struct DynamicSecureField: View {
         component.parameters(SecureFieldParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
         let params = component.parameters(SecureFieldParameters.self)
         self.state = params?.defaultValue ?? ""
@@ -38,6 +28,6 @@ public struct DynamicSecureField: View {
             "\(component.props?["title"] as? String ?? "")",
             text: $state
         )
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
     }
 }

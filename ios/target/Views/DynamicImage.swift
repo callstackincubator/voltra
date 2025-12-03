@@ -1,13 +1,3 @@
-//
-//  DynamicImage.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  Updated by the Voltra team to support multiple image source types.
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import Foundation
 import SwiftUI
 #if canImport(UIKit)
@@ -17,16 +7,16 @@ import AppKit
 #endif
 
 public struct DynamicImage: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: ImageParameters? {
         component.parameters(ImageParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -47,7 +37,7 @@ public struct DynamicImage: View {
     }
 
     private func appGroupIdentifier() -> String? {
-        Bundle.main.object(forInfoDictionaryKey: "VoltraUI_AppGroupIdentifier") as? String
+        Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
     }
 
     private func appGroupFileURL(for filename: String) -> URL? {
@@ -111,11 +101,11 @@ public struct DynamicImage: View {
     public var body: some View {
         if let source = resolvedSource,
            let image = loadImage(kind: source.kind, value: source.value) {
-            image.voltraUIModifiers(component)
+            image.voltraModifiers(component)
         } else {
             Image(systemName: "photo")
                 .foregroundStyle(Color.gray.opacity(0.35))
-                .voltraUIModifiers(component)
+                .voltraModifiers(component)
         }
     }
 }

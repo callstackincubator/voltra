@@ -1,26 +1,26 @@
 //
 //  DynamicGlassView.swift
-//  VoltraUI
+//  Voltra
 //
 //  Created by Voltra.
 //
 
 import SwiftUI
 
-/// VoltraUI: GlassView (iOS 26+ preferred, but renders content on lower OSes)
+/// Voltra: GlassView (iOS 26+ preferred, but renders content on lower OSes)
 ///
 /// Renders its children and applies ordered modifiers (including `glassEffect`) to the wrapper.
 public struct DynamicGlassView: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: GlassViewParameters? {
         component.parameters(GlassViewParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -30,15 +30,15 @@ public struct DynamicGlassView: View {
         Group {
             Color.clear
         }
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
         .overlay {
             if let children = component.children {
                 switch children {
                 case .component(let component):
-                    AnyView(voltraUIEnvironment.buildView(for: [component]))
+                    AnyView(voltraEnvironment.buildView(for: [component]))
                 case .components(let components):
                     if !components.isEmpty {
-                        AnyView(voltraUIEnvironment.buildView(for: components))
+                        AnyView(voltraEnvironment.buildView(for: components))
                     }
                 case .text:
                     // GlassView shouldn't have text children, ignore

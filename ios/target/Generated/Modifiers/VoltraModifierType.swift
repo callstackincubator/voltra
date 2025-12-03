@@ -1,17 +1,13 @@
 //
 //  VoltraModifierType.swift
-//  VoltraUI
 //
-//  🤖 AUTO-GENERATED from data/modifiers.json
+//  AUTO-GENERATED from data/modifiers.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
 //  Schema version: 1.0.0
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
 
 import Foundation
 
-/// All available Voltra UI modifier types
+/// All available Voltra modifier types
 /// This enum provides exhaustive type checking for modifiers
 public enum VoltraModifierType: String, Codable, CaseIterable {
     case frame

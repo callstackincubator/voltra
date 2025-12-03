@@ -1,26 +1,16 @@
-//
-//  DynamicGauge.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 public struct DynamicGauge: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: GaugeParameters? {
         component.parameters(GaugeParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -56,7 +46,7 @@ public struct DynamicGauge: View {
         } currentValueLabel: {
             valueLabelView(for: progress)
         }
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
     }
 
     private func formattedPercentage(_ progress: Double) -> String {

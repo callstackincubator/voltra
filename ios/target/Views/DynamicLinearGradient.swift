@@ -1,6 +1,6 @@
 //
 //  DynamicLinearGradient.swift
-//  VoltraUI
+//  Voltra
 //
 //  Created by Windsurf Cascade.
 //
@@ -10,16 +10,16 @@
 import SwiftUI
 
 public struct DynamicLinearGradient: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: LinearGradientParameters? {
         component.parameters(LinearGradientParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -53,7 +53,7 @@ public struct DynamicLinearGradient: View {
     }
 
     // Build Gradient from parameters
-    private func buildGradient(helper: VoltraUIHelper) -> Gradient {
+    private func buildGradient(helper: VoltraHelper) -> Gradient {
         // Prefer explicit stops over color array
         if let stopsStr = params?.stops {
             let parts = stopsStr.split(separator: "|")
@@ -81,7 +81,7 @@ public struct DynamicLinearGradient: View {
     }
 
     public var body: some View {
-        let helper = VoltraUIHelper()
+        let helper = VoltraHelper()
         let gradient = buildGradient(helper: helper)
         let start = parsePoint(params?.startPoint)
         let end = parsePoint(params?.endPoint)
@@ -96,15 +96,15 @@ public struct DynamicLinearGradient: View {
             if let children = component.children {
                 switch children {
                 case .component(let component):
-                    AnyView(voltraUIEnvironment.buildView(for: [component]))
+                    AnyView(voltraEnvironment.buildView(for: [component]))
                 case .components(let components):
-                    AnyView(voltraUIEnvironment.buildView(for: components))
+                    AnyView(voltraEnvironment.buildView(for: components))
                 case .text:
                     // LinearGradient shouldn't have text children, ignore
                     EmptyView()
                 }
             }
         }
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
     }
 }

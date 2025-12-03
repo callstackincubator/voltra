@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for contributing to `voltra`! This document explains the local development workflow, how the iOS config plugin works, and how VoltraUI Swift sources are vendored locally (no external SPM required).
+Thank you for contributing to `voltra`! This document explains the local development workflow, how the iOS config plugin works, and how Voltra Swift sources are vendored locally (no external SPM required).
 
 ## Repository overview
 
@@ -31,16 +31,16 @@ The config plugin is written in TypeScript under `plugin/src/` and compiled to `
   npm run clean:plugin # Removes plugin/build and tsbuildinfo
   ```
 
-## How VoltraUI is vendored locally
+## How Voltra is vendored locally
 
-To avoid relying on a remote Swift Package, we vendor the VoltraUI Swift sources directly in this repository under `ios-files/VoltraUI-main/` (copied from GitHub).
+To avoid relying on a remote Swift Package, we vendor the Voltra Swift sources directly in this repository under `ios-files/Voltra-main/` (copied from GitHub).
 
 The plugin copies these sources into the widget extension target during prebuild:
 
-1. Copies `ios-files/VoltraUIWidget.swift`, `VoltraUIWidgetBundle.swift`, and `Assets.xcassets/`.
-2. Copies the entire directory `ios-files/VoltraUI-main/Sources/VoltraUI/` into the extension target as `VoltraUI/`.
-3. Adds all `.swift` files under `VoltraUI/` to the PBX Sources build phase.
-4. The widget code in `VoltraUIWidget.swift` references `VoltraUI` types unconditionally and compiles them from the vendored sources (no `import VoltraUI` or SPM required).
+1. Copies `ios-files/VoltraWidget.swift`, `VoltraWidgetBundle.swift`, and `Assets.xcassets/`.
+2. Copies the entire directory `ios-files/Voltra-main/Sources/Voltra/` into the extension target as `Voltra/`.
+3. Adds all `.swift` files under `Voltra/` to the PBX Sources build phase.
+4. The widget code in `VoltraWidget.swift` references `Voltra` types unconditionally and compiles them from the vendored sources (no `import Voltra` or SPM required).
 
 This is implemented in `plugin/src/lib/getWidgetFiles.ts`.
 
@@ -67,23 +67,21 @@ If you’re iterating on the plugin, rerun step (1) after making changes in `plu
 ## Troubleshooting
 
 - EISDIR: illegal operation on a directory, read
-
   - Cause: Using an old compiled plugin that attempts to copy a directory as a file.
   - Fix:
     1. Rebuild the plugin: `npx tsc -p plugin/tsconfig.json`.
     2. Re-run prebuild in the example app: `(cd example && npx expo prebuild -p ios)`.
 
 - Cannot find module './plugin/build'
-
   - Cause: You ran `npm run clean:plugin` (which deletes `plugin/build/`) and didn’t rebuild.
   - Fix: `npx tsc -p plugin/tsconfig.json` from the repo root.
 
-- Widget target missing VoltraUI/ folder in Xcode
-  - Ensure the plugin compiled and prebuild ran. Then open the iOS workspace and check the extension target for the `VoltraUI/` folder and many Swift files (e.g., `VoltraUI.swift`, `Views/*`, `Helpers/*`).
+- Widget target missing Voltra/ folder in Xcode
+  - Ensure the plugin compiled and prebuild ran. Then open the iOS workspace and check the extension target for the `Voltra/` folder and many Swift files (e.g., `Voltra.swift`, `Views/*`, `Helpers/*`).
 
 ## Event forwarding via App Groups (optional)
 
-The widget writes interaction events to a shared App Group queue. The app polls the queue and emits them via `addVoltraUIEventListener`.
+The widget writes interaction events to a shared App Group queue. The app polls the queue and emits them via `addVoltraListener`.
 
 - To enable, pass `groupIdentifier` to the plugin in your app config.
 - The plugin adds the entitlements file and Info.plist keys for the extension and host app.

@@ -1,8 +1,8 @@
 import Foundation
 
-public struct VoltraUIEventLogger {
+public struct VoltraEventLogger {
     static func groupIdentifier() -> String? {
-        Bundle.main.object(forInfoDictionaryKey: "VoltraUI_AppGroupIdentifier") as? String
+        Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
     }
 
     static func writeEvent(_ payload: [String: Any]) {
@@ -15,9 +15,9 @@ public struct VoltraUIEventLogger {
         else { return }
         let jsonString = String(data: data, encoding: .utf8) ?? "{}"
 
-        var queue = defaults.array(forKey: "VoltraUI_EventsQueue") as? [String] ?? []
+        var queue = defaults.array(forKey: "Voltra_EventsQueue") as? [String] ?? []
         queue.append(jsonString)
-        defaults.set(queue, forKey: "VoltraUI_EventsQueue")
+        defaults.set(queue, forKey: "Voltra_EventsQueue")
         defaults.synchronize()
     }
 }

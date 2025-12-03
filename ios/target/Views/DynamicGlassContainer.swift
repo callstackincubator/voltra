@@ -1,27 +1,27 @@
 //
 //  DynamicGlassContainer.swift
-//  VoltraUI
+//  Voltra
 //
 //  Created by Voltra.
 //
 
 import SwiftUI
 
-/// VoltraUI: GlassContainer (iOS 18+)
+/// Voltra: GlassContainer (iOS 18+)
 ///
 /// Wraps child views in a GlassEffectContainer so any child that applies `.glassEffect` will be
 /// composed as a unified "liquid" surface. On iOS < 26, this simply renders the children.
 public struct DynamicGlassContainer: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: GlassContainerParameters? {
         component.parameters(GlassContainerParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
@@ -33,20 +33,20 @@ public struct DynamicGlassContainer: View {
                     if #available(iOS 26.0, *) {
                         let spacing = params?.spacing ?? 0.0
                         GlassEffectContainer(spacing: CGFloat(spacing)) {
-                            AnyView(voltraUIEnvironment.buildView(for: [component]))
+                            AnyView(voltraEnvironment.buildView(for: [component]))
                         }
                     } else {
-                        AnyView(voltraUIEnvironment.buildView(for: [component]))
+                        AnyView(voltraEnvironment.buildView(for: [component]))
                     }
                 case .components(let components):
                     if !components.isEmpty {
                         if #available(iOS 26.0, *) {
                             let spacing = params?.spacing ?? 0.0
                             GlassEffectContainer(spacing: CGFloat(spacing)) {
-                                AnyView(voltraUIEnvironment.buildView(for: components))
+                                AnyView(voltraEnvironment.buildView(for: components))
                             }
                         } else {
-                            AnyView(voltraUIEnvironment.buildView(for: components))
+                            AnyView(voltraEnvironment.buildView(for: components))
                         }
                     } else {
                         EmptyView()
@@ -59,6 +59,6 @@ public struct DynamicGlassContainer: View {
                 EmptyView()
             }
         }
-        .voltraUIModifiers(component)
+        .voltraModifiers(component)
     }
 }

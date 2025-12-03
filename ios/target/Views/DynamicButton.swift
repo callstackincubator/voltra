@@ -1,45 +1,35 @@
-//
-//  DynamicButton.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 19/04/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 import AppIntents
 
 public struct DynamicButton: View {
-    @Environment(\.internalVoltraUIEnvironment)
-    private var voltraUIEnvironment
+    @Environment(\.internalVoltraEnvironment)
+    private var voltraEnvironment
 
-    private let component: VoltraUIComponent
+    private let component: VoltraComponent
 
     private var params: ButtonParameters? {
         component.parameters(ButtonParameters.self)
     }
 
-    init(_ component: VoltraUIComponent) {
+    init(_ component: VoltraComponent) {
         self.component = component
     }
 
     public var body: some View {
-        if let activityId = voltraUIEnvironment.activityId,
+        if let activityId = voltraEnvironment.activityId,
            let componentId = component.id {
             Button(intent: VoltraInteractionIntent(activityId: activityId, componentId: componentId), label: {
                 Text(params?.title ?? "Button")
             })
-            .voltraUIModifiers(component)
+            .voltraModifiers(component)
         } else {
             // Fallback to callback if activityId or componentId is missing
             Button(action: {
-                voltraUIEnvironment.callback(component)
+                voltraEnvironment.callback(component)
             }, label: {
                 Text(params?.title ?? "Button")
             })
-            .voltraUIModifiers(component)
+            .voltraModifiers(component)
         }
     }
 }

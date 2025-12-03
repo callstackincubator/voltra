@@ -1,7 +1,7 @@
 import { ensurePayloadWithinBudget } from './payload'
 import { renderVoltraToString, VoltraVariants } from './renderer'
 import { assertRunningOnApple } from './utils'
-import VoltraUIModule from './VoltraUIModule'
+import VoltraModule from './VoltraModule'
 
 export type StartVoltraOptions = {
   deepLinkUrl?: string
@@ -13,7 +13,7 @@ export const startVoltra = async (variants: VoltraVariants, options?: StartVoltr
   const payload = renderVoltraToString(variants)
   ensurePayloadWithinBudget(payload)
 
-  const targetId = await VoltraUIModule.startVoltraUI(payload, {
+  const targetId = await VoltraModule.startVoltra(payload, {
     target: 'liveActivity',
     deepLinkUrl: options?.deepLinkUrl,
   })
@@ -26,11 +26,11 @@ export const updateVoltra = async (targetId: string, variants: VoltraVariants): 
   const payload = renderVoltraToString(variants)
   ensurePayloadWithinBudget(payload)
 
-  return VoltraUIModule.updateVoltraUI(targetId, payload)
+  return VoltraModule.updateVoltra(targetId, payload)
 }
 
 export const stopVoltra = async (targetId: string): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
-  return VoltraUIModule.endVoltraUI(targetId)
+  return VoltraModule.endVoltra(targetId)
 }

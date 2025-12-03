@@ -1,13 +1,3 @@
-//
-//  Modifiers.swift
-//  VoltraUI
-//
-//  Created by Wesley de Groot on 25/07/2024.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import SwiftUI
 
 extension View {
@@ -15,7 +5,7 @@ extension View {
     ///
     /// - Parameter component: The component with modifiers to apply
     /// - Returns: The modified view
-    public func voltraUIModifiers(_ component: VoltraUIComponent) -> some View {
+    public func voltraModifiers(_ component: VoltraComponent) -> some View {
         if let modifiers = component.modifiers, !modifiers.isEmpty {
             return AnyView(self.applyModifiers(modifiers))
         }
@@ -26,12 +16,12 @@ extension View {
     ///
     /// - Parameter modifiers: The modifiers to apply
     /// - Returns: The modified view
-    public func voltraUIModifiers(_ modifiers: [VoltraUIModifier]) -> some View {
+    public func voltraModifiers(_ modifiers: [VoltraModifier]) -> some View {
         AnyView(self.applyModifiers(modifiers))
     }
 
-    private func applyModifiers(_ modifiers: [VoltraUIModifier]) -> AnyView {
-        let helper = VoltraUIHelper()
+    private func applyModifiers(_ modifiers: [VoltraModifier]) -> AnyView {
+        let helper = VoltraHelper()
         var tempView = AnyView(self)
 
         for modifier in modifiers {

@@ -37,14 +37,10 @@ const generateParameterStruct = (component: ComponentDefinition, version: string
 
   const header = `//
 //  ${component.name}Parameters.swift
-//  VoltraUI
-//
-//  🤖 AUTO-GENERATED from data/components.json
+
+//  AUTO-GENERATED from data/components.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
 //  Schema version: ${version}
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
 
 import Foundation
 
@@ -69,14 +65,10 @@ public struct ${component.name}Parameters: ComponentParameters {
 const generateProtocol = (version: string): string => {
   return `//
 //  ComponentParameters.swift
-//  VoltraUI
 //
-//  🤖 AUTO-GENERATED from data/components.json
+//  AUTO-GENERATED from data/components.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
 //  Schema version: ${version}
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
 
 import Foundation
 
@@ -88,19 +80,15 @@ public protocol ComponentParameters: Codable, Hashable {}
 
 const generateComponentExtension = (components: ComponentDefinition[], version: string): string => {
   const header = `//
-//  VoltraUIComponent+Parameters.swift
-//  VoltraUI
+//  VoltraComponent+Parameters.swift
 //
-//  🤖 AUTO-GENERATED from data/components.json
+//  AUTO-GENERATED from data/components.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
 //  Schema version: ${version}
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
 
 import Foundation
 
-extension VoltraUIComponent {
+extension VoltraComponent {
     /// Generic type-safe parameter accessor
     /// - Parameter type: The parameter struct type to decode
     /// - Returns: Decoded parameters, or nil if decoding fails or no parameters exist
@@ -152,8 +140,8 @@ export const generateSwiftParameters = (data: ComponentsData): GeneratedFiles =>
     }
   }
 
-  // Generate VoltraUIComponent extension
-  files['VoltraUIComponent+Parameters.swift'] = generateComponentExtension(data.components, data.version)
+  // Generate VoltraComponent extension
+  files['VoltraComponent+Parameters.swift'] = generateComponentExtension(data.components, data.version)
 
   // Generate marker file
   files['.generated'] = `This directory contains auto-generated Swift parameter files.

@@ -1,7 +1,7 @@
 {
   "name": "voltra",
   "version": "0.2.1",
-  "description": "Render SwiftUI via VoltraUI JSON from React Native (JSX → JSON → iOS)",
+  "description": "Build Live Activities with JSX in React Native",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "exports": {
@@ -36,16 +36,16 @@
     "ios",
     "apple"
   ],
-  "author": "Saúl Sharma (https://x.com/saul_sharma)",
+  "author": "Saúl Sharma (https://x.com/saul_sharma), Szymon Chmal (https://x.com/chmalszymon)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saulsharma/voltra.git"
+    "url": "git+https://github.com/callstackincubator/voltra.git"
   },
   "bugs": {
-    "url": "https://github.com/saulsharma/voltra/issues"
+    "url": "https://github.com/callstackincubator/voltra/issues"
   },
   "license": "MIT",
-  "homepage": "https://github.com/saulsharma/voltra#readme",
+  "homepage": "https://github.com/callstackincubator/voltra#readme",
   "dependencies": {
     "react-is": "^19.2.0"
   },

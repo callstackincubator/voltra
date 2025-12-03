@@ -3,14 +3,14 @@ import ExpoModulesCore
 import Foundation
 import WidgetKit
 
-public class VoltraUIModule: Module {
+public class VoltraModule: Module {
   private let STATIC_WIDGET_SYNTHETIC_ID = "widget"
   private let DEFAULT_WIDGET_KEY = "1"
   // Legacy keys retained for backward compatibility if needed
-  private let WIDGET_JSON_KEY = "VoltraUI_Widget_JSON"
-  private let WIDGET_DEEPLINK_URL_KEY = "VoltraUI_Widget_DeepLinkURL"
+  private let WIDGET_JSON_KEY = "Voltra_Widget_JSON"
+  private let WIDGET_DEEPLINK_URL_KEY = "Voltra_Widget_DeepLinkURL"
   private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
-  enum VoltraUIErrors: Error {
+  enum VoltraErrors: Error {
     case unsupportedOS
     case notFound
     case liveActivitiesNotEnabled
@@ -23,9 +23,9 @@ public class VoltraUIModule: Module {
     let estimatedBase64 = ((dataSize + 2) / 3) * 4
 
     if dataSize > safeBudget || estimatedBase64 > MAX_PAYLOAD_SIZE_IN_BYTES {
-      throw VoltraUIErrors.unexpectedError(
+      throw VoltraErrors.unexpectedError(
         NSError(
-          domain: "VoltraUIModule",
+          domain: "VoltraModule",
           code: operation == "start" ? -10 : -11,
           userInfo: [NSLocalizedDescriptionKey: "Payload too large: JSON=\(dataSize)B, est.base64=\(estimatedBase64)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B). Reduce the UI before \(operation == "start" ? "starting" : "updating") the Live Activity."]
         )
@@ -34,7 +34,7 @@ public class VoltraUIModule: Module {
   }
 
   public func definition() -> ModuleDefinition {
-    Name("VoltraUIModule")
+    Name("VoltraModule")
 
     // UI component events forwarded from the extension + push/state events
     Events("interaction", "activityTokenReceived", "activityPushToStartTokenReceived", "stateChange")
@@ -48,7 +48,7 @@ public class VoltraUIModule: Module {
       observeLiveActivityUpdates()
     }
 
-    AsyncFunction("startVoltraUI") { (jsonString: String, options: [String: Any]?) async throws -> String in
+    AsyncFunction("startVoltra") { (jsonString: String, options: [String: Any]?) async throws -> String in
       // Route to static widget if requested
       let target = (options?["target"] as? String) ?? "liveActivity"
       if target == "widget" {
@@ -57,9 +57,9 @@ public class VoltraUIModule: Module {
         // Write JSON into App Group so the Widget extension can render it
         let payloadBytes = jsonString.lengthOfBytes(using: .utf8)
         guard writeWidgetJsonString(jsonString, suffix: key) else {
-          throw VoltraUIErrors.unexpectedError(
+          throw VoltraErrors.unexpectedError(
             NSError(
-              domain: "VoltraUIModule",
+              domain: "VoltraModule",
               code: -100,
               userInfo: [NSLocalizedDescriptionKey: "App Group not configured: set 'groupIdentifier' in the config plugin so the app and widget extension share storage."]
             )
@@ -69,15 +69,15 @@ public class VoltraUIModule: Module {
           _ = writeWidgetDeepLinkUrl(dl, suffix: key)
         }
         if #available(iOS 14.0, *) {
-          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraUIStaticWidget")
+          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraStaticWidget")
           WidgetCenter.shared.reloadAllTimelines()
         }
-        print("[VoltraUI][Widget] start key=\(key) bytes=\(payloadBytes)")
+        print("[Voltra][Widget] start key=\(key) bytes=\(payloadBytes)")
         return "\(STATIC_WIDGET_SYNTHETIC_ID):\(key)"
       }
 
-      guard #available(iOS 16.2, *) else { throw VoltraUIErrors.unsupportedOS }
-      guard ActivityAuthorizationInfo().areActivitiesEnabled else { throw VoltraUIErrors.liveActivitiesNotEnabled }
+      guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+      guard ActivityAuthorizationInfo().areActivitiesEnabled else { throw VoltraErrors.liveActivitiesNotEnabled }
 
       do {
         try validatePayloadSize(jsonString, operation: "start")
@@ -86,8 +86,8 @@ public class VoltraUIModule: Module {
         let activityName = (options?["activityId"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let key = activityName, !key.isEmpty,
-           let existing = Activity<VoltraUIAttributes>.activities.first(where: { $0.attributes.name == key }) {
-          let newState = VoltraUIAttributes.ContentState(uiJsonData: jsonString)
+           let existing = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == key }) {
+          let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
           await existing.update(ActivityContent(state: newState, staleDate: nil))
           if options?["autoEndAt"] as? Double == nil {
             return existing.id
@@ -100,7 +100,7 @@ public class VoltraUIModule: Module {
             if delay > 0 {
               Task.detached { [id = existing.id] in
                 do { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) } catch {}
-                guard let live = Activity<VoltraUIAttributes>.activities.first(where: { $0.id == id }) else { return }
+                guard let live = Activity<VoltraAttributes>.activities.first(where: { $0.id == id }) else { return }
                 await live.end(ActivityContent(state: live.content.state, staleDate: nil), dismissalPolicy: .immediate)
               }
             } else {
@@ -110,8 +110,8 @@ public class VoltraUIModule: Module {
           return existing.id
         }
 
-        let attributes = VoltraUIAttributes(name: activityName?.isEmpty == false ? activityName! : "VoltraUI", deepLinkUrl: deepLinkUrl)
-        let initialState = VoltraUIAttributes.ContentState(uiJsonData: jsonString)
+        let attributes = VoltraAttributes(name: activityName?.isEmpty == false ? activityName! : "Voltra", deepLinkUrl: deepLinkUrl)
+        let initialState = VoltraAttributes.ContentState(uiJsonData: jsonString)
 
         let activity = try Activity.request(
           attributes: attributes,
@@ -128,7 +128,7 @@ public class VoltraUIModule: Module {
               do {
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
               } catch {}
-              guard let live = Activity<VoltraUIAttributes>.activities.first(where: { $0.id == id }) else { return }
+              guard let live = Activity<VoltraAttributes>.activities.first(where: { $0.id == id }) else { return }
               await live.end(
                 ActivityContent(state: live.content.state, staleDate: nil),
                 dismissalPolicy: .immediate
@@ -145,18 +145,18 @@ public class VoltraUIModule: Module {
 
         return activity.id
       } catch let error {
-        print("Error starting VoltraUI instance: \(error)")
-        throw VoltraUIErrors.unexpectedError(error)
+        print("Error starting Voltra instance: \(error)")
+        throw VoltraErrors.unexpectedError(error)
       }
     }
 
-    AsyncFunction("updateVoltraUI") { (activityId: String, jsonString: String) async throws in
+    AsyncFunction("updateVoltra") { (activityId: String, jsonString: String) async throws in
       // Static Widget path
       if activityId.hasPrefix(STATIC_WIDGET_SYNTHETIC_ID) {
         guard let key = parseWidgetKey(from: activityId) else {
-          throw VoltraUIErrors.unexpectedError(
+          throw VoltraErrors.unexpectedError(
             NSError(
-              domain: "VoltraUIModule",
+              domain: "VoltraModule",
               code: -102,
               userInfo: [NSLocalizedDescriptionKey: "Invalid widget identifier \(activityId). Pass IDs in the format 'widget:<your-id>'."]
             )
@@ -164,40 +164,40 @@ public class VoltraUIModule: Module {
         }
         let payloadBytes = jsonString.lengthOfBytes(using: .utf8)
         guard writeWidgetJsonString(jsonString, suffix: key) else {
-          throw VoltraUIErrors.unexpectedError(
+          throw VoltraErrors.unexpectedError(
             NSError(
-              domain: "VoltraUIModule",
+              domain: "VoltraModule",
               code: -101,
               userInfo: [NSLocalizedDescriptionKey: "App Group not configured: set 'groupIdentifier' in the config plugin so the app and widget extension share storage."]
             )
           )
         }
         if #available(iOS 14.0, *) {
-          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraUIStaticWidget")
+          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraStaticWidget")
           WidgetCenter.shared.reloadAllTimelines()
         }
-        print("[VoltraUI][Widget] update key=\(key) bytes=\(payloadBytes)")
+        print("[Voltra][Widget] update key=\(key) bytes=\(payloadBytes)")
         return
       }
 
-      guard #available(iOS 16.2, *) else { throw VoltraUIErrors.unsupportedOS }
-      guard let activity = Activity<VoltraUIAttributes>.activities.first(where: { $0.id == activityId }) else {
-        throw VoltraUIErrors.notFound
+      guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.id == activityId }) else {
+        throw VoltraErrors.notFound
       }
 
       try validatePayloadSize(jsonString, operation: "update")
 
-      let newState = VoltraUIAttributes.ContentState(uiJsonData: jsonString)
+      let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
       await activity.update(ActivityContent(state: newState, staleDate: nil))
     }
 
-    AsyncFunction("endVoltraUI") { (activityId: String) async throws in
+    AsyncFunction("endVoltra") { (activityId: String) async throws in
       // Static Widget path
       if activityId.hasPrefix(STATIC_WIDGET_SYNTHETIC_ID) {
         guard let key = parseWidgetKey(from: activityId) else {
-          throw VoltraUIErrors.unexpectedError(
+          throw VoltraErrors.unexpectedError(
             NSError(
-              domain: "VoltraUIModule",
+              domain: "VoltraModule",
               code: -103,
               userInfo: [NSLocalizedDescriptionKey: "Invalid widget identifier \(activityId). Pass IDs in the format 'widget:<your-id>'."]
             )
@@ -206,16 +206,16 @@ public class VoltraUIModule: Module {
         clearWidgetJson(suffix: key)
         clearWidgetDeepLinkUrl(suffix: key)
         if #available(iOS 14.0, *) {
-          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraUIStaticWidget")
+          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraStaticWidget")
           WidgetCenter.shared.reloadAllTimelines()
         }
-        print("[VoltraUI][Widget] cleared key=\(key)")
+        print("[Voltra][Widget] cleared key=\(key)")
         return
       }
 
-      guard #available(iOS 16.2, *) else { throw VoltraUIErrors.unsupportedOS }
-      guard let activity = Activity<VoltraUIAttributes>.activities.first(where: { $0.id == activityId }) else {
-        throw VoltraUIErrors.notFound
+      guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.id == activityId }) else {
+        throw VoltraErrors.notFound
       }
 
       await activity.end(
@@ -225,9 +225,9 @@ public class VoltraUIModule: Module {
     }
 
     // End all running Live Activities created by this module
-    AsyncFunction("endAllVoltraUI") { () async throws in
-      guard #available(iOS 16.2, *) else { throw VoltraUIErrors.unsupportedOS }
-      for activity in Activity<VoltraUIAttributes>.activities {
+    AsyncFunction("endAllVoltra") { () async throws in
+      guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+      for activity in Activity<VoltraAttributes>.activities {
         await activity.end(
           ActivityContent(state: activity.content.state, staleDate: nil),
           dismissalPolicy: .immediate
@@ -237,8 +237,8 @@ public class VoltraUIModule: Module {
 
     // Preferred name mirroring iOS terminology
     AsyncFunction("endAllLiveActivities") { () async throws in
-      guard #available(iOS 16.2, *) else { throw VoltraUIErrors.unsupportedOS }
-      for activity in Activity<VoltraUIAttributes>.activities {
+      guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+      for activity in Activity<VoltraAttributes>.activities {
         await activity.end(
           ActivityContent(state: activity.content.state, staleDate: nil),
           dismissalPolicy: .immediate
@@ -246,26 +246,26 @@ public class VoltraUIModule: Module {
       }
     }
 
-    // Return the latest (most recently created) VoltraUI Live Activity ID, if any.
+    // Return the latest (most recently created) Voltra Live Activity ID, if any.
     // Useful to rebind after Fast Refresh in development.
-    AsyncFunction("getLatestVoltraUIActivityId") { () -> String? in
+    AsyncFunction("getLatestVoltraActivityId") { () -> String? in
       guard #available(iOS 16.2, *) else { return nil }
-      return Activity<VoltraUIAttributes>.activities.last?.id
+      return Activity<VoltraAttributes>.activities.last?.id
     }
 
-    // Debug helper: list all running VoltraUI Live Activity IDs
-    AsyncFunction("listVoltraUIActivityIds") { () -> [String] in
+    // Debug helper: list all running Voltra Live Activity IDs
+    AsyncFunction("listVoltraActivityIds") { () -> [String] in
       guard #available(iOS 16.2, *) else { return [] }
-      return Activity<VoltraUIAttributes>.activities.map { $0.id }
+      return Activity<VoltraAttributes>.activities.map { $0.id }
     }
   }
 }
 
 // MARK: - App Groups Event Forwarding
 
-private extension VoltraUIModule {
+private extension VoltraModule {
   func appGroupIdentifier() -> String? {
-    Bundle.main.object(forInfoDictionaryKey: "VoltraUI_AppGroupIdentifier") as? String
+    Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
   }
 
   func startEventForwarding() {
@@ -284,7 +284,7 @@ private extension VoltraUIModule {
   func drainAndEmitEvents(groupIdentifier: String) {
     guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
 
-    var queue = defaults.array(forKey: "VoltraUI_EventsQueue") as? [String] ?? []
+    var queue = defaults.array(forKey: "Voltra_EventsQueue") as? [String] ?? []
     if queue.isEmpty { return }
 
     var remaining: [String] = []
@@ -300,7 +300,7 @@ private extension VoltraUIModule {
       }
     }
 
-    defaults.set(remaining, forKey: "VoltraUI_EventsQueue")
+    defaults.set(remaining, forKey: "Voltra_EventsQueue")
     defaults.synchronize()
   }
 
@@ -376,17 +376,17 @@ private extension VoltraUIModule {
 
 // MARK: - Push Tokens and Activity State Streams
 
-private extension VoltraUIModule {
+private extension VoltraModule {
   var pushNotificationsEnabled: Bool {
-    // Support both keys for compatibility with older plugin and new VoltraUI naming
+    // Support both keys for compatibility with older plugin and new Voltra naming
     let main = Bundle.main
-    return main.object(forInfoDictionaryKey: "VoltraUI_EnablePushNotifications") as? Bool ?? false
+    return main.object(forInfoDictionaryKey: "Voltra_EnablePushNotifications") as? Bool ?? false
   }
 
   func observePushToStartToken() {
     guard #available(iOS 17.2, *), ActivityAuthorizationInfo().areActivitiesEnabled else { return }
     Task {
-      for await data in Activity<VoltraUIAttributes>.pushToStartTokenUpdates {
+      for await data in Activity<VoltraAttributes>.pushToStartTokenUpdates {
         let token = data.reduce("") { $0 + String(format: "%02x", $1) }
         sendEvent("activityPushToStartTokenReceived", [
           "activityPushToStartToken": token,
@@ -398,12 +398,12 @@ private extension VoltraUIModule {
   func observeLiveActivityUpdates() {
     guard #available(iOS 16.2, *) else { return }
     Task {
-      for await activityUpdate in Activity<VoltraUIAttributes>.activityUpdates {
+      for await activityUpdate in Activity<VoltraAttributes>.activityUpdates {
         let activityId = activityUpdate.id
         let activityState = activityUpdate.activityState
 
         guard
-          let activity = Activity<VoltraUIAttributes>.activities.first(where: { $0.id == activityId })
+          let activity = Activity<VoltraAttributes>.activities.first(where: { $0.id == activityId })
         else { continue }
 
         if case .active = activityState {

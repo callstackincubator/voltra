@@ -1,13 +1,3 @@
-//
-//  Binding.onChange.swift
-//  VoltraUI
-//
-//  Created by Saul Sharma.
-//  https://x.com/saul_sharma
-//
-//  https://github.com/saulsharma/voltra
-//  MIT LICENCE
-
 import Foundation
 
 /// Any Codable supports different `Codable` types as `String`, `Int`, `Data`, `Double` and `Bool`.
