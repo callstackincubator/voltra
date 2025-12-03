@@ -11,12 +11,17 @@
   },
   {
     "type": "file",
+    "name": "interactions",
+    "label": "Interactions"
+  },
+  {
+    "type": "file",
     "name": "events",
     "label": "Events"
   },
   {
     "type": "file",
     "name": "server-side-updates",
-    "label": "Server-side Updates"
+    "label": "Server-side updates"
   }
 ]

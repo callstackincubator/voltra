@@ -20,7 +20,7 @@ const activityUI = (
     <Voltra.Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 8 }}>
       Building A · Lobby pickup
     </Voltra.Text>
-    <Voltra.Button title="Contact driver" eventHandlerName="onPressContactDriver" style={{ marginTop: 12 }} />
+    <Voltra.Button title="Contact driver" id="contact-driver" style={{ marginTop: 12 }} />
   </Voltra.VStack>
 )
 
