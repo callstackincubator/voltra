@@ -2,7 +2,7 @@ import SwiftUI
 import WidgetKit
 
 struct VoltraUIContentBuilder {
-    static func build(components: [VoltraUIComponent], source: String) -> AnyView {
+    static func build(components: [VoltraUIComponent], source: String, activityId: String? = nil) -> AnyView {
         // Detect whether any node in the payload applies a glassEffect ordered modifier.
         let usesGlass: Bool = {
             func hasGlass(_ node: VoltraUIComponent) -> Bool {
@@ -38,13 +38,15 @@ struct VoltraUIContentBuilder {
         let base: AnyView = {
             // Use pre-parsed components directly
             return AnyView(
-                VoltraUI(components: components, callback: { _ in
+                VoltraUI(components: components, callback: { component in
                     VoltraUIEventLogger.writeEvent([
                         "name": "voltraui_event",
                         "source": source,
                         "timestamp": Date().timeIntervalSince1970,
+                        "identifier": component.id,
+                        "componentType": component.type,
                     ])
-                })
+                }, activityId: activityId)
                 .onAppear {
                     VoltraUIEventLogger.writeEvent([
                         "name": "voltraui_onAppear",

@@ -30,7 +30,7 @@ const withPlist: ConfigPlugin<{ targetName: string; groupIdentifier?: string }> 
       ]
 
       if (groupIdentifier) {
-        ;(content as any).AppGroupIdentifier = groupIdentifier
+        ;(content as any)['VoltraUI_AppGroupIdentifier'] = groupIdentifier
       }
 
       writeFileSync(filePath, plist.build(content))

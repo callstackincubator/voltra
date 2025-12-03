@@ -9,13 +9,11 @@
 //  MIT LICENCE
 
 import SwiftUI
+import AppIntents
 
 public struct DynamicToggle: View {
     @Environment(\.internalVoltraUIEnvironment)
     private var voltraUIEnvironment
-
-    @State
-    private var state: Bool
 
     private let title: String
     private let component: VoltraUIComponent
@@ -25,19 +23,19 @@ public struct DynamicToggle: View {
     }
 
     init(_ component: VoltraUIComponent) {
-        let params = component.parameters(ToggleParameters.self)
         self.title = component.props?["title"] as? String ?? ""
-        self.state = params?.defaultValue ?? false
         self.component = component
     }
 
     public var body: some View {
-        Toggle(isOn: $state.onChange({ newState in
-            var newComponent = component
-            newComponent.state = .bool(newState)
-
-            voltraUIEnvironment.callback(newComponent)
-        })) {
+        Toggle(
+            isOn: params?.defaultValue ?? false,
+            intent: VoltraInteractionIntent(
+                activityId: voltraUIEnvironment.activityId ?? "unknown",
+                componentId: component.id ?? "unknown",
+                payload: (params?.defaultValue ?? false) ? "false" : "true"
+            )
+        ) {
             Text(title)
         }
         .voltraUIModifiers(component)

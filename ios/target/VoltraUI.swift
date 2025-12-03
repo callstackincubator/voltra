@@ -25,12 +25,18 @@ public struct VoltraUI: View {
     /// Callback handler for updates
     public var callback: Handler? = { _ in }
 
+    /// Activity ID for Live Activity interactions
+    public var activityId: String?
+
     /// Initialize VoltraUI
     ///
     /// - Parameter components: Pre-parsed array of VoltraUIComponent
-    public init(components: [VoltraUIComponent], callback: Handler?) {
+    /// - Parameter callback: Handler for component interactions
+    /// - Parameter activityId: Activity ID for Live Activity interactions
+    public init(components: [VoltraUIComponent], callback: Handler?, activityId: String? = nil) {
         self.components = components
         self.callback = callback
+        self.activityId = activityId
     }
 
     /// Generated body for SwiftUI
@@ -38,7 +44,8 @@ public struct VoltraUI: View {
         AnyView(
             InternalVoltraUI(
                 layout: components,
-                callback: callback ?? { _ in }
+                callback: callback ?? { _ in },
+                activityId: activityId
             )
         )
     }
@@ -47,10 +54,12 @@ public struct VoltraUI: View {
 struct InternalVoltraUI: View {
     public var callback: (VoltraUIComponent) -> Void
     public var layout: [VoltraUIComponent]
+    public var activityId: String?
 
-    init(layout: [VoltraUIComponent], callback: @escaping (VoltraUIComponent) -> Void) {
+    init(layout: [VoltraUIComponent], callback: @escaping (VoltraUIComponent) -> Void, activityId: String? = nil) {
         self.callback = callback
         self.layout = layout
+        self.activityId = activityId
     }
 
     var body: some View {
@@ -201,7 +210,7 @@ struct InternalVoltraUI: View {
 }
 
 private struct InternalVoltraUIKey: EnvironmentKey {
-    static let defaultValue: InternalVoltraUI = InternalVoltraUI(layout: [], callback: { _ in })
+    static let defaultValue: InternalVoltraUI = InternalVoltraUI(layout: [], callback: { _ in }, activityId: nil)
 }
 
 extension EnvironmentValues {

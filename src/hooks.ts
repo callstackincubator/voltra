@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { addActivityUpdatesListener } from './events'
+import { addVoltraListener } from './events'
 import { startVoltra, stopVoltra, updateVoltra } from './imperative-api'
 import { VoltraVariants } from './renderer'
 
@@ -20,9 +20,10 @@ export type UseVoltraResult = {
 export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions): UseVoltraResult => {
   const [targetId, setTargetId] = useState<string | null>(null)
   const isActive = targetId !== null
+  const optionsRef = useRef(options)
 
   const start = useCallback(async () => {
-    const id = await startVoltra(variants, { deepLinkUrl: options?.deepLinkUrl })
+    const id = await startVoltra(variants, optionsRef.current)
     setTargetId(id)
   }, [variants])
 
@@ -50,7 +51,7 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
   useEffect(() => {
     if (!targetId) return
 
-    const subscription = addActivityUpdatesListener((event) => {
+    const subscription = addVoltraListener('stateChange', (event) => {
       if (event.activityID !== targetId) return
 
       if (event.activityState === 'dismissed' || event.activityState === 'ended') {

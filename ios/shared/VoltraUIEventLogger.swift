@@ -1,11 +1,13 @@
 import Foundation
 
-struct VoltraUIEventLogger {
+public struct VoltraUIEventLogger {
     static func groupIdentifier() -> String? {
-        Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
+        Bundle.main.object(forInfoDictionaryKey: "VoltraUI_AppGroupIdentifier") as? String
     }
 
     static func writeEvent(_ payload: [String: Any]) {
+        print("Writing event: \(payload)")
+        print("Group identifier: \(groupIdentifier() ?? "No group identifier")")
         guard let group = groupIdentifier(),
               let defaults = UserDefaults(suiteName: group),
               JSONSerialization.isValidJSONObject(payload),

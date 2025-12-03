@@ -1,6 +1,8 @@
 import { Stack } from 'expo-router'
 import { Image, StyleSheet, useWindowDimensions } from 'react-native'
 
+import { useVoltraEvents } from '~/hooks/useVoltraEvents'
+
 const STACK_SCREEN_OPTIONS = {
   headerShown: false,
   contentStyle: { backgroundColor: 'transparent' },
@@ -12,6 +14,8 @@ export const unstable_settings = {
 
 export default function Layout() {
   const { width, height } = useWindowDimensions()
+
+  useVoltraEvents()
 
   return (
     <>

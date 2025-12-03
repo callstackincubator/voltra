@@ -5,63 +5,44 @@ export type EventSubscription = {
   remove: () => void
 }
 
-export type ActivityState = 'active' | 'dismissed' | 'pending' | 'stale' | 'ended' | string
-export type ActivityTokenReceivedEvent = {
+export type VoltraActivityState = 'active' | 'dismissed' | 'pending' | 'stale' | 'ended' | string
+export type VoltraActivityTokenReceivedEvent = {
   activityID: string
   activityName: string
   activityPushToken: string
 }
-export type ActivityPushToStartTokenReceivedEvent = {
+export type VoltraActivityPushToStartTokenReceivedEvent = {
   activityPushToStartToken: string
 }
-export type ActivityUpdateEvent = {
+export type VoltraActivityUpdateEvent = {
   activityID: string
   activityName: string
-  activityState: ActivityState
+  activityState: VoltraActivityState
 }
 
-export type VoltraUIEvent = {
+export type VoltraInteractionEvent = {
   identifier?: string
-  eventHandler?: string
   componentType: string
-  // Optional payload for future extensibility
-  payload?: Record<string, unknown>
 }
 
 const noopSubscription: EventSubscription = {
   remove: () => {},
 }
 
-export function addActivityTokenListener(listener: (event: ActivityTokenReceivedEvent) => void): EventSubscription {
-  if (!assertRunningOnApple()) {
-    return noopSubscription
-  }
-
-  return VoltraUIModule.addListener('onTokenReceived', listener)
+export type VoltraEventMap = {
+  activityTokenReceived: VoltraActivityTokenReceivedEvent
+  activityPushToStartTokenReceived: VoltraActivityPushToStartTokenReceivedEvent
+  stateChange: VoltraActivityUpdateEvent
+  interaction: VoltraInteractionEvent
 }
 
-export function addActivityPushToStartTokenListener(
-  listener: (event: ActivityPushToStartTokenReceivedEvent) => void
+export function addVoltraListener<K extends keyof VoltraEventMap>(
+  event: K,
+  listener: (event: VoltraEventMap[K]) => void
 ): EventSubscription {
   if (!assertRunningOnApple()) {
     return noopSubscription
   }
 
-  return VoltraUIModule.addListener('onPushToStartTokenReceived', listener)
-}
-
-export function addActivityUpdatesListener(listener: (event: ActivityUpdateEvent) => void): EventSubscription {
-  if (!assertRunningOnApple()) {
-    return noopSubscription
-  }
-
-  return VoltraUIModule.addListener('onStateChange', listener)
-}
-
-export function addVoltraUIEventListener(listener: (event: VoltraUIEvent) => void): EventSubscription {
-  if (!assertRunningOnApple()) {
-    return noopSubscription
-  }
-
-  return VoltraUIModule.addListener('onVoltraUIEvent', listener)
+  return VoltraUIModule.addListener(event, listener)
 }

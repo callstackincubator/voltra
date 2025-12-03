@@ -11,8 +11,7 @@ Pod::Spec.new do |s|
   s.author         = package['author']
   s.homepage       = package['homepage']
   s.platforms      = {
-    :ios => '16.2',
-    :tvos => '16.2'
+    :ios => '17.0',
   }
   s.swift_version  = '5.9'
   s.source         = { git: 'https://github.com/saulsharma/voltra' }

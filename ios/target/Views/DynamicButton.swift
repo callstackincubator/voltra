@@ -9,6 +9,7 @@
 //  MIT LICENCE
 
 import SwiftUI
+import AppIntents
 
 public struct DynamicButton: View {
     @Environment(\.internalVoltraUIEnvironment)
@@ -25,11 +26,20 @@ public struct DynamicButton: View {
     }
 
     public var body: some View {
-        Button(action: {
-            voltraUIEnvironment.callback(component)
-        }, label: {
-            Text(params?.title ?? "Button")
-        })
-        .voltraUIModifiers(component)
+        if let activityId = voltraUIEnvironment.activityId,
+           let componentId = component.id {
+            Button(intent: VoltraInteractionIntent(activityId: activityId, componentId: componentId), label: {
+                Text(params?.title ?? "Button")
+            })
+            .voltraUIModifiers(component)
+        } else {
+            // Fallback to callback if activityId or componentId is missing
+            Button(action: {
+                voltraUIEnvironment.callback(component)
+            }, label: {
+                Text(params?.title ?? "Button")
+            })
+            .voltraUIModifiers(component)
+        }
     }
 }

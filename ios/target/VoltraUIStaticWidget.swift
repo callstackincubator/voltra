@@ -153,7 +153,7 @@ fileprivate func buildStaticContentView(data: Data, source: String) -> AnyView {
 
   if let components = try? JSONDecoder().decode([VoltraUIComponent].self, from: sanitized) {
     return AnyView(
-      VoltraUI(components: components, callback: nil)
+      VoltraUI(components: components, callback: nil, activityId: nil)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     )
   } else {

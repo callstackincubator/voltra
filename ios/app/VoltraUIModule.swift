@@ -37,7 +37,7 @@ public class VoltraUIModule: Module {
     Name("VoltraUIModule")
 
     // UI component events forwarded from the extension + push/state events
-    Events("onVoltraUIEvent", "onTokenReceived", "onPushToStartTokenReceived", "onStateChange")
+    Events("interaction", "activityTokenReceived", "activityPushToStartTokenReceived", "stateChange")
 
     OnCreate {
       startEventForwarding()
@@ -291,7 +291,8 @@ private extension VoltraUIModule {
     for item in queue {
       if let data = item.data(using: .utf8),
          let any = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-        sendEvent("onVoltraUIEvent", [
+          print("Sending event: \(any)")
+        sendEvent("interaction", [
           "payload": any,
         ])
       } else {
@@ -387,7 +388,7 @@ private extension VoltraUIModule {
     Task {
       for await data in Activity<VoltraUIAttributes>.pushToStartTokenUpdates {
         let token = data.reduce("") { $0 + String(format: "%02x", $1) }
-        sendEvent("onPushToStartTokenReceived", [
+        sendEvent("activityPushToStartTokenReceived", [
           "activityPushToStartToken": token,
         ])
       }
@@ -407,7 +408,7 @@ private extension VoltraUIModule {
 
         if case .active = activityState {
           // Emit an immediate event so JS can learn about newly-active activities (e.g., push-to-start)
-          sendEvent("onStateChange", [
+          sendEvent("stateChange", [
             "activityID": activity.id,
             "activityName": activity.attributes.name,
             "activityState": String(describing: activityState),
@@ -416,7 +417,7 @@ private extension VoltraUIModule {
           // Forward state changes
           Task {
             for await state in activity.activityStateUpdates {
-              sendEvent("onStateChange", [
+              sendEvent("stateChange", [
                 "activityID": activity.id,
                 "activityName": activity.attributes.name,
                 "activityState": String(describing: state),
@@ -429,7 +430,7 @@ private extension VoltraUIModule {
             Task {
               for await pushToken in activity.pushTokenUpdates {
                 let pushTokenString = pushToken.reduce("") { $0 + String(format: "%02x", $1) }
-                sendEvent("onTokenReceived", [
+                sendEvent("activityTokenReceived", [
                   "activityID": activity.id,
                   "activityName": activity.attributes.name,
                   "activityPushToken": pushTokenString,
