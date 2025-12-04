@@ -1,6 +1,6 @@
 [
   {
-    "type": "file",
+    "type": "dir",
     "name": "components",
     "label": "Components"
   },
