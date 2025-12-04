@@ -92,12 +92,12 @@ public class VoltraModule: Module {
           }
           return nil
         }()
-        let relevanceScore: Double? = options?["relevanceScore"] as? Double
+        let relevanceScore: Double = (options?["relevanceScore"] as? Double) ?? 0.0
 
         if let key = activityName, !key.isEmpty,
            let existing = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == key }) {
           let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
-          await existing.update(ActivityContent(state: newState, staleDate: staleDate), relevanceScore: relevanceScore)
+            await existing.update(ActivityContent(state: newState, staleDate: staleDate, relevanceScore: relevanceScore))
           if options?["autoEndAt"] as? Double == nil {
             return existing.id
           }
@@ -124,9 +124,8 @@ public class VoltraModule: Module {
 
         let activity = try Activity.request(
           attributes: attributes,
-          content: .init(state: initialState, staleDate: staleDate),
+          content: .init(state: initialState, staleDate: staleDate, relevanceScore: relevanceScore),
           pushType: pushNotificationsEnabled ? .token : nil,
-          relevanceScore: relevanceScore
         )
 
         // Best-effort local auto-end scheduling (app must be alive)
@@ -204,10 +203,10 @@ public class VoltraModule: Module {
         }
         return nil
       }()
-      let relevanceScore: Double? = options?["relevanceScore"] as? Double
+      let relevanceScore: Double = (options?["relevanceScore"] as? Double) ?? 0.0
 
       let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
-      await activity.update(ActivityContent(state: newState, staleDate: staleDate), relevanceScore: relevanceScore)
+      await activity.update(ActivityContent(state: newState, staleDate: staleDate, relevanceScore: relevanceScore))
     }
 
     AsyncFunction("endVoltra") { (activityId: String) async throws in

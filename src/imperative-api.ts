@@ -11,6 +11,7 @@ export type SharedVoltraOptions = {
   staleDate?: number
   /**
    * Double value between 0.0 and 1.0
+   * @default 0.0
    */
   relevanceScore?: number
 }
@@ -37,12 +38,13 @@ const normalizeSharedVoltraOptions = (options?: SharedVoltraOptions): SharedVolt
     }
   }
 
-  if (options.relevanceScore !== undefined) {
-    if (options.relevanceScore < 0 || options.relevanceScore > 1) {
-      logger.warn('Ignoring relevanceScore because it is out of range [0.0, 1.0]')
-    } else {
-      normalizedOptions.relevanceScore = options.relevanceScore
-    }
+  // Always include relevanceScore, defaulting to 0.0 if not provided
+  const relevanceScore = options.relevanceScore ?? 0.0
+  if (relevanceScore < 0 || relevanceScore > 1) {
+    logger.warn('Ignoring relevanceScore because it is out of range [0.0, 1.0], using default 0.0')
+    normalizedOptions.relevanceScore = 0.0
+  } else {
+    normalizedOptions.relevanceScore = relevanceScore
   }
 
   return Object.keys(normalizedOptions).length > 0 ? normalizedOptions : undefined
