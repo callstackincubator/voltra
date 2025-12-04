@@ -2,7 +2,7 @@ import type { ComponentType } from 'react'
 import { createElement } from 'react'
 
 import { VoltraModifier } from '../modifiers'
-import { getModifiersFromStyle } from '../styles'
+import { getModifiersFromLayoutStyle } from '../styles'
 
 export const VOLTRA_COMPONENT_TAG = Symbol.for('VOLTRA_COMPONENT_TAG')
 
@@ -19,17 +19,21 @@ export const createVoltraComponent = <TProps extends Record<string, unknown>>(
   componentName: string,
   options?: VoltraComponentOptions<TProps>
 ): VoltraComponent<TProps> => {
-  const Component = ({ style, ...propsWithoutStyle }: TProps) => {
+  const Component = (props: TProps) => {
     const toJSON = options?.toJSON ? options.toJSON : (props: TProps) => props
-    const normalizedProps = toJSON(propsWithoutStyle as TProps)
+    let normalizedProps = toJSON(props)
 
-    if (style) {
-      // Convert from React Native style to Voltra modifiers
-      const styleModifiers = getModifiersFromStyle(style)
-      normalizedProps.modifiers = [
-        ...('modifiers' in normalizedProps ? (normalizedProps.modifiers as VoltraModifier[]) : []),
-        ...styleModifiers,
-      ]
+    if (normalizedProps.style) {
+      // Convert from React Native layout style to Voltra modifiers
+      const styleModifiers = getModifiersFromLayoutStyle(normalizedProps.style as any)
+      const existingModifiers = 'modifiers' in normalizedProps ? (normalizedProps.modifiers as VoltraModifier[]) : []
+
+      // Remove style property and add modifiers
+      const { style: _, ...propsWithoutStyle } = normalizedProps
+      normalizedProps = {
+        ...propsWithoutStyle,
+        modifiers: [...existingModifiers, ...styleModifiers],
+      }
     }
 
     return createElement(componentName, normalizedProps)

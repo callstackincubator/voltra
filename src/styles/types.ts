@@ -1,4 +1,4 @@
-import { StyleProp, ViewStyle as RNViewStyle } from 'react-native'
+import { StyleProp, TextStyle as RNTextStyle, ViewStyle as RNViewStyle } from 'react-native'
 
 export type VoltraViewStyle = Pick<
   RNViewStyle,
@@ -30,7 +30,10 @@ export type VoltraViewStyle = Pick<
   | 'overflow'
 >
 
-export type VoltraStyleProp = StyleProp<VoltraViewStyle>
+export type VoltraTextStyle = VoltraViewStyle & Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color'>
 
-// Re-export the main conversion function
-export { getModifiersFromStyle } from './converter'
+export type VoltraStyleProp = StyleProp<VoltraViewStyle>
+export type VoltraTextStyleProp = StyleProp<VoltraTextStyle>
+
+// Re-export the main conversion functions
+export { getModifiersFromLayoutStyle, getModifiersFromTextStyle } from './converter'

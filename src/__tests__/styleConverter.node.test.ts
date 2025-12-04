@@ -1,4 +1,4 @@
-import { getModifiersFromStyle } from '../styles/converter'
+import { getModifiersFromLayoutStyle } from '../styles/converter'
 
 describe('Style to modifiers conversion', () => {
   describe('Basic conversion', () => {
@@ -7,7 +7,7 @@ describe('Style to modifiers conversion', () => {
         backgroundColor: '#FF0000',
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(1)
       expect(modifiers[0]).toEqual({
@@ -22,7 +22,7 @@ describe('Style to modifiers conversion', () => {
         height: 200,
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(1)
       expect(modifiers[0]).toEqual({
@@ -36,7 +36,7 @@ describe('Style to modifiers conversion', () => {
         opacity: 0.5,
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(1)
       expect(modifiers[0]).toEqual({
@@ -55,7 +55,7 @@ describe('Style to modifiers conversion', () => {
         paddingRight: 25,
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(1)
       expect(modifiers[0]).toEqual({
@@ -74,7 +74,7 @@ describe('Style to modifiers conversion', () => {
         padding: 16,
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(1)
       expect(modifiers[0]).toEqual({
@@ -91,7 +91,7 @@ describe('Style to modifiers conversion', () => {
         backgroundColor: '#FF0000',
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(2)
       expect(modifiers[0].name).toBe('padding')
@@ -105,7 +105,7 @@ describe('Style to modifiers conversion', () => {
         borderRadius: 20,
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(3)
       expect(modifiers[0].name).toBe('padding')
@@ -123,7 +123,7 @@ describe('Style to modifiers conversion', () => {
         borderColor: '#000000',
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(3)
       expect(modifiers[0].name).toBe('padding')
@@ -144,7 +144,7 @@ describe('Style to modifiers conversion', () => {
         borderWidth: 0,
       }
 
-      const modifiers = getModifiersFromStyle(style)
+      const modifiers = getModifiersFromLayoutStyle(style)
 
       expect(modifiers).toHaveLength(3)
       expect(modifiers[0].name).toBe('padding')

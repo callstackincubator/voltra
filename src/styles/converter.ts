@@ -2,7 +2,7 @@ import { ColorValue, I18nManager, StyleSheet } from 'react-native'
 
 import type { FrameModifier } from '../modifiers'
 import { VoltraModifier } from '../modifiers'
-import type { VoltraStyleProp, VoltraViewStyle } from './types'
+import type { VoltraStyleProp, VoltraTextStyle, VoltraTextStyleProp, VoltraViewStyle } from './types'
 
 const colorToString = (color: ColorValue): string => {
   if (typeof color === 'string') return color
@@ -40,7 +40,7 @@ const SUPPORTED_KEYS: (keyof VoltraViewStyle)[] = [
   'overflow',
 ]
 
-export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] => {
+export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModifier[] => {
   const flattenedStyle = StyleSheet.flatten(style)
   const modifiers: VoltraModifier[] = []
 
@@ -349,6 +349,84 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
         args: marginPaddingArgs,
       })
     }
+  }
+
+  return modifiers
+}
+
+const TEXT_STYLE_KEYS: (keyof Pick<VoltraTextStyle, 'fontSize' | 'fontWeight' | 'color'>)[] = [
+  'fontSize',
+  'fontWeight',
+  'color',
+]
+
+export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraModifier[] => {
+  // First get all layout style modifiers
+  const modifiers = getModifiersFromLayoutStyle(style)
+  const flattenedStyle = StyleSheet.flatten(style)
+
+  // Process text-specific properties
+  let fontSize: number | undefined = undefined
+  let fontWeight: string | undefined = undefined
+  let color: ColorValue | undefined = undefined
+
+  for (const key of TEXT_STYLE_KEYS) {
+    const value = flattenedStyle[key]
+    if (value === undefined) continue
+
+    switch (key) {
+      case 'fontSize':
+        if (typeof value === 'number') {
+          fontSize = value
+        }
+        break
+
+      case 'fontWeight':
+        if (typeof value === 'string') {
+          fontWeight = value
+        }
+        break
+
+      case 'color':
+        if (value !== undefined) {
+          color = value as ColorValue
+        }
+        break
+    }
+  }
+
+  // Add text modifiers in correct order
+  // Text modifiers should be applied early (before other modifiers) so they affect the text content
+
+  // 1. Font modifier (combines fontSize and fontWeight if both are present)
+  if (fontSize !== undefined) {
+    if (fontWeight !== undefined) {
+      // Create font modifier with both size and weight
+      modifiers.unshift({
+        name: 'font',
+        args: { size: fontSize, weight: fontWeight },
+      })
+    } else {
+      // Create font modifier with only size
+      modifiers.unshift({
+        name: 'font',
+        args: { size: fontSize },
+      })
+    }
+  } else if (fontWeight !== undefined) {
+    // Only fontWeight, use fontWeight modifier (iOS 16+)
+    modifiers.unshift({
+      name: 'fontWeight',
+      args: { weight: fontWeight },
+    })
+  }
+
+  // 2. Foreground style (text color) - should be applied early
+  if (color !== undefined) {
+    modifiers.unshift({
+      name: 'foregroundStyle',
+      args: { color: colorToString(color) },
+    })
   }
 
   return modifiers

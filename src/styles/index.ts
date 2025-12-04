@@ -1,2 +1,2 @@
-export { getModifiersFromStyle } from './converter'
-export { VoltraStyleProp, VoltraViewStyle } from './types'
+export { getModifiersFromLayoutStyle, getModifiersFromTextStyle } from './converter'
+export { VoltraStyleProp, VoltraTextStyle, VoltraTextStyleProp, VoltraViewStyle } from './types'
