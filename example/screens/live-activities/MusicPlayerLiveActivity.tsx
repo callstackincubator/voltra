@@ -7,14 +7,15 @@ import { LiveActivityExampleComponent } from './types'
 type Song = {
   title: string
   artist: string
+  image: string
 }
 
 const SONGS: Song[] = [
-  { title: 'Midnight Dreams', artist: 'The Voltra Collective' },
-  { title: 'Electric Pulse', artist: 'Neon Waves' },
-  { title: 'Starlight Symphony', artist: 'Cosmic Harmony' },
-  { title: 'Urban Echoes', artist: 'City Lights' },
-  { title: 'Ocean Breeze', artist: 'Coastal Vibes' },
+  { title: 'Midnight Dreams', artist: 'The Voltra Collective', image: 'voltra-icon' },
+  { title: 'Electric Pulse', artist: 'Neon Waves', image: 'voltra-light' },
+  { title: 'Starlight Symphony', artist: 'Cosmic Harmony', image: 'voltra-icon' },
+  { title: 'Urban Echoes', artist: 'City Lights', image: 'voltra-light' },
+  { title: 'Ocean Breeze', artist: 'Coastal Vibes', image: 'voltra-icon' },
 ]
 
 const styles = StyleSheet.create({
@@ -85,7 +86,7 @@ function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlayerLiveAc
   return (
     <Voltra.VStack id="music-player-live-activity" style={styles.card} spacing={16}>
       <Voltra.HStack spacing={16} alignment="center">
-        <Voltra.Image assetName="voltra-icon" style={styles.albumArt} resizeMode="cover" />
+        <Voltra.Image id={currentSong.image} assetName={currentSong.image} style={styles.albumArt} resizeMode="cover" />
         <Voltra.VStack spacing={4} style={{ flex: 1 }}>
           <Voltra.Text style={styles.title}>{currentSong.title}</Voltra.Text>
           <Voltra.Text style={styles.artist}>{currentSong.artist}</Voltra.Text>
