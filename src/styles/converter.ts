@@ -444,12 +444,10 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
   return modifiers
 }
 
-const TEXT_STYLE_KEYS: (keyof Pick<VoltraTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing'>)[] = [
-  'fontSize',
-  'fontWeight',
-  'color',
-  'letterSpacing',
-]
+const TEXT_STYLE_KEYS: (keyof Pick<
+  VoltraTextStyle,
+  'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant'
+>)[] = ['fontSize', 'fontWeight', 'color', 'letterSpacing', 'fontVariant']
 
 export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraModifier[] => {
   // First get all layout style modifiers
@@ -461,6 +459,7 @@ export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraMod
   let fontWeight: string | undefined = undefined
   let color: ColorValue | undefined = undefined
   let letterSpacing: number | undefined = undefined
+  let fontVariant: string[] | undefined = undefined
 
   for (const key of TEXT_STYLE_KEYS) {
     const value = flattenedStyle[key]
@@ -490,27 +489,58 @@ export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraMod
           letterSpacing = value
         }
         break
+
+      case 'fontVariant':
+        if (Array.isArray(value)) {
+          fontVariant = value
+        }
+        break
     }
   }
 
   // Add text modifiers in correct order
   // Text modifiers should be applied early (before other modifiers) so they affect the text content
 
-  // 1. Font modifier (combines fontSize and fontWeight if both are present)
-  if (fontSize !== undefined) {
-    if (fontWeight !== undefined) {
-      // Create font modifier with both size and weight
-      modifiers.unshift({
-        name: 'font',
-        args: { size: fontSize, weight: fontWeight },
-      })
-    } else {
-      // Create font modifier with only size
-      modifiers.unshift({
-        name: 'font',
-        args: { size: fontSize },
-      })
+  // Process font variants to extract supported ones
+  let hasSmallCaps = false
+  let hasMonospacedDigit = false
+  if (fontVariant !== undefined && Array.isArray(fontVariant)) {
+    for (const variant of fontVariant) {
+      if (variant === 'small-caps') {
+        hasSmallCaps = true
+      } else if (variant === 'tabular-nums') {
+        hasMonospacedDigit = true
+      }
+      // Ignore unsupported variants silently
     }
+  }
+
+  // 1. Font modifier (combines fontSize, fontWeight, and font variants if present)
+  if (fontSize !== undefined || hasSmallCaps || hasMonospacedDigit) {
+    // Use fontSize if provided, otherwise default to system font size (17)
+    const fontArgs: {
+      size: number
+      weight?: string
+      smallCaps?: boolean
+      monospacedDigit?: boolean
+    } = { size: fontSize ?? 17 }
+
+    if (fontWeight !== undefined) {
+      fontArgs.weight = fontWeight
+    }
+
+    // Include font variants in the font modifier
+    if (hasSmallCaps) {
+      fontArgs.smallCaps = true
+    }
+    if (hasMonospacedDigit) {
+      fontArgs.monospacedDigit = true
+    }
+
+    modifiers.unshift({
+      name: 'font',
+      args: fontArgs,
+    })
   } else if (fontWeight !== undefined) {
     // Only fontWeight, use fontWeight modifier (iOS 16+)
     modifiers.unshift({

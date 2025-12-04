@@ -22,6 +22,8 @@ public enum VoltraModifierType: String, Codable, CaseIterable {
     case font
     case fontWeight
     case italic
+    case smallCaps
+    case monospacedDigit
     case lineLimit
     case lineSpacing
     case kerning
@@ -43,7 +45,7 @@ public enum VoltraModifierType: String, Codable, CaseIterable {
             return .layout
         case .foregroundStyle, .background, .backgroundStyle, .tint, .opacity, .cornerRadius:
             return .style
-        case .font, .fontWeight, .italic, .lineLimit, .lineSpacing, .kerning, .multilineTextAlignment, .underline, .strikethrough:
+        case .font, .fontWeight, .italic, .smallCaps, .monospacedDigit, .lineLimit, .lineSpacing, .kerning, .multilineTextAlignment, .underline, .strikethrough:
             return .text
         case .shadow, .scaleEffect, .rotationEffect, .border, .clipped, .glassEffect:
             return .effect

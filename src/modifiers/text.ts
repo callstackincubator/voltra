@@ -14,6 +14,10 @@ export type FontModifier = Modifier<
     size: number
     /** Font weight (e.g., 'bold', 'regular') */
     weight?: string
+    /** Apply small caps styling (iOS 14+) */
+    smallCaps?: boolean
+    /** Apply monospaced digits (iOS 15+) */
+    monospacedDigit?: boolean
   }
 >
 
@@ -37,6 +41,30 @@ export type ItalicModifier = Modifier<
   'italic',
   {
     /** Whether italic is enabled */
+    enabled?: boolean
+  }
+>
+
+/**
+ * Applies small caps styling to text
+ * @availability iOS 14.0, macOS 11.0, tvOS 14.0, watchOS 7.0
+ */
+export type SmallCapsModifier = Modifier<
+  'smallCaps',
+  {
+    /** Whether small caps is enabled */
+    enabled?: boolean
+  }
+>
+
+/**
+ * Applies monospaced digit styling to text
+ * @availability iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0
+ */
+export type MonospacedDigitModifier = Modifier<
+  'monospacedDigit',
+  {
+    /** Whether monospaced digits are enabled */
     enabled?: boolean
   }
 >
@@ -120,6 +148,8 @@ export type TextModifiers =
   | FontModifier
   | FontWeightModifier
   | ItalicModifier
+  | SmallCapsModifier
+  | MonospacedDigitModifier
   | LineLimitModifier
   | LineSpacingModifier
   | KerningModifier

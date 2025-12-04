@@ -197,6 +197,16 @@
           "type": "string",
           "optional": true,
           "description": "Font weight (e.g., 'bold', 'regular')"
+        },
+        "smallCaps": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Apply small caps styling (iOS 14+)"
+        },
+        "monospacedDigit": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Apply monospaced digits (iOS 15+)"
         }
       }
     },
@@ -224,6 +234,34 @@
           "optional": true,
           "default": true,
           "description": "Whether italic is enabled"
+        }
+      }
+    },
+    {
+      "name": "smallCaps",
+      "category": "text",
+      "description": "Applies small caps styling to text",
+      "swiftAvailability": "iOS 14.0, macOS 11.0, tvOS 14.0, watchOS 7.0",
+      "args": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether small caps is enabled"
+        }
+      }
+    },
+    {
+      "name": "monospacedDigit",
+      "category": "text",
+      "description": "Applies monospaced digit styling to text",
+      "swiftAvailability": "iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0",
+      "args": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether monospaced digits are enabled"
         }
       }
     },

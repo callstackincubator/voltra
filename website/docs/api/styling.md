@@ -43,6 +43,9 @@ The following React Native style properties are supported:
 - `fontWeight` - Font weight (e.g., `'600'`, `'bold'`, `'regular'`)
 - `color` - Text color (maps to `foregroundStyle` modifier)
 - `letterSpacing` - Spacing between characters (maps to `kerning` modifier)
+- `fontVariant` - Font variant array (e.g., `['small-caps', 'tabular-nums']`). Supported values:
+  - `'small-caps'` - Applies small caps styling (iOS 14+)
+  - `'tabular-nums'` - Applies monospaced digits (iOS 15+)
 
 **Effects:**
 
@@ -56,7 +59,7 @@ Properties not listed above are ignored during rendering. This includes common R
 - `gap` and spacing properties
 - Percentage-based widths and heights
 - `position` and absolute positioning
-- Most text styling properties beyond `fontSize`, `fontWeight`, `color`, and `letterSpacing`
+- Most text styling properties beyond `fontSize`, `fontWeight`, `color`, `letterSpacing`, and `fontVariant`
 
 If you need styling capabilities beyond what the `style` prop supports, use modifiers instead.
 
@@ -142,6 +145,8 @@ Modifiers are organized into categories based on their purpose:
 - **`font`** - Sets the font (`{ size: number, weight?: string }`)
 - **`fontWeight`** - Sets the font weight (`{ weight: string }`)
 - **`italic`** - Applies italic styling (`{ enabled?: boolean }`)
+- **`smallCaps`** - Applies small caps styling (`{ enabled?: boolean }`) - iOS 14+
+- **`monospacedDigit`** - Applies monospaced digits (`{ enabled?: boolean }`) - iOS 15+
 - **`lineLimit`** - Limits the number of lines (`{ value: number }`)
 - **`lineSpacing`** - Sets spacing between lines (`{ value: number }`)
 - **`kerning`** - Sets spacing between characters (`{ value: number }`)

@@ -132,12 +132,28 @@ extension View {
             case "font":
                 if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *),
                    let size = modifier.args?["size"]?.toDouble() ?? modifier.args?["size"]?.toInt().map(Double.init) {
+                    var font: Font
+                    
+                    // Create base font with size and optional weight
                     if let weightStr = modifier.args?["weight"]?.toString(),
                        let weight = helper.translateFontWeight(weightStr) {
-                        tempView = AnyView(tempView.font(.system(size: CGFloat(size), weight: weight)))
+                        font = .system(size: CGFloat(size), weight: weight)
                     } else {
-                        tempView = AnyView(tempView.font(.system(size: CGFloat(size))))
+                        font = .system(size: CGFloat(size))
                     }
+                    
+                    // Apply font variants if present
+                    if #available(iOS 14.0, macOS 11.0, tvOS 14.0, watchOS 7.0, *),
+                       modifier.args?["smallCaps"]?.toBool() == true {
+                        font = font.smallCaps()
+                    }
+                    
+                    if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *),
+                       modifier.args?["monospacedDigit"]?.toBool() == true {
+                        font = font.monospacedDigit()
+                    }
+                    
+                    tempView = AnyView(tempView.font(font))
                 }
 
             case "padding":
