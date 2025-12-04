@@ -1,23 +1,10 @@
 import SwiftUI
-import UIKit
 
 private enum SymbolRenderingMode: String {
     case monochrome
     case hierarchical
     case palette
     case multicolor
-}
-
-private struct SymbolRenderConfiguration {
-    let name: String
-    let renderingMode: SymbolRenderingMode
-    let scale: UIImage.SymbolScale
-    let weight: UIImage.SymbolWeight
-    let pointSize: CGFloat
-    let tintColor: UIColor?
-    let paletteColors: [UIColor]
-    let contentMode: UIView.ContentMode
-    let animationSpec: SymbolAnimationSpec?
 }
 
 private enum SymbolAnimationType: String, Decodable {
@@ -55,87 +42,6 @@ private struct SymbolAnimationSpec: Decodable {
 }
 
 @available(iOS 17.0, *)
-private protocol SymbolEffectAdding {
-    func add(to view: UIImageView, options: SymbolEffectOptions)
-}
-
-@available(iOS 17.0, *)
-private struct BounceEffectAdapter: SymbolEffectAdding {
-    private let base: BounceSymbolEffect = .bounce
-    let wholeSymbol: Bool?
-    let direction: SymbolAnimationDirection?
-
-    func add(to view: UIImageView, options: SymbolEffectOptions) {
-        var effect = base
-        if wholeSymbol ?? false {
-            effect = effect.wholeSymbol
-        }
-        if let direction {
-            effect = direction == .up ? effect.up : effect.down
-        }
-        view.addSymbolEffect(effect, options: options, animated: true)
-    }
-}
-
-@available(iOS 17.0, *)
-private struct PulseEffectAdapter: SymbolEffectAdding {
-    private let base: PulseSymbolEffect = .pulse
-    let wholeSymbol: Bool?
-
-    func add(to view: UIImageView, options: SymbolEffectOptions) {
-        var effect = base
-        if wholeSymbol ?? false {
-            effect = effect.wholeSymbol
-        }
-        view.addSymbolEffect(effect, options: options, animated: true)
-    }
-}
-
-@available(iOS 17.0, *)
-private struct ScaleEffectAdapter: SymbolEffectAdding {
-    private let base: ScaleSymbolEffect = .scale
-    let wholeSymbol: Bool?
-    let direction: SymbolAnimationDirection?
-
-    func add(to view: UIImageView, options: SymbolEffectOptions) {
-        var effect = base
-        if wholeSymbol ?? false {
-            effect = effect.wholeSymbol
-        }
-        if let direction {
-            effect = direction == .up ? effect.up : effect.down
-        }
-        view.addSymbolEffect(effect, options: options, animated: true)
-    }
-}
-
-@available(iOS 17.0, *)
-private extension SymbolAnimationSpec.VariableSpec {
-    func toVariableEffect() -> VariableColorSymbolEffect {
-        var effect: VariableColorSymbolEffect = .variableColor
-        if cumulative ?? false {
-            effect = effect.cumulative
-        }
-        if iterative ?? false {
-            effect = effect.iterative
-        }
-        if hideInactiveLayers ?? false {
-            effect = effect.hideInactiveLayers
-        }
-        if dimInactiveLayers ?? false {
-            effect = effect.dimInactiveLayers
-        }
-        if reversing ?? false {
-            effect = effect.reversing
-        }
-        if nonReversing ?? false {
-            effect = effect.nonReversing
-        }
-        return effect
-    }
-}
-
-@available(iOS 17.0, *)
 private extension SymbolAnimationSpec {
     func makeOptions() -> SymbolEffectOptions {
         var options: SymbolEffectOptions = (repeating ?? false) ? .repeating : .nonRepeating
@@ -149,134 +55,33 @@ private extension SymbolAnimationSpec {
     }
 }
 
-private final class SymbolRenderView: UIView {
-    private let imageView = UIImageView()
-    private var configuration: SymbolRenderConfiguration?
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        clipsToBounds = false
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(imageView)
-        NSLayoutConstraint.activate([
-            imageView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            imageView.topAnchor.constraint(equalTo: topAnchor),
-            imageView.bottomAnchor.constraint(equalTo: bottomAnchor),
-        ])
+@available(iOS 17.0, *)
+private func applyVariableEffect<V: View>(to view: V, spec: SymbolAnimationSpec.VariableSpec, options: SymbolEffectOptions) -> some View {
+    // Build effect by checking flags in priority order
+    // Since modifiers can't be chained conditionally due to type changes,
+    // we apply them in a specific order based on priority
+    let base: VariableColorSymbolEffect = .variableColor
+    
+    if spec.cumulative == true {
+        return view.symbolEffect(base.cumulative, options: options, isActive: true)
     }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    if spec.iterative == true {
+        return view.symbolEffect(base.iterative, options: options, isActive: true)
     }
-
-    override var intrinsicContentSize: CGSize {
-        if let pointSize = configuration?.pointSize {
-            return CGSize(width: pointSize, height: pointSize)
-        }
-        return super.intrinsicContentSize
+    if spec.hideInactiveLayers == true {
+        return view.symbolEffect(base.hideInactiveLayers, options: options, isActive: true)
     }
-
-    func apply(configuration: SymbolRenderConfiguration) {
-        self.configuration = configuration
-        invalidateIntrinsicContentSize()
-        reloadSymbol()
+    if spec.dimInactiveLayers == true {
+        return view.symbolEffect(base.dimInactiveLayers, options: options, isActive: true)
     }
-
-    private func reloadSymbol() {
-        guard let config = configuration else {
-            imageView.image = nil
-            return
-        }
-        guard let baseImage = UIImage(systemName: config.name) else {
-            imageView.image = nil
-            return
-        }
-
-        imageView.contentMode = config.contentMode
-
-        var symbolConfig = UIImage.SymbolConfiguration(
-            pointSize: config.pointSize,
-            weight: config.weight,
-            scale: config.scale
-        )
-
-        switch config.renderingMode {
-        case .monochrome:
-            if #available(iOS 16.0, *) {
-                symbolConfig = symbolConfig.applying(UIImage.SymbolConfiguration.preferringMonochrome())
-            }
-        case .hierarchical:
-            if let tint = config.tintColor {
-                symbolConfig = symbolConfig.applying(UIImage.SymbolConfiguration(hierarchicalColor: tint))
-            }
-        case .palette:
-            if config.paletteColors.count > 1 {
-                symbolConfig = symbolConfig.applying(UIImage.SymbolConfiguration(paletteColors: config.paletteColors))
-            } else if let tint = config.tintColor {
-                symbolConfig = symbolConfig.applying(UIImage.SymbolConfiguration(hierarchicalColor: tint))
-            }
-        case .multicolor:
-            if #available(iOS 16.0, *) {
-                symbolConfig = symbolConfig.applying(UIImage.SymbolConfiguration.preferringMulticolor())
-            }
-        }
-
-        imageView.preferredSymbolConfiguration = symbolConfig
-
-        var finalImage = baseImage
-        if let tint = config.tintColor,
-           config.renderingMode != .hierarchical,
-           config.renderingMode != .palette {
-            finalImage = baseImage.withTintColor(tint, renderingMode: .alwaysOriginal)
-        }
-
-        imageView.image = finalImage
-        if let tint = config.tintColor {
-            imageView.tintColor = tint
-        }
-
-        if #available(iOS 17.0, *) {
-            imageView.removeAllSymbolEffects()
-            if let spec = config.animationSpec {
-                applyAnimation(spec)
-            }
-        }
+    if spec.reversing == true {
+        return view.symbolEffect(base.reversing, options: options, isActive: true)
     }
-
-    @available(iOS 17.0, *)
-    private func applyAnimation(_ spec: SymbolAnimationSpec) {
-        let options = spec.makeOptions()
-        if let variable = spec.variableAnimationSpec {
-            imageView.addSymbolEffect(variable.toVariableEffect(), options: options, animated: true)
-            return
-        }
-        guard let effect = spec.effect else { return }
-
-        switch effect.type {
-        case .bounce:
-            BounceEffectAdapter(wholeSymbol: effect.wholeSymbol, direction: effect.direction)
-                .add(to: imageView, options: options)
-        case .pulse:
-            PulseEffectAdapter(wholeSymbol: effect.wholeSymbol)
-                .add(to: imageView, options: options)
-        case .scale:
-            ScaleEffectAdapter(wholeSymbol: effect.wholeSymbol, direction: effect.direction)
-                .add(to: imageView, options: options)
-        }
+    if spec.nonReversing == true {
+        return view.symbolEffect(base.nonReversing, options: options, isActive: true)
     }
-}
-
-private struct SymbolUIViewRepresentable: UIViewRepresentable {
-    var configuration: SymbolRenderConfiguration
-
-    func makeUIView(context: Context) -> SymbolRenderView {
-        SymbolRenderView()
-    }
-
-    func updateUIView(_ uiView: SymbolRenderView, context: Context) {
-        uiView.apply(configuration: configuration)
-    }
+    
+    return view.symbolEffect(base, options: options, isActive: true)
 }
 
 /// Voltra: SymbolView
@@ -288,6 +93,9 @@ public struct DynamicSymbolView: View {
 
     private let component: VoltraComponent
     private let colorHelper = VoltraHelper()
+    
+    // Trigger for discrete animations
+    @State private var animationTrigger = false
 
     private var params: SymbolViewParameters? {
         component.parameters(SymbolViewParameters.self)
@@ -312,14 +120,14 @@ public struct DynamicSymbolView: View {
         SymbolRenderingMode(rawValue: symbolTypeKey) ?? .monochrome
     }
 
-    private var symbolScale: UIImage.SymbolScale {
+    private var symbolScale: Image.Scale {
         switch params?.scale?.lowercased() {
         case "small":
             return .small
         case "large":
             return .large
         case "unspecified":
-            return .unspecified
+            return .medium
         case "medium", "default":
             return .medium
         default:
@@ -327,7 +135,7 @@ public struct DynamicSymbolView: View {
         }
     }
 
-    private var symbolWeight: UIImage.SymbolWeight {
+    private var symbolWeight: Font.Weight {
         switch params?.weight?.lowercased() {
         case "ultralight":
             return .ultraLight
@@ -359,15 +167,14 @@ public struct DynamicSymbolView: View {
         return 24.0
     }
 
-    private var tintUIColor: UIColor? {
-        guard let string = params?.tintColor,
-              let color = colorHelper.translateColor(string) else {
+    private var tintColor: Color? {
+        guard let string = params?.tintColor else {
             return nil
         }
-        return UIColor(color)
+        return colorHelper.translateColor(string)
     }
 
-    private var paletteColors: [UIColor] {
+    private var paletteColors: [Color] {
         guard let colorsString = params?.colors, !colorsString.isEmpty else {
             return []
         }
@@ -375,36 +182,7 @@ public struct DynamicSymbolView: View {
             .split(separator: "|")
             .compactMap { part in
                 let value = String(part)
-                return colorHelper.translateColor(value).map { UIColor($0) }
-            }
-    }
-
-    private var contentMode: UIView.ContentMode {
-        switch params?.resizeMode?.lowercased() {
-        case "scaletofill":
-            return .scaleToFill
-        case "scaleaspectfill":
-            return .scaleAspectFill
-        case "center":
-            return .center
-        case "top":
-            return .top
-        case "bottom":
-            return .bottom
-        case "left":
-            return .left
-        case "right":
-            return .right
-        case "topleft":
-            return .topLeft
-        case "topright":
-            return .topRight
-        case "bottomleft":
-            return .bottomLeft
-        case "bottomright":
-            return .bottomRight
-        default:
-            return .scaleAspectFit
+                return colorHelper.translateColor(value)
         }
     }
 
@@ -416,22 +194,110 @@ public struct DynamicSymbolView: View {
         return try? JSONDecoder().decode(SymbolAnimationSpec.self, from: data)
     }
 
-    private var symbolConfiguration: SymbolRenderConfiguration {
-        SymbolRenderConfiguration(
-            name: symbolName,
-            renderingMode: renderingMode,
-            scale: symbolScale,
-            weight: symbolWeight,
-            pointSize: symbolSize,
-            tintColor: tintUIColor,
-            paletteColors: paletteColors,
-            contentMode: contentMode,
-            animationSpec: animationSpec
-        )
+    public var body: some View {
+        let image = Image(systemName: symbolName)
+        
+        applyStyling(to: image)
+            .voltraModifiers(component)
+            .onAppear {
+                animationTrigger = true
+            }
     }
 
-    public var body: some View {
-        SymbolUIViewRepresentable(configuration: symbolConfiguration)
-            .voltraModifiers(component)
+    @ViewBuilder
+    private func applyStyling(to image: Image) -> some View {
+        let sized = image
+            .font(.system(size: symbolSize, weight: symbolWeight))
+            .imageScale(symbolScale)
+
+        let colored = applyColor(to: sized)
+        
+        if #available(iOS 17.0, *), let spec = animationSpec {
+            applyAnimation(to: colored, spec: spec)
+        } else {
+            colored
+        }
+    }
+
+    @ViewBuilder
+    private func applyColor(to view: some View) -> some View {
+        switch renderingMode {
+        case .monochrome:
+            if let tint = tintColor {
+                view.foregroundStyle(tint)
+            } else {
+                view.symbolRenderingMode(.monochrome)
+            }
+        case .hierarchical:
+            if let tint = tintColor {
+                view.symbolRenderingMode(.hierarchical).foregroundStyle(tint)
+            } else {
+                view.symbolRenderingMode(.hierarchical)
+            }
+        case .palette:
+            if !paletteColors.isEmpty {
+                // Swift's variadic foregroundStyle is tricky with array, 
+                // but .foregroundStyle(Color, Color...) works up to a limit.
+                // We'll support up to 3 colors for now as that's common for symbols.
+                if paletteColors.count == 1 {
+                    view.symbolRenderingMode(.palette).foregroundStyle(paletteColors[0])
+                } else if paletteColors.count == 2 {
+                    view.symbolRenderingMode(.palette).foregroundStyle(paletteColors[0], paletteColors[1])
+                } else if paletteColors.count >= 3 {
+                    view.symbolRenderingMode(.palette).foregroundStyle(paletteColors[0], paletteColors[1], paletteColors[2])
+                } else {
+                     view.symbolRenderingMode(.palette)
+                }
+            } else if let tint = tintColor {
+                 view.symbolRenderingMode(.hierarchical).foregroundStyle(tint)
+            } else {
+                 view.symbolRenderingMode(.palette)
+            }
+        case .multicolor:
+            view.symbolRenderingMode(.multicolor)
+        }
+    }
+
+    @available(iOS 17.0, *)
+    @ViewBuilder
+    private func applyAnimation(to view: some View, spec: SymbolAnimationSpec) -> some View {
+        let options = spec.makeOptions()
+        
+        if let variable = spec.variableAnimationSpec {
+            applyVariableEffect(to: view, spec: variable, options: options)
+        } else if let effectSpec = spec.effect {
+            switch effectSpec.type {
+            case .bounce:
+                let effect = BounceSymbolEffect.bounce
+                
+                if effectSpec.direction == .up {
+                    view.symbolEffect(effect.up, options: options, value: animationTrigger)
+                } else if effectSpec.direction == .down {
+                    view.symbolEffect(effect.down, options: options, value: animationTrigger)
+                } else {
+                    view.symbolEffect(effect, options: options, value: animationTrigger)
+                }
+                
+            case .pulse:
+                let effect = PulseSymbolEffect.pulse
+                if effectSpec.wholeSymbol == true {
+                    view.symbolEffect(effect.wholeSymbol, options: options, isActive: true)
+                } else {
+                    view.symbolEffect(effect, options: options, isActive: true)
+                }
+                
+            case .scale:
+                let effect = ScaleSymbolEffect.scale
+                if effectSpec.direction == .up {
+                    view.symbolEffect(effect.up, options: options, isActive: true)
+                } else if effectSpec.direction == .down {
+                    view.symbolEffect(effect.down, options: options, isActive: true)
+                } else {
+                    view.symbolEffect(effect, options: options, isActive: true)
+                }
+            }
+        } else {
+            view
+        }
     }
 }
