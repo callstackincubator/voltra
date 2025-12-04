@@ -38,19 +38,13 @@
     },
     {
       "name": "Image",
-      "description": "Display images from various sources",
+      "description": "Display images from asset catalog",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "parameters": {
-        "imageSourceKind": {
+        "assetName": {
           "type": "string",
           "optional": true,
-          "enum": ["system", "asset", "uri", "app-group"],
-          "description": "Image source type"
-        },
-        "imageSourceValue": {
-          "type": "string",
-          "optional": true,
-          "description": "Image source identifier or path"
+          "description": "Asset catalog name bundled inside the widget extension"
         }
       }
     },

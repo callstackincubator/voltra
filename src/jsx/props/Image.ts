@@ -5,8 +5,6 @@
 import type { VoltraBaseProps } from '../baseProps'
 
 export type ImageProps = VoltraBaseProps & {
-  /** Image source type */
-  imageSourceKind?: 'system' | 'asset' | 'uri' | 'app-group'
-  /** Image source identifier or path */
-  imageSourceValue?: string
+  /** Asset catalog name bundled inside the widget extension */
+  assetName?: string
 }

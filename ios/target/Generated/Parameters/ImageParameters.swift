@@ -8,11 +8,8 @@
 import Foundation
 
 /// Parameters for Image component
-/// Display images from various sources
+/// Display images from asset catalog
 public struct ImageParameters: ComponentParameters {
-    /// Image source type
-    public let imageSourceKind: String?
-
-    /// Image source identifier or path
-    public let imageSourceValue: String?
+    /// Asset catalog name bundled inside the widget extension
+    public let assetName: String?
 }
