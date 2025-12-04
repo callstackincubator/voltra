@@ -78,7 +78,7 @@ import { renderVoltraToString, Voltra } from 'voltra/server'
 const jsonPayload = renderVoltraToString({
   lockScreen: (
     <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
-      <Voltra.SymbolView name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
+      <Voltra.Symbol name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
       <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>Driver arrived</Voltra.Text>
       <Voltra.Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 8 }}>Ready for pickup</Voltra.Text>
     </Voltra.VStack>

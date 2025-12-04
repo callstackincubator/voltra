@@ -32,7 +32,7 @@ function LiquidGlassLiveActivityUI({ sessionStartAt }: { sessionStartAt: number 
             style={{ tintColor: '#34D399', marginTop: 12, height: 6, borderRadius: 4 }}
           />
           <Voltra.HStack style={{ marginTop: 14, alignItems: 'center' }}>
-            <Voltra.SymbolView
+            <Voltra.Symbol
               name="figure.strengthtraining.traditional"
               tintColor="#34D399"
               style={{ width: 32, height: 32 }}
@@ -56,7 +56,7 @@ function LiquidGlassLiveActivityUI({ sessionStartAt }: { sessionStartAt: number 
         modifiers={[{ name: 'glassEffect', args: { shape: 'capsule' } }]}
       >
         <Voltra.HStack style={{ alignItems: 'center' }}>
-          <Voltra.SymbolView name="heart.fill" tintColor="#F472B6" style={{ width: 20, height: 20 }} />
+          <Voltra.Symbol name="heart.fill" tintColor="#F472B6" style={{ width: 20, height: 20 }} />
           <Voltra.Text style={{ color: '#F8FAFC', fontWeight: '600', marginLeft: 8 }}>HR 132</Voltra.Text>
           <Voltra.Spacer />
           <Voltra.Timer

@@ -1,5 +1,5 @@
 //
-//  SymbolViewParameters.swift
+//  SymbolParameters.swift
 
 //  AUTO-GENERATED from data/components.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
@@ -7,9 +7,9 @@
 
 import Foundation
 
-/// Parameters for SymbolView component
+/// Parameters for Symbol component
 /// Display SF Symbols with advanced configuration
-public struct SymbolViewParameters: ComponentParameters {
+public struct SymbolParameters: ComponentParameters {
     /// SF Symbol name
     public let name: String?
 
@@ -37,3 +37,4 @@ public struct SymbolViewParameters: ComponentParameters {
     /// JSON-encoded animation specification
     public let animationSpec: String?
 }
+

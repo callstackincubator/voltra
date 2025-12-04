@@ -107,8 +107,8 @@ struct InternalVoltra: View {
                 DynamicImage(component)
                     .environment(\.internalVoltraEnvironment, self)
 
-            case "SymbolView":
-                DynamicSymbolView(component)
+            case "Symbol":
+                DynamicSymbol(component)
                     .environment(\.internalVoltraEnvironment, self)
 
             case "Divider":

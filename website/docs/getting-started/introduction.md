@@ -13,7 +13,7 @@ import { startVoltra, Voltra } from 'voltra'
 
 const activityUI = (
   <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
-    <Voltra.SymbolView name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
+    <Voltra.Symbol name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
     <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>
       Driver en route
     </Voltra.Text>
@@ -45,7 +45,7 @@ import { renderVoltraToString, Voltra } from 'voltra/server'
 const payload = renderVoltraToString({
   lockScreen: (
     <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
-      <Voltra.SymbolView name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
+      <Voltra.Symbol name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
       <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>
         Driver arrived
       </Voltra.Text>

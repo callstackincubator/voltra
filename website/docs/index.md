@@ -18,7 +18,7 @@ hero:
     type: info
 features:
   - title: SwiftUI primitives in JSX
-    details: Compose Live Activities using VStack, HStack, Text, SymbolView, and LinearGradient directly in JSX. Your React components render as native SwiftUI primitives.
+    details: Compose Live Activities using VStack, HStack, Text, Symbol, and LinearGradient directly in JSX. Your React components render as native SwiftUI primitives.
     icon: <img src="/icons/card-id.svg" />
   - title: Dynamic Island support
     details: Define minimal, compact, and expanded presentations for the Dynamic Island using the same JSX components. Full control over Live Activity regions.
