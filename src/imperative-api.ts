@@ -1,10 +1,51 @@
+import { logger } from './logger'
 import { ensurePayloadWithinBudget } from './payload'
 import { renderVoltraToString, VoltraVariants } from './renderer'
 import { assertRunningOnApple } from './utils'
 import VoltraModule from './VoltraModule'
 
+export type SharedVoltraOptions = {
+  /**
+   * Unix timestamp in milliseconds
+   */
+  staleDate?: number
+  /**
+   * Double value between 0.0 and 1.0
+   */
+  relevanceScore?: number
+}
+
 export type StartVoltraOptions = {
+  /**
+   * URL to open when the Live Activity is tapped.
+   */
   deepLinkUrl?: string
+} & SharedVoltraOptions
+
+export type UpdateVoltraOptions = SharedVoltraOptions
+
+const normalizeSharedVoltraOptions = (options?: SharedVoltraOptions): SharedVoltraOptions | undefined => {
+  if (!options) return undefined
+
+  const normalizedOptions: SharedVoltraOptions = {}
+
+  if (options.staleDate !== undefined) {
+    if (options.staleDate < Date.now()) {
+      logger.warn('Ignoring staleDate because it is in the past, the Live Activity would be dismissed immediately.')
+    } else {
+      normalizedOptions.staleDate = options.staleDate
+    }
+  }
+
+  if (options.relevanceScore !== undefined) {
+    if (options.relevanceScore < 0 || options.relevanceScore > 1) {
+      logger.warn('Ignoring relevanceScore because it is out of range [0.0, 1.0]')
+    } else {
+      normalizedOptions.relevanceScore = options.relevanceScore
+    }
+  }
+
+  return Object.keys(normalizedOptions).length > 0 ? normalizedOptions : undefined
 }
 
 export const startVoltra = async (variants: VoltraVariants, options?: StartVoltraOptions): Promise<string> => {
@@ -13,20 +54,27 @@ export const startVoltra = async (variants: VoltraVariants, options?: StartVoltr
   const payload = renderVoltraToString(variants)
   ensurePayloadWithinBudget(payload)
 
+  const normalizedSharedOptions = normalizeSharedVoltraOptions(options)
   const targetId = await VoltraModule.startVoltra(payload, {
     target: 'liveActivity',
     deepLinkUrl: options?.deepLinkUrl,
+    ...normalizedSharedOptions,
   })
   return targetId
 }
 
-export const updateVoltra = async (targetId: string, variants: VoltraVariants): Promise<void> => {
+export const updateVoltra = async (
+  targetId: string,
+  variants: VoltraVariants,
+  options?: UpdateVoltraOptions
+): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
   const payload = renderVoltraToString(variants)
   ensurePayloadWithinBudget(payload)
 
-  return VoltraModule.updateVoltra(targetId, payload)
+  const normalizedSharedOptions = normalizeSharedVoltraOptions(options)
+  return VoltraModule.updateVoltra(targetId, payload, normalizedSharedOptions)
 }
 
 export const stopVoltra = async (targetId: string): Promise<void> => {

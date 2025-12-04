@@ -84,11 +84,20 @@ public class VoltraModule: Module {
 
         let deepLinkUrl = options?["deepLinkUrl"] as? String
         let activityName = (options?["activityId"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Extract staleDate and relevanceScore from options
+        let staleDate: Date? = {
+          if let staleDateMs = options?["staleDate"] as? Double {
+            return Date(timeIntervalSince1970: staleDateMs / 1000.0)
+          }
+          return nil
+        }()
+        let relevanceScore: Double? = options?["relevanceScore"] as? Double
 
         if let key = activityName, !key.isEmpty,
            let existing = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == key }) {
           let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
-          await existing.update(ActivityContent(state: newState, staleDate: nil))
+          await existing.update(ActivityContent(state: newState, staleDate: staleDate), relevanceScore: relevanceScore)
           if options?["autoEndAt"] as? Double == nil {
             return existing.id
           }
@@ -115,8 +124,9 @@ public class VoltraModule: Module {
 
         let activity = try Activity.request(
           attributes: attributes,
-          content: .init(state: initialState, staleDate: nil),
-          pushType: pushNotificationsEnabled ? .token : nil
+          content: .init(state: initialState, staleDate: staleDate),
+          pushType: pushNotificationsEnabled ? .token : nil,
+          relevanceScore: relevanceScore
         )
 
         // Best-effort local auto-end scheduling (app must be alive)
@@ -150,7 +160,7 @@ public class VoltraModule: Module {
       }
     }
 
-    AsyncFunction("updateVoltra") { (activityId: String, jsonString: String) async throws in
+    AsyncFunction("updateVoltra") { (activityId: String, jsonString: String, options: [String: Any]?) async throws in
       // Static Widget path
       if activityId.hasPrefix(STATIC_WIDGET_SYNTHETIC_ID) {
         guard let key = parseWidgetKey(from: activityId) else {
@@ -187,8 +197,17 @@ public class VoltraModule: Module {
 
       try validatePayloadSize(jsonString, operation: "update")
 
+      // Extract staleDate and relevanceScore from options
+      let staleDate: Date? = {
+        if let staleDateMs = options?["staleDate"] as? Double {
+          return Date(timeIntervalSince1970: staleDateMs / 1000.0)
+        }
+        return nil
+      }()
+      let relevanceScore: Double? = options?["relevanceScore"] as? Double
+
       let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
-      await activity.update(ActivityContent(state: newState, staleDate: nil))
+      await activity.update(ActivityContent(state: newState, staleDate: staleDate), relevanceScore: relevanceScore)
     }
 
     AsyncFunction("endVoltra") { (activityId: String) async throws in

@@ -1,18 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { addVoltraListener } from './events'
-import { startVoltra, stopVoltra, updateVoltra } from './imperative-api'
+import { startVoltra, StartVoltraOptions, stopVoltra, updateVoltra, UpdateVoltraOptions } from './imperative-api'
 import { VoltraVariants } from './renderer'
 
 export type UseVoltraOptions = {
+  /**
+   * Automatically start the Live Activity when the component mounts.
+   */
   autoStart?: boolean
+  /**
+   * Automatically update the Live Activity when the component updates.
+   */
   autoUpdate?: boolean
+  /**
+   * URL to open when the Live Activity is tapped.
+   */
   deepLinkUrl?: string
 }
 
 export type UseVoltraResult = {
-  start: () => Promise<void>
-  update: () => Promise<void>
+  start: (options?: StartVoltraOptions) => Promise<void>
+  update: (options?: UpdateVoltraOptions) => Promise<void>
   end: () => Promise<void>
   isActive: boolean
 }
@@ -21,31 +30,49 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
   const [targetId, setTargetId] = useState<string | null>(null)
   const isActive = targetId !== null
   const optionsRef = useRef(options)
+  const lastUpdateOptionsRef = useRef<UpdateVoltraOptions | undefined>(undefined)
 
-  const start = useCallback(async () => {
-    const id = await startVoltra(variants, optionsRef.current)
-    setTargetId(id)
-  }, [variants])
+  const start = useCallback(
+    async (options?: StartVoltraOptions) => {
+      const id = await startVoltra(variants, { ...optionsRef.current, ...options })
+      setTargetId(id)
+    },
+    [variants]
+  )
 
-  const update = useCallback(async () => {
-    if (!targetId) return
-    await updateVoltra(targetId, variants)
-  }, [variants, targetId])
+  const update = useCallback(
+    async (options?: UpdateVoltraOptions) => {
+      if (!targetId) {
+        return
+      }
+
+      const updateOptions = { ...optionsRef.current, ...options }
+      lastUpdateOptionsRef.current = updateOptions
+      await updateVoltra(targetId, variants, updateOptions)
+    },
+    [variants, targetId]
+  )
 
   const end = useCallback(async () => {
-    if (!targetId) return
+    if (!targetId) {
+      return
+    }
+
     await stopVoltra(targetId)
     setTargetId(null)
   }, [targetId])
 
   useEffect(() => {
-    if (!options?.autoStart) return
+    if (!options?.autoStart) {
+      return
+    }
+
     start().catch(() => null)
   }, [options?.autoStart, start])
 
   useEffect(() => {
     if (!options?.autoUpdate) return
-    update().catch(() => null)
+    update(lastUpdateOptionsRef.current).catch(() => null)
   }, [options?.autoUpdate, variants, update])
 
   useEffect(() => {
