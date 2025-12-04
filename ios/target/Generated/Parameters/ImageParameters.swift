@@ -12,4 +12,7 @@ import Foundation
 public struct ImageParameters: ComponentParameters {
     /// Asset catalog name bundled inside the widget extension
     public let assetName: String?
+
+    /// How the image should be resized to fit its container
+    public let resizeMode: String?
 }

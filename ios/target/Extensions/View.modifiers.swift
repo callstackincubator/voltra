@@ -59,15 +59,32 @@ extension View {
                     let maxWidth = modifier.args?["maxWidth"]?.toString() == "infinity"
 
                     if w != nil || h != nil || maxWidth {
+                        // Use fixed frame when both width and height are specified
+                        if let width = w, let height = h {
+                            tempView = AnyView(tempView.frame(width: CGFloat(width), height: CGFloat(height)))
+                        } else if maxWidth {
+                            // Handle maxWidth: infinity case
+                            tempView = AnyView(tempView.frame(
+                                minWidth: 0,
+                                idealWidth: w.map { CGFloat($0) },
+                                maxWidth: .infinity,
+                                minHeight: 0,
+                                idealHeight: h.map { CGFloat($0) },
+                                maxHeight: h.map { CGFloat($0) },
+                                alignment: .center
+                            ))
+                        } else {
+                            // Use flexible frame when only one dimension is specified
                         tempView = AnyView(tempView.frame(
                             minWidth: 0,
                             idealWidth: w.map { CGFloat($0) },
-                            maxWidth: maxWidth ? .infinity : w.map { CGFloat($0) },
+                                maxWidth: w.map { CGFloat($0) },
                             minHeight: 0,
                             idealHeight: h.map { CGFloat($0) },
                             maxHeight: h.map { CGFloat($0) },
                             alignment: .center
                         ))
+                        }
                     }
                 }
 
