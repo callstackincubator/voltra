@@ -21,7 +21,7 @@ export function getWidgetFiles(targetPath: string) {
   const fallbackRoot = path.resolve(__dirname, '..', '..', '..')
   const baseRoot = packagePath ?? fallbackRoot
   const liveActivityFilesPath = path.join(baseRoot, 'ios-files')
-  const imageAssetsPath = './assets/liveActivity'
+  const imageAssetsPath = './assets/voltra'
 
   const widgetFiles: WidgetFiles = {
     swiftFiles: [],
@@ -120,7 +120,7 @@ export function getWidgetFiles(targetPath: string) {
     })
   } else {
     console.warn(
-      `Warning: Skipping adding images to live activity because directory does not exist at path: ${imageAssetsPath}`
+      `Warning: Skipping adding images to widget extension because directory does not exist at path: ${imageAssetsPath}`
     )
   }
 
