@@ -21,6 +21,13 @@ const SUPPORTED_KEYS: (keyof VoltraViewStyle)[] = [
   'paddingRight',
   'paddingHorizontal',
   'paddingVertical',
+  'margin',
+  'marginTop',
+  'marginBottom',
+  'marginLeft',
+  'marginRight',
+  'marginHorizontal',
+  'marginVertical',
   'backgroundColor',
   'opacity',
   'borderRadius',
@@ -39,6 +46,7 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
 
   // Group related properties
   const paddingProps: Record<string, number> = {}
+  const marginProps: Record<string, number> = {}
   const borderProps: Record<string, any> = {}
   const shadowProps: Record<string, any> = {}
   let backgroundColor: ColorValue | undefined = undefined
@@ -92,6 +100,19 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
       case 'paddingVertical':
         if (typeof value === 'number') {
           paddingProps[key] = value
+        }
+        break
+
+      // Margin properties - collect all for grouping (will be converted to padding and applied last)
+      case 'margin':
+      case 'marginTop':
+      case 'marginBottom':
+      case 'marginLeft':
+      case 'marginRight':
+      case 'marginHorizontal':
+      case 'marginVertical':
+        if (typeof value === 'number') {
+          marginProps[key] = value
         }
         break
 
@@ -159,7 +180,7 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
   }
 
   // Process grouped properties in correct order for SwiftUI
-  // Order matters: padding → background → cornerRadius → border → shadow
+  // Order matters: padding → background → cornerRadius → border → shadow → margin (as padding, applied last)
 
   // 1. Create padding modifier (must come first so background fills the padded area)
   if (Object.keys(paddingProps).length > 0) {
@@ -282,6 +303,50 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
       modifiers.push({
         name: 'shadow',
         args: shadowArgs,
+      })
+    }
+  }
+
+  // 6. Create padding modifier from margins (applied last to create space outside the element)
+  if (Object.keys(marginProps).length > 0) {
+    const marginPaddingArgs: Record<string, number> = {}
+
+    // Handle uniform margin
+    if (marginProps.margin !== undefined) {
+      marginPaddingArgs.all = marginProps.margin
+    } else {
+      // Handle individual edges with proper priority
+      if (marginProps.marginTop !== undefined) {
+        marginPaddingArgs.top = marginProps.marginTop
+      }
+      if (marginProps.marginBottom !== undefined) {
+        marginPaddingArgs.bottom = marginProps.marginBottom
+      }
+
+      // RTL-aware margin direction
+      const isRTL = I18nManager.isRTL
+      if (marginProps.marginLeft !== undefined) {
+        marginPaddingArgs[isRTL ? 'trailing' : 'leading'] = marginProps.marginLeft
+      }
+      if (marginProps.marginRight !== undefined) {
+        marginPaddingArgs[isRTL ? 'leading' : 'trailing'] = marginProps.marginRight
+      }
+
+      // Handle horizontal/vertical (lower priority)
+      if (marginProps.marginHorizontal !== undefined && !marginPaddingArgs.leading && !marginPaddingArgs.trailing) {
+        marginPaddingArgs.leading = marginProps.marginHorizontal
+        marginPaddingArgs.trailing = marginProps.marginHorizontal
+      }
+      if (marginProps.marginVertical !== undefined && !marginPaddingArgs.top && !marginPaddingArgs.bottom) {
+        marginPaddingArgs.top = marginProps.marginVertical
+        marginPaddingArgs.bottom = marginProps.marginVertical
+      }
+    }
+
+    if (Object.keys(marginPaddingArgs).length > 0) {
+      modifiers.push({
+        name: 'padding',
+        args: marginPaddingArgs,
       })
     }
   }
