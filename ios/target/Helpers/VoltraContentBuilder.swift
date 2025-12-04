@@ -22,19 +22,6 @@ struct VoltraContentBuilder {
             return components.contains(where: { hasGlass($0) })
         }()
 
-        let tint: Color? = {
-            guard let root = components.first else { return nil }
-            let helper = VoltraHelper()
-            if let modifiers = root.modifiers {
-                if let bgMod = modifiers.first(where: { $0.name == "backgroundStyle" || $0.name == "background" }),
-                   let colorName = bgMod.args?["color"]?.toString(),
-                   let color = helper.translateColor(colorName) {
-                    return color
-                }
-            }
-            return nil
-        }()
-
         let base: AnyView = {
             // Use pre-parsed components directly
             return AnyView(
@@ -64,10 +51,8 @@ struct VoltraContentBuilder {
             if usesGlass {
                 return AnyView(base.activityBackgroundTint(.clear))
             }
-            if let tint { return AnyView(base.activityBackgroundTint(tint)) }
             return base
         } else {
-            if let tint { return AnyView(base.background(tint)) }
             return base
         }
     }

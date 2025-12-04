@@ -28,6 +28,9 @@ export type VoltraViewStyle = Pick<
   | 'shadowOpacity'
   | 'shadowRadius'
   | 'overflow'
+  | 'flex'
+  | 'flexGrow'
+  | 'flexShrink'
 >
 
 export type VoltraTextStyle = VoltraViewStyle & Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing'>

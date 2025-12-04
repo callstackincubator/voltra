@@ -14,6 +14,9 @@ The following React Native style properties are supported:
 
 - `width` - Fixed width (number values only, percentages are ignored)
 - `height` - Fixed height (number values only, percentages are ignored)
+- `flex` - Flex shorthand (follows Yoga's behavior). Positive values act as `flexGrow`, negative values act as `flexShrink`. Explicit `flexGrow`/`flexShrink` take precedence if both are specified.
+- `flexGrow` - Flex grow factor. When > 0, allows the view to grow to fill available space (converts to flexible frame with `maxWidth`/`maxHeight` set to infinity)
+- `flexShrink` - Flex shrink factor. When > 0, allows the view to shrink below its ideal size (sets `minWidth`/`minHeight` to 0)
 - `padding` - Uniform padding on all edges
 - `paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight` - Individual edge padding
 - `paddingHorizontal`, `paddingVertical` - Horizontal and vertical padding
@@ -49,7 +52,7 @@ The following React Native style properties are supported:
 
 Properties not listed above are ignored during rendering. This includes common React Native properties like:
 
-- Flexbox layout properties (`flex`, `flexDirection`, `justifyContent`, `alignItems`, etc.)
+- Most flexbox layout properties (`flexDirection`, `justifyContent`, `alignItems`, etc.) - Note: `flex`, `flexGrow`, and `flexShrink` are supported
 - `gap` and spacing properties
 - Percentage-based widths and heights
 - `position` and absolute positioning
@@ -121,7 +124,7 @@ Modifiers are organized into categories based on their purpose:
 
 #### Layout modifiers
 
-- **`frame`** - Sets the frame dimensions (`{ width?: number, height?: number, maxWidth?: 'infinity' }`)
+- **`frame`** - Sets the frame dimensions (`{ width?: number, height?: number, maxWidth?: 'infinity', maxHeight?: 'infinity', minWidth?: number, minHeight?: number, idealWidth?: number, idealHeight?: number }`)
 - **`padding`** - Adds padding around the view (`{ all?: number, top?: number, bottom?: number, leading?: number, trailing?: number }`)
 - **`offset`** - Offsets the view by x and y values (`{ x?: number, y?: number }`)
 

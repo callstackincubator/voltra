@@ -21,7 +21,33 @@
           "type": "string",
           "optional": true,
           "enum": ["infinity"],
-          "description": "Maximum width constraint"
+          "description": "Maximum width constraint (use 'infinity' for flexible width)"
+        },
+        "maxHeight": {
+          "type": "string",
+          "optional": true,
+          "enum": ["infinity"],
+          "description": "Maximum height constraint (use 'infinity' for flexible height)"
+        },
+        "minWidth": {
+          "type": "number",
+          "optional": true,
+          "description": "Minimum width constraint"
+        },
+        "minHeight": {
+          "type": "number",
+          "optional": true,
+          "description": "Minimum height constraint"
+        },
+        "idealWidth": {
+          "type": "number",
+          "optional": true,
+          "description": "Preferred/ideal width (used as preferred size in flexible layouts)"
+        },
+        "idealHeight": {
+          "type": "number",
+          "optional": true,
+          "description": "Preferred/ideal height (used as preferred size in flexible layouts)"
         }
       }
     },

@@ -54,36 +54,47 @@ extension View {
 
             case "frame":
                 if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *) {
-                    let w = modifier.args?["width"]?.toDouble() ?? modifier.args?["width"]?.toInt().map(Double.init)
-                    let h = modifier.args?["height"]?.toDouble() ?? modifier.args?["height"]?.toInt().map(Double.init)
-                    let maxWidth = modifier.args?["maxWidth"]?.toString() == "infinity"
-
-                    if w != nil || h != nil || maxWidth {
-                        // Use fixed frame when both width and height are specified
-                        if let width = w, let height = h {
-                            tempView = AnyView(tempView.frame(width: CGFloat(width), height: CGFloat(height)))
-                        } else if maxWidth {
-                            // Handle maxWidth: infinity case
+                    // Extract all frame parameters
+                    let width = modifier.args?["width"]?.toDouble() ?? modifier.args?["width"]?.toInt().map(Double.init)
+                    let height = modifier.args?["height"]?.toDouble() ?? modifier.args?["height"]?.toInt().map(Double.init)
+                    let maxWidthInfinity = modifier.args?["maxWidth"]?.toString() == "infinity"
+                    let maxHeightInfinity = modifier.args?["maxHeight"]?.toString() == "infinity"
+                    let minWidth = modifier.args?["minWidth"]?.toDouble() ?? modifier.args?["minWidth"]?.toInt().map(Double.init)
+                    let minHeight = modifier.args?["minHeight"]?.toDouble() ?? modifier.args?["minHeight"]?.toInt().map(Double.init)
+                    let idealWidth = modifier.args?["idealWidth"]?.toDouble() ?? modifier.args?["idealWidth"]?.toInt().map(Double.init)
+                    let idealHeight = modifier.args?["idealHeight"]?.toDouble() ?? modifier.args?["idealHeight"]?.toInt().map(Double.init)
+                    
+                    // Check if we have any frame parameters
+                    let hasAnyParam = width != nil || height != nil || maxWidthInfinity || maxHeightInfinity || 
+                                     minWidth != nil || minHeight != nil || idealWidth != nil || idealHeight != nil
+                    
+                    if hasAnyParam {
+                        // Use fixed frame only when both width and height are specified AND no flexible constraints
+                        let useFixedFrame = width != nil && height != nil && !maxWidthInfinity && !maxHeightInfinity && 
+                                          minWidth == nil && minHeight == nil && idealWidth == nil && idealHeight == nil
+                        
+                        if useFixedFrame {
+                            tempView = AnyView(tempView.frame(width: CGFloat(width!), height: CGFloat(height!)))
+                        } else {
+                            // Use flexible frame API with all parameters
+                            // Determine ideal width: use idealWidth if provided, otherwise use width
+                            let finalIdealWidth: CGFloat? = idealWidth.map { CGFloat($0) } ?? width.map { CGFloat($0) }
+                            // Determine ideal height: use idealHeight if provided, otherwise use height
+                            let finalIdealHeight: CGFloat? = idealHeight.map { CGFloat($0) } ?? height.map { CGFloat($0) }
+                            // Determine max width: infinity if specified, otherwise use width
+                            let finalMaxWidth: CGFloat? = maxWidthInfinity ? .infinity : width.map { CGFloat($0) }
+                            // Determine max height: infinity if specified, otherwise use height
+                            let finalMaxHeight: CGFloat? = maxHeightInfinity ? .infinity : height.map { CGFloat($0) }
+                            
                             tempView = AnyView(tempView.frame(
-                                minWidth: 0,
-                                idealWidth: w.map { CGFloat($0) },
-                                maxWidth: .infinity,
-                                minHeight: 0,
-                                idealHeight: h.map { CGFloat($0) },
-                                maxHeight: h.map { CGFloat($0) },
+                                minWidth: minWidth.map { CGFloat($0) } ?? 0,
+                                idealWidth: finalIdealWidth,
+                                maxWidth: finalMaxWidth,
+                                minHeight: minHeight.map { CGFloat($0) } ?? 0,
+                                idealHeight: finalIdealHeight,
+                                maxHeight: finalMaxHeight,
                                 alignment: .center
                             ))
-                        } else {
-                            // Use flexible frame when only one dimension is specified
-                        tempView = AnyView(tempView.frame(
-                            minWidth: 0,
-                            idealWidth: w.map { CGFloat($0) },
-                                maxWidth: w.map { CGFloat($0) },
-                            minHeight: 0,
-                            idealHeight: h.map { CGFloat($0) },
-                            maxHeight: h.map { CGFloat($0) },
-                            alignment: .center
-                        ))
                         }
                     }
                 }

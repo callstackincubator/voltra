@@ -14,8 +14,18 @@ export type FrameModifier = Modifier<
     width?: number
     /** Fixed height */
     height?: number
-    /** Maximum width constraint */
+    /** Maximum width constraint (use 'infinity' for flexible width) */
     maxWidth?: 'infinity'
+    /** Maximum height constraint (use 'infinity' for flexible height) */
+    maxHeight?: 'infinity'
+    /** Minimum width constraint */
+    minWidth?: number
+    /** Minimum height constraint */
+    minHeight?: number
+    /** Preferred/ideal width (used as preferred size in flexible layouts) */
+    idealWidth?: number
+    /** Preferred/ideal height (used as preferred size in flexible layouts) */
+    idealHeight?: number
   }
 >
 

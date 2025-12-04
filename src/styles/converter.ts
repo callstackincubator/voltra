@@ -38,6 +38,9 @@ const SUPPORTED_KEYS: (keyof VoltraViewStyle)[] = [
   'shadowOpacity',
   'shadowRadius',
   'overflow',
+  'flex',
+  'flexGrow',
+  'flexShrink',
 ]
 
 export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModifier[] => {
@@ -50,6 +53,8 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
   const borderProps: Record<string, any> = {}
   const shadowProps: Record<string, any> = {}
   let backgroundColor: ColorValue | undefined = undefined
+  let flexGrow: number | undefined = undefined
+  let flexShrink: number | undefined = undefined
 
   // Process all supported properties
 
@@ -173,9 +178,94 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
         }
         break
 
+      // Flex properties - collect for processing after width/height
+      case 'flex':
+        // Yoga's flex shorthand: positive acts as flexGrow, negative acts as flexShrink
+        if (typeof value === 'number') {
+          if (value > 0) {
+            // Only set flexGrow if not explicitly set
+            if (flexGrow === undefined) {
+              flexGrow = value
+            }
+          } else if (value < 0) {
+            // Only set flexShrink if not explicitly set
+            if (flexShrink === undefined) {
+              flexShrink = Math.abs(value)
+            }
+          }
+        }
+        break
+
+      case 'flexGrow':
+        if (typeof value === 'number' && value > 0) {
+          flexGrow = value
+        }
+        break
+
+      case 'flexShrink':
+        if (typeof value === 'number' && value > 0) {
+          flexShrink = value
+        }
+        break
+
       // Ignore unsupported properties
       default:
         break
+    }
+  }
+
+  // Process flex properties: adjust frame modifier based on flexGrow/flexShrink
+  if (flexGrow !== undefined || flexShrink !== undefined) {
+    const frameModifier = modifiers.find((m) => m.name === 'frame') as FrameModifier | undefined
+
+    if (frameModifier) {
+      // If flexGrow > 0, convert width/height to idealWidth/idealHeight and set maxWidth/maxHeight to infinity
+      if (flexGrow !== undefined && flexGrow > 0) {
+        const hadWidth = frameModifier.args.width !== undefined
+        const hadHeight = frameModifier.args.height !== undefined
+
+        // Convert width to idealWidth if present
+        if (hadWidth) {
+          frameModifier.args.idealWidth = frameModifier.args.width
+          delete frameModifier.args.width
+          frameModifier.args.maxWidth = 'infinity'
+        }
+        // Convert height to idealHeight if present
+        if (hadHeight) {
+          frameModifier.args.idealHeight = frameModifier.args.height
+          delete frameModifier.args.height
+          frameModifier.args.maxHeight = 'infinity'
+        }
+        // If no width/height was set, still enable flexible sizing
+        if (!hadWidth && frameModifier.args.idealWidth === undefined) {
+          frameModifier.args.maxWidth = 'infinity'
+        }
+        if (!hadHeight && frameModifier.args.idealHeight === undefined) {
+          frameModifier.args.maxHeight = 'infinity'
+        }
+      }
+
+      // If flexShrink > 0 (or flexGrow > 0, which implies shrink), ensure minWidth/minHeight is 0
+      if ((flexShrink !== undefined && flexShrink > 0) || (flexGrow !== undefined && flexGrow > 0)) {
+        // minWidth/minHeight default to 0 in SwiftUI, but we can explicitly set them for clarity
+        if (frameModifier.args.minWidth === undefined) {
+          frameModifier.args.minWidth = 0
+        }
+        if (frameModifier.args.minHeight === undefined) {
+          frameModifier.args.minHeight = 0
+        }
+      }
+    } else if (flexGrow !== undefined && flexGrow > 0) {
+      // No frame modifier exists yet, create one with flexible sizing
+      modifiers.push({
+        name: 'frame',
+        args: {
+          maxWidth: 'infinity',
+          maxHeight: 'infinity',
+          minWidth: 0,
+          minHeight: 0,
+        },
+      })
     }
   }
 
