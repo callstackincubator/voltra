@@ -92,10 +92,10 @@ function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlayerLiveAc
           <Voltra.Text style={styles.artist}>{currentSong.artist}</Voltra.Text>
           <Voltra.HStack spacing={8} style={styles.controlsContainer}>
             <Voltra.Button id="previous-button" style={styles.controlButton}>
-              <Voltra.SymbolView name="backward.fill" type="hierarchical" scale="large" tintColor="#F0F9FF" />
+              <Voltra.Symbol name="backward.fill" type="hierarchical" scale="large" tintColor="#F0F9FF" />
             </Voltra.Button>
             <Voltra.Button id="play-pause-button" style={styles.playButton}>
-              <Voltra.SymbolView
+              <Voltra.Symbol
                 name={isPlaying ? 'pause.fill' : 'play.fill'}
                 type="hierarchical"
                 scale="large"
@@ -103,7 +103,7 @@ function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlayerLiveAc
               />
             </Voltra.Button>
             <Voltra.Button id="next-button" style={styles.controlButton}>
-              <Voltra.SymbolView name="forward.fill" type="hierarchical" scale="large" tintColor="#F0F9FF" />
+              <Voltra.Symbol name="forward.fill" type="hierarchical" scale="large" tintColor="#F0F9FF" />
             </Voltra.Button>
           </Voltra.HStack>
         </Voltra.VStack>

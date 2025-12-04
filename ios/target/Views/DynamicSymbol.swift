@@ -84,10 +84,10 @@ private func applyVariableEffect<V: View>(to view: V, spec: SymbolAnimationSpec.
     return view.symbolEffect(base, options: options, isActive: true)
 }
 
-/// Voltra: SymbolView
+/// Voltra: Symbol
 ///
 /// Dynamic rendering for SF Symbols with Expo Symbols API parity.
-public struct DynamicSymbolView: View {
+public struct DynamicSymbol: View {
     @Environment(\.internalVoltraEnvironment)
     private var voltraEnvironment
 
@@ -97,8 +97,8 @@ public struct DynamicSymbolView: View {
     // Trigger for discrete animations
     @State private var animationTrigger = false
 
-    private var params: SymbolViewParameters? {
-        component.parameters(SymbolViewParameters.self)
+    private var params: SymbolParameters? {
+        component.parameters(SymbolParameters.self)
     }
 
     init(_ component: VoltraComponent) {
@@ -301,3 +301,4 @@ public struct DynamicSymbolView: View {
         }
     }
 }
+

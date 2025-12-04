@@ -4,7 +4,7 @@
 
 import type { VoltraBaseProps } from '../baseProps'
 
-export type SymbolViewProps = VoltraBaseProps & {
+export type SymbolProps = VoltraBaseProps & {
   /** SF Symbol name */
   name?: string
   /** Symbol rendering type */
@@ -24,3 +24,4 @@ export type SymbolViewProps = VoltraBaseProps & {
   /** JSON-encoded animation specification */
   animationSpec?: string
 }
+

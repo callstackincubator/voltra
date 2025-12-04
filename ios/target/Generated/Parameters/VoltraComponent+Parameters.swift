@@ -35,10 +35,10 @@ extension VoltraComponent {
         return parameters(ImageParameters.self)
     }
 
-    /// Convenience accessor for SymbolView parameters
-    public var symbolViewParameters: SymbolViewParameters? {
-        guard type == "SymbolView" else { return nil }
-        return parameters(SymbolViewParameters.self)
+    /// Convenience accessor for Symbol parameters
+    public var symbolParameters: SymbolParameters? {
+        guard type == "Symbol" else { return nil }
+        return parameters(SymbolParameters.self)
     }
 
     /// Convenience accessor for Toggle parameters

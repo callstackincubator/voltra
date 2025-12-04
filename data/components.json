@@ -51,7 +51,7 @@
       }
     },
     {
-      "name": "SymbolView",
+      "name": "Symbol",
       "description": "Display SF Symbols with advanced configuration",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "parameters": {
