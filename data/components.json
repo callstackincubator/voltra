@@ -11,13 +11,8 @@
       "name": "Button",
       "description": "Interactive button component",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "parameters": {
-        "title": {
-          "type": "string",
-          "optional": true,
-          "description": "Text content for the button"
-        }
-      }
+      "hasChildren": true,
+      "parameters": {}
     },
     {
       "name": "Label",

@@ -23,12 +23,6 @@ extension VoltraComponent {
         }
     }
 
-    /// Convenience accessor for Button parameters
-    public var buttonParameters: ButtonParameters? {
-        guard type == "Button" else { return nil }
-        return parameters(ButtonParameters.self)
-    }
-
     /// Convenience accessor for Label parameters
     public var labelParameters: LabelParameters? {
         guard type == "Label" else { return nil }

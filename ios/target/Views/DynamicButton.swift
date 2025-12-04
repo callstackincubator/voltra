@@ -7,28 +7,42 @@ public struct DynamicButton: View {
 
     private let component: VoltraComponent
 
-    private var params: ButtonParameters? {
-        component.parameters(ButtonParameters.self)
-    }
-
     init(_ component: VoltraComponent) {
         self.component = component
     }
 
+    @ViewBuilder
+    private var buttonLabel: some View {
+        if let children = component.children {
+            switch children {
+            case .component(let component):
+                AnyView(voltraEnvironment.buildView(for: [component]))
+            case .components(let components):
+                AnyView(voltraEnvironment.buildView(for: components))
+            case .text(let text):
+                Text(text)
+            }
+        } else {
+            Text("Button")
+        }
+    }
+    
     public var body: some View {
         if let activityId = voltraEnvironment.activityId,
            let componentId = component.id {
             Button(intent: VoltraInteractionIntent(activityId: activityId, componentId: componentId), label: {
-                Text(params?.title ?? "Button")
+                buttonLabel
             })
+            .buttonStyle(.plain)
             .voltraModifiers(component)
         } else {
             // Fallback to callback if activityId or componentId is missing
             Button(action: {
                 voltraEnvironment.callback(component)
             }, label: {
-                Text(params?.title ?? "Button")
+                buttonLabel
             })
+            .buttonStyle(.plain)
             .voltraModifiers(component)
         }
     }

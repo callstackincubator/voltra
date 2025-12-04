@@ -4,7 +4,4 @@
 
 import type { VoltraBaseProps } from '../baseProps'
 
-export type ButtonProps = VoltraBaseProps & {
-  /** Text content for the button */
-  title?: string
-}
+export type ButtonProps = VoltraBaseProps
