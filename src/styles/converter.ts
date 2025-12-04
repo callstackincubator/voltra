@@ -354,10 +354,11 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
   return modifiers
 }
 
-const TEXT_STYLE_KEYS: (keyof Pick<VoltraTextStyle, 'fontSize' | 'fontWeight' | 'color'>)[] = [
+const TEXT_STYLE_KEYS: (keyof Pick<VoltraTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing'>)[] = [
   'fontSize',
   'fontWeight',
   'color',
+  'letterSpacing',
 ]
 
 export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraModifier[] => {
@@ -369,6 +370,7 @@ export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraMod
   let fontSize: number | undefined = undefined
   let fontWeight: string | undefined = undefined
   let color: ColorValue | undefined = undefined
+  let letterSpacing: number | undefined = undefined
 
   for (const key of TEXT_STYLE_KEYS) {
     const value = flattenedStyle[key]
@@ -390,6 +392,12 @@ export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraMod
       case 'color':
         if (value !== undefined) {
           color = value as ColorValue
+        }
+        break
+
+      case 'letterSpacing':
+        if (typeof value === 'number') {
+          letterSpacing = value
         }
         break
     }
@@ -426,6 +434,14 @@ export const getModifiersFromTextStyle = (style: VoltraTextStyleProp): VoltraMod
     modifiers.unshift({
       name: 'foregroundStyle',
       args: { color: colorToString(color) },
+    })
+  }
+
+  // 3. Kerning (letter spacing) - should be applied early to affect text rendering
+  if (letterSpacing !== undefined) {
+    modifiers.unshift({
+      name: 'kerning',
+      args: { value: letterSpacing },
     })
   }
 

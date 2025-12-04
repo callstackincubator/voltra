@@ -30,7 +30,7 @@ export type VoltraViewStyle = Pick<
   | 'overflow'
 >
 
-export type VoltraTextStyle = VoltraViewStyle & Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color'>
+export type VoltraTextStyle = VoltraViewStyle & Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing'>
 
 export type VoltraStyleProp = StyleProp<VoltraViewStyle>
 export type VoltraTextStyleProp = StyleProp<VoltraTextStyle>

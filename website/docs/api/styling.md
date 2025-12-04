@@ -39,6 +39,7 @@ The following React Native style properties are supported:
 - `fontSize` - Font size (maps to `font` modifier)
 - `fontWeight` - Font weight (e.g., `'600'`, `'bold'`, `'regular'`)
 - `color` - Text color (maps to `foregroundStyle` modifier)
+- `letterSpacing` - Spacing between characters (maps to `kerning` modifier)
 
 **Effects:**
 
@@ -52,7 +53,7 @@ Properties not listed above are ignored during rendering. This includes common R
 - `gap` and spacing properties
 - Percentage-based widths and heights
 - `position` and absolute positioning
-- Most text styling properties beyond `fontSize`, `fontWeight`, and `color`
+- Most text styling properties beyond `fontSize`, `fontWeight`, `color`, and `letterSpacing`
 
 If you need styling capabilities beyond what the `style` prop supports, use modifiers instead.
 
