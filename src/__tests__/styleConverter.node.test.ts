@@ -83,4 +83,74 @@ describe('Style to modifiers conversion', () => {
       })
     })
   })
+
+  describe('Modifier order', () => {
+    it('orders padding before background when both are present', () => {
+      const style = {
+        padding: 16,
+        backgroundColor: '#FF0000',
+      }
+
+      const modifiers = getModifiersFromStyle(style)
+
+      expect(modifiers).toHaveLength(2)
+      expect(modifiers[0].name).toBe('padding')
+      expect(modifiers[1].name).toBe('background')
+    })
+
+    it('orders padding → background → cornerRadius when borderRadius is present without border', () => {
+      const style = {
+        padding: 16,
+        backgroundColor: '#FF0000',
+        borderRadius: 20,
+      }
+
+      const modifiers = getModifiersFromStyle(style)
+
+      expect(modifiers).toHaveLength(3)
+      expect(modifiers[0].name).toBe('padding')
+      expect(modifiers[1].name).toBe('background')
+      expect(modifiers[2].name).toBe('cornerRadius')
+      expect(modifiers[2].args).toEqual({ radius: 20 })
+    })
+
+    it('orders padding → background → border when borderRadius is present with border', () => {
+      const style = {
+        padding: 16,
+        backgroundColor: '#FF0000',
+        borderRadius: 20,
+        borderWidth: 2,
+        borderColor: '#000000',
+      }
+
+      const modifiers = getModifiersFromStyle(style)
+
+      expect(modifiers).toHaveLength(3)
+      expect(modifiers[0].name).toBe('padding')
+      expect(modifiers[1].name).toBe('background')
+      expect(modifiers[2].name).toBe('border')
+      expect(modifiers[2].args).toEqual({
+        width: 2,
+        color: '#000000',
+        cornerRadius: 20,
+      })
+    })
+
+    it('treats borderWidth 0 as no border and uses cornerRadius instead', () => {
+      const style = {
+        padding: 16,
+        backgroundColor: '#FF0000',
+        borderRadius: 20,
+        borderWidth: 0,
+      }
+
+      const modifiers = getModifiersFromStyle(style)
+
+      expect(modifiers).toHaveLength(3)
+      expect(modifiers[0].name).toBe('padding')
+      expect(modifiers[1].name).toBe('background')
+      expect(modifiers[2].name).toBe('cornerRadius')
+      expect(modifiers[2].args).toEqual({ radius: 20 })
+    })
+  })
 })

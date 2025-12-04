@@ -41,6 +41,7 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
   const paddingProps: Record<string, number> = {}
   const borderProps: Record<string, any> = {}
   const shadowProps: Record<string, any> = {}
+  let backgroundColor: ColorValue | undefined = undefined
 
   // Process all supported properties
 
@@ -94,13 +95,10 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
         }
         break
 
-      // Style properties
+      // Style properties - collect backgroundColor to add after padding
       case 'backgroundColor':
         if (value !== undefined) {
-          modifiers.push({
-            name: 'background',
-            args: { color: colorToString(value as ColorValue) },
-          })
+          backgroundColor = value as ColorValue
         }
         break
 
@@ -114,7 +112,7 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
         break
 
       case 'borderRadius':
-        // Will handle in border grouping
+        // Will handle in border grouping or as separate cornerRadius
         borderProps.borderRadius = value
         break
 
@@ -160,9 +158,10 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
     }
   }
 
-  // Process grouped properties
+  // Process grouped properties in correct order for SwiftUI
+  // Order matters: padding → background → cornerRadius → border → shadow
 
-  // Create padding modifier
+  // 1. Create padding modifier (must come first so background fills the padded area)
   if (Object.keys(paddingProps).length > 0) {
     const paddingArgs: Record<string, number> = {}
 
@@ -206,15 +205,38 @@ export const getModifiersFromStyle = (style: VoltraStyleProp): VoltraModifier[] 
     }
   }
 
-  // Create border modifier
-  if (Object.keys(borderProps).length > 0) {
+  // 2. Add background modifier (after padding so it fills the padded area)
+  if (backgroundColor !== undefined) {
+    modifiers.push({
+      name: 'background',
+      args: { color: colorToString(backgroundColor) },
+    })
+  }
+
+  // 3. Handle borderRadius - add as cornerRadius if no border, otherwise include in border modifier
+  const hasBorderWidth =
+    borderProps.borderWidth !== undefined && typeof borderProps.borderWidth === 'number' && borderProps.borderWidth > 0
+  const hasBorderColor = borderProps.borderColor !== undefined
+  const hasBorder = hasBorderWidth || hasBorderColor
+  if (borderProps.borderRadius !== undefined && typeof borderProps.borderRadius === 'number') {
+    if (!hasBorder) {
+      // Add as separate cornerRadius modifier when there's no border
+      modifiers.push({
+        name: 'cornerRadius',
+        args: { radius: borderProps.borderRadius },
+      })
+    }
+  }
+
+  // 4. Create border modifier (includes borderRadius if border exists)
+  if (hasBorder) {
     const borderArgs: Record<string, any> = {}
 
-    if (borderProps.borderWidth !== undefined && typeof borderProps.borderWidth === 'number') {
+    if (hasBorderWidth) {
       borderArgs.width = borderProps.borderWidth
     }
 
-    if (borderProps.borderColor !== undefined) {
+    if (hasBorderColor) {
       borderArgs.color = colorToString(borderProps.borderColor as ColorValue)
     }
 
