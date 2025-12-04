@@ -8,7 +8,7 @@ import { Card } from '~/components/Card'
 import { NotificationsCard } from '~/components/NotificationsCard'
 import BasicLiveActivity from '~/screens/live-activities/BasicLiveActivity'
 import LiquidGlassLiveActivity from '~/screens/live-activities/LiquidGlassLiveActivity'
-import StylesheetLiveActivity from '~/screens/live-activities/StylesheetLiveActivity'
+import MusicPlayerLiveActivity from '~/screens/live-activities/MusicPlayerLiveActivity'
 
 import { LiveActivityExampleComponentRef } from './types'
 
@@ -20,8 +20,8 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
     description: 'Inline JSX styles with core stacks, labels, and buttons.',
   },
   stylesheet: {
-    title: 'With StyleSheet',
-    description: 'Uses StyleSheet.create to share styles across components.',
+    title: 'Music Player',
+    description: 'Provides info about current song and allows interaction with playback controls.',
   },
   glass: {
     title: 'Liquid Glass',
@@ -139,7 +139,7 @@ export default function LiveActivitiesScreen() {
         />
 
         <BasicLiveActivity ref={basicRef} onIsActiveChange={handleBasicStatusChange} />
-        <StylesheetLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
+        <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
         <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
       </ScrollView>
     </View>
