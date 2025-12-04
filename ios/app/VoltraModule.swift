@@ -39,8 +39,17 @@ public class VoltraModule: Module {
     // UI component events forwarded from the extension + push/state events
     Events("interaction", "activityTokenReceived", "activityPushToStartTokenReceived", "stateChange")
 
+    OnStartObserving {
+        VoltraEventBus.shared.subscribe { [weak self] eventType, eventData in
+            self?.sendEvent(eventType, eventData)
+        }
+    }
+
+    OnStopObserving {
+      VoltraEventBus.shared.unsubscribe()
+    }
+
     OnCreate {
-      startEventForwarding()
       // Observe ActivityKit streams for tokens and state changes
       if pushNotificationsEnabled {
         observePushToStartToken()
@@ -277,50 +286,15 @@ public class VoltraModule: Module {
       return Activity<VoltraAttributes>.activities.map { $0.id }
     }
   }
+
 }
 
-// MARK: - App Groups Event Forwarding
+// MARK: - Static Widget JSON store
 
 private extension VoltraModule {
   func appGroupIdentifier() -> String? {
     Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
   }
-
-  func startEventForwarding() {
-    guard let group = appGroupIdentifier() else { return }
-
-    // Simple polling loop; can be replaced with Darwin notifications later
-    Task.detached(priority: .background) { [weak self] in
-      while true {
-        await self?.drainAndEmitEvents(groupIdentifier: group)
-        try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5s
-      }
-    }
-  }
-
-  @MainActor
-  func drainAndEmitEvents(groupIdentifier: String) {
-    guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
-
-    var queue = defaults.array(forKey: "Voltra_EventsQueue") as? [String] ?? []
-    if queue.isEmpty { return }
-
-    var remaining: [String] = []
-    for item in queue {
-      if let data = item.data(using: .utf8),
-         let any = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-          print("Sending event: \(any)")
-        sendEvent("interaction", any)
-      } else {
-        remaining.append(item)
-      }
-    }
-
-    defaults.set(remaining, forKey: "Voltra_EventsQueue")
-    defaults.synchronize()
-  }
-
-  // MARK: - Static Widget JSON store
 
   @discardableResult
   func writeWidgetJsonString(_ json: String) -> Bool {
@@ -406,7 +380,6 @@ private extension VoltraModule {
         let token = data.reduce("") { $0 + String(format: "%02x", $1) }
         sendEvent("activityPushToStartTokenReceived", [
           "source": "pushToStartToken",
-          "timestamp": Date().timeIntervalSince1970,
           "activityPushToStartToken": token,
         ])
       }
