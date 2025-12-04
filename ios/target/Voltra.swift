@@ -14,14 +14,14 @@ public struct Voltra: View {
     public var callback: Handler? = { _ in }
 
     /// Activity ID for Live Activity interactions
-    public var activityId: String?
+    public var activityId: String
 
     /// Initialize Voltra
     ///
     /// - Parameter components: Pre-parsed array of VoltraComponent
     /// - Parameter callback: Handler for component interactions
     /// - Parameter activityId: Activity ID for Live Activity interactions
-    public init(components: [VoltraComponent], callback: Handler?, activityId: String? = nil) {
+    public init(components: [VoltraComponent], callback: Handler?, activityId: String) {
         self.components = components
         self.callback = callback
         self.activityId = activityId
@@ -42,9 +42,9 @@ public struct Voltra: View {
 struct InternalVoltra: View {
     public var callback: (VoltraComponent) -> Void
     public var layout: [VoltraComponent]
-    public var activityId: String?
+    public var activityId: String
 
-    init(layout: [VoltraComponent], callback: @escaping (VoltraComponent) -> Void, activityId: String? = nil) {
+    init(layout: [VoltraComponent], callback: @escaping (VoltraComponent) -> Void, activityId: String) {
         self.callback = callback
         self.layout = layout
         self.activityId = activityId
@@ -198,7 +198,7 @@ struct InternalVoltra: View {
 }
 
 private struct InternalVoltraKey: EnvironmentKey {
-    static let defaultValue: InternalVoltra = InternalVoltra(layout: [], callback: { _ in }, activityId: nil)
+    static let defaultValue: InternalVoltra = InternalVoltra(layout: [], callback: { _ in }, activityId: "")
 }
 
 extension EnvironmentValues {

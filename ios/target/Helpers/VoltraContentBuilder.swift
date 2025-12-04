@@ -2,7 +2,7 @@ import SwiftUI
 import WidgetKit
 
 struct VoltraContentBuilder {
-    static func build(components: [VoltraComponent], source: String, activityId: String? = nil) -> AnyView {
+    static func build(components: [VoltraComponent], source: String, activityId: String) -> AnyView {
         // Detect whether any node in the payload applies a glassEffect ordered modifier.
         let usesGlass: Bool = {
             func hasGlass(_ node: VoltraComponent) -> Bool {

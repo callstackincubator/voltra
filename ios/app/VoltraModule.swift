@@ -310,9 +310,7 @@ private extension VoltraModule {
       if let data = item.data(using: .utf8),
          let any = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
           print("Sending event: \(any)")
-        sendEvent("interaction", [
-          "payload": any,
-        ])
+        sendEvent("interaction", any)
       } else {
         remaining.append(item)
       }
@@ -407,6 +405,8 @@ private extension VoltraModule {
       for await data in Activity<VoltraAttributes>.pushToStartTokenUpdates {
         let token = data.reduce("") { $0 + String(format: "%02x", $1) }
         sendEvent("activityPushToStartTokenReceived", [
+          "source": "pushToStartToken",
+          "timestamp": Date().timeIntervalSince1970,
           "activityPushToStartToken": token,
         ])
       }
@@ -427,6 +427,8 @@ private extension VoltraModule {
         if case .active = activityState {
           // Emit an immediate event so JS can learn about newly-active activities (e.g., push-to-start)
           sendEvent("stateChange", [
+            "source": activity.id,
+            "timestamp": Date().timeIntervalSince1970,
             "activityID": activity.id,
             "activityName": activity.attributes.name,
             "activityState": String(describing: activityState),
@@ -436,6 +438,8 @@ private extension VoltraModule {
           Task {
             for await state in activity.activityStateUpdates {
               sendEvent("stateChange", [
+                "source": activity.id,
+                "timestamp": Date().timeIntervalSince1970,
                 "activityID": activity.id,
                 "activityName": activity.attributes.name,
                 "activityState": String(describing: state),
@@ -449,6 +453,8 @@ private extension VoltraModule {
               for await pushToken in activity.pushTokenUpdates {
                 let pushTokenString = pushToken.reduce("") { $0 + String(format: "%02x", $1) }
                 sendEvent("activityTokenReceived", [
+                  "source": activity.id,
+                  "timestamp": Date().timeIntervalSince1970,
                   "activityID": activity.id,
                   "activityName": activity.attributes.name,
                   "activityPushToken": pushTokenString,

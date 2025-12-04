@@ -11,6 +11,14 @@ public struct DynamicButton: View {
         self.component = component
     }
 
+    private var activityId: String {
+        voltraEnvironment.activityId
+    }
+    
+    private var componentId: String {
+        component.id!
+    }
+    
     @ViewBuilder
     private var buttonLabel: some View {
         if let children = component.children {
@@ -28,22 +36,10 @@ public struct DynamicButton: View {
     }
     
     public var body: some View {
-        if let activityId = voltraEnvironment.activityId,
-           let componentId = component.id {
-            Button(intent: VoltraInteractionIntent(activityId: activityId, componentId: componentId), label: {
-                buttonLabel
-            })
-            .buttonStyle(.plain)
-            .voltraModifiers(component)
-        } else {
-            // Fallback to callback if activityId or componentId is missing
-            Button(action: {
-                voltraEnvironment.callback(component)
-            }, label: {
-                buttonLabel
-            })
-            .buttonStyle(.plain)
-            .voltraModifiers(component)
-        }
+        Button(intent: VoltraInteractionIntent(activityId: activityId, componentId: componentId), label: {
+            buttonLabel
+        })
+        .buttonStyle(.plain)
+        .voltraModifiers(component)
     }
 }

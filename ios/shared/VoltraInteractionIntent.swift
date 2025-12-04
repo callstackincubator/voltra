@@ -29,7 +29,7 @@ public struct VoltraInteractionIntent: LiveActivityIntent {
         print("User interacted with component: \(componentId)")
         
         VoltraEventLogger.writeEvent([
-            "name": "voltra_event",
+            "type": "interaction",
             "source": activityId,
             "timestamp": Date().timeIntervalSince1970,
             "identifier": componentId,

@@ -5,24 +5,34 @@ export type EventSubscription = {
   remove: () => void
 }
 
+export type BasicVoltraEvent = {
+  source: string
+  timestamp: number
+}
+
 export type VoltraActivityState = 'active' | 'dismissed' | 'pending' | 'stale' | 'ended' | string
-export type VoltraActivityTokenReceivedEvent = {
+export type VoltraActivityTokenReceivedEvent = BasicVoltraEvent & {
+  type: 'activityTokenReceived'
   activityID: string
   activityName: string
   activityPushToken: string
 }
-export type VoltraActivityPushToStartTokenReceivedEvent = {
+export type VoltraActivityPushToStartTokenReceivedEvent = BasicVoltraEvent & {
+  type: 'activityPushToStartTokenReceived'
   activityPushToStartToken: string
 }
-export type VoltraActivityUpdateEvent = {
+export type VoltraActivityUpdateEvent = BasicVoltraEvent & {
+  type: 'stateChange'
   activityID: string
   activityName: string
   activityState: VoltraActivityState
 }
 
-export type VoltraInteractionEvent = {
-  identifier?: string
-  componentType: string
+export type VoltraInteractionEvent = BasicVoltraEvent & {
+  type: 'interaction'
+  identifier: string
+  componentId: string
+  payload: string
 }
 
 const noopSubscription: EventSubscription = {
