@@ -9,10 +9,16 @@ export type VoltraNodeJson = VoltraElementJson | VoltraElementJson[] | string
 
 export type VoltraIslandVariants = {
   minimal?: VoltraNodeJson
-  compact?: VoltraNodeJson
-  compactLeading?: VoltraNodeJson
-  compactTrailing?: VoltraNodeJson
-  expanded?: VoltraNodeJson
+  compact?: {
+    leading?: VoltraNodeJson
+    trailing?: VoltraNodeJson
+  }
+  expanded?: {
+    center?: VoltraNodeJson
+    leading?: VoltraNodeJson
+    trailing?: VoltraNodeJson
+    bottom?: VoltraNodeJson
+  }
 }
 
 export type VoltraVariantsJson = {

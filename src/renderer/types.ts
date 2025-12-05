@@ -5,10 +5,16 @@ import { VoltraJson, VoltraNodeJson } from '../types'
 export type VoltraVariants = {
   lockScreen?: ReactNode
   island?: {
-    expanded?: ReactNode
-    compact?: ReactNode
-    compactLeading?: ReactNode
-    compactTrailing?: ReactNode
+    expanded?: {
+      center?: ReactNode
+      leading?: ReactNode
+      trailing?: ReactNode
+      bottom?: ReactNode
+    }
+    compact?: {
+      leading?: ReactNode
+      trailing?: ReactNode
+    }
     minimal?: ReactNode
   }
 }

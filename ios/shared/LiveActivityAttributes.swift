@@ -44,7 +44,7 @@ public struct VoltraAttributes: ActivityAttributes {
         return regions
       }
 
-      // Extract components for each region with fallbacks
+      // Extract components for each region
       for region in VoltraRegion.allCases {
         if let jsonString = selectJsonString(from: dict, region: region),
            let components = parseComponents(from: jsonString) {
@@ -61,52 +61,35 @@ public struct VoltraAttributes: ActivityAttributes {
     }
 
     private static func selectJsonString(from dict: [String: Any], region: VoltraRegion) -> String? {
-      func tryPaths(_ paths: [[String]]) -> String? {
-        for path in paths {
-          if let fragment = extract(dict, path: path),
-             let arrayString = fragmentToArrayString(fragment) {
-            return arrayString
-          }
+      func tryPath(_ path: [String]) -> String? {
+        if let fragment = extract(dict, path: path),
+           let arrayString = fragmentToArrayString(fragment) {
+          return arrayString
         }
         return nil
       }
 
-      let lockScreenPath: [String] = ["lockScreen"]
-      let expandedUnified: [String] = ["island", "expanded"]
-      let compactUnified: [String] = ["island", "compact"]
-      let compactLeadingUnified: [String] = ["island", "compactLeading"]
-      let compactTrailingUnified: [String] = ["island", "compactTrailing"]
-      let minimalUnified: [String] = ["island", "minimal"]
-
-      var selected: String? = {
-        switch region {
-        case .lockScreen:
-          return tryPaths([lockScreenPath, expandedUnified])
-        case .islandExpandedCenter:
-          return tryPaths([expandedUnified, lockScreenPath])
-        case .islandExpandedLeading:
-          return nil
-        case .islandExpandedTrailing:
-          return nil
-        case .islandExpandedBottom:
-          return nil
-        case .islandCompactLeading:
-          return tryPaths([compactLeadingUnified, compactUnified, minimalUnified, expandedUnified, lockScreenPath])
-        case .islandCompactTrailing:
-          return tryPaths([compactTrailingUnified, minimalUnified]) ?? "[]"
-        case .islandMinimal:
-          return tryPaths([minimalUnified, compactUnified, expandedUnified, lockScreenPath])
-        }
-      }()
-
-      if selected != nil, region == .islandExpandedCenter {
-        if let data = selected!.data(using: .utf8),
-           let arr = try? JSONSerialization.jsonObject(with: data) as? [Any], arr.isEmpty {
-          selected = tryPaths([lockScreenPath])
-        }
+      let path: [String]
+      switch region {
+      case .lockScreen:
+        path = ["lockScreen"]
+      case .islandExpandedCenter:
+        path = ["island", "expanded", "center"]
+      case .islandExpandedLeading:
+        path = ["island", "expanded", "leading"]
+      case .islandExpandedTrailing:
+        path = ["island", "expanded", "trailing"]
+      case .islandExpandedBottom:
+        path = ["island", "expanded", "bottom"]
+      case .islandCompactLeading:
+        path = ["island", "compact", "leading"]
+      case .islandCompactTrailing:
+        path = ["island", "compact", "trailing"]
+      case .islandMinimal:
+        path = ["island", "minimal"]
       }
 
-      return selected
+      return tryPath(path)
     }
 
     private static func extract(_ root: [String: Any], path: [String]) -> Any? {

@@ -305,19 +305,35 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
     const islandVariants: VoltraVariantsJson['island'] = {}
 
     if (variants.island.expanded) {
-      islandVariants.expanded = renderCache.getOrRender(variants.island.expanded)
+      const islandExpanded: NonNullable<VoltraVariantsJson['island']>['expanded'] = {}
+
+      if (variants.island.expanded.center) {
+        islandExpanded.center = renderCache.getOrRender(variants.island.expanded.center)
+      }
+      if (variants.island.expanded.leading) {
+        islandExpanded.leading = renderCache.getOrRender(variants.island.expanded.leading)
+      }
+      if (variants.island.expanded.trailing) {
+        islandExpanded.trailing = renderCache.getOrRender(variants.island.expanded.trailing)
+      }
+      if (variants.island.expanded.bottom) {
+        islandExpanded.bottom = renderCache.getOrRender(variants.island.expanded.bottom)
+      }
+
+      islandVariants.expanded = islandExpanded
     }
 
     if (variants.island.compact) {
-      islandVariants.compact = renderCache.getOrRender(variants.island.compact)
-    }
+      const islandCompact: NonNullable<VoltraVariantsJson['island']>['compact'] = {}
 
-    if (variants.island.compactLeading) {
-      islandVariants.compactLeading = renderCache.getOrRender(variants.island.compactLeading)
-    }
+      if (variants.island.compact.leading) {
+        islandCompact.leading = renderCache.getOrRender(variants.island.compact.leading)
+      }
+      if (variants.island.compact.trailing) {
+        islandCompact.trailing = renderCache.getOrRender(variants.island.compact.trailing)
+      }
 
-    if (variants.island.compactTrailing) {
-      islandVariants.compactTrailing = renderCache.getOrRender(variants.island.compactTrailing)
+      islandVariants.compact = islandCompact
     }
 
     if (variants.island.minimal) {
