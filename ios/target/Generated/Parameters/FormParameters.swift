@@ -1,5 +1,5 @@
 //
-//  ButtonParameters.swift
+//  FormParameters.swift
 
 //  AUTO-GENERATED from data/components.json
 //  DO NOT EDIT MANUALLY - Changes will be overwritten
@@ -7,8 +7,8 @@
 
 import Foundation
 
-/// Parameters for Button component
-/// Interactive button component
-public struct ButtonParameters: ComponentParameters {
+/// Parameters for Form component
+/// Form container
+public struct FormParameters: ComponentParameters {
 
 }

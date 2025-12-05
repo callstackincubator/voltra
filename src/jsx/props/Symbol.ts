@@ -24,4 +24,3 @@ export type SymbolProps = VoltraBaseProps & {
   /** JSON-encoded animation specification */
   animationSpec?: string
 }
-

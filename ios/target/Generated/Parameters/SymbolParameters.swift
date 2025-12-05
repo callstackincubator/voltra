@@ -37,4 +37,3 @@ public struct SymbolParameters: ComponentParameters {
     /// JSON-encoded animation specification
     public let animationSpec: String?
 }
-

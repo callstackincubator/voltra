@@ -30,11 +30,6 @@ const toSwiftType = (param: ComponentParameter): string => {
 const generateParameterStruct = (component: ComponentDefinition, version: string): string => {
   const params = Object.entries(component.parameters)
 
-  if (params.length === 0) {
-    // Skip components with no parameters
-    return ''
-  }
-
   const header = `//
 //  ${component.name}Parameters.swift
 
@@ -78,52 +73,6 @@ public protocol ComponentParameters: Codable, Hashable {}
 `
 }
 
-const generateComponentExtension = (components: ComponentDefinition[], version: string): string => {
-  const header = `//
-//  VoltraComponent+Parameters.swift
-//
-//  AUTO-GENERATED from data/components.json
-//  DO NOT EDIT MANUALLY - Changes will be overwritten
-//  Schema version: ${version}
-
-import Foundation
-
-extension VoltraComponent {
-    /// Generic type-safe parameter accessor
-    /// - Parameter type: The parameter struct type to decode
-    /// - Returns: Decoded parameters, or nil if decoding fails or no parameters exist
-    public func parameters<T: ComponentParameters>(_ type: T.Type) -> T? {
-        guard let raw = parametersRaw else { return nil }
-        do {
-            // Convert AnyCodable dictionary to Data
-            let dict = raw.mapValues { $0.toAny() }
-            let data = try JSONSerialization.data(withJSONObject: dict, options: [])
-            return try JSONDecoder().decode(T.self, from: data)
-        } catch {
-            return nil
-        }
-    }
-`
-
-  // Generate convenience accessors for each component with parameters
-  const accessors = components
-    .filter((c) => Object.keys(c.parameters).length > 0)
-    .map((component) => {
-      const varName = component.name.charAt(0).toLowerCase() + component.name.slice(1) + 'Parameters'
-      return `
-    /// Convenience accessor for ${component.name} parameters
-    public var ${varName}: ${component.name}Parameters? {
-        guard type == "${component.name}" else { return nil }
-        return parameters(${component.name}Parameters.self)
-    }`
-    })
-    .join('\n')
-
-  const footer = '\n}\n'
-
-  return header + accessors + footer
-}
-
 export const generateSwiftParameters = (data: ComponentsData): GeneratedFiles => {
   const files: GeneratedFiles = {}
 
@@ -132,16 +81,9 @@ export const generateSwiftParameters = (data: ComponentsData): GeneratedFiles =>
 
   // Generate parameter structs for each component
   for (const component of data.components) {
-    if (Object.keys(component.parameters).length > 0) {
-      const content = generateParameterStruct(component, data.version)
-      if (content) {
-        files[`${component.name}Parameters.swift`] = content
-      }
-    }
+    const content = generateParameterStruct(component, data.version)
+    files[`${component.name}Parameters.swift`] = content
   }
-
-  // Generate VoltraComponent extension
-  files['VoltraComponent+Parameters.swift'] = generateComponentExtension(data.components, data.version)
 
   // Generate marker file
   files['.generated'] = `This directory contains auto-generated Swift parameter files.

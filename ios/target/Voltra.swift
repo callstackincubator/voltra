@@ -1,5 +1,17 @@
 import SwiftUI
 
+/// Environment values needed by Voltra views
+struct VoltraEnvironment {
+    /// Build views for child components recursively
+    let buildView: ([VoltraComponent]) -> AnyView
+    
+    /// Callback for component state changes
+    let callback: (VoltraComponent) -> Void
+    
+    /// Activity ID for Live Activity interactions
+    let activityId: String
+}
+
 /// Voltra
 ///
 /// Voltra is a SwiftUI View that can be used to display an interface based on VoltraComponents.
@@ -40,18 +52,30 @@ public struct Voltra: View {
 }
 
 struct InternalVoltra: View {
-    public var callback: (VoltraComponent) -> Void
-    public var layout: [VoltraComponent]
-    public var activityId: String
+    let callback: (VoltraComponent) -> Void
+    let activityId: String
+    let layout: [VoltraComponent]  // Private, only for initial render
 
     init(layout: [VoltraComponent], callback: @escaping (VoltraComponent) -> Void, activityId: String) {
         self.callback = callback
-        self.layout = layout
         self.activityId = activityId
+        self.layout = layout
     }
 
     var body: some View {
         buildView(for: layout)
+            .environment(\.voltraEnvironment, createEnvironment())
+    }
+    
+    // Create the environment struct
+    private func createEnvironment() -> VoltraEnvironment {
+        VoltraEnvironment(
+            buildView: { components in
+                AnyView(self.buildView(for: components))
+            },
+            callback: callback,
+            activityId: activityId
+        )
     }
 
     /// Build a SwiftUI View based on the components
@@ -68,124 +92,94 @@ struct InternalVoltra: View {
             let component = item.component
             switch component.type {
             case "Button":
-                DynamicButton(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraButton(component)
 
             case "VStack":
-                DynamicVStack(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraVStack(component)
 
             case "HStack":
-                DynamicHStack(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraHStack(component)
 
             case "ZStack":
-                DynamicZStack(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraZStack(component)
 
             case "List":
-                DynamicList(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraList(component)
 
             case "ScrollView":
-                DynamicScrollView(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraScrollView(component)
 
             case "NavigationView":
-                DynamicNavigationView(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraNavigationView(component)
 
             case "Form":
-                DynamicForm(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraForm(component)
 
             case "Text":
-                DynamicText(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraText(component)
 
             case "Image":
-                DynamicImage(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraImage(component)
 
             case "Symbol":
-                DynamicSymbol(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraSymbol(component)
 
             case "Divider":
-                DynamicDivider(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraDivider(component)
 
             case "Spacer":
-                DynamicSpacer(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraSpacer(component)
 
             case "Label":
-                DynamicLabel(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraLabel(component)
 
             case "TextField":
-                DynamicTextField(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraTextField(component)
 
             case "SecureField":
-                DynamicSecureField(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraSecureField(component)
 
             case "TextEditor":
-                DynamicTextEditor(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraTextEditor(component)
 
             case "Toggle":
-                DynamicToggle(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraToggle(component)
 
             case "Gauge":
-                DynamicGauge(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraGauge(component)
 
             case "ProgressView":
-                DynamicProgressView(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraProgressView(component)
 
             case "Slider":
-                DynamicSlider(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraSlider(component)
 
             case "Timer":
-                DynamicTimer(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraTimer(component)
 
             case "GroupBox":
-                DynamicGroupBox(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraGroupBox(component)
 
             case "DisclosureGroup":
-                DynamicDisclosureGroup(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraDisclosureGroup(component)
 
             case "HSplitView":
-                DynamicHSplitView(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraHSplitView(component)
 
             case "VSplitView":
-                DynamicVSplitView(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraVSplitView(component)
 
             case "Picker":
-                DynamicPicker(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraPicker(component)
 
             case "LinearGradient":
-                DynamicLinearGradient(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraLinearGradient(component)
 
             case "GlassContainer":
-                DynamicGlassContainer(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraGlassContainer(component)
 
             case "GlassView":
-                DynamicGlassView(component)
-                    .environment(\.internalVoltraEnvironment, self)
+                VoltraGlassView(component)
 
             // NavigationSplitView
             // TabView
@@ -197,13 +191,17 @@ struct InternalVoltra: View {
     }
 }
 
-private struct InternalVoltraKey: EnvironmentKey {
-    static let defaultValue: InternalVoltra = InternalVoltra(layout: [], callback: { _ in }, activityId: "")
+private struct VoltraEnvironmentKey: EnvironmentKey {
+    static let defaultValue: VoltraEnvironment = VoltraEnvironment(
+        buildView: { _ in AnyView(EmptyView()) },
+        callback: { _ in },
+        activityId: ""
+    )
 }
 
 extension EnvironmentValues {
-    var internalVoltraEnvironment: InternalVoltra {
-        get { self[InternalVoltraKey.self] }
-        set { self[InternalVoltraKey.self] = newValue }
+    var voltraEnvironment: VoltraEnvironment {
+        get { self[VoltraEnvironmentKey.self] }
+        set { self[VoltraEnvironmentKey.self] = newValue }
     }
 }
