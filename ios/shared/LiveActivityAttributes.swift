@@ -100,7 +100,8 @@ public struct VoltraAttributes: ActivityAttributes {
         return string
       }
       if let dict = fragment as? [String: Any] {
-        guard let type = dict["t"] as? String, !type.isEmpty else { return nil }
+        // Component type is now a numeric ID, not a string
+        guard dict["t"] != nil else { return nil }
         if JSONSerialization.isValidJSONObject([dict]) {
           guard let data = try? JSONSerialization.data(withJSONObject: [dict]),
                 let string = String(data: data, encoding: .utf8) else { return nil }

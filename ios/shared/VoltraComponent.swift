@@ -169,7 +169,18 @@ public struct VoltraComponent: Codable {
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        type = try container.decode(String.self, forKey: .t)
+        
+        // Decode component type as Int (numeric ID) and convert to component name
+        let typeID = try container.decode(Int.self, forKey: .t)
+        guard let componentTypeID = ComponentTypeID(rawValue: typeID) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .t,
+                in: container,
+                debugDescription: "Invalid component type ID: \(typeID)"
+            )
+        }
+        type = componentTypeID.componentName
+        
         id = try container.decodeIfPresent(String.self, forKey: .i)
         state = try container.decodeIfPresent(AnyCodable.self, forKey: .s)
         

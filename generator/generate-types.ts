@@ -6,6 +6,7 @@ import { generateSwiftTypes } from './generators/swift'
 import { generateSwiftParameters } from './generators/swift-parameters'
 import { generateTypeScriptTypes } from './generators/typescript'
 import { generateTypeScriptJSX } from './generators/typescript-jsx'
+import { generateComponentIds } from './generators/component-ids'
 import type { ComponentsData, ModifiersData } from './types'
 import { validateComponentsSchema } from './validate-components'
 import { validateModifiersSchema } from './validate-schema'
@@ -15,9 +16,11 @@ const MODIFIERS_DATA_PATH = path.join(ROOT_DIR, 'data/modifiers.json')
 const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
 const TS_MODIFIERS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/modifiers')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
+const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
 const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/target/Generated')
 const SWIFT_MODIFIERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Modifiers')
 const SWIFT_PARAMETERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Parameters')
+const SWIFT_SHARED_OUTPUT_DIR = path.join(ROOT_DIR, 'ios/shared')
 
 const ensureDirectoryExists = (dir: string) => {
   if (!fs.existsSync(dir)) {
@@ -97,6 +100,23 @@ const main = () => {
   writeFiles(SWIFT_PARAMETERS_OUTPUT_DIR, swiftParameterFiles)
   console.log()
 
+  // Step 9: Generate component ID mappings
+  console.log('Step 10: Generating component ID mappings...')
+  const componentIdFiles = generateComponentIds(componentsData)
+  // Split files by destination
+  const tsComponentIdFiles: Record<string, string> = {}
+  const swiftComponentIdFiles: Record<string, string> = {}
+  for (const [filename, content] of Object.entries(componentIdFiles)) {
+    if (filename.endsWith('.ts')) {
+      tsComponentIdFiles[filename] = content
+    } else if (filename.endsWith('.swift')) {
+      swiftComponentIdFiles[filename] = content
+    }
+  }
+  writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsComponentIdFiles)
+  writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
+  console.log()
+
   console.log('✅ Generation complete!\n')
   console.log('Generated files:')
   console.log(`   TypeScript modifiers: ${Object.keys(tsModifierFiles).length} files in src/modifiers/`)
@@ -105,6 +125,7 @@ const main = () => {
   )
   console.log(`   Swift modifiers: ${Object.keys(swiftModifierFiles).length} files in ios/.../Generated/Modifiers/`)
   console.log(`   Swift parameters: ${Object.keys(swiftParameterFiles).length} files in ios/.../Generated/Parameters/`)
+  console.log(`   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files`)
   console.log()
   console.log('Next steps:')
   console.log('   1. Review generated files')

@@ -1,5 +1,5 @@
 export type VoltraElementJson = {
-  t: string
+  t: number
   i?: string
   c?: VoltraNodeJson
   p: Record<string, unknown>

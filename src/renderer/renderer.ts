@@ -24,7 +24,8 @@ import {
 } from 'react-is'
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent'
-import { VoltraElementJson, VoltraJson, VoltraNodeJson, VoltraVariantsJson } from '../types'
+import { getComponentId } from '../payload/component-ids'
+import { VoltraElementJson, VoltraJson, VoltraNodeJson } from '../types'
 import { ContextRegistry, getContextRegistry } from './context-registry'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher'
 import { getRenderCache } from './render-cache'
@@ -249,7 +250,7 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
         const transformedProps = transformProps(cleanParameters)
 
         const voltraHostElement: VoltraElementJson = {
-          t: child.type,
+          t: getComponentId(child.type),
           ...(id ? { i: id } : {}),
           c: renderedChildren,
           p: transformedProps,
@@ -267,7 +268,7 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
       const transformedProps = transformProps(cleanParameters)
 
       const voltraHostElement: VoltraElementJson = {
-        t: child.type,
+        t: getComponentId(child.type),
         ...(id ? { i: id } : {}),
         c: renderedChildren,
         p: transformedProps,

@@ -240,13 +240,24 @@ fileprivate func sanitizeWidgetJson(_ data: Data) -> Data {
       return arr.compactMap { sanitizeNode($0) }
     }
     if var dict = node as? [String: Any] {
-      let type = (dict["t"] as? String) ?? (dict["type"] as? String) ?? ""
+      // Component type is now a numeric ID - convert to component name
+      var type: String = ""
+      if let typeID = dict["t"] as? Int, let componentTypeID = ComponentTypeID(rawValue: typeID) {
+        type = componentTypeID.componentName
+      } else if let typeString = dict["t"] as? String {
+        type = typeString
+      } else if let typeString = dict["type"] as? String {
+        type = typeString
+      }
+      
       let allowedContainers: Set<String> = ["VStack", "HStack", "ZStack", "ScrollView", "List", "Form", "GroupBox", "DisclosureGroup"]
       let allowedLeaves: Set<String> = ["Text", "Label", "Image", "Divider", "Spacer"]
 
       switch type {
       case "Button":
-        var new: [String: Any] = ["t": "Text"]
+        // Convert component name back to ID for serialization
+        let textID = ComponentTypeID(componentName: "Text")?.rawValue ?? 0
+        var new: [String: Any] = ["t": textID]
         if let t = dict["title"] as? String { new["title"] = t }
         if let id = dict["identifier"] as? String { new["identifier"] = id }
         if let mods = dict["modifiers"] { new["modifiers"] = mods }
@@ -256,9 +267,17 @@ fileprivate func sanitizeWidgetJson(_ data: Data) -> Data {
         return nil
 
       case _ where allowedLeaves.contains(type):
+        // Ensure t field is numeric ID if it was converted from string
+        if dict["t"] as? String != nil, let componentTypeID = ComponentTypeID(componentName: type) {
+          dict["t"] = componentTypeID.rawValue
+        }
         return dict
 
       case _ where allowedContainers.contains(type):
+        // Ensure t field is numeric ID if it was converted from string
+        if dict["t"] as? String != nil, let componentTypeID = ComponentTypeID(componentName: type) {
+          dict["t"] = componentTypeID.rawValue
+        }
         if let children = (dict["c"] as? [Any]) ?? (dict["children"] as? [Any]) {
           dict["c"] = children.compactMap { sanitizeNode($0) }
           dict.removeValue(forKey: "children")
@@ -303,7 +322,8 @@ fileprivate func fragmentToArrayData(_ fragment: Any) -> Data? {
     return try? JSONSerialization.data(withJSONObject: arr)
   }
   if let dict = fragment as? [String: Any] {
-    guard let type = (dict["t"] as? String) ?? (dict["type"] as? String), !type.isEmpty else { return nil }
+    // Component type is now a numeric ID, not a string - just check it exists
+    guard dict["t"] != nil else { return nil }
     if JSONSerialization.isValidJSONObject([dict]) {
       return try? JSONSerialization.data(withJSONObject: [dict])
     }
