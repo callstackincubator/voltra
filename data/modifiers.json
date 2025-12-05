@@ -105,6 +105,24 @@
       }
     },
     {
+      "name": "position",
+      "category": "layout",
+      "description": "Positions the view at absolute coordinates. Note: SwiftUI positions the center of the view at (x, y), not the top-left corner like React Native.",
+      "swiftAvailability": "iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0",
+      "args": {
+        "x": {
+          "type": "number",
+          "optional": false,
+          "description": "X coordinate (horizontal position)"
+        },
+        "y": {
+          "type": "number",
+          "optional": false,
+          "description": "Y coordinate (vertical position)"
+        }
+      }
+    },
+    {
       "name": "foregroundStyle",
       "category": "style",
       "description": "Sets the foreground color of the view",

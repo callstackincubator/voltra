@@ -62,7 +62,22 @@ export type OffsetModifier = Modifier<
     y?: number
   }
 >
+
+/**
+ * Positions the view at absolute coordinates. Note: SwiftUI positions the center of the view at (x, y), not the top-left corner like React Native.
+ * @availability iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0
+ */
+export type PositionModifier = Modifier<
+  'position',
+  {
+    /** X coordinate (horizontal position) */
+    x: number
+    /** Y coordinate (vertical position) */
+    y: number
+  }
+>
 export type LayoutModifiers =
   | FrameModifier
   | PaddingModifier
   | OffsetModifier
+  | PositionModifier

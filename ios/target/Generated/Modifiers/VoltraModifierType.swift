@@ -13,6 +13,7 @@ public enum VoltraModifierType: String, Codable, CaseIterable {
     case frame
     case padding
     case offset
+    case position
     case foregroundStyle
     case background
     case backgroundStyle
@@ -41,7 +42,7 @@ public enum VoltraModifierType: String, Codable, CaseIterable {
     /// Modifier category for organization and grouping
     public var category: ModifierCategory {
         switch self {
-        case .frame, .padding, .offset:
+        case .frame, .padding, .offset, .position:
             return .layout
         case .foregroundStyle, .background, .backgroundStyle, .tint, .opacity, .cornerRadius:
             return .style

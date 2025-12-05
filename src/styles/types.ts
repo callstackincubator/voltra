@@ -31,6 +31,11 @@ export type VoltraViewStyle = Pick<
   | 'flex'
   | 'flexGrow'
   | 'flexShrink'
+  | 'position'
+  | 'top'
+  | 'left'
+  | 'right'
+  | 'bottom'
 >
 
 export type VoltraTextStyle = VoltraViewStyle & Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant'>

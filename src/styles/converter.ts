@@ -41,6 +41,11 @@ const SUPPORTED_KEYS: (keyof VoltraViewStyle)[] = [
   'flex',
   'flexGrow',
   'flexShrink',
+  'position',
+  'top',
+  'left',
+  'right',
+  'bottom',
 ]
 
 export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModifier[] => {
@@ -208,6 +213,15 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
         }
         break
 
+      // Position properties - collect for processing after all properties
+      case 'position':
+      case 'top':
+      case 'left':
+      case 'right':
+      case 'bottom':
+        // Will be processed after all properties are collected
+        break
+
       // Ignore unsupported properties
       default:
         break
@@ -266,6 +280,56 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
           minHeight: 0,
         },
       })
+    }
+  }
+
+  // Handle absolute and relative positioning
+  const positionValue = flattenedStyle.position
+  if (positionValue === 'absolute' || positionValue === 'relative') {
+    const top = flattenedStyle.top as number | undefined
+    const left = flattenedStyle.left as number | undefined
+
+    if (positionValue === 'absolute') {
+      // Convert top/left to position modifier (center-based)
+      // Note: SwiftUI positions center, not top-left, so user needs to account for view size
+      if (top !== undefined && left !== undefined) {
+        modifiers.push({
+          name: 'position',
+          args: {
+            x: left,
+            y: top,
+          },
+        })
+      }
+      // Note: right/bottom not supported in this simple implementation
+    } else if (positionValue === 'relative') {
+      // Convert top/left to offset modifier (relative positioning)
+      // offset already exists, so check if we need to add or update it
+      const existingOffset = modifiers.find(
+        (m) => m.name === 'offset'
+      ) as { name: string; args: { x?: number; y?: number } } | undefined
+
+      if (existingOffset) {
+        // Update existing offset
+        if (left !== undefined) {
+          existingOffset.args.x = (existingOffset.args.x ?? 0) + left
+        }
+        if (top !== undefined) {
+          existingOffset.args.y = (existingOffset.args.y ?? 0) + top
+        }
+      } else {
+        // Create new offset modifier
+        const offsetArgs: { x?: number; y?: number } = {}
+        if (left !== undefined) offsetArgs.x = left
+        if (top !== undefined) offsetArgs.y = top
+
+        if (Object.keys(offsetArgs).length > 0) {
+          modifiers.push({
+            name: 'offset',
+            args: offsetArgs,
+          })
+        }
+      }
     }
   }
 

@@ -228,6 +228,14 @@ extension View {
                     tempView = AnyView(tempView.offset(x: CGFloat(x), y: CGFloat(y)))
                 }
 
+            case "position":
+                if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *) {
+                    if let x = modifier.args?["x"]?.toDouble(),
+                       let y = modifier.args?["y"]?.toDouble() {
+                        tempView = AnyView(tempView.position(x: CGFloat(x), y: CGFloat(y)))
+                    }
+                }
+
             case "scaleEffect":
                 if #available(iOS 13.0, *) {
                     if let value = modifier.args?["value"]?.toDouble() ?? modifier.args?["value"]?.toInt().map(Double.init) {

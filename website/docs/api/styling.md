@@ -21,6 +21,10 @@ The following React Native style properties are supported:
 - `paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight` - Individual edge padding
 - `paddingHorizontal`, `paddingVertical` - Horizontal and vertical padding
 - `margin`, `marginTop`, `marginBottom`, `marginLeft`, `marginRight`, `marginHorizontal`, `marginVertical` - All margin properties are mapped to padding in SwiftUI
+- `position: 'absolute'` - Enables absolute positioning (requires `top` and `left` properties). Positions the view at absolute coordinates.
+- `position: 'relative'` - Enables relative positioning (uses `top` and `left` properties). Offsets the view from its natural position without affecting layout flow.
+- `top` - Top offset for positioned elements
+- `left` - Left offset for positioned elements
 
 **Style:**
 
@@ -58,8 +62,15 @@ Properties not listed above are ignored during rendering. This includes common R
 - Most flexbox layout properties (`flexDirection`, `justifyContent`, `alignItems`, etc.) - Note: `flex`, `flexGrow`, and `flexShrink` are supported
 - `gap` and spacing properties
 - Percentage-based widths and heights
-- `position` and absolute positioning
+- `right` and `bottom` positioning properties (only `top` and `left` are supported)
 - Most text styling properties beyond `fontSize`, `fontWeight`, `color`, `letterSpacing`, and `fontVariant`
+
+:::warning
+
+- For `position: 'absolute'`: SwiftUI's `position` modifier positions the center of the view at the specified coordinates, not the top-left corner like React Native. You may need to adjust your coordinates by half the view's width/height to achieve the desired positioning.
+- For `position: 'relative'`: Maps directly to SwiftUI's `offset` modifier, which behaves the same as React Native's relative positioning.
+
+:::
 
 If you need styling capabilities beyond what the `style` prop supports, use modifiers instead.
 
@@ -130,6 +141,7 @@ Modifiers are organized into categories based on their purpose:
 - **`frame`** - Sets the frame dimensions (`{ width?: number, height?: number, maxWidth?: 'infinity', maxHeight?: 'infinity', minWidth?: number, minHeight?: number, idealWidth?: number, idealHeight?: number }`)
 - **`padding`** - Adds padding around the view (`{ all?: number, top?: number, bottom?: number, leading?: number, trailing?: number }`)
 - **`offset`** - Offsets the view by x and y values (`{ x?: number, y?: number }`)
+- **`position`** - Positions the view at absolute coordinates (`{ x: number, y: number }`). Note: SwiftUI positions the center of the view at (x, y), not the top-left corner.
 
 #### Style modifiers
 
