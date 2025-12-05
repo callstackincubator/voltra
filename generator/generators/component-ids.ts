@@ -65,7 +65,10 @@ const generateSwiftMapping = (data: ComponentsData): string => {
   const enumCases = components
     .map((comp, index) => {
       // Convert component name to Swift enum case name (handle special cases)
-      const caseName = comp.name.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '')
+      const caseName = comp.name
+        .replace(/([A-Z])/g, '_$1')
+        .toUpperCase()
+        .replace(/^_/, '')
       return `    case ${caseName} = ${index}`
     })
     .join('\n')
@@ -73,7 +76,10 @@ const generateSwiftMapping = (data: ComponentsData): string => {
   // Generate switch cases for ID to name conversion
   const switchCases = components
     .map((comp, index) => {
-      const caseName = comp.name.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '')
+      const caseName = comp.name
+        .replace(/([A-Z])/g, '_$1')
+        .toUpperCase()
+        .replace(/^_/, '')
       return `        case .${caseName}:\n            return "${comp.name}"`
     })
     .join('\n')
@@ -106,7 +112,10 @@ ${switchCases}
         switch componentName {
 ${components
   .map((comp) => {
-    const caseName = comp.name.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '')
+    const caseName = comp.name
+      .replace(/([A-Z])/g, '_$1')
+      .toUpperCase()
+      .replace(/^_/, '')
     return `        case "${comp.name}": self = .${caseName}`
   })
   .join('\n')}
@@ -129,4 +138,3 @@ export const generateComponentIds = (data: ComponentsData): GeneratedFiles => {
 
   return files
 }
-

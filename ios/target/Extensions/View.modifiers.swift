@@ -6,8 +6,22 @@ extension View {
     /// - Parameter component: The component with modifiers to apply
     /// - Returns: The modified view
     public func voltraModifiers(_ component: VoltraComponent) -> some View {
-        if let modifiers = component.modifiers, !modifiers.isEmpty {
-            return AnyView(self.applyModifiers(modifiers))
+        var allModifiers: [VoltraModifier] = []
+        
+        // Convert style to modifiers if present
+        if let style = component.style {
+            let converter = StyleConverter()
+            let styleModifiers = converter.getModifiersFromStyle(style)
+            allModifiers.append(contentsOf: styleModifiers)
+        }
+        
+        // Add existing modifiers
+        if let existingModifiers = component.modifiers {
+            allModifiers.append(contentsOf: existingModifiers)
+        }
+        
+        if !allModifiers.isEmpty {
+            return AnyView(self.applyModifiers(allModifiers))
         }
         return AnyView(self)
     }

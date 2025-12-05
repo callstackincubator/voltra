@@ -42,6 +42,3 @@ export type VoltraTextStyle = VoltraViewStyle & Pick<RNTextStyle, 'fontSize' | '
 
 export type VoltraStyleProp = StyleProp<VoltraViewStyle>
 export type VoltraTextStyleProp = StyleProp<VoltraTextStyle>
-
-// Re-export the main conversion functions
-export { getModifiersFromLayoutStyle, getModifiersFromTextStyle } from './converter'

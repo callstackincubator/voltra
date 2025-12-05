@@ -2,23 +2,17 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
-import { generateSwiftTypes } from './generators/swift'
 import { generateSwiftParameters } from './generators/swift-parameters'
-import { generateTypeScriptTypes } from './generators/typescript'
 import { generateTypeScriptJSX } from './generators/typescript-jsx'
 import { generateComponentIds } from './generators/component-ids'
-import type { ComponentsData, ModifiersData } from './types'
+import type { ComponentsData } from './types'
 import { validateComponentsSchema } from './validate-components'
-import { validateModifiersSchema } from './validate-schema'
 
 const ROOT_DIR = path.join(__dirname, '..')
-const MODIFIERS_DATA_PATH = path.join(ROOT_DIR, 'data/modifiers.json')
 const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
-const TS_MODIFIERS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/modifiers')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
 const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/target/Generated')
-const SWIFT_MODIFIERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Modifiers')
 const SWIFT_PARAMETERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Parameters')
 const SWIFT_SHARED_OUTPUT_DIR = path.join(ROOT_DIR, 'ios/shared')
 
@@ -43,31 +37,16 @@ const writeFiles = (outputDir: string, files: Record<string, string>) => {
 const main = () => {
   console.log('🚀 Generating types from schemas...\n')
 
-  // Step 1: Validate modifiers schema
-  console.log('Step 1: Validating modifiers schema...')
-  if (!validateModifiersSchema()) {
-    console.error('\n❌ Generation failed due to modifiers validation errors')
-    process.exit(1)
-  }
-  console.log()
-
-  // Step 2: Validate components schema
-  console.log('Step 2: Validating components schema...')
+  // Step 1: Validate components schema
+  console.log('Step 1: Validating components schema...')
   if (!validateComponentsSchema()) {
     console.error('\n❌ Generation failed due to components validation errors')
     process.exit(1)
   }
   console.log()
 
-  // Step 3: Load modifiers data
-  console.log('Step 3: Loading modifiers data...')
-  const modifiersContent = fs.readFileSync(MODIFIERS_DATA_PATH, 'utf-8')
-  const modifiersData: ModifiersData = JSON.parse(modifiersContent)
-  console.log(`   ✓ Loaded ${modifiersData.modifiers.length} modifiers (version ${modifiersData.version})`)
-  console.log()
-
-  // Step 4: Load components data
-  console.log('Step 4: Loading components data...')
+  // Step 2: Load components data
+  console.log('Step 2: Loading components data...')
   const componentsContent = fs.readFileSync(COMPONENTS_DATA_PATH, 'utf-8')
   const componentsData: ComponentsData = JSON.parse(componentsContent)
   const componentsWithParams = componentsData.components.filter((c) => Object.keys(c.parameters).length > 0).length
@@ -76,32 +55,20 @@ const main = () => {
   )
   console.log()
 
-  // Step 5: Generate TypeScript modifier types
-  console.log('Step 5: Generating TypeScript modifier types...')
-  const tsModifierFiles = generateTypeScriptTypes(modifiersData)
-  writeFiles(TS_MODIFIERS_OUTPUT_DIR, tsModifierFiles)
-  console.log()
-
-  // Step 6: Generate TypeScript component props types and component exports
-  console.log('Step 7: Generating TypeScript component props types and component exports...')
+  // Step 3: Generate TypeScript component props types and component exports
+  console.log('Step 3: Generating TypeScript component props types and component exports...')
   const tsJsxResult = generateTypeScriptJSX(componentsData)
   writeFiles(TS_PROPS_OUTPUT_DIR, tsJsxResult.props)
   console.log()
 
-  // Step 7: Generate Swift modifier types
-  console.log('Step 8: Generating Swift modifier types...')
-  const swiftModifierFiles = generateSwiftTypes(modifiersData)
-  writeFiles(SWIFT_MODIFIERS_OUTPUT_DIR, swiftModifierFiles)
-  console.log()
-
-  // Step 8: Generate Swift parameter types
-  console.log('Step 9: Generating Swift parameter types...')
+  // Step 4: Generate Swift parameter types
+  console.log('Step 4: Generating Swift parameter types...')
   const swiftParameterFiles = generateSwiftParameters(componentsData)
   writeFiles(SWIFT_PARAMETERS_OUTPUT_DIR, swiftParameterFiles)
   console.log()
 
-  // Step 9: Generate component ID mappings
-  console.log('Step 10: Generating component ID mappings...')
+  // Step 5: Generate component ID mappings
+  console.log('Step 5: Generating component ID mappings...')
   const componentIdFiles = generateComponentIds(componentsData)
   // Split files by destination
   const tsComponentIdFiles: Record<string, string> = {}
@@ -119,13 +86,13 @@ const main = () => {
 
   console.log('✅ Generation complete!\n')
   console.log('Generated files:')
-  console.log(`   TypeScript modifiers: ${Object.keys(tsModifierFiles).length} files in src/modifiers/`)
   console.log(
     `   TypeScript props and components: ${Object.keys(tsJsxResult.props).length + Object.keys(tsJsxResult.jsx).length} files in src/jsx/`
   )
-  console.log(`   Swift modifiers: ${Object.keys(swiftModifierFiles).length} files in ios/.../Generated/Modifiers/`)
   console.log(`   Swift parameters: ${Object.keys(swiftParameterFiles).length} files in ios/.../Generated/Parameters/`)
-  console.log(`   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files`)
+  console.log(
+    `   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files`
+  )
   console.log()
   console.log('Next steps:')
   console.log('   1. Review generated files')

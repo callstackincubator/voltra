@@ -23,6 +23,8 @@ import {
   isSuspense,
 } from 'react-is'
 
+import { StyleSheet } from 'react-native'
+
 import { isVoltraComponent } from '../jsx/createVoltraComponent'
 import { getComponentId } from '../payload/component-ids'
 import { VoltraElementJson, VoltraJson, VoltraNodeJson } from '../types'
@@ -65,6 +67,41 @@ const MODIFIER_NAME_MAP: Record<string, string> = {
 
 function shortenModifierName(name: string): string {
   return MODIFIER_NAME_MAP[name] || name
+}
+
+// Style property name shortening map
+const STYLE_PROPERTY_NAME_MAP: Record<string, string> = {
+  padding: 'pad',
+  paddingVertical: 'pv',
+  paddingHorizontal: 'ph',
+  paddingTop: 'pt',
+  paddingBottom: 'pb',
+  paddingLeft: 'pl',
+  paddingRight: 'pr',
+  margin: 'm',
+  marginVertical: 'mv',
+  marginHorizontal: 'mh',
+  marginTop: 'mt',
+  marginBottom: 'mb',
+  marginLeft: 'ml',
+  marginRight: 'mr',
+  backgroundColor: 'bg',
+  borderRadius: 'br',
+  borderWidth: 'bw',
+  borderColor: 'bc',
+  shadowColor: 'sc',
+  shadowOffset: 'so',
+  shadowOpacity: 'sop',
+  shadowRadius: 'sr',
+  fontSize: 'fs',
+  fontWeight: 'fw',
+  color: 'c',
+  letterSpacing: 'ls',
+  fontVariant: 'fv',
+}
+
+function shortenStylePropertyName(name: string): string {
+  return STYLE_PROPERTY_NAME_MAP[name] || name
 }
 
 type VoltraRenderingContext = {
@@ -332,7 +369,39 @@ export const renderVoltraVariantToJson = (element: ReactNode): VoltraNodeJson =>
   return renderNode(element, context)
 }
 
-function transformProps(props: Record<string, unknown>): Record<string, unknown> {
+function compressStyleObject(style: any): any {
+  if (style === null || style === undefined) {
+    return style
+  }
+
+  // Flatten style if it's a StyleSheet reference or array
+  const flattened = StyleSheet.flatten(style)
+  
+  const compressed: Record<string, any> = {}
+  
+  for (const [key, value] of Object.entries(flattened)) {
+    const shortKey = shortenStylePropertyName(key)
+    
+    if (value === null || value === undefined) {
+      continue
+    }
+    
+    // Handle nested objects (e.g., shadowOffset: { width, height })
+    if (typeof value === 'object' && !Array.isArray(value) && value.constructor === Object) {
+      const compressedNested: Record<string, any> = {}
+      for (const [nestedKey, nestedValue] of Object.entries(value)) {
+        compressedNested[nestedKey] = nestedValue
+      }
+      compressed[shortKey] = compressedNested
+    } else {
+      compressed[shortKey] = value
+    }
+  }
+  
+  return compressed
+}
+
+export function transformProps(props: Record<string, unknown>): Record<string, unknown> {
   const transformed: Record<string, unknown> = {}
   
   for (const [key, value] of Object.entries(props)) {
@@ -346,6 +415,9 @@ function transformProps(props: Record<string, unknown>): Record<string, unknown>
         }
         return modifier
       })
+    } else if (key === 'style') {
+      // Compress style property names
+      transformed[key] = compressStyleObject(value)
     } else {
       transformed[key] = value
     }

@@ -15,6 +15,8 @@ const utf8ByteLength = (s: string): number => {
 
 export const ensurePayloadWithinBudget = (json: string): void => {
   const bytes = utf8ByteLength(json)
+  console.log('bytes', bytes)
+  console.log(json)
 
   if (bytes > EFFECTIVE_JSON_BUDGET) {
     throw new Error(

@@ -26,8 +26,7 @@
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module",
     "open:ios": "xed example/ios",
-    "generate": "ts-node generator/generate-types.ts",
-    "validate": "ts-node generator/validate-schema.ts"
+    "generate": "ts-node generator/generate-types.ts"
   },
   "keywords": [
     "react-native",

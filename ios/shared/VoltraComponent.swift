@@ -138,6 +138,61 @@ public struct VoltraComponent: Codable {
         return modifierNameMap[shortName] ?? shortName
     }
     
+    /// Expand short style property name to full name
+    private func expandStylePropertyName(_ shortName: String) -> String {
+        let stylePropertyMap: [String: String] = [
+            "pad": "padding",
+            "pv": "paddingVertical",
+            "ph": "paddingHorizontal",
+            "pt": "paddingTop",
+            "pb": "paddingBottom",
+            "pl": "paddingLeft",
+            "pr": "paddingRight",
+            "m": "margin",
+            "mv": "marginVertical",
+            "mh": "marginHorizontal",
+            "mt": "marginTop",
+            "mb": "marginBottom",
+            "ml": "marginLeft",
+            "mr": "marginRight",
+            "bg": "backgroundColor",
+            "br": "borderRadius",
+            "bw": "borderWidth",
+            "bc": "borderColor",
+            "sc": "shadowColor",
+            "so": "shadowOffset",
+            "sop": "shadowOpacity",
+            "sr": "shadowRadius",
+            "fs": "fontSize",
+            "fw": "fontWeight",
+            "c": "color",
+            "ls": "letterSpacing",
+            "fv": "fontVariant",
+        ]
+        return stylePropertyMap[shortName] ?? shortName
+    }
+    
+    /// Style property with expanded property names
+    public var style: [String: Any]? {
+        guard let styleDict = props?["style"] as? [String: Any] else {
+            return nil
+        }
+        
+        var expanded: [String: Any] = [:]
+        for (key, value) in styleDict {
+            let expandedKey = expandStylePropertyName(key)
+            
+            // Handle nested objects (e.g., shadowOffset: { width, height })
+            if let nestedDict = value as? [String: Any] {
+                expanded[expandedKey] = nestedDict
+            } else {
+                expanded[expandedKey] = value
+            }
+        }
+        
+        return expanded
+    }
+    
     /// Component-specific parameters (all props, parameter structs will decode only their defined fields)
     public var parametersRaw: [String: AnyCodable]? {
         guard let props = props else { return nil }

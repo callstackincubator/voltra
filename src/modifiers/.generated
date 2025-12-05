@@ -1,8 +1,0 @@
-This directory contains auto-generated files.
-DO NOT EDIT MANUALLY.
-
-Generated from: data/modifiers.json
-Schema version: 1.0.0
-
-To regenerate these files, run:
-  npm run generate
