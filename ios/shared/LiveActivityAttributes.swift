@@ -61,45 +61,37 @@ public struct VoltraAttributes: ActivityAttributes {
     }
 
     private static func selectJsonString(from dict: [String: Any], region: VoltraRegion) -> String? {
-      func tryPath(_ path: [String]) -> String? {
-        if let fragment = extract(dict, path: path),
+      func tryKey(_ key: String) -> String? {
+        if let fragment = dict[key],
            let arrayString = fragmentToArrayString(fragment) {
           return arrayString
         }
         return nil
       }
 
-      let path: [String]
+      let key: String
       switch region {
       case .lockScreen:
-        path = ["lockScreen"]
+        key = "ls"
       case .islandExpandedCenter:
-        path = ["island", "expanded", "center"]
+        key = "isl_exp_c"
       case .islandExpandedLeading:
-        path = ["island", "expanded", "leading"]
+        key = "isl_exp_l"
       case .islandExpandedTrailing:
-        path = ["island", "expanded", "trailing"]
+        key = "isl_exp_t"
       case .islandExpandedBottom:
-        path = ["island", "expanded", "bottom"]
+        key = "isl_exp_b"
       case .islandCompactLeading:
-        path = ["island", "compact", "leading"]
+        key = "isl_cmp_l"
       case .islandCompactTrailing:
-        path = ["island", "compact", "trailing"]
+        key = "isl_cmp_t"
       case .islandMinimal:
-        path = ["island", "minimal"]
+        key = "isl_min"
       }
 
-      return tryPath(path)
+      return tryKey(key)
     }
 
-    private static func extract(_ root: [String: Any], path: [String]) -> Any? {
-      var cursor: Any? = root
-      for key in path {
-        guard let dict = cursor as? [String: Any] else { return nil }
-        cursor = dict[key]
-      }
-      return cursor
-    }
 
     private static func fragmentToArrayString(_ fragment: Any) -> String? {
       if let arr = fragment as? [Any], JSONSerialization.isValidJSONObject(arr) {
@@ -108,7 +100,7 @@ public struct VoltraAttributes: ActivityAttributes {
         return string
       }
       if let dict = fragment as? [String: Any] {
-        guard let type = dict["type"] as? String, !type.isEmpty else { return nil }
+        guard let type = dict["t"] as? String, !type.isEmpty else { return nil }
         if JSONSerialization.isValidJSONObject([dict]) {
           guard let data = try? JSONSerialization.data(withJSONObject: [dict]),
                 let string = String(data: data, encoding: .utf8) else { return nil }

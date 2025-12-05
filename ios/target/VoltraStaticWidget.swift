@@ -240,13 +240,13 @@ fileprivate func sanitizeWidgetJson(_ data: Data) -> Data {
       return arr.compactMap { sanitizeNode($0) }
     }
     if var dict = node as? [String: Any] {
-      let type = (dict["type"] as? String) ?? ""
+      let type = (dict["t"] as? String) ?? (dict["type"] as? String) ?? ""
       let allowedContainers: Set<String> = ["VStack", "HStack", "ZStack", "ScrollView", "List", "Form", "GroupBox", "DisclosureGroup"]
       let allowedLeaves: Set<String> = ["Text", "Label", "Image", "Divider", "Spacer"]
 
       switch type {
       case "Button":
-        var new: [String: Any] = ["type": "Text"]
+        var new: [String: Any] = ["t": "Text"]
         if let t = dict["title"] as? String { new["title"] = t }
         if let id = dict["identifier"] as? String { new["identifier"] = id }
         if let mods = dict["modifiers"] { new["modifiers"] = mods }
@@ -259,8 +259,9 @@ fileprivate func sanitizeWidgetJson(_ data: Data) -> Data {
         return dict
 
       case _ where allowedContainers.contains(type):
-        if let children = dict["children"] as? [Any] {
-          dict["children"] = children.compactMap { sanitizeNode($0) }
+        if let children = (dict["c"] as? [Any]) ?? (dict["children"] as? [Any]) {
+          dict["c"] = children.compactMap { sanitizeNode($0) }
+          dict.removeValue(forKey: "children")
         }
         return dict
 
@@ -302,7 +303,7 @@ fileprivate func fragmentToArrayData(_ fragment: Any) -> Data? {
     return try? JSONSerialization.data(withJSONObject: arr)
   }
   if let dict = fragment as? [String: Any] {
-    guard let type = dict["type"] as? String, !type.isEmpty else { return nil }
+    guard let type = (dict["t"] as? String) ?? (dict["type"] as? String), !type.isEmpty else { return nil }
     if JSONSerialization.isValidJSONObject([dict]) {
       return try? JSONSerialization.data(withJSONObject: [dict])
     }
@@ -317,15 +318,11 @@ fileprivate func selectLockScreenJson(_ data: Data) -> Data {
   if root is [Any] { return normalizeJsonData(data) ?? (try? JSONSerialization.data(withJSONObject: [])) ?? Data("[]".utf8) }
   guard let dict = root as? [String: Any] else { return normalizeJsonData(data) ?? (try? JSONSerialization.data(withJSONObject: [])) ?? Data("[]".utf8) }
 
-  let paths: [[String]] = [
-    ["lockScreen"],
-    ["island", "expanded"],
-    ["island", "compact"],
-    ["island", "minimal"],
-  ]
-
-  for path in paths {
-    if let frag = extract(dict, path: path), let d = fragmentToArrayData(frag) {
+  // Check flattened variant keys
+  let keys = ["ls", "isl_exp_c", "isl_exp_l", "isl_exp_t", "isl_exp_b", "isl_cmp_l", "isl_cmp_t", "isl_min"]
+  
+  for key in keys {
+    if let frag = dict[key], let d = fragmentToArrayData(frag) {
       return d
     }
   }

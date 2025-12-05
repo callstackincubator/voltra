@@ -30,6 +30,42 @@ import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher'
 import { getRenderCache } from './render-cache'
 import { VoltraVariants } from './types'
 
+// Modifier name shortening map
+const MODIFIER_NAME_MAP: Record<string, string> = {
+  frame: 'f',
+  padding: 'pad',
+  offset: 'off',
+  position: 'pos',
+  foregroundStyle: 'fg',
+  background: 'bg',
+  backgroundStyle: 'bgs',
+  tint: 'tint',
+  opacity: 'op',
+  cornerRadius: 'cr',
+  font: 'font',
+  fontWeight: 'fw',
+  italic: 'it',
+  smallCaps: 'sc',
+  monospacedDigit: 'md',
+  lineLimit: 'll',
+  lineSpacing: 'lsp',
+  kerning: 'kern',
+  multilineTextAlignment: 'mta',
+  underline: 'ul',
+  strikethrough: 'st',
+  shadow: 'sh',
+  scaleEffect: 'se',
+  rotationEffect: 're',
+  border: 'bd',
+  clipped: 'clip',
+  glassEffect: 'ge',
+  gaugeStyle: 'gs',
+}
+
+function shortenModifierName(name: string): string {
+  return MODIFIER_NAME_MAP[name] || name
+}
+
 type VoltraRenderingContext = {
   registry: ContextRegistry
   inStringOnlyContext?: boolean
@@ -209,13 +245,14 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
           )
         }
 
+        // Transform props to shorten modifier names
+        const transformedProps = transformProps(cleanParameters)
+
         const voltraHostElement: VoltraElementJson = {
-          type: child.type,
-          ...(id ? { id } : {}),
-          children: renderedChildren,
-          props: {
-            ...cleanParameters,
-          },
+          t: child.type,
+          ...(id ? { i: id } : {}),
+          c: renderedChildren,
+          p: transformedProps,
         }
 
         return voltraHostElement
@@ -226,13 +263,14 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
         throw new Error('Unexpected string in non-Text component children.')
       }
 
+      // Transform props to shorten modifier names
+      const transformedProps = transformProps(cleanParameters)
+
       const voltraHostElement: VoltraElementJson = {
-        type: child.type,
-        ...(id ? { id } : {}),
-        children: renderedChildren,
-        props: {
-          ...cleanParameters,
-        },
+        t: child.type,
+        ...(id ? { i: id } : {}),
+        c: renderedChildren,
+        p: transformedProps,
       }
 
       return voltraHostElement
@@ -293,54 +331,64 @@ export const renderVoltraVariantToJson = (element: ReactNode): VoltraNodeJson =>
   return renderNode(element, context)
 }
 
+function transformProps(props: Record<string, unknown>): Record<string, unknown> {
+  const transformed: Record<string, unknown> = {}
+  
+  for (const [key, value] of Object.entries(props)) {
+    if (key === 'modifiers' && Array.isArray(value)) {
+      // Transform modifiers array to [name, args] format
+      transformed[key] = value.map((modifier: any) => {
+        if (typeof modifier === 'object' && modifier !== null) {
+          const name = 'name' in modifier ? shortenModifierName(String(modifier.name)) : ''
+          const args = 'args' in modifier ? modifier.args : {}
+          return [name, args]
+        }
+        return modifier
+      })
+    } else {
+      transformed[key] = value
+    }
+  }
+  
+  return transformed
+}
+
 export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
   const renderCache = getRenderCache(renderVoltraVariantToJson)
-  let result: VoltraJson = {}
+  const result: VoltraJson = {}
 
   if (variants.lockScreen) {
-    result.lockScreen = renderCache.getOrRender(variants.lockScreen)
+    result.ls = renderCache.getOrRender(variants.lockScreen)
   }
 
   if (variants.island) {
-    const islandVariants: VoltraVariantsJson['island'] = {}
-
     if (variants.island.expanded) {
-      const islandExpanded: NonNullable<VoltraVariantsJson['island']>['expanded'] = {}
-
       if (variants.island.expanded.center) {
-        islandExpanded.center = renderCache.getOrRender(variants.island.expanded.center)
+        result.isl_exp_c = renderCache.getOrRender(variants.island.expanded.center)
       }
       if (variants.island.expanded.leading) {
-        islandExpanded.leading = renderCache.getOrRender(variants.island.expanded.leading)
+        result.isl_exp_l = renderCache.getOrRender(variants.island.expanded.leading)
       }
       if (variants.island.expanded.trailing) {
-        islandExpanded.trailing = renderCache.getOrRender(variants.island.expanded.trailing)
+        result.isl_exp_t = renderCache.getOrRender(variants.island.expanded.trailing)
       }
       if (variants.island.expanded.bottom) {
-        islandExpanded.bottom = renderCache.getOrRender(variants.island.expanded.bottom)
+        result.isl_exp_b = renderCache.getOrRender(variants.island.expanded.bottom)
       }
-
-      islandVariants.expanded = islandExpanded
     }
 
     if (variants.island.compact) {
-      const islandCompact: NonNullable<VoltraVariantsJson['island']>['compact'] = {}
-
       if (variants.island.compact.leading) {
-        islandCompact.leading = renderCache.getOrRender(variants.island.compact.leading)
+        result.isl_cmp_l = renderCache.getOrRender(variants.island.compact.leading)
       }
       if (variants.island.compact.trailing) {
-        islandCompact.trailing = renderCache.getOrRender(variants.island.compact.trailing)
+        result.isl_cmp_t = renderCache.getOrRender(variants.island.compact.trailing)
       }
-
-      islandVariants.compact = islandCompact
     }
 
     if (variants.island.minimal) {
-      islandVariants.minimal = renderCache.getOrRender(variants.island.minimal)
+      result.isl_min = renderCache.getOrRender(variants.island.minimal)
     }
-
-    result.island = islandVariants
   }
 
   return result

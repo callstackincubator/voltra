@@ -73,14 +73,19 @@ public struct VoltraComponent: Codable {
     
     /// Type-safe modifiers to apply (from props.modifiers)
     public var modifiers: [VoltraModifier]? {
-        guard let modifiersArray = props?["modifiers"] as? [[String: Any]] else {
+        guard let modifiersArray = props?["modifiers"] as? [Any] else {
             return nil
         }
-        return try? modifiersArray.compactMap { dict in
-            guard let name = dict["name"] as? String else { return nil }
-            let argsDict = dict["args"] as? [String: Any]
+        return try? modifiersArray.compactMap { modifier in
+            // Modifiers are now arrays: [name, args]
+            guard let modifierArray = modifier as? [Any],
+                  modifierArray.count >= 2,
+                  let name = modifierArray[0] as? String,
+                  let argsDict = modifierArray[1] as? [String: Any] else {
+                return nil
+            }
             // Convert args to AnyCodable
-            let args = argsDict?.compactMapValues { value -> AnyCodable? in
+            let args = argsDict.compactMapValues { value -> AnyCodable? in
                 if let string = value as? String {
                     return .string(string)
                 } else if let int = value as? Int {
@@ -92,8 +97,45 @@ public struct VoltraComponent: Codable {
                 }
                 return nil
             }
-            return VoltraModifier(name: name, args: args)
+            // Expand short modifier name to full name
+            let fullName = expandModifierName(name)
+            return VoltraModifier(name: fullName, args: args.isEmpty ? nil : args)
         }
+    }
+    
+    /// Expand short modifier name to full name
+    private func expandModifierName(_ shortName: String) -> String {
+        let modifierNameMap: [String: String] = [
+            "f": "frame",
+            "pad": "padding",
+            "off": "offset",
+            "pos": "position",
+            "fg": "foregroundStyle",
+            "bg": "background",
+            "bgs": "backgroundStyle",
+            "tint": "tint",
+            "op": "opacity",
+            "cr": "cornerRadius",
+            "font": "font",
+            "fw": "fontWeight",
+            "it": "italic",
+            "sc": "smallCaps",
+            "md": "monospacedDigit",
+            "ll": "lineLimit",
+            "lsp": "lineSpacing",
+            "kern": "kerning",
+            "mta": "multilineTextAlignment",
+            "ul": "underline",
+            "st": "strikethrough",
+            "sh": "shadow",
+            "se": "scaleEffect",
+            "re": "rotationEffect",
+            "bd": "border",
+            "clip": "clipped",
+            "ge": "glassEffect",
+            "gs": "gaugeStyle",
+        ]
+        return modifierNameMap[shortName] ?? shortName
     }
     
     /// Component-specific parameters (all props, parameter structs will decode only their defined fields)
@@ -122,26 +164,26 @@ public struct VoltraComponent: Codable {
     // MARK: - Codable
     
     enum CodingKeys: String, CodingKey {
-        case type, id, children, props, state
+        case t, i, c, p, s
     }
     
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        type = try container.decode(String.self, forKey: .type)
-        id = try container.decodeIfPresent(String.self, forKey: .id)
-        state = try container.decodeIfPresent(AnyCodable.self, forKey: .state)
+        type = try container.decode(String.self, forKey: .t)
+        id = try container.decodeIfPresent(String.self, forKey: .i)
+        state = try container.decodeIfPresent(AnyCodable.self, forKey: .s)
         
         // Decode children from root level (can be array or string)
-        if container.contains(.children) {
-            _childrenValue = try? container.decode(JSONValue.self, forKey: .children)
+        if container.contains(.c) {
+            _childrenValue = try? container.decode(JSONValue.self, forKey: .c)
         } else {
             _childrenValue = nil
         }
         
         // Decode props using JSONSerialization to handle nested structures
-        if container.contains(.props) {
+        if container.contains(.p) {
             // Get the raw JSON value for props
-            let propsJSON = try container.decode(JSONValue.self, forKey: .props)
+            let propsJSON = try container.decode(JSONValue.self, forKey: .p)
             _props = propsJSON.toDictionary()
         } else {
             _props = nil
@@ -150,18 +192,18 @@ public struct VoltraComponent: Codable {
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(type, forKey: .type)
-        try container.encodeIfPresent(id, forKey: .id)
-        try container.encodeIfPresent(state, forKey: .state)
+        try container.encode(type, forKey: .t)
+        try container.encodeIfPresent(id, forKey: .i)
+        try container.encodeIfPresent(state, forKey: .s)
         
         // Encode children at root level
         if let childrenValue = _childrenValue {
-            try container.encode(childrenValue, forKey: .children)
+            try container.encode(childrenValue, forKey: .c)
         }
         
         if let props = _props {
             let jsonValue = JSONValue.fromAny(props)
-            try container.encode(jsonValue, forKey: .props)
+            try container.encode(jsonValue, forKey: .p)
         }
     }
 }
