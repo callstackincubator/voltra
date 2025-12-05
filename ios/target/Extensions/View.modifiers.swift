@@ -82,10 +82,34 @@ extension View {
                             // Determine ideal height: use idealHeight if provided, otherwise use height
                             let finalIdealHeight: CGFloat? = idealHeight.map { CGFloat($0) } ?? height.map { CGFloat($0) }
                             // Determine max width: infinity if specified, otherwise use width
-                            let finalMaxWidth: CGFloat? = maxWidthInfinity ? .infinity : width.map { CGFloat($0) }
+                            // If only minWidth is set (flexShrink case), don't set maxWidth to allow shrinking
+                            let finalMaxWidth: CGFloat?
+                            if maxWidthInfinity {
+                                finalMaxWidth = .infinity
+                            } else if width != nil {
+                                finalMaxWidth = CGFloat(width!)
+                            } else if minWidth != nil && idealWidth == nil && width == nil && !maxWidthInfinity {
+                                // Only minWidth set (flexShrink), don't constrain maxWidth
+                                finalMaxWidth = nil
+                            } else {
+                                finalMaxWidth = nil
+                            }
                             // Determine max height: infinity if specified, otherwise use height
-                            let finalMaxHeight: CGFloat? = maxHeightInfinity ? .infinity : height.map { CGFloat($0) }
+                            // If only minHeight is set (flexShrink case), don't set maxHeight to allow shrinking
+                            let finalMaxHeight: CGFloat?
+                            if maxHeightInfinity {
+                                finalMaxHeight = .infinity
+                            } else if height != nil {
+                                finalMaxHeight = CGFloat(height!)
+                            } else if minHeight != nil && idealHeight == nil && height == nil && !maxHeightInfinity {
+                                // Only minHeight set (flexShrink), don't constrain maxHeight
+                                finalMaxHeight = nil
+                            } else {
+                                finalMaxHeight = nil
+                            }
                             
+                            // Use .leading alignment for frame to respect VStack/HStack alignment
+                            // The frame alignment affects how the view is positioned, not children alignment
                             tempView = AnyView(tempView.frame(
                                 minWidth: minWidth.map { CGFloat($0) } ?? 0,
                                 idealWidth: finalIdealWidth,
@@ -93,8 +117,19 @@ extension View {
                                 minHeight: minHeight.map { CGFloat($0) } ?? 0,
                                 idealHeight: finalIdealHeight,
                                 maxHeight: finalMaxHeight,
-                                alignment: .center
+                                alignment: .leading
                             ))
+                            
+                            // If only minWidth/minHeight are set (flexShrink with flexGrow: 0 case),
+                            // use fixedSize AFTER frame to override the default .infinity constraint
+                            if minWidth != nil && finalMaxWidth == nil && finalIdealWidth == nil && width == nil {
+                                // Only minWidth set, use fixedSize to allow natural sizing and override .infinity
+                                tempView = AnyView(tempView.fixedSize(horizontal: true, vertical: false))
+                            }
+                            if minHeight != nil && finalMaxHeight == nil && finalIdealHeight == nil && height == nil {
+                                // Only minHeight set, use fixedSize to allow natural sizing and override .infinity
+                                tempView = AnyView(tempView.fixedSize(horizontal: false, vertical: true))
+                            }
                         }
                     }
                 }

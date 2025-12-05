@@ -21,15 +21,15 @@ public class VoltraModule: Module {
 
   private func validatePayloadSize(_ jsonString: String, operation: String) throws {
     let dataSize = jsonString.utf8.count
-    let safeBudget = 3500  // Keep existing safe budget
-    let estimatedBase64 = ((dataSize + 2) / 3) * 4
+    let safeBudget = 3345  // Keep existing safe budget
+    print("Payload size: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B)")
 
-    if dataSize > safeBudget || estimatedBase64 > MAX_PAYLOAD_SIZE_IN_BYTES {
+    if dataSize > safeBudget {
       throw VoltraErrors.unexpectedError(
         NSError(
           domain: "VoltraModule",
           code: operation == "start" ? -10 : -11,
-          userInfo: [NSLocalizedDescriptionKey: "Payload too large: JSON=\(dataSize)B, est.base64=\(estimatedBase64)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B). Reduce the UI before \(operation == "start" ? "starting" : "updating") the Live Activity."]
+          userInfo: [NSLocalizedDescriptionKey: "Payload too large: JSON=\(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B). Reduce the UI before \(operation == "start" ? "starting" : "updating") the Live Activity."]
         )
       )
     }

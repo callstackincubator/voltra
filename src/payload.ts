@@ -1,6 +1,6 @@
 const MAX_ACTIVITYKIT_BYTES = 4096
 // Leave headroom below the hard ActivityKit limit to account for the native envelope.
-const EFFECTIVE_JSON_BUDGET = 3800
+const EFFECTIVE_JSON_BUDGET = 3345
 
 const utf8ByteLength = (s: string): number => {
   try {

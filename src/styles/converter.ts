@@ -257,6 +257,15 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
         if (!hadHeight && frameModifier.args.idealHeight === undefined) {
           frameModifier.args.maxHeight = 'infinity'
         }
+      } else if (flexGrow !== undefined && flexGrow === 0) {
+        // flexGrow: 0 means don't grow - explicitly remove maxWidth/maxHeight infinity constraints
+        // This allows the view to size to its content instead of filling available space
+        if (frameModifier.args.maxWidth === 'infinity') {
+          delete frameModifier.args.maxWidth
+        }
+        if (frameModifier.args.maxHeight === 'infinity') {
+          delete frameModifier.args.maxHeight
+        }
       }
 
       // If flexShrink > 0 (or flexGrow > 0, which implies shrink), ensure minWidth/minHeight is 0
@@ -279,6 +288,18 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
           minWidth: 0,
           minHeight: 0,
         },
+      })
+    } else if ((flexShrink !== undefined && flexShrink > 0) || (flexGrow !== undefined && flexGrow === 0)) {
+      // No frame modifier exists yet, create one with shrink enabled (minWidth/minHeight = 0)
+      // Don't set maxWidth/maxHeight to infinity as that would prevent shrinking
+      // Also handle flexGrow: 0 case - don't allow growing
+      const frameArgs: FrameModifier['args'] = {
+        minWidth: 0,
+        minHeight: 0,
+      }
+      modifiers.push({
+        name: 'frame',
+        args: frameArgs,
       })
     }
   }
@@ -305,9 +326,9 @@ export const getModifiersFromLayoutStyle = (style: VoltraStyleProp): VoltraModif
     } else if (positionValue === 'relative') {
       // Convert top/left to offset modifier (relative positioning)
       // offset already exists, so check if we need to add or update it
-      const existingOffset = modifiers.find(
-        (m) => m.name === 'offset'
-      ) as { name: string; args: { x?: number; y?: number } } | undefined
+      const existingOffset = modifiers.find((m) => m.name === 'offset') as
+        | { name: string; args: { x?: number; y?: number } }
+        | undefined
 
       if (existingOffset) {
         // Update existing offset

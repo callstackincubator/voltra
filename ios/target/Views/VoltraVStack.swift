@@ -16,12 +16,13 @@ public struct VoltraVStack: View {
         case "leading": .leading
         case "trailing": .trailing
         case "center": .center
-        default: .center
+        default: .leading
         }
         
         VStack(alignment: alignment, spacing: spacing) {
             VoltraChildrenView(component: component)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Alignment(horizontal: alignment, vertical: .center))
         .voltraModifiers(component)
     }
 }

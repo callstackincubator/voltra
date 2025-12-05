@@ -7,12 +7,13 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { NotificationsCard } from '~/components/NotificationsCard'
 import BasicLiveActivity from '~/screens/live-activities/BasicLiveActivity'
+import FlightLiveActivity from '~/screens/live-activities/FlightLiveActivity'
 import LiquidGlassLiveActivity from '~/screens/live-activities/LiquidGlassLiveActivity'
 import MusicPlayerLiveActivity from '~/screens/live-activities/MusicPlayerLiveActivity'
 
 import { LiveActivityExampleComponentRef } from './types'
 
-type ActivityKey = 'basic' | 'stylesheet' | 'glass'
+type ActivityKey = 'basic' | 'stylesheet' | 'glass' | 'flight'
 
 const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: string }> = {
   basic: {
@@ -27,9 +28,13 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
     title: 'Liquid Glass',
     description: 'GlassContainer + GlassView with the glassEffect modifier.',
   },
+  flight: {
+    title: 'Flight Tracker',
+    description: 'Flight information widget with departure/arrival times, gate info, and status updates.',
+  },
 }
 
-const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass']
+const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass', 'flight']
 
 export default function LiveActivitiesScreen() {
   const insets = useSafeAreaInsets()
@@ -38,17 +43,20 @@ export default function LiveActivitiesScreen() {
     basic: false,
     stylesheet: false,
     glass: false,
+    flight: false,
   })
 
   const basicRef = useRef<LiveActivityExampleComponentRef>(null)
   const stylesheetRef = useRef<LiveActivityExampleComponentRef>(null)
   const glassRef = useRef<LiveActivityExampleComponentRef>(null)
+  const flightRef = useRef<LiveActivityExampleComponentRef>(null)
 
   const activityRefs = useMemo(
     () => ({
       basic: basicRef,
       stylesheet: stylesheetRef,
       glass: glassRef,
+      flight: flightRef,
     }),
     []
   )
@@ -72,9 +80,13 @@ export default function LiveActivitiesScreen() {
     (isActive: boolean) => handleStatusChange('glass', isActive),
     [handleStatusChange]
   )
+  const handleFlightStatusChange = useCallback(
+    (isActive: boolean) => handleStatusChange('flight', isActive),
+    [handleStatusChange]
+  )
 
   const handleStart = async (key: ActivityKey) => {
-    await activityRefs[key].current?.start?.()
+    await activityRefs[key].current?.start?.().catch(console.error)
   }
 
   const handleEnd = async (key: ActivityKey) => {
@@ -141,6 +153,7 @@ export default function LiveActivitiesScreen() {
         <BasicLiveActivity ref={basicRef} onIsActiveChange={handleBasicStatusChange} />
         <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
         <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
+        <FlightLiveActivity ref={flightRef} onIsActiveChange={handleFlightStatusChange} />
       </ScrollView>
     </View>
   )
