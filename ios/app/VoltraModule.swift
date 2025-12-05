@@ -10,6 +10,8 @@ public class VoltraModule: Module {
   private let WIDGET_JSON_KEY = "Voltra_Widget_JSON"
   private let WIDGET_DEEPLINK_URL_KEY = "Voltra_Widget_DeepLinkURL"
   private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
+  private let liveActivityService = VoltraLiveActivityService()
+  
   enum VoltraErrors: Error {
     case unsupportedOS
     case notFound
@@ -57,12 +59,12 @@ public class VoltraModule: Module {
       observeLiveActivityUpdates()
     }
 
-    AsyncFunction("startVoltra") { (jsonString: String, options: [String: Any]?) async throws -> String in
+    AsyncFunction("startVoltra") { (jsonString: String, options: StartVoltraOptions?) async throws -> String in
       // Route to static widget if requested
-      let target = (options?["target"] as? String) ?? "liveActivity"
+      let target = options?.target ?? "liveActivity"
       if target == "widget" {
         // Select widget key (arbitrary string). Default to "1" for backward compatibility.
-        let key = ((options?["widgetKey"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? DEFAULT_WIDGET_KEY
+        let key = (options?.widgetKey?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? DEFAULT_WIDGET_KEY
         // Write JSON into App Group so the Widget extension can render it
         let payloadBytes = jsonString.lengthOfBytes(using: .utf8)
         guard writeWidgetJsonString(jsonString, suffix: key) else {
@@ -74,7 +76,7 @@ public class VoltraModule: Module {
             )
           )
         }
-        if let dl = options?["deepLinkUrl"] as? String, !dl.isEmpty {
+        if let dl = options?.deepLinkUrl, !dl.isEmpty {
           _ = writeWidgetDeepLinkUrl(dl, suffix: key)
         }
         if #available(iOS 14.0, *) {
@@ -86,51 +88,40 @@ public class VoltraModule: Module {
       }
 
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      guard ActivityAuthorizationInfo().areActivitiesEnabled else { throw VoltraErrors.liveActivitiesNotEnabled }
+      guard VoltraLiveActivityService.areActivitiesEnabled() else { 
+        throw VoltraErrors.liveActivitiesNotEnabled 
+      }
 
       do {
         try validatePayloadSize(jsonString, operation: "start")
 
-        let deepLinkUrl = options?["deepLinkUrl"] as? String
-        let activityName = (options?["activityId"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let activityName = options?.activityId?.trimmingCharacters(in: .whitespacesAndNewlines)
         
         // Extract staleDate and relevanceScore from options
         let staleDate: Date? = {
-          if let staleDateMs = options?["staleDate"] as? Double {
+          if let staleDateMs = options?.staleDate {
             return Date(timeIntervalSince1970: staleDateMs / 1000.0)
           }
           return nil
         }()
-        let relevanceScore: Double = (options?["relevanceScore"] as? Double) ?? 0.0
+        let relevanceScore: Double = options?.relevanceScore ?? 0.0
 
-        // Generate activityId if not provided by user
-        let finalActivityId: String
-        if let key = activityName, !key.isEmpty {
-          finalActivityId = key
-        } else {
-          finalActivityId = UUID().uuidString
-        }
-
-        // Ensure uniqueness: end all existing activities with the same name
-        let existingActivities = Activity<VoltraAttributes>.activities.filter { $0.attributes.name == finalActivityId }
-        for existingActivity in existingActivities {
-          await existingActivity.end(
-            ActivityContent(state: existingActivity.content.state, staleDate: nil),
-            dismissalPolicy: .immediate
-          )
-        }
-
-        let attributes = VoltraAttributes(name: finalActivityId, deepLinkUrl: deepLinkUrl)
-        let initialState = VoltraAttributes.ContentState(uiJsonData: jsonString)
-
-        let activity = try Activity.request(
-          attributes: attributes,
-          content: .init(state: initialState, staleDate: staleDate, relevanceScore: relevanceScore),
+        // Create request struct
+        let createRequest = CreateActivityRequest(
+          activityId: activityName,
+          deepLinkUrl: options?.deepLinkUrl,
+          jsonString: jsonString,
+          staleDate: staleDate,
+          relevanceScore: relevanceScore,
           pushType: pushNotificationsEnabled ? .token : nil,
+          endExistingWithSameName: true
         )
 
+        // Create activity using service
+        let finalActivityId = try await liveActivityService.createActivity(createRequest)
+
         // Best-effort local auto-end scheduling (app must be alive)
-        if let autoEndAt = options?["autoEndAt"] as? Double {
+        if let autoEndAt = options?.autoEndAt {
           let endDate = Date(timeIntervalSince1970: autoEndAt / 1000.0)
           let delay = max(0, endDate.timeIntervalSinceNow)
           if delay > 0 {
@@ -138,29 +129,33 @@ public class VoltraModule: Module {
               do {
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
               } catch {}
-              guard let live = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == activityId }) else { return }
-              await live.end(
-                ActivityContent(state: live.content.state, staleDate: nil),
-                dismissalPolicy: .immediate
-              )
+                try? await self.liveActivityService.endActivity(byName: activityId)
             }
           } else {
             // If autoEndAt is in the past, end immediately
-            await activity.end(
-              ActivityContent(state: activity.content.state, staleDate: nil),
-              dismissalPolicy: .immediate
-            )
+            try await liveActivityService.endActivity(byName: finalActivityId)
           }
         }
 
         return finalActivityId
       } catch let error {
         print("Error starting Voltra instance: \(error)")
+        // Map service errors to module errors
+        if let serviceError = error as? VoltraLiveActivityError {
+          switch serviceError {
+          case .unsupportedOS:
+            throw VoltraErrors.unsupportedOS
+          case .liveActivitiesNotEnabled:
+            throw VoltraErrors.liveActivitiesNotEnabled
+          case .notFound:
+            throw VoltraErrors.notFound
+          }
+        }
         throw VoltraErrors.unexpectedError(error)
       }
     }
 
-    AsyncFunction("updateVoltra") { (activityId: String, jsonString: String, options: [String: Any]?) async throws in
+    AsyncFunction("updateVoltra") { (activityId: String, jsonString: String, options: UpdateVoltraOptions?) async throws in
       // Static Widget path
       if activityId.hasPrefix(STATIC_WIDGET_SYNTHETIC_ID) {
         guard let key = parseWidgetKey(from: activityId) else {
@@ -191,24 +186,40 @@ public class VoltraModule: Module {
       }
 
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      let trimmedActivityId = activityId.trimmingCharacters(in: .whitespacesAndNewlines)
-      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == trimmedActivityId }) else {
-        throw VoltraErrors.notFound
-      }
-
+      
       try validatePayloadSize(jsonString, operation: "update")
 
       // Extract staleDate and relevanceScore from options
       let staleDate: Date? = {
-        if let staleDateMs = options?["staleDate"] as? Double {
+        if let staleDateMs = options?.staleDate {
           return Date(timeIntervalSince1970: staleDateMs / 1000.0)
         }
         return nil
       }()
-      let relevanceScore: Double = (options?["relevanceScore"] as? Double) ?? 0.0
+      let relevanceScore: Double = options?.relevanceScore ?? 0.0
 
-      let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
-      await activity.update(ActivityContent(state: newState, staleDate: staleDate, relevanceScore: relevanceScore))
+      // Create update request struct
+      let updateRequest = UpdateActivityRequest(
+        jsonString: jsonString,
+        staleDate: staleDate,
+        relevanceScore: relevanceScore
+      )
+
+      do {
+        try await liveActivityService.updateActivity(byName: activityId, request: updateRequest)
+      } catch let error {
+        if let serviceError = error as? VoltraLiveActivityError {
+          switch serviceError {
+          case .unsupportedOS:
+            throw VoltraErrors.unsupportedOS
+          case .notFound:
+            throw VoltraErrors.notFound
+          case .liveActivitiesNotEnabled:
+            throw VoltraErrors.liveActivitiesNotEnabled
+          }
+        }
+        throw VoltraErrors.unexpectedError(error)
+      }
     }
 
     AsyncFunction("endVoltra") { (activityId: String) async throws in
@@ -234,56 +245,52 @@ public class VoltraModule: Module {
       }
 
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      let trimmedActivityId = activityId.trimmingCharacters(in: .whitespacesAndNewlines)
-      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == trimmedActivityId }) else {
-        throw VoltraErrors.notFound
+      
+      do {
+        try await liveActivityService.endActivity(byName: activityId)
+      } catch let error {
+        if let serviceError = error as? VoltraLiveActivityError {
+          switch serviceError {
+          case .unsupportedOS:
+            throw VoltraErrors.unsupportedOS
+          case .notFound:
+            throw VoltraErrors.notFound
+          case .liveActivitiesNotEnabled:
+            throw VoltraErrors.liveActivitiesNotEnabled
+          }
+        }
+        throw VoltraErrors.unexpectedError(error)
       }
-
-      await activity.end(
-        ActivityContent(state: activity.content.state, staleDate: nil),
-        dismissalPolicy: .immediate
-      )
     }
 
     // End all running Live Activities created by this module
     AsyncFunction("endAllVoltra") { () async throws in
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      for activity in Activity<VoltraAttributes>.activities {
-        await activity.end(
-          ActivityContent(state: activity.content.state, staleDate: nil),
-          dismissalPolicy: .immediate
-        )
-      }
+      await liveActivityService.endAllActivities()
     }
 
     // Preferred name mirroring iOS terminology
     AsyncFunction("endAllLiveActivities") { () async throws in
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      for activity in Activity<VoltraAttributes>.activities {
-        await activity.end(
-          ActivityContent(state: activity.content.state, staleDate: nil),
-          dismissalPolicy: .immediate
-        )
-      }
+      await liveActivityService.endAllActivities()
     }
 
     // Return the latest (most recently created) Voltra Live Activity ID, if any.
     // Useful to rebind after Fast Refresh in development.
     AsyncFunction("getLatestVoltraActivityId") { () -> String? in
       guard #available(iOS 16.2, *) else { return nil }
-      return Activity<VoltraAttributes>.activities.last?.id
+      return liveActivityService.getLatestActivity()?.id
     }
 
     // Debug helper: list all running Voltra Live Activity IDs
     AsyncFunction("listVoltraActivityIds") { () -> [String] in
       guard #available(iOS 16.2, *) else { return [] }
-      return Activity<VoltraAttributes>.activities.map { $0.id }
+      return liveActivityService.getAllActivities().map { $0.id }
     }
 
     Function("isVoltraActive") { (activityId: String) -> Bool in
       guard #available(iOS 16.2, *) else { return false }
-      let trimmedActivityId = activityId.trimmingCharacters(in: .whitespacesAndNewlines)
-      return Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == trimmedActivityId }) != nil
+      return liveActivityService.isActivityActive(name: activityId)
     }
   }
 
