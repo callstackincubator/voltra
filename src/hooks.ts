@@ -1,10 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { addVoltraListener } from './events'
-import { startVoltra, StartVoltraOptions, stopVoltra, updateVoltra, UpdateVoltraOptions } from './imperative-api'
+import {
+  isVoltraActive,
+  startVoltra,
+  StartVoltraOptions,
+  stopVoltra,
+  updateVoltra,
+  UpdateVoltraOptions,
+} from './imperative-api'
 import { VoltraVariants } from './renderer'
 
 export type UseVoltraOptions = {
+  /**
+   * The unique identifier of the Live Activity.
+   * Allows you to rebind to the same activity on app restart.
+   */
+  activityId?: string
   /**
    * Automatically start the Live Activity when the component mounts.
    */
@@ -27,7 +39,13 @@ export type UseVoltraResult = {
 }
 
 export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions): UseVoltraResult => {
-  const [targetId, setTargetId] = useState<string | null>(null)
+  const [targetId, setTargetId] = useState<string | null>(() => {
+    if (options?.activityId) {
+      return isVoltraActive(options.activityId) ? options.activityId : null
+    }
+
+    return null
+  })
   const isActive = targetId !== null
   const optionsRef = useRef(options)
   const lastUpdateOptionsRef = useRef<UpdateVoltraOptions | undefined>(undefined)
@@ -79,7 +97,7 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
     if (!targetId) return
 
     const subscription = addVoltraListener('stateChange', (event) => {
-      if (event.activityID !== targetId) return
+      if (event.activityName !== targetId) return
 
       if (event.activityState === 'dismissed' || event.activityState === 'ended') {
         // Live Activity is no longer active.

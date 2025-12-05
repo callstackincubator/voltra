@@ -45,6 +45,7 @@ const BasicLiveActivity: LiveActivityExampleComponent = forwardRef(
         lockScreen: <BasicLiveActivityUI />,
       },
       {
+        activityId: 'basic',
         autoUpdate,
         autoStart,
         deepLinkUrl: '/voltraui/basic',

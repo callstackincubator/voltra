@@ -103,32 +103,24 @@ public class VoltraModule: Module {
         }()
         let relevanceScore: Double = (options?["relevanceScore"] as? Double) ?? 0.0
 
-        if let key = activityName, !key.isEmpty,
-           let existing = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == key }) {
-          let newState = VoltraAttributes.ContentState(uiJsonData: jsonString)
-            await existing.update(ActivityContent(state: newState, staleDate: staleDate, relevanceScore: relevanceScore))
-          if options?["autoEndAt"] as? Double == nil {
-            return existing.id
-          }
-          // Fall through to auto-end scheduling below (to refresh timer) but skip requesting a new activity.
-          let endDate = options?["autoEndAt"] as? Double
-          if let endDate {
-            let end = Date(timeIntervalSince1970: endDate / 1000.0)
-            let delay = max(0, end.timeIntervalSinceNow)
-            if delay > 0 {
-              Task.detached { [id = existing.id] in
-                do { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) } catch {}
-                guard let live = Activity<VoltraAttributes>.activities.first(where: { $0.id == id }) else { return }
-                await live.end(ActivityContent(state: live.content.state, staleDate: nil), dismissalPolicy: .immediate)
-              }
-            } else {
-              await existing.end(ActivityContent(state: existing.content.state, staleDate: nil), dismissalPolicy: .immediate)
-            }
-          }
-          return existing.id
+        // Generate activityId if not provided by user
+        let finalActivityId: String
+        if let key = activityName, !key.isEmpty {
+          finalActivityId = key
+        } else {
+          finalActivityId = UUID().uuidString
         }
 
-        let attributes = VoltraAttributes(name: activityName?.isEmpty == false ? activityName! : "Voltra", deepLinkUrl: deepLinkUrl)
+        // Ensure uniqueness: end all existing activities with the same name
+        let existingActivities = Activity<VoltraAttributes>.activities.filter { $0.attributes.name == finalActivityId }
+        for existingActivity in existingActivities {
+          await existingActivity.end(
+            ActivityContent(state: existingActivity.content.state, staleDate: nil),
+            dismissalPolicy: .immediate
+          )
+        }
+
+        let attributes = VoltraAttributes(name: finalActivityId, deepLinkUrl: deepLinkUrl)
         let initialState = VoltraAttributes.ContentState(uiJsonData: jsonString)
 
         let activity = try Activity.request(
@@ -142,11 +134,11 @@ public class VoltraModule: Module {
           let endDate = Date(timeIntervalSince1970: autoEndAt / 1000.0)
           let delay = max(0, endDate.timeIntervalSinceNow)
           if delay > 0 {
-            Task.detached { [id = activity.id] in
+            Task.detached { [activityId = finalActivityId] in
               do {
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
               } catch {}
-              guard let live = Activity<VoltraAttributes>.activities.first(where: { $0.id == id }) else { return }
+              guard let live = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == activityId }) else { return }
               await live.end(
                 ActivityContent(state: live.content.state, staleDate: nil),
                 dismissalPolicy: .immediate
@@ -161,7 +153,7 @@ public class VoltraModule: Module {
           }
         }
 
-        return activity.id
+        return finalActivityId
       } catch let error {
         print("Error starting Voltra instance: \(error)")
         throw VoltraErrors.unexpectedError(error)
@@ -199,7 +191,8 @@ public class VoltraModule: Module {
       }
 
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.id == activityId }) else {
+      let trimmedActivityId = activityId.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == trimmedActivityId }) else {
         throw VoltraErrors.notFound
       }
 
@@ -241,7 +234,8 @@ public class VoltraModule: Module {
       }
 
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.id == activityId }) else {
+      let trimmedActivityId = activityId.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard let activity = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == trimmedActivityId }) else {
         throw VoltraErrors.notFound
       }
 
@@ -284,6 +278,12 @@ public class VoltraModule: Module {
     AsyncFunction("listVoltraActivityIds") { () -> [String] in
       guard #available(iOS 16.2, *) else { return [] }
       return Activity<VoltraAttributes>.activities.map { $0.id }
+    }
+
+    Function("isVoltraActive") { (activityId: String) -> Bool in
+      guard #available(iOS 16.2, *) else { return false }
+      let trimmedActivityId = activityId.trimmingCharacters(in: .whitespacesAndNewlines)
+      return Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == trimmedActivityId }) != nil
     }
   }
 

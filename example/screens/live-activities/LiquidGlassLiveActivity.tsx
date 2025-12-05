@@ -31,6 +31,7 @@ const LiquidGlassLiveActivity: LiveActivityExampleComponent = forwardRef(
         lockScreen: <LiquidGlassLiveActivityUI />,
       },
       {
+        activityId: 'liquid-glass',
         autoUpdate,
         autoStart,
         deepLinkUrl: '/voltraui/glass',

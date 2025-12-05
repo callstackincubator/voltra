@@ -127,6 +127,7 @@ const MusicPlayerLiveActivity: LiveActivityExampleComponent = forwardRef(
     )
 
     const { start, update, end, isActive } = useVoltra(variants, {
+      activityId: 'music-player',
       autoUpdate,
       autoStart,
     })
