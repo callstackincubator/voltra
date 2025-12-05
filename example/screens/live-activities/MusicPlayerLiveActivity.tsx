@@ -86,7 +86,12 @@ function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlayerLiveAc
   return (
     <Voltra.VStack id="music-player-live-activity" style={styles.card} spacing={16}>
       <Voltra.HStack spacing={16} alignment="center">
-        <Voltra.Image id={currentSong.image} assetName={currentSong.image} style={styles.albumArt} resizeMode="cover" />
+        <Voltra.Image
+          id={currentSong.image}
+          source={{ assetName: currentSong.image }}
+          style={styles.albumArt}
+          resizeMode="cover"
+        />
         <Voltra.VStack spacing={4} style={{ flex: 1 }}>
           <Voltra.Text style={styles.title}>{currentSong.title}</Voltra.Text>
           <Voltra.Text style={styles.artist}>{currentSong.artist}</Voltra.Text>

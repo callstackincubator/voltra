@@ -8,10 +8,10 @@
 import Foundation
 
 /// Parameters for Image component
-/// Display images from asset catalog
+/// Display images from asset catalog or base64 data
 public struct ImageParameters: ComponentParameters {
-    /// Asset catalog name bundled inside the widget extension
-    public let assetName: String?
+    /// Image source - either { assetName: string } for asset catalog images or { base64: string } for base64 encoded images
+    public let source: String?
 
     /// How the image should be resized to fit its container
     public let resizeMode: String?

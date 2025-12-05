@@ -8,7 +8,7 @@ function BasicLiveActivityUI() {
     <Voltra.VStack id="basic-live-activity" spacing={16} style={{ padding: 16 }}>
       <Voltra.VStack spacing={8}>
         <Voltra.Image
-          assetName="voltra-icon"
+          source={{ assetName: 'voltra-icon' }}
           style={{ width: 60, height: 60, borderRadius: 12 }}
           resizeMode="stretch"
         />

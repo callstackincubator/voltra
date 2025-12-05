@@ -16,14 +16,38 @@ public struct VoltraImage: View {
     @ViewBuilder
     public var body: some View {
         let params = component.parameters(ImageParameters.self)
-        let assetName: String? = {
-            guard let name = params.assetName, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                return nil
-            }
-            return name.trimmingCharacters(in: .whitespacesAndNewlines)
-        }()
         let resizeMode = params.resizeMode?.lowercased() ?? "cover"
-        let baseImage = assetName.map { Image($0) } ?? Image(systemName: "photo")
+        
+        // Parse source object
+        let baseImage: Image = {
+            guard let sourceString = params.source,
+                  let sourceData = sourceString.data(using: .utf8),
+                  let sourceDict = try? JSONSerialization.jsonObject(with: sourceData) as? [String: Any] else {
+                return Image(systemName: "photo")
+            }
+            
+            // Check for base64 first
+            if let base64String = sourceDict["base64"] as? String,
+               let base64Data = Data(base64Encoded: base64String) {
+                #if canImport(UIKit)
+                if let uiImage = UIImage(data: base64Data) {
+                    return Image(uiImage: uiImage)
+                }
+                #elseif canImport(AppKit)
+                if let nsImage = NSImage(data: base64Data) {
+                    return Image(nsImage: nsImage)
+                }
+                #endif
+            }
+            
+            // Check for assetName
+            if let assetName = sourceDict["assetName"] as? String,
+               !assetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return Image(assetName.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            
+            return Image(systemName: "photo")
+        }()
             
         switch resizeMode {
             case "cover":

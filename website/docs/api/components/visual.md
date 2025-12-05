@@ -27,12 +27,24 @@ A semantic label that can display both an icon and title text.
 
 ### Image
 
-Displays bitmap images from the asset catalog bundled inside the widget extension.
+Displays bitmap images from the asset catalog or base64 encoded data.
 
 **Parameters:**
 
-- `assetName` (string, optional): Asset catalog name bundled inside the widget extension
+- `source` (object, optional): Image source object. Either:
+  - `{ assetName: string }` - Asset catalog name bundled inside the widget extension
+  - `{ base64: string }` - Base64 encoded image data
 - `resizeMode` (string, optional): How the image should be resized to fit its container - `"cover"`, `"contain"`, `"stretch"`, `"repeat"`, or `"center"` (default: `"cover"`)
+
+**Examples:**
+
+```tsx
+// Using asset catalog
+<Voltra.Image source={{ assetName: 'my-image' }} />
+
+// Using base64 encoded image
+<Voltra.Image source={{ base64: 'iVBORw0KGgoAAAANS...' }} />
+```
 
 **Apple Documentation:** [Image](https://developer.apple.com/documentation/swiftui/image)
 
