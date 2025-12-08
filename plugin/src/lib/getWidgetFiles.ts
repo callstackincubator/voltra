@@ -10,6 +10,20 @@ export type WidgetFiles = {
   otherFiles: string[]
 }
 
+const MAX_IMAGE_SIZE_BYTES = 4096 // 4KB limit for Live Activities
+
+function validateLiveActivityImageSize(imagePath: string, fileName: string): void {
+  const stats = fs.statSync(imagePath)
+  const imageSizeInBytes = stats.size
+
+  if (imageSizeInBytes >= MAX_IMAGE_SIZE_BYTES) {
+    throw new Error(
+      `Live Activity image size limit exceeded: ${fileName} is ${imageSizeInBytes} bytes (${(imageSizeInBytes / 1024).toFixed(2)}KB). ` +
+        `Live Activity images must be less than 4KB (4096 bytes).`
+    )
+  }
+}
+
 export function getWidgetFiles(targetPath: string) {
   let packagePath: string | undefined
   try {
@@ -90,6 +104,9 @@ export function getWidgetFiles(targetPath: string) {
     files.forEach((file) => {
       if (path.extname(file).match(/\.(png|jpg|jpeg)$/)) {
         const source = path.join(imageAssetsPath, file)
+
+        validateLiveActivityImageSize(source, file)
+
         const imageSetDir = path.join(imagesXcassetsTarget, `${path.basename(file, path.extname(file))}.imageset`)
 
         // Create the .imageset directory if it doesn't exist
@@ -150,6 +167,11 @@ function copyFolderRecursiveSync(source: string, target: string) {
       if (fs.lstatSync(currentPath).isDirectory()) {
         copyFolderRecursiveSync(currentPath, targetPath)
       } else {
+        // Validate image size for Live Activities (must be less than 4KB)
+        const fileExtension = path.extname(file).toLowerCase()
+        if (fileExtension.match(/\.(png|jpg|jpeg)$/)) {
+          validateLiveActivityImageSize(currentPath, file)
+        }
         copyFileSync(currentPath, targetPath)
       }
     })
