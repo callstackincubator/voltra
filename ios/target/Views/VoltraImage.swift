@@ -1,10 +1,6 @@
 import Foundation
 import SwiftUI
-#if canImport(UIKit)
 import UIKit
-#elseif canImport(AppKit)
-import AppKit
-#endif
 
 public struct VoltraImage: View {
     private let component: VoltraComponent
@@ -12,42 +8,45 @@ public struct VoltraImage: View {
     public init(_ component: VoltraComponent) {
         self.component = component
     }
+    
+    /// Creates an Image from the source parameter, falling back to a system photo icon if invalid or not found
+    private func createImage(from source: String?) -> Image {
+        // Fallback image when source is invalid or not found
+        let fallbackImage = Image(systemName: "photo")
+        
+        guard let sourceString = source,
+              let sourceData = sourceString.data(using: .utf8),
+              let sourceDict = try? JSONSerialization.jsonObject(with: sourceData) as? [String: Any] else {
+            return fallbackImage
+        }
+        
+        // Check for base64 first
+        if let base64String = sourceDict["base64"] as? String,
+           let base64Data = Data(base64Encoded: base64String),
+           let uiImage = UIImage(data: base64Data) {
+            return Image(uiImage: uiImage)
+        }
+        
+        // Check for assetName and verify it exists
+        if let assetName = sourceDict["assetName"] as? String,
+           !assetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let trimmedName = assetName.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Verify asset exists by trying to load it
+            if UIImage(named: trimmedName) != nil {
+                return Image(trimmedName)
+            }
+        }
+        
+        // Asset not found or invalid, use fallback
+        return fallbackImage
+    }
 
     @ViewBuilder
     public var body: some View {
         let params = component.parameters(ImageParameters.self)
         let resizeMode = params.resizeMode?.lowercased() ?? "cover"
-        
-        // Parse source object
-        let baseImage: Image = {
-            guard let sourceString = params.source,
-                  let sourceData = sourceString.data(using: .utf8),
-                  let sourceDict = try? JSONSerialization.jsonObject(with: sourceData) as? [String: Any] else {
-                return Image(systemName: "photo")
-            }
-            
-            // Check for base64 first
-            if let base64String = sourceDict["base64"] as? String,
-               let base64Data = Data(base64Encoded: base64String) {
-                #if canImport(UIKit)
-                if let uiImage = UIImage(data: base64Data) {
-                    return Image(uiImage: uiImage)
-                }
-                #elseif canImport(AppKit)
-                if let nsImage = NSImage(data: base64Data) {
-                    return Image(nsImage: nsImage)
-                }
-                #endif
-            }
-            
-            // Check for assetName
-            if let assetName = sourceDict["assetName"] as? String,
-               !assetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return Image(assetName.trimmingCharacters(in: .whitespacesAndNewlines))
-            }
-            
-            return Image(systemName: "photo")
-        }()
+        let baseImage = createImage(from: params.source)
             
         switch resizeMode {
             case "cover":
