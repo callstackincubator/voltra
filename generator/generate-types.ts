@@ -5,6 +5,7 @@ import * as path from 'node:path'
 import { generateSwiftParameters } from './generators/swift-parameters'
 import { generateTypeScriptJSX } from './generators/typescript-jsx'
 import { generateComponentIds } from './generators/component-ids'
+import { generatePropIds } from './generators/prop-ids'
 import type { ComponentsData } from './types'
 import { validateComponentsSchema } from './validate-components'
 
@@ -84,6 +85,23 @@ const main = () => {
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
   console.log()
 
+  // Step 6: Generate prop ID mappings
+  console.log('Step 6: Generating prop ID mappings...')
+  const propIdFiles = generatePropIds(componentsData)
+  // Split files by destination
+  const tsPropIdFiles: Record<string, string> = {}
+  const swiftPropIdFiles: Record<string, string> = {}
+  for (const [filename, content] of Object.entries(propIdFiles)) {
+    if (filename.endsWith('.ts')) {
+      tsPropIdFiles[filename] = content
+    } else if (filename.endsWith('.swift')) {
+      swiftPropIdFiles[filename] = content
+    }
+  }
+  writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsPropIdFiles)
+  writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftPropIdFiles)
+  console.log()
+
   console.log('✅ Generation complete!\n')
   console.log('Generated files:')
   console.log(
@@ -92,6 +110,9 @@ const main = () => {
   console.log(`   Swift parameters: ${Object.keys(swiftParameterFiles).length} files in ios/.../Generated/Parameters/`)
   console.log(
     `   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files`
+  )
+  console.log(
+    `   Prop IDs: ${Object.keys(tsPropIdFiles).length} TypeScript files, ${Object.keys(swiftPropIdFiles).length} Swift files`
   )
   console.log()
   console.log('Next steps:')

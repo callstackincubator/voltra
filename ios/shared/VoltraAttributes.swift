@@ -1,12 +1,21 @@
 //
-//  LiveActivityAttributes.swift
+//  VoltraAttributes.swift
 //  ExpoLiveActivity
 //
 //  Created by Anna Olak on 03/06/2025.
 //
 
 import ActivityKit
+import Compression
 import Foundation
+
+public enum ContentStateParsingError: Error {
+  case invalidJsonString
+  case jsonDeserializationFailed(Error)
+  case invalidRootType
+  case componentsParsingFailed(Error)
+  case regionParsingFailed(VoltraRegion, Error)
+}
 
 public struct VoltraAttributes: ActivityAttributes {
   public struct ContentState: Codable, Hashable {
@@ -17,47 +26,65 @@ public struct VoltraAttributes: ActivityAttributes {
       case uiJsonData
     }
 
-    public init(uiJsonData: String) {
+    public init(uiJsonData: String) throws {
       self.uiJsonData = uiJsonData
-      self.regions = ContentState.parseRegions(from: uiJsonData)
+
+      let decompressedJson = try BrotliCompression.decompress(base64String: uiJsonData)
+      self.regions = try ContentState.parseRegions(from: decompressedJson)
     }
 
-    private static func parseRegions(from jsonString: String) -> [VoltraRegion: [VoltraComponent]] {
+    private static func parseRegions(from jsonString: String) throws -> [VoltraRegion: [VoltraComponent]] {
       var regions: [VoltraRegion: [VoltraComponent]] = [:]
 
-      guard let data = jsonString.data(using: .utf8),
-            let root = try? JSONSerialization.jsonObject(with: data) else {
-        return regions
+      guard let data = jsonString.data(using: .utf8) else {
+        throw ContentStateParsingError.invalidJsonString
+      }
+      
+      let root: Any
+      do {
+        root = try JSONSerialization.jsonObject(with: data)
+      } catch {
+        throw ContentStateParsingError.jsonDeserializationFailed(error)
       }
 
       // If it's already an array, use it for all regions
       if root is [Any] {
-        if let components = parseComponents(from: jsonString) {
-          for region in VoltraRegion.allCases {
-            regions[region] = components
-          }
+        let components = try parseComponents(from: jsonString)
+        for region in VoltraRegion.allCases {
+          regions[region] = components
         }
         return regions
       }
 
       guard let dict = root as? [String: Any] else {
-        return regions
+        throw ContentStateParsingError.invalidRootType
       }
 
       // Extract components for each region
       for region in VoltraRegion.allCases {
-        if let jsonString = selectJsonString(from: dict, region: region),
-           let components = parseComponents(from: jsonString) {
-          regions[region] = components
+        if let jsonString = selectJsonString(from: dict, region: region) {
+          do {
+            let components = try parseComponents(from: jsonString)
+            regions[region] = components
+          } catch {
+            throw ContentStateParsingError.regionParsingFailed(region, error)
+          }
         }
       }
 
       return regions
     }
 
-    private static func parseComponents(from jsonString: String) -> [VoltraComponent]? {
-      guard let data = jsonString.data(using: .utf8) else { return nil }
-      return try? JSONDecoder().decode([VoltraComponent].self, from: data)
+    private static func parseComponents(from jsonString: String) throws -> [VoltraComponent] {
+      guard let data = jsonString.data(using: .utf8) else {
+        throw ContentStateParsingError.invalidJsonString
+      }
+      
+      do {
+        return try JSONDecoder().decode([VoltraComponent].self, from: data)
+      } catch {
+        throw ContentStateParsingError.componentsParsingFailed(error)
+      }
     }
 
     private static func selectJsonString(from dict: [String: Any], region: VoltraRegion) -> String? {
@@ -113,11 +140,15 @@ public struct VoltraAttributes: ActivityAttributes {
 
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      uiJsonData = try container.decode(String.self, forKey: .uiJsonData)
-      regions = ContentState.parseRegions(from: uiJsonData)
+      let compressedJson = try container.decode(String.self, forKey: .uiJsonData)
+      uiJsonData = compressedJson
+      // Decompress brotli-compressed base64 data
+      let decompressedJson = try BrotliCompression.decompress(base64String: compressedJson)
+      regions = try ContentState.parseRegions(from: decompressedJson)
     }
   }
 
   var name: String
   var deepLinkUrl: String?
 }
+

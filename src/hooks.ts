@@ -85,12 +85,12 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
       return
     }
 
-    start().catch(() => null)
+    start()
   }, [options?.autoStart, start])
 
   useEffect(() => {
     if (!options?.autoUpdate) return
-    update(lastUpdateOptionsRef.current).catch(() => null)
+    update(lastUpdateOptionsRef.current)
   }, [options?.autoUpdate, variants, update])
 
   useEffect(() => {

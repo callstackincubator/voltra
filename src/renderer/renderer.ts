@@ -27,6 +27,7 @@ import { StyleSheet } from 'react-native'
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent'
 import { getComponentId } from '../payload/component-ids'
+import { PROP_NAME_TO_ID } from '../payload/prop-ids'
 import { VoltraElementJson, VoltraJson, VoltraNodeJson } from '../types'
 import { ContextRegistry, getContextRegistry } from './context-registry'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher'
@@ -98,6 +99,18 @@ const STYLE_PROPERTY_NAME_MAP: Record<string, string> = {
   color: 'c',
   letterSpacing: 'ls',
   fontVariant: 'fv',
+  width: 'w',
+  height: 'h',
+  opacity: 'op',
+  overflow: 'ov',
+  flex: 'f',
+  flexGrow: 'fg',
+  flexShrink: 'fsh',
+  position: 'pos',
+  top: 't',
+  left: 'l',
+  right: 'r',
+  bottom: 'b',
 }
 
 function shortenStylePropertyName(name: string): string {
@@ -376,16 +389,16 @@ function compressStyleObject(style: any): any {
 
   // Flatten style if it's a StyleSheet reference or array
   const flattened = StyleSheet.flatten(style)
-  
+
   const compressed: Record<string, any> = {}
-  
+
   for (const [key, value] of Object.entries(flattened)) {
     const shortKey = shortenStylePropertyName(key)
-    
+
     if (value === null || value === undefined) {
       continue
     }
-    
+
     // Handle nested objects (e.g., shadowOffset: { width, height })
     if (typeof value === 'object' && !Array.isArray(value) && value.constructor === Object) {
       const compressedNested: Record<string, any> = {}
@@ -397,16 +410,17 @@ function compressStyleObject(style: any): any {
       compressed[shortKey] = value
     }
   }
-  
+
   return compressed
 }
 
-export function transformProps(props: Record<string, unknown>): Record<string, unknown> {
-  const transformed: Record<string, unknown> = {}
-  
+export function transformProps(props: Record<string, unknown>): Record<string | number, unknown> {
+  const transformed: Record<string | number, unknown> = {}
+
   for (const [key, value] of Object.entries(props)) {
     if (key === 'modifiers' && Array.isArray(value)) {
       // Transform modifiers array to [name, args] format
+      // Keep 'modifiers' as string key (special case)
       transformed[key] = value.map((modifier: any) => {
         if (typeof modifier === 'object' && modifier !== null) {
           const name = 'name' in modifier ? shortenModifierName(String(modifier.name)) : ''
@@ -416,13 +430,20 @@ export function transformProps(props: Record<string, unknown>): Record<string, u
         return modifier
       })
     } else if (key === 'style') {
-      // Compress style property names
-      transformed[key] = compressStyleObject(value)
+      // Compress style property names and use prop ID 0 (style is always ID 0)
+      transformed[0] = compressStyleObject(value)
     } else {
-      transformed[key] = value
+      // Convert component-specific prop names to numeric IDs
+      const propId = PROP_NAME_TO_ID[key]
+      if (propId !== undefined) {
+        transformed[propId] = value
+      } else {
+        // Fallback: keep original key if not in mapping (for backwards compatibility)
+        transformed[key] = value
+      }
     }
   }
-  
+
   return transformed
 }
 

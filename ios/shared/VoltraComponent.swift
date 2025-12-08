@@ -168,6 +168,18 @@ public struct VoltraComponent: Codable {
             "c": "color",
             "ls": "letterSpacing",
             "fv": "fontVariant",
+            "w": "width",
+            "h": "height",
+            "op": "opacity",
+            "ov": "overflow",
+            "f": "flex",
+            "fg": "flexGrow",
+            "fsh": "flexShrink",
+            "pos": "position",
+            "t": "top",
+            "l": "left",
+            "r": "right",
+            "b": "bottom",
         ]
         return stylePropertyMap[shortName] ?? shortName
     }
@@ -250,7 +262,24 @@ public struct VoltraComponent: Codable {
         if container.contains(.p) {
             // Get the raw JSON value for props
             let propsJSON = try container.decode(JSONValue.self, forKey: .p)
-            _props = propsJSON.toDictionary()
+            let rawProps = propsJSON.toDictionary()
+            
+            // Expand numeric prop IDs to string names
+            var expandedProps: [String: Any] = [:]
+            if let rawProps = rawProps {
+                for (key, value) in rawProps {
+                    // Check if key is a numeric string (prop ID)
+                    if let numericKey = Int(key),
+                       let propNameID = PropNameID(rawValue: numericKey) {
+                        // Convert numeric ID to prop name
+                        expandedProps[propNameID.propName] = value
+                    } else {
+                        // Keep string keys as-is (for 'modifiers' and unknown props)
+                        expandedProps[key] = value
+                    }
+                }
+            }
+            _props = expandedProps.isEmpty ? nil : expandedProps
         } else {
             _props = nil
         }

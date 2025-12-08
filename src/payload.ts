@@ -13,14 +13,13 @@ const utf8ByteLength = (s: string): number => {
   }
 }
 
-export const ensurePayloadWithinBudget = (json: string): void => {
-  const bytes = utf8ByteLength(json)
-  console.log('bytes', bytes)
-  console.log(json)
+export const ensurePayloadWithinBudget = (compressedPayload: string): void => {
+  // Validate compressed payload size (base64-encoded string)
+  const bytes = utf8ByteLength(compressedPayload)
 
   if (bytes > EFFECTIVE_JSON_BUDGET) {
     throw new Error(
-      `[Voltra] Payload size ${bytes}B exceeds safe budget ${EFFECTIVE_JSON_BUDGET}B (ActivityKit hard cap ${MAX_ACTIVITYKIT_BYTES}B). You need to reduce the complexity of your UI.`
+      `[Voltra] Compressed payload size ${bytes}B exceeds safe budget ${EFFECTIVE_JSON_BUDGET}B (ActivityKit hard cap ${MAX_ACTIVITYKIT_BYTES}B). You need to reduce the complexity of your UI.`
     )
   }
 }

@@ -151,7 +151,7 @@ public class VoltraLiveActivityService {
         
         // Create attributes and initial state
         let attributes = VoltraAttributes(name: finalActivityId, deepLinkUrl: request.deepLinkUrl)
-        let initialState = VoltraAttributes.ContentState(uiJsonData: request.jsonString)
+        let initialState = try VoltraAttributes.ContentState(uiJsonData: request.jsonString)
         
         // Request the activity
         let activity = try Activity.request(
@@ -182,7 +182,7 @@ public class VoltraLiveActivityService {
             throw VoltraLiveActivityError.unsupportedOS
         }
         
-        let newState = VoltraAttributes.ContentState(uiJsonData: request.jsonString)
+        let newState = try VoltraAttributes.ContentState(uiJsonData: request.jsonString)
         await activity.update(
             ActivityContent(
                 state: newState,

@@ -1,5 +1,4 @@
 import { logger } from './logger'
-import { ensurePayloadWithinBudget } from './payload'
 import { renderVoltraToString, VoltraVariants } from './renderer'
 import { assertRunningOnApple } from './utils'
 import VoltraModule from './VoltraModule'
@@ -59,7 +58,6 @@ export const startVoltra = async (variants: VoltraVariants, options?: StartVoltr
   if (!assertRunningOnApple()) return Promise.resolve('')
 
   const payload = renderVoltraToString(variants)
-  ensurePayloadWithinBudget(payload)
 
   const normalizedSharedOptions = normalizeSharedVoltraOptions(options)
   const targetId = await VoltraModule.startVoltra(payload, {
@@ -79,7 +77,7 @@ export const updateVoltra = async (
   if (!assertRunningOnApple()) return Promise.resolve()
 
   const payload = renderVoltraToString(variants)
-  ensurePayloadWithinBudget(payload)
+  console.log('payload', payload)
 
   const normalizedSharedOptions = normalizeSharedVoltraOptions(options)
   return VoltraModule.updateVoltra(targetId, payload, normalizedSharedOptions)

@@ -1,4 +1,5 @@
 import ActivityKit
+import Compression
 import ExpoModulesCore
 import Foundation
 import WidgetKit
@@ -19,17 +20,17 @@ public class VoltraModule: Module {
     case unexpectedError(Error)
   }
 
-  private func validatePayloadSize(_ jsonString: String, operation: String) throws {
-    let dataSize = jsonString.utf8.count
+  private func validatePayloadSize(_ compressedPayload: String, operation: String) throws {
+    let dataSize = compressedPayload.utf8.count
     let safeBudget = 3345  // Keep existing safe budget
-    print("Payload size: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B)")
+    print("Compressed payload size: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B)")
 
     if dataSize > safeBudget {
       throw VoltraErrors.unexpectedError(
         NSError(
           domain: "VoltraModule",
           code: operation == "start" ? -10 : -11,
-          userInfo: [NSLocalizedDescriptionKey: "Payload too large: JSON=\(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B). Reduce the UI before \(operation == "start" ? "starting" : "updating") the Live Activity."]
+          userInfo: [NSLocalizedDescriptionKey: "Compressed payload too large: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B). Reduce the UI before \(operation == "start" ? "starting" : "updating") the Live Activity."]
         )
       )
     }
@@ -93,7 +94,9 @@ public class VoltraModule: Module {
       }
 
       do {
-        try validatePayloadSize(jsonString, operation: "start")
+        // Compress JSON using brotli level 2
+        let compressedJson = try BrotliCompression.compress(jsonString: jsonString)
+        try validatePayloadSize(compressedJson, operation: "start")
 
         let activityName = options?.activityId?.trimmingCharacters(in: .whitespacesAndNewlines)
         
@@ -106,11 +109,11 @@ public class VoltraModule: Module {
         }()
         let relevanceScore: Double = options?.relevanceScore ?? 0.0
 
-        // Create request struct
+        // Create request struct with compressed JSON
         let createRequest = CreateActivityRequest(
           activityId: activityName,
           deepLinkUrl: options?.deepLinkUrl,
-          jsonString: jsonString,
+          jsonString: compressedJson,
           staleDate: staleDate,
           relevanceScore: relevanceScore,
           pushType: pushNotificationsEnabled ? .token : nil,
@@ -187,7 +190,9 @@ public class VoltraModule: Module {
 
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
       
-      try validatePayloadSize(jsonString, operation: "update")
+      // Compress JSON using brotli level 2
+      let compressedJson = try BrotliCompression.compress(jsonString: jsonString)
+      try validatePayloadSize(compressedJson, operation: "update")
 
       // Extract staleDate and relevanceScore from options
       let staleDate: Date? = {
@@ -198,9 +203,9 @@ public class VoltraModule: Module {
       }()
       let relevanceScore: Double = options?.relevanceScore ?? 0.0
 
-      // Create update request struct
+      // Create update request struct with compressed JSON
       let updateRequest = UpdateActivityRequest(
-        jsonString: jsonString,
+        jsonString: compressedJson,
         staleDate: staleDate,
         relevanceScore: relevanceScore
       )
