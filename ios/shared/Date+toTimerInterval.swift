@@ -1,9 +1,3 @@
-//
-//  Date+toTimerInterval.swift
-//  
-//
-//  Created by Artur Bilski on 04/08/2025.
-//
 import SwiftUI
 
 extension Date {

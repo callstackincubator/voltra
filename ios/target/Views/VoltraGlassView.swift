@@ -1,10 +1,3 @@
-//
-//  VoltraGlassView.swift
-//  Voltra
-//
-//  Created by Voltra.
-//
-
 import SwiftUI
 
 /// Voltra: GlassView (iOS 26+ preferred, but renders content on lower OSes)

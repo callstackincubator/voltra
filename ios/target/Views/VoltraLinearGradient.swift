@@ -1,12 +1,3 @@
-//
-//  VoltraLinearGradient.swift
-//  Voltra
-//
-//  Created by Windsurf Cascade.
-//
-//  MIT LICENSE
-//
-
 import SwiftUI
 
 public struct VoltraLinearGradient: View {

@@ -1,10 +1,3 @@
-//
-//  VoltraGlassContainer.swift
-//  Voltra
-//
-//  Created by Voltra.
-//
-
 import SwiftUI
 
 /// Voltra: GlassContainer (iOS 18+)
