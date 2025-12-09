@@ -1,0 +1,99 @@
+import SwiftUI
+
+public struct VoltraCircularProgressView: View {
+    private let component: VoltraComponent
+    private let helper = VoltraHelper()
+    
+    public init(_ component: VoltraComponent) {
+        self.component = component
+    }
+
+    @ViewBuilder
+    public var body: some View {
+        let params = component.parameters(CircularProgressViewParameters.self)
+        let endAtMs = params.endAtMs
+        let startAtMs = params.startAtMs
+        
+        // Extract colors and styling from direct props
+        let trackColor = params.trackColor.flatMap { helper.translateColor($0) }
+        let progressColor = params.progressColor.flatMap { helper.translateColor($0) }
+        let lineWidth = params.lineWidth.map { CGFloat($0) }
+        
+        // Determine if we need custom style
+        let needsCustomStyle = trackColor != nil || lineWidth != nil
+        
+        // Define the custom style builder (if needed)
+        let customStyle = VoltraCircularProgressStyle(
+            progressTint: progressColor,
+            trackTint: trackColor ?? Color.gray.opacity(0.2),
+            lineWidth: lineWidth
+        )
+        
+        // Group containing the ProgressView variations
+        let progressContent = Group {
+            if let endAtMs = endAtMs {
+                // Timer-based progress
+                let timeRange = Date.toTimerInterval(startAtMs: startAtMs, endAtMs: endAtMs)
+                
+                ProgressView(timerInterval: timeRange)
+                    .tint(progressColor)
+            } else if let value = params.value {
+                // Determinate progress
+                ProgressView(
+                    value: value,
+                    total: params.maximumValue ?? 100
+                )
+                .tint(progressColor)
+            } else {
+                // Indeterminate progress (only supported for circular)
+                ProgressView()
+                    .tint(progressColor)
+            }
+        }
+        
+        // Apply the style conditionally
+        if needsCustomStyle {
+            progressContent
+                .progressViewStyle(customStyle)
+                .voltraModifiers(component)
+        } else {
+            progressContent
+                .progressViewStyle(CircularProgressViewStyle())
+                .voltraModifiers(component)
+        }
+    }
+}
+
+@available(iOS 16.0, macOS 13.0, *)
+private struct VoltraCircularProgressStyle: ProgressViewStyle {
+    var progressTint: Color?
+    var trackTint: Color
+    var lineWidth: CGFloat?
+
+    func makeBody(configuration: Configuration) -> some View {
+        let fraction = max(0, min(configuration.fractionCompleted ?? 0, 1))
+        let strokeWidth = lineWidth ?? 4
+        
+        return GeometryReader { geometry in
+            let size = min(geometry.size.width, geometry.size.height)
+            
+            ZStack {
+                // Track (background circle)
+                Circle()
+                    .stroke(trackTint, lineWidth: strokeWidth)
+                
+                // Progress arc
+                Circle()
+                    .trim(from: 0, to: fraction)
+                    .stroke(
+                        progressTint ?? Color.accentColor,
+                        style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear, value: fraction)
+            }
+            .frame(width: size, height: size)
+        }
+    }
+}
+

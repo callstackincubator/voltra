@@ -148,8 +148,11 @@ struct InternalVoltra: View {
             case "Gauge":
                 VoltraGauge(component)
 
-            case "ProgressView":
-                VoltraProgressView(component)
+            case "LinearProgressView":
+                VoltraLinearProgressView(component)
+
+            case "CircularProgressView":
+                VoltraCircularProgressView(component)
 
             case "Slider":
                 VoltraSlider(component)

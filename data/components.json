@@ -168,25 +168,25 @@
       }
     },
     {
-      "name": "ProgressView",
-      "description": "Progress indicator (determinate or timer-based)",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "name": "LinearProgressView",
+      "description": "Linear progress indicator (determinate or timer-based)",
+      "swiftAvailability": "iOS 16.0, macOS 13.0",
       "parameters": {
-        "defaultValue": {
+        "value": {
           "type": "number",
           "optional": true,
           "description": "Current progress value"
+        },
+        "countDown": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Whether to count down instead of up"
         },
         "maximumValue": {
           "type": "number",
           "optional": true,
           "default": 100,
           "description": "Maximum progress value"
-        },
-        "timerEndDateInMilliseconds": {
-          "type": "number",
-          "optional": true,
-          "description": "Legacy: End time for timer-based progress"
         },
         "endAtMs": {
           "type": "number",
@@ -198,12 +198,79 @@
           "optional": true,
           "description": "Start time in milliseconds since epoch"
         },
-        "mode": {
+        "trackColor": {
           "type": "string",
           "optional": true,
-          "enum": ["bar", "circular"],
-          "default": "bar",
-          "description": "Progress view style"
+          "description": "Color for the track (background) of the progress bar"
+        },
+        "progressColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Color for the progress fill"
+        },
+        "cornerRadius": {
+          "type": "number",
+          "optional": true,
+          "description": "Corner radius for the progress bar"
+        },
+        "height": {
+          "type": "number",
+          "optional": true,
+          "description": "Explicit height for the progress bar"
+        },
+        "thumbImage": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Image source for thumb indicator (same format as Image component: { assetName: string } or { base64: string })"
+        }
+      }
+    },
+    {
+      "name": "CircularProgressView",
+      "description": "Circular progress indicator (determinate or timer-based)",
+      "swiftAvailability": "iOS 16.0, macOS 13.0",
+      "parameters": {
+        "value": {
+          "type": "number",
+          "optional": true,
+          "description": "Current progress value"
+        },
+        "countDown": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Whether to count down instead of up"
+        },
+        "maximumValue": {
+          "type": "number",
+          "optional": true,
+          "default": 100,
+          "description": "Maximum progress value"
+        },
+        "endAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "End time in milliseconds since epoch"
+        },
+        "startAtMs": {
+          "type": "number",
+          "optional": true,
+          "description": "Start time in milliseconds since epoch"
+        },
+        "trackColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Color for the track (background) of the circular progress indicator"
+        },
+        "progressColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Color for the progress fill"
+        },
+        "lineWidth": {
+          "type": "number",
+          "optional": true,
+          "description": "Width of the stroke line"
         }
       }
     },
@@ -241,7 +308,7 @@
     },
     {
       "name": "Timer",
-      "description": "Flexible countdown/stopwatch component",
+      "description": "Text-based countdown/stopwatch timer component",
       "swiftAvailability": "iOS 16.0, macOS 13.0",
       "parameters": {
         "endAtMs": {
@@ -258,13 +325,6 @@
           "type": "number",
           "optional": true,
           "description": "Duration in milliseconds"
-        },
-        "mode": {
-          "type": "string",
-          "optional": true,
-          "enum": ["text", "bar", "circular"],
-          "default": "text",
-          "description": "Display mode"
         },
         "direction": {
           "type": "string",
@@ -290,24 +350,6 @@
           "optional": true,
           "jsonEncoded": true,
           "description": "JSON-encoded TextTemplates object with running/completed templates"
-        },
-        "modeOrderedModifiers": {
-          "type": "string",
-          "optional": true,
-          "jsonEncoded": true,
-          "description": "JSON-encoded mode-specific modifiers map"
-        },
-        "modeTrackColors": {
-          "type": "string",
-          "optional": true,
-          "jsonEncoded": true,
-          "description": "JSON-encoded track colors map"
-        },
-        "modeTintColors": {
-          "type": "string",
-          "optional": true,
-          "jsonEncoded": true,
-          "description": "JSON-encoded tint colors map"
         }
       }
     },

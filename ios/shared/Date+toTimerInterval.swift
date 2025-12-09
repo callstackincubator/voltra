@@ -13,9 +13,11 @@ extension Date {
       } else {
           start = .now
       }
-      // Ensure start <= end to avoid invalid range
+      // Handle countdown case: if start > end, swap them for countdown behavior
       if start > end {
-          return end...end
+          // For countdown, range should be end...start (swapped)
+          // Clamp to now if end is in the past
+          return end...max(.now, start)
       }
       // If end is in the past, clamp to now to avoid negative intervals
       return start...max(.now, end)
