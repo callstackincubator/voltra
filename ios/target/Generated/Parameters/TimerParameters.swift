@@ -8,7 +8,7 @@
 import Foundation
 
 /// Parameters for Timer component
-/// Flexible countdown/stopwatch component
+/// Text-based countdown/stopwatch timer component
 public struct TimerParameters: ComponentParameters {
     /// End time in milliseconds since epoch
     public let endAtMs: Double?
@@ -18,9 +18,6 @@ public struct TimerParameters: ComponentParameters {
 
     /// Duration in milliseconds
     public let durationMs: Double?
-
-    /// Display mode
-    public let mode: String?
 
     /// Count direction
     public let direction: String?
@@ -33,13 +30,4 @@ public struct TimerParameters: ComponentParameters {
 
     /// JSON-encoded TextTemplates object with running/completed templates
     public let textTemplates: String?
-
-    /// JSON-encoded mode-specific modifiers map
-    public let modeOrderedModifiers: String?
-
-    /// JSON-encoded track colors map
-    public let modeTrackColors: String?
-
-    /// JSON-encoded tint colors map
-    public let modeTintColors: String?
 }

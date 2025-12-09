@@ -4,17 +4,21 @@
 
 import type { VoltraBaseProps } from '../baseProps'
 
-export type ProgressViewProps = VoltraBaseProps & {
+export type CircularProgressViewProps = VoltraBaseProps & {
   /** Current progress value */
-  defaultValue?: number
+  value?: number
+  /** Whether to count down instead of up */
+  countDown?: boolean
   /** Maximum progress value */
   maximumValue?: number
-  /** Legacy: End time for timer-based progress */
-  timerEndDateInMilliseconds?: number
   /** End time in milliseconds since epoch */
   endAtMs?: number
   /** Start time in milliseconds since epoch */
   startAtMs?: number
-  /** Progress view style */
-  mode?: 'bar' | 'circular'
+  /** Color for the track (background) of the circular progress indicator */
+  trackColor?: string
+  /** Color for the progress fill */
+  progressColor?: string
+  /** Width of the stroke line */
+  lineWidth?: number
 }

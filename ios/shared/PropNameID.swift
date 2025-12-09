@@ -16,45 +16,48 @@ public enum PropNameID: Int, Codable {
     case autoHideOnEnd = 3
     case axis = 4
     case colors = 5
-    case defaultValue = 6
-    case direction = 7
-    case dither = 8
-    case durationMs = 9
-    case effect = 10
-    case endAtMs = 11
-    case endPoint = 12
-    case hideValueLabel = 13
-    case interactive = 14
-    case isExpanded = 15
-    case maximumLabel = 16
-    case maximumValue = 17
-    case minLength = 18
-    case minimumLabel = 19
-    case minimumValue = 20
-    case mode = 21
-    case modeOrderedModifiers = 22
-    case modeTintColors = 23
-    case modeTrackColors = 24
+    case cornerRadius = 6
+    case countDown = 7
+    case defaultValue = 8
+    case direction = 9
+    case dither = 10
+    case durationMs = 11
+    case effect = 12
+    case endAtMs = 13
+    case endPoint = 14
+    case height = 15
+    case hideValueLabel = 16
+    case interactive = 17
+    case isExpanded = 18
+    case lineWidth = 19
+    case maximumLabel = 20
+    case maximumValue = 21
+    case minLength = 22
+    case minimumLabel = 23
+    case minimumValue = 24
     case name = 25
-    case resizeMode = 26
-    case scale = 27
-    case showValueLabel = 28
-    case showsIndicators = 29
-    case size = 30
-    case source = 31
-    case spacing = 32
-    case startAtMs = 33
-    case startPoint = 34
-    case stops = 35
-    case systemImage = 36
-    case textStyle = 37
-    case textTemplates = 38
-    case timerEndDateInMilliseconds = 39
-    case tint = 40
-    case tintColor = 41
-    case title = 42
-    case type = 43
-    case weight = 44
+    case progressColor = 26
+    case resizeMode = 27
+    case scale = 28
+    case showValueLabel = 29
+    case showsIndicators = 30
+    case size = 31
+    case source = 32
+    case spacing = 33
+    case startAtMs = 34
+    case startPoint = 35
+    case stops = 36
+    case systemImage = 37
+    case textStyle = 38
+    case textTemplates = 39
+    case thumbImage = 40
+    case tint = 41
+    case tintColor = 42
+    case title = 43
+    case trackColor = 44
+    case type = 45
+    case value = 46
+    case weight = 47
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -71,6 +74,10 @@ public enum PropNameID: Int, Codable {
             return "axis"
         case .colors:
             return "colors"
+        case .cornerRadius:
+            return "cornerRadius"
+        case .countDown:
+            return "countDown"
         case .defaultValue:
             return "defaultValue"
         case .direction:
@@ -85,12 +92,16 @@ public enum PropNameID: Int, Codable {
             return "endAtMs"
         case .endPoint:
             return "endPoint"
+        case .height:
+            return "height"
         case .hideValueLabel:
             return "hideValueLabel"
         case .interactive:
             return "interactive"
         case .isExpanded:
             return "isExpanded"
+        case .lineWidth:
+            return "lineWidth"
         case .maximumLabel:
             return "maximumLabel"
         case .maximumValue:
@@ -101,16 +112,10 @@ public enum PropNameID: Int, Codable {
             return "minimumLabel"
         case .minimumValue:
             return "minimumValue"
-        case .mode:
-            return "mode"
-        case .modeOrderedModifiers:
-            return "modeOrderedModifiers"
-        case .modeTintColors:
-            return "modeTintColors"
-        case .modeTrackColors:
-            return "modeTrackColors"
         case .name:
             return "name"
+        case .progressColor:
+            return "progressColor"
         case .resizeMode:
             return "resizeMode"
         case .scale:
@@ -137,16 +142,20 @@ public enum PropNameID: Int, Codable {
             return "textStyle"
         case .textTemplates:
             return "textTemplates"
-        case .timerEndDateInMilliseconds:
-            return "timerEndDateInMilliseconds"
+        case .thumbImage:
+            return "thumbImage"
         case .tint:
             return "tint"
         case .tintColor:
             return "tintColor"
         case .title:
             return "title"
+        case .trackColor:
+            return "trackColor"
         case .type:
             return "type"
+        case .value:
+            return "value"
         case .weight:
             return "weight"
         }
@@ -163,6 +172,8 @@ public enum PropNameID: Int, Codable {
         case "autoHideOnEnd": self = .autoHideOnEnd
         case "axis": self = .axis
         case "colors": self = .colors
+        case "cornerRadius": self = .cornerRadius
+        case "countDown": self = .countDown
         case "defaultValue": self = .defaultValue
         case "direction": self = .direction
         case "dither": self = .dither
@@ -170,19 +181,18 @@ public enum PropNameID: Int, Codable {
         case "effect": self = .effect
         case "endAtMs": self = .endAtMs
         case "endPoint": self = .endPoint
+        case "height": self = .height
         case "hideValueLabel": self = .hideValueLabel
         case "interactive": self = .interactive
         case "isExpanded": self = .isExpanded
+        case "lineWidth": self = .lineWidth
         case "maximumLabel": self = .maximumLabel
         case "maximumValue": self = .maximumValue
         case "minLength": self = .minLength
         case "minimumLabel": self = .minimumLabel
         case "minimumValue": self = .minimumValue
-        case "mode": self = .mode
-        case "modeOrderedModifiers": self = .modeOrderedModifiers
-        case "modeTintColors": self = .modeTintColors
-        case "modeTrackColors": self = .modeTrackColors
         case "name": self = .name
+        case "progressColor": self = .progressColor
         case "resizeMode": self = .resizeMode
         case "scale": self = .scale
         case "showValueLabel": self = .showValueLabel
@@ -196,11 +206,13 @@ public enum PropNameID: Int, Codable {
         case "systemImage": self = .systemImage
         case "textStyle": self = .textStyle
         case "textTemplates": self = .textTemplates
-        case "timerEndDateInMilliseconds": self = .timerEndDateInMilliseconds
+        case "thumbImage": self = .thumbImage
         case "tint": self = .tint
         case "tintColor": self = .tintColor
         case "title": self = .title
+        case "trackColor": self = .trackColor
         case "type": self = .type
+        case "value": self = .value
         case "weight": self = .weight
         default:
             return nil

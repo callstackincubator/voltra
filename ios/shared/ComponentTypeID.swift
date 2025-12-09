@@ -17,26 +17,27 @@ public enum ComponentTypeID: Int, Codable {
     case SYMBOL = 4
     case TOGGLE = 5
     case SLIDER = 6
-    case PROGRESS_VIEW = 7
-    case GAUGE = 8
-    case TIMER = 9
-    case LINEAR_GRADIENT = 10
-    case V_STACK = 11
-    case H_STACK = 12
-    case Z_STACK = 13
-    case SCROLL_VIEW = 14
-    case LIST = 15
-    case NAVIGATION_VIEW = 16
-    case FORM = 17
-    case GROUP_BOX = 18
-    case DISCLOSURE_GROUP = 19
-    case H_SPLIT_VIEW = 20
-    case V_SPLIT_VIEW = 21
-    case PICKER = 22
-    case GLASS_CONTAINER = 23
-    case GLASS_VIEW = 24
-    case SPACER = 25
-    case DIVIDER = 26
+    case LINEAR_PROGRESS_VIEW = 7
+    case CIRCULAR_PROGRESS_VIEW = 8
+    case GAUGE = 9
+    case TIMER = 10
+    case LINEAR_GRADIENT = 11
+    case V_STACK = 12
+    case H_STACK = 13
+    case Z_STACK = 14
+    case SCROLL_VIEW = 15
+    case LIST = 16
+    case NAVIGATION_VIEW = 17
+    case FORM = 18
+    case GROUP_BOX = 19
+    case DISCLOSURE_GROUP = 20
+    case H_SPLIT_VIEW = 21
+    case V_SPLIT_VIEW = 22
+    case PICKER = 23
+    case GLASS_CONTAINER = 24
+    case GLASS_VIEW = 25
+    case SPACER = 26
+    case DIVIDER = 27
     
     /// Get the component name string for this ID
     public var componentName: String {
@@ -55,8 +56,10 @@ public enum ComponentTypeID: Int, Codable {
             return "Toggle"
         case .SLIDER:
             return "Slider"
-        case .PROGRESS_VIEW:
-            return "ProgressView"
+        case .LINEAR_PROGRESS_VIEW:
+            return "LinearProgressView"
+        case .CIRCULAR_PROGRESS_VIEW:
+            return "CircularProgressView"
         case .GAUGE:
             return "Gauge"
         case .TIMER:
@@ -110,7 +113,8 @@ public enum ComponentTypeID: Int, Codable {
         case "Symbol": self = .SYMBOL
         case "Toggle": self = .TOGGLE
         case "Slider": self = .SLIDER
-        case "ProgressView": self = .PROGRESS_VIEW
+        case "LinearProgressView": self = .LINEAR_PROGRESS_VIEW
+        case "CircularProgressView": self = .CIRCULAR_PROGRESS_VIEW
         case "Gauge": self = .GAUGE
         case "Timer": self = .TIMER
         case "LinearGradient": self = .LINEAR_GRADIENT
