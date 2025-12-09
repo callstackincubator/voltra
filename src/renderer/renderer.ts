@@ -497,6 +497,10 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
   }
 
   if (variants.island) {
+    if (variants.island.keylineTint) {
+      result.isl_keyline_tint = variants.island.keylineTint
+    }
+
     if (variants.island.expanded) {
       if (variants.island.expanded.center) {
         result.isl_exp_c = renderCache.getOrRender(variants.island.expanded.center)

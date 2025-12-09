@@ -5,6 +5,7 @@ import { VoltraJson, VoltraNodeJson } from '../types'
 export type VoltraVariants = {
   lockScreen?: ReactNode
   island?: {
+    keylineTint?: string
     expanded?: {
       center?: ReactNode
       leading?: ReactNode

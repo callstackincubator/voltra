@@ -21,6 +21,7 @@ public struct VoltraAttributes: ActivityAttributes {
   public struct ContentState: Codable, Hashable {
     public var uiJsonData: String
     public let regions: [VoltraRegion: [VoltraComponent]]
+    public let keylineTint: String?
 
     private enum CodingKeys: String, CodingKey {
       case uiJsonData
@@ -30,7 +31,62 @@ public struct VoltraAttributes: ActivityAttributes {
       self.uiJsonData = uiJsonData
 
       let decompressedJson = try BrotliCompression.decompress(base64String: uiJsonData)
-      self.regions = try ContentState.parseRegions(from: decompressedJson)
+      let parsedData = try ContentState.parseJsonData(from: decompressedJson)
+      self.regions = parsedData.regions
+      self.keylineTint = parsedData.keylineTint
+    }
+
+    private struct ParsedJsonData {
+      let regions: [VoltraRegion: [VoltraComponent]]
+      let keylineTint: String?
+    }
+
+    private static func parseJsonData(from jsonString: String) throws -> ParsedJsonData {
+      var regions: [VoltraRegion: [VoltraComponent]] = [:]
+      var keylineTint: String? = nil
+
+      guard let data = jsonString.data(using: .utf8) else {
+        throw ContentStateParsingError.invalidJsonString
+      }
+
+      let root: Any
+      do {
+        root = try JSONSerialization.jsonObject(with: data)
+      } catch {
+        throw ContentStateParsingError.jsonDeserializationFailed(error)
+      }
+
+      // If it's already an array, use it for all regions
+      if root is [Any] {
+        let components = try parseComponents(from: jsonString)
+        for region in VoltraRegion.allCases {
+          regions[region] = components
+        }
+        return ParsedJsonData(regions: regions, keylineTint: nil)
+      }
+
+      guard let dict = root as? [String: Any] else {
+        throw ContentStateParsingError.invalidRootType
+      }
+
+      // Extract keylineTint
+      if let keylineTintValue = dict["isl_keyline_tint"] as? String {
+        keylineTint = keylineTintValue
+      }
+
+      // Extract components for each region
+      for region in VoltraRegion.allCases {
+        if let jsonString = selectJsonString(from: dict, region: region) {
+          do {
+            let components = try parseComponents(from: jsonString)
+            regions[region] = components
+          } catch {
+            throw ContentStateParsingError.regionParsingFailed(region, error)
+          }
+        }
+      }
+
+      return ParsedJsonData(regions: regions, keylineTint: keylineTint)
     }
 
     private static func parseRegions(from jsonString: String) throws -> [VoltraRegion: [VoltraComponent]] {
@@ -144,7 +200,9 @@ public struct VoltraAttributes: ActivityAttributes {
       uiJsonData = compressedJson
       // Decompress brotli-compressed base64 data
       let decompressedJson = try BrotliCompression.decompress(base64String: compressedJson)
-      regions = try ContentState.parseRegions(from: decompressedJson)
+      let parsedData = try ContentState.parseJsonData(from: decompressedJson)
+      regions = parsedData.regions
+      keylineTint = parsedData.keylineTint
     }
   }
 

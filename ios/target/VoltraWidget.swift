@@ -13,7 +13,7 @@ public struct VoltraWidget: Widget {
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
 
     } dynamicIsland: { context in
-      DynamicIsland {
+      let dynamicIsland = DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
           let components = context.state.regions[.islandExpandedLeading] ?? []
           VoltraContentBuilder.build(components: components, source: "dynamic_island_expanded_leading", activityId: context.activityID)
@@ -46,6 +46,14 @@ public struct VoltraWidget: Widget {
         let components = context.state.regions[.islandMinimal] ?? []
         VoltraContentBuilder.build(components: components, source: "dynamic_island_minimal", activityId: context.activityID)
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+      }
+
+      // Apply keylineTint if specified
+      if let keylineTint = context.state.keylineTint,
+         let color = VoltraHelper().translateColor(keylineTint) {
+        return dynamicIsland.keylineTint(color)
+      } else {
+        return dynamicIsland
       }
     }
   }

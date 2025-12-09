@@ -396,6 +396,7 @@ const FlightLiveActivity: LiveActivityExampleComponent = forwardRef(
       {
         lockScreen: <FlightLiveActivityLockScreen />,
         island: {
+          keylineTint: 'yellow',
           minimal: <FlightLiveActivityIslandMinimal />,
           compact: {
             leading: <FlightLiveActivityIslandCompactLeading />,
