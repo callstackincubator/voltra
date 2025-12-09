@@ -211,22 +211,30 @@ public class VoltraLiveActivityService {
     
     /// End a specific activity
     /// - Parameter activity: The activity to end
-    public func endActivity(_ activity: Activity<VoltraAttributes>) async {
+    /// - Parameter dismissalPolicy: How the activity should be dismissed
+    public func endActivity(
+        _ activity: Activity<VoltraAttributes>,
+        dismissalPolicy: ActivityUIDismissalPolicy = .immediate
+    ) async {
         guard Self.isSupported() else { return }
         await activity.end(
             ActivityContent(state: activity.content.state, staleDate: nil),
-            dismissalPolicy: .immediate
+            dismissalPolicy: dismissalPolicy
         )
     }
     
     /// End an activity by name
     /// - Parameter name: The activity name (activityId)
+    /// - Parameter dismissalPolicy: How the activity should be dismissed
     /// - Throws: Error if activity not found
-    public func endActivity(byName name: String) async throws {
+    public func endActivity(
+        byName name: String,
+        dismissalPolicy: ActivityUIDismissalPolicy = .immediate
+    ) async throws {
         guard let activity = findActivity(byName: name) else {
             throw VoltraLiveActivityError.notFound
         }
-        await endActivity(activity)
+        await endActivity(activity, dismissalPolicy: dismissalPolicy)
     }
     
     /// End all activities with the same name

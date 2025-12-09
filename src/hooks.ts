@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { addVoltraListener } from './events'
 import {
+  EndVoltraOptions,
   isVoltraActive,
   startVoltra,
   StartVoltraOptions,
@@ -34,7 +35,7 @@ export type UseVoltraOptions = {
 export type UseVoltraResult = {
   start: (options?: StartVoltraOptions) => Promise<void>
   update: (options?: UpdateVoltraOptions) => Promise<void>
-  end: () => Promise<void>
+  end: (options?: EndVoltraOptions) => Promise<void>
   isActive: boolean
 }
 
@@ -71,14 +72,17 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
     [variants, targetId]
   )
 
-  const end = useCallback(async () => {
-    if (!targetId) {
-      return
-    }
+  const end = useCallback(
+    async (options?: EndVoltraOptions) => {
+      if (!targetId) {
+        return
+      }
 
-    await stopVoltra(targetId)
-    setTargetId(null)
-  }, [targetId])
+      await stopVoltra(targetId, options)
+      setTargetId(null)
+    },
+    [targetId]
+  )
 
   useEffect(() => {
     if (!options?.autoStart) {

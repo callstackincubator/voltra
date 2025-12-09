@@ -1,5 +1,6 @@
 import { logger } from './logger'
 import { renderVoltraToString, VoltraVariants } from './renderer'
+import type { DismissalPolicy } from './types'
 import { assertRunningOnApple } from './utils'
 import VoltraModule from './VoltraModule'
 
@@ -13,6 +14,11 @@ export type SharedVoltraOptions = {
    * @default 0.0
    */
   relevanceScore?: number
+  /**
+   * How the Live Activity should be dismissed after ending
+   * @default 'immediate'
+   */
+  dismissalPolicy?: DismissalPolicy
 }
 
 export type StartVoltraOptions = {
@@ -28,6 +34,10 @@ export type StartVoltraOptions = {
 } & SharedVoltraOptions
 
 export type UpdateVoltraOptions = SharedVoltraOptions
+
+export type EndVoltraOptions = {
+  dismissalPolicy?: DismissalPolicy
+}
 
 const normalizeSharedVoltraOptions = (options?: SharedVoltraOptions): SharedVoltraOptions | undefined => {
   if (!options) return undefined
@@ -83,10 +93,10 @@ export const updateVoltra = async (
   return VoltraModule.updateVoltra(targetId, payload, normalizedSharedOptions)
 }
 
-export const stopVoltra = async (targetId: string): Promise<void> => {
+export const stopVoltra = async (targetId: string, options?: EndVoltraOptions): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
-  return VoltraModule.endVoltra(targetId)
+  return VoltraModule.endVoltra(targetId, options)
 }
 
 export const isVoltraActive = (targetId: string): boolean => {

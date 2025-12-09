@@ -227,7 +227,7 @@ public class VoltraModule: Module {
       }
     }
 
-    AsyncFunction("endVoltra") { (activityId: String) async throws in
+    AsyncFunction("endVoltra") { (activityId: String, options: EndVoltraOptions?) async throws in
       // Static Widget path
       if activityId.hasPrefix(STATIC_WIDGET_SYNTHETIC_ID) {
         guard let key = parseWidgetKey(from: activityId) else {
@@ -250,9 +250,12 @@ public class VoltraModule: Module {
       }
 
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      
+
+      // Convert dismissal policy options to ActivityKit type
+      let dismissalPolicy = convertToActivityKitDismissalPolicy(options?.dismissalPolicy)
+
       do {
-        try await liveActivityService.endActivity(byName: activityId)
+        try await liveActivityService.endActivity(byName: activityId, dismissalPolicy: dismissalPolicy)
       } catch let error {
         if let serviceError = error as? VoltraLiveActivityError {
           switch serviceError {
@@ -373,6 +376,26 @@ private extension VoltraModule {
     guard parts.count == 2, parts[0] == STATIC_WIDGET_SYNTHETIC_ID else { return nil }
     let key = parts[1]
     return key.isEmpty ? nil : key
+  }
+
+  // Convert dismissal policy options to ActivityKit type
+  func convertToActivityKitDismissalPolicy(_ options: DismissalPolicyOptions?) -> ActivityUIDismissalPolicy {
+    guard let options = options else {
+      return .immediate
+    }
+
+    switch options.type {
+    case "immediate":
+      return .immediate
+    case "after":
+      if let timestamp = options.date {
+        let date = Date(timeIntervalSince1970: timestamp / 1000.0)
+        return .after(date)
+      }
+      return .immediate
+    default:
+      return .immediate
+    }
   }
 }
 

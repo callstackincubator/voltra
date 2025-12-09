@@ -1,3 +1,5 @@
+export type DismissalPolicy = 'immediate' | { after: number }
+
 export type VoltraPropValue = string | number | boolean | null | VoltraNodeJson // Allow component trees in props
 
 export type VoltraElementJson = {

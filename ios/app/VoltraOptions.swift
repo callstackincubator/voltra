@@ -6,11 +6,15 @@ public struct SharedVoltraOptions: Record {
   /// Unix timestamp in milliseconds
   @Field
   public var staleDate: Double?
-  
+
   /// Double value between 0.0 and 1.0, defaults to 0.0
   @Field
   public var relevanceScore: Double?
-  
+
+  /// How the Live Activity should be dismissed after ending
+  @Field
+  public var dismissalPolicy: DismissalPolicyOptions?
+
   public init() {}
 }
 
@@ -50,4 +54,23 @@ public struct StartVoltraOptions: Record {
 
 /// Options for updating a Live Activity
 public typealias UpdateVoltraOptions = SharedVoltraOptions
+
+/// Options for ending a Live Activity
+public struct EndVoltraOptions: Record {
+  @Field
+  public var dismissalPolicy: DismissalPolicyOptions?
+
+  public init() {}
+}
+
+/// Dismissal policy options
+public struct DismissalPolicyOptions: Record {
+  @Field
+  public var type: String  // "immediate" or "after"
+
+  @Field
+  public var date: Double? // timestamp for after
+
+  public init() {}
+}
 
