@@ -19,10 +19,15 @@ public struct VoltraVStack: View {
         default: .leading
         }
         
+        // Check if this VStack should expand to fill space
+        let shouldExpand = component.style?["flexGrow"] as? NSNumber != nil ||
+                          (component.style?["flex"] as? NSNumber != nil &&
+                           (component.style?["flex"] as? NSNumber)?.doubleValue ?? 0 > 0)
+
         VStack(alignment: alignment, spacing: spacing) {
             VoltraChildrenView(component: component)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: Alignment(horizontal: alignment, vertical: .center))
+        .frame(maxWidth: .infinity, maxHeight: shouldExpand ? .infinity : nil, alignment: Alignment(horizontal: alignment, vertical: .center))
         .voltraModifiers(component)
     }
 }

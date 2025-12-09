@@ -5,9 +5,9 @@ import { LiveActivityExampleComponent } from './types'
 
 function FlightLiveActivityLockScreen() {
   return (
-    <Voltra.VStack id="flight-live-activity" spacing={8} style={{ padding: 12, flex: 1 }}>
+    <Voltra.VStack id="flight-live-activity" spacing={8} style={{ padding: 12 }}>
       <Voltra.HStack>
-        <Voltra.Symbol name="airplane" tintColor="#FFFFFF" size={14} />
+        <Voltra.Symbol name="airplane" tintColor="#FFFFFF" size={14} style={{ marginRight: 4 }} />
         <Voltra.Text
           style={{
             color: '#FFFFFF',
@@ -33,7 +33,7 @@ function FlightLiveActivityLockScreen() {
 
       <Voltra.HStack spacing={0}>
         <Voltra.VStack spacing={4}>
-          <Voltra.HStack style={{ flexShrink: 1 }}>
+          <Voltra.HStack>
             <Voltra.Text
               style={{
                 color: '#FFFFFF',
@@ -54,7 +54,7 @@ function FlightLiveActivityLockScreen() {
               8:45 PM
             </Voltra.Text>
           </Voltra.HStack>
-          <Voltra.HStack spacing={4} style={{ flexShrink: 1 }}>
+          <Voltra.HStack spacing={4}>
             <Voltra.Text
               style={{
                 color: '#94A3B8',
@@ -76,7 +76,7 @@ function FlightLiveActivityLockScreen() {
           </Voltra.HStack>
         </Voltra.VStack>
 
-        <Voltra.HStack spacing={4} style={{ flexShrink: 1 }}>
+        <Voltra.HStack spacing={4}>
           <Voltra.Symbol name="circle.fill" tintColor="#94A3B8" size={3} />
           <Voltra.Symbol name="circle.fill" tintColor="#94A3B8" size={3} />
           <Voltra.Symbol name="airplane" tintColor="#94A3B8" size={16} />
@@ -85,7 +85,7 @@ function FlightLiveActivityLockScreen() {
         </Voltra.HStack>
 
         <Voltra.VStack spacing={4} alignment="trailing">
-          <Voltra.HStack style={{ flexShrink: 1 }}>
+          <Voltra.HStack>
             <Voltra.Text
               style={{
                 color: '#F87171',
@@ -120,7 +120,7 @@ function FlightLiveActivityLockScreen() {
 
       <Voltra.HStack style={{ marginTop: 12 }}>
         <Voltra.VStack spacing={2}>
-          <Voltra.HStack spacing={0} style={{ flexShrink: 1 }}>
+          <Voltra.HStack spacing={0}>
             <Voltra.Text
               style={{
                 color: '#94A3B8',
@@ -158,7 +158,6 @@ function FlightLiveActivityLockScreen() {
             paddingHorizontal: 10,
             paddingVertical: 6,
             borderRadius: 12,
-            flexShrink: 1,
           }}
         >
           <Voltra.Symbol name="arrow.up.right" tintColor="#000000" size={14} />
@@ -247,7 +246,7 @@ function FlightLiveActivityIslandExpandedBottom() {
       <Voltra.HStack>
         <Voltra.HStack>
           <Voltra.VStack spacing={4}>
-            <Voltra.HStack style={{ flexShrink: 1 }}>
+            <Voltra.HStack>
               <Voltra.Text
                 style={{
                   color: '#FFFFFF',
@@ -268,7 +267,7 @@ function FlightLiveActivityIslandExpandedBottom() {
                 8:45 PM
               </Voltra.Text>
             </Voltra.HStack>
-            <Voltra.HStack spacing={4} style={{ flexShrink: 1 }}>
+            <Voltra.HStack spacing={4}>
               <Voltra.Text
                 style={{
                   color: '#94A3B8',
@@ -290,7 +289,7 @@ function FlightLiveActivityIslandExpandedBottom() {
             </Voltra.HStack>
           </Voltra.VStack>
 
-          <Voltra.HStack spacing={4} style={{ flexShrink: 1 }}>
+          <Voltra.HStack spacing={4}>
             <Voltra.Symbol name="circle.fill" tintColor="#94A3B8" size={3} />
             <Voltra.Symbol name="circle.fill" tintColor="#94A3B8" size={3} />
             <Voltra.Symbol name="airplane" tintColor="#94A3B8" size={16} />
@@ -299,7 +298,7 @@ function FlightLiveActivityIslandExpandedBottom() {
           </Voltra.HStack>
 
           <Voltra.VStack spacing={4} alignment="trailing">
-            <Voltra.HStack style={{ flexShrink: 1 }}>
+            <Voltra.HStack>
               <Voltra.Text
                 style={{
                   color: '#F87171',
@@ -335,7 +334,7 @@ function FlightLiveActivityIslandExpandedBottom() {
 
       <Voltra.HStack>
         <Voltra.VStack spacing={2}>
-          <Voltra.HStack spacing={0} style={{ flexShrink: 1 }}>
+          <Voltra.HStack spacing={0}>
             <Voltra.Text
               style={{
                 color: '#94A3B8',
@@ -373,7 +372,6 @@ function FlightLiveActivityIslandExpandedBottom() {
             paddingHorizontal: 10,
             paddingVertical: 6,
             borderRadius: 12,
-            flexShrink: 1,
           }}
         >
           <Voltra.Symbol name="arrow.up.right" tintColor="#000000" size={14} />

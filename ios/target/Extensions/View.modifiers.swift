@@ -277,6 +277,15 @@ extension View {
                     tempView = AnyView(tempView.offset(x: CGFloat(x), y: CGFloat(y)))
                 }
 
+            case "flexShrink":
+                if #available(iOS 13.0, *) {
+                    let preventShrink = modifier.args?["preventShrink"]?.toBool() ?? false
+                    if preventShrink {
+                        // flexShrink: 0 - Do not shrink below content size
+                        tempView = AnyView(tempView.fixedSize())
+                    }
+                }
+
             case "position":
                 if #available(iOS 13.0, macOS 10.15, tvOS 13.0, watchOS 6.0, *) {
                     if let x = modifier.args?["x"]?.toDouble(),

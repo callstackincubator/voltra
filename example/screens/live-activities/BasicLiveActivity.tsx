@@ -29,7 +29,6 @@ function BasicLiveActivityUI() {
             fontSize: 16,
             fontWeight: '500',
           }}
-          modifiers={[{ name: 'multilineTextAlignment', args: { value: 'center' } }]}
         >
           Welcome to your first Live Activity
         </Voltra.Text>
