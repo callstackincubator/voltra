@@ -1,6 +1,6 @@
 # Styling
 
-You can style Voltra components using either React Native-style `style` props or SwiftUI modifiers. The `style` prop works with a limited set of React Native properties, while modifiers give you direct access to SwiftUI's styling system.
+You can style Voltra components using React Native-style `style` props. The `style` prop works with a limited set of React Native properties that are automatically converted to SwiftUI modifiers under the hood.
 
 ## React Native style prop
 
@@ -72,8 +72,6 @@ Properties not listed above are ignored during rendering. This includes common R
 
 :::
 
-If you need styling capabilities beyond what the `style` prop supports, use modifiers instead.
-
 ### Example
 
 ```tsx
@@ -94,130 +92,5 @@ import { Voltra } from 'voltra'
   >
     Styled Text
   </Voltra.Text>
-</Voltra.VStack>
-```
-
-## Modifiers
-
-Modifiers are the preferred way to style Voltra components. They provide direct equivalents of built-in SwiftUI styling modifiers, giving you full access to SwiftUI's powerful styling capabilities. Modifiers offer more control and flexibility than the React Native `style` prop, and they're the recommended approach for advanced styling needs.
-
-### Using modifiers
-
-Pass modifiers to any Voltra component using the `modifiers` prop:
-
-```tsx
-import { Voltra } from 'voltra'
-;<Voltra.Text
-  modifiers={[
-    { name: 'font', args: { size: 18, weight: '600' } },
-    { name: 'foregroundStyle', args: { color: '#F8FAFC' } },
-    { name: 'opacity', args: { value: 0.9 } },
-  ]}
->
-  Styled Text
-</Voltra.Text>
-```
-
-You can combine modifiers with the `style` prop - modifiers from both sources will be merged together:
-
-```tsx
-<Voltra.VStack
-  style={{ padding: 16, backgroundColor: '#101828' }}
-  modifiers={[
-    { name: 'cornerRadius', args: { radius: 18 } },
-    { name: 'shadow', args: { color: '#000', radius: 8, opacity: 0.3 } },
-  ]}
->
-  {/* content */}
-</Voltra.VStack>
-```
-
-### Modifier categories
-
-Modifiers are organized into categories based on their purpose:
-
-#### Layout modifiers
-
-- **`frame`** - Sets the frame dimensions (`{ width?: number, height?: number, maxWidth?: 'infinity', maxHeight?: 'infinity', minWidth?: number, minHeight?: number, idealWidth?: number, idealHeight?: number }`)
-- **`padding`** - Adds padding around the view (`{ all?: number, top?: number, bottom?: number, leading?: number, trailing?: number }`)
-- **`offset`** - Offsets the view by x and y values (`{ x?: number, y?: number }`)
-- **`position`** - Positions the view at absolute coordinates (`{ x: number, y: number }`). Note: SwiftUI positions the center of the view at (x, y), not the top-left corner.
-
-#### Style modifiers
-
-- **`foregroundStyle`** - Sets the foreground color (`{ color: string }`)
-- **`background`** - Sets the background color (`{ color: string }`)
-- **`backgroundStyle`** - Sets the background style, alias for `background` (`{ color: string }`)
-- **`tint`** - Sets the tint color (`{ color: string }`)
-- **`opacity`** - Sets the opacity (`{ value: number }` where value is 0-1)
-- **`cornerRadius`** - Applies corner radius (`{ radius: number }`)
-
-#### Text modifiers
-
-- **`font`** - Sets the font (`{ size: number, weight?: string }`)
-- **`fontWeight`** - Sets the font weight (`{ weight: string }`)
-- **`italic`** - Applies italic styling (`{ enabled?: boolean }`)
-- **`smallCaps`** - Applies small caps styling (`{ enabled?: boolean }`) - iOS 14+
-- **`monospacedDigit`** - Applies monospaced digits (`{ enabled?: boolean }`) - iOS 15+
-- **`lineLimit`** - Limits the number of lines (`{ value: number }`)
-- **`lineSpacing`** - Sets spacing between lines (`{ value: number }`)
-- **`kerning`** - Sets spacing between characters (`{ value: number }`)
-- **`multilineTextAlignment`** - Sets text alignment (`{ value: 'leading' | 'center' | 'right' }`)
-- **`underline`** - Applies underline (`{ enabled?: boolean, color?: string }`)
-- **`strikethrough`** - Applies strikethrough (`{ enabled?: boolean, color?: string }`)
-
-#### Effect modifiers
-
-- **`shadow`** - Applies a shadow (`{ color?: string, opacity?: number, radius?: number, x?: number, y?: number }`)
-- **`scaleEffect`** - Scales the view (`{ value?: number }` or `{ x?: number, y?: number }`)
-- **`rotationEffect`** - Rotates the view (`{ degrees: number }`)
-- **`border`** - Adds a border (`{ width?: number, color?: string, cornerRadius?: number }`)
-- **`clipped`** - Clips the view to its bounds (`{ enabled?: boolean }`)
-- **`glassEffect`** - Applies iOS 26+ Liquid Glass effect (`{ enabled?: boolean, shape?: 'rect' | 'roundedRect' | 'capsule' | 'circle', cornerRadius?: number }`)
-
-## Examples
-
-### Text styling
-
-```tsx
-<Voltra.Text
-  modifiers={[
-    { name: 'font', args: { size: 24, weight: 'bold' } },
-    { name: 'foregroundStyle', args: { color: '#38BDF8' } },
-    { name: 'italic', args: { enabled: true } },
-    { name: 'underline', args: { enabled: true, color: '#38BDF8' } },
-    { name: 'lineSpacing', args: { value: 4 } },
-  ]}
->
-  Styled Heading
-</Voltra.Text>
-```
-
-### Layout styling
-
-```tsx
-<Voltra.VStack
-  modifiers={[
-    { name: 'frame', args: { width: 300, height: 200 } },
-    { name: 'padding', args: { all: 20 } },
-    { name: 'offset', args: { x: 10, y: 10 } },
-  ]}
->
-  {/* content */}
-</Voltra.VStack>
-```
-
-### Effects
-
-```tsx
-<Voltra.VStack
-  modifiers={[
-    { name: 'background', args: { color: '#FFFFFF' } },
-    { name: 'cornerRadius', args: { radius: 12 } },
-    { name: 'shadow', args: { color: '#000', radius: 10, opacity: 0.2, y: 5 } },
-    { name: 'scaleEffect', args: { value: 1.05 } },
-  ]}
->
-  {/* content */}
 </Voltra.VStack>
 ```

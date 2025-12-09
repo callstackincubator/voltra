@@ -2,18 +2,41 @@
 
 Components specifically designed to show dynamic values or states over time.
 
-### ProgressView
+### LinearProgressView
 
-A progress indicator that can display either determinate progress (linear or circular) or timer-based progress.
+A horizontal progress bar that displays determinate progress or timer-based progress.
 
 **Parameters:**
 
-- `defaultValue` (number, optional): Current progress value
+- `value` (number, optional): Current progress value
 - `maximumValue` (number, optional): Maximum progress value (default: `100`)
-- `timerEndDateInMilliseconds` (number, optional): Legacy: End time for timer-based progress
+- `countDown` (boolean, optional): Whether to count down instead of up
 - `endAtMs` (number, optional): End time in milliseconds since epoch
 - `startAtMs` (number, optional): Start time in milliseconds since epoch
-- `mode` (string, optional): Progress view style - `"bar"` or `"circular"` (default: `"bar"`)
+- `trackColor` (string, optional): Color for the track (background) of the progress bar
+- `progressColor` (string, optional): Color for the progress fill
+- `cornerRadius` (number, optional): Corner radius for the progress bar
+- `height` (number, optional): Explicit height for the progress bar
+- `thumb` (ReactNode, optional): Custom thumb component to display at progress position
+
+**Apple Documentation:** [ProgressView](https://developer.apple.com/documentation/swiftui/progressview)
+
+---
+
+### CircularProgressView
+
+A circular progress indicator that displays determinate progress or timer-based progress.
+
+**Parameters:**
+
+- `value` (number, optional): Current progress value
+- `maximumValue` (number, optional): Maximum progress value (default: `100`)
+- `countDown` (boolean, optional): Whether to count down instead of up
+- `endAtMs` (number, optional): End time in milliseconds since epoch
+- `startAtMs` (number, optional): Start time in milliseconds since epoch
+- `trackColor` (string, optional): Color for the track (background) of the circular progress indicator
+- `progressColor` (string, optional): Color for the progress fill
+- `lineWidth` (number, optional): Width of the stroke line
 
 **Apple Documentation:** [ProgressView](https://developer.apple.com/documentation/swiftui/progressview)
 
@@ -44,13 +67,9 @@ A flexible countdown or stopwatch component that counts down or up to a specific
 - `endAtMs` (number, optional): End time in milliseconds since epoch
 - `startAtMs` (number, optional): Start time in milliseconds since epoch
 - `durationMs` (number, optional): Duration in milliseconds
-- `mode` (string, optional): Display mode - `"text"`, `"bar"`, or `"circular"` (default: `"text"`)
 - `direction` (string, optional): Count direction - `"up"` or `"down"` (default: `"down"`)
 - `autoHideOnEnd` (boolean, optional): Hide timer when complete
 - `textStyle` (string, optional): Text formatting style - `"timer"` or `"relative"` (default: `"timer"`)
 - `textTemplates` (string, optional): JSON-encoded TextTemplates object with running/completed templates
-- `modeOrderedModifiers` (string, optional): JSON-encoded mode-specific modifiers map
-- `modeTrackColors` (string, optional): JSON-encoded track colors map
-- `modeTintColors` (string, optional): JSON-encoded tint colors map
 
 **Apple Documentation:** [Text](https://developer.apple.com/documentation/swiftui/text) (Timer formatting)
