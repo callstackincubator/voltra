@@ -14,50 +14,44 @@ public enum PropNameID: Int, Codable {
     case alignment = 1
     case animationSpec = 2
     case autoHideOnEnd = 3
-    case axis = 4
-    case colors = 5
-    case cornerRadius = 6
-    case countDown = 7
-    case defaultValue = 8
-    case direction = 9
-    case dither = 10
-    case durationMs = 11
-    case effect = 12
-    case endAtMs = 13
-    case endPoint = 14
-    case height = 15
-    case hideValueLabel = 16
-    case interactive = 17
-    case isExpanded = 18
-    case lineWidth = 19
-    case maximumLabel = 20
-    case maximumValue = 21
-    case minLength = 22
-    case minimumLabel = 23
-    case minimumValue = 24
-    case name = 25
-    case progressColor = 26
-    case resizeMode = 27
-    case scale = 28
-    case showValueLabel = 29
-    case showsIndicators = 30
-    case size = 31
-    case source = 32
-    case spacing = 33
-    case startAtMs = 34
-    case startPoint = 35
-    case stops = 36
-    case systemImage = 37
-    case textStyle = 38
-    case textTemplates = 39
-    case thumb = 40
-    case tint = 41
-    case tintColor = 42
-    case title = 43
-    case trackColor = 44
-    case type = 45
-    case value = 46
-    case weight = 47
+    case colors = 4
+    case cornerRadius = 5
+    case countDown = 6
+    case defaultValue = 7
+    case direction = 8
+    case dither = 9
+    case durationMs = 10
+    case effect = 11
+    case endAtMs = 12
+    case endPoint = 13
+    case height = 14
+    case hideValueLabel = 15
+    case interactive = 16
+    case lineWidth = 17
+    case maximumValue = 18
+    case minLength = 19
+    case name = 20
+    case progressColor = 21
+    case resizeMode = 22
+    case scale = 23
+    case showValueLabel = 24
+    case size = 25
+    case source = 26
+    case spacing = 27
+    case startAtMs = 28
+    case startPoint = 29
+    case stops = 30
+    case systemImage = 31
+    case textStyle = 32
+    case textTemplates = 33
+    case thumb = 34
+    case tint = 35
+    case tintColor = 36
+    case title = 37
+    case trackColor = 38
+    case type = 39
+    case value = 40
+    case weight = 41
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -70,8 +64,6 @@ public enum PropNameID: Int, Codable {
             return "animationSpec"
         case .autoHideOnEnd:
             return "autoHideOnEnd"
-        case .axis:
-            return "axis"
         case .colors:
             return "colors"
         case .cornerRadius:
@@ -98,20 +90,12 @@ public enum PropNameID: Int, Codable {
             return "hideValueLabel"
         case .interactive:
             return "interactive"
-        case .isExpanded:
-            return "isExpanded"
         case .lineWidth:
             return "lineWidth"
-        case .maximumLabel:
-            return "maximumLabel"
         case .maximumValue:
             return "maximumValue"
         case .minLength:
             return "minLength"
-        case .minimumLabel:
-            return "minimumLabel"
-        case .minimumValue:
-            return "minimumValue"
         case .name:
             return "name"
         case .progressColor:
@@ -122,8 +106,6 @@ public enum PropNameID: Int, Codable {
             return "scale"
         case .showValueLabel:
             return "showValueLabel"
-        case .showsIndicators:
-            return "showsIndicators"
         case .size:
             return "size"
         case .source:
@@ -170,7 +152,6 @@ public enum PropNameID: Int, Codable {
         case "alignment": self = .alignment
         case "animationSpec": self = .animationSpec
         case "autoHideOnEnd": self = .autoHideOnEnd
-        case "axis": self = .axis
         case "colors": self = .colors
         case "cornerRadius": self = .cornerRadius
         case "countDown": self = .countDown
@@ -184,19 +165,14 @@ public enum PropNameID: Int, Codable {
         case "height": self = .height
         case "hideValueLabel": self = .hideValueLabel
         case "interactive": self = .interactive
-        case "isExpanded": self = .isExpanded
         case "lineWidth": self = .lineWidth
-        case "maximumLabel": self = .maximumLabel
         case "maximumValue": self = .maximumValue
         case "minLength": self = .minLength
-        case "minimumLabel": self = .minimumLabel
-        case "minimumValue": self = .minimumValue
         case "name": self = .name
         case "progressColor": self = .progressColor
         case "resizeMode": self = .resizeMode
         case "scale": self = .scale
         case "showValueLabel": self = .showValueLabel
-        case "showsIndicators": self = .showsIndicators
         case "size": self = .size
         case "source": self = .source
         case "spacing": self = .spacing

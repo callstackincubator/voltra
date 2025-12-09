@@ -1,6 +1,3 @@
-// Not all components are exported and that's on purpose.
-// We're focusing on Live Activties for now and they don't support all components.
-
 // Import component props registry to register component props
 import './component-props-registry'
 

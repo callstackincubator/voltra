@@ -103,18 +103,6 @@ struct InternalVoltra: View {
             case "ZStack":
                 VoltraZStack(component)
 
-            case "List":
-                VoltraList(component)
-
-            case "ScrollView":
-                VoltraScrollView(component)
-
-            case "NavigationView":
-                VoltraNavigationView(component)
-
-            case "Form":
-                VoltraForm(component)
-
             case "Text":
                 VoltraText(component)
 
@@ -133,15 +121,6 @@ struct InternalVoltra: View {
             case "Label":
                 VoltraLabel(component)
 
-            case "TextField":
-                VoltraTextField(component)
-
-            case "SecureField":
-                VoltraSecureField(component)
-
-            case "TextEditor":
-                VoltraTextEditor(component)
-
             case "Toggle":
                 VoltraToggle(component)
 
@@ -154,26 +133,11 @@ struct InternalVoltra: View {
             case "CircularProgressView":
                 VoltraCircularProgressView(component)
 
-            case "Slider":
-                VoltraSlider(component)
-
             case "Timer":
                 VoltraTimer(component)
 
             case "GroupBox":
                 VoltraGroupBox(component)
-
-            case "DisclosureGroup":
-                VoltraDisclosureGroup(component)
-
-            case "HSplitView":
-                VoltraHSplitView(component)
-
-            case "VSplitView":
-                VoltraVSplitView(component)
-
-            case "Picker":
-                VoltraPicker(component)
 
             case "LinearGradient":
                 VoltraLinearGradient(component)
