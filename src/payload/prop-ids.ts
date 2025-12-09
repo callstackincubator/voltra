@@ -1,3 +1,4 @@
+/* eslint-disable */
 // 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
@@ -47,7 +48,7 @@ export const PROP_NAME_TO_ID: Record<string, number> = {
   'systemImage': 37,
   'textStyle': 38,
   'textTemplates': 39,
-  'thumbImage': 40,
+  'thumb': 40,
   'tint': 41,
   'tintColor': 42,
   'title': 43,
@@ -101,7 +102,7 @@ export const PROP_ID_TO_NAME: Record<number, string> = {
   37: 'systemImage',
   38: 'textStyle',
   39: 'textTemplates',
-  40: 'thumbImage',
+  40: 'thumb',
   41: 'tint',
   42: 'tintColor',
   43: 'title',

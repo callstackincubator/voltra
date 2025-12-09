@@ -21,7 +21,7 @@
   },
   "definitions": {
     "parameterType": {
-      "enum": ["string", "number", "boolean", "object", "array"]
+      "enum": ["string", "number", "boolean", "object", "array", "component"]
     },
     "parameter": {
       "type": "object",

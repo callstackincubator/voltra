@@ -37,6 +37,6 @@ public struct LinearProgressViewParameters: ComponentParameters {
     /// Explicit height for the progress bar
     public let height: Double?
 
-    /// Image source for thumb indicator (same format as Image component: { assetName: string } or { base64: string })
-    public let thumbImage: String?
+    /// Custom thumb component to display at progress position
+    public let thumb: String?
 }

@@ -218,11 +218,10 @@
           "optional": true,
           "description": "Explicit height for the progress bar"
         },
-        "thumbImage": {
-          "type": "object",
+        "thumb": {
+          "type": "component",
           "optional": true,
-          "jsonEncoded": true,
-          "description": "Image source for thumb indicator (same format as Image component: { assetName: string } or { base64: string })"
+          "description": "Custom thumb component to display at progress position"
         }
       }
     },

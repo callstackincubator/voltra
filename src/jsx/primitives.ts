@@ -1,6 +1,11 @@
 // Not all components are exported and that's on purpose.
 // We're focusing on Live Activties for now and they don't support all components.
+
+// Import component props registry to register component props
+import './component-props-registry'
+
 export * from './Button'
+export * from './CircularProgressView'
 export * from './Divider'
 export * from './Gauge'
 export * from './GlassContainer'
@@ -11,7 +16,6 @@ export * from './Image'
 export * from './Label'
 export * from './LinearGradient'
 export * from './LinearProgressView'
-export * from './CircularProgressView'
 export * from './Spacer'
 export * from './Symbol'
 export * from './Text'

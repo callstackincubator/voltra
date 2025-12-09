@@ -50,7 +50,7 @@ public enum PropNameID: Int, Codable {
     case systemImage = 37
     case textStyle = 38
     case textTemplates = 39
-    case thumbImage = 40
+    case thumb = 40
     case tint = 41
     case tintColor = 42
     case title = 43
@@ -142,8 +142,8 @@ public enum PropNameID: Int, Codable {
             return "textStyle"
         case .textTemplates:
             return "textTemplates"
-        case .thumbImage:
-            return "thumbImage"
+        case .thumb:
+            return "thumb"
         case .tint:
             return "tint"
         case .tintColor:
@@ -206,7 +206,7 @@ public enum PropNameID: Int, Codable {
         case "systemImage": self = .systemImage
         case "textStyle": self = .textStyle
         case "textTemplates": self = .textTemplates
-        case "thumbImage": self = .thumbImage
+        case "thumb": self = .thumb
         case "tint": self = .tint
         case "tintColor": self = .tintColor
         case "title": self = .title

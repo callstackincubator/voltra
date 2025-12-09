@@ -13,7 +13,8 @@ const generateTypeScriptMappings = (data: ComponentsData): string => {
   // Create ID to name mapping
   const idToNameEntries = components.map((comp, index) => `  ${index}: '${comp.name}'`).join(',\n')
 
-  return `// 🤖 AUTO-GENERATED from data/components.json
+  return `/* eslint-disable */
+// 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: ${version}
 

@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import type { ComponentDefinition, ComponentParameter, ComponentsData } from '../types'
 
 type GeneratedFiles = {
@@ -6,7 +8,9 @@ type GeneratedFiles = {
 
 const toTSType = (param: ComponentParameter): string => {
   let baseType: string
-  if (param.enum && param.enum.length > 0) {
+  if (param.type === 'component') {
+    baseType = 'ReactNode'
+  } else if (param.enum && param.enum.length > 0) {
     baseType = param.enum.map((v) => `'${v}'`).join(' | ')
   } else if (param.jsonEncoded) {
     // JSON-encoded parameters are stored as strings in JSON but might be objects in props
@@ -35,9 +39,12 @@ const generatePropsType = (component: ComponentDefinition): string => {
 }
 
 const generatePropsTypeFile = (component: ComponentDefinition, version: string): string => {
-  const header = `// 🤖 AUTO-GENERATED from data/components.json
+  const header = `/* eslint-disable */
+// 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: ${version}
+
+import type { ReactNode } from 'react'
 
 import type { VoltraBaseProps } from '../baseProps'
 

@@ -3,7 +3,7 @@
 // Component types
 
 export type ComponentParameter = {
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array'
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'component'
   optional: boolean
   description?: string
   default?: string | number | boolean

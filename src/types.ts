@@ -1,8 +1,15 @@
+export type VoltraPropValue = 
+  | string 
+  | number 
+  | boolean 
+  | null 
+  | VoltraNodeJson  // Allow component trees in props
+
 export type VoltraElementJson = {
   t: number
   i?: string
   c?: VoltraNodeJson
-  p: Record<string, unknown>
+  p: Record<string | number, VoltraPropValue>
 }
 
 export type VoltraNodeJson = VoltraElementJson | VoltraElementJson[] | string

@@ -5,7 +5,10 @@ type GeneratedFiles = {
 }
 
 const toSwiftType = (param: ComponentParameter): string => {
-  if (param.enum && param.enum.length > 0) {
+  if (param.type === 'component') {
+    // Component props are accessed via component.componentProp() helper, not through parameters struct
+    return 'String'
+  } else if (param.enum && param.enum.length > 0) {
     // Enums will be generated as nested enums
     return 'String'
   } else if (param.jsonEncoded) {

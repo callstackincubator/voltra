@@ -424,6 +424,42 @@ public enum VoltraChildren {
     case text(String)
 }
 
+extension VoltraComponent {
+    /// Get component prop by name - handles both single component and array
+    /// Component props are stored as component objects/arrays directly in props dictionary
+    public func componentProp(_ propName: String) -> VoltraChildren? {
+        guard let propValue = props?[propName] else { return nil }
+        
+        // Try to decode as component object directly (no JSON string parsing!)
+        if let componentDict = propValue as? [String: Any] {
+            // Check if it looks like a component (has "t" key for type)
+            guard componentDict["t"] != nil else { return nil }
+            
+            let dictAny = componentDict
+            guard let data = try? JSONSerialization.data(withJSONObject: dictAny),
+                  let component = try? JSONDecoder().decode(VoltraComponent.self, from: data) else {
+                return nil
+            }
+            return .component(component)
+        }
+        
+        // Try to decode as component array
+        if let componentsArray = propValue as? [[String: Any]] {
+            let components = try? componentsArray.compactMap { componentDict -> VoltraComponent? in
+                guard componentDict["t"] != nil else { return nil }
+                guard let data = try? JSONSerialization.data(withJSONObject: componentDict) else {
+                    return nil
+                }
+                return try? JSONDecoder().decode(VoltraComponent.self, from: data)
+            }
+            guard let components = components, !components.isEmpty else { return nil }
+            return .components(components)
+        }
+        
+        return nil
+    }
+}
+
 public struct VoltraModifier: Codable, Hashable {
     public let name: String
     public let args: [String: AnyCodable]?

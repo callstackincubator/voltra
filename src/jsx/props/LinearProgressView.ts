@@ -1,6 +1,9 @@
+/* eslint-disable */
 // 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
+
+import type { ReactNode } from 'react'
 
 import type { VoltraBaseProps } from '../baseProps'
 
@@ -23,6 +26,6 @@ export type LinearProgressViewProps = VoltraBaseProps & {
   cornerRadius?: number
   /** Explicit height for the progress bar */
   height?: number
-  /** Image source for thumb indicator (same format as Image component: { assetName: string } or { base64: string }) */
-  thumbImage?: Record<string, any>
+  /** Custom thumb component to display at progress position */
+  thumb?: ReactNode
 }
