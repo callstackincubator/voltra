@@ -42,22 +42,4 @@ public struct VoltraChildrenView: View {
     }
 }
 
-/// Helper view that builds component props for a VoltraComponent
-/// Similar to VoltraChildrenView but for component props stored in props dictionary
-public struct VoltraComponentPropView: View {
-    public let component: VoltraComponent
-    public let propName: String
-    
-    public init(component: VoltraComponent, propName: String) {
-        self.component = component
-        self.propName = propName
-    }
-    
-    @ViewBuilder
-    public var body: some View {
-        if let children = component.componentProp(propName) {
-            VoltraChildrenRenderer(children: children)
-        }
-    }
-}
 

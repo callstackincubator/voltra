@@ -16,28 +16,19 @@ public enum ComponentTypeID: Int, Codable {
     case IMAGE = 3
     case SYMBOL = 4
     case TOGGLE = 5
-    case SLIDER = 6
-    case LINEAR_PROGRESS_VIEW = 7
-    case CIRCULAR_PROGRESS_VIEW = 8
-    case GAUGE = 9
-    case TIMER = 10
-    case LINEAR_GRADIENT = 11
-    case V_STACK = 12
-    case H_STACK = 13
-    case Z_STACK = 14
-    case SCROLL_VIEW = 15
-    case LIST = 16
-    case NAVIGATION_VIEW = 17
-    case FORM = 18
-    case GROUP_BOX = 19
-    case DISCLOSURE_GROUP = 20
-    case H_SPLIT_VIEW = 21
-    case V_SPLIT_VIEW = 22
-    case PICKER = 23
-    case GLASS_CONTAINER = 24
-    case GLASS_VIEW = 25
-    case SPACER = 26
-    case DIVIDER = 27
+    case LINEAR_PROGRESS_VIEW = 6
+    case CIRCULAR_PROGRESS_VIEW = 7
+    case GAUGE = 8
+    case TIMER = 9
+    case LINEAR_GRADIENT = 10
+    case V_STACK = 11
+    case H_STACK = 12
+    case Z_STACK = 13
+    case GROUP_BOX = 14
+    case GLASS_CONTAINER = 15
+    case GLASS_VIEW = 16
+    case SPACER = 17
+    case DIVIDER = 18
     
     /// Get the component name string for this ID
     public var componentName: String {
@@ -54,8 +45,6 @@ public enum ComponentTypeID: Int, Codable {
             return "Symbol"
         case .TOGGLE:
             return "Toggle"
-        case .SLIDER:
-            return "Slider"
         case .LINEAR_PROGRESS_VIEW:
             return "LinearProgressView"
         case .CIRCULAR_PROGRESS_VIEW:
@@ -72,24 +61,8 @@ public enum ComponentTypeID: Int, Codable {
             return "HStack"
         case .Z_STACK:
             return "ZStack"
-        case .SCROLL_VIEW:
-            return "ScrollView"
-        case .LIST:
-            return "List"
-        case .NAVIGATION_VIEW:
-            return "NavigationView"
-        case .FORM:
-            return "Form"
         case .GROUP_BOX:
             return "GroupBox"
-        case .DISCLOSURE_GROUP:
-            return "DisclosureGroup"
-        case .H_SPLIT_VIEW:
-            return "HSplitView"
-        case .V_SPLIT_VIEW:
-            return "VSplitView"
-        case .PICKER:
-            return "Picker"
         case .GLASS_CONTAINER:
             return "GlassContainer"
         case .GLASS_VIEW:
@@ -112,7 +85,6 @@ public enum ComponentTypeID: Int, Codable {
         case "Image": self = .IMAGE
         case "Symbol": self = .SYMBOL
         case "Toggle": self = .TOGGLE
-        case "Slider": self = .SLIDER
         case "LinearProgressView": self = .LINEAR_PROGRESS_VIEW
         case "CircularProgressView": self = .CIRCULAR_PROGRESS_VIEW
         case "Gauge": self = .GAUGE
@@ -121,15 +93,7 @@ public enum ComponentTypeID: Int, Codable {
         case "VStack": self = .V_STACK
         case "HStack": self = .H_STACK
         case "ZStack": self = .Z_STACK
-        case "ScrollView": self = .SCROLL_VIEW
-        case "List": self = .LIST
-        case "NavigationView": self = .NAVIGATION_VIEW
-        case "Form": self = .FORM
         case "GroupBox": self = .GROUP_BOX
-        case "DisclosureGroup": self = .DISCLOSURE_GROUP
-        case "HSplitView": self = .H_SPLIT_VIEW
-        case "VSplitView": self = .V_SPLIT_VIEW
-        case "Picker": self = .PICKER
         case "GlassContainer": self = .GLASS_CONTAINER
         case "GlassView": self = .GLASS_VIEW
         case "Spacer": self = .SPACER

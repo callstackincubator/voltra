@@ -133,41 +133,6 @@
       }
     },
     {
-      "name": "Slider",
-      "description": "Slider control for numeric input",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "parameters": {
-        "minimumLabel": {
-          "type": "string",
-          "optional": true,
-          "description": "Label for minimum value"
-        },
-        "maximumLabel": {
-          "type": "string",
-          "optional": true,
-          "description": "Label for maximum value"
-        },
-        "minimumValue": {
-          "type": "number",
-          "optional": true,
-          "default": 0,
-          "description": "Minimum slider value"
-        },
-        "maximumValue": {
-          "type": "number",
-          "optional": true,
-          "default": 100,
-          "description": "Maximum slider value"
-        },
-        "defaultValue": {
-          "type": "number",
-          "optional": true,
-          "default": 0,
-          "description": "Initial slider value"
-        }
-      }
-    },
-    {
       "name": "LinearProgressView",
       "description": "Linear progress indicator (determinate or timer-based)",
       "swiftAvailability": "iOS 16.0, macOS 13.0",
@@ -437,85 +402,8 @@
       }
     },
     {
-      "name": "ScrollView",
-      "description": "Scrollable container",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {
-        "axis": {
-          "type": "string",
-          "optional": true,
-          "enum": ["vertical", "horizontal"],
-          "default": "vertical",
-          "description": "Scroll axis"
-        },
-        "showsIndicators": {
-          "type": "boolean",
-          "optional": true,
-          "default": true,
-          "description": "Show scroll indicators"
-        }
-      }
-    },
-    {
-      "name": "List",
-      "description": "List container",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {}
-    },
-    {
-      "name": "NavigationView",
-      "description": "Navigation container",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {}
-    },
-    {
-      "name": "Form",
-      "description": "Form container",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {}
-    },
-    {
       "name": "GroupBox",
       "description": "Grouped content container",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {}
-    },
-    {
-      "name": "DisclosureGroup",
-      "description": "Collapsible disclosure group",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {
-        "isExpanded": {
-          "type": "boolean",
-          "optional": true,
-          "default": false,
-          "description": "Initial expanded state"
-        }
-      }
-    },
-    {
-      "name": "HSplitView",
-      "description": "Horizontal split view",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {}
-    },
-    {
-      "name": "VSplitView",
-      "description": "Vertical split view",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "hasChildren": true,
-      "parameters": {}
-    },
-    {
-      "name": "Picker",
-      "description": "Picker control",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "hasChildren": true,
       "parameters": {}
