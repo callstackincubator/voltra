@@ -6,7 +6,9 @@ Static or decorative elements used to display content.
 
 Displays text content.
 
-**Parameters:** None
+**Parameters:**
+
+- `numberOfLines` (number, optional): Maximum number of lines to display
 
 **Apple Documentation:** [Text](https://developer.apple.com/documentation/swiftui/text)
 

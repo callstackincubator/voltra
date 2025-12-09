@@ -5,7 +5,13 @@
       "name": "Text",
       "description": "Display text content",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
-      "parameters": {}
+      "parameters": {
+        "numberOfLines": {
+          "type": "number",
+          "optional": true,
+          "description": "Maximum number of lines to display"
+        }
+      }
     },
     {
       "name": "Button",

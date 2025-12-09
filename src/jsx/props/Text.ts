@@ -7,4 +7,7 @@ import type { ReactNode } from 'react'
 
 import type { VoltraBaseProps } from '../baseProps'
 
-export type TextProps = VoltraBaseProps
+export type TextProps = VoltraBaseProps & {
+  /** Maximum number of lines to display */
+  numberOfLines?: number
+}

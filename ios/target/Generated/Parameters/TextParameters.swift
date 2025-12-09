@@ -10,5 +10,6 @@ import Foundation
 /// Parameters for Text component
 /// Display text content
 public struct TextParameters: ComponentParameters {
-
+    /// Maximum number of lines to display
+    public let numberOfLines: Double?
 }

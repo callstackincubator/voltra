@@ -31,27 +31,28 @@ public enum PropNameID: Int, Codable {
     case maximumValue = 18
     case minLength = 19
     case name = 20
-    case progressColor = 21
-    case resizeMode = 22
-    case scale = 23
-    case showValueLabel = 24
-    case size = 25
-    case source = 26
-    case spacing = 27
-    case startAtMs = 28
-    case startPoint = 29
-    case stops = 30
-    case systemImage = 31
-    case textStyle = 32
-    case textTemplates = 33
-    case thumb = 34
-    case tint = 35
-    case tintColor = 36
-    case title = 37
-    case trackColor = 38
-    case type = 39
-    case value = 40
-    case weight = 41
+    case numberOfLines = 21
+    case progressColor = 22
+    case resizeMode = 23
+    case scale = 24
+    case showValueLabel = 25
+    case size = 26
+    case source = 27
+    case spacing = 28
+    case startAtMs = 29
+    case startPoint = 30
+    case stops = 31
+    case systemImage = 32
+    case textStyle = 33
+    case textTemplates = 34
+    case thumb = 35
+    case tint = 36
+    case tintColor = 37
+    case title = 38
+    case trackColor = 39
+    case type = 40
+    case value = 41
+    case weight = 42
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -98,6 +99,8 @@ public enum PropNameID: Int, Codable {
             return "minLength"
         case .name:
             return "name"
+        case .numberOfLines:
+            return "numberOfLines"
         case .progressColor:
             return "progressColor"
         case .resizeMode:
@@ -169,6 +172,7 @@ public enum PropNameID: Int, Codable {
         case "maximumValue": self = .maximumValue
         case "minLength": self = .minLength
         case "name": self = .name
+        case "numberOfLines": self = .numberOfLines
         case "progressColor": self = .progressColor
         case "resizeMode": self = .resizeMode
         case "scale": self = .scale
