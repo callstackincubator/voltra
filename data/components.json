@@ -467,6 +467,19 @@
       "description": "Visual divider",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "parameters": {}
+    },
+    {
+      "name": "Mask",
+      "description": "Mask content using any Voltra element as the mask shape",
+      "swiftAvailability": "iOS 15.0, macOS 12.0",
+      "hasChildren": true,
+      "parameters": {
+        "maskElement": {
+          "type": "component",
+          "optional": false,
+          "description": "Voltra element used as the mask - alpha channel determines visibility"
+        }
+      }
     }
   ]
 }

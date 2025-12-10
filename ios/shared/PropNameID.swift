@@ -28,31 +28,32 @@ public enum PropNameID: Int, Codable {
     case hideValueLabel = 15
     case interactive = 16
     case lineWidth = 17
-    case maximumValue = 18
-    case minLength = 19
-    case name = 20
-    case numberOfLines = 21
-    case progressColor = 22
-    case resizeMode = 23
-    case scale = 24
-    case showValueLabel = 25
-    case size = 26
-    case source = 27
-    case spacing = 28
-    case startAtMs = 29
-    case startPoint = 30
-    case stops = 31
-    case systemImage = 32
-    case textStyle = 33
-    case textTemplates = 34
-    case thumb = 35
-    case tint = 36
-    case tintColor = 37
-    case title = 38
-    case trackColor = 39
-    case type = 40
-    case value = 41
-    case weight = 42
+    case maskElement = 18
+    case maximumValue = 19
+    case minLength = 20
+    case name = 21
+    case numberOfLines = 22
+    case progressColor = 23
+    case resizeMode = 24
+    case scale = 25
+    case showValueLabel = 26
+    case size = 27
+    case source = 28
+    case spacing = 29
+    case startAtMs = 30
+    case startPoint = 31
+    case stops = 32
+    case systemImage = 33
+    case textStyle = 34
+    case textTemplates = 35
+    case thumb = 36
+    case tint = 37
+    case tintColor = 38
+    case title = 39
+    case trackColor = 40
+    case type = 41
+    case value = 42
+    case weight = 43
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -93,6 +94,8 @@ public enum PropNameID: Int, Codable {
             return "interactive"
         case .lineWidth:
             return "lineWidth"
+        case .maskElement:
+            return "maskElement"
         case .maximumValue:
             return "maximumValue"
         case .minLength:
@@ -169,6 +172,7 @@ public enum PropNameID: Int, Codable {
         case "hideValueLabel": self = .hideValueLabel
         case "interactive": self = .interactive
         case "lineWidth": self = .lineWidth
+        case "maskElement": self = .maskElement
         case "maximumValue": self = .maximumValue
         case "minLength": self = .minLength
         case "name": self = .name
