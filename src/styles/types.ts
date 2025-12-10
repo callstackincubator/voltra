@@ -1,17 +1,5 @@
 import { StyleProp, TextStyle as RNTextStyle, ViewStyle as RNViewStyle } from 'react-native'
 
-// Alignment types for positioning
-export type Alignment =
-  | 'center'
-  | 'leading'
-  | 'trailing'
-  | 'top'
-  | 'bottom'
-  | 'topLeading'
-  | 'topTrailing'
-  | 'bottomLeading'
-  | 'bottomTrailing'
-
 export type VoltraViewStyle = Pick<
   RNViewStyle,
   | 'width'
@@ -44,8 +32,7 @@ export type VoltraViewStyle = Pick<
   | 'flexGrow'
   | 'flexShrink'
 > & {
-  // SwiftUI-native positioning properties
-  alignment?: Alignment
+  // Offset for fine-tuning position
   offsetX?: number
   offsetY?: number
 }
