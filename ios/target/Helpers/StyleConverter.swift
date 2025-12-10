@@ -20,7 +20,6 @@ public struct StyleConverter {
         var flexGrow: Double?
         var flexShrink: Double?
         var frameProps: [String: Any] = [:]
-        var alignment: String?
         var offsetProps: [String: Double] = [:]
         var opacity: Double?
         var overflow: String?
@@ -138,8 +137,6 @@ public struct StyleConverter {
                 if let num = value as? NSNumber, num.doubleValue > 0 {
                     flexShrink = num.doubleValue
                 }
-            case "alignment":
-                alignment = value as? String
             case "offsetX":
                 if let num = value as? NSNumber {
                     offsetProps["x"] = num.doubleValue
@@ -203,40 +200,7 @@ public struct StyleConverter {
             frameProps["minHeight"] = 0.0
         }
         
-        // Add frame modifier if needed
-        if !frameProps.isEmpty {
-            var frameArgs: [String: AnyCodable] = [:]
-            for (key, value) in frameProps {
-                if let num = value as? Double {
-                    frameArgs[key] = .double(num)
-                } else if let str = value as? String {
-                    frameArgs[key] = .string(str)
-                }
-            }
-            modifiers.append(VoltraModifier(name: "frame", args: frameArgs))
-        }
-        
-        // Handle alignment
-        if let alignment = alignment {
-            // Apply frame with alignment to position within parent
-            frameProps["alignment"] = alignment
-        }
-
-        // Handle offset
-        if !offsetProps.isEmpty {
-            var offsetArgs: [String: AnyCodable] = [:]
-            if let x = offsetProps["x"] {
-                offsetArgs["x"] = .double(x)
-            }
-            if let y = offsetProps["y"] {
-                offsetArgs["y"] = .double(y)
-            }
-            if !offsetArgs.isEmpty {
-                modifiers.append(VoltraModifier(name: "offset", args: offsetArgs))
-            }
-        }
-        
-        // Process padding (must come first)
+        // Process padding (applied first to style content)
         if !paddingProps.isEmpty {
             var paddingArgs: [String: AnyCodable] = [:]
             
@@ -355,6 +319,34 @@ public struct StyleConverter {
             var clippedArgs: [String: AnyCodable] = [:]
             clippedArgs["enabled"] = .bool(true)
             modifiers.append(VoltraModifier(name: "clipped", args: clippedArgs))
+        }
+        
+        // Add frame modifier if needed (for explicit width/height/flex)
+        // This comes after styling modifiers so the frame wraps the styled content
+        if !frameProps.isEmpty {
+            var frameArgs: [String: AnyCodable] = [:]
+            for (key, value) in frameProps {
+                if let num = value as? Double {
+                    frameArgs[key] = .double(num)
+                } else if let str = value as? String {
+                    frameArgs[key] = .string(str)
+                }
+            }
+            modifiers.append(VoltraModifier(name: "frame", args: frameArgs))
+        }
+
+        // Handle offset - fine-tunes position
+        if !offsetProps.isEmpty {
+            var offsetArgs: [String: AnyCodable] = [:]
+            if let x = offsetProps["x"] {
+                offsetArgs["x"] = .double(x)
+            }
+            if let y = offsetProps["y"] {
+                offsetArgs["y"] = .double(y)
+            }
+            if !offsetArgs.isEmpty {
+                modifiers.append(VoltraModifier(name: "offset", args: offsetArgs))
+            }
         }
         
         // Process margin as padding (applied last)

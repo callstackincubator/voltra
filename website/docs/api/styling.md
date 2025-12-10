@@ -21,10 +21,11 @@ The following React Native style properties are supported:
 - `paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight` - Individual edge padding
 - `paddingHorizontal`, `paddingVertical` - Horizontal and vertical padding
 - `margin`, `marginTop`, `marginBottom`, `marginLeft`, `marginRight`, `marginHorizontal`, `marginVertical` - All margin properties are mapped to padding in SwiftUI
-- `position: 'absolute'` - Enables absolute positioning (requires `top` and `left` properties). Positions the view at absolute coordinates.
-- `position: 'relative'` - Enables relative positioning (uses `top` and `left` properties). Offsets the view from its natural position without affecting layout flow.
-- `top` - Top offset for positioned elements
-- `left` - Left offset for positioned elements
+
+**Positioning:**
+
+- `offsetX` - Horizontal offset from the element's natural position (positive = right, negative = left)
+- `offsetY` - Vertical offset from the element's natural position (positive = down, negative = up)
 
 **Style:**
 
@@ -62,13 +63,17 @@ Properties not listed above are ignored during rendering. This includes common R
 - Most flexbox layout properties (`flexDirection`, `justifyContent`, `alignItems`, etc.) - Note: `flex`, `flexGrow`, and `flexShrink` are supported
 - `gap` and spacing properties
 - Percentage-based widths and heights
-- `right` and `bottom` positioning properties (only `top` and `left` are supported)
+- CSS-style positioning (`position`, `top`, `left`, `right`, `bottom`) - Use SwiftUI-native positioning instead (see below)
 - Most text styling properties beyond `fontSize`, `fontWeight`, `color`, `letterSpacing`, and `fontVariant`
 
-:::warning
+:::tip Positioning in Voltra
 
-- For `position: 'absolute'`: SwiftUI's `position` modifier positions the center of the view at the specified coordinates, not the top-left corner like React Native. You may need to adjust your coordinates by half the view's width/height to achieve the desired positioning.
-- For `position: 'relative'`: Maps directly to SwiftUI's `offset` modifier, which behaves the same as React Native's relative positioning.
+Voltra uses SwiftUI's native positioning model instead of CSS-style absolute/relative positioning:
+
+1. **Use stack `alignment` props** - `ZStack`, `VStack`, and `HStack` all support an `alignment` prop that positions all children
+2. **Use `offsetX`/`offsetY` styles** - Fine-tune individual element positions with offset
+
+See the [Layout & Containers](/api/components/layout) documentation for details on alignment.
 
 :::
 
