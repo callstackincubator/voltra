@@ -17,7 +17,7 @@ public struct CircularProgressViewParameters: ComponentParameters {
     public let countDown: Bool?
 
     /// Maximum progress value
-    public let maximumValue: Double?
+    public let maximumValue: Double = 100
 
     /// End time in milliseconds since epoch
     public let endAtMs: Double?

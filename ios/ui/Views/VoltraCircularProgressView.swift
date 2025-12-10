@@ -18,17 +18,10 @@ public struct VoltraCircularProgressView: View {
         let trackColor = params.trackColor.flatMap { helper.translateColor($0) }
         let progressColor = params.progressColor.flatMap { helper.translateColor($0) }
         let lineWidth = params.lineWidth.map { CGFloat($0) }
-        
+
         // Determine if we need custom style
-        let needsCustomStyle = trackColor != nil || lineWidth != nil
-        
-        // Define the custom style builder (if needed)
-        let customStyle = VoltraCircularProgressStyle(
-            progressTint: progressColor,
-            trackTint: trackColor ?? Color.gray.opacity(0.2),
-            lineWidth: lineWidth
-        )
-        
+        let needsCustomStyle = trackColor != nil || lineWidth != nil || params.value != nil
+
         // Group containing the ProgressView variations
         let progressContent = Group {
             if let endAtMs = endAtMs {
@@ -36,29 +29,33 @@ public struct VoltraCircularProgressView: View {
                 let timeRange = Date.toTimerInterval(startAtMs: startAtMs, endAtMs: endAtMs)
                 
                 ProgressView(timerInterval: timeRange)
-                    .tint(progressColor)
             } else if let value = params.value {
                 // Determinate progress
                 ProgressView(
                     value: value,
                     total: params.maximumValue ?? 100
                 )
-                .tint(progressColor)
             } else {
                 // Indeterminate progress (only supported for circular)
                 ProgressView()
-                    .tint(progressColor)
             }
         }
         
         // Apply the style conditionally
         if needsCustomStyle {
+            let customStyle = VoltraCircularProgressStyle(
+                progressTint: progressColor,
+                trackTint: trackColor ?? Color.gray.opacity(0.2),
+                lineWidth: lineWidth
+            )
+
             progressContent
                 .progressViewStyle(customStyle)
                 .voltraModifiers(component)
         } else {
             progressContent
-                .progressViewStyle(CircularProgressViewStyle())
+                .progressViewStyle(.circular)
+                .tint(progressColor)
                 .voltraModifiers(component)
         }
     }

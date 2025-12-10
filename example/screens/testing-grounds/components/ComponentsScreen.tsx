@@ -158,7 +158,7 @@ const COMPONENTS_DATA = [
       <VoltraView style={{ width: '100%', height: 120, backgroundColor: '#1E293B', padding: 16 }}>
         <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12 }}>
           <Voltra.LinearProgressView value={50} progressColor="#8232FF" />
-          <Voltra.CircularProgressView value={50} />
+          <Voltra.CircularProgressView value={50} progressColor="#8232FF" />
         </Voltra.VStack>
       </VoltraView>
     ),

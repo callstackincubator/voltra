@@ -51,7 +51,10 @@ public struct ${component.name}Parameters: ComponentParameters {
     .map(([name, param]) => {
       const description = param.description ? `    /// ${param.description}\n` : ''
       const swiftType = toSwiftType(param)
-      return `${description}    public let ${name}: ${swiftType}?`
+      const hasDefault = param.default !== undefined
+      const typeDeclaration = hasDefault ? `${swiftType}` : `${swiftType}?`
+      const defaultValue = hasDefault ? ` = ${JSON.stringify(param.default)}` : ''
+      return `${description}    public let ${name}: ${typeDeclaration}${defaultValue}`
     })
     .join('\n\n')
 

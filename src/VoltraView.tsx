@@ -60,11 +60,12 @@ export function VoltraView({ id, children, style, onInteraction }: VoltraViewPro
       // Only forward events from this view
       if (event.source === viewId) {
         onInteraction({
+          type: 'interaction',
           source: event.source,
           timestamp: event.timestamp,
           identifier: event.identifier,
-          componentType: (event as any).componentType ?? '',
-          state: (event as any).state ?? {},
+          componentId: event.componentId,
+          payload: event.payload,
         })
       }
     })

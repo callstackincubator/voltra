@@ -14,5 +14,5 @@ public struct ImageParameters: ComponentParameters {
     public let source: String?
 
     /// How the image should be resized to fit its container
-    public let resizeMode: String?
+    public let resizeMode: String = "cover"
 }

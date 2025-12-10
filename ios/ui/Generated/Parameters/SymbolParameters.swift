@@ -23,7 +23,7 @@ public struct SymbolParameters: ComponentParameters {
     public let weight: String?
 
     /// Symbol size in points
-    public let size: Double?
+    public let size: Double = 24
 
     /// Tint color for the symbol
     public let tintColor: String?

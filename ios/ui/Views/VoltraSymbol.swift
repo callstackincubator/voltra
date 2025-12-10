@@ -154,10 +154,7 @@ public struct VoltraSymbol: View {
     }
 
     private func symbolSize(params: SymbolParameters) -> CGFloat {
-        if let size = params.size {
-            return CGFloat(size)
-        }
-        return 24.0
+        return CGFloat(params.size)
     }
 
     private func tintColor(params: SymbolParameters) -> Color? {

@@ -20,13 +20,13 @@ public struct TimerParameters: ComponentParameters {
     public let durationMs: Double?
 
     /// Count direction
-    public let direction: String?
+    public let direction: String = "down"
 
     /// Hide timer when complete
     public let autoHideOnEnd: Bool?
 
     /// Text formatting style
-    public let textStyle: String?
+    public let textStyle: String = "timer"
 
     /// JSON-encoded TextTemplates object with running/completed templates
     public let textTemplates: String?

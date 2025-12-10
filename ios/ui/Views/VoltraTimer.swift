@@ -18,10 +18,10 @@ public struct VoltraTimer: View {
     private func resolvedStartDate(params: TimerParameters) -> Date? { progressRange(params: params)?.lowerBound }
     private func resolvedEndDate(params: TimerParameters) -> Date? { progressRange(params: params)?.upperBound }
     private func countsDown(params: TimerParameters) -> Bool {
-        (params.direction?.lowercased() ?? "down") != "up"
+        (params.direction.lowercased()) != "up"
     }
     private func textStyle(params: TimerParameters) -> String {
-        params.textStyle?.lowercased() ?? "timer"
+        params.textStyle.lowercased()
     }
     private func autoHideOnEnd(params: TimerParameters) -> Bool {
         params.autoHideOnEnd ?? false

@@ -11,5 +11,5 @@ import Foundation
 /// Toggle switch control
 public struct ToggleParameters: ComponentParameters {
     /// Initial toggle state
-    public let defaultValue: Bool?
+    public let defaultValue: Bool = false
 }

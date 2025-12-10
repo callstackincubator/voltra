@@ -45,7 +45,7 @@ public struct VoltraImage: View {
     @ViewBuilder
     public var body: some View {
         let params = component.parameters(ImageParameters.self)
-        let resizeMode = params.resizeMode?.lowercased() ?? "cover"
+        let resizeMode = params.resizeMode.lowercased()
         let baseImage = createImage(from: params.source)
             
         switch resizeMode {
