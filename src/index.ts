@@ -44,6 +44,16 @@ export function isGlassSupported(): boolean {
 }
 
 /**
+ * Return whether the app was launched in the background (headless).
+ * Returns true if the app was launched in background, false if launched in foreground.
+ * Always returns false on non-iOS platforms.
+ */
+export function isHeadless(): boolean {
+  if (Platform.OS !== 'ios') return false
+  return VoltraModule.isHeadless?.() ?? false
+}
+
+/**
  * Debug: list current Voltra Live Activity IDs (if any).
  */
 export async function listLiveActivityIds(): Promise<string[]> {

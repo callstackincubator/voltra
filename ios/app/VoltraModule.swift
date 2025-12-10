@@ -12,6 +12,7 @@ public class VoltraModule: Module {
   private let WIDGET_DEEPLINK_URL_KEY = "Voltra_Widget_DeepLinkURL"
   private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
   private let liveActivityService = VoltraLiveActivityService()
+  private var wasLaunchedInBackground: Bool = false
   
   enum VoltraErrors: Error {
     case unsupportedOS
@@ -53,6 +54,9 @@ public class VoltraModule: Module {
     }
 
     OnCreate {
+      // Track if app was launched in background (headless)
+      wasLaunchedInBackground = UIApplication.shared.applicationState == .background
+
       // Observe ActivityKit streams for tokens and state changes
       if pushNotificationsEnabled {
         observePushToStartToken()
@@ -299,6 +303,10 @@ public class VoltraModule: Module {
     Function("isVoltraActive") { (activityId: String) -> Bool in
       guard #available(iOS 16.2, *) else { return false }
       return liveActivityService.isActivityActive(name: activityId)
+    }
+
+    Function("isHeadless") { () -> Bool in
+      return wasLaunchedInBackground
     }
 
     View(VoltraView.self) {
