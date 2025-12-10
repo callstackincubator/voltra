@@ -17,6 +17,9 @@ module.exports = {
         'node_modules/(?!(jest-expo|@react-native|react-native|react-clone-referenced-element|@expo)/)',
       ],
       testMatch: ['<rootDir>/src/**/*.node.test.ts?(x)'],
+      moduleNameMapper: {
+        voltra: '<rootDir>/src/server.ts',
+      },
     },
   ],
 }

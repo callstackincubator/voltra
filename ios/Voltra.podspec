@@ -28,10 +28,11 @@ Pod::Spec.new do |s|
   # Core subspec: React Native bridge module
   s.subspec 'Core' do |ss|
     ss.dependency 'ExpoModulesCore'
-    
+
     ss.source_files = [
       "app/**/*.swift",
       "shared/**/*.swift",
+      "ui/**/*.swift",  # Add shared UI code
     ]
   end
 
@@ -39,7 +40,8 @@ Pod::Spec.new do |s|
   s.subspec 'Widget' do |ss|
     ss.source_files = [
       "shared/**/*.swift",
-      "target/**/*.swift",
+      "ui/**/*.swift",     # Add shared UI code
+      "target/**/*.swift", # Widget-specific files only
     ]
   end
 end
