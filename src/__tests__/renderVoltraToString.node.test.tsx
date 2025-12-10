@@ -7,7 +7,7 @@ describe('renderVoltraVariantToJson', () => {
   it('should render a simple text component', () => {
     const element = <Voltra.Text>Hello, world!</Voltra.Text>
     const result = renderVoltraVariantToJson(element)
-    expect(result).toEqual({ type: 'Text', props: {}, children: 'Hello, world!' })
+    expect(result).toEqual({ t: 0, p: {}, c: 'Hello, world!' })
   })
 
   it('should render nested components', () => {
@@ -19,11 +19,11 @@ describe('renderVoltraVariantToJson', () => {
     )
     const result = renderVoltraVariantToJson(element)
     expect(result).toEqual({
-      type: 'VStack',
-      props: {},
-      children: [
-        { type: 'Text', props: {}, children: 'Element 1' },
-        { type: 'Text', props: {}, children: 'Element 2' },
+      t: 11,
+      p: {},
+      c: [
+        { t: 0, p: {}, c: 'Element 1' },
+        { t: 0, p: {}, c: 'Element 2' },
       ],
     })
   })
@@ -32,7 +32,7 @@ describe('renderVoltraVariantToJson', () => {
     it('should render a simple text component', () => {
       const element = <Voltra.Text>Hello, world!</Voltra.Text>
       const result = renderVoltraVariantToJson(element)
-      expect(result).toEqual({ type: 'Text', props: {}, children: 'Hello, world!' })
+      expect(result).toEqual({ t: 0, p: {}, c: 'Hello, world!' })
     })
 
     it('should not allow nested components', () => {
@@ -42,6 +42,18 @@ describe('renderVoltraVariantToJson', () => {
         </Voltra.Text>
       )
       expect(() => renderVoltraVariantToJson(element)).toThrow('Text component children must resolve to a string.')
+    })
+
+    it('should stringify number children', () => {
+      const element = <Voltra.Text>{42}</Voltra.Text>
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({ t: 0, p: {}, c: '42' })
+    })
+
+    it('should stringify bigint children', () => {
+      const element = <Voltra.Text>{123n}</Voltra.Text>
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({ t: 0, p: {}, c: '123' })
     })
   })
 
@@ -89,7 +101,7 @@ describe('renderVoltraVariantToJson', () => {
     )
 
     const result = renderVoltraVariantToJson(element)
-    expect(result).toEqual({ type: 'Text', props: {}, children: 'provided' })
+    expect(result).toEqual({ t: 0, p: {}, c: 'provided' })
   })
 
   it('should handle context consumers correctly', () => {
@@ -102,7 +114,7 @@ describe('renderVoltraVariantToJson', () => {
     )
 
     const result = renderVoltraVariantToJson(element)
-    expect(result).toEqual({ type: 'Text', props: {}, children: 'Consumed: from provider' })
+    expect(result).toEqual({ t: 0, p: {}, c: 'Consumed: from provider' })
   })
 
   it('should handle context consumers with default values', () => {
@@ -111,7 +123,7 @@ describe('renderVoltraVariantToJson', () => {
     const element = <TestContext.Consumer>{(value) => <Voltra.Text>{value}</Voltra.Text>}</TestContext.Consumer>
 
     const result = renderVoltraVariantToJson(element)
-    expect(result).toEqual({ type: 'Text', props: {}, children: 'default value' })
+    expect(result).toEqual({ t: 0, p: {}, c: 'default value' })
   })
 
   it('should throw error for Suspense component', () => {
@@ -153,9 +165,9 @@ describe('renderVoltraVariantToJson', () => {
     const result = renderVoltraVariantToJson(element)
 
     expect(result).toEqual([
-      { type: 'Text', props: {}, children: 'Element 1' },
-      { type: 'Text', props: {}, children: 'Element 2' },
-      { type: 'Text', props: {}, children: 'Element 3' },
+      { t: 0, p: {}, c: 'Element 1' },
+      { t: 0, p: {}, c: 'Element 2' },
+      { t: 0, p: {}, c: 'Element 3' },
     ])
   })
 })

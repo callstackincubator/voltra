@@ -15,8 +15,8 @@ describe('renderVoltraVariantToJson array handling', () => {
 
     // We expect a flat array of elements
     expect(result).toEqual([
-      { type: 'Text', props: {}, children: 'Element 1' },
-      { type: 'Text', props: {}, children: 'Element 2' },
+      { t: 0, p: {}, c: 'Element 1' },
+      { t: 0, p: {}, c: 'Element 2' },
     ])
   })
 
@@ -34,9 +34,9 @@ describe('renderVoltraVariantToJson array handling', () => {
 
     // With proper flattening, this should be a single flat array
     expect(result).toEqual([
-      { type: 'Text', props: {}, children: 'Element 1' },
-      { type: 'Text', props: {}, children: 'Element 2' },
-      { type: 'Text', props: {}, children: 'Element 3' },
+      { t: 0, p: {}, c: 'Element 1' },
+      { t: 0, p: {}, c: 'Element 2' },
+      { t: 0, p: {}, c: 'Element 3' },
     ])
   })
 })

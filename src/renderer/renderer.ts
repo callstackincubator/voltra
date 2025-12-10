@@ -146,6 +146,9 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
   }
 
   if (typeof element === 'number' || typeof element === 'bigint') {
+    if (context.inStringOnlyContext) {
+      return String(element)
+    }
     throw new Error(`Expected a React element, but got "${typeof element}".`)
   }
 
