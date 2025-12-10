@@ -300,6 +300,16 @@ public class VoltraModule: Module {
       guard #available(iOS 16.2, *) else { return false }
       return liveActivityService.isActivityActive(name: activityId)
     }
+
+    View(VoltraView.self) {
+      Prop("payload") { (view, payload: String) in
+        view.setPayload(payload)
+      }
+      
+      Prop("viewId") { (view, viewId: String) in
+        view.setViewId(viewId)
+      }
+    }
   }
 
 }

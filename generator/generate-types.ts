@@ -15,7 +15,7 @@ const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
 const TS_JSX_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
-const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/target/Generated')
+const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/ui/Generated')
 const SWIFT_PARAMETERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Parameters')
 const SWIFT_SHARED_OUTPUT_DIR = path.join(ROOT_DIR, 'ios/shared')
 
@@ -116,7 +116,7 @@ const main = () => {
     `   TypeScript props and components: ${Object.keys(tsJsxResult.props).length + Object.keys(tsJsxResult.jsx).length} files in src/jsx/`
   )
   console.log(`   Component props registry: ${Object.keys(componentPropsRegistryFiles).length} files in src/jsx/`)
-  console.log(`   Swift parameters: ${Object.keys(swiftParameterFiles).length} files in ios/.../Generated/Parameters/`)
+  console.log(`   Swift parameters: ${Object.keys(swiftParameterFiles).length} files in ios/ui/Generated/Parameters/`)
   console.log(
     `   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files`
   )
