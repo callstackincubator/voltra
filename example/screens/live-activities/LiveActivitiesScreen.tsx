@@ -1,3 +1,4 @@
+import { Link } from 'expo-router'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -139,6 +140,12 @@ export default function LiveActivitiesScreen() {
           no need to open Xcode anymore.
         </Text>
 
+        <View style={styles.navigationButtons}>
+          <Link href="/testing-grounds" asChild>
+            <Button title="Testing Grounds" variant="secondary" />
+          </Link>
+        </View>
+
         <NotificationsCard />
 
         {CARD_ORDER.map(renderCard)}
@@ -180,6 +187,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#CBD5F5',
     marginBottom: 8,
+  },
+  navigationButtons: {
+    marginTop: 16,
   },
   cardHeader: {
     flexDirection: 'row',

@@ -1,0 +1,90 @@
+import { useRouter } from 'expo-router'
+import React from 'react'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { Button } from '~/components/Button'
+import { Card } from '~/components/Card'
+
+const TESTING_GROUNDS_SECTIONS = [
+  {
+    id: 'styling',
+    title: 'Styling',
+    description:
+      'Explore Voltra styling properties including padding, margins, colors, borders, shadows, and typography.',
+    route: '/testing-grounds/styling',
+  },
+  {
+    id: 'components',
+    title: 'Components',
+    description:
+      'Explore all available Voltra components including Button, Text, VStack, HStack, ZStack, Image, and more.',
+    route: '/testing-grounds/components',
+  },
+  // Add more sections here as they are implemented
+]
+
+export default function TestingGroundsScreen() {
+  const insets = useSafeAreaInsets()
+  const router = useRouter()
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={[styles.scrollView]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+      >
+        <Text style={styles.heading}>Testing Grounds</Text>
+        <Text style={styles.subheading}>
+          Explore different aspects of Voltra development. Each section provides hands-on examples and demonstrations of
+          specific features.
+        </Text>
+
+        {TESTING_GROUNDS_SECTIONS.map((section) => (
+          <Card key={section.id}>
+            <Card.Title>{section.title}</Card.Title>
+            <Card.Text>{section.description}</Card.Text>
+            <View style={styles.buttonContainer}>
+              <Button title={`Explore ${section.title}`} variant="primary" onPress={() => router.push(section.route)} />
+            </View>
+          </Card>
+        ))}
+
+        <View style={styles.footer}>
+          <Button title="Back to Live Activities" variant="ghost" onPress={() => router.push('/live-activities')} />
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  heading: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  subheading: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#CBD5F5',
+    marginBottom: 8,
+  },
+  buttonContainer: {
+    marginTop: 16,
+  },
+  footer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+})

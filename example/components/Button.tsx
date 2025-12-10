@@ -3,7 +3,7 @@ import { StyleProp, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-
 export type ButtonProps = {
   style?: StyleProp<ViewStyle>
   title: string
-  onPress: () => void
+  onPress?: () => void
   variant?: 'primary' | 'secondary' | 'ghost'
   disabled?: boolean
 }
