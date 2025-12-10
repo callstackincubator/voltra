@@ -20,7 +20,8 @@ public struct StyleConverter {
         var flexGrow: Double?
         var flexShrink: Double?
         var frameProps: [String: Any] = [:]
-        var positionProps: [String: Double] = [:]
+        var alignment: String?
+        var offsetProps: [String: Double] = [:]
         var opacity: Double?
         var overflow: String?
         
@@ -137,25 +138,15 @@ public struct StyleConverter {
                 if let num = value as? NSNumber, num.doubleValue > 0 {
                     flexShrink = num.doubleValue
                 }
-            case "position":
-                if let pos = value as? String {
-                    positionProps["position"] = pos == "absolute" ? 1 : 0
-                }
-            case "top":
+            case "alignment":
+                alignment = value as? String
+            case "offsetX":
                 if let num = value as? NSNumber {
-                    positionProps["top"] = num.doubleValue
+                    offsetProps["x"] = num.doubleValue
                 }
-            case "left":
+            case "offsetY":
                 if let num = value as? NSNumber {
-                    positionProps["left"] = num.doubleValue
-                }
-            case "right":
-                if let num = value as? NSNumber {
-                    positionProps["right"] = num.doubleValue
-                }
-            case "bottom":
-                if let num = value as? NSNumber {
-                    positionProps["bottom"] = num.doubleValue
+                    offsetProps["y"] = num.doubleValue
                 }
             // Text properties
             case "fontSize":
@@ -225,23 +216,20 @@ public struct StyleConverter {
             modifiers.append(VoltraModifier(name: "frame", args: frameArgs))
         }
         
-        // Handle position
-        if let position = positionProps["position"], position == 1 {
-            // Absolute positioning
-            if let top = positionProps["top"], let left = positionProps["left"] {
-                var positionArgs: [String: AnyCodable] = [:]
-                positionArgs["x"] = .double(left)
-                positionArgs["y"] = .double(top)
-                modifiers.append(VoltraModifier(name: "position", args: positionArgs))
-            }
-        } else if let position = positionProps["position"], position == 0 {
-            // Relative positioning (offset)
+        // Handle alignment
+        if let alignment = alignment {
+            // Apply frame with alignment to position within parent
+            frameProps["alignment"] = alignment
+        }
+
+        // Handle offset
+        if !offsetProps.isEmpty {
             var offsetArgs: [String: AnyCodable] = [:]
-            if let left = positionProps["left"] {
-                offsetArgs["x"] = .double(left)
+            if let x = offsetProps["x"] {
+                offsetArgs["x"] = .double(x)
             }
-            if let top = positionProps["top"] {
-                offsetArgs["y"] = .double(top)
+            if let y = offsetProps["y"] {
+                offsetArgs["y"] = .double(y)
             }
             if !offsetArgs.isEmpty {
                 modifiers.append(VoltraModifier(name: "offset", args: offsetArgs))

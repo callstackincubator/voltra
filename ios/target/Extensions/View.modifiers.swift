@@ -77,6 +77,25 @@ extension View {
                     let minHeight = modifier.args?["minHeight"]?.toDouble() ?? modifier.args?["minHeight"]?.toInt().map(Double.init)
                     let idealWidth = modifier.args?["idealWidth"]?.toDouble() ?? modifier.args?["idealWidth"]?.toInt().map(Double.init)
                     let idealHeight = modifier.args?["idealHeight"]?.toDouble() ?? modifier.args?["idealHeight"]?.toInt().map(Double.init)
+
+                    // Convert alignment string to SwiftUI Alignment
+                    let alignmentStr = modifier.args?["alignment"]?.toString()
+                    let alignment: Alignment = if let alignmentStr = alignmentStr {
+                        switch alignmentStr.lowercased() {
+                        case "leading": .leading
+                        case "trailing": .trailing
+                        case "top": .top
+                        case "bottom": .bottom
+                        case "topleading": .topLeading
+                        case "toptrailing": .topTrailing
+                        case "bottomleading": .bottomLeading
+                        case "bottomtrailing": .bottomTrailing
+                        case "center": .center
+                        default: .center
+                        }
+                    } else {
+                        .center
+                    }
                     
                     // Check if we have any frame parameters
                     let hasAnyParam = width != nil || height != nil || maxWidthInfinity || maxHeightInfinity || 
@@ -131,7 +150,7 @@ extension View {
                                 minHeight: minHeight.map { CGFloat($0) } ?? 0,
                                 idealHeight: finalIdealHeight,
                                 maxHeight: finalMaxHeight,
-                                alignment: .leading
+                                alignment: alignment
                             ))
                             
                             // If only minWidth/minHeight are set (flexShrink with flexGrow: 0 case),
