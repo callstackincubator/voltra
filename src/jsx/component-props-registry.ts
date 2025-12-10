@@ -9,3 +9,4 @@ import { registerComponentProps } from '../renderer/renderer'
 // This registry is used by the renderer to detect which props need special serialization
 
 registerComponentProps('LinearProgressView', ['thumb'])
+registerComponentProps('Mask', ['maskElement'])
