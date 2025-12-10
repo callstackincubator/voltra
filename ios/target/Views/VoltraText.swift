@@ -16,9 +16,12 @@ public struct VoltraText: View {
             return ""
         }()
 
+        // Check if text alignment is specified in styles
+        let hasTextAlignment = component.style?["textAlign"] != nil
+
         let textView = Text(.init(textContent))
             .voltraModifiers(component)
-            .fixedSize(horizontal: false, vertical: true)
+            .fixedSize(horizontal: !hasTextAlignment, vertical: true)
 
         // Apply lineLimit if numberOfLines is specified
         if let numberOfLines = params.numberOfLines {

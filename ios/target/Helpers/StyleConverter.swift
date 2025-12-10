@@ -30,6 +30,7 @@ public struct StyleConverter {
         var color: String?
         var letterSpacing: Double?
         var fontVariant: [String]?
+        var textAlign: String?
         
         // Process all style properties
         for (key, value) in style {
@@ -162,6 +163,8 @@ public struct StyleConverter {
                 if let arr = value as? [String] {
                     fontVariant = arr
                 }
+            case "textAlign":
+                textAlign = value as? String
             default:
                 break
             }
@@ -439,7 +442,29 @@ public struct StyleConverter {
             kernArgs["value"] = .double(spacing)
             textModifiers.append(VoltraModifier(name: "kerning", args: kernArgs))
         }
-        
+
+        // Text alignment
+        if let align = textAlign {
+            // multilineTextAlignment is for multiline text wrapping
+            var mtaArgs: [String: AnyCodable] = [:]
+            mtaArgs["value"] = .string(align)
+            textModifiers.append(VoltraModifier(name: "multilineTextAlignment", args: mtaArgs))
+            
+            // For single-line text, we need a frame with maxWidth: infinity and proper alignment
+            // This makes the text fill the available width and positions it according to textAlign
+            var frameArgs: [String: AnyCodable] = [:]
+            frameArgs["maxWidth"] = .string("infinity")
+            switch align.lowercased() {
+            case "center":
+                frameArgs["alignment"] = .string("center")
+            case "right":
+                frameArgs["alignment"] = .string("trailing")
+            default: // "left" or "auto"
+                frameArgs["alignment"] = .string("leading")
+            }
+            textModifiers.append(VoltraModifier(name: "frame", args: frameArgs))
+        }
+
         // Prepend text modifiers (they should be applied early)
         return textModifiers + modifiers
     }
