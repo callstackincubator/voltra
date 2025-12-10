@@ -7,9 +7,6 @@ import SwiftUI
 public struct VoltraGlassContainer: View {
     private let component: VoltraComponent
     
-    @Environment(\.voltraEnvironment)
-    private var voltraEnvironment
-    
     public init(_ component: VoltraComponent) {
         self.component = component
     }
@@ -23,20 +20,20 @@ public struct VoltraGlassContainer: View {
                     if #available(iOS 26.0, *) {
                         let spacing = params.spacing ?? 0.0
                         GlassEffectContainer(spacing: CGFloat(spacing)) {
-                            voltraEnvironment.buildView([childComponent])
+                            VoltraChildrenView(components: [childComponent])
                         }
                     } else {
-                        voltraEnvironment.buildView([childComponent])
+                        VoltraChildrenView(components: [childComponent])
                     }
                 case .components(let components):
                     if !components.isEmpty {
                         if #available(iOS 26.0, *) {
                             let spacing = params.spacing ?? 0.0
                             GlassEffectContainer(spacing: CGFloat(spacing)) {
-                                voltraEnvironment.buildView(components)
+                                VoltraChildrenView(components: components)
                             }
                         } else {
-                            voltraEnvironment.buildView(components)
+                            VoltraChildrenView(components: components)
                         }
                     } else {
                         EmptyView()

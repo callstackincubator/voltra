@@ -1,10 +1,6 @@
 import SwiftUI
 
-/// Environment values needed by Voltra views
 struct VoltraEnvironment {
-    /// Build views for child components recursively
-    let buildView: ([VoltraComponent]) -> AnyView
-    
     /// Callback for component state changes
     let callback: (VoltraComponent) -> Void
     
@@ -12,9 +8,6 @@ struct VoltraEnvironment {
     let activityId: String
 }
 
-/// Voltra
-///
-/// Voltra is a SwiftUI View that can be used to display an interface based on VoltraComponents.
 public struct Voltra: View {
     /// VoltraComponent state change handler
     public typealias Handler = (VoltraComponent) -> Void
@@ -41,126 +34,147 @@ public struct Voltra: View {
 
     /// Generated body for SwiftUI
     public var body: some View {
-        AnyView(
-            InternalVoltra(
-                layout: components,
+        VoltraChildrenView(components: components)
+            .environment(\.voltraEnvironment, VoltraEnvironment(
                 callback: callback ?? { _ in },
                 activityId: activityId
-            )
-        )
+            ))
     }
 }
 
-struct InternalVoltra: View {
-    let callback: (VoltraComponent) -> Void
-    let activityId: String
-    let layout: [VoltraComponent]  // Private, only for initial render
-
-    init(layout: [VoltraComponent], callback: @escaping (VoltraComponent) -> Void, activityId: String) {
-        self.callback = callback
-        self.activityId = activityId
-        self.layout = layout
-    }
-
-    var body: some View {
-        buildView(for: layout)
-            .environment(\.voltraEnvironment, createEnvironment())
+/// Renders an array of VoltraComponents using ForEach with stable identity
+public struct VoltraChildrenView: View {
+    public let components: [VoltraComponent]
+    
+    public init(components: [VoltraComponent]) {
+        self.components = components
     }
     
-    // Create the environment struct
-    private func createEnvironment() -> VoltraEnvironment {
-        VoltraEnvironment(
-            buildView: { components in
-                AnyView(self.buildView(for: components))
-            },
-            callback: callback,
-            activityId: activityId
-        )
+    /// Convenience initializer that extracts children from a component
+    public init(component: VoltraComponent) {
+        if let children = component.children {
+            switch children {
+            case .component(let childComponent):
+                self.components = [childComponent]
+            case .components(let childComponents):
+                self.components = childComponents
+            case .text:
+                self.components = []
+            }
+        } else {
+            self.components = []
+        }
     }
-
-    /// Build a SwiftUI View based on the components
-    /// - Parameter components: [UIComponent]
-    /// - Returns: A SwiftUI View
-    func buildView(for components: [VoltraComponent]) -> some View {
-        // swiftlint:disable:previous cyclomatic_complexity function_body_length
+    
+    /// Convenience initializer for VoltraChildren enum
+    public init?(children: VoltraChildren?) {
+        guard let children = children else { return nil }
+        switch children {
+        case .component(let component):
+            self.components = [component]
+        case .components(let components):
+            self.components = components
+        case .text:
+            return nil
+        }
+    }
+    
+    public var body: some View {
         // Use stable identifiers for SwiftUI identity to avoid flicker on updates.
         // Prefer the provided component.id; fall back to array index when absent.
         let items: [(id: String, component: VoltraComponent)] = components.enumerated().map { (offset, comp) in
             (comp.id ?? "idx_\(offset)", comp)
         }
-        return ForEach(items, id: \.id) { item in
-            let component = item.component
-            switch component.type {
-            case "Button":
-                VoltraButton(component)
+        ForEach(items, id: \.id) { item in
+            VoltraChildView(component: item.component)
+        }
+    }
+}
 
-            case "VStack":
-                VoltraVStack(component)
+public struct VoltraChildView: View {
+    public let component: VoltraComponent
+    
+    public init(component: VoltraComponent) {
+        self.component = component
+    }
+    
+    public var body: some View {
+        componentView
+            .id(component.id)
+    }
+    
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
+    @ViewBuilder
+    private var componentView: some View {
+        switch component.type {
+        case "Button":
+            VoltraButton(component)
 
-            case "HStack":
-                VoltraHStack(component)
+        case "VStack":
+            VoltraVStack(component)
 
-            case "ZStack":
-                VoltraZStack(component)
+        case "HStack":
+            VoltraHStack(component)
 
-            case "Text":
-                VoltraText(component)
+        case "ZStack":
+            VoltraZStack(component)
 
-            case "Image":
-                VoltraImage(component)
+        case "Text":
+            VoltraText(component)
 
-            case "Symbol":
-                VoltraSymbol(component)
+        case "Image":
+            VoltraImage(component)
 
-            case "Divider":
-                VoltraDivider(component)
+        case "Symbol":
+            VoltraSymbol(component)
 
-            case "Spacer":
-                VoltraSpacer(component)
+        case "Divider":
+            VoltraDivider(component)
 
-            case "Label":
-                VoltraLabel(component)
+        case "Spacer":
+            VoltraSpacer(component)
 
-            case "Toggle":
-                VoltraToggle(component)
+        case "Label":
+            VoltraLabel(component)
 
-            case "Gauge":
-                VoltraGauge(component)
+        case "Toggle":
+            VoltraToggle(component)
 
-            case "LinearProgressView":
-                VoltraLinearProgressView(component)
+        case "Gauge":
+            VoltraGauge(component)
 
-            case "CircularProgressView":
-                VoltraCircularProgressView(component)
+        case "LinearProgressView":
+            VoltraLinearProgressView(component)
 
-            case "Timer":
-                VoltraTimer(component)
+        case "CircularProgressView":
+            VoltraCircularProgressView(component)
 
-            case "GroupBox":
-                VoltraGroupBox(component)
+        case "Timer":
+            VoltraTimer(component)
 
-            case "LinearGradient":
-                VoltraLinearGradient(component)
+        case "GroupBox":
+            VoltraGroupBox(component)
 
-            case "GlassContainer":
-                VoltraGlassContainer(component)
+        case "LinearGradient":
+            VoltraLinearGradient(component)
 
-            case "GlassView":
-                VoltraGlassView(component)
+        case "GlassContainer":
+            VoltraGlassContainer(component)
 
-            // NavigationSplitView
-            // TabView
+        case "GlassView":
+            VoltraGlassView(component)
+            
+        case "Mask":
+            VoltraMask(component)
 
-            default:
-                EmptyView()
-            }
+        default:
+            EmptyView()
         }
     }
 }
 
 private struct VoltraEnvironmentKey: EnvironmentKey {
     static let defaultValue: VoltraEnvironment = VoltraEnvironment(
-        buildView: { _ in AnyView(EmptyView()) },
         callback: { _ in },
         activityId: ""
     )

@@ -16,9 +16,9 @@ public struct VoltraButton: View {
             if let children = component.children {
                 switch children {
                 case .component(let childComponent):
-                    voltraEnvironment.buildView([childComponent])
+                    VoltraChildrenView(components: [childComponent])
                 case .components(let components):
-                    voltraEnvironment.buildView(components)
+                    VoltraChildrenView(components: components)
                 case .text(let text):
                     Text(text)
                 }

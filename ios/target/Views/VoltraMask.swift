@@ -8,9 +8,6 @@ import SwiftUI
 public struct VoltraMask: View {
     private let component: VoltraComponent
     
-    @Environment(\.voltraEnvironment)
-    private var voltraEnvironment
-    
     public init(_ component: VoltraComponent) {
         self.component = component
     }
