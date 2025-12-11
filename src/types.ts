@@ -13,6 +13,7 @@ export type VoltraNodeJson = VoltraElementJson | VoltraElementJson[] | string
 
 export type VoltraVariantsJson = {
   ls?: VoltraNodeJson
+  ls_background_tint?: string
   isl_keyline_tint?: string
   isl_exp_c?: VoltraNodeJson
   isl_exp_l?: VoltraNodeJson

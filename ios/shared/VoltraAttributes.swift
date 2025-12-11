@@ -15,6 +15,7 @@ public struct VoltraAttributes: ActivityAttributes {
     public var uiJsonData: String
     public let regions: [VoltraRegion: [VoltraComponent]]
     public let keylineTint: String?
+    public let activityBackgroundTint: String?
 
     private enum CodingKeys: String, CodingKey {
       case uiJsonData
@@ -27,16 +28,19 @@ public struct VoltraAttributes: ActivityAttributes {
       let parsedData = try ContentState.parseJsonData(from: decompressedJson)
       self.regions = parsedData.regions
       self.keylineTint = parsedData.keylineTint
+      self.activityBackgroundTint = parsedData.activityBackgroundTint
     }
 
     private struct ParsedJsonData {
       let regions: [VoltraRegion: [VoltraComponent]]
       let keylineTint: String?
+      let activityBackgroundTint: String?
     }
 
     private static func parseJsonData(from jsonString: String) throws -> ParsedJsonData {
       var regions: [VoltraRegion: [VoltraComponent]] = [:]
       var keylineTint: String? = nil
+      var activityBackgroundTint: String? = nil
 
       guard let data = jsonString.data(using: .utf8) else {
         throw ContentStateParsingError.invalidJsonString
@@ -55,7 +59,7 @@ public struct VoltraAttributes: ActivityAttributes {
         for region in VoltraRegion.allCases {
           regions[region] = components
         }
-        return ParsedJsonData(regions: regions, keylineTint: nil)
+        return ParsedJsonData(regions: regions, keylineTint: nil, activityBackgroundTint: nil)
       }
 
       guard let dict = root as? [String: Any] else {
@@ -65,6 +69,11 @@ public struct VoltraAttributes: ActivityAttributes {
       // Extract keylineTint
       if let keylineTintValue = dict["isl_keyline_tint"] as? String {
         keylineTint = keylineTintValue
+      }
+
+      // Extract activityBackgroundTint
+      if let activityBackgroundTintValue = dict["ls_background_tint"] as? String {
+        activityBackgroundTint = activityBackgroundTintValue
       }
 
       // Extract components for each region
@@ -79,7 +88,7 @@ public struct VoltraAttributes: ActivityAttributes {
         }
       }
 
-      return ParsedJsonData(regions: regions, keylineTint: keylineTint)
+      return ParsedJsonData(regions: regions, keylineTint: keylineTint, activityBackgroundTint: activityBackgroundTint)
     }
 
     private static func parseRegions(from jsonString: String) throws -> [VoltraRegion: [VoltraComponent]] {
@@ -196,6 +205,7 @@ public struct VoltraAttributes: ActivityAttributes {
       let parsedData = try ContentState.parseJsonData(from: decompressedJson)
       regions = parsedData.regions
       keylineTint = parsedData.keylineTint
+      activityBackgroundTint = parsedData.activityBackgroundTint
     }
   }
 

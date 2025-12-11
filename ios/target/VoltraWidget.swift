@@ -9,7 +9,7 @@ public struct VoltraWidget: Widget {
   public var body: some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
       let components = context.state.regions[.lockScreen] ?? []
-      VoltraContentBuilder.build(components: components, source: "activity_content", activityId: context.activityID)
+      VoltraContentBuilder.build(components: components, source: "activity_content", activityId: context.activityID, activityBackgroundTint: context.state.activityBackgroundTint)
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
 
     } dynamicIsland: { context in

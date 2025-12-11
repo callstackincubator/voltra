@@ -505,7 +505,17 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
   const result: VoltraJson = {}
 
   if (variants.lockScreen) {
-    result.ls = renderCache.getOrRender(variants.lockScreen)
+    const lockScreenVariant = variants.lockScreen
+
+    if (typeof lockScreenVariant === 'object' && lockScreenVariant !== null && 'content' in lockScreenVariant) {
+      result.ls = renderCache.getOrRender(lockScreenVariant.content)
+
+      if (lockScreenVariant.activityBackgroundTint) {
+        result.ls_background_tint = lockScreenVariant.activityBackgroundTint
+      }
+    } else {
+      result.ls = renderCache.getOrRender(lockScreenVariant as ReactNode)
+    }
   }
 
   if (variants.island) {

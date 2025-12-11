@@ -20,7 +20,10 @@ const LiquidGlassLiveActivity: LiveActivityExampleComponent = forwardRef(
             center: <VoltraLovesLiveActivity />,
           },
         },
-        lockScreen: <LiquidGlassLiveActivityUI />,
+        lockScreen: {
+          content: <LiquidGlassLiveActivityUI />,
+          activityBackgroundTint: 'clear',
+        },
       },
       {
         activityId: 'liquid-glass',

@@ -8,7 +8,9 @@ const BasicLiveActivity: LiveActivityExampleComponent = forwardRef(
   ({ autoUpdate = true, autoStart = false, onIsActiveChange }, ref) => {
     const { start, update, end, isActive } = useVoltra(
       {
-        lockScreen: <BasicLiveActivityUI />,
+        lockScreen: {
+          content: <BasicLiveActivityUI />,
+        },
         island: {
           keylineTint: 'green',
         },
