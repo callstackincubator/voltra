@@ -26,7 +26,7 @@ public struct VoltraMask: View {
                     EmptyView()
                 }
             }
-            .voltraModifiers(component)
+            .applyStyle(component.style)
     }
 }
 

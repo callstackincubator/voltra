@@ -61,11 +61,11 @@ public struct VoltraLinearProgressView: View {
         if needsCustomStyle {
             progressContent
                 .progressViewStyle(customStyle)
-                .voltraModifiers(component)
+                .applyStyle(component.style)
         } else {
             progressContent
                 .progressViewStyle(LinearProgressViewStyle())
-                .voltraModifiers(component)
+                .applyStyle(component.style)
         }
     }
 }

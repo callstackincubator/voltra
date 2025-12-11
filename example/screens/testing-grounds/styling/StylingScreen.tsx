@@ -135,7 +135,7 @@ const STYLING_DATA = [
           <Voltra.VStack
             style={{
               backgroundColor: '#10B981',
-              borderRadius: 16,
+              borderRadius: 120,
               borderWidth: 3,
               borderColor: '#047857',
               flexGrowWidth: true,

@@ -86,8 +86,8 @@ const COMPONENTS_DATA = [
     title: 'Spacer',
     description: 'Flexible spacer component for creating gaps between elements.',
     renderExample: () => (
-      <VoltraView style={{ width: '100%', height: 100, backgroundColor: '#1E293B', padding: 16 }}>
-        <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12, height: '100%' }}>
+      <VoltraView style={{ height: 100, backgroundColor: '#1E293B', padding: 16 }}>
+        <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12, height: 100 }}>
           <Voltra.Text>Top Item</Voltra.Text>
           <Voltra.Spacer />
           <Voltra.Text>Bottom Item</Voltra.Text>
@@ -114,7 +114,7 @@ const COMPONENTS_DATA = [
     title: 'Image',
     description: 'Component for displaying images with various sources and styling.',
     renderExample: () => (
-      <VoltraView style={{ width: '100%', height: 100, backgroundColor: '#1E293B', padding: 16 }}>
+      <VoltraView style={{ width: '100%', height: 200, backgroundColor: '#1E293B', padding: 16 }}>
         <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12 }} alignment="center">
           <Voltra.Image source={{ base64: IMAGE }} style={{ width: 50, height: 50, borderRadius: 8 }} />
         </Voltra.VStack>
@@ -219,9 +219,8 @@ const COMPONENTS_DATA = [
     description: 'Container component for grouping related elements with visual styling.',
     renderExample: () => (
       <VoltraView style={{ width: '100%', height: 100, backgroundColor: '#1E293B', padding: 16 }}>
-        <Voltra.GroupBox style={{ backgroundColor: '#334155', padding: 12 }}>
+        <Voltra.GroupBox style={{ backgroundColor: '#334155', padding: 12 }} label={<Voltra.Text>Label</Voltra.Text>}>
           <Voltra.Text>Grouped Content</Voltra.Text>
-          <Voltra.Text>Secondary text</Voltra.Text>
         </Voltra.GroupBox>
       </VoltraView>
     ),
@@ -258,12 +257,12 @@ const COMPONENTS_DATA = [
           />
           {/* Glass components on top */}
           <Voltra.GlassContainer spacing={10} style={{ padding: 12 }}>
-            <Voltra.VStack spacing={0}>
-              <Voltra.VStack style={{ padding: 12, borderRadius: 16, glassEffect: true }}>
+            <Voltra.VStack>
+              <Voltra.VStack style={{ padding: 12, borderRadius: 16, glassEffect: 'regular' }}>
                 <Voltra.Text style={{ color: '#000', fontWeight: '600' }}>Glass View</Voltra.Text>
               </Voltra.VStack>
 
-              <Voltra.VStack style={{ padding: 12, borderRadius: 16, glassEffect: true }}>
+              <Voltra.VStack style={{ padding: 12, borderRadius: 16, glassEffect: 'regular' }}>
                 <Voltra.Text style={{ color: '#000', fontWeight: '600' }}>Glass View</Voltra.Text>
               </Voltra.VStack>
             </Voltra.VStack>

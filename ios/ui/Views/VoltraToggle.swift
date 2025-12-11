@@ -25,6 +25,6 @@ public struct VoltraToggle: View {
         ) {
             Text(title)
         }
-        .voltraModifiers(component)
+        .applyStyle(component.style)
     }
 }

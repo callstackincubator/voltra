@@ -80,6 +80,6 @@ public struct VoltraLinearGradient: View {
             Rectangle().fill(lg)
             VoltraChildrenView(component: component)
         }
-        .voltraModifiers(component)
+        .applyStyle(component.style)
     }
 }

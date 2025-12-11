@@ -150,10 +150,10 @@ public struct VoltraTimer: View {
                 // Timer component now only supports text mode
                 if countsDown(params: params) {
                     countdownTextView(params: params, range: range)
-                        .voltraModifiers(component)
+                        .applyStyle(component.style)
                 } else {
                     countUpTextView(params: params, range: range)
-                        .voltraModifiers(component)
+                        .applyStyle(component.style)
                 }
             }
         }

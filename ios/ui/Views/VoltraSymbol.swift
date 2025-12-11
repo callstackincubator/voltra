@@ -189,7 +189,7 @@ public struct VoltraSymbol: View {
         let image = Image(systemName: symbolName(params: params))
         
         applyStyling(params: params, to: image)
-            .voltraModifiers(component)
+            .applyStyle(component.style)
             .onAppear {
                 animationTrigger = true
             }

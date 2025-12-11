@@ -14,10 +14,10 @@ public struct VoltraLabel: View {
                 params.title ?? "Label",
                 systemImage: systemImage
             )
-            .voltraModifiers(component)
+            .applyStyle(component.style)
         } else {
             VoltraText(component)
-                .voltraModifiers(component)
+                .applyStyle(component.style)
         }
     }
 }

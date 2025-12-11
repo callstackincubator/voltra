@@ -55,31 +55,31 @@ public struct VoltraImage: View {
                     .resizable()
                     .scaledToFill()
                     .clipped()
-                    .voltraModifiers(component)
+                    .applyStyle(component.style)
                     
             case "contain":
                 // Fit within container, may leave space
                 baseImage
                     .resizable()
                     .scaledToFit()
-                    .voltraModifiers(component)
+                    .applyStyle(component.style)
                     
             case "stretch":
                 // Stretch to fill, may distort
                 baseImage
                     .resizable()
-                    .voltraModifiers(component)
+                    .applyStyle(component.style)
                     
             case "repeat":
                 // Tile the image
                 baseImage
                     .resizable(resizingMode: .tile)
-                    .voltraModifiers(component)
+                    .applyStyle(component.style)
                     
             case "center":
                 // Center without scaling
                 baseImage
-                    .voltraModifiers(component)
+                    .applyStyle(component.style)
                     
             default:
                 // Default to cover
@@ -87,7 +87,7 @@ public struct VoltraImage: View {
                     .resizable()
                     .scaledToFill()
                     .clipped()
-                    .voltraModifiers(component)
+                    .applyStyle(component.style)
         }
     }
 }

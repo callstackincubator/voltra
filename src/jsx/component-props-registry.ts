@@ -10,4 +10,5 @@ import { registerComponentProps } from '../renderer/renderer'
 
 registerComponentProps('LinearProgressView', ['thumb'])
 registerComponentProps('Gauge', ['currentValueLabel', 'minimumValueLabel', 'maximumValueLabel'])
+registerComponentProps('GroupBox', ['label'])
 registerComponentProps('Mask', ['maskElement'])

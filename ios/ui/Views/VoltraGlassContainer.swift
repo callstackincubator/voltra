@@ -19,11 +19,11 @@ public struct VoltraGlassContainer: View {
                 let spacing = params.spacing ?? 0.0
                 GlassEffectContainer(spacing: CGFloat(spacing)) {
                     VoltraChildrenView(children: children)
-                }.voltraModifiers(component)
+                }.applyStyle(component.style)
             } else {
                 Group {
                     VoltraChildrenView(children: children)
-                }.voltraModifiers(component)
+                }.applyStyle(component.style)
             }
         } else {
             EmptyView();

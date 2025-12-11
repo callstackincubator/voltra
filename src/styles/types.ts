@@ -2,7 +2,13 @@ import { StyleProp, TextStyle as RNTextStyle, ViewStyle as RNViewStyle } from 'r
 
 export type VoltraViewStyle = Pick<
   RNViewStyle,
+  | 'flex'
+  | 'flexGrow'
+  | 'minWidth'
+  | 'maxWidth'
   | 'width'
+  | 'minHeight'
+  | 'maxHeight'
   | 'height'
   | 'padding'
   | 'paddingTop'
@@ -28,34 +34,14 @@ export type VoltraViewStyle = Pick<
   | 'shadowOpacity'
   | 'shadowRadius'
   | 'overflow'
+  | 'aspectRatio'
+  | 'zIndex'
 > & {
-  // Aspect ratio
-  aspectRatio?: number
-  // Frame constraints
-  minWidth?: number
-  maxWidth?: number | 'infinity'
-  minHeight?: number
-  maxHeight?: number | 'infinity'
-  // Flex grow width (sets maxWidth to infinity)
-  flexGrowWidth?: boolean
-  // Fixed size
-  fixedSizeHorizontal?: boolean
-  fixedSizeVertical?: boolean
-  // Layout priority
-  layoutPriority?: number
-  // Z-index for layering
-  zIndex?: number
-  // Offset for fine-tuning position
-  offsetX?: number
-  offsetY?: number
-  // Absolute position (overrides everything else)
-  absolutePosition?: { x: number; y: number }
-  // Glass effect properties (iOS 26+)
-  glassEffect?: boolean
+  glassEffect?: 'clear' | 'identity' | 'regular' | 'none'
 }
 
 export type VoltraTextStyle = VoltraViewStyle &
-  Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant'>
+  Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant' | 'textDecorationLine'>
 
 export type VoltraStyleProp = StyleProp<VoltraViewStyle>
 export type VoltraTextStyleProp = StyleProp<VoltraTextStyle>

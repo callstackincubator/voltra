@@ -10,6 +10,6 @@ public struct VoltraSpacer: View {
     public var body: some View {
         let params = component.parameters(SpacerParameters.self)
         Spacer(minLength: params.minLength.map { CGFloat($0) })
-            .voltraModifiers(component)
+            .applyStyle(component.style)
     }
 }

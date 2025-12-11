@@ -9,6 +9,6 @@ public struct VoltraDivider: View {
 
     public var body: some View {
         Divider()
-            .voltraModifiers(component)
+            .applyStyle(component.style)
     }
 }

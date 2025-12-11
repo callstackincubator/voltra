@@ -51,12 +51,12 @@ public struct VoltraCircularProgressView: View {
 
             progressContent
                 .progressViewStyle(customStyle)
-                .voltraModifiers(component)
+                .applyStyle(component.style)
         } else {
             progressContent
                 .progressViewStyle(.circular)
                 .tint(progressColor)
-                .voltraModifiers(component)
+                .applyStyle(component.style)
         }
     }
 }

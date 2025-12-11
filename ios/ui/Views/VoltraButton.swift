@@ -27,6 +27,6 @@ public struct VoltraButton: View {
             }
         })
         .buttonStyle(.plain)
-        .voltraModifiers(component)
+        .applyStyle(component.style)
     }
 }

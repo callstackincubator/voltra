@@ -457,7 +457,13 @@
       "description": "Grouped content container",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "hasChildren": true,
-      "parameters": {}
+      "parameters": {
+        "label": {
+          "type": "component",
+          "optional": true,
+          "description": "Label content for the group box"
+        }
+      }
     },
     {
       "name": "GlassContainer",

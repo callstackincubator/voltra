@@ -26,35 +26,36 @@ public enum PropNameID: Int, Codable {
     case endPoint = 13
     case gaugeStyle = 14
     case height = 15
-    case lineWidth = 16
-    case maskElement = 17
-    case maximumValue = 18
-    case maximumValueLabel = 19
-    case minLength = 20
-    case minimumValue = 21
-    case minimumValueLabel = 22
-    case multilineTextAlignment = 23
-    case name = 24
-    case numberOfLines = 25
-    case progressColor = 26
-    case resizeMode = 27
-    case scale = 28
-    case size = 29
-    case source = 30
-    case spacing = 31
-    case startAtMs = 32
-    case startPoint = 33
-    case stops = 34
-    case systemImage = 35
-    case textStyle = 36
-    case textTemplates = 37
-    case thumb = 38
-    case tintColor = 39
-    case title = 40
-    case trackColor = 41
-    case type = 42
-    case value = 43
-    case weight = 44
+    case label = 16
+    case lineWidth = 17
+    case maskElement = 18
+    case maximumValue = 19
+    case maximumValueLabel = 20
+    case minLength = 21
+    case minimumValue = 22
+    case minimumValueLabel = 23
+    case multilineTextAlignment = 24
+    case name = 25
+    case numberOfLines = 26
+    case progressColor = 27
+    case resizeMode = 28
+    case scale = 29
+    case size = 30
+    case source = 31
+    case spacing = 32
+    case startAtMs = 33
+    case startPoint = 34
+    case stops = 35
+    case systemImage = 36
+    case textStyle = 37
+    case textTemplates = 38
+    case thumb = 39
+    case tintColor = 40
+    case title = 41
+    case trackColor = 42
+    case type = 43
+    case value = 44
+    case weight = 45
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -91,6 +92,8 @@ public enum PropNameID: Int, Codable {
             return "gaugeStyle"
         case .height:
             return "height"
+        case .label:
+            return "label"
         case .lineWidth:
             return "lineWidth"
         case .maskElement:
@@ -173,6 +176,7 @@ public enum PropNameID: Int, Codable {
         case "endPoint": self = .endPoint
         case "gaugeStyle": self = .gaugeStyle
         case "height": self = .height
+        case "label": self = .label
         case "lineWidth": self = .lineWidth
         case "maskElement": self = .maskElement
         case "maximumValue": self = .maximumValue

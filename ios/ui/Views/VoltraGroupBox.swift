@@ -2,20 +2,28 @@ import SwiftUI
 
 public struct VoltraGroupBox: View {
     private let component: VoltraComponent
-    
+
     public init(_ component: VoltraComponent) {
         self.component = component
     }
 
     public var body: some View {
-#if !os(tvOS) && !os(watchOS)
+        let label = component.componentProp("label")
+
         GroupBox {
             VoltraChildrenView(component: component)
+        } label: {
+            buildNestedView(label)
         }
-        .voltraModifiers(component)
-#else
-        VoltraVStack(component)
-            .voltraModifiers(component)
-#endif
+        .applyStyle(component.style)
+    }
+
+    @ViewBuilder
+    private func buildNestedView(_ optionalNestedView: VoltraChildren?) -> some View {
+        if let nestedView = optionalNestedView {
+            VoltraChildrenRenderer(children: nestedView)
+        } else {
+            EmptyView()
+        }
     }
 }

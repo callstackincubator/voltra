@@ -27,6 +27,6 @@ public struct VoltraZStack: View {
         ZStack(alignment: alignment) {
             VoltraChildrenView(component: component)
         }
-        .voltraModifiers(component)
+        .applyStyle(component.style)
     }
 }

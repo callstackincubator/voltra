@@ -15,20 +15,40 @@ public struct VoltraText: View {
             }
             return ""
         }()
+        let style = StyleConverter.convert(component.style ?? [:])
+        let textStyle = style.3;
+
+        var lineSpacing: CGFloat {
+            guard let lh = textStyle.lineHeight else { return 0 }
+            return max(0, lh - textStyle.fontSize)
+        }
+        
+        var font: Font {
+            var baseFont = Font.system(size: textStyle.fontSize, weight: textStyle.fontWeight)
+            
+            if textStyle.fontVariant.contains(.smallCaps) {
+                baseFont = baseFont.smallCaps()
+            }
+            
+            if textStyle.fontVariant.contains(.tabularNums) {
+                baseFont = baseFont.monospacedDigit()
+            }
+            
+            return baseFont
+        }
 
         Text(.init(textContent))
-            .ifLet(params.multilineTextAlignment) { view, alignment in
-                let textAlignment: TextAlignment
-                switch alignment.lowercased() {
-                case "center": textAlignment = .center
-                case "right": textAlignment = .trailing
-                default: textAlignment = .leading
-                }
-                return view.multilineTextAlignment(textAlignment)
-            }
+            .kerning(textStyle.letterSpacing)
+            .underline(textStyle.decoration == .underline || textStyle.decoration == .underlineLineThrough)
+            .strikethrough(textStyle.decoration == .lineThrough || textStyle.decoration == .underlineLineThrough)
+            // These technically work on View, but good to keep close
+            .font(font)
+            .foregroundColor(textStyle.color)
+            .multilineTextAlignment(textStyle.alignment)
+            .lineSpacing(lineSpacing)
             .ifLet(params.numberOfLines) { view, numberOfLines in
                 view.lineLimit(Int(numberOfLines))
             }
-            .voltraModifiers(component)
+            .applyStyle(style)
     }
 }

@@ -22,6 +22,6 @@ public struct VoltraVStack: View {
         VStack(alignment: alignment, spacing: spacing) {
             VoltraChildrenView(component: component)
         }
-        .voltraModifiers(component)
+        .applyStyle(component.style)
     }
 }
