@@ -170,8 +170,16 @@ const COMPONENTS_DATA = [
     renderExample: () => (
       <VoltraView style={{ width: '100%', height: 120, backgroundColor: '#1E293B', padding: 16 }}>
         <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12 }}>
-          <Voltra.Gauge defaultValue={75} />
-          <Voltra.Text>75/100</Voltra.Text>
+          <Voltra.Gauge
+            minimumValue={0}
+            value={50}
+            maximumValue={100}
+            tintColor="#8232FF"
+            gaugeStyle="accessoryLinearCapacity"
+            currentValueLabel={<Voltra.Text>50/100</Voltra.Text>}
+            minimumValueLabel={<Voltra.Text>01234</Voltra.Text>}
+            maximumValueLabel={<Voltra.Text>12345</Voltra.Text>}
+          />
         </Voltra.VStack>
       </VoltraView>
     ),
@@ -239,15 +247,28 @@ const COMPONENTS_DATA = [
     title: 'Glass Components',
     description: 'Specialized glass effect components for iOS 26+ (Liquid Glass).',
     renderExample: () => (
-      <VoltraView style={{ width: '100%', height: 120, backgroundColor: '#1E293B', padding: 16 }}>
-        <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12 }}>
-          <Voltra.GlassView style={{ padding: 8, borderRadius: 8 }}>
-            <Voltra.Text>Glass View</Voltra.Text>
-          </Voltra.GlassView>
-          <Voltra.GlassContainer style={{ padding: 8, borderRadius: 8 }}>
-            <Voltra.Text>Glass Container</Voltra.Text>
+      <VoltraView style={{ width: '100%', height: 120, padding: 16 }}>
+        <Voltra.ZStack>
+          {/* Background gradient that the glass will refract */}
+          <Voltra.LinearGradient
+            colors={['#FF6B6B', '#FFE66D', '#4ECDC4', '#45B7D1', '#A855F7', '#EC4899']}
+            start="leading"
+            end="trailing"
+            style={{ width: '100%', height: '100%' }}
+          />
+          {/* Glass components on top */}
+          <Voltra.GlassContainer spacing={10} style={{ padding: 12 }}>
+            <Voltra.VStack spacing={0}>
+              <Voltra.GlassView style={{ padding: 12, borderRadius: 16 }} effect="glassEffect">
+                <Voltra.Text style={{ color: '#000', fontWeight: '600' }}>Glass View</Voltra.Text>
+              </Voltra.GlassView>
+
+              <Voltra.GlassView style={{ padding: 12, borderRadius: 16 }} effect="glassEffect">
+                <Voltra.Text style={{ color: '#000', fontWeight: '600' }}>Glass View</Voltra.Text>
+              </Voltra.GlassView>
+            </Voltra.VStack>
           </Voltra.GlassContainer>
-        </Voltra.VStack>
+        </Voltra.ZStack>
       </VoltraView>
     ),
   },

@@ -249,10 +249,22 @@
       "description": "Gauge indicator for progress visualization",
       "swiftAvailability": "iOS 16.0, macOS 13.0",
       "parameters": {
-        "defaultValue": {
+        "value": {
           "type": "number",
           "optional": true,
-          "description": "Current gauge value (0-1 range)"
+          "description": "Current gauge value"
+        },
+        "minimumValue": {
+          "type": "number",
+          "optional": true,
+          "default": 0,
+          "description": "Minimum value of the gauge range"
+        },
+        "maximumValue": {
+          "type": "number",
+          "optional": true,
+          "default": 1,
+          "description": "Maximum value of the gauge range"
         },
         "endAtMs": {
           "type": "number",
@@ -264,15 +276,38 @@
           "optional": true,
           "description": "Start time in milliseconds since epoch"
         },
-        "showValueLabel": {
-          "type": "boolean",
+        "tintColor": {
+          "type": "string",
           "optional": true,
-          "description": "Show the value label"
+          "description": "Tint color for the gauge"
         },
-        "hideValueLabel": {
-          "type": "boolean",
+        "gaugeStyle": {
+          "type": "string",
           "optional": true,
-          "description": "Hide the value label"
+          "enum": [
+            "automatic",
+            "accessoryLinear",
+            "accessoryLinearCapacity",
+            "accessoryCircular",
+            "accessoryCircularCapacity",
+            "linearCapacity"
+          ],
+          "description": "Visual style of the gauge"
+        },
+        "currentValueLabel": {
+          "type": "component",
+          "optional": true,
+          "description": "Custom text for current value label"
+        },
+        "minimumValueLabel": {
+          "type": "component",
+          "optional": true,
+          "description": "Text for minimum value label"
+        },
+        "maximumValueLabel": {
+          "type": "component",
+          "optional": true,
+          "description": "Text for maximum value label"
         }
       }
     },

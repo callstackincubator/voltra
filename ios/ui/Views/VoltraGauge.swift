@@ -1,83 +1,71 @@
 import SwiftUI
 
 public struct VoltraGauge: View {
-    private let component: VoltraComponent
+ private let component: VoltraComponent
+    private let voltraHelper: VoltraHelper = VoltraHelper()
     
     public init(_ component: VoltraComponent) {
         self.component = component
     }
 
-    @ViewBuilder
-    private func gaugeLabelView() -> some View {
-        if let title = component.props?["title"] as? String, !title.isEmpty {
-            Text(title)
-        }
-    }
-
-    @ViewBuilder
-    private func valueLabelView(params: GaugeParameters, for progress: Double) -> some View {
-        let showValueLabel: Bool = {
-            if let explicit = params.showValueLabel {
-                return explicit
-            }
-            if let hide = params.hideValueLabel {
-                return !hide
-            }
-            return true
-        }()
-        if showValueLabel {
-            Text(formattedPercentage(progress))
-                .monospacedDigit()
-        }
-    }
-
-    @ViewBuilder
-    private func renderGauge(params: GaugeParameters, progress: Double) -> some View {
-        Gauge(value: max(0, min(progress, 1))) {
-            gaugeLabelView()
-        } currentValueLabel: {
-            valueLabelView(params: params, for: progress)
-        }
-        .voltraModifiers(component)
-    }
-
-    private func formattedPercentage(_ progress: Double) -> String {
-        let percent = max(0, min(progress, 1)) * 100
-        let number = NSNumber(value: percent)
-        return Self.percentFormatter.string(from: number) ?? String(format: "%.0f%%", percent)
-    }
-
-    private static let percentFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .percent
-        formatter.maximumFractionDigits = 0
-        formatter.minimumFractionDigits = 0
-        return formatter
-    }()
-
-    /// Generated body for SwiftUI
+    
     public var body: some View {
         let params = component.parameters(GaugeParameters.self)
-#if !os(tvOS)
-        if #available(macOS 13.0, iOS 16.0, *) {
-            // Standardized time-driven props
-            let endAtMs = params.endAtMs
-            let startAtMs = params.startAtMs
+        let label = component.componentProp("label")
+        let currentValueLabel = component.componentProp("currentValueLabel")
+        let minimumValueLabel = component.componentProp("minimumValueLabel")
+        let maximumValueLabel = component.componentProp("maximumValueLabel")
+        let value = params.value ?? 0.0
+        let range = (params.minimumValue ?? 0.0)...(params.maximumValue ?? 1.0)
+        let gaugeStyle = params.gaugeStyle
+        let tintColor = params.tintColor
+         
+        let gauge = Gauge(value: value, in: range) {
+                buildNestedView(label)
+              } currentValueLabel: {
+                buildNestedView(currentValueLabel)
+              } minimumValueLabel: {
+                buildNestedView(minimumValueLabel)
+              } maximumValueLabel: {
+                buildNestedView(maximumValueLabel)
+              }
+        
+        applyTint(applyGaugeStyle(gauge, gaugeStyle), tintColor)
+    }
 
-            if let range = VoltraProgressDriver.resolveRange(startAtMs: startAtMs, endAtMs: endAtMs, durationMs: nil) {
-                TimelineView(.animation) { timeline in
-                    let progress = VoltraProgressDriver.progress(for: range, at: timeline.date)
-                    renderGauge(params: params, progress: progress)
-                }
-            } else {
-                let value = params.defaultValue ?? 0
-                renderGauge(params: params, progress: value)
-            }
+    @ViewBuilder
+    private func applyGaugeStyle(_ gauge: some View, _ gaugeStyle: String?) -> some View {
+        switch gaugeStyle {
+        case "automatic":
+            gauge.gaugeStyle(.automatic)
+        case "accessoryCircular":
+            gauge.gaugeStyle(.accessoryCircular)
+        case "accessoryCircularCapacity":
+            gauge.gaugeStyle(.accessoryCircularCapacity)
+        case "accessoryLinear":
+            gauge.gaugeStyle(.accessoryLinear)
+        case "accessoryLinearCapacity", "linearCapacity":
+            gauge.gaugeStyle(.accessoryLinearCapacity)
+        default:
+            gauge
+        }
+    }
+    
+    @ViewBuilder
+    private func applyTint(_ view: some View, _ optionalColor: String?) -> some View {
+        if let color = optionalColor {
+            view.tint(voltraHelper.translateColor(color))
+        } else {
+            view
+        }
+    }
+    
+    @ViewBuilder
+    private func buildNestedView(_ optionalNestedView: VoltraChildren?) -> some View {
+        if let nestedView = optionalNestedView {
+            VoltraChildrenRenderer(children: nestedView)
         } else {
             EmptyView()
         }
-#else
-        EmptyView()
-#endif
     }
 }

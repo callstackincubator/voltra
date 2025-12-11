@@ -10,8 +10,14 @@ import Foundation
 /// Parameters for Gauge component
 /// Gauge indicator for progress visualization
 public struct GaugeParameters: ComponentParameters {
-    /// Current gauge value (0-1 range)
-    public let defaultValue: Double?
+    /// Current gauge value
+    public let value: Double?
+
+    /// Minimum value of the gauge range
+    public let minimumValue: Double = 0
+
+    /// Maximum value of the gauge range
+    public let maximumValue: Double = 1
 
     /// End time in milliseconds since epoch
     public let endAtMs: Double?
@@ -19,9 +25,18 @@ public struct GaugeParameters: ComponentParameters {
     /// Start time in milliseconds since epoch
     public let startAtMs: Double?
 
-    /// Show the value label
-    public let showValueLabel: Bool?
+    /// Tint color for the gauge
+    public let tintColor: String?
 
-    /// Hide the value label
-    public let hideValueLabel: Bool?
+    /// Visual style of the gauge
+    public let gaugeStyle: String?
+
+    /// Custom text for current value label
+    public let currentValueLabel: String?
+
+    /// Text for minimum value label
+    public let minimumValueLabel: String?
+
+    /// Text for maximum value label
+    public let maximumValueLabel: String?
 }

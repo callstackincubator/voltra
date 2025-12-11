@@ -17,43 +17,46 @@ public enum PropNameID: Int, Codable {
     case colors = 4
     case cornerRadius = 5
     case countDown = 6
-    case defaultValue = 7
-    case direction = 8
-    case dither = 9
-    case durationMs = 10
-    case effect = 11
-    case endAtMs = 12
-    case endPoint = 13
-    case height = 14
-    case hideValueLabel = 15
-    case interactive = 16
-    case lineWidth = 17
-    case maskElement = 18
-    case maximumValue = 19
-    case minLength = 20
-    case name = 21
-    case numberOfLines = 22
-    case progressColor = 23
-    case resizeMode = 24
-    case scale = 25
-    case showValueLabel = 26
-    case size = 27
-    case source = 28
-    case spacing = 29
-    case startAtMs = 30
-    case startPoint = 31
-    case stops = 32
-    case systemImage = 33
-    case textStyle = 34
-    case textTemplates = 35
-    case thumb = 36
-    case tint = 37
-    case tintColor = 38
-    case title = 39
-    case trackColor = 40
-    case type = 41
-    case value = 42
-    case weight = 43
+    case currentValueLabel = 7
+    case defaultValue = 8
+    case direction = 9
+    case dither = 10
+    case durationMs = 11
+    case effect = 12
+    case endAtMs = 13
+    case endPoint = 14
+    case gaugeStyle = 15
+    case height = 16
+    case interactive = 17
+    case lineWidth = 18
+    case maskElement = 19
+    case maximumValue = 20
+    case maximumValueLabel = 21
+    case minLength = 22
+    case minimumValue = 23
+    case minimumValueLabel = 24
+    case name = 25
+    case numberOfLines = 26
+    case progressColor = 27
+    case resizeMode = 28
+    case scale = 29
+    case size = 30
+    case source = 31
+    case spacing = 32
+    case startAtMs = 33
+    case startPoint = 34
+    case stops = 35
+    case systemImage = 36
+    case textStyle = 37
+    case textTemplates = 38
+    case thumb = 39
+    case tint = 40
+    case tintColor = 41
+    case title = 42
+    case trackColor = 43
+    case type = 44
+    case value = 45
+    case weight = 46
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -72,6 +75,8 @@ public enum PropNameID: Int, Codable {
             return "cornerRadius"
         case .countDown:
             return "countDown"
+        case .currentValueLabel:
+            return "currentValueLabel"
         case .defaultValue:
             return "defaultValue"
         case .direction:
@@ -86,10 +91,10 @@ public enum PropNameID: Int, Codable {
             return "endAtMs"
         case .endPoint:
             return "endPoint"
+        case .gaugeStyle:
+            return "gaugeStyle"
         case .height:
             return "height"
-        case .hideValueLabel:
-            return "hideValueLabel"
         case .interactive:
             return "interactive"
         case .lineWidth:
@@ -98,8 +103,14 @@ public enum PropNameID: Int, Codable {
             return "maskElement"
         case .maximumValue:
             return "maximumValue"
+        case .maximumValueLabel:
+            return "maximumValueLabel"
         case .minLength:
             return "minLength"
+        case .minimumValue:
+            return "minimumValue"
+        case .minimumValueLabel:
+            return "minimumValueLabel"
         case .name:
             return "name"
         case .numberOfLines:
@@ -110,8 +121,6 @@ public enum PropNameID: Int, Codable {
             return "resizeMode"
         case .scale:
             return "scale"
-        case .showValueLabel:
-            return "showValueLabel"
         case .size:
             return "size"
         case .source:
@@ -161,6 +170,7 @@ public enum PropNameID: Int, Codable {
         case "colors": self = .colors
         case "cornerRadius": self = .cornerRadius
         case "countDown": self = .countDown
+        case "currentValueLabel": self = .currentValueLabel
         case "defaultValue": self = .defaultValue
         case "direction": self = .direction
         case "dither": self = .dither
@@ -168,19 +178,21 @@ public enum PropNameID: Int, Codable {
         case "effect": self = .effect
         case "endAtMs": self = .endAtMs
         case "endPoint": self = .endPoint
+        case "gaugeStyle": self = .gaugeStyle
         case "height": self = .height
-        case "hideValueLabel": self = .hideValueLabel
         case "interactive": self = .interactive
         case "lineWidth": self = .lineWidth
         case "maskElement": self = .maskElement
         case "maximumValue": self = .maximumValue
+        case "maximumValueLabel": self = .maximumValueLabel
         case "minLength": self = .minLength
+        case "minimumValue": self = .minimumValue
+        case "minimumValueLabel": self = .minimumValueLabel
         case "name": self = .name
         case "numberOfLines": self = .numberOfLines
         case "progressColor": self = .progressColor
         case "resizeMode": self = .resizeMode
         case "scale": self = .scale
-        case "showValueLabel": self = .showValueLabel
         case "size": self = .size
         case "source": self = .source
         case "spacing": self = .spacing
