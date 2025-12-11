@@ -33,6 +33,10 @@ const toSwiftType = (param: ComponentParameter): string => {
 const generateParameterStruct = (component: ComponentDefinition, version: string): string => {
   const params = Object.entries(component.parameters)
 
+  // Separate params with and without defaults
+  const paramsWithDefaults = params.filter(([_, param]) => param.default !== undefined)
+  const paramsWithoutDefaults = params.filter(([_, param]) => param.default === undefined)
+
   const header = `//
 //  ${component.name}Parameters.swift
 
@@ -47,20 +51,53 @@ import Foundation
 public struct ${component.name}Parameters: ComponentParameters {
 `
 
+  // All properties are now `let` with no inline defaults - values come from init
   const properties = params
     .map(([name, param]) => {
       const description = param.description ? `    /// ${param.description}\n` : ''
       const swiftType = toSwiftType(param)
       const hasDefault = param.default !== undefined
+      // Properties with defaults are non-optional (we provide the default in init)
+      // Properties without defaults are optional
       const typeDeclaration = hasDefault ? `${swiftType}` : `${swiftType}?`
-      const defaultValue = hasDefault ? ` = ${JSON.stringify(param.default)}` : ''
-      return `${description}    public let ${name}: ${typeDeclaration}${defaultValue}`
+      return `${description}    public let ${name}: ${typeDeclaration}`
     })
     .join('\n\n')
 
+  // Generate custom init only if there are params with defaults
+  let customInit = ''
+  if (paramsWithDefaults.length > 0) {
+    const codingKeysEnum = params.map(([name]) => `        case ${name}`).join('\n')
+
+    const decoderStatements = params
+      .map(([name, param]) => {
+        const swiftType = toSwiftType(param)
+        if (param.default !== undefined) {
+          // Use decodeIfPresent and fall back to default
+          const defaultValue = JSON.stringify(param.default)
+          return `        ${name} = try container.decodeIfPresent(${swiftType}.self, forKey: .${name}) ?? ${defaultValue}`
+        } else {
+          // Optional property, just decode if present
+          return `        ${name} = try container.decodeIfPresent(${swiftType}.self, forKey: .${name})`
+        }
+      })
+      .join('\n')
+
+    customInit = `
+
+    enum CodingKeys: String, CodingKey {
+${codingKeysEnum}
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+${decoderStatements}
+    }`
+  }
+
   const footer = '\n}\n'
 
-  return header + properties + footer
+  return header + properties + customInit + footer
 }
 
 const generateProtocol = (version: string): string => {

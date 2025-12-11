@@ -12,4 +12,7 @@ import Foundation
 public struct TextParameters: ComponentParameters {
     /// Maximum number of lines to display
     public let numberOfLines: Double?
+
+    /// Text alignment for multiline text
+    public let multilineTextAlignment: String?
 }

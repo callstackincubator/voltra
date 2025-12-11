@@ -16,18 +16,19 @@ public struct VoltraText: View {
             return ""
         }()
 
-        // Check if text alignment is specified in styles
-        let hasTextAlignment = component.style?["textAlign"] != nil
-
-        let textView = Text(.init(textContent))
+        Text(.init(textContent))
+            .ifLet(params.multilineTextAlignment) { view, alignment in
+                let textAlignment: TextAlignment
+                switch alignment.lowercased() {
+                case "center": textAlignment = .center
+                case "right": textAlignment = .trailing
+                default: textAlignment = .leading
+                }
+                return view.multilineTextAlignment(textAlignment)
+            }
+            .ifLet(params.numberOfLines) { view, numberOfLines in
+                view.lineLimit(Int(numberOfLines))
+            }
             .voltraModifiers(component)
-            .fixedSize(horizontal: !hasTextAlignment, vertical: true)
-
-        // Apply lineLimit if numberOfLines is specified
-        if let numberOfLines = params.numberOfLines {
-            textView.lineLimit(Int(numberOfLines))
-        } else {
-            textView
-        }
     }
 }

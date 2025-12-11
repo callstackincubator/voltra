@@ -100,13 +100,13 @@ const STYLING_DATA = [
     renderExample: () => (
       <VoltraView style={{ width: '100%', height: 100, backgroundColor: '#1E293B' }}>
         <Voltra.HStack>
-          <Voltra.VStack style={{ backgroundColor: '#3B82F6', flex: 1, padding: 8 }}>
+          <Voltra.VStack style={{ backgroundColor: '#3B82F6', flexGrowWidth: true, padding: 8 }}>
             <Voltra.Text style={{ color: 'white' }}>Blue</Voltra.Text>
           </Voltra.VStack>
-          <Voltra.VStack style={{ backgroundColor: '#10B981', flex: 1, padding: 8 }}>
+          <Voltra.VStack style={{ backgroundColor: '#10B981', flexGrowWidth: true, padding: 8 }}>
             <Voltra.Text style={{ color: 'white' }}>Green</Voltra.Text>
           </Voltra.VStack>
-          <Voltra.VStack style={{ backgroundColor: '#F59E0B', flex: 1, padding: 8 }}>
+          <Voltra.VStack style={{ backgroundColor: '#F59E0B', flexGrowWidth: true, padding: 8 }}>
             <Voltra.Text style={{ color: 'white' }}>Orange</Voltra.Text>
           </Voltra.VStack>
         </Voltra.HStack>
@@ -126,7 +126,7 @@ const STYLING_DATA = [
               borderRadius: 8,
               borderWidth: 2,
               borderColor: '#1E40AF',
-              flex: 1,
+              flexGrowWidth: true,
               padding: 12,
             }}
           >
@@ -138,7 +138,7 @@ const STYLING_DATA = [
               borderRadius: 16,
               borderWidth: 3,
               borderColor: '#047857',
-              flex: 1,
+              flexGrowWidth: true,
               padding: 12,
             }}
           >
@@ -157,9 +157,9 @@ const STYLING_DATA = [
         <Voltra.VStack
           style={{
             backgroundColor: '#FFFFFF',
-            shadowColor: '#000000',
+            shadowColor: '#FF0000',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
+            shadowOpacity: 0.5,
             shadowRadius: 8,
             padding: 16,
           }}
@@ -191,13 +191,13 @@ const STYLING_DATA = [
     renderExample: () => (
       <VoltraView style={{ width: '100%', height: 100, backgroundColor: '#1E293B' }}>
         <Voltra.HStack>
-          <Voltra.VStack style={{ backgroundColor: '#3B82F6', opacity: 1.0, flex: 1, padding: 8 }}>
+          <Voltra.VStack style={{ backgroundColor: '#3B82F6', opacity: 1.0, flexGrowWidth: true, padding: 8 }}>
             <Voltra.Text style={{ color: 'white' }}>100%</Voltra.Text>
           </Voltra.VStack>
-          <Voltra.VStack style={{ backgroundColor: '#3B82F6', opacity: 0.7, flex: 1, padding: 8 }}>
+          <Voltra.VStack style={{ backgroundColor: '#3B82F6', opacity: 0.7, flexGrowWidth: true, padding: 8 }}>
             <Voltra.Text style={{ color: 'white' }}>70%</Voltra.Text>
           </Voltra.VStack>
-          <Voltra.VStack style={{ backgroundColor: '#3B82F6', opacity: 0.4, flex: 1, padding: 8 }}>
+          <Voltra.VStack style={{ backgroundColor: '#3B82F6', opacity: 0.4, flexGrowWidth: true, padding: 8 }}>
             <Voltra.Text style={{ color: 'white' }}>40%</Voltra.Text>
           </Voltra.VStack>
         </Voltra.HStack>

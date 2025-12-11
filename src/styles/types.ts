@@ -28,17 +28,32 @@ export type VoltraViewStyle = Pick<
   | 'shadowOpacity'
   | 'shadowRadius'
   | 'overflow'
-  | 'flex'
-  | 'flexGrow'
-  | 'flexShrink'
 > & {
+  // Aspect ratio
+  aspectRatio?: number
+  // Frame constraints
+  minWidth?: number
+  maxWidth?: number | 'infinity'
+  minHeight?: number
+  maxHeight?: number | 'infinity'
+  // Flex grow width (sets maxWidth to infinity)
+  flexGrowWidth?: boolean
+  // Fixed size
+  fixedSizeHorizontal?: boolean
+  fixedSizeVertical?: boolean
+  // Layout priority
+  layoutPriority?: number
+  // Z-index for layering
+  zIndex?: number
   // Offset for fine-tuning position
   offsetX?: number
   offsetY?: number
+  // Absolute position (overrides everything else)
+  absolutePosition?: { x: number; y: number }
 }
 
 export type VoltraTextStyle = VoltraViewStyle &
-  Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant' | 'textAlign'>
+  Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant'>
 
 export type VoltraStyleProp = StyleProp<VoltraViewStyle>
 export type VoltraTextStyleProp = StyleProp<VoltraTextStyle>

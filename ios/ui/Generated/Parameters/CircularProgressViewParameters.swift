@@ -17,7 +17,7 @@ public struct CircularProgressViewParameters: ComponentParameters {
     public let countDown: Bool?
 
     /// Maximum progress value
-    public let maximumValue: Double = 100
+    public let maximumValue: Double
 
     /// End time in milliseconds since epoch
     public let endAtMs: Double?
@@ -33,4 +33,27 @@ public struct CircularProgressViewParameters: ComponentParameters {
 
     /// Width of the stroke line
     public let lineWidth: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case value
+        case countDown
+        case maximumValue
+        case endAtMs
+        case startAtMs
+        case trackColor
+        case progressColor
+        case lineWidth
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        value = try container.decodeIfPresent(Double.self, forKey: .value)
+        countDown = try container.decodeIfPresent(Bool.self, forKey: .countDown)
+        maximumValue = try container.decodeIfPresent(Double.self, forKey: .maximumValue) ?? 100
+        endAtMs = try container.decodeIfPresent(Double.self, forKey: .endAtMs)
+        startAtMs = try container.decodeIfPresent(Double.self, forKey: .startAtMs)
+        trackColor = try container.decodeIfPresent(String.self, forKey: .trackColor)
+        progressColor = try container.decodeIfPresent(String.self, forKey: .progressColor)
+        lineWidth = try container.decodeIfPresent(Double.self, forKey: .lineWidth)
+    }
 }

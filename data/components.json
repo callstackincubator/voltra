@@ -10,6 +10,12 @@
           "type": "number",
           "optional": true,
           "description": "Maximum number of lines to display"
+        },
+        "multilineTextAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["left", "center", "right", "auto"],
+          "description": "Text alignment for multiline text"
         }
       }
     },
@@ -399,11 +405,13 @@
       "parameters": {
         "spacing": {
           "type": "number",
+          "default": 0,
           "optional": true,
           "description": "Spacing between children"
         },
         "alignment": {
           "type": "string",
+          "default": "center",
           "optional": true,
           "enum": ["leading", "center", "trailing"],
           "description": "Horizontal alignment"
@@ -418,11 +426,13 @@
       "parameters": {
         "spacing": {
           "type": "number",
+          "default": 0,
           "optional": true,
           "description": "Spacing between children"
         },
         "alignment": {
           "type": "string",
+          "default": "center",
           "optional": true,
           "enum": ["top", "center", "bottom"],
           "description": "Vertical alignment"

@@ -1,6 +1,21 @@
 import SwiftUI
 
 extension View {
+    /// Conditionally apply a modifier if the value is not nil
+    ///
+    /// - Parameters:
+    ///   - value: The optional value to check
+    ///   - transform: The transformation to apply if value is not nil
+    /// - Returns: The modified view or the original view if value is nil
+    @ViewBuilder
+    func `ifLet`<Value, Content: View>(_ value: Value?, _ transform: (Self, Value) -> Content) -> some View {
+      if let value {
+        transform(self, value)
+      } else {
+        self
+      }
+    }
+
     /// Apply type-safe modifiers to the view
     ///
     /// - Parameter component: The component with modifiers to apply
@@ -296,12 +311,31 @@ extension View {
                     tempView = AnyView(tempView.offset(x: CGFloat(x), y: CGFloat(y)))
                 }
 
-            case "flexShrink":
+            case "aspectRatio":
                 if #available(iOS 13.0, *) {
-                    let preventShrink = modifier.args?["preventShrink"]?.toBool() ?? false
-                    if preventShrink {
-                        // flexShrink: 0 - Do not shrink below content size
-                        tempView = AnyView(tempView.fixedSize())
+                    if let ratio = modifier.args?["ratio"]?.toDouble() {
+                        tempView = AnyView(tempView.aspectRatio(ratio, contentMode: .fit))
+                    }
+                }
+
+            case "fixedSize":
+                if #available(iOS 13.0, *) {
+                    let horizontal = modifier.args?["horizontal"]?.toBool() ?? false
+                    let vertical = modifier.args?["vertical"]?.toBool() ?? false
+                    tempView = AnyView(tempView.fixedSize(horizontal: horizontal, vertical: vertical))
+                }
+
+            case "layoutPriority":
+                if #available(iOS 13.0, *) {
+                    if let priority = modifier.args?["value"]?.toDouble() {
+                        tempView = AnyView(tempView.layoutPriority(priority))
+                    }
+                }
+
+            case "zIndex":
+                if #available(iOS 13.0, *) {
+                    if let zIndex = modifier.args?["value"]?.toDouble() {
+                        tempView = AnyView(tempView.zIndex(zIndex))
                     }
                 }
 
@@ -337,17 +371,6 @@ extension View {
                     if enabled { tempView = AnyView(tempView.clipped()) }
                 }
 
-            case "multilineTextAlignment":
-                if #available(iOS 13.0, *) {
-                    let v = modifier.args?["value"]?.toString()?.lowercased()
-                    let alignment: TextAlignment
-                    switch v {
-                    case "center": alignment = .center
-                    case "right": alignment = .trailing
-                    default: alignment = .leading
-                    }
-                    tempView = AnyView(tempView.multilineTextAlignment(alignment))
-                }
 
             case "lineLimit":
                 if #available(iOS 13.0, *) {

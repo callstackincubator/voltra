@@ -25,19 +25,11 @@ export function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlaye
     <Voltra.VStack
       id="music-player-live-activity"
       style={{
-        padding: 20,
-        borderRadius: 24,
-        backgroundColor: '#0A0E1A',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(148, 163, 184, 0.1)',
+        padding: 12,
       }}
       spacing={16}
     >
-      <Voltra.HStack spacing={16} alignment="center">
+      <Voltra.HStack spacing={16}>
         <Voltra.Image
           id={currentSong.image}
           source={{ assetName: currentSong.image }}
@@ -48,7 +40,8 @@ export function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlaye
           }}
           resizeMode="cover"
         />
-        <Voltra.VStack spacing={4} style={{ flex: 1 }}>
+
+        <Voltra.VStack spacing={4}>
           <Voltra.Text
             style={{
               color: '#F0F9FF',
@@ -69,30 +62,10 @@ export function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlaye
             {currentSong.artist}
           </Voltra.Text>
           <Voltra.HStack spacing={8} style={{ marginTop: 8 }}>
-            <Voltra.Button
-              id="previous-button"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Voltra.Button id="previous-button">
               <Voltra.Symbol name="backward.fill" type="hierarchical" scale="large" tintColor="#F0F9FF" />
             </Voltra.Button>
-            <Voltra.Button
-              id="play-pause-button"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Voltra.Button id="play-pause-button">
               <Voltra.Symbol
                 name={isPlaying ? 'pause.fill' : 'play.fill'}
                 type="hierarchical"
@@ -100,17 +73,7 @@ export function MusicPlayerLiveActivityUI({ currentSong, isPlaying }: MusicPlaye
                 tintColor="#F0F9FF"
               />
             </Voltra.Button>
-            <Voltra.Button
-              id="next-button"
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: 'rgba(148, 163, 184, 0.2)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
+            <Voltra.Button id="next-button">
               <Voltra.Symbol name="forward.fill" type="hierarchical" scale="large" tintColor="#F0F9FF" />
             </Voltra.Button>
           </Voltra.HStack>

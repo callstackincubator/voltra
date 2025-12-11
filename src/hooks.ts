@@ -11,6 +11,7 @@ import {
   UpdateVoltraOptions,
 } from './imperative-api'
 import { VoltraVariants } from './renderer'
+import { useUpdateOnHMR } from './utils'
 
 export type UseVoltraOptions = {
   /**
@@ -50,6 +51,8 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
   const isActive = targetId !== null
   const optionsRef = useRef(options)
   const lastUpdateOptionsRef = useRef<UpdateVoltraOptions | undefined>(undefined)
+
+  useUpdateOnHMR()
 
   const start = useCallback(
     async (options?: StartVoltraOptions) => {

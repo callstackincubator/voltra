@@ -23,7 +23,7 @@ public struct SymbolParameters: ComponentParameters {
     public let weight: String?
 
     /// Symbol size in points
-    public let size: Double = 24
+    public let size: Double
 
     /// Tint color for the symbol
     public let tintColor: String?
@@ -36,4 +36,29 @@ public struct SymbolParameters: ComponentParameters {
 
     /// JSON-encoded animation specification
     public let animationSpec: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case type
+        case scale
+        case weight
+        case size
+        case tintColor
+        case colors
+        case resizeMode
+        case animationSpec
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        type = try container.decodeIfPresent(String.self, forKey: .type)
+        scale = try container.decodeIfPresent(String.self, forKey: .scale)
+        weight = try container.decodeIfPresent(String.self, forKey: .weight)
+        size = try container.decodeIfPresent(Double.self, forKey: .size) ?? 24
+        tintColor = try container.decodeIfPresent(String.self, forKey: .tintColor)
+        colors = try container.decodeIfPresent(String.self, forKey: .colors)
+        resizeMode = try container.decodeIfPresent(String.self, forKey: .resizeMode)
+        animationSpec = try container.decodeIfPresent(String.self, forKey: .animationSpec)
+    }
 }

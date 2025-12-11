@@ -17,12 +17,17 @@ public struct StyleConverter {
         var borderProps: [String: Any] = [:]
         var shadowProps: [String: Any] = [:]
         var backgroundColor: String?
-        var flexGrow: Double?
-        var flexShrink: Double?
         var frameProps: [String: Any] = [:]
         var offsetProps: [String: Double] = [:]
         var opacity: Double?
         var overflow: String?
+        var aspectRatio: Double?
+        var flexGrowWidth: Bool = false
+        var fixedSizeHorizontal: Bool = false
+        var fixedSizeVertical: Bool = false
+        var layoutPriority: Double?
+        var zIndex: Double?
+        var absolutePosition: [String: Double]?
         
         // Text-specific properties
         var fontSize: Double?
@@ -30,7 +35,6 @@ public struct StyleConverter {
         var color: String?
         var letterSpacing: Double?
         var fontVariant: [String]?
-        var textAlign: String?
         
         // Process all style properties
         for (key, value) in style {
@@ -121,22 +125,62 @@ public struct StyleConverter {
                 shadowProps["shadowRadius"] = value
             case "overflow":
                 overflow = value as? String
-            case "flex":
+            case "aspectRatio":
                 if let num = value as? NSNumber {
-                    let flexValue = num.doubleValue
-                    if flexValue > 0 {
-                        flexGrow = flexValue
-                    } else if flexValue < 0 {
-                        flexShrink = abs(flexValue)
+                    aspectRatio = num.doubleValue
+                }
+            case "minWidth":
+                if let num = value as? NSNumber {
+                    frameProps["minWidth"] = num.doubleValue
+                }
+            case "maxWidth":
+                if let num = value as? NSNumber {
+                    frameProps["maxWidth"] = num.doubleValue
+                } else if let str = value as? String, str == "infinity" {
+                    frameProps["maxWidth"] = "infinity"
+                }
+            case "minHeight":
+                if let num = value as? NSNumber {
+                    frameProps["minHeight"] = num.doubleValue
+                }
+            case "maxHeight":
+                if let num = value as? NSNumber {
+                    frameProps["maxHeight"] = num.doubleValue
+                } else if let str = value as? String, str == "infinity" {
+                    frameProps["maxHeight"] = "infinity"
+                }
+            case "flexGrowWidth":
+                if let bool = value as? Bool {
+                    flexGrowWidth = bool
+                }
+            case "fixedSizeHorizontal":
+                if let bool = value as? Bool {
+                    fixedSizeHorizontal = bool
+                }
+            case "fixedSizeVertical":
+                if let bool = value as? Bool {
+                    fixedSizeVertical = bool
+                }
+            case "layoutPriority":
+                if let num = value as? NSNumber {
+                    layoutPriority = num.doubleValue
+                }
+            case "zIndex":
+                if let num = value as? NSNumber {
+                    zIndex = num.doubleValue
+                }
+            case "absolutePosition":
+                if let pos = value as? [String: Any] {
+                    var posDict: [String: Double] = [:]
+                    if let x = pos["x"] as? NSNumber {
+                        posDict["x"] = x.doubleValue
                     }
-                }
-            case "flexGrow":
-                if let num = value as? NSNumber, num.doubleValue > 0 {
-                    flexGrow = num.doubleValue
-                }
-            case "flexShrink":
-                if let num = value as? NSNumber, num.doubleValue > 0 {
-                    flexShrink = num.doubleValue
+                    if let y = pos["y"] as? NSNumber {
+                        posDict["y"] = y.doubleValue
+                    }
+                    if !posDict.isEmpty {
+                        absolutePosition = posDict
+                    }
                 }
             case "offsetX":
                 if let num = value as? NSNumber {
@@ -163,44 +207,16 @@ public struct StyleConverter {
                 if let arr = value as? [String] {
                     fontVariant = arr
                 }
-            case "textAlign":
-                textAlign = value as? String
             default:
                 break
             }
         }
         
-        // Process flex properties and update frame
-        if let flexGrow = flexGrow, flexGrow > 0 {
-            if let width = frameProps["width"] as? Double {
-                frameProps["idealWidth"] = width
-                frameProps.removeValue(forKey: "width")
-                frameProps["maxWidth"] = "infinity"
-            } else {
-                frameProps["maxWidth"] = "infinity"
-            }
-            if let height = frameProps["height"] as? Double {
-                frameProps["idealHeight"] = height
-                frameProps.removeValue(forKey: "height")
-                frameProps["maxHeight"] = "infinity"
-            } else {
-                frameProps["maxHeight"] = "infinity"
-            }
-            frameProps["minWidth"] = 0.0
-            frameProps["minHeight"] = 0.0
-        } else if flexGrow == 0 {
-            // Don't allow growing
-            if frameProps["maxWidth"] as? String == "infinity" {
-                frameProps.removeValue(forKey: "maxWidth")
-            }
-            if frameProps["maxHeight"] as? String == "infinity" {
-                frameProps.removeValue(forKey: "maxHeight")
-            }
-        }
-        
-        if let flexShrink = flexShrink, flexShrink > 0 {
-            frameProps["minWidth"] = 0.0
-            frameProps["minHeight"] = 0.0
+        // 1. Aspect Ratio (Must be tightest to content)
+        if let aspectRatio = aspectRatio {
+            var aspectRatioArgs: [String: AnyCodable] = [:]
+            aspectRatioArgs["ratio"] = .double(aspectRatio)
+            modifiers.append(VoltraModifier(name: "aspectRatio", args: aspectRatioArgs))
         }
         
         // Process padding (applied first to style content)
@@ -324,20 +340,65 @@ public struct StyleConverter {
             modifiers.append(VoltraModifier(name: "clipped", args: clippedArgs))
         }
         
-        // Add frame modifier if needed (for explicit width/height/flex)
-        // This comes after styling modifiers so the frame wraps the styled content
-        if !frameProps.isEmpty {
-            var frameArgs: [String: AnyCodable] = [:]
-            for (key, value) in frameProps {
-                if let num = value as? Double {
-                    frameArgs[key] = .double(num)
-                } else if let str = value as? String {
-                    frameArgs[key] = .string(str)
-                }
-            }
-            modifiers.append(VoltraModifier(name: "frame", args: frameArgs))
+        // 2. Main Frame & Constraints
+        // First frame: width and height
+        var mainFrameArgs: [String: AnyCodable] = [:]
+        if let width = frameProps["width"] as? Double {
+            mainFrameArgs["width"] = .double(width)
         }
-
+        if let height = frameProps["height"] as? Double {
+            mainFrameArgs["height"] = .double(height)
+        }
+        if !mainFrameArgs.isEmpty {
+            modifiers.append(VoltraModifier(name: "frame", args: mainFrameArgs))
+        }
+        
+        // Second frame: min/max constraints
+        var constraintFrameArgs: [String: AnyCodable] = [:]
+        if let minWidth = frameProps["minWidth"] as? Double {
+            constraintFrameArgs["minWidth"] = .double(minWidth)
+        }
+        if let maxWidth = frameProps["maxWidth"] {
+            if let num = maxWidth as? Double {
+                constraintFrameArgs["maxWidth"] = .double(num)
+            } else if let str = maxWidth as? String, str == "infinity" {
+                constraintFrameArgs["maxWidth"] = .string("infinity")
+            } else if flexGrowWidth {
+                constraintFrameArgs["maxWidth"] = .string("infinity")
+            }
+        } else if flexGrowWidth {
+            constraintFrameArgs["maxWidth"] = .string("infinity")
+        }
+        if let minHeight = frameProps["minHeight"] as? Double {
+            constraintFrameArgs["minHeight"] = .double(minHeight)
+        }
+        if let maxHeight = frameProps["maxHeight"] {
+            if let num = maxHeight as? Double {
+                constraintFrameArgs["maxHeight"] = .double(num)
+            } else if let str = maxHeight as? String, str == "infinity" {
+                constraintFrameArgs["maxHeight"] = .string("infinity")
+            }
+        }
+        if !constraintFrameArgs.isEmpty {
+            modifiers.append(VoltraModifier(name: "frame", args: constraintFrameArgs))
+        }
+        
+        // 3. Fixed Size (Force content expansion)
+        if fixedSizeHorizontal || fixedSizeVertical {
+            var fixedSizeArgs: [String: AnyCodable] = [:]
+            fixedSizeArgs["horizontal"] = .bool(fixedSizeHorizontal)
+            fixedSizeArgs["vertical"] = .bool(fixedSizeVertical)
+            modifiers.append(VoltraModifier(name: "fixedSize", args: fixedSizeArgs))
+        }
+        
+        // 4. Layout Priority (Resolves sibling contention)
+        if let layoutPriority = layoutPriority {
+            var priorityArgs: [String: AnyCodable] = [:]
+            priorityArgs["value"] = .double(layoutPriority)
+            modifiers.append(VoltraModifier(name: "layoutPriority", args: priorityArgs))
+        }
+        
+        // 5. Positioning & Layers
         // Handle offset - fine-tunes position
         if !offsetProps.isEmpty {
             var offsetArgs: [String: AnyCodable] = [:]
@@ -349,6 +410,27 @@ public struct StyleConverter {
             }
             if !offsetArgs.isEmpty {
                 modifiers.append(VoltraModifier(name: "offset", args: offsetArgs))
+            }
+        }
+        
+        // zIndex
+        if let zIndex = zIndex {
+            var zIndexArgs: [String: AnyCodable] = [:]
+            zIndexArgs["value"] = .double(zIndex)
+            modifiers.append(VoltraModifier(name: "zIndex", args: zIndexArgs))
+        }
+        
+        // 7. Absolute Position (Overrides everything else)
+        if let absolutePosition = absolutePosition {
+            var positionArgs: [String: AnyCodable] = [:]
+            if let x = absolutePosition["x"] {
+                positionArgs["x"] = .double(x)
+            }
+            if let y = absolutePosition["y"] {
+                positionArgs["y"] = .double(y)
+            }
+            if !positionArgs.isEmpty {
+                modifiers.append(VoltraModifier(name: "position", args: positionArgs))
             }
         }
         
@@ -394,7 +476,7 @@ public struct StyleConverter {
         
         // Text-specific modifiers (should be applied early, so we'll prepend them)
         var textModifiers: [VoltraModifier] = []
-        
+
         // Process font variants
         var hasSmallCaps = false
         var hasMonospacedDigit = false
@@ -407,7 +489,7 @@ public struct StyleConverter {
                 }
             }
         }
-        
+
         // Font modifier (combines fontSize, fontWeight, and font variants)
         if fontSize != nil || hasSmallCaps || hasMonospacedDigit {
             var fontArgs: [String: AnyCodable] = [:]
@@ -428,41 +510,19 @@ public struct StyleConverter {
             fwArgs["weight"] = .string(fontWeight!)
             textModifiers.append(VoltraModifier(name: "fontWeight", args: fwArgs))
         }
-        
+
         // Foreground style (text color)
         if let textColor = color {
             var fgArgs: [String: AnyCodable] = [:]
             fgArgs["color"] = .string(textColor)
             textModifiers.append(VoltraModifier(name: "foregroundStyle", args: fgArgs))
         }
-        
+
         // Kerning (letter spacing)
         if let spacing = letterSpacing {
             var kernArgs: [String: AnyCodable] = [:]
             kernArgs["value"] = .double(spacing)
             textModifiers.append(VoltraModifier(name: "kerning", args: kernArgs))
-        }
-
-        // Text alignment
-        if let align = textAlign {
-            // multilineTextAlignment is for multiline text wrapping
-            var mtaArgs: [String: AnyCodable] = [:]
-            mtaArgs["value"] = .string(align)
-            textModifiers.append(VoltraModifier(name: "multilineTextAlignment", args: mtaArgs))
-            
-            // For single-line text, we need a frame with maxWidth: infinity and proper alignment
-            // This makes the text fill the available width and positions it according to textAlign
-            var frameArgs: [String: AnyCodable] = [:]
-            frameArgs["maxWidth"] = .string("infinity")
-            switch align.lowercased() {
-            case "center":
-                frameArgs["alignment"] = .string("center")
-            case "right":
-                frameArgs["alignment"] = .string("trailing")
-            default: // "left" or "auto"
-                frameArgs["alignment"] = .string("leading")
-            }
-            textModifiers.append(VoltraModifier(name: "frame", args: frameArgs))
         }
 
         // Prepend text modifiers (they should be applied early)

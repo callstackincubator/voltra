@@ -14,5 +14,16 @@ public struct ImageParameters: ComponentParameters {
     public let source: String?
 
     /// How the image should be resized to fit its container
-    public let resizeMode: String = "cover"
+    public let resizeMode: String
+
+    enum CodingKeys: String, CodingKey {
+        case source
+        case resizeMode
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        source = try container.decodeIfPresent(String.self, forKey: .source)
+        resizeMode = try container.decodeIfPresent(String.self, forKey: .resizeMode) ?? "cover"
+    }
 }

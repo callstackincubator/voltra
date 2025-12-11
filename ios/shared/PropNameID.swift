@@ -35,28 +35,29 @@ public enum PropNameID: Int, Codable {
     case minLength = 22
     case minimumValue = 23
     case minimumValueLabel = 24
-    case name = 25
-    case numberOfLines = 26
-    case progressColor = 27
-    case resizeMode = 28
-    case scale = 29
-    case size = 30
-    case source = 31
-    case spacing = 32
-    case startAtMs = 33
-    case startPoint = 34
-    case stops = 35
-    case systemImage = 36
-    case textStyle = 37
-    case textTemplates = 38
-    case thumb = 39
-    case tint = 40
-    case tintColor = 41
-    case title = 42
-    case trackColor = 43
-    case type = 44
-    case value = 45
-    case weight = 46
+    case multilineTextAlignment = 25
+    case name = 26
+    case numberOfLines = 27
+    case progressColor = 28
+    case resizeMode = 29
+    case scale = 30
+    case size = 31
+    case source = 32
+    case spacing = 33
+    case startAtMs = 34
+    case startPoint = 35
+    case stops = 36
+    case systemImage = 37
+    case textStyle = 38
+    case textTemplates = 39
+    case thumb = 40
+    case tint = 41
+    case tintColor = 42
+    case title = 43
+    case trackColor = 44
+    case type = 45
+    case value = 46
+    case weight = 47
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -111,6 +112,8 @@ public enum PropNameID: Int, Codable {
             return "minimumValue"
         case .minimumValueLabel:
             return "minimumValueLabel"
+        case .multilineTextAlignment:
+            return "multilineTextAlignment"
         case .name:
             return "name"
         case .numberOfLines:
@@ -188,6 +191,7 @@ public enum PropNameID: Int, Codable {
         case "minLength": self = .minLength
         case "minimumValue": self = .minimumValue
         case "minimumValueLabel": self = .minimumValueLabel
+        case "multilineTextAlignment": self = .multilineTextAlignment
         case "name": self = .name
         case "numberOfLines": self = .numberOfLines
         case "progressColor": self = .progressColor
