@@ -259,13 +259,13 @@ const COMPONENTS_DATA = [
           {/* Glass components on top */}
           <Voltra.GlassContainer spacing={10} style={{ padding: 12 }}>
             <Voltra.VStack spacing={0}>
-              <Voltra.GlassView style={{ padding: 12, borderRadius: 16 }} effect="glassEffect">
+              <Voltra.VStack style={{ padding: 12, borderRadius: 16, glassEffect: true }}>
                 <Voltra.Text style={{ color: '#000', fontWeight: '600' }}>Glass View</Voltra.Text>
-              </Voltra.GlassView>
+              </Voltra.VStack>
 
-              <Voltra.GlassView style={{ padding: 12, borderRadius: 16 }} effect="glassEffect">
+              <Voltra.VStack style={{ padding: 12, borderRadius: 16, glassEffect: true }}>
                 <Voltra.Text style={{ color: '#000', fontWeight: '600' }}>Glass View</Voltra.Text>
-              </Voltra.GlassView>
+              </Voltra.VStack>
             </Voltra.VStack>
           </Voltra.GlassContainer>
         </Voltra.ZStack>

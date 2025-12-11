@@ -420,6 +420,7 @@ extension View {
             case "glassEffect":
                 // iOS 26+ Liquid Glass.
                 // Args (subset, conservative to ensure build on earlier SDKs is unaffected at compile time):
+                //   enabled?: boolean (default: true)
                 //   shape?: "rect" | "roundedRect" | "capsule" | "circle"
                 //   cornerRadius?: number (used when shape is rect/roundedRect)
                 //   interactive?: boolean (reserved; no-op for now)
@@ -427,6 +428,7 @@ extension View {
                     // Optional gate for debugging/fallbacks: when enabled is false, skip applying the effect.
                     let enabled = modifier.args?["enabled"]?.toBool() ?? true
                     if !enabled { break }
+
                     var newView = AnyView(tempView.glassEffect())
 
                     // Optional shaping
@@ -445,6 +447,7 @@ extension View {
 
                     tempView = newView
                 }
+
 
             default:
                 break

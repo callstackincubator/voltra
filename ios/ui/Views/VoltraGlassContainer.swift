@@ -13,39 +13,20 @@ public struct VoltraGlassContainer: View {
 
     public var body: some View {
         let params = component.parameters(GlassContainerParameters.self)
-        Group {
-            if let children = component.children {
-                switch children {
-                case .component(let childComponent):
-                    if #available(iOS 26.0, *) {
-                        let spacing = params.spacing ?? 0.0
-                        GlassEffectContainer(spacing: CGFloat(spacing)) {
-                            VoltraChildrenView(components: [childComponent])
-                        }
-                    } else {
-                        VoltraChildrenView(components: [childComponent])
-                    }
-                case .components(let components):
-                    if !components.isEmpty {
-                        if #available(iOS 26.0, *) {
-                            let spacing = params.spacing ?? 0.0
-                            GlassEffectContainer(spacing: CGFloat(spacing)) {
-                                VoltraChildrenView(components: components)
-                            }
-                        } else {
-                            VoltraChildrenView(components: components)
-                        }
-                    } else {
-                        EmptyView()
-                    }
-                case .text:
-                    // GlassContainer shouldn't have text children, ignore
-                    EmptyView()
-                }
+
+        if let children = component.children {
+            if #available(iOS 26.0, *) {
+                let spacing = params.spacing ?? 0.0
+                GlassEffectContainer(spacing: CGFloat(spacing)) {
+                    VoltraChildrenView(children: children)
+                }.voltraModifiers(component)
             } else {
-                EmptyView()
+                Group {
+                    VoltraChildrenView(children: children)
+                }.voltraModifiers(component)
             }
+        } else {
+            EmptyView();
         }
-        .voltraModifiers(component)
     }
 }

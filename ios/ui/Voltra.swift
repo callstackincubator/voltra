@@ -161,9 +161,6 @@ public struct VoltraChildView: View {
         case "GlassContainer":
             VoltraGlassContainer(component)
 
-        case "GlassView":
-            VoltraGlassView(component)
-            
         case "Mask":
             VoltraMask(component)
 

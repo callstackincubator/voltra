@@ -22,42 +22,39 @@ public enum PropNameID: Int, Codable {
     case direction = 9
     case dither = 10
     case durationMs = 11
-    case effect = 12
-    case endAtMs = 13
-    case endPoint = 14
-    case gaugeStyle = 15
-    case height = 16
-    case interactive = 17
-    case lineWidth = 18
-    case maskElement = 19
-    case maximumValue = 20
-    case maximumValueLabel = 21
-    case minLength = 22
-    case minimumValue = 23
-    case minimumValueLabel = 24
-    case multilineTextAlignment = 25
-    case name = 26
-    case numberOfLines = 27
-    case progressColor = 28
-    case resizeMode = 29
-    case scale = 30
-    case size = 31
-    case source = 32
-    case spacing = 33
-    case startAtMs = 34
-    case startPoint = 35
-    case stops = 36
-    case systemImage = 37
-    case textStyle = 38
-    case textTemplates = 39
-    case thumb = 40
-    case tint = 41
-    case tintColor = 42
-    case title = 43
-    case trackColor = 44
-    case type = 45
-    case value = 46
-    case weight = 47
+    case endAtMs = 12
+    case endPoint = 13
+    case gaugeStyle = 14
+    case height = 15
+    case lineWidth = 16
+    case maskElement = 17
+    case maximumValue = 18
+    case maximumValueLabel = 19
+    case minLength = 20
+    case minimumValue = 21
+    case minimumValueLabel = 22
+    case multilineTextAlignment = 23
+    case name = 24
+    case numberOfLines = 25
+    case progressColor = 26
+    case resizeMode = 27
+    case scale = 28
+    case size = 29
+    case source = 30
+    case spacing = 31
+    case startAtMs = 32
+    case startPoint = 33
+    case stops = 34
+    case systemImage = 35
+    case textStyle = 36
+    case textTemplates = 37
+    case thumb = 38
+    case tintColor = 39
+    case title = 40
+    case trackColor = 41
+    case type = 42
+    case value = 43
+    case weight = 44
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -86,8 +83,6 @@ public enum PropNameID: Int, Codable {
             return "dither"
         case .durationMs:
             return "durationMs"
-        case .effect:
-            return "effect"
         case .endAtMs:
             return "endAtMs"
         case .endPoint:
@@ -96,8 +91,6 @@ public enum PropNameID: Int, Codable {
             return "gaugeStyle"
         case .height:
             return "height"
-        case .interactive:
-            return "interactive"
         case .lineWidth:
             return "lineWidth"
         case .maskElement:
@@ -144,8 +137,6 @@ public enum PropNameID: Int, Codable {
             return "textTemplates"
         case .thumb:
             return "thumb"
-        case .tint:
-            return "tint"
         case .tintColor:
             return "tintColor"
         case .title:
@@ -178,12 +169,10 @@ public enum PropNameID: Int, Codable {
         case "direction": self = .direction
         case "dither": self = .dither
         case "durationMs": self = .durationMs
-        case "effect": self = .effect
         case "endAtMs": self = .endAtMs
         case "endPoint": self = .endPoint
         case "gaugeStyle": self = .gaugeStyle
         case "height": self = .height
-        case "interactive": self = .interactive
         case "lineWidth": self = .lineWidth
         case "maskElement": self = .maskElement
         case "maximumValue": self = .maximumValue
@@ -207,7 +196,6 @@ public enum PropNameID: Int, Codable {
         case "textStyle": self = .textStyle
         case "textTemplates": self = .textTemplates
         case "thumb": self = .thumb
-        case "tint": self = .tint
         case "tintColor": self = .tintColor
         case "title": self = .title
         case "trackColor": self = .trackColor

@@ -24,10 +24,9 @@ export const COMPONENT_NAME_TO_ID: Record<string, number> = {
   'ZStack': 13,
   'GroupBox': 14,
   'GlassContainer': 15,
-  'GlassView': 16,
-  'Spacer': 17,
-  'Divider': 18,
-  'Mask': 19
+  'Spacer': 16,
+  'Divider': 17,
+  'Mask': 18
 }
 
 /**
@@ -50,10 +49,9 @@ export const COMPONENT_ID_TO_NAME: Record<number, string> = {
   13: 'ZStack',
   14: 'GroupBox',
   15: 'GlassContainer',
-  16: 'GlassView',
-  17: 'Spacer',
-  18: 'Divider',
-  19: 'Mask'
+  16: 'Spacer',
+  17: 'Divider',
+  18: 'Mask'
 }
 
 /**

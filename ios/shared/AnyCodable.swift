@@ -26,6 +26,9 @@ public enum AnyCodable {
     /// Boolean value
     case bool(Bool)
 
+    /// Array value
+    case array([AnyCodable])
+
     /// No value
     case none
 
@@ -92,6 +95,16 @@ extension AnyCodable {
         return nil
     }
 
+    /// Convert value to Array
+    /// - Returns: value if it is an array
+    public func toArray() -> [AnyCodable]? {
+        if case let .array(array) = self {
+            return array
+        }
+
+        return nil
+    }
+
     /// Check if value is nil
     /// - Returns: nil if value is none/empty
     public func isNil() -> Bool {
@@ -117,6 +130,8 @@ extension AnyCodable {
             return value
         case .data(let value):
             return value
+        case .array(let value):
+            return value.map { $0.toAny() }
         case .none:
             return NSNull()
         }
@@ -125,7 +140,7 @@ extension AnyCodable {
 
 extension AnyCodable: Codable, Hashable {
     enum CodingKeys: String, CodingKey {
-        case string, int, data, double, bool
+        case string, int, data, double, bool, array
     }
 
     /// Decode the values
@@ -157,6 +172,11 @@ extension AnyCodable: Codable, Hashable {
             return
         }
 
+        if let array = try? decoder.singleValueContainer().decode([AnyCodable].self) {
+            self = .array(array)
+            return
+        }
+
         // Use `self = .none` if the value can be optional
         // or `throw AnyCodableError.missingValue` is it may not be optional
         self = .none
@@ -182,6 +202,9 @@ extension AnyCodable: Codable, Hashable {
             try container.encode(value)
 
         case .bool(let value):
+            try container.encode(value)
+
+        case .array(let value):
             try container.encode(value)
 
         case .none:

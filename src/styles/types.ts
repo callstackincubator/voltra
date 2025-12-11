@@ -50,6 +50,8 @@ export type VoltraViewStyle = Pick<
   offsetY?: number
   // Absolute position (overrides everything else)
   absolutePosition?: { x: number; y: number }
+  // Glass effect properties (iOS 26+)
+  glassEffect?: boolean
 }
 
 export type VoltraTextStyle = VoltraViewStyle &

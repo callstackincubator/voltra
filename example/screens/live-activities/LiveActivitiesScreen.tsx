@@ -27,7 +27,7 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
   },
   glass: {
     title: 'Liquid Glass',
-    description: 'GlassContainer + GlassView with the glassEffect modifier.',
+    description: 'GlassContainer + VStack with glassEffect style property.',
   },
   flight: {
     title: 'Flight Tracker',

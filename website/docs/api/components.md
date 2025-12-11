@@ -14,7 +14,7 @@ Components that arrange other elements or provide structural grouping. These inc
 
 Static or decorative elements used to display content. These components handle text rendering, images, system icons (SF Symbols), visual separators, gradients, and glass effects.
 
-**Components:** Text, Label, Image, Symbol, Divider, LinearGradient, GlassView
+**Components:** Text, Label, Image, Symbol, Divider, LinearGradient
 
 ---
 
@@ -56,15 +56,15 @@ await startVoltra({
     minimal: <MinimalIslandContent />,
     compact: {
       leading: <CompactLeadingContent />,
-      trailing: <CompactTrailingContent />
+      trailing: <CompactTrailingContent />,
     },
     expanded: {
       center: <ExpandedCenterContent />,
       leading: <ExpandedLeadingContent />,
       trailing: <ExpandedTrailingContent />,
-      bottom: <ExpandedBottomContent />
-    }
-  }
+      bottom: <ExpandedBottomContent />,
+    },
+  },
 })
 ```
 

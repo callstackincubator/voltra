@@ -97,15 +97,3 @@ A linear gradient background that can contain children. Creates a gradient effec
 **Apple Documentation:** [LinearGradient](https://developer.apple.com/documentation/swiftui/lineargradient)
 
 ---
-
-### GlassView
-
-A standalone Liquid Glass view wrapper that provides glassmorphism effects (iOS 18+).
-
-**Parameters:**
-
-- `effect` (string, optional): Glass effect style
-- `tint` (string, optional): Glass tint color
-- `interactive` (boolean, optional): Enable interactive glass
-
-**Apple Documentation:** [GlassView](https://developer.apple.com/documentation/swiftui/glassview)

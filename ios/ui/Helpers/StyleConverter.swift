@@ -28,7 +28,10 @@ public struct StyleConverter {
         var layoutPriority: Double?
         var zIndex: Double?
         var absolutePosition: [String: Double]?
-        
+
+        // Glass effect properties
+        var glassEffect: Bool?
+
         // Text-specific properties
         var fontSize: Double?
         var fontWeight: String?
@@ -207,6 +210,10 @@ public struct StyleConverter {
                 if let arr = value as? [String] {
                     fontVariant = arr
                 }
+            case "glassEffect":
+                if let bool = value as? Bool {
+                    glassEffect = bool
+                }
             default:
                 break
             }
@@ -325,7 +332,14 @@ public struct StyleConverter {
                 modifiers.append(VoltraModifier(name: "shadow", args: shadowArgs))
             }
         }
-        
+
+        // Add glass effect modifier
+        if glassEffect == true {
+            var glassArgs: [String: AnyCodable] = [:]
+            glassArgs["enabled"] = .bool(true)
+            modifiers.append(VoltraModifier(name: "glassEffect", args: glassArgs))
+        }
+
         // Add opacity modifier
         if let opacity = opacity {
             var opacityArgs: [String: AnyCodable] = [:]

@@ -473,29 +473,6 @@
       }
     },
     {
-      "name": "GlassView",
-      "description": "iOS 26+ Liquid Glass view wrapper",
-      "swiftAvailability": "iOS 26.0",
-      "hasChildren": true,
-      "parameters": {
-        "effect": {
-          "type": "string",
-          "optional": true,
-          "description": "Glass effect style"
-        },
-        "tint": {
-          "type": "string",
-          "optional": true,
-          "description": "Glass tint color"
-        },
-        "interactive": {
-          "type": "boolean",
-          "optional": true,
-          "description": "Enable interactive glass"
-        }
-      }
-    },
-    {
       "name": "Spacer",
       "description": "Flexible space",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
