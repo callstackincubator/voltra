@@ -38,6 +38,7 @@ export type VoltraViewStyle = Pick<
   | 'left'
   | 'top'
   | 'zIndex'
+  | 'transform'
 > & {
   glassEffect?: 'clear' | 'identity' | 'regular' | 'none'
 }

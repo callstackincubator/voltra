@@ -1,5 +1,14 @@
 export { BasicLiveActivityUI } from './BasicLiveActivityUI'
 export {
+  CompassLiveActivityIslandCompactLeading,
+  CompassLiveActivityIslandCompactTrailing,
+  CompassLiveActivityIslandExpandedBottom,
+  CompassLiveActivityIslandExpandedLeading,
+  CompassLiveActivityIslandExpandedTrailing,
+  CompassLiveActivityIslandMinimal,
+  CompassLiveActivityLockScreen,
+} from './CompassLiveActivityUI'
+export {
   FlightLiveActivityIslandCompactLeading,
   FlightLiveActivityIslandCompactTrailing,
   FlightLiveActivityIslandExpandedBottom,

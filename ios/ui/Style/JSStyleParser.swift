@@ -126,4 +126,71 @@ struct JSStyleParser {
         
         return variants
     }
+    
+    /// Parse RN transform array: [{ rotate: '45deg' }, { scale: 1.5 }]
+    static func transform(_ value: Any?) -> TransformStyle? {
+        guard let array = value as? [[String: Any]] else { return nil }
+        
+        var transform = TransformStyle()
+        
+        for item in array {
+            // Handle rotate: '45deg' or rotate: '0.785rad'
+            if let rotateStr = item["rotate"] as? String {
+                transform.rotate = parseAngle(rotateStr)
+            }
+            // Handle rotateZ (same as rotate for 2D)
+            if let rotateZStr = item["rotateZ"] as? String {
+                transform.rotate = parseAngle(rotateZStr)
+            }
+            // Handle scale
+            if let scale = item["scale"] as? Double {
+                transform.scale = CGFloat(scale)
+            } else if let scale = item["scale"] as? Int {
+                transform.scale = CGFloat(scale)
+            }
+            // Handle scaleX
+            if let scaleX = item["scaleX"] as? Double {
+                transform.scaleX = CGFloat(scaleX)
+            } else if let scaleX = item["scaleX"] as? Int {
+                transform.scaleX = CGFloat(scaleX)
+            }
+            // Handle scaleY
+            if let scaleY = item["scaleY"] as? Double {
+                transform.scaleY = CGFloat(scaleY)
+            } else if let scaleY = item["scaleY"] as? Int {
+                transform.scaleY = CGFloat(scaleY)
+            }
+        }
+        
+        return transform.hasTransforms ? transform : nil
+    }
+    
+    /// Parse angle string like '45deg' or '0.785rad' to degrees
+    private static func parseAngle(_ value: String) -> CGFloat? {
+        let trimmed = value.trimmingCharacters(in: .whitespaces)
+        
+        if trimmed.hasSuffix("deg") {
+            let numStr = String(trimmed.dropLast(3))
+            return Double(numStr).map { CGFloat($0) }
+        } else if trimmed.hasSuffix("rad") {
+            let numStr = String(trimmed.dropLast(3))
+            if let radians = Double(numStr) {
+                return CGFloat(radians * 180.0 / .pi) // Convert to degrees
+            }
+        }
+        // Try parsing as plain number (assume degrees)
+        return Double(trimmed).map { CGFloat($0) }
+    }
+}
+
+/// Parsed transform style from RN transform array
+struct TransformStyle {
+    var rotate: CGFloat? // in degrees
+    var scale: CGFloat?
+    var scaleX: CGFloat?
+    var scaleY: CGFloat?
+    
+    var hasTransforms: Bool {
+        rotate != nil || scale != nil || scaleX != nil || scaleY != nil
+    }
 }

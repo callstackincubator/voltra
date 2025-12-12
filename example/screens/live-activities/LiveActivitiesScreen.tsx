@@ -8,6 +8,7 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { NotificationsCard } from '~/components/NotificationsCard'
 import BasicLiveActivity from '~/screens/live-activities/BasicLiveActivity'
+import CompassLiveActivity from '~/screens/live-activities/CompassLiveActivity'
 import FlightLiveActivity from '~/screens/live-activities/FlightLiveActivity'
 import LiquidGlassLiveActivity from '~/screens/live-activities/LiquidGlassLiveActivity'
 import MusicPlayerLiveActivity from '~/screens/live-activities/MusicPlayerLiveActivity'
@@ -15,7 +16,7 @@ import WorkoutLiveActivity from '~/screens/live-activities/WorkoutLiveActivity'
 
 import { LiveActivityExampleComponentRef } from './types'
 
-type ActivityKey = 'basic' | 'stylesheet' | 'glass' | 'flight' | 'workout'
+type ActivityKey = 'basic' | 'stylesheet' | 'glass' | 'flight' | 'workout' | 'compass'
 
 const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: string }> = {
   basic: {
@@ -38,9 +39,13 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
     title: 'Workout Tracker',
     description: 'Fitness tracking widget with heart rate zones, timer, distance, and pace metrics.',
   },
+  compass: {
+    title: 'Compass',
+    description: 'Real-time compass using magnetometer with rotating arrow indicator.',
+  },
 }
 
-const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass', 'flight', 'workout']
+const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass', 'flight', 'workout', 'compass']
 
 export default function LiveActivitiesScreen() {
   const insets = useSafeAreaInsets()
@@ -51,6 +56,7 @@ export default function LiveActivitiesScreen() {
     glass: false,
     flight: false,
     workout: false,
+    compass: false,
   })
 
   const basicRef = useRef<LiveActivityExampleComponentRef>(null)
@@ -58,6 +64,7 @@ export default function LiveActivitiesScreen() {
   const glassRef = useRef<LiveActivityExampleComponentRef>(null)
   const flightRef = useRef<LiveActivityExampleComponentRef>(null)
   const workoutRef = useRef<LiveActivityExampleComponentRef>(null)
+  const compassRef = useRef<LiveActivityExampleComponentRef>(null)
 
   const activityRefs = useMemo(
     () => ({
@@ -66,6 +73,7 @@ export default function LiveActivitiesScreen() {
       glass: glassRef,
       flight: flightRef,
       workout: workoutRef,
+      compass: compassRef,
     }),
     []
   )
@@ -95,6 +103,10 @@ export default function LiveActivitiesScreen() {
   )
   const handleWorkoutStatusChange = useCallback(
     (isActive: boolean) => handleStatusChange('workout', isActive),
+    [handleStatusChange]
+  )
+  const handleCompassStatusChange = useCallback(
+    (isActive: boolean) => handleStatusChange('compass', isActive),
     [handleStatusChange]
   )
 
@@ -174,6 +186,7 @@ export default function LiveActivitiesScreen() {
         <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
         <FlightLiveActivity ref={flightRef} onIsActiveChange={handleFlightStatusChange} />
         <WorkoutLiveActivity ref={workoutRef} onIsActiveChange={handleWorkoutStatusChange} />
+        <CompassLiveActivity ref={compassRef} onIsActiveChange={handleCompassStatusChange} />
       </ScrollView>
     </View>
   )

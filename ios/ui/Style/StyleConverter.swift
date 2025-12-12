@@ -95,7 +95,8 @@ struct StyleConverter {
 
     private static func parseRendering(_ js: [String: Any]) -> RenderingStyle {
         return RenderingStyle(
-            opacity: JSStyleParser.number(js["opacity"]) ?? 1.0
+            opacity: JSStyleParser.number(js["opacity"]) ?? 1.0,
+            transform: JSStyleParser.transform(js["transform"])
         )
     }
 
