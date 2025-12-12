@@ -16,6 +16,19 @@ struct StyleConverter {
         // Do NOT use the raw value (e.g. 2.0), or it will eat other flex items.
         let priority: Double = finalFlex > 0 ? 1.0 : 0.0
 
+        // Position parsing (offsetX/offsetY -> CGPoint)
+        var position: CGPoint?
+        if let offsetX = JSStyleParser.number(js["left"]), let offsetY = JSStyleParser.number(js["top"]) {
+            position = CGPoint(x: offsetX, y: offsetY)
+        } else if let offsetX = JSStyleParser.number(js["left"]) {
+            position = CGPoint(x: offsetX, y: 0)
+        } else if let offsetY = JSStyleParser.number(js["top"]) {
+            position = CGPoint(x: 0, y: offsetY)
+        }
+        
+        // zIndex parsing
+        let zIndex = JSStyleParser.number(js["zIndex"]) ?? 0.0
+
         return LayoutStyle(
             // Dimensions
             width: JSStyleParser.number(js["width"]),
@@ -32,7 +45,11 @@ struct StyleConverter {
             
             // Spacing (Resolves logic: padding -> paddingHorizontal -> paddingLeft)
             padding: JSStyleParser.parseInsets(from: js, prefix: "padding"),
-            margin: JSStyleParser.parseInsets(from: js, prefix: "margin")
+            margin: JSStyleParser.parseInsets(from: js, prefix: "margin"),
+            
+            // Positioning
+            position: position,
+            zIndex: zIndex
         )
     }
     

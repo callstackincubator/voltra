@@ -20,5 +20,12 @@ struct CompositeStyleModifier: ViewModifier {
             .voltraIfLet(layout.margin) { content, margin in
                 content.background(.clear).padding(margin)
             }
+
+            .voltraIfLet(layout.position) { content, position in
+                content.position(x: position.x, y: position.y)
+            }
+            .voltraIfLet(layout.zIndex) { content, zIndex in
+                content.zIndex(zIndex)
+            }
     }
 }

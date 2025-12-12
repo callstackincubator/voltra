@@ -27,7 +27,7 @@ struct LayoutStyle {
 
     // 6. Positioning
     var position: CGPoint? // x,y coordinates
-    var zIndex: Double = 0
+    var zIndex: Double?
 }
 
 struct LayoutModifier: ViewModifier {
@@ -68,14 +68,6 @@ struct LayoutModifier: ViewModifier {
             // E. Inner Spacing (Padding)
             .voltraIfLet(style.padding) { content, padding in
                 content.padding(padding)
-            }
-
-            // F. Positioning
-            .voltraIfLet(style.position) { content, position in
-                content.offset(x: position.x, y: position.y)
-            }
-            .voltraIfLet(style.zIndex) { content, zIndex in
-                content.zIndex(zIndex)
             }
     }
 }

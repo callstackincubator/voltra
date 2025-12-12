@@ -35,6 +35,8 @@ export type VoltraViewStyle = Pick<
   | 'shadowRadius'
   | 'overflow'
   | 'aspectRatio'
+  | 'left'
+  | 'top'
   | 'zIndex'
 > & {
   glassEffect?: 'clear' | 'identity' | 'regular' | 'none'
