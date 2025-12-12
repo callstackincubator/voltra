@@ -8,7 +8,7 @@ extension View {
     ///   - transform: The transformation to apply if value is not nil
     /// - Returns: The modified view or the original view if value is nil
     @ViewBuilder
-    func `ifLet`<Value, Content: View>(_ value: Value?, @ViewBuilder _ transform: (Self, Value) -> Content) -> some View {
+    func `voltraIfLet`<Value, Content: View>(_ value: Value?, @ViewBuilder _ transform: (Self, Value) -> Content) -> some View {
       if let value {
         transform(self, value)
       } else {

@@ -17,7 +17,7 @@ struct CompositeStyleModifier: ViewModifier {
             .modifier(RenderingModifier(style: rendering))
             
             // 4. Apply Outer Margin (Must happen last!)
-            .ifLet(layout.margin) { content, margin in
+            .voltraIfLet(layout.margin) { content, margin in
                 content.background(.clear).padding(margin)
             }
     }

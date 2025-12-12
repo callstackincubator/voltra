@@ -36,7 +36,7 @@ struct LayoutModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             // A. Aspect Ratio (Must be applied before frames to impact sizing)
-            .ifLet(style.aspectRatio) { content, aspectRatio in
+            .voltraIfLet(style.aspectRatio) { content, aspectRatio in
                 content.aspectRatio(aspectRatio, contentMode: .fill)
             }
             
@@ -61,20 +61,20 @@ struct LayoutModifier: ViewModifier {
             
             // D. Layout Priority (Flex Grow/Shrink arbitration)
             // Views with higher priority get their requested size first.
-            .ifLet(style.layoutPriority) { content, priority in
+            .voltraIfLet(style.layoutPriority) { content, priority in
                 content.layoutPriority(priority)
             }
             
             // E. Inner Spacing (Padding)
-            .ifLet(style.padding) { content, padding in
+            .voltraIfLet(style.padding) { content, padding in
                 content.padding(padding)
             }
 
             // F. Positioning
-            .ifLet(style.position) { content, position in
+            .voltraIfLet(style.position) { content, position in
                 content.offset(x: position.x, y: position.y)
             }
-            .ifLet(style.zIndex) { content, zIndex in
+            .voltraIfLet(style.zIndex) { content, zIndex in
                 content.zIndex(zIndex)
             }
     }

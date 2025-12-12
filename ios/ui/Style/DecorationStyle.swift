@@ -14,11 +14,11 @@ struct DecorationModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .ifLet(style.backgroundColor) { content, color in
+            .voltraIfLet(style.backgroundColor) { content, color in
                 content.background(color)
             }
             // If we have a corner radius, we must handle the border specifically here
-            .ifLet(style.cornerRadius) { content, radius in
+            .voltraIfLet(style.cornerRadius) { content, radius in
                 if let border = style.border {
                     content
                         .cornerRadius(radius)
@@ -37,7 +37,7 @@ struct DecorationModifier: ViewModifier {
             .voltraIf(style.overflow == .hidden) { view in
                 view.clipped()
             }
-            .ifLet(style.shadow) { content, shadow in
+            .voltraIfLet(style.shadow) { content, shadow in
                 content
                     .compositingGroup()
                     .shadow(
@@ -47,7 +47,7 @@ struct DecorationModifier: ViewModifier {
                         y: shadow.offset.height
                     )
             }
-            .ifLet(style.glassEffect) { content, glassEffect in
+            .voltraIfLet(style.glassEffect) { content, glassEffect in
                 if #available(iOS 26.0, *) {
                     switch glassEffect {
                         case .clear:

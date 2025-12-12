@@ -2,7 +2,7 @@ import SwiftUI
 
 extension View {
     func applyStyle(_ optionalStyle: [String: Any]?) -> some View {
-        self.ifLet(optionalStyle) { content, rawStyle in
+        self.voltraIfLet(optionalStyle) { content, rawStyle in
             let style = StyleConverter.convert(rawStyle)
             return self.applyStyle(style)
         }

@@ -46,7 +46,7 @@ public struct VoltraText: View {
             .foregroundColor(textStyle.color)
             .multilineTextAlignment(textStyle.alignment)
             .lineSpacing(lineSpacing)
-            .ifLet(params.numberOfLines) { view, numberOfLines in
+            .voltraIfLet(params.numberOfLines) { view, numberOfLines in
                 view.lineLimit(Int(numberOfLines))
             }
             .applyStyle(style)
