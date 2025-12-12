@@ -17,22 +17,35 @@ struct DecorationModifier: ViewModifier {
             .ifLet(style.backgroundColor) { content, color in
                 content.background(color)
             }
-            .ifLet(style.cornerRadius) { content, cornerRadius in 
-                content.cornerRadius(cornerRadius)
+            // If we have a corner radius, we must handle the border specifically here
+            .ifLet(style.cornerRadius) { content, radius in
+                if let border = style.border {
+                    content
+                        .cornerRadius(radius)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: radius)
+                                .stroke(border.color, lineWidth: border.width)
+                        )
+                } else {
+                    content.cornerRadius(radius)
+                }
             }
-            .ifLet(style.border) { content, border in
-                content.border(border.color, width: border.width)
+            // Fallback: If there is NO corner radius, but there IS a border
+            .voltraIf(style.cornerRadius == nil && style.border != nil) { content in
+                content.border(style.border!.color, width: style.border!.width)
             }
             .voltraIf(style.overflow == .hidden) { view in
                 view.clipped()
             }
             .ifLet(style.shadow) { content, shadow in
-                content.shadow(
-                    color: shadow.color.opacity(shadow.opacity),
-                    radius: shadow.radius,
-                    x: shadow.offset.width,
-                    y: shadow.offset.height
-                )
+                content
+                    .compositingGroup()
+                    .shadow(
+                        color: shadow.color.opacity(shadow.opacity),
+                        radius: shadow.radius,
+                        x: shadow.offset.width,
+                        y: shadow.offset.height
+                    )
             }
             .ifLet(style.glassEffect) { content, glassEffect in
                 if #available(iOS 26.0, *) {
