@@ -89,7 +89,6 @@ private func applyVariableEffect<V: View>(to view: V, spec: SymbolAnimationSpec.
 /// Voltra rendering for SF Symbols with Expo Symbols API parity.
 public struct VoltraSymbol: View {
     private let component: VoltraComponent
-    private let colorHelper = VoltraHelper()
     
     // Trigger for discrete animations
     @State private var animationTrigger = false
@@ -161,7 +160,7 @@ public struct VoltraSymbol: View {
         guard let string = params.tintColor else {
             return nil
         }
-        return colorHelper.translateColor(string)
+        return JSColorParser.parse(string)
     }
 
     private func paletteColors(params: SymbolParameters) -> [Color] {
@@ -172,7 +171,7 @@ public struct VoltraSymbol: View {
             .split(separator: "|")
             .compactMap { part in
                 let value = String(part)
-                return colorHelper.translateColor(value)
+                return JSColorParser.parse(value)
         }
     }
 

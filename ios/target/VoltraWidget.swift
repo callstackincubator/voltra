@@ -50,7 +50,7 @@ public struct VoltraWidget: Widget {
 
       // Apply keylineTint if specified
       if let keylineTint = context.state.keylineTint,
-         let color = VoltraHelper().translateColor(keylineTint) {
+         let color = JSColorParser.parse(keylineTint) {
         return dynamicIsland.keylineTint(color)
       } else {
         return dynamicIsland

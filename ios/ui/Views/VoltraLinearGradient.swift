@@ -37,7 +37,7 @@ public struct VoltraLinearGradient: View {
     }
 
     // Build Gradient from parameters
-    private func buildGradient(params: LinearGradientParameters, helper: VoltraHelper) -> Gradient {
+    private func buildGradient(params: LinearGradientParameters) -> Gradient {
         // Prefer explicit stops over color array
         if let stopsStr = params.stops {
             let parts = stopsStr.split(separator: "|")
@@ -47,7 +47,7 @@ public struct VoltraLinearGradient: View {
                 if sub.count == 2 {
                     let colorStr = sub[0]
                     let locStr = sub[1]
-                    if let color = helper.translateColor(colorStr) {
+                    if let color = JSColorParser.parse(colorStr) {
                         let loc = Double(locStr) ?? 0.0
                         stops.append(.init(color: color, location: loc))
                     }
@@ -57,7 +57,7 @@ public struct VoltraLinearGradient: View {
         }
         if let colorsStr = params.colors {
             let parts = colorsStr.split(separator: "|").map(String.init)
-            let colors: [Color] = parts.compactMap { helper.translateColor($0) }
+            let colors: [Color] = parts.compactMap { JSColorParser.parse($0) }
             if !colors.isEmpty { return Gradient(colors: colors) }
         }
         // Fallback neutral gradient
@@ -66,8 +66,7 @@ public struct VoltraLinearGradient: View {
 
     public var body: some View {
         let params = component.parameters(LinearGradientParameters.self)
-        let helper = VoltraHelper()
-        let gradient = buildGradient(params: params, helper: helper)
+        let gradient = buildGradient(params: params)
         let start = parsePoint(params.startPoint)
         let end = parsePoint(params.endPoint)
         

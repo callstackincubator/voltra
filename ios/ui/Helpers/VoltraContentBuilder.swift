@@ -26,7 +26,7 @@ struct VoltraContentBuilder {
         }()
 
          if let tint = activityBackgroundTint,
-            let color = VoltraHelper().translateColor(tint) {
+            let color = JSColorParser.parse(tint) {
             return AnyView(base.activityBackgroundTint(color))
         }
 

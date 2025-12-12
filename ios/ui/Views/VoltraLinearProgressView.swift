@@ -2,7 +2,6 @@ import SwiftUI
 
 public struct VoltraLinearProgressView: View {
     private let component: VoltraComponent
-    private let helper = VoltraHelper()
     
     public init(_ component: VoltraComponent) {
         self.component = component
@@ -15,8 +14,8 @@ public struct VoltraLinearProgressView: View {
         let startAtMs = params.startAtMs
         
         // Extract colors and styling from direct props
-        let trackColor = params.trackColor.flatMap { helper.translateColor($0) }
-        let progressColor = params.progressColor.flatMap { helper.translateColor($0) }
+        let trackColor = params.trackColor.flatMap { JSColorParser.parse($0) }
+        let progressColor = params.progressColor.flatMap { JSColorParser.parse($0) }
         let cornerRadius = params.cornerRadius.map { CGFloat($0) }
         let height = params.height.map { CGFloat($0) }
         

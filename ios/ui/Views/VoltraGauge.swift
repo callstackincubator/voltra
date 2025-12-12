@@ -2,7 +2,6 @@ import SwiftUI
 
 public struct VoltraGauge: View {
  private let component: VoltraComponent
-    private let voltraHelper: VoltraHelper = VoltraHelper()
     
     public init(_ component: VoltraComponent) {
         self.component = component
@@ -54,7 +53,7 @@ public struct VoltraGauge: View {
     @ViewBuilder
     private func applyTint(_ view: some View, _ optionalColor: String?) -> some View {
         if let color = optionalColor {
-            view.tint(voltraHelper.translateColor(color))
+            view.tint(JSColorParser.parse(color))
         } else {
             view
         }

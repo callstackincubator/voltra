@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct JSColorParser {
-    /// Parses Hex, RGB, RGBA, HSL, and HSLA strings into SwiftUI Color.
+    /// Parses Hex, RGB, RGBA, HSL, HSLA, and named color strings into SwiftUI Color.
     static func parse(_ value: Any?) -> Color? {
         guard let string = value as? String else { return nil }
         
@@ -10,9 +10,14 @@ struct JSColorParser {
         
         if trimmed.isEmpty { return nil }
         
-        // 1. Hex
+        // 1. Hex (with or without #)
         if trimmed.hasPrefix("#") {
             return parseHex(trimmed)
+        }
+        
+        // Check for hex without # prefix (6 or 8 hex digits)
+        if isHexColor(trimmed) {
+            return parseHex("#" + trimmed)
         }
         
         // 2. RGB / RGBA
@@ -25,16 +30,85 @@ struct JSColorParser {
             return parseHSL(trimmed)
         }
         
-        // "transparent" check
-        if trimmed == "transparent" { return .clear }
+        // 4. Named colors
+        if let namedColor = parseNamedColor(trimmed) {
+            return namedColor
+        }
         
         return nil
+    }
+    
+    /// Check if a string is a valid hex color (6 or 8 hex digits)
+    private static func isHexColor(_ string: String) -> Bool {
+        guard string.count == 6 || string.count == 8 else { return false }
+        // Check if all characters are valid hex digits (0-9, a-f)
+        let hexChars = CharacterSet(charactersIn: "0123456789abcdef")
+        return string.unicodeScalars.allSatisfy { hexChars.contains($0) }
+    }
+    
+    /// Parse named color strings
+    private static func parseNamedColor(_ name: String) -> Color? {
+        switch name {
+        case "red":
+            return .red
+        case "orange":
+            return .orange
+        case "yellow":
+            return .yellow
+        case "green":
+            return .green
+        case "mint":
+            if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
+                return .mint
+            }
+            return .primary
+        case "teal":
+            if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
+                return .teal
+            }
+            return .primary
+        case "cyan":
+            if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
+                return .cyan
+            }
+            return .primary
+        case "blue":
+            return .blue
+        case "indigo":
+            if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
+                return .indigo
+            }
+            return .primary
+        case "purple":
+            return .purple
+        case "pink":
+            return .pink
+        case "brown":
+            if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
+                return .brown
+            }
+            return .primary
+        case "white":
+            return .white
+        case "gray":
+            return .gray
+        case "black":
+            return .black
+        case "clear", "transparent":
+            return .clear
+        case "primary":
+            return .primary
+        case "secondary":
+            return .secondary
+        default:
+            return nil
+        }
     }
     
     // MARK: - Hex Parser
     // Supports #RGB, #RGBA, #RRGGBB, #RRGGBBAA
     private static func parseHex(_ hex: String) -> Color? {
-        var hexSanitized = hex.replacingOccurrences(of: "#", with: "")
+        let hexSanitized = hex.replacingOccurrences(of: "#", with: "")
         
         var rgb: UInt64 = 0
         Scanner(string: hexSanitized).scanHexInt64(&rgb)
