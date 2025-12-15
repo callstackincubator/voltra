@@ -16,7 +16,7 @@ class VoltraView: ExpoView {
   }
 
   private func setupHostingController() {
-    let view = Voltra(root: .empty, callback: { _ in }, activityId: viewId)
+    let view = Voltra(root: .empty, activityId: viewId)
     let hostingController = UIHostingController(rootView: AnyView(view))
     hostingController.view.backgroundColor = .clear
     addSubview(hostingController.view)
@@ -54,7 +54,7 @@ class VoltraView: ExpoView {
     hostingController?.view.removeFromSuperview()
 
     // This is not the most performant way to update the view, but it's the easiest way to get the job done.
-    let newView = Voltra(root: root, callback: { _ in }, activityId: viewId)
+    let newView = Voltra(root: root, activityId: viewId)
     let newHostingController = UIHostingController(rootView: AnyView(newView))
     newHostingController.view.backgroundColor = .clear
     newHostingController.view.frame = bounds

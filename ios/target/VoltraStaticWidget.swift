@@ -163,9 +163,9 @@ fileprivate func buildStaticContentView(data: Data, source: String) -> AnyView {
   let root = VoltraNode(from: json)
 
   return AnyView(
-    Voltra(root: root, callback: nil, activityId: "widget")
-      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    Voltra(root: root, activityId: "widget").frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   )
+
 }
 
 private extension View {
