@@ -34,9 +34,6 @@ public struct SymbolParameters: ComponentParameters {
     /// Image resize mode
     public let resizeMode: String?
 
-    /// JSON-encoded animation specification
-    public let animationSpec: String?
-
     enum CodingKeys: String, CodingKey {
         case name
         case type
@@ -46,7 +43,6 @@ public struct SymbolParameters: ComponentParameters {
         case tintColor
         case colors
         case resizeMode
-        case animationSpec
     }
 
     public init(from decoder: Decoder) throws {
@@ -59,6 +55,5 @@ public struct SymbolParameters: ComponentParameters {
         tintColor = try container.decodeIfPresent(String.self, forKey: .tintColor)
         colors = try container.decodeIfPresent(String.self, forKey: .colors)
         resizeMode = try container.decodeIfPresent(String.self, forKey: .resizeMode)
-        animationSpec = try container.decodeIfPresent(String.self, forKey: .animationSpec)
     }
 }

@@ -24,6 +24,4 @@ export type SymbolProps = VoltraBaseProps & {
   colors?: string
   /** Image resize mode */
   resizeMode?: string
-  /** JSON-encoded animation specification */
-  animationSpec?: string
 }

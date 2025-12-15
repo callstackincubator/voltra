@@ -61,27 +61,6 @@ public struct VoltraElement: Hashable {
         return expanded
     }
 
-    /// Parsed modifiers
-    public var modifiers: [VoltraModifier]? {
-        guard let modifiersArray = props?["modifiers"]?.arrayValue else {
-            return nil
-        }
-
-        return modifiersArray.compactMap { modifier in
-            // Modifiers are now arrays: [name, args]
-            guard let modifierArray = modifier.arrayValue,
-                  modifierArray.count >= 2,
-                  let name = modifierArray[0].stringValue,
-                  let argsDict = modifierArray[1].objectValue else {
-                return nil
-            }
-
-            // Expand short modifier name to full name
-            let fullName = expandModifierName(name)
-            return VoltraModifier(name: fullName, args: argsDict)
-        }
-    }
-
     // MARK: - Initialization
 
     /// Initialize from JSONValue (no serialization roundtrip)

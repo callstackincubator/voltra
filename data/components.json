@@ -122,12 +122,6 @@
           "type": "string",
           "optional": true,
           "description": "Image resize mode"
-        },
-        "animationSpec": {
-          "type": "string",
-          "optional": true,
-          "jsonEncoded": true,
-          "description": "JSON-encoded animation specification"
         }
       }
     },

@@ -1,9 +1,5 @@
 import SwiftUI
 
-/// Voltra: GlassContainer (iOS 18+)
-///
-/// Wraps child views in a GlassEffectContainer so any child that applies `.glassEffect` will be
-/// composed as a unified "liquid" surface. On iOS < 26, this simply renders the children.
 public struct VoltraGlassContainer: VoltraView {
     public typealias Parameters = GlassContainerParameters
 
