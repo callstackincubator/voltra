@@ -20,7 +20,7 @@
     "clean:plugin": "rm -rf plugin/build plugin/tsconfig.tsbuildinfo",
     "format:check": "prettier --check .",
     "lint": "expo-module eslint",
-    "lint:libOnly": "expo-module eslint --ignore-pattern 'example/*'",
+    "lint:libOnly": "expo-module eslint ./src",
     "test": "expo-module test",
     "prepare": "expo-module prepare && rm .eslintrc.js",
     "prepublishOnly": "expo-module prepublishOnly",

@@ -39,12 +39,13 @@ const generatePropsType = (component: ComponentDefinition): string => {
 }
 
 const generatePropsTypeFile = (component: ComponentDefinition, version: string): string => {
-  const header = `/* eslint-disable */
-// 🤖 AUTO-GENERATED from data/components.json
+  // Check if ReactNode import is needed
+  const needsReactNode = Object.values(component.parameters).some((param) => param.type === 'component')
+
+  const header = `// 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: ${version}
-
-import type { ReactNode } from 'react'
+${needsReactNode ? "\nimport type { ReactNode } from 'react'" : ''}
 
 import type { VoltraBaseProps } from '../baseProps'
 

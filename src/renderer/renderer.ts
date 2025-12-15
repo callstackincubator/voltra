@@ -22,7 +22,6 @@ import {
   isStrictMode,
   isSuspense,
 } from 'react-is'
-
 import { StyleSheet } from 'react-native'
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent'

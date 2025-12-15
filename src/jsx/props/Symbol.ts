@@ -1,9 +1,6 @@
-/* eslint-disable */
 // 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
-
-import type { ReactNode } from 'react'
 
 import type { VoltraBaseProps } from '../baseProps'
 
@@ -15,7 +12,17 @@ export type SymbolProps = VoltraBaseProps & {
   /** Symbol scale */
   scale?: 'default' | 'unspecified' | 'small' | 'medium' | 'large'
   /** Symbol weight */
-  weight?: 'unspecified' | 'ultraLight' | 'thin' | 'light' | 'regular' | 'medium' | 'semibold' | 'bold' | 'heavy' | 'black'
+  weight?:
+    | 'unspecified'
+    | 'ultraLight'
+    | 'thin'
+    | 'light'
+    | 'regular'
+    | 'medium'
+    | 'semibold'
+    | 'bold'
+    | 'heavy'
+    | 'black'
   /** Symbol size in points */
   size?: number
   /** Tint color for the symbol */

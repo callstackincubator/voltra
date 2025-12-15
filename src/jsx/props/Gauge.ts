@@ -1,4 +1,3 @@
-/* eslint-disable */
 // 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
@@ -21,7 +20,13 @@ export type GaugeProps = VoltraBaseProps & {
   /** Tint color for the gauge */
   tintColor?: string
   /** Visual style of the gauge */
-  gaugeStyle?: 'automatic' | 'accessoryLinear' | 'accessoryLinearCapacity' | 'accessoryCircular' | 'accessoryCircularCapacity' | 'linearCapacity'
+  gaugeStyle?:
+    | 'automatic'
+    | 'accessoryLinear'
+    | 'accessoryLinearCapacity'
+    | 'accessoryCircular'
+    | 'accessoryCircularCapacity'
+    | 'linearCapacity'
   /** Custom text for current value label */
   currentValueLabel?: ReactNode
   /** Text for minimum value label */

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { execSync } from 'node:child_process'
 
 import { generateSwiftParameters } from './generators/swift-parameters'
 import { generateTypeScriptJSX } from './generators/typescript-jsx'
@@ -63,8 +64,31 @@ const main = () => {
   writeFiles(TS_PROPS_OUTPUT_DIR, tsJsxResult.props)
   console.log()
 
-  // Step 4: Generate Swift parameter types
-  console.log('Step 4: Generating Swift parameter types...')
+  // Step 4: Lint and fix generated TypeScript files
+  console.log('Step 4: Running eslint --fix on generated TypeScript files...')
+  const generatedTsFiles = Object.keys(tsJsxResult.props).map((filename) => path.join(TS_PROPS_OUTPUT_DIR, filename))
+  if (generatedTsFiles.length > 0) {
+    const eslintCommand = `npx eslint --fix ${generatedTsFiles.join(' ')}`
+    try {
+      const result = require('child_process').execSync(eslintCommand, { encoding: 'utf-8', cwd: ROOT_DIR })
+      if (result) {
+        console.log('   ESLint output:', result.trim())
+      }
+    } catch (error: any) {
+      // ESLint might exit with code 1 if it fixed issues, which is normal
+      if (error.status !== 0 && error.status !== 1) {
+        console.warn('   Warning: ESLint exited with code', error.status)
+        if (error.stdout) console.log('   stdout:', error.stdout.trim())
+        if (error.stderr) console.log('   stderr:', error.stderr.trim())
+      } else if (error.stdout) {
+        console.log('   ESLint output:', error.stdout.trim())
+      }
+    }
+  }
+  console.log()
+
+  // Step 5: Generate Swift parameter types
+  console.log('Step 5: Generating Swift parameter types...')
   const swiftParameterFiles = generateSwiftParameters(componentsData)
   writeFiles(SWIFT_PARAMETERS_OUTPUT_DIR, swiftParameterFiles)
   console.log()
@@ -86,8 +110,8 @@ const main = () => {
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
   console.log()
 
-  // Step 5: Generate prop ID mappings
-  console.log('Step 5: Generating prop ID mappings...')
+  // Step 7: Generate prop ID mappings
+  console.log('Step 7: Generating prop ID mappings...')
   const propIdFiles = generatePropIds(componentsData)
   // Split files by destination
   const tsPropIdFiles: Record<string, string> = {}
