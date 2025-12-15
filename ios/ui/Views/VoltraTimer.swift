@@ -4,7 +4,6 @@ public struct VoltraTimer: VoltraView {
     public typealias Parameters = TimerParameters
 
     public let element: VoltraElement
-    private let helper = VoltraHelper()
 
     public init(_ element: VoltraElement) {
         self.element = element
