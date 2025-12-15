@@ -309,7 +309,7 @@ public class VoltraModule: Module {
       return wasLaunchedInBackground
     }
 
-    View(VoltraView.self) {
+    View(VoltraRN.self) {
       Prop("payload") { (view, payload: String) in
         view.setPayload(payload)
       }

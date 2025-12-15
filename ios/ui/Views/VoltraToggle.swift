@@ -1,8 +1,10 @@
 import SwiftUI
 import AppIntents
 
-public struct VoltraToggle: View {
-    private let element: VoltraElement
+public struct VoltraToggle: VoltraView {
+    public typealias Parameters = ToggleParameters
+
+    public let element: VoltraElement
     private let title: String
 
     @Environment(\.voltraEnvironment)
@@ -14,7 +16,6 @@ public struct VoltraToggle: View {
     }
 
     public var body: some View {
-        let params = element.parameters(ToggleParameters.self)
         Toggle(
             isOn: params.defaultValue ?? false,
             intent: VoltraInteractionIntent(

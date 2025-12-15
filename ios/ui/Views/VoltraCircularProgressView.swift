@@ -1,7 +1,9 @@
 import SwiftUI
 
-public struct VoltraCircularProgressView: View {
-    private let element: VoltraElement
+public struct VoltraCircularProgressView: VoltraView {
+    public typealias Parameters = CircularProgressViewParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element
@@ -9,7 +11,6 @@ public struct VoltraCircularProgressView: View {
 
     @ViewBuilder
     public var body: some View {
-        let params = element.parameters(CircularProgressViewParameters.self)
         let endAtMs = params.endAtMs
         let startAtMs = params.startAtMs
         

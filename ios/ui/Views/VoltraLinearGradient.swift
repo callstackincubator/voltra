@@ -1,7 +1,9 @@
 import SwiftUI
 
-public struct VoltraLinearGradient: View {
-    private let element: VoltraElement
+public struct VoltraLinearGradient: VoltraView {
+    public typealias Parameters = LinearGradientParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element
@@ -65,7 +67,6 @@ public struct VoltraLinearGradient: View {
     }
 
     public var body: some View {
-        let params = element.parameters(LinearGradientParameters.self)
         let gradient = buildGradient(params: params)
         let start = parsePoint(params.startPoint)
         let end = parsePoint(params.endPoint)

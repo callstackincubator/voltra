@@ -1,14 +1,15 @@
 import SwiftUI
 
-public struct VoltraText: View {
-    private let element: VoltraElement
+public struct VoltraText: VoltraView {
+    public typealias Parameters = TextParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element
     }
 
     public var body: some View {
-        let params = element.parameters(TextParameters.self)
         let textContent: String = {
             if let children = element.children, case .text(let text) = children {
                 return text

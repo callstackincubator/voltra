@@ -1,7 +1,9 @@
 import SwiftUI
 
-public struct VoltraDivider: View {
-    private let element: VoltraElement
+public struct VoltraDivider: VoltraView {
+    public typealias Parameters = EmptyParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element

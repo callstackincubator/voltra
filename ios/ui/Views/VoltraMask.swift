@@ -5,8 +5,10 @@ import SwiftUI
 /// Masks content using any Voltra element as the mask shape.
 /// The alpha channel of the maskElement determines visibility.
 @available(iOS 15.0, macOS 12.0, *)
-public struct VoltraMask: View {
-    private let element: VoltraElement
+public struct VoltraMask: VoltraView {
+    public typealias Parameters = EmptyParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element

@@ -1,8 +1,10 @@
 import SwiftUI
 import AppIntents
 
-public struct VoltraButton: View {
-    private let element: VoltraElement
+public struct VoltraButton: VoltraView {
+    public typealias Parameters = EmptyParameters
+
+    public let element: VoltraElement
     
     @Environment(\.voltraEnvironment)
     private var voltraEnvironment

@@ -2,7 +2,7 @@ import ExpoModulesCore
 import SwiftUI
 import UIKit
 
-class VoltraView: ExpoView {
+class VoltraRN: ExpoView {
   private var hostingController: UIHostingController<AnyView>?
   private var root: VoltraNode = .empty
 

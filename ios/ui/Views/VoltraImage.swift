@@ -2,8 +2,10 @@ import Foundation
 import SwiftUI
 import UIKit
 
-public struct VoltraImage: View {
-    private let element: VoltraElement
+public struct VoltraImage: VoltraView {
+    public typealias Parameters = ImageParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element
@@ -44,7 +46,6 @@ public struct VoltraImage: View {
 
     @ViewBuilder
     public var body: some View {
-        let params = element.parameters(ImageParameters.self)
         let resizeMode = params.resizeMode.lowercased()
         let baseImage = createImage(from: params.source)
             

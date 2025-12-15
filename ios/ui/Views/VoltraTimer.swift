@@ -1,7 +1,9 @@
 import SwiftUI
 
-public struct VoltraTimer: View {
-    private let element: VoltraElement
+public struct VoltraTimer: VoltraView {
+    public typealias Parameters = TimerParameters
+
+    public let element: VoltraElement
     private let helper = VoltraHelper()
 
     public init(_ element: VoltraElement) {
@@ -144,7 +146,6 @@ public struct VoltraTimer: View {
 
     @ViewBuilder
     public var body: some View {
-        let params = element.parameters(TimerParameters.self)
         if let range = progressRange(params: params) {
             if !autoHideOnEnd(params: params) || resolvedEndDate(params: params).map({ Date() < $0 }) ?? true {
                 // Timer component now only supports text mode

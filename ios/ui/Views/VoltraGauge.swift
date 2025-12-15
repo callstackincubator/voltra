@@ -1,14 +1,15 @@
 import SwiftUI
 
-public struct VoltraGauge: View {
-    private let element: VoltraElement
+public struct VoltraGauge: VoltraView {
+    public typealias Parameters = GaugeParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element
     }
 
     public var body: some View {
-        let params = element.parameters(GaugeParameters.self)
         let label = element.componentProp("label")
         let currentValueLabel = element.componentProp("currentValueLabel")
         let minimumValueLabel = element.componentProp("minimumValueLabel")

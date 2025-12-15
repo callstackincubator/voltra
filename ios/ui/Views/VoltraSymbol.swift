@@ -87,8 +87,10 @@ private func applyVariableEffect<V: View>(to view: V, spec: SymbolAnimationSpec.
 /// Voltra: Symbol
 ///
 /// Voltra rendering for SF Symbols with Expo Symbols API parity.
-public struct VoltraSymbol: View {
-    private let element: VoltraElement
+public struct VoltraSymbol: VoltraView {
+    public typealias Parameters = SymbolParameters
+
+    public let element: VoltraElement
 
     // Trigger for discrete animations
     @State private var animationTrigger = false
@@ -184,7 +186,6 @@ public struct VoltraSymbol: View {
     }
 
     public var body: some View {
-        let params = element.parameters(SymbolParameters.self)
         let image = Image(systemName: symbolName(params: params))
 
         applyStyling(params: params, to: image)

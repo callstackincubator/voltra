@@ -1,14 +1,15 @@
 import SwiftUI
 
-public struct VoltraHStack: View {
-    private let element: VoltraElement
+public struct VoltraHStack: VoltraView {
+    public typealias Parameters = HStackParameters
+
+    public let element: VoltraElement
 
     public init(_ element: VoltraElement) {
         self.element = element
     }
 
     public var body: some View {
-        let params = element.parameters(HStackParameters.self)
         let spacing = params.spacing
         let alignmentStr = params.alignment.lowercased()
 
