@@ -1,13 +1,13 @@
 import Foundation
 
-extension VoltraComponent {
+extension VoltraNode {
     /// Generic type-safe parameter accessor
     /// - Parameter type: The parameter struct type to decode
-    /// - Returns: Decoded parameters (uses empty dict if parametersRaw is nil)
+    /// - Returns: Decoded parameters (uses empty dict if props is nil)
     public func parameters<T: ComponentParameters>(_ type: T.Type) -> T {
-        // Use empty dictionary if parametersRaw is nil (components may have no parameters)
-        let raw = parametersRaw ?? [:]
-        // Convert AnyCodable dictionary to Data
+        // Use empty dictionary if props is nil (components may have no parameters)
+        let raw = props ?? [:]
+        // Convert JSONValue dictionary to Data
         let dict = raw.mapValues { $0.toAny() }
         guard let data = try? JSONSerialization.data(withJSONObject: dict, options: []) else {
             // Fallback to empty data if serialization fails
@@ -30,4 +30,3 @@ extension VoltraComponent {
         fatalError("Failed to decode parameters of type \(T.self) for component type \(self.type)")
     }
 }
-

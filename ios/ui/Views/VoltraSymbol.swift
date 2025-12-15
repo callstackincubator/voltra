@@ -88,13 +88,13 @@ private func applyVariableEffect<V: View>(to view: V, spec: SymbolAnimationSpec.
 ///
 /// Voltra rendering for SF Symbols with Expo Symbols API parity.
 public struct VoltraSymbol: View {
-    private let component: VoltraComponent
-    
+    private let node: VoltraNode
+
     // Trigger for discrete animations
     @State private var animationTrigger = false
 
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     private func symbolName(params: SymbolParameters) -> String {
@@ -184,11 +184,11 @@ public struct VoltraSymbol: View {
     }
 
     public var body: some View {
-        let params = component.parameters(SymbolParameters.self)
+        let params = node.parameters(SymbolParameters.self)
         let image = Image(systemName: symbolName(params: params))
-        
+
         applyStyling(params: params, to: image)
-            .applyStyle(component.style)
+            .applyStyle(node.style)
             .onAppear {
                 animationTrigger = true
             }

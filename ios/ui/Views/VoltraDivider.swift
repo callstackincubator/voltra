@@ -1,14 +1,14 @@
 import SwiftUI
 
 public struct VoltraDivider: View {
-    private let component: VoltraComponent
-    
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    private let node: VoltraNode
+
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     public var body: some View {
         Divider()
-            .applyStyle(component.style)
+            .applyStyle(node.style)
     }
 }

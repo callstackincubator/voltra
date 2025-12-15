@@ -151,18 +151,31 @@ fileprivate func buildStaticContentView(data: Data, source: String) -> AnyView {
   let normalized = normalizeJsonData(data) ?? (try? JSONSerialization.data(withJSONObject: [])) ?? Data("[]".utf8)
   let sanitized = sanitizeWidgetJson(normalized)
 
-  if let components = try? JSONDecoder().decode([VoltraComponent].self, from: sanitized) {
-    return AnyView(
-      Voltra(components: components, callback: nil, activityId: "widget")
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    )
-  } else {
+  guard let jsonString = String(data: sanitized, encoding: .utf8),
+        let json = try? JSONValue.parse(from: jsonString) else {
     return AnyView(
       Text("Failed to render widget")
         .font(.caption)
         .foregroundStyle(.secondary)
     )
   }
+
+  let nodes: [VoltraNode]
+  if case .array(let items) = json {
+    nodes = items.compactMap { item -> VoltraNode? in
+      guard case .object = item else { return nil }
+      return try? VoltraNode(from: item)
+    }
+  } else if case .object = json {
+    nodes = (try? VoltraNode(from: json)).map { [$0] } ?? []
+  } else {
+    nodes = []
+  }
+
+  return AnyView(
+    Voltra(nodes: nodes, callback: nil, activityId: "widget")
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  )
 }
 
 private extension View {
@@ -188,8 +201,15 @@ fileprivate func deepLinkScheme() -> String? {
 }
 
 fileprivate func extractRootIdentifier(_ data: Data) -> String? {
-  if let comps = try? JSONDecoder().decode([VoltraComponent].self, from: data), let first = comps.first {
-    return first.id ?? first.type
+  guard let jsonString = String(data: data, encoding: .utf8),
+        let json = try? JSONValue.parse(from: jsonString) else {
+    return nil
+  }
+
+  if case .array(let items) = json, let first = items.first, case .object = first {
+    if let node = try? VoltraNode(from: first) {
+      return node.id ?? node.type
+    }
   }
   return nil
 }

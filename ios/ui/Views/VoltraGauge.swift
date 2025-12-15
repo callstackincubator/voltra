@@ -1,19 +1,19 @@
 import SwiftUI
 
 public struct VoltraGauge: View {
- private let component: VoltraComponent
-    
-    public init(_ component: VoltraComponent) {
-        self.component = component
+ private let node: VoltraNode
+
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
-    
+
     public var body: some View {
-        let params = component.parameters(GaugeParameters.self)
-        let label = component.componentProp("label")
-        let currentValueLabel = component.componentProp("currentValueLabel")
-        let minimumValueLabel = component.componentProp("minimumValueLabel")
-        let maximumValueLabel = component.componentProp("maximumValueLabel")
+        let params = node.parameters(GaugeParameters.self)
+        let label = node.componentProp("label")
+        let currentValueLabel = node.componentProp("currentValueLabel")
+        let minimumValueLabel = node.componentProp("minimumValueLabel")
+        let maximumValueLabel = node.componentProp("maximumValueLabel")
         let value = params.value ?? 0.0
         let range = (params.minimumValue ?? 0.0)...(params.maximumValue ?? 1.0)
         let gaugeStyle = params.gaugeStyle

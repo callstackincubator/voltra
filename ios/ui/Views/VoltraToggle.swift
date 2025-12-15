@@ -2,29 +2,29 @@ import SwiftUI
 import AppIntents
 
 public struct VoltraToggle: View {
-    private let component: VoltraComponent
+    private let node: VoltraNode
     private let title: String
-    
+
     @Environment(\.voltraEnvironment)
     private var voltraEnvironment
-    
-    public init(_ component: VoltraComponent) {
-        self.component = component
-        self.title = component.props?["title"] as? String ?? ""
+
+    public init(_ node: VoltraNode) {
+        self.node = node
+        self.title = node.props?["title"]?.stringValue ?? ""
     }
 
     public var body: some View {
-        let params = component.parameters(ToggleParameters.self)
+        let params = node.parameters(ToggleParameters.self)
         Toggle(
             isOn: params.defaultValue ?? false,
             intent: VoltraInteractionIntent(
                 activityId: voltraEnvironment.activityId,
-                componentId: component.id ?? "unknown",
+                componentId: node.id ?? "unknown",
                 payload: (params.defaultValue ?? false) ? "false" : "true"
             )
         ) {
             Text(title)
         }
-        .applyStyle(component.style)
+        .applyStyle(node.style)
     }
 }

@@ -1,21 +1,22 @@
 import SwiftUI
 
 public struct VoltraText: View {
-    private let component: VoltraComponent
+    private let node: VoltraNode
 
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     public var body: some View {
-        let params = component.parameters(TextParameters.self)
+        let params = node.parameters(TextParameters.self)
         let textContent: String = {
-            if let children = component.children, case .text(let text) = children {
+            if let children = node.children, case .text(let text) = children {
                 return text
             }
             return ""
         }()
-        let style = StyleConverter.convert(component.style ?? [:])
+        let anyStyle = (node.style ?? [:]).mapValues { $0.toAny() }
+        let style = StyleConverter.convert(anyStyle)
         let textStyle = style.3;
 
         var lineSpacing: CGFloat {

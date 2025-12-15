@@ -1,14 +1,14 @@
 import SwiftUI
 
 public struct VoltraVStack: View {
-    private let component: VoltraComponent
+    private let node: VoltraNode
     
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     public var body: some View {
-        let params = component.parameters(VStackParameters.self)
+        let params = node.parameters(VStackParameters.self)
         let spacing = params.spacing
         let alignmentStr = params.alignment.lowercased()
         
@@ -20,8 +20,8 @@ public struct VoltraVStack: View {
         }
 
         VStack(alignment: alignment, spacing: spacing) {
-            VoltraChildrenView(component: component)
+            VoltraChildrenView(node: node)
         }
-        .applyStyle(component.style)
+        .applyStyle(node.style)
     }
 }

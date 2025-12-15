@@ -6,18 +6,18 @@ import SwiftUI
 /// The alpha channel of the maskElement determines visibility.
 @available(iOS 15.0, macOS 12.0, *)
 public struct VoltraMask: View {
-    private let component: VoltraComponent
-    
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    private let node: VoltraNode
+
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     public var body: some View {
-        // Get the mask element from component props
-        let maskElement = component.componentProp("maskElement")
-        
+        // Get the mask element from node props
+        let maskElement = node.componentProp("maskElement")
+
         // Render children as the content to be masked
-        VoltraChildrenView(component: component)
+        VoltraChildrenView(node: node)
             .mask {
                 if let maskElement = maskElement {
                     VoltraChildrenRenderer(children: maskElement)
@@ -26,7 +26,7 @@ public struct VoltraMask: View {
                     EmptyView()
                 }
             }
-            .applyStyle(component.style)
+            .applyStyle(node.style)
     }
 }
 

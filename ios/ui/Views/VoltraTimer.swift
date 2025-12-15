@@ -1,11 +1,11 @@
 import SwiftUI
 
 public struct VoltraTimer: View {
-    private let component: VoltraComponent
+    private let node: VoltraNode
     private let helper = VoltraHelper()
 
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     private func progressRange(params: TimerParameters) -> ClosedRange<Date>? {
@@ -144,16 +144,16 @@ public struct VoltraTimer: View {
 
     @ViewBuilder
     public var body: some View {
-        let params = component.parameters(TimerParameters.self)
+        let params = node.parameters(TimerParameters.self)
         if let range = progressRange(params: params) {
             if !autoHideOnEnd(params: params) || resolvedEndDate(params: params).map({ Date() < $0 }) ?? true {
                 // Timer component now only supports text mode
                 if countsDown(params: params) {
                     countdownTextView(params: params, range: range)
-                        .applyStyle(component.style)
+                        .applyStyle(node.style)
                 } else {
                     countUpTextView(params: params, range: range)
-                        .applyStyle(component.style)
+                        .applyStyle(node.style)
                 }
             }
         }

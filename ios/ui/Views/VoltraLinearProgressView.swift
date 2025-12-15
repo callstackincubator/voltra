@@ -1,26 +1,26 @@
 import SwiftUI
 
 public struct VoltraLinearProgressView: View {
-    private let component: VoltraComponent
-    
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    private let node: VoltraNode
+
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     @ViewBuilder
     public var body: some View {
-        let params = component.parameters(LinearProgressViewParameters.self)
+        let params = node.parameters(LinearProgressViewParameters.self)
         let endAtMs = params.endAtMs
         let startAtMs = params.startAtMs
-        
+
         // Extract colors and styling from direct props
         let trackColor = params.trackColor.flatMap { JSColorParser.parse($0) }
         let progressColor = params.progressColor.flatMap { JSColorParser.parse($0) }
         let cornerRadius = params.cornerRadius.map { CGFloat($0) }
         let height = params.height.map { CGFloat($0) }
-        
+
         // Get thumb component prop
-        let thumbComponent = component.componentProp("thumb")
+        let thumbComponent = node.componentProp("thumb")
         
         // Determine if we need custom style
         let needsCustomStyle = trackColor != nil || cornerRadius != nil || height != nil || thumbComponent != nil
@@ -60,11 +60,11 @@ public struct VoltraLinearProgressView: View {
         if needsCustomStyle {
             progressContent
                 .progressViewStyle(customStyle)
-                .applyStyle(component.style)
+                .applyStyle(node.style)
         } else {
             progressContent
                 .progressViewStyle(LinearProgressViewStyle())
-                .applyStyle(component.style)
+                .applyStyle(node.style)
         }
     }
 }

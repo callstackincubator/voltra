@@ -1,10 +1,10 @@
 import SwiftUI
 
 public struct VoltraLinearGradient: View {
-    private let component: VoltraComponent
-    
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    private let node: VoltraNode
+
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     // Map string to UnitPoint
@@ -65,20 +65,20 @@ public struct VoltraLinearGradient: View {
     }
 
     public var body: some View {
-        let params = component.parameters(LinearGradientParameters.self)
+        let params = node.parameters(LinearGradientParameters.self)
         let gradient = buildGradient(params: params)
         let start = parsePoint(params.startPoint)
         let end = parsePoint(params.endPoint)
-        
-        // Note: dither parameter is available in component.parameters["dither"] but SwiftUI's LinearGradient
+
+        // Note: dither parameter is available in node.parameters["dither"] but SwiftUI's LinearGradient
         // doesn't expose dithering control directly. This is handled automatically by the system.
         let lg = LinearGradient(gradient: gradient, startPoint: start, endPoint: end)
 
         // Use ZStack with a Rectangle that fills and is tinted by the gradient, then overlay children.
         return ZStack {
             Rectangle().fill(lg)
-            VoltraChildrenView(component: component)
+            VoltraChildrenView(node: node)
         }
-        .applyStyle(component.style)
+        .applyStyle(node.style)
     }
 }

@@ -1,16 +1,16 @@
 import SwiftUI
 
 public struct VoltraZStack: View {
-    private let component: VoltraComponent
-    
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    private let node: VoltraNode
+
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
 
     public var body: some View {
-        let params = component.parameters(ZStackParameters.self)
+        let params = node.parameters(ZStackParameters.self)
         let alignmentStr = params.alignment?.lowercased()
-        
+
         let alignment: Alignment = switch alignmentStr {
         case "leading": .leading
         case "trailing": .trailing
@@ -23,10 +23,10 @@ public struct VoltraZStack: View {
         case "center": .center
         default: .center
         }
-        
+
         ZStack(alignment: alignment) {
-            VoltraChildrenView(component: component)
+            VoltraChildrenView(node: node)
         }
-        .applyStyle(component.style)
+        .applyStyle(node.style)
     }
 }

@@ -2,23 +2,23 @@ import SwiftUI
 import AppIntents
 
 public struct VoltraButton: View {
-    private let component: VoltraComponent
+    private let node: VoltraNode
     
     @Environment(\.voltraEnvironment)
     private var voltraEnvironment
     
-    public init(_ component: VoltraComponent) {
-        self.component = component
+    public init(_ node: VoltraNode) {
+        self.node = node
     }
     
     public var body: some View {
-        Button(intent: VoltraInteractionIntent(activityId: voltraEnvironment.activityId, componentId: component.id!), label: {
-            if let children = component.children {
+        Button(intent: VoltraInteractionIntent(activityId: voltraEnvironment.activityId, componentId: node.id!), label: {
+            if let children = node.children {
                 switch children {
-                case .component(let childComponent):
-                    VoltraChildrenView(components: [childComponent])
-                case .components(let components):
-                    VoltraChildrenView(components: components)
+                case .node(let childNode):
+                    VoltraChildrenView(nodes: [childNode])
+                case .nodes(let nodes):
+                    VoltraChildrenView(nodes: nodes)
                 case .text(let text):
                     Text(text)
                 }
@@ -27,6 +27,6 @@ public struct VoltraButton: View {
             }
         })
         .buttonStyle(.plain)
-        .applyStyle(component.style)
+        .applyStyle(node.style)
     }
 }

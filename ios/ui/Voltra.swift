@@ -1,19 +1,19 @@
 import SwiftUI
 
 struct VoltraEnvironment {
-    /// Callback for component state changes
-    let callback: (VoltraComponent) -> Void
+    /// Callback for node state changes
+    let callback: (VoltraNode) -> Void
     
     /// Activity ID for Live Activity interactions
     let activityId: String
 }
 
 public struct Voltra: View {
-    /// VoltraComponent state change handler
-    public typealias Handler = (VoltraComponent) -> Void
+    /// VoltraNode state change handler
+    public typealias Handler = (VoltraNode) -> Void
 
-    /// Pre-parsed components
-    public var components: [VoltraComponent]
+    /// Pre-parsed nodes
+    public var nodes: [VoltraNode]
 
     /// Callback handler for updates
     public var callback: Handler? = { _ in }
@@ -23,18 +23,18 @@ public struct Voltra: View {
 
     /// Initialize Voltra
     ///
-    /// - Parameter components: Pre-parsed array of VoltraComponent
-    /// - Parameter callback: Handler for component interactions
+    /// - Parameter nodes: Pre-parsed array of VoltraNode
+    /// - Parameter callback: Handler for node interactions
     /// - Parameter activityId: Activity ID for Live Activity interactions
-    public init(components: [VoltraComponent], callback: Handler?, activityId: String) {
-        self.components = components
+    public init(nodes: [VoltraNode], callback: Handler?, activityId: String) {
+        self.nodes = nodes
         self.callback = callback
         self.activityId = activityId
     }
 
     /// Generated body for SwiftUI
     public var body: some View {
-        VoltraChildrenView(components: components)
+        VoltraChildrenView(nodes: nodes)
             .environment(\.voltraEnvironment, VoltraEnvironment(
                 callback: callback ?? { _ in },
                 activityId: activityId
@@ -42,27 +42,27 @@ public struct Voltra: View {
     }
 }
 
-/// Renders an array of VoltraComponents using ForEach with stable identity
+/// Renders an array of VoltraNodes using ForEach with stable identity
 public struct VoltraChildrenView: View {
-    public let components: [VoltraComponent]
+    public let nodes: [VoltraNode]
     
-    public init(components: [VoltraComponent]) {
-        self.components = components
+    public init(nodes: [VoltraNode]) {
+        self.nodes = nodes
     }
     
-    /// Convenience initializer that extracts children from a component
-    public init(component: VoltraComponent) {
-        if let children = component.children {
+    /// Convenience initializer that extracts children from a node
+    public init(node: VoltraNode) {
+        if let children = node.children {
             switch children {
-            case .component(let childComponent):
-                self.components = [childComponent]
-            case .components(let childComponents):
-                self.components = childComponents
+            case .node(let childNode):
+                self.nodes = [childNode]
+            case .nodes(let childNodes):
+                self.nodes = childNodes
             case .text:
-                self.components = []
+                self.nodes = []
             }
         } else {
-            self.components = []
+            self.nodes = []
         }
     }
     
@@ -70,10 +70,10 @@ public struct VoltraChildrenView: View {
     public init?(children: VoltraChildren?) {
         guard let children = children else { return nil }
         switch children {
-        case .component(let component):
-            self.components = [component]
-        case .components(let components):
-            self.components = components
+        case .node(let node):
+            self.nodes = [node]
+        case .nodes(let nodes):
+            self.nodes = nodes
         case .text:
             return nil
         }
@@ -81,88 +81,88 @@ public struct VoltraChildrenView: View {
     
     public var body: some View {
         // Use stable identifiers for SwiftUI identity to avoid flicker on updates.
-        // Prefer the provided component.id; fall back to array index when absent.
-        let items: [(id: String, component: VoltraComponent)] = components.enumerated().map { (offset, comp) in
-            (comp.id ?? "idx_\(offset)", comp)
+        // Prefer the provided node.id; fall back to array index when absent.
+        let items: [(id: String, node: VoltraNode)] = nodes.enumerated().map { (offset, node) in
+            (node.id ?? "idx_\(offset)", node)
         }
         ForEach(items, id: \.id) { item in
-            VoltraChildView(component: item.component)
+            VoltraChildView(node: item.node)
         }
     }
 }
 
 public struct VoltraChildView: View {
-    public let component: VoltraComponent
+    public let node: VoltraNode
     
-    public init(component: VoltraComponent) {
-        self.component = component
+    public init(node: VoltraNode) {
+        self.node = node
     }
     
     public var body: some View {
-        componentView
-            .id(component.id)
+        nodeView
+            .id(node.id)
     }
     
     // swiftlint:disable:next cyclomatic_complexity function_body_length
     @ViewBuilder
-    private var componentView: some View {
-        switch component.type {
+    private var nodeView: some View {
+        switch node.type {
         case "Button":
-            VoltraButton(component)
+            VoltraButton(node)
 
         case "VStack":
-            VoltraVStack(component)
+            VoltraVStack(node)
 
         case "HStack":
-            VoltraHStack(component)
+            VoltraHStack(node)
 
         case "ZStack":
-            VoltraZStack(component)
+            VoltraZStack(node)
 
         case "Text":
-            VoltraText(component)
+            VoltraText(node)
 
         case "Image":
-            VoltraImage(component)
+            VoltraImage(node)
 
         case "Symbol":
-            VoltraSymbol(component)
+            VoltraSymbol(node)
 
         case "Divider":
-            VoltraDivider(component)
+            VoltraDivider(node)
 
         case "Spacer":
-            VoltraSpacer(component)
+            VoltraSpacer(node)
 
         case "Label":
-            VoltraLabel(component)
+            VoltraLabel(node)
 
         case "Toggle":
-            VoltraToggle(component)
+            VoltraToggle(node)
 
         case "Gauge":
-            VoltraGauge(component)
+            VoltraGauge(node)
 
         case "LinearProgressView":
-            VoltraLinearProgressView(component)
+            VoltraLinearProgressView(node)
 
         case "CircularProgressView":
-            VoltraCircularProgressView(component)
+            VoltraCircularProgressView(node)
 
         case "Timer":
-            VoltraTimer(component)
+            VoltraTimer(node)
 
         case "GroupBox":
-            VoltraGroupBox(component)
+            VoltraGroupBox(node)
 
         case "LinearGradient":
-            VoltraLinearGradient(component)
+            VoltraLinearGradient(node)
 
         case "GlassContainer":
-            VoltraGlassContainer(component)
+            VoltraGlassContainer(node)
 
         case "Mask":
-            VoltraMask(component)
+            VoltraMask(node)
 
         default:
             EmptyView()

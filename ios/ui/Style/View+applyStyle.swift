@@ -1,9 +1,10 @@
 import SwiftUI
 
 extension View {
-    func applyStyle(_ optionalStyle: [String: Any]?) -> some View {
+    func applyStyle(_ optionalStyle: [String: JSONValue]?) -> some View {
         self.voltraIfLet(optionalStyle) { content, rawStyle in
-            let style = StyleConverter.convert(rawStyle)
+            let anyStyle = rawStyle.mapValues { $0.toAny() }
+            let style = StyleConverter.convert(anyStyle)
             return self.applyStyle(style)
         }
     }
