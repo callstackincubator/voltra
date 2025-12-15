@@ -128,12 +128,7 @@ const COMPONENTS_DATA = [
     renderExample: () => (
       <VoltraView style={{ width: '100%', height: 80, backgroundColor: '#1E293B', padding: 16 }}>
         <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12 }}>
-          <Voltra.Label>
-            <Voltra.Text>Primary Label</Voltra.Text>
-          </Voltra.Label>
-          <Voltra.Label>
-            <Voltra.Text>Secondary Label</Voltra.Text>
-          </Voltra.Label>
+          <Voltra.Label title="Primary Label" systemImage="star.fill" style={{ color: '#FFFFFF' }} />
         </Voltra.VStack>
       </VoltraView>
     ),
