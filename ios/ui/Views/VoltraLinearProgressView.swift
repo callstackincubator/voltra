@@ -1,15 +1,15 @@
 import SwiftUI
 
 public struct VoltraLinearProgressView: View {
-    private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
     @ViewBuilder
     public var body: some View {
-        let params = node.parameters(LinearProgressViewParameters.self)
+        let params = element.parameters(LinearProgressViewParameters.self)
         let endAtMs = params.endAtMs
         let startAtMs = params.startAtMs
 
@@ -20,7 +20,7 @@ public struct VoltraLinearProgressView: View {
         let height = params.height.map { CGFloat($0) }
 
         // Get thumb component prop
-        let thumbComponent = node.componentProp("thumb")
+        let thumbComponent = element.componentProp("thumb")
         
         // Determine if we need custom style
         let needsCustomStyle = trackColor != nil || cornerRadius != nil || height != nil || thumbComponent != nil
@@ -60,11 +60,11 @@ public struct VoltraLinearProgressView: View {
         if needsCustomStyle {
             progressContent
                 .progressViewStyle(customStyle)
-                .applyStyle(node.style)
+                .applyStyle(element.style)
         } else {
             progressContent
                 .progressViewStyle(LinearProgressViewStyle())
-                .applyStyle(node.style)
+                .applyStyle(element.style)
         }
     }
 }
@@ -75,7 +75,7 @@ private struct VoltraLinearProgressStyle: ProgressViewStyle {
     var trackTint: Color
     var cornerRadius: CGFloat?
     var explicitHeight: CGFloat?
-    var thumbComponent: VoltraChildren?
+    var thumbComponent: VoltraNode?
 
     func makeBody(configuration: Configuration) -> some View {
         let fraction = max(0, min(configuration.fractionCompleted ?? 0, 1))
@@ -99,7 +99,7 @@ private struct VoltraLinearProgressBar: View {
     var trackTint: Color
     var cornerRadius: CGFloat?
     var explicitHeight: CGFloat?
-    var thumbComponent: VoltraChildren?
+    var thumbComponent: VoltraNode?
     
     var body: some View {
         let baseHeight = explicitHeight ?? 4
@@ -124,7 +124,7 @@ private struct VoltraLinearProgressBar: View {
                 // Render thumb component at progress position
                 if let thumbComponent = thumbComponent {
                     let offsetX = (totalWidth * CGFloat(fraction))
-                    VoltraChildrenRenderer(children: thumbComponent)
+                    thumbComponent
                         .offset(x: offsetX)
                 }
             }

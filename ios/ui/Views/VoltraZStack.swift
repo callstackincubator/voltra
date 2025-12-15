@@ -1,14 +1,14 @@
 import SwiftUI
 
 public struct VoltraZStack: View {
-    private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
     public var body: some View {
-        let params = node.parameters(ZStackParameters.self)
+        let params = element.parameters(ZStackParameters.self)
         let alignmentStr = params.alignment?.lowercased()
 
         let alignment: Alignment = switch alignmentStr {
@@ -25,8 +25,8 @@ public struct VoltraZStack: View {
         }
 
         ZStack(alignment: alignment) {
-            VoltraChildrenView(node: node)
+            element.children ?? .empty
         }
-        .applyStyle(node.style)
+        .applyStyle(element.style)
     }
 }

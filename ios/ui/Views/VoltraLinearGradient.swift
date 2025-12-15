@@ -1,10 +1,10 @@
 import SwiftUI
 
 public struct VoltraLinearGradient: View {
-    private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
     // Map string to UnitPoint
@@ -65,7 +65,7 @@ public struct VoltraLinearGradient: View {
     }
 
     public var body: some View {
-        let params = node.parameters(LinearGradientParameters.self)
+        let params = element.parameters(LinearGradientParameters.self)
         let gradient = buildGradient(params: params)
         let start = parsePoint(params.startPoint)
         let end = parsePoint(params.endPoint)
@@ -77,8 +77,8 @@ public struct VoltraLinearGradient: View {
         // Use ZStack with a Rectangle that fills and is tinted by the gradient, then overlay children.
         return ZStack {
             Rectangle().fill(lg)
-            VoltraChildrenView(node: node)
+            element.children ?? .empty
         }
-        .applyStyle(node.style)
+        .applyStyle(element.style)
     }
 }

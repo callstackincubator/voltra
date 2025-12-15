@@ -3,10 +3,10 @@ import SwiftUI
 import UIKit
 
 public struct VoltraImage: View {
-    private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
     /// Creates an Image from the source parameter, falling back to a system photo icon if invalid or not found
@@ -44,7 +44,7 @@ public struct VoltraImage: View {
 
     @ViewBuilder
     public var body: some View {
-        let params = node.parameters(ImageParameters.self)
+        let params = element.parameters(ImageParameters.self)
         let resizeMode = params.resizeMode.lowercased()
         let baseImage = createImage(from: params.source)
             
@@ -55,31 +55,31 @@ public struct VoltraImage: View {
                     .resizable()
                     .scaledToFill()
                     .clipped()
-                    .applyStyle(node.style)
+                    .applyStyle(element.style)
 
             case "contain":
                 // Fit within container, may leave space
                 baseImage
                     .resizable()
                     .scaledToFit()
-                    .applyStyle(node.style)
+                    .applyStyle(element.style)
 
             case "stretch":
                 // Stretch to fill, may distort
                 baseImage
                     .resizable()
-                    .applyStyle(node.style)
+                    .applyStyle(element.style)
 
             case "repeat":
                 // Tile the image
                 baseImage
                     .resizable(resizingMode: .tile)
-                    .applyStyle(node.style)
+                    .applyStyle(element.style)
 
             case "center":
                 // Center without scaling
                 baseImage
-                    .applyStyle(node.style)
+                    .applyStyle(element.style)
 
             default:
                 // Default to cover
@@ -87,7 +87,7 @@ public struct VoltraImage: View {
                     .resizable()
                     .scaledToFill()
                     .clipped()
-                    .applyStyle(node.style)
+                    .applyStyle(element.style)
         }
     }
 }

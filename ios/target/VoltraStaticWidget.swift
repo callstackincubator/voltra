@@ -160,20 +160,10 @@ fileprivate func buildStaticContentView(data: Data, source: String) -> AnyView {
     )
   }
 
-  let nodes: [VoltraNode]
-  if case .array(let items) = json {
-    nodes = items.compactMap { item -> VoltraNode? in
-      guard case .object = item else { return nil }
-      return try? VoltraNode(from: item)
-    }
-  } else if case .object = json {
-    nodes = (try? VoltraNode(from: json)).map { [$0] } ?? []
-  } else {
-    nodes = []
-  }
+  let root = VoltraNode(from: json)
 
   return AnyView(
-    Voltra(nodes: nodes, callback: nil, activityId: "widget")
+    Voltra(root: root, callback: nil, activityId: "widget")
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   )
 }
@@ -206,10 +196,9 @@ fileprivate func extractRootIdentifier(_ data: Data) -> String? {
     return nil
   }
 
-  if case .array(let items) = json, let first = items.first, case .object = first {
-    if let node = try? VoltraNode(from: first) {
-      return node.id ?? node.type
-    }
+  let root = VoltraNode(from: json)
+  if case .element(let element) = root {
+    return element.id ?? element.type
   }
   return nil
 }

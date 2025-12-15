@@ -1,21 +1,21 @@
 import SwiftUI
 
 public struct VoltraText: View {
-    private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
     public var body: some View {
-        let params = node.parameters(TextParameters.self)
+        let params = element.parameters(TextParameters.self)
         let textContent: String = {
-            if let children = node.children, case .text(let text) = children {
+            if let children = element.children, case .text(let text) = children {
                 return text
             }
             return ""
         }()
-        let anyStyle = (node.style ?? [:]).mapValues { $0.toAny() }
+        let anyStyle = (element.style ?? [:]).mapValues { $0.toAny() }
         let style = StyleConverter.convert(anyStyle)
         let textStyle = style.3;
 
@@ -50,6 +50,6 @@ public struct VoltraText: View {
             .voltraIfLet(params.numberOfLines) { view, numberOfLines in
                 view.lineLimit(Int(numberOfLines))
             }
-            .applyStyle(style)
+            .applyStyle(element.style)
     }
 }

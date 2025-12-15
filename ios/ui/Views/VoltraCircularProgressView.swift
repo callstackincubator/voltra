@@ -1,15 +1,15 @@
 import SwiftUI
 
 public struct VoltraCircularProgressView: View {
-    private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
     @ViewBuilder
     public var body: some View {
-        let params = node.parameters(CircularProgressViewParameters.self)
+        let params = element.parameters(CircularProgressViewParameters.self)
         let endAtMs = params.endAtMs
         let startAtMs = params.startAtMs
         
@@ -50,12 +50,12 @@ public struct VoltraCircularProgressView: View {
 
             progressContent
                 .progressViewStyle(customStyle)
-                .applyStyle(node.style)
+                .applyStyle(element.style)
         } else {
             progressContent
                 .progressViewStyle(.circular)
                 .tint(progressColor)
-                .applyStyle(node.style)
+                .applyStyle(element.style)
         }
     }
 }

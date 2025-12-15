@@ -1,23 +1,23 @@
 import SwiftUI
 
 public struct VoltraLabel: View {
-    private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
     public var body: some View {
-        let params = node.parameters(LabelParameters.self)
+        let params = element.parameters(LabelParameters.self)
         if let systemImage = params.systemImage {
             Label(
                 params.title ?? "Label",
                 systemImage: systemImage
             )
-            .applyStyle(node.style)
+            .applyStyle(element.style)
         } else {
-            VoltraText(node)
-                .applyStyle(node.style)
+            VoltraText(element)
+                .applyStyle(element.style)
         }
     }
 }

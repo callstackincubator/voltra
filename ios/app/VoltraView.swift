@@ -4,7 +4,7 @@ import UIKit
 
 class VoltraView: ExpoView {
   private var hostingController: UIHostingController<AnyView>?
-  private var nodes: [VoltraNode] = []
+  private var root: VoltraNode = .empty
 
   /// Unique identifier for this view instance, used as 'source' in interaction events
   private var viewId: String = UUID().uuidString
@@ -16,7 +16,7 @@ class VoltraView: ExpoView {
   }
 
   private func setupHostingController() {
-    let view = Voltra(nodes: [], callback: { _ in }, activityId: viewId)
+    let view = Voltra(root: .empty, callback: { _ in }, activityId: viewId)
     let hostingController = UIHostingController(rootView: AnyView(view))
     hostingController.view.backgroundColor = .clear
     addSubview(hostingController.view)
@@ -41,21 +41,10 @@ class VoltraView: ExpoView {
   private func parseAndUpdatePayload(_ jsonString: String) {
     do {
       let json = try JSONValue.parse(from: jsonString)
-
-      // Try parsing as array first (most common case), then as single node
-      if case .array(let items) = json {
-        nodes = try items.compactMap { item -> VoltraNode? in
-          guard case .object = item else { return nil }
-          return try VoltraNode(from: item)
-        }
-      } else if case .object = json {
-        nodes = [try VoltraNode(from: json)]
-      } else {
-        nodes = []
-      }
+      root = VoltraNode(from: json)
     } catch {
       print("Error setting payload in VoltraView: \(error)")
-      nodes = []
+      root = .empty
     }
 
     updateView()
@@ -65,7 +54,7 @@ class VoltraView: ExpoView {
     hostingController?.view.removeFromSuperview()
 
     // This is not the most performant way to update the view, but it's the easiest way to get the job done.
-    let newView = Voltra(nodes: nodes, callback: { _ in }, activityId: viewId)
+    let newView = Voltra(root: root, callback: { _ in }, activityId: viewId)
     let newHostingController = UIHostingController(rootView: AnyView(newView))
     newHostingController.view.backgroundColor = .clear
     newHostingController.view.frame = bounds

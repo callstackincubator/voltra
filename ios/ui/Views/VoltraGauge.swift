@@ -1,19 +1,18 @@
 import SwiftUI
 
 public struct VoltraGauge: View {
- private let node: VoltraNode
+    private let element: VoltraElement
 
-    public init(_ node: VoltraNode) {
-        self.node = node
+    public init(_ element: VoltraElement) {
+        self.element = element
     }
 
-
     public var body: some View {
-        let params = node.parameters(GaugeParameters.self)
-        let label = node.componentProp("label")
-        let currentValueLabel = node.componentProp("currentValueLabel")
-        let minimumValueLabel = node.componentProp("minimumValueLabel")
-        let maximumValueLabel = node.componentProp("maximumValueLabel")
+        let params = element.parameters(GaugeParameters.self)
+        let label = element.componentProp("label")
+        let currentValueLabel = element.componentProp("currentValueLabel")
+        let minimumValueLabel = element.componentProp("minimumValueLabel")
+        let maximumValueLabel = element.componentProp("maximumValueLabel")
         let value = params.value ?? 0.0
         let range = (params.minimumValue ?? 0.0)...(params.maximumValue ?? 1.0)
         let gaugeStyle = params.gaugeStyle
@@ -60,11 +59,7 @@ public struct VoltraGauge: View {
     }
     
     @ViewBuilder
-    private func buildNestedView(_ optionalNestedView: VoltraChildren?) -> some View {
-        if let nestedView = optionalNestedView {
-            VoltraChildrenRenderer(children: nestedView)
-        } else {
-            EmptyView()
-        }
+    private func buildNestedView(_ nestedView: VoltraNode) -> some View {
+        nestedView
     }
 }

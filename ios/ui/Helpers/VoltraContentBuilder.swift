@@ -2,17 +2,17 @@ import SwiftUI
 import WidgetKit
 
 struct VoltraContentBuilder {
-    static func build(nodes: [VoltraNode], source: String, activityId: String, activityBackgroundTint: String? = nil) -> AnyView {
+    static func build(root: VoltraNode, source: String, activityId: String, activityBackgroundTint: String? = nil) -> AnyView {
         let base: AnyView = {
-            // Use pre-parsed nodes directly
+            // Use pre-parsed root node directly
             return AnyView(
-                Voltra(nodes: nodes, callback: { node in
+                Voltra(root: root, callback: { element in
                     VoltraEventLogger.writeEvent([
                         "name": "voltra_event",
                         "source": source,
                         "timestamp": Date().timeIntervalSince1970,
-                        "identifier": node.id,
-                        "nodeType": node.type,
+                        "identifier": element.id,
+                        "nodeType": element.type,
                     ])
                 }, activityId: activityId)
                 .onAppear {
