@@ -6,7 +6,6 @@ import { generateSwiftParameters } from './generators/swift-parameters'
 import { generateTypeScriptJSX } from './generators/typescript-jsx'
 import { generateComponentIds } from './generators/component-ids'
 import { generatePropIds } from './generators/prop-ids'
-import { generateComponentPropsRegistryFiles } from './generators/component-props-registry'
 import type { ComponentsData } from './types'
 import { validateComponentsSchema } from './validate-components'
 
@@ -70,12 +69,6 @@ const main = () => {
   writeFiles(SWIFT_PARAMETERS_OUTPUT_DIR, swiftParameterFiles)
   console.log()
 
-  // Step 5: Generate component props registry
-  console.log('Step 5: Generating component props registry...')
-  const componentPropsRegistryFiles = generateComponentPropsRegistryFiles(componentsData)
-  writeFiles(TS_JSX_OUTPUT_DIR, componentPropsRegistryFiles)
-  console.log()
-
   // Step 6: Generate component ID mappings
   console.log('Step 6: Generating component ID mappings...')
   const componentIdFiles = generateComponentIds(componentsData)
@@ -93,8 +86,8 @@ const main = () => {
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
   console.log()
 
-  // Step 7: Generate prop ID mappings
-  console.log('Step 7: Generating prop ID mappings...')
+  // Step 5: Generate prop ID mappings
+  console.log('Step 5: Generating prop ID mappings...')
   const propIdFiles = generatePropIds(componentsData)
   // Split files by destination
   const tsPropIdFiles: Record<string, string> = {}
@@ -115,7 +108,6 @@ const main = () => {
   console.log(
     `   TypeScript props and components: ${Object.keys(tsJsxResult.props).length + Object.keys(tsJsxResult.jsx).length} files in src/jsx/`
   )
-  console.log(`   Component props registry: ${Object.keys(componentPropsRegistryFiles).length} files in src/jsx/`)
   console.log(`   Swift parameters: ${Object.keys(swiftParameterFiles).length} files in ios/ui/Generated/Parameters/`)
   console.log(
     `   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files`

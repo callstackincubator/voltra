@@ -34,13 +34,6 @@ import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher'
 import { getRenderCache } from './render-cache'
 import { VoltraVariants } from './types'
 
-// Registry for component prop names (component name -> set of prop names that can contain JSX)
-const COMPONENT_PROP_REGISTRY = new Map<string, Set<string>>()
-
-export function registerComponentProps(componentName: string, propNames: string[]): void {
-  COMPONENT_PROP_REGISTRY.set(componentName, new Set(propNames))
-}
-
 // Modifier name shortening map
 const MODIFIER_NAME_MAP: Record<string, string> = {
   frame: 'f',
@@ -455,7 +448,6 @@ export function transformProps(
   componentName?: string
 ): Record<string | number, VoltraPropValue> {
   const transformed: Record<string | number, VoltraPropValue> = {}
-  const componentProps = componentName ? COMPONENT_PROP_REGISTRY.get(componentName) : null
 
   for (const [key, value] of Object.entries(props)) {
     if (key === 'modifiers' && Array.isArray(value)) {
@@ -472,27 +464,22 @@ export function transformProps(
     } else if (key === 'style') {
       // Compress style property names and use prop ID 0 (style is always ID 0)
       transformed[0] = compressStyleObject(value)
+    } else if (isReactNode(value)) {
+      // Serialize JSX elements directly to component objects (no JSON.stringify!)
+      const serializedComponent = renderNode(value, {
+        registry: getContextRegistry(),
+        inStringOnlyContext: false,
+      })
+      const propId = PROP_NAME_TO_ID[key]
+      transformed[propId ?? key] = serializedComponent
     } else {
-      // Check if this prop can contain JSX elements
-      const canContainJSX = componentProps?.has(key) || isReactNode(value)
-
-      if (canContainJSX && isReactNode(value)) {
-        // Serialize JSX elements directly to component objects (no JSON.stringify!)
-        const serializedComponent = renderNode(value, {
-          registry: getContextRegistry(),
-          inStringOnlyContext: false,
-        })
-        const propId = PROP_NAME_TO_ID[key]
-        transformed[propId ?? key] = serializedComponent
+      // Regular primitive prop handling
+      const propId = PROP_NAME_TO_ID[key]
+      if (propId !== undefined) {
+        transformed[propId] = value as VoltraPropValue
       } else {
-        // Regular primitive prop handling
-        const propId = PROP_NAME_TO_ID[key]
-        if (propId !== undefined) {
-          transformed[propId] = value as VoltraPropValue
-        } else {
-          // Fallback: keep original key if not in mapping (for backwards compatibility)
-          transformed[key] = value as VoltraPropValue
-        }
+        // Fallback: keep original key if not in mapping (for backwards compatibility)
+        transformed[key] = value as VoltraPropValue
       }
     }
   }

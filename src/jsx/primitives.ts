@@ -1,6 +1,3 @@
-// Import component props registry to register component props
-import './component-props-registry'
-
 export * from './Button'
 export * from './CircularProgressView'
 export * from './Divider'
