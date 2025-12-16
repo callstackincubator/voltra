@@ -21,6 +21,13 @@ const TESTING_GROUNDS_SECTIONS = [
       'Explore all available Voltra components including Button, Text, VStack, HStack, ZStack, Image, and more.',
     route: '/testing-grounds/components',
   },
+  {
+    id: 'image-preloading',
+    title: 'Image Preloading',
+    description:
+      'Test image preloading functionality for Live Activities. Download images to App Group storage and verify they appear in Live Activities.',
+    route: '/testing-grounds/image-preloading',
+  },
   // Add more sections here as they are implemented
 ]
 

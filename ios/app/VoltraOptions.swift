@@ -74,3 +74,56 @@ public struct DismissalPolicyOptions: Record {
   public init() {}
 }
 
+/// Options for preloading a single image
+public struct PreloadImageOptions: Record {
+  /// The URL to download the image from
+  @Field
+  public var url: String
+  
+  /// The key to use when referencing this image (used as assetName)
+  @Field
+  public var key: String
+  
+  /// HTTP method to use (GET, POST, PUT). Defaults to GET.
+  @Field
+  public var method: String?
+  
+  /// Optional HTTP headers to include in the request
+  @Field
+  public var headers: [String: String]?
+  
+  public init() {}
+}
+
+/// Result of a failed image preload
+public struct PreloadImageFailure: Record {
+  @Field
+  public var key: String
+  
+  @Field
+  public var error: String
+  
+  public init() {}
+  
+  public init(key: String, error: String) {
+    self.key = key
+    self.error = error
+  }
+}
+
+/// Result of preloading images
+public struct PreloadImagesResult: Record {
+  @Field
+  public var succeeded: [String]
+  
+  @Field
+  public var failed: [PreloadImageFailure]
+  
+  public init() {}
+  
+  public init(succeeded: [String], failed: [PreloadImageFailure]) {
+    self.succeeded = succeeded
+    self.failed = failed
+  }
+}
+

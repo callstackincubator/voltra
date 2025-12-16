@@ -70,6 +70,13 @@ export * from './events'
 export { useVoltra, type UseVoltraOptions, type UseVoltraResult } from './hooks'
 export { startVoltra, stopVoltra, updateVoltra } from './imperative-api'
 export * as Voltra from './jsx/primitives'
+export {
+  clearPreloadedImages,
+  type PreloadImageOptions,
+  preloadImages,
+  type PreloadImagesResult,
+  reloadLiveActivities,
+} from './preload'
 export type { VoltraVariants } from './renderer'
 export type { VoltraElementJson, VoltraJson, VoltraNodeJson, VoltraVariantsJson } from './types'
 export { VoltraView, type VoltraViewProps } from './VoltraView'

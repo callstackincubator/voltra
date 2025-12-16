@@ -29,14 +29,19 @@ public struct VoltraImage: VoltraView {
             return Image(uiImage: uiImage)
         }
 
-        // Check for assetName and verify it exists
+        // Check for assetName - first try preloaded images from App Group, then asset catalog
         if let assetName = sourceDict["assetName"] as? String,
            !assetName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let trimmedName = assetName.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            // Verify asset exists by trying to load it
-            if UIImage(named: trimmedName) != nil {
-                return Image(trimmedName)
+            // First, check for preloaded image in App Group storage
+            if let preloadedImage = VoltraImageStore.loadImage(key: trimmedName) {
+                return Image(uiImage: preloadedImage)
+            }
+            
+            // Fall back to asset catalog
+            if let catalogImage = UIImage(named: trimmedName) {
+                return Image(uiImage: catalogImage)
             }
         }
 
