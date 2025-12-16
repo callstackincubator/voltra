@@ -47,6 +47,12 @@ public class VoltraModule: Module {
         VoltraEventBus.shared.subscribe { [weak self] eventType, eventData in
             self?.sendEvent(eventType, eventData)
         }
+
+        if pushNotificationsEnabled {
+            observePushToStartToken()
+        }
+
+        observeLiveActivityUpdates()
     }
 
     OnStopObserving {
@@ -56,12 +62,6 @@ public class VoltraModule: Module {
     OnCreate {
       // Track if app was launched in background (headless)
       wasLaunchedInBackground = UIApplication.shared.applicationState == .background
-
-      // Observe ActivityKit streams for tokens and state changes
-      if pushNotificationsEnabled {
-        observePushToStartToken()
-      }
-      observeLiveActivityUpdates()
     }
 
     AsyncFunction("startVoltra") { (jsonString: String, options: StartVoltraOptions?) async throws -> String in
@@ -339,16 +339,22 @@ public class VoltraModule: Module {
           guard ids.contains(activity.attributes.name) else { continue }
         }
         
-        // Update with the same content state to trigger a refresh
-        await activity.update(
-          ActivityContent(
-            state: activity.content.state,
-            staleDate: activity.content.staleDate,
-            relevanceScore: activity.content.relevanceScore
+        do {
+          let newState = try VoltraAttributes.ContentState(
+            uiJsonData: activity.content.state.uiJsonData,
           )
-        )
-        
-        print("[Voltra] Reloaded Live Activity '\(activity.attributes.name)'")
+          
+          await activity.update(
+            ActivityContent(
+              state: newState,
+              staleDate: activity.content.staleDate,
+              relevanceScore: activity.content.relevanceScore
+            )
+          )
+          print("[Voltra] Reloaded Live Activity '\(activity.attributes.name)'")
+        } catch {
+          print("[Voltra] Failed to reload Live Activity '\(activity.attributes.name)': \(error)")
+        }
       }
     }
     
@@ -579,6 +585,34 @@ private extension VoltraModule {
 
   func observeLiveActivityUpdates() {
     guard #available(iOS 16.2, *) else { return }
+
+    // First, emit current state of all existing activities so JS knows about them
+    for activity in Activity<VoltraAttributes>.activities {
+      sendEvent("stateChange", [
+        "source": activity.id,
+        "timestamp": Date().timeIntervalSince1970,
+        "activityID": activity.id,
+        "activityName": activity.attributes.name,
+        "activityState": String(describing: activity.activityState),
+      ])
+
+      // Start observing state changes for this activity
+      if activity.activityState == .active {
+        Task {
+          for await state in activity.activityStateUpdates {
+            sendEvent("stateChange", [
+              "source": activity.id,
+              "timestamp": Date().timeIntervalSince1970,
+              "activityID": activity.id,
+              "activityName": activity.attributes.name,
+              "activityState": String(describing: state),
+            ])
+          }
+        }
+      }
+    }
+
+    // Then observe for new activity updates
     Task {
       for await activityUpdate in Activity<VoltraAttributes>.activityUpdates {
         let activityId = activityUpdate.id

@@ -1,6 +1,6 @@
 import { Link } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { clearPreloadedImages, preloadImages, reloadLiveActivities, startVoltra, Voltra } from 'voltra'
 
@@ -8,51 +8,33 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { TextInput } from '~/components/TextInput'
 
+function generateRandomKey(): string {
+  return `asset-${Math.random().toString(36).substring(2, 15)}`
+}
+
 export default function ImagePreloadingScreen() {
   const insets = useSafeAreaInsets()
-  const [url, setUrl] = useState(`https://picsum.photos/id/${Math.floor(Math.random() * 238)}/100/100`)
-  const [key, setKey] = useState('test-image')
-  const [isDownloading, setIsDownloading] = useState(false)
-  const [isStartingActivity, setIsStartingActivity] = useState(false)
-  const [downloadResult, setDownloadResult] = useState<{
-    succeeded: string[]
-    failed: { key: string; error: string }[]
-  } | null>(null)
+  const [url, setUrl] = useState(`https://picsum.photos/id/${Math.floor(Math.random() * 120)}/100/100`)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [currentAssetKey, setCurrentAssetKey] = useState<string | null>(null)
 
-  const handleDownload = async () => {
-    if (!url.trim() || !key.trim()) {
-      Alert.alert('Error', 'Please enter both URL and key')
+  const handleShowAndDownload = async () => {
+    if (!url.trim()) {
+      Alert.alert('Error', 'Please enter a URL')
       return
     }
 
-    setIsDownloading(true)
-    setDownloadResult(null)
+    const assetKey = generateRandomKey()
+    setIsProcessing(true)
+    setCurrentAssetKey(assetKey)
 
     try {
-      const result = await preloadImages([
-        {
-          url: url.trim(),
-          key: key.trim(),
-        },
-      ])
+      // Clear any existing images first
+      if (currentAssetKey) {
+        await clearPreloadedImages([currentAssetKey])
+      }
 
-      setDownloadResult(result)
-    } catch (error) {
-      Alert.alert('Error', `Failed to download image: ${error}`)
-    } finally {
-      setIsDownloading(false)
-    }
-  }
-
-  const handleStartActivity = async () => {
-    if (!downloadResult?.succeeded.length) {
-      Alert.alert('Error', 'Please download an image first')
-      return
-    }
-
-    setIsStartingActivity(true)
-
-    try {
+      // Start live activity with the asset key
       await startVoltra(
         {
           lockScreen: (
@@ -61,7 +43,7 @@ export default function ImagePreloadingScreen() {
                 Image Preloading Test
               </Voltra.Text>
               <Voltra.Image
-                source={{ assetName: downloadResult.succeeded[0] }}
+                source={{ assetName: assetKey }}
                 style={{ width: 80, height: 80, borderRadius: 8, marginTop: 8 }}
               />
               <Voltra.Text style={{ color: '#CBD5F5', marginTop: 8 }}>
@@ -74,27 +56,39 @@ export default function ImagePreloadingScreen() {
           activityId: 'image-preload-test',
         }
       )
-    } catch (error) {
-      Alert.alert('Error', `Failed to start Live Activity: ${error}`)
-    } finally {
-      setIsStartingActivity(false)
-    }
-  }
 
-  const handleReloadActivities = async () => {
-    try {
+      // Wait a bit for the activity to start
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      // Preload the image
+      const result = await preloadImages([
+        {
+          url: url.trim(),
+          key: assetKey,
+        },
+      ])
+
+      console.log('preloaded image', result)
+
+      // Reload live activities to show the preloaded image
       await reloadLiveActivities()
-      Alert.alert('Success', 'Live Activities reloaded')
     } catch (error) {
-      Alert.alert('Error', `Failed to reload Live Activities: ${error}`)
+      Alert.alert('Error', `Failed to process: ${error}`)
+    } finally {
+      setIsProcessing(false)
     }
   }
 
   const handleClearImages = async () => {
+    if (!currentAssetKey) {
+      Alert.alert('Error', 'No images to clear')
+      return
+    }
+
     try {
-      await clearPreloadedImages([key.trim()])
+      await clearPreloadedImages([currentAssetKey])
       Alert.alert('Success', 'Preloaded images cleared')
-      setDownloadResult(null)
+      setCurrentAssetKey(null)
     } catch (error) {
       Alert.alert('Error', `Failed to clear images: ${error}`)
     }
@@ -118,8 +112,8 @@ export default function ImagePreloadingScreen() {
         </Text>
 
         <Card>
-          <Card.Title>Download Image</Card.Title>
-          <Card.Text>Enter a URL and key to download an image for use in Live Activities.</Card.Text>
+          <Card.Title>Show and Download</Card.Title>
+          <Card.Text>Enter a URL to start a Live Activity and preload the image automatically.</Card.Text>
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Image URL</Text>
@@ -131,77 +125,17 @@ export default function ImagePreloadingScreen() {
               autoCapitalize="none"
               autoCorrect={false}
             />
-
-            <Text style={[styles.inputLabel, { marginTop: 16 }]}>Asset Key</Text>
-            <TextInput
-              placeholder="my-image-key"
-              value={key}
-              onChangeText={setKey}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
           </View>
 
           <View style={styles.buttonRow}>
             <Button
-              title={isDownloading ? 'Downloading...' : 'Download Image'}
+              title={isProcessing ? 'Processing...' : 'Show and Download'}
               variant="primary"
-              onPress={handleDownload}
-              disabled={isDownloading}
+              onPress={handleShowAndDownload}
+              disabled={isProcessing}
             />
             <Button title="Clear Images" variant="secondary" onPress={handleClearImages} />
           </View>
-
-          {downloadResult && (
-            <View style={styles.resultContainer}>
-              <Text style={styles.resultTitle}>Download Result:</Text>
-              {downloadResult.succeeded.length > 0 && (
-                <Text style={styles.resultSuccess}>✓ Succeeded: {downloadResult.succeeded.join(', ')}</Text>
-              )}
-              {downloadResult.failed.length > 0 && (
-                <Text style={styles.resultError}>✗ Failed: {downloadResult.failed.map((f) => f.key).join(', ')}</Text>
-              )}
-            </View>
-          )}
-        </Card>
-
-        <Card>
-          <Card.Title>Downloaded Image Preview</Card.Title>
-          <Card.Text>Preview of the downloaded image in React Native UI.</Card.Text>
-
-          <View style={styles.imagePreviewContainer}>
-            {downloadResult?.succeeded.length ? (
-              <Image source={{ uri: url.trim() }} style={styles.previewImage} resizeMode="cover" />
-            ) : (
-              <View style={styles.placeholderContainer}>
-                <Text style={styles.placeholderText}>
-                  {isDownloading ? 'Downloading...' : 'No image downloaded yet'}
-                </Text>
-              </View>
-            )}
-          </View>
-        </Card>
-
-        <Card>
-          <Card.Title>Test Live Activity</Card.Title>
-          <Card.Text>
-            Start a Live Activity that uses the preloaded image. If preloading worked, you should see the image in the
-            Live Activity.
-          </Card.Text>
-
-          <View style={styles.buttonRow}>
-            <Button
-              title={isStartingActivity ? 'Starting...' : 'Start Live Activity'}
-              variant="primary"
-              onPress={handleStartActivity}
-              disabled={isStartingActivity || !downloadResult?.succeeded.length}
-            />
-            <Button title="Reload Activities" variant="ghost" onPress={handleReloadActivities} />
-          </View>
-
-          {!downloadResult?.succeeded.length && (
-            <Text style={styles.hint}>Download an image first to enable Live Activity testing.</Text>
-          )}
         </Card>
 
         <View style={styles.footer}>
@@ -249,58 +183,8 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 12,
   },
-  resultContainer: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-  },
-  resultTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#E2E8F0',
-    marginBottom: 8,
-  },
-  resultSuccess: {
-    fontSize: 13,
-    color: '#10B981',
-    marginBottom: 4,
-  },
-  resultError: {
-    fontSize: 13,
-    color: '#EF4444',
-  },
-  hint: {
-    marginTop: 12,
-    fontSize: 13,
-    color: '#64748B',
-    fontStyle: 'italic',
-  },
   footer: {
     marginTop: 24,
     alignItems: 'center',
-  },
-  imagePreviewContainer: {
-    marginTop: 16,
-    height: 120,
-    backgroundColor: '#1E293B',
-    borderRadius: 8,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  placeholderContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  placeholderText: {
-    color: '#64748B',
-    fontSize: 14,
-    textAlign: 'center',
   },
 })

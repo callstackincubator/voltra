@@ -45,7 +45,8 @@ public struct VoltraImageStore {
         let sanitizedKey = sanitizeKey(key)
         let fileURL = directory.appendingPathComponent(sanitizedKey)
         
-        try data.write(to: fileURL)
+        // Write atomically to ensure the file is fully written before it becomes visible
+        try data.write(to: fileURL, options: .atomic)
     }
     
     /// Load a preloaded image from App Group storage
