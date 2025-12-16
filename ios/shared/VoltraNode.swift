@@ -18,7 +18,7 @@ public indirect enum VoltraNode: Hashable, View {
     // MARK: - Initialization
 
     /// Initialize from JSONValue (handles all types)
-    public init(from json: JSONValue) {
+    public init(from json: JSONValue, stylesheet: [[String: JSONValue]]? = nil) {
         switch json {
         case .string(let text):
             self = .text(text)
@@ -31,10 +31,10 @@ public indirect enum VoltraNode: Hashable, View {
         case .null:
             self = .empty
         case .array(let items):
-            let nodes = items.map { VoltraNode(from: $0) }.filter { !$0.isEmpty }
+            let nodes = items.map { VoltraNode(from: $0, stylesheet: stylesheet) }.filter { !$0.isEmpty }
             self = nodes.isEmpty ? .empty : .array(nodes)
         case .object:
-            if let element = VoltraElement(from: json) {
+            if let element = VoltraElement(from: json, stylesheet: stylesheet) {
                 self = .element(element)
             } else {
                 self = .empty

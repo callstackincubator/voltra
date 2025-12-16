@@ -14,6 +14,9 @@ public struct VoltraElement: Hashable {
     /// Raw properties (stored as JSONValue for type safety)
     private let _props: [String: JSONValue]?
 
+    /// Optional stylesheet for resolving style references
+    public let stylesheet: [[String: JSONValue]]?
+
     // MARK: - Hashable
 
     public func hash(into hasher: inout Hasher) {
@@ -48,7 +51,22 @@ public struct VoltraElement: Hashable {
 
     /// Style dictionary with expanded keys
     public var style: [String: JSONValue]? {
-        guard let styleDict = props?["style"]?.objectValue else {
+        guard let styleValue = props?["style"] else {
+            return nil
+        }
+
+        let styleDict: [String: JSONValue]
+
+        // Handle stylesheet reference (integer index)
+        if let index = styleValue.intValue,
+           let stylesheet = self.stylesheet,
+           index >= 0 && index < stylesheet.count {
+            styleDict = stylesheet[index]
+        }
+        // Handle inline style (object)
+        else if let objectValue = styleValue.objectValue {
+            styleDict = objectValue
+        } else {
             return nil
         }
 
@@ -64,7 +82,7 @@ public struct VoltraElement: Hashable {
     // MARK: - Initialization
 
     /// Initialize from JSONValue (no serialization roundtrip)
-    public init?(from json: JSONValue) {
+    public init?(from json: JSONValue, stylesheet: [[String: JSONValue]]? = nil) {
         guard case .object(let dict) = json else {
             return nil
         }
@@ -81,7 +99,7 @@ public struct VoltraElement: Hashable {
 
         // Extract children
         if let childrenValue = dict["c"] {
-            self.children = VoltraNode(from: childrenValue)
+            self.children = VoltraNode(from: childrenValue, stylesheet: stylesheet)
         } else {
             self.children = nil
         }
@@ -92,13 +110,16 @@ public struct VoltraElement: Hashable {
         } else {
             self._props = nil
         }
+
+        // Store stylesheet reference
+        self.stylesheet = stylesheet
     }
 
     /// Get component prop by name - handles both single component and array
     public func componentProp(_ propName: String) -> VoltraNode {
         guard let propValue = props?[propName] else { return .empty }
 
-        return VoltraNode(from: propValue)
+        return VoltraNode(from: propValue, stylesheet: stylesheet)
     }
 
     /// Decode parameters from props

@@ -31,6 +31,7 @@ import { VoltraElementJson, VoltraJson, VoltraNodeJson, VoltraPropValue } from '
 import { ContextRegistry, getContextRegistry } from './context-registry'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher'
 import { getRenderCache } from './render-cache'
+import { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry'
 import { VoltraVariants } from './types'
 
 // Modifier name shortening map
@@ -127,6 +128,7 @@ function shortenStylePropertyName(name: string): string {
 
 type VoltraRenderingContext = {
   registry: ContextRegistry
+  stylesheetRegistry?: StylesheetRegistry
   inStringOnlyContext?: boolean
 }
 
@@ -308,7 +310,7 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
         }
 
         // Transform props to shorten modifier names
-        const transformedProps = transformProps(cleanParameters, child.type)
+        const transformedProps = transformProps(cleanParameters, context, child.type)
 
         const voltraHostElement: VoltraElementJson = {
           t: getComponentId(child.type),
@@ -326,7 +328,7 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
       }
 
       // Transform props to shorten modifier names
-      const transformedProps = transformProps(cleanParameters, child.type)
+      const transformedProps = transformProps(cleanParameters, context, child.type)
 
       const voltraHostElement: VoltraElementJson = {
         t: getComponentId(child.type),
@@ -389,6 +391,7 @@ export const renderVoltraVariantToJson = (element: ReactNode): VoltraNodeJson =>
   const registry = getContextRegistry()
   const context: VoltraRenderingContext = {
     registry,
+    // No stylesheet registry for backwards compatibility
   }
   return renderNode(element, context)
 }
@@ -444,6 +447,7 @@ function isReactNode(value: unknown): value is ReactNode {
 
 export function transformProps(
   props: Record<string, unknown>,
+  context: VoltraRenderingContext,
   componentName?: string
 ): Record<string | number, VoltraPropValue> {
   const transformed: Record<string | number, VoltraPropValue> = {}
@@ -461,12 +465,18 @@ export function transformProps(
         return modifier
       })
     } else if (key === 'style') {
-      // Compress style property names and use prop ID 0 (style is always ID 0)
-      transformed[0] = compressStyleObject(value)
+      // Use stylesheet registry if available, otherwise fall back to inline compression
+      if (context.stylesheetRegistry) {
+        const index = context.stylesheetRegistry.registerStyle(value as object)
+        transformed[0] = index
+      } else {
+        transformed[0] = compressStyleObject(value)
+      }
     } else if (isReactNode(value)) {
       // Serialize JSX elements directly to component objects (no JSON.stringify!)
       const serializedComponent = renderNode(value, {
         registry: getContextRegistry(),
+        stylesheetRegistry: context.stylesheetRegistry,
         inStringOnlyContext: false,
       })
       const propId = PROP_NAME_TO_ID[key]
@@ -487,11 +497,22 @@ export function transformProps(
 }
 
 export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
-  const renderCache = getRenderCache(renderVoltraVariantToJson)
   const result: VoltraJson = {}
 
   if (variants.lockScreen) {
     const lockScreenVariant = variants.lockScreen
+    const stylesheetRegistry = createStylesheetRegistry()
+
+    const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
+      const registry = getContextRegistry()
+      const context: VoltraRenderingContext = {
+        registry,
+        stylesheetRegistry,
+      }
+      return renderNode(element, context)
+    }
+
+    const renderCache = getRenderCache(renderVariantToJson)
 
     if (typeof lockScreenVariant === 'object' && lockScreenVariant !== null && 'content' in lockScreenVariant) {
       result.ls = renderCache.getOrRender(lockScreenVariant.content)
@@ -502,6 +523,11 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
     } else {
       result.ls = renderCache.getOrRender(lockScreenVariant as ReactNode)
     }
+
+    const styles = stylesheetRegistry.getStyles()
+    if (styles.length > 0) {
+      ;(result as any).ls_s = styles
+    }
   }
 
   if (variants.island) {
@@ -510,31 +536,125 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
     }
 
     if (variants.island.expanded) {
+      // Create separate stylesheet registry for each island variant
+      const createIslandRenderer = () => {
+        const stylesheetRegistry = createStylesheetRegistry()
+
+        const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
+          const registry = getContextRegistry()
+          const context: VoltraRenderingContext = {
+            registry,
+            stylesheetRegistry,
+          }
+          return renderNode(element, context)
+        }
+
+        const renderCache = getRenderCache(renderVariantToJson)
+        return { renderCache, stylesheetRegistry }
+      }
+
       if (variants.island.expanded.center) {
-        result.isl_exp_c = renderCache.getOrRender(variants.island.expanded.center)
+        const { renderCache: centerCache, stylesheetRegistry: centerStyles } = createIslandRenderer()
+        result.isl_exp_c = centerCache.getOrRender(variants.island.expanded.center)
+        const styles = centerStyles.getStyles()
+        if (styles.length > 0) {
+          ;(result as any).isl_exp_c_s = styles
+        }
       }
       if (variants.island.expanded.leading) {
-        result.isl_exp_l = renderCache.getOrRender(variants.island.expanded.leading)
+        const { renderCache: leadingCache, stylesheetRegistry: leadingStyles } = createIslandRenderer()
+        result.isl_exp_l = leadingCache.getOrRender(variants.island.expanded.leading)
+        const styles = leadingStyles.getStyles()
+        if (styles.length > 0) {
+          ;(result as any).isl_exp_l_s = styles
+        }
       }
       if (variants.island.expanded.trailing) {
-        result.isl_exp_t = renderCache.getOrRender(variants.island.expanded.trailing)
+        const { renderCache: trailingCache, stylesheetRegistry: trailingStyles } = createIslandRenderer()
+        result.isl_exp_t = trailingCache.getOrRender(variants.island.expanded.trailing)
+        const styles = trailingStyles.getStyles()
+        if (styles.length > 0) {
+          ;(result as any).isl_exp_t_s = styles
+        }
       }
       if (variants.island.expanded.bottom) {
-        result.isl_exp_b = renderCache.getOrRender(variants.island.expanded.bottom)
+        const { renderCache: bottomCache, stylesheetRegistry: bottomStyles } = createIslandRenderer()
+        result.isl_exp_b = bottomCache.getOrRender(variants.island.expanded.bottom)
+        const styles = bottomStyles.getStyles()
+        if (styles.length > 0) {
+          ;(result as any).isl_exp_b_s = styles
+        }
       }
     }
 
     if (variants.island.compact) {
       if (variants.island.compact.leading) {
-        result.isl_cmp_l = renderCache.getOrRender(variants.island.compact.leading)
+        const { renderCache: cmpLeadingCache, stylesheetRegistry: cmpLeadingStyles } = (() => {
+          const stylesheetRegistry = createStylesheetRegistry()
+
+          const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
+            const registry = getContextRegistry()
+            const context: VoltraRenderingContext = {
+              registry,
+              stylesheetRegistry,
+            }
+            return renderNode(element, context)
+          }
+
+          const renderCache = getRenderCache(renderVariantToJson)
+          return { renderCache, stylesheetRegistry }
+        })()
+        result.isl_cmp_l = cmpLeadingCache.getOrRender(variants.island.compact.leading)
+        const styles = cmpLeadingStyles.getStyles()
+        if (styles.length > 0) {
+          ;(result as any).isl_cmp_l_s = styles
+        }
       }
       if (variants.island.compact.trailing) {
-        result.isl_cmp_t = renderCache.getOrRender(variants.island.compact.trailing)
+        const { renderCache: cmpTrailingCache, stylesheetRegistry: cmpTrailingStyles } = (() => {
+          const stylesheetRegistry = createStylesheetRegistry()
+
+          const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
+            const registry = getContextRegistry()
+            const context: VoltraRenderingContext = {
+              registry,
+              stylesheetRegistry,
+            }
+            return renderNode(element, context)
+          }
+
+          const renderCache = getRenderCache(renderVariantToJson)
+          return { renderCache, stylesheetRegistry }
+        })()
+        result.isl_cmp_t = cmpTrailingCache.getOrRender(variants.island.compact.trailing)
+        const styles = cmpTrailingStyles.getStyles()
+        if (styles.length > 0) {
+          ;(result as any).isl_cmp_t_s = styles
+        }
       }
     }
 
     if (variants.island.minimal) {
-      result.isl_min = renderCache.getOrRender(variants.island.minimal)
+      const { renderCache: minimalCache, stylesheetRegistry: minimalStyles } = (() => {
+        const stylesheetRegistry = createStylesheetRegistry()
+
+        const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
+          const registry = getContextRegistry()
+          const context: VoltraRenderingContext = {
+            registry,
+            stylesheetRegistry,
+          }
+          return renderNode(element, context)
+        }
+
+        const renderCache = getRenderCache(renderVariantToJson)
+        return { renderCache, stylesheetRegistry }
+      })()
+      result.isl_min = minimalCache.getOrRender(variants.island.minimal)
+      const styles = minimalStyles.getStyles()
+      if (styles.length > 0) {
+        ;(result as any).isl_min_s = styles
+      }
     }
   }
 
