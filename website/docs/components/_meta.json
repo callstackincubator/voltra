@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "index",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
     "name": "layout",
     "label": "Layout & containers"
   },

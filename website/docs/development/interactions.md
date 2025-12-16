@@ -83,26 +83,6 @@ The deep link URL can be:
 
 When the Live Activity is tapped, your app will be launched (or brought to the foreground) and the deep link will be handled by your routing system.
 
-## App Lifecycle Considerations
-
-One of the powerful features of Live Activities is that interactions work even when your app isn't running. If your app is terminated (killed), the operating system will automatically launch it when a user interacts with a button or toggle in your Live Activity.
-
-This means you can:
-
-1. **Handle interactions reliably**: Your event listeners will be called even if the app was killed, allowing you to respond to user actions immediately.
-
-2. **Restore app state**: When the app is launched from a Live Activity interaction, you can restore the appropriate state or navigate to the correct screen based on the event identifier.
-
-3. **Process background tasks**: Use the interaction event to trigger background tasks or API calls that need to happen in response to the user's action.
-
-### Best Practices
-
-- **Set up event listeners early**: Initialize your event listeners as early as possible in your app lifecycle (e.g., in your root component or app entry point) to ensure they're ready when interactions occur.
-
-- **Handle app launch scenarios**: When your app is launched from a terminated state, make sure your event listeners are set up before processing any queued events. Voltra handles event queuing automatically when using App Groups.
-
-- **Test terminated state**: Always test your interaction handling with the app in a terminated state to ensure everything works as expected.
-
 ## Limitations
 
 While Live Activities provide powerful interaction capabilities, there are some limitations to be aware of:

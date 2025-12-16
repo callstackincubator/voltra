@@ -2,11 +2,16 @@
   {
     "type": "dir",
     "name": "getting-started",
-    "label": "Getting Started"
+    "label": "Getting started"
   },
   {
     "type": "dir",
-    "name": "api",
-    "label": "API"
+    "name": "development",
+    "label": "Development"
+  },
+  {
+    "type": "dir",
+    "name": "components",
+    "label": "Components"
   }
 ]

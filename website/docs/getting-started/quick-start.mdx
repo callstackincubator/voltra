@@ -2,7 +2,7 @@ import { PackageManagerTabs } from '@rspress/core/theme'
 
 # Quick Start
 
-Get started with Voltra in just a few steps. We'll walk through installation, configuration, and your first live activity.
+Get started with Voltra in just a few steps. We'll walk through installation and configuration.
 
 ## 1. Install Voltra
 
@@ -56,18 +56,14 @@ import { startVoltra, Voltra } from 'voltra'
 function HelloWorldActivity() {
   const activityUI = (
     <Voltra.VStack style={{ padding: 20, borderRadius: 18, backgroundColor: '#007AFF' }}>
-      <Voltra.Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>
-        Hello World from Voltra!
-      </Voltra.Text>
-      <Voltra.Text style={{ color: 'white', fontSize: 16, marginTop: 8 }}>
-        Your first live activity ✨
-      </Voltra.Text>
+      <Voltra.Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>Hello World from Voltra!</Voltra.Text>
+      <Voltra.Text style={{ color: 'white', fontSize: 16, marginTop: 8 }}>Your first live activity</Voltra.Text>
     </Voltra.VStack>
   )
 
   const startActivity = async () => {
     await startVoltra({
-      lockScreen: activityUI
+      lockScreen: activityUI,
     })
   }
 
@@ -81,4 +77,4 @@ function HelloWorldActivity() {
 }
 ```
 
-That's it! You've created your first live activity with Voltra. The JSX you write gets automatically converted to SwiftUI and displayed natively on iOS.
+You've created your first live activity with Voltra. The JSX you write gets automatically converted to SwiftUI and displayed natively on iOS.

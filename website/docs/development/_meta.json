@@ -1,8 +1,13 @@
 [
   {
-    "type": "dir",
-    "name": "components",
-    "label": "Components"
+    "type": "file",
+    "name": "managing-live-activities-locally",
+    "label": "Managing Live Activities locally"
+  },
+  {
+    "type": "file",
+    "name": "developing-live-activities",
+    "label": "Developing Live Activities"
   },
   {
     "type": "file",

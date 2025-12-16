@@ -8,7 +8,7 @@ hero:
       dark: /logo-dark.svg
     alt: Voltra
   name: 100% JSX. 0% Native.
-  tagline: 'Build dynamic iOS Live Activities and interact with the Dynamic Island directly from React Native. No Swift, no Xcode, no hassle.'
+  tagline: 'Build dynamic iOS Live Activities and interact with the Dynamic Island directly from React Native. No Swift or Xcode required.'
   actions:
     - theme: brand
       text: Get Started

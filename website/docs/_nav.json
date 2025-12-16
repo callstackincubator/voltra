@@ -1,6 +1,14 @@
 [
   {
-    "text": "Docs",
-    "link": "/getting-started/introduction"
+    "text": "Getting started",
+    "link": "/getting-started"
+  },
+  {
+    "text": "Development",
+    "link": "/development/developing-live-activities"
+  },
+  {
+    "text": "Components",
+    "link": "/components"
   }
 ]

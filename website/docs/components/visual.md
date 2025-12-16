@@ -54,7 +54,7 @@ Displays bitmap images from the asset catalog or base64 encoded data.
 
 ### Symbol
 
-Displays SF Symbols (system icons) with advanced configuration options.
+Displays SF Symbols (system icons) with configuration options.
 
 **Parameters:**
 
