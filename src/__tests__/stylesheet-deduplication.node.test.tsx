@@ -101,8 +101,8 @@ describe('Stylesheet Deduplication', () => {
       const elements = result.ls!.c
       expect(elements).toHaveLength(3)
 
-      // First element should not have a style property
-      expect(elements[0].p).toEqual({})
+      // First element should not have a style property (p is undefined when empty)
+      expect(elements[0].p).toBeUndefined()
 
       // Second and third elements should reference the same style
       expect(elements[1].p['s']).toBe(0)
@@ -390,7 +390,8 @@ describe('Stylesheet Deduplication', () => {
 
       const maskElement = result.ls as any
       const maskElementProp = maskElement.p['me'] // maskElement has short name "me"
-      const children = maskElement.c // children (the content VStack)
+      // Single child is not wrapped in array - it's the VStack object directly
+      const children = maskElement.c
 
       // Both should reference the same style index
       expect(maskElementProp.p['s']).toBe(children.p['s'])

@@ -219,12 +219,13 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
 
         // Transform props to shorten modifier names
         const transformedProps = transformProps(cleanParameters, context, child.type)
+        const hasProps = Object.keys(transformedProps).length > 0
 
         const voltraHostElement: VoltraElementJson = {
           t: getComponentId(child.type),
           ...(id ? { i: id } : {}),
           c: renderedChildren,
-          p: transformedProps,
+          ...(hasProps ? { p: transformedProps } : {}),
         }
 
         return voltraHostElement
@@ -237,12 +238,16 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
 
       // Transform props to shorten modifier names
       const transformedProps = transformProps(cleanParameters, context, child.type)
+      const hasProps = Object.keys(transformedProps).length > 0
+      // Children can be an array (multiple children) or a single element object
+      // Empty means: no children at all, or an empty array
+      const hasChildren = Array.isArray(renderedChildren) ? renderedChildren.length > 0 : true
 
       const voltraHostElement: VoltraElementJson = {
         t: getComponentId(child.type),
         ...(id ? { i: id } : {}),
-        c: renderedChildren,
-        p: transformedProps,
+        ...(hasChildren ? { c: renderedChildren } : {}),
+        ...(hasProps ? { p: transformedProps } : {}),
       }
 
       return voltraHostElement
