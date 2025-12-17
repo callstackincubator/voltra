@@ -26,105 +26,13 @@ import { StyleSheet } from 'react-native'
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent'
 import { getComponentId } from '../payload/component-ids'
-import { PROP_NAME_TO_ID } from '../payload/prop-ids'
+import { shorten } from '../payload/short-names'
 import { VoltraElementJson, VoltraJson, VoltraNodeJson, VoltraPropValue } from '../types'
 import { ContextRegistry, getContextRegistry } from './context-registry'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher'
 import { getRenderCache } from './render-cache'
 import { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry'
 import { VoltraVariants } from './types'
-
-// Modifier name shortening map
-const MODIFIER_NAME_MAP: Record<string, string> = {
-  frame: 'f',
-  padding: 'pad',
-  offset: 'off',
-  position: 'pos',
-  foregroundStyle: 'fg',
-  background: 'bg',
-  backgroundStyle: 'bgs',
-  tint: 'tint',
-  opacity: 'op',
-  cornerRadius: 'cr',
-  font: 'font',
-  fontWeight: 'fw',
-  italic: 'it',
-  smallCaps: 'sc',
-  monospacedDigit: 'md',
-  lineLimit: 'll',
-  lineSpacing: 'lsp',
-  kerning: 'kern',
-  underline: 'ul',
-  strikethrough: 'st',
-  shadow: 'sh',
-  scaleEffect: 'se',
-  rotationEffect: 're',
-  border: 'bd',
-  clipped: 'clip',
-  glassEffect: 'ge',
-  gaugeStyle: 'gs',
-}
-
-function shortenModifierName(name: string): string {
-  return MODIFIER_NAME_MAP[name] || name
-}
-
-// Style property name shortening map
-const STYLE_PROPERTY_NAME_MAP: Record<string, string> = {
-  padding: 'pad',
-  paddingVertical: 'pv',
-  paddingHorizontal: 'ph',
-  paddingTop: 'pt',
-  paddingBottom: 'pb',
-  paddingLeft: 'pl',
-  paddingRight: 'pr',
-  margin: 'm',
-  marginVertical: 'mv',
-  marginHorizontal: 'mh',
-  marginTop: 'mt',
-  marginBottom: 'mb',
-  marginLeft: 'ml',
-  marginRight: 'mr',
-  backgroundColor: 'bg',
-  borderRadius: 'br',
-  borderWidth: 'bw',
-  borderColor: 'bc',
-  shadowColor: 'sc',
-  shadowOffset: 'so',
-  shadowOpacity: 'sop',
-  shadowRadius: 'sr',
-  fontSize: 'fs',
-  fontWeight: 'fw',
-  color: 'c',
-  letterSpacing: 'ls',
-  fontVariant: 'fv',
-  width: 'w',
-  height: 'h',
-  opacity: 'op',
-  overflow: 'ov',
-  aspectRatio: 'ar',
-  minWidth: 'minw',
-  maxWidth: 'maxw',
-  minHeight: 'minh',
-  maxHeight: 'maxh',
-  flexGrowWidth: 'fgw',
-  fixedSizeHorizontal: 'fsh',
-  fixedSizeVertical: 'fsv',
-  layoutPriority: 'lp',
-  zIndex: 'zi',
-  offsetX: 'ox',
-  offsetY: 'oy',
-  absolutePosition: 'ap',
-  position: 'pos',
-  top: 't',
-  left: 'l',
-  right: 'r',
-  bottom: 'b',
-}
-
-function shortenStylePropertyName(name: string): string {
-  return STYLE_PROPERTY_NAME_MAP[name] || name
-}
 
 type VoltraRenderingContext = {
   registry: ContextRegistry
@@ -407,7 +315,7 @@ function compressStyleObject(style: any): any {
   const compressed: Record<string, any> = {}
 
   for (const [key, value] of Object.entries(flattened)) {
-    const shortKey = shortenStylePropertyName(key)
+    const shortKey = shorten(key)
 
     if (value === null || value === undefined) {
       continue
@@ -449,8 +357,8 @@ export function transformProps(
   props: Record<string, unknown>,
   context: VoltraRenderingContext,
   componentName?: string
-): Record<string | number, VoltraPropValue> {
-  const transformed: Record<string | number, VoltraPropValue> = {}
+): Record<string, VoltraPropValue> {
+  const transformed: Record<string, VoltraPropValue> = {}
 
   for (const [key, value] of Object.entries(props)) {
     if (key === 'modifiers' && Array.isArray(value)) {
@@ -458,7 +366,7 @@ export function transformProps(
       // Keep 'modifiers' as string key (special case)
       transformed[key] = value.map((modifier: any) => {
         if (typeof modifier === 'object' && modifier !== null) {
-          const name = 'name' in modifier ? shortenModifierName(String(modifier.name)) : ''
+          const name = 'name' in modifier ? shorten(String(modifier.name)) : ''
           const args = 'args' in modifier ? modifier.args : {}
           return [name, args]
         }
@@ -466,11 +374,12 @@ export function transformProps(
       })
     } else if (key === 'style') {
       // Use stylesheet registry if available, otherwise fall back to inline compression
+      const shortKey = shorten(key)
       if (context.stylesheetRegistry) {
         const index = context.stylesheetRegistry.registerStyle(value as object)
-        transformed[0] = index
+        transformed[shortKey] = index
       } else {
-        transformed[0] = compressStyleObject(value)
+        transformed[shortKey] = compressStyleObject(value)
       }
     } else if (isReactNode(value)) {
       // Serialize JSX elements directly to component objects (no JSON.stringify!)
@@ -479,17 +388,12 @@ export function transformProps(
         stylesheetRegistry: context.stylesheetRegistry,
         inStringOnlyContext: false,
       })
-      const propId = PROP_NAME_TO_ID[key]
-      transformed[propId ?? key] = serializedComponent
+      const shortKey = shorten(key)
+      transformed[shortKey] = serializedComponent
     } else {
-      // Regular primitive prop handling
-      const propId = PROP_NAME_TO_ID[key]
-      if (propId !== undefined) {
-        transformed[propId] = value as VoltraPropValue
-      } else {
-        // Fallback: keep original key if not in mapping (for backwards compatibility)
-        transformed[key] = value as VoltraPropValue
-      }
+      // Regular primitive prop handling - use unified short names
+      const shortKey = shorten(key)
+      transformed[shortKey] = value as VoltraPropValue
     }
   }
 

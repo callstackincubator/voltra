@@ -54,7 +54,7 @@ describe('Stylesheet Deduplication', () => {
       expect(elements).toHaveLength(3)
 
       elements.forEach((element: any) => {
-        expect(element.p[0]).toBe(0) // All reference style index 0
+        expect(element.p['s']).toBe(0) // All reference style index 0
       })
     })
 
@@ -79,7 +79,7 @@ describe('Stylesheet Deduplication', () => {
       const elements = result.ls!.c
       expect(elements).toHaveLength(3)
 
-      const styleIndices = elements.map((element: any) => element.p[0])
+      const styleIndices = elements.map((element: any) => element.p['s'])
       expect(styleIndices).toEqual([0, 1, 2])
     })
 
@@ -105,8 +105,8 @@ describe('Stylesheet Deduplication', () => {
       expect(elements[0].p).toEqual({})
 
       // Second and third elements should reference the same style
-      expect(elements[1].p[0]).toBe(0)
-      expect(elements[2].p[0]).toBe(0)
+      expect(elements[1].p['s']).toBe(0)
+      expect(elements[2].p['s']).toBe(0)
     })
 
     it('should handle complex nested styles', () => {
@@ -134,13 +134,13 @@ describe('Stylesheet Deduplication', () => {
       expect(style).toHaveProperty('bg', '#FFFFFF')
       expect(style).toHaveProperty('br', 8)
       expect(style).toHaveProperty('pad', 12)
-      expect(style).toHaveProperty('sc', '#000000')
-      expect(style).toHaveProperty('so', { width: 0, height: 2 })
-      expect(style).toHaveProperty('sop', 0.1)
-      expect(style).toHaveProperty('sr', 4)
+      expect(style).toHaveProperty('shc', '#000000')
+      expect(style).toHaveProperty('sho', { width: 0, height: 2 })
+      expect(style).toHaveProperty('shop', 0.1)
+      expect(style).toHaveProperty('shr', 4)
 
       // Element should reference style index
-      expect((result.ls as any).p[0]).toBe(0)
+      expect((result.ls as any).p['s']).toBe(0)
     })
   })
 
@@ -166,10 +166,10 @@ describe('Stylesheet Deduplication', () => {
       expect(result.s![0]).toHaveProperty('c', '#FF0000')
 
       // All variants should reference the same style index
-      expect((result.ls as any).p[0]).toBe(0)
-      expect((result.isl_exp_c as any).p[0]).toBe(0)
-      expect((result.isl_exp_l as any).p[0]).toBe(0)
-      expect((result.isl_cmp_t as any).p[0]).toBe(0)
+      expect((result.ls as any).p['s']).toBe(0)
+      expect((result.isl_exp_c as any).p['s']).toBe(0)
+      expect((result.isl_exp_l as any).p['s']).toBe(0)
+      expect((result.isl_cmp_t as any).p['s']).toBe(0)
     })
 
     it('should deduplicate styles across lockScreen and island variants', () => {
@@ -202,8 +202,8 @@ describe('Stylesheet Deduplication', () => {
       const lsElements = (result.ls as any).c
       const islElements = (result.isl_exp_c as any).c
 
-      expect(lsElements[0].p[0]).toBe(islElements[0].p[0])
-      expect(lsElements[1].p[0]).toBe(islElements[1].p[0])
+      expect(lsElements[0].p['s']).toBe(islElements[0].p['s'])
+      expect(lsElements[1].p['s']).toBe(islElements[1].p['s'])
     })
 
     it('should handle different styles in different variants', () => {
@@ -227,9 +227,9 @@ describe('Stylesheet Deduplication', () => {
       expect(result.s).toHaveLength(3)
 
       // Each variant element should reference a different style index
-      expect((result.isl_exp_c as any).p[0]).toBe(0)
-      expect((result.isl_exp_l as any).p[0]).toBe(1)
-      expect((result.isl_cmp_t as any).p[0]).toBe(2)
+      expect((result.isl_exp_c as any).p['s']).toBe(0)
+      expect((result.isl_exp_l as any).p['s']).toBe(1)
+      expect((result.isl_cmp_t as any).p['s']).toBe(2)
     })
   })
 
@@ -269,7 +269,7 @@ describe('Stylesheet Deduplication', () => {
       // All text elements should reference the same style index
       const textElements = (result.ls as any).c
       textElements.forEach((element: any) => {
-        expect(element.p[0]).toBe(0)
+        expect(element.p['s']).toBe(0)
       })
 
       // Verify the compressed style is present
@@ -321,8 +321,8 @@ describe('Stylesheet Deduplication', () => {
       expect(elements).toHaveLength(2)
 
       elements.forEach((element: any) => {
-        expect(element.p[0]).toHaveProperty('c', '#FF0000')
-        expect(element.p[0]).toHaveProperty('fs', 16)
+        expect(element.p['s']).toHaveProperty('c', '#FF0000')
+        expect(element.p['s']).toHaveProperty('fs', 16)
       })
     })
   })
@@ -358,12 +358,12 @@ describe('Stylesheet Deduplication', () => {
 
       // Check that styles inside maskElement prop are also using indices
       // The maskElement prop should contain components with style references
-      // maskElement has prop ID 17
-      const maskElementProp = maskElement.p[17]
+      // maskElement has short name "me"
+      const maskElementProp = maskElement.p['me']
       expect(maskElementProp).toBeDefined()
 
       // The nested VStack in maskElement should have a style index (number, not object)
-      expect(typeof maskElementProp.p[0]).toBe('number')
+      expect(typeof maskElementProp.p['s']).toBe('number')
     })
 
     it('should deduplicate styles across main content and component props', () => {
@@ -389,11 +389,11 @@ describe('Stylesheet Deduplication', () => {
       expect(result.s).toHaveLength(1)
 
       const maskElement = result.ls as any
-      const maskElementProp = maskElement.p[17] // maskElement has prop ID 17
+      const maskElementProp = maskElement.p['me'] // maskElement has short name "me"
       const children = maskElement.c // children (the content VStack)
 
       // Both should reference the same style index
-      expect(maskElementProp.p[0]).toBe(children.p[0])
+      expect(maskElementProp.p['s']).toBe(children.p['s'])
     })
   })
 })

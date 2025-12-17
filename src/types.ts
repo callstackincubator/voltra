@@ -6,7 +6,7 @@ export type VoltraElementJson = {
   t: number
   i?: string
   c?: VoltraNodeJson
-  p: Record<string | number, VoltraPropValue>
+  p: Record<string, VoltraPropValue>
 }
 
 export type VoltraNodeJson = VoltraElementJson | VoltraElementJson[] | string

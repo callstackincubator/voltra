@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process'
 import { generateSwiftParameters } from './generators/swift-parameters'
 import { generateTypeScriptJSX } from './generators/typescript-jsx'
 import { generateComponentIds } from './generators/component-ids'
-import { generatePropIds } from './generators/prop-ids'
+import { generateShortNames } from './generators/short-names'
 import type { ComponentsData } from './types'
 import { validateComponentsSchema } from './validate-components'
 
@@ -110,21 +110,21 @@ const main = () => {
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
   console.log()
 
-  // Step 7: Generate prop ID mappings
-  console.log('Step 7: Generating prop ID mappings...')
-  const propIdFiles = generatePropIds(componentsData)
+  // Step 7: Generate unified short names mappings
+  console.log('Step 7: Generating unified short names mappings...')
+  const shortNameFiles = generateShortNames(componentsData)
   // Split files by destination
-  const tsPropIdFiles: Record<string, string> = {}
-  const swiftPropIdFiles: Record<string, string> = {}
-  for (const [filename, content] of Object.entries(propIdFiles)) {
+  const tsShortNameFiles: Record<string, string> = {}
+  const swiftShortNameFiles: Record<string, string> = {}
+  for (const [filename, content] of Object.entries(shortNameFiles)) {
     if (filename.endsWith('.ts')) {
-      tsPropIdFiles[filename] = content
+      tsShortNameFiles[filename] = content
     } else if (filename.endsWith('.swift')) {
-      swiftPropIdFiles[filename] = content
+      swiftShortNameFiles[filename] = content
     }
   }
-  writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsPropIdFiles)
-  writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftPropIdFiles)
+  writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsShortNameFiles)
+  writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftShortNameFiles)
   console.log()
 
   console.log('✅ Generation complete!\n')
@@ -137,7 +137,7 @@ const main = () => {
     `   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files`
   )
   console.log(
-    `   Prop IDs: ${Object.keys(tsPropIdFiles).length} TypeScript files, ${Object.keys(swiftPropIdFiles).length} Swift files`
+    `   Short names: ${Object.keys(tsShortNameFiles).length} TypeScript files, ${Object.keys(swiftShortNameFiles).length} Swift files`
   )
   console.log()
   console.log('Next steps:')

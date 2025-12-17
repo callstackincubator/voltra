@@ -36,15 +36,9 @@ public struct VoltraElement: Hashable {
         guard let props = _props else { return nil }
         var expanded: [String: JSONValue] = [:]
         for (key, value) in props {
-            // Check if key is a numeric string (prop ID)
-            if let numericKey = Int(key),
-               let propNameID = PropNameID(rawValue: numericKey) {
-                // Convert numeric ID to prop name
-                expanded[propNameID.propName] = value
-            } else {
-                // Keep string keys as-is
-                expanded[key] = value
-            }
+            // Expand short key to full name using unified ShortNames mapping
+            let fullKey = ShortNames.expand(key)
+            expanded[fullKey] = value
         }
         return expanded.isEmpty ? nil : expanded
     }
@@ -72,7 +66,8 @@ public struct VoltraElement: Hashable {
 
         var expanded: [String: JSONValue] = [:]
         for (key, value) in styleDict {
-            let expandedKey = expandStylePropertyName(key)
+            // Use unified ShortNames mapping for style properties
+            let expandedKey = ShortNames.expand(key)
             expanded[expandedKey] = value
         }
 
@@ -139,97 +134,4 @@ public struct VoltraElement: Hashable {
             return try! JSONDecoder().decode(T.self, from: "{}".data(using: .utf8)!)
         }
     }
-
-    // MARK: - Private Helpers
-
-    /// Expand short modifier name to full name
-    private func expandModifierName(_ shortName: String) -> String {
-        let modifierNameMap: [String: String] = [
-            "f": "frame",
-            "pad": "padding",
-            "off": "offset",
-            "pos": "position",
-            "fg": "foregroundStyle",
-            "bg": "background",
-            "bgs": "backgroundStyle",
-            "tint": "tint",
-            "op": "opacity",
-            "cr": "cornerRadius",
-            "font": "font",
-            "fw": "fontWeight",
-            "it": "italic",
-            "sc": "smallCaps",
-            "md": "monospacedDigit",
-            "ll": "lineLimit",
-            "lsp": "lineSpacing",
-            "kern": "kerning",
-            "ul": "underline",
-            "st": "strikethrough",
-            "sh": "shadow",
-            "se": "scaleEffect",
-            "re": "rotationEffect",
-            "bd": "border",
-            "clip": "clipped",
-            "ge": "glassEffect",
-            "gs": "gaugeStyle",
-        ]
-        return modifierNameMap[shortName] ?? shortName
-    }
-
-    /// Expand short style property name to full name
-    private func expandStylePropertyName(_ shortName: String) -> String {
-        let stylePropertyMap: [String: String] = [
-            "pad": "padding",
-            "pv": "paddingVertical",
-            "ph": "paddingHorizontal",
-            "pt": "paddingTop",
-            "pb": "paddingBottom",
-            "pl": "paddingLeft",
-            "pr": "paddingRight",
-            "m": "margin",
-            "mv": "marginVertical",
-            "mh": "marginHorizontal",
-            "mt": "marginTop",
-            "mb": "marginBottom",
-            "ml": "marginLeft",
-            "mr": "marginRight",
-            "bg": "backgroundColor",
-            "br": "borderRadius",
-            "bw": "borderWidth",
-            "bc": "borderColor",
-            "sc": "shadowColor",
-            "so": "shadowOffset",
-            "sop": "shadowOpacity",
-            "sr": "shadowRadius",
-            "fs": "fontSize",
-            "fw": "fontWeight",
-            "c": "color",
-            "ls": "letterSpacing",
-            "fv": "fontVariant",
-            "w": "width",
-            "h": "height",
-            "op": "opacity",
-            "ov": "overflow",
-            "ar": "aspectRatio",
-            "minw": "minWidth",
-            "maxw": "maxWidth",
-            "minh": "minHeight",
-            "maxh": "maxHeight",
-            "fgw": "flexGrowWidth",
-            "fsh": "fixedSizeHorizontal",
-            "fsv": "fixedSizeVertical",
-            "lp": "layoutPriority",
-            "zi": "zIndex",
-            "ox": "offsetX",
-            "oy": "offsetY",
-            "ap": "absolutePosition",
-            "pos": "position",
-            "t": "top",
-            "l": "left",
-            "r": "right",
-            "b": "bottom",
-        ]
-        return stylePropertyMap[shortName] ?? shortName
-    }
-
 }

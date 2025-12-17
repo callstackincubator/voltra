@@ -2,4 +2,4 @@
 
 exports[`Payload size regression tests BasicLiveActivityUI 1`] = `428`;
 
-exports[`Payload size regression tests MusicPlayerLiveActivityUI 1`] = `528`;
+exports[`Payload size regression tests MusicPlayerLiveActivityUI 1`] = `520`;

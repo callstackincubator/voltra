@@ -21,5 +21,8 @@ export type ComponentDefinition = {
 
 export type ComponentsData = {
   version: string
+  shortNames: Record<string, string>
+  styleProperties: string[]
+  modifiers: string[]
   components: ComponentDefinition[]
 }
