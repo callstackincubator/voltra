@@ -496,8 +496,13 @@ export function transformProps(
   return transformed
 }
 
+/** Current payload version - increment when making breaking changes to payload schema */
+export const VOLTRA_PAYLOAD_VERSION = 1
+
 export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
-  const result: VoltraJson = {}
+  const result: VoltraJson = {
+    v: VOLTRA_PAYLOAD_VERSION,
+  }
 
   // Create a single shared stylesheet registry for all variants
   const stylesheetRegistry = createStylesheetRegistry()

@@ -12,14 +12,28 @@ public struct VoltraLiveActivityPayload: Hashable {
     /// Optional background tint for Lock Screen
     public let activityBackgroundTint: String?
 
+    /// Whether this payload represents an unsupported version (renders empty)
+    public let isUnsupportedVersion: Bool
+
     /// Parse from decompressed JSON string (called once per update)
     public init(jsonString: String) throws {
         let root = try JSONValue.parse(from: jsonString)
 
+        // Migrate to current version if needed
+        guard let migrated = try VoltraPayloadMigrator.migrateToCurrentVersion(root) else {
+            // Unsupported version (future version) - render empty
+            self.regions = [:]
+            self.keylineTint = nil
+            self.activityBackgroundTint = nil
+            self.isUnsupportedVersion = true
+            return
+        }
+
         // Extract regions directly from the parsed tree
-        self.regions = try Self.extractRegions(from: root)
-        self.keylineTint = root["isl_keyline_tint"]?.stringValue
-        self.activityBackgroundTint = root["ls_background_tint"]?.stringValue
+        self.regions = try Self.extractRegions(from: migrated)
+        self.keylineTint = migrated["isl_keyline_tint"]?.stringValue
+        self.activityBackgroundTint = migrated["ls_background_tint"]?.stringValue
+        self.isUnsupportedVersion = false
     }
 
     /// Extract regions from the parsed JSON tree

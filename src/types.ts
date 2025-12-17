@@ -12,6 +12,7 @@ export type VoltraElementJson = {
 export type VoltraNodeJson = VoltraElementJson | VoltraElementJson[] | string
 
 export type VoltraVariantsJson = {
+  v: number // Payload version - required for remote updates
   s?: Record<string, unknown>[] // Shared stylesheet for all variants
   ls?: VoltraNodeJson
   ls_background_tint?: string
