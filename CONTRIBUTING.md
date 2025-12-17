@@ -117,6 +117,62 @@ If your changes affect payload size, the tests will fail. This is intentional:
 
 ⚠️ **CI will block merging** if payload size snapshots are out of date. This ensures we don't accidentally regress payload efficiency.
 
+## Payload schema versioning
+
+The payload schema has a version number to support forward compatibility. When the Swift code receives a payload with a newer version than it understands, it renders empty instead of crashing.
+
+### Version constants
+
+The version is defined in two places that must stay in sync:
+
+- **TypeScript**: `src/renderer/renderer.ts` → `VOLTRA_PAYLOAD_VERSION`
+- **Swift**: `ios/shared/VoltraPayloadMigrator.swift` → `currentVersion`
+
+### When to increment the version
+
+Increment the version when making **breaking changes** to the payload schema:
+
+- Adding required fields that old Swift code wouldn't understand
+- Changing the structure of existing fields
+- Renaming keys in a way that breaks parsing
+
+You do **not** need to increment for:
+
+- Adding optional fields (old Swift code will ignore them)
+- Bug fixes that don't change the schema
+- Adding new component types (they render as `EmptyView` if unknown)
+
+### Adding migrations
+
+When you increment the version, add a migration in Swift to upgrade old payloads:
+
+1. Increment `currentVersion` in both TypeScript and Swift
+2. Create a migration struct implementing `VoltraPayloadMigration`
+3. Register it in the `migrations` dictionary
+
+```swift
+// Example: V1ToV2Migration.swift
+struct V1ToV2Migration: VoltraPayloadMigration {
+    static let fromVersion = 1
+    static let toVersion = 2
+
+    static func migrate(_ json: JSONValue) throws -> JSONValue {
+        // Transform v1 payload to v2 format
+        // Update the version field
+        var result = json
+        result["v"] = .int(2)
+        return result
+    }
+}
+
+// In VoltraPayloadMigrator.swift:
+private static let migrations: [Int: any VoltraPayloadMigration.Type] = [
+    1: V1ToV2Migration.self,
+]
+```
+
+This ensures users with older apps can still receive updates from newer servers.
+
 ## Testing your changes
 
 The `example/` directory contains an Expo app for testing changes.
