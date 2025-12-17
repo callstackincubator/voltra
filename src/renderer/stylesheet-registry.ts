@@ -108,6 +108,6 @@ export const createStylesheetRegistry = (): StylesheetRegistry => {
       styles.push(compressStyleObject(styleObject))
       return index
     },
-    getStyles: () => styles
+    getStyles: () => styles,
   }
 }

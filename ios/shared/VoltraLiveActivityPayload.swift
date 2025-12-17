@@ -28,7 +28,7 @@ public struct VoltraLiveActivityPayload: Hashable {
 
         // Handle array case (same UI for all regions)
         if case .array = root {
-            let nodes = try parseNodes(from: root, stylesheetKey: nil, root: [:])
+            let nodes = try parseNodes(from: root, stylesheet: nil)
             for region in VoltraRegion.allCases {
                 regions[region] = nodes
             }
@@ -42,11 +42,13 @@ public struct VoltraLiveActivityPayload: Hashable {
                          userInfo: [NSLocalizedDescriptionKey: "Invalid root JSON type"])
         }
 
+        // Extract the shared stylesheet from root (key "s")
+        let stylesheet = extractStylesheet(from: rootObject)
+
         // Extract components for each region
         for region in VoltraRegion.allCases {
             if let regionValue = rootObject[region.jsonKey] {
-                let stylesheetKey = region.jsonKey + "_s"
-                let nodes = try parseNodes(from: regionValue, stylesheetKey: stylesheetKey, root: rootObject)
+                let nodes = try parseNodes(from: regionValue, stylesheet: stylesheet)
                 regions[region] = nodes
             }
         }
@@ -55,10 +57,7 @@ public struct VoltraLiveActivityPayload: Hashable {
     }
 
     /// Parse an array of JSON values into VoltraNodes
-    private static func parseNodes(from value: JSONValue, stylesheetKey: String?, root: [String: JSONValue] = [:]) throws -> [VoltraNode] {
-        // Extract stylesheet for this region
-        let stylesheet = extractStylesheet(from: root, stylesheetKey: stylesheetKey)
-
+    private static func parseNodes(from value: JSONValue, stylesheet: [[String: JSONValue]]?) throws -> [VoltraNode] {
         if case .array(let nodeArray) = value {
             return try nodeArray.compactMap { nodeJson in
                 guard case .object = nodeJson else { return nil }
@@ -72,10 +71,9 @@ public struct VoltraLiveActivityPayload: Hashable {
         }
     }
 
-    /// Extract the appropriate stylesheet for a region
-    private static func extractStylesheet(from root: [String: JSONValue], stylesheetKey: String?) -> [[String: JSONValue]]? {
-        guard let key = stylesheetKey,
-              case .array(let stylesheetArray) = root[key] else {
+    /// Extract the shared stylesheet from root
+    private static func extractStylesheet(from root: [String: JSONValue]) -> [[String: JSONValue]]? {
+        guard case .array(let stylesheetArray) = root["s"] else {
             return nil
         }
 

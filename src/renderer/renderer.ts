@@ -499,20 +499,22 @@ export function transformProps(
 export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
   const result: VoltraJson = {}
 
+  // Create a single shared stylesheet registry for all variants
+  const stylesheetRegistry = createStylesheetRegistry()
+
+  const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
+    const registry = getContextRegistry()
+    const context: VoltraRenderingContext = {
+      registry,
+      stylesheetRegistry,
+    }
+    return renderNode(element, context)
+  }
+
+  const renderCache = getRenderCache(renderVariantToJson)
+
   if (variants.lockScreen) {
     const lockScreenVariant = variants.lockScreen
-    const stylesheetRegistry = createStylesheetRegistry()
-
-    const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
-      const registry = getContextRegistry()
-      const context: VoltraRenderingContext = {
-        registry,
-        stylesheetRegistry,
-      }
-      return renderNode(element, context)
-    }
-
-    const renderCache = getRenderCache(renderVariantToJson)
 
     if (typeof lockScreenVariant === 'object' && lockScreenVariant !== null && 'content' in lockScreenVariant) {
       result.ls = renderCache.getOrRender(lockScreenVariant.content)
@@ -523,11 +525,6 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
     } else {
       result.ls = renderCache.getOrRender(lockScreenVariant as ReactNode)
     }
-
-    const styles = stylesheetRegistry.getStyles()
-    if (styles.length > 0) {
-      ;(result as any).ls_s = styles
-    }
   }
 
   if (variants.island) {
@@ -536,126 +533,38 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
     }
 
     if (variants.island.expanded) {
-      // Create separate stylesheet registry for each island variant
-      const createIslandRenderer = () => {
-        const stylesheetRegistry = createStylesheetRegistry()
-
-        const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
-          const registry = getContextRegistry()
-          const context: VoltraRenderingContext = {
-            registry,
-            stylesheetRegistry,
-          }
-          return renderNode(element, context)
-        }
-
-        const renderCache = getRenderCache(renderVariantToJson)
-        return { renderCache, stylesheetRegistry }
-      }
-
       if (variants.island.expanded.center) {
-        const { renderCache: centerCache, stylesheetRegistry: centerStyles } = createIslandRenderer()
-        result.isl_exp_c = centerCache.getOrRender(variants.island.expanded.center)
-        const styles = centerStyles.getStyles()
-        if (styles.length > 0) {
-          ;(result as any).isl_exp_c_s = styles
-        }
+        result.isl_exp_c = renderCache.getOrRender(variants.island.expanded.center)
       }
       if (variants.island.expanded.leading) {
-        const { renderCache: leadingCache, stylesheetRegistry: leadingStyles } = createIslandRenderer()
-        result.isl_exp_l = leadingCache.getOrRender(variants.island.expanded.leading)
-        const styles = leadingStyles.getStyles()
-        if (styles.length > 0) {
-          ;(result as any).isl_exp_l_s = styles
-        }
+        result.isl_exp_l = renderCache.getOrRender(variants.island.expanded.leading)
       }
       if (variants.island.expanded.trailing) {
-        const { renderCache: trailingCache, stylesheetRegistry: trailingStyles } = createIslandRenderer()
-        result.isl_exp_t = trailingCache.getOrRender(variants.island.expanded.trailing)
-        const styles = trailingStyles.getStyles()
-        if (styles.length > 0) {
-          ;(result as any).isl_exp_t_s = styles
-        }
+        result.isl_exp_t = renderCache.getOrRender(variants.island.expanded.trailing)
       }
       if (variants.island.expanded.bottom) {
-        const { renderCache: bottomCache, stylesheetRegistry: bottomStyles } = createIslandRenderer()
-        result.isl_exp_b = bottomCache.getOrRender(variants.island.expanded.bottom)
-        const styles = bottomStyles.getStyles()
-        if (styles.length > 0) {
-          ;(result as any).isl_exp_b_s = styles
-        }
+        result.isl_exp_b = renderCache.getOrRender(variants.island.expanded.bottom)
       }
     }
 
     if (variants.island.compact) {
       if (variants.island.compact.leading) {
-        const { renderCache: cmpLeadingCache, stylesheetRegistry: cmpLeadingStyles } = (() => {
-          const stylesheetRegistry = createStylesheetRegistry()
-
-          const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
-            const registry = getContextRegistry()
-            const context: VoltraRenderingContext = {
-              registry,
-              stylesheetRegistry,
-            }
-            return renderNode(element, context)
-          }
-
-          const renderCache = getRenderCache(renderVariantToJson)
-          return { renderCache, stylesheetRegistry }
-        })()
-        result.isl_cmp_l = cmpLeadingCache.getOrRender(variants.island.compact.leading)
-        const styles = cmpLeadingStyles.getStyles()
-        if (styles.length > 0) {
-          ;(result as any).isl_cmp_l_s = styles
-        }
+        result.isl_cmp_l = renderCache.getOrRender(variants.island.compact.leading)
       }
       if (variants.island.compact.trailing) {
-        const { renderCache: cmpTrailingCache, stylesheetRegistry: cmpTrailingStyles } = (() => {
-          const stylesheetRegistry = createStylesheetRegistry()
-
-          const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
-            const registry = getContextRegistry()
-            const context: VoltraRenderingContext = {
-              registry,
-              stylesheetRegistry,
-            }
-            return renderNode(element, context)
-          }
-
-          const renderCache = getRenderCache(renderVariantToJson)
-          return { renderCache, stylesheetRegistry }
-        })()
-        result.isl_cmp_t = cmpTrailingCache.getOrRender(variants.island.compact.trailing)
-        const styles = cmpTrailingStyles.getStyles()
-        if (styles.length > 0) {
-          ;(result as any).isl_cmp_t_s = styles
-        }
+        result.isl_cmp_t = renderCache.getOrRender(variants.island.compact.trailing)
       }
     }
 
     if (variants.island.minimal) {
-      const { renderCache: minimalCache, stylesheetRegistry: minimalStyles } = (() => {
-        const stylesheetRegistry = createStylesheetRegistry()
-
-        const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
-          const registry = getContextRegistry()
-          const context: VoltraRenderingContext = {
-            registry,
-            stylesheetRegistry,
-          }
-          return renderNode(element, context)
-        }
-
-        const renderCache = getRenderCache(renderVariantToJson)
-        return { renderCache, stylesheetRegistry }
-      })()
-      result.isl_min = minimalCache.getOrRender(variants.island.minimal)
-      const styles = minimalStyles.getStyles()
-      if (styles.length > 0) {
-        ;(result as any).isl_min_s = styles
-      }
+      result.isl_min = renderCache.getOrRender(variants.island.minimal)
     }
+  }
+
+  // Add the shared stylesheet at the root level
+  const styles = stylesheetRegistry.getStyles()
+  if (styles.length > 0) {
+    result.s = styles
   }
 
   return result
