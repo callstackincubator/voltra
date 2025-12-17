@@ -160,12 +160,35 @@ fileprivate func buildStaticContentView(data: Data, source: String) -> AnyView {
     )
   }
 
-  let root = VoltraNode(from: json)
+  let root = parseVoltraNode(from: json)
 
   return AnyView(
     Voltra(root: root, activityId: "widget").frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   )
 
+}
+
+/// Parse a VoltraNode from JSON, extracting stylesheet and sharedElements if present
+fileprivate func parseVoltraNode(from json: JSONValue) -> VoltraNode {
+  // Extract stylesheet and sharedElements from root if it's an object
+  var stylesheet: [[String: JSONValue]]? = nil
+  var sharedElements: [JSONValue]? = nil
+
+  if case .object(let rootObject) = json {
+    // Extract stylesheet (key "s")
+    if case .array(let stylesheetArray) = rootObject["s"] {
+      stylesheet = stylesheetArray.compactMap { item in
+        if case .object(let dict) = item { return dict }
+        return nil
+      }
+    }
+    // Extract shared elements (key "e")
+    if case .array(let elementsArray) = rootObject["e"] {
+      sharedElements = elementsArray
+    }
+  }
+
+  return VoltraNode(from: json, stylesheet: stylesheet, sharedElements: sharedElements)
 }
 
 private extension View {
@@ -196,7 +219,7 @@ fileprivate func extractRootIdentifier(_ data: Data) -> String? {
     return nil
   }
 
-  let root = VoltraNode(from: json)
+  let root = parseVoltraNode(from: json)
   if case .element(let element) = root {
     return element.id ?? element.type
   }

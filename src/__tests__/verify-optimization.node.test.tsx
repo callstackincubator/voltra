@@ -14,8 +14,6 @@ test('verifies empty p and c are omitted', () => {
     ),
   })
 
-  console.log('Result:', JSON.stringify(result, null, 2))
-
   const vstack = result.ls as any
   const text = vstack.c[0]
   const spacer = vstack.c[1]

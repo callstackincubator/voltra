@@ -9,11 +9,21 @@ export type VoltraElementJson = {
   p?: Record<string, VoltraPropValue>
 }
 
-export type VoltraNodeJson = VoltraElementJson | VoltraElementJson[] | string
+/**
+ * Reference to a shared element by index.
+ * Used for element deduplication - when the same JSX element (by reference)
+ * appears multiple times in the tree.
+ */
+export type VoltraElementRef = {
+  $r: number
+}
+
+export type VoltraNodeJson = VoltraElementJson | VoltraElementJson[] | VoltraElementRef | string
 
 export type VoltraVariantsJson = {
   v: number // Payload version - required for remote updates
   s?: Record<string, unknown>[] // Shared stylesheet for all variants
+  e?: VoltraNodeJson[] // Shared elements for deduplication
   ls?: VoltraNodeJson
   ls_background_tint?: string
   isl_keyline_tint?: string

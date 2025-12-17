@@ -42,7 +42,7 @@ public struct VoltraLiveActivityPayload: Hashable {
 
         // Handle array case (same UI for all regions)
         if case .array = root {
-            let nodes = try parseNodes(from: root, stylesheet: nil)
+            let nodes = try parseNodes(from: root, stylesheet: nil, sharedElements: nil)
             for region in VoltraRegion.allCases {
                 regions[region] = nodes
             }
@@ -59,10 +59,13 @@ public struct VoltraLiveActivityPayload: Hashable {
         // Extract the shared stylesheet from root (key "s")
         let stylesheet = extractStylesheet(from: rootObject)
 
+        // Extract the shared elements from root (key "e") for element deduplication
+        let sharedElements = extractSharedElements(from: rootObject)
+
         // Extract components for each region
         for region in VoltraRegion.allCases {
             if let regionValue = rootObject[region.jsonKey] {
-                let nodes = try parseNodes(from: regionValue, stylesheet: stylesheet)
+                let nodes = try parseNodes(from: regionValue, stylesheet: stylesheet, sharedElements: sharedElements)
                 regions[region] = nodes
             }
         }
@@ -71,15 +74,15 @@ public struct VoltraLiveActivityPayload: Hashable {
     }
 
     /// Parse an array of JSON values into VoltraNodes
-    private static func parseNodes(from value: JSONValue, stylesheet: [[String: JSONValue]]?) throws -> [VoltraNode] {
+    private static func parseNodes(from value: JSONValue, stylesheet: [[String: JSONValue]]?, sharedElements: [JSONValue]?) throws -> [VoltraNode] {
         if case .array(let nodeArray) = value {
             return try nodeArray.compactMap { nodeJson in
                 guard case .object = nodeJson else { return nil }
-                return try VoltraNode(from: nodeJson, stylesheet: stylesheet)
+                return try VoltraNode(from: nodeJson, stylesheet: stylesheet, sharedElements: sharedElements)
             }
         } else if case .object = value {
             // Single node wrapped in array
-            return [try VoltraNode(from: value, stylesheet: stylesheet)]
+            return [try VoltraNode(from: value, stylesheet: stylesheet, sharedElements: sharedElements)]
         } else {
             return []
         }
@@ -98,5 +101,13 @@ public struct VoltraLiveActivityPayload: Hashable {
             }
             return nil
         }
+    }
+
+    /// Extract the shared elements array from root (for element deduplication)
+    private static func extractSharedElements(from root: [String: JSONValue]) -> [JSONValue]? {
+        guard case .array(let elementsArray) = root["e"] else {
+            return nil
+        }
+        return elementsArray
     }
 }

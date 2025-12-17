@@ -17,6 +17,9 @@ public struct VoltraElement: Hashable {
     /// Optional stylesheet for resolving style references
     public let stylesheet: [[String: JSONValue]]?
 
+    /// Optional shared elements for resolving element references
+    public let sharedElements: [JSONValue]?
+
     // MARK: - Hashable
 
     public func hash(into hasher: inout Hasher) {
@@ -77,7 +80,11 @@ public struct VoltraElement: Hashable {
     // MARK: - Initialization
 
     /// Initialize from JSONValue (no serialization roundtrip)
-    public init?(from json: JSONValue, stylesheet: [[String: JSONValue]]? = nil) {
+    /// - Parameters:
+    ///   - json: The JSON value to parse
+    ///   - stylesheet: Optional shared stylesheet for style deduplication
+    ///   - sharedElements: Optional shared elements array for element deduplication
+    public init?(from json: JSONValue, stylesheet: [[String: JSONValue]]? = nil, sharedElements: [JSONValue]? = nil) {
         guard case .object(let dict) = json else {
             return nil
         }
@@ -94,7 +101,7 @@ public struct VoltraElement: Hashable {
 
         // Extract children
         if let childrenValue = dict["c"] {
-            self.children = VoltraNode(from: childrenValue, stylesheet: stylesheet)
+            self.children = VoltraNode(from: childrenValue, stylesheet: stylesheet, sharedElements: sharedElements)
         } else {
             self.children = nil
         }
@@ -108,13 +115,16 @@ public struct VoltraElement: Hashable {
 
         // Store stylesheet reference
         self.stylesheet = stylesheet
+
+        // Store shared elements reference
+        self.sharedElements = sharedElements
     }
 
     /// Get component prop by name - handles both single component and array
     public func componentProp(_ propName: String) -> VoltraNode {
         guard let propValue = props?[propName] else { return .empty }
 
-        return VoltraNode(from: propValue, stylesheet: stylesheet)
+        return VoltraNode(from: propValue, stylesheet: stylesheet, sharedElements: sharedElements)
     }
 
     /// Decode parameters from props

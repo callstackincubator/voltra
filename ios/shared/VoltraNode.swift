@@ -18,7 +18,11 @@ public indirect enum VoltraNode: Hashable, View {
     // MARK: - Initialization
 
     /// Initialize from JSONValue (handles all types)
-    public init(from json: JSONValue, stylesheet: [[String: JSONValue]]? = nil) {
+    /// - Parameters:
+    ///   - json: The JSON value to parse
+    ///   - stylesheet: Optional shared stylesheet for style deduplication
+    ///   - sharedElements: Optional shared elements array for element deduplication
+    public init(from json: JSONValue, stylesheet: [[String: JSONValue]]? = nil, sharedElements: [JSONValue]? = nil) {
         switch json {
         case .string(let text):
             self = .text(text)
@@ -31,10 +35,16 @@ public indirect enum VoltraNode: Hashable, View {
         case .null:
             self = .empty
         case .array(let items):
-            let nodes = items.map { VoltraNode(from: $0, stylesheet: stylesheet) }.filter { !$0.isEmpty }
+            let nodes = items.map { VoltraNode(from: $0, stylesheet: stylesheet, sharedElements: sharedElements) }.filter { !$0.isEmpty }
             self = nodes.isEmpty ? .empty : .array(nodes)
-        case .object:
-            if let element = VoltraElement(from: json, stylesheet: stylesheet) {
+        case .object(let dict):
+            // Check for element reference ($r key) and resolve from shared elements
+            if let refIndex = dict["$r"]?.intValue,
+               let sharedElements = sharedElements,
+               refIndex >= 0 && refIndex < sharedElements.count {
+                // Resolve reference by parsing the shared element
+                self = VoltraNode(from: sharedElements[refIndex], stylesheet: stylesheet, sharedElements: sharedElements)
+            } else if let element = VoltraElement(from: json, stylesheet: stylesheet, sharedElements: sharedElements) {
                 self = .element(element)
             } else {
                 self = .empty

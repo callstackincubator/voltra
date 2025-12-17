@@ -13,5 +13,10 @@
     "type": "dir",
     "name": "components",
     "label": "Components"
+  },
+  {
+    "type": "dir",
+    "name": "api",
+    "label": "API Reference"
   }
 ]

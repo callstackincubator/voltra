@@ -11,8 +11,18 @@
   },
   {
     "type": "file",
+    "name": "images",
+    "label": "Images"
+  },
+  {
+    "type": "file",
     "name": "image-preloading",
-    "label": "Image Preloading"
+    "label": "Image preloading"
+  },
+  {
+    "type": "file",
+    "name": "performance",
+    "label": "Performance"
   },
   {
     "type": "file",

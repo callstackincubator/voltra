@@ -41,7 +41,26 @@ class VoltraRN: ExpoView {
   private func parseAndUpdatePayload(_ jsonString: String) {
     do {
       let json = try JSONValue.parse(from: jsonString)
-      root = VoltraNode(from: json)
+
+      // Extract stylesheet and sharedElements from root if it's an object
+      var stylesheet: [[String: JSONValue]]? = nil
+      var sharedElements: [JSONValue]? = nil
+
+      if case .object(let rootObject) = json {
+        // Extract stylesheet (key "s")
+        if case .array(let stylesheetArray) = rootObject["s"] {
+          stylesheet = stylesheetArray.compactMap { item in
+            if case .object(let dict) = item { return dict }
+            return nil
+          }
+        }
+        // Extract shared elements (key "e")
+        if case .array(let elementsArray) = rootObject["e"] {
+          sharedElements = elementsArray
+        }
+      }
+
+      root = VoltraNode(from: json, stylesheet: stylesheet, sharedElements: sharedElements)
     } catch {
       print("Error setting payload in VoltraView: \(error)")
       root = .empty

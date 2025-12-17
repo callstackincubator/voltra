@@ -1,6 +1,8 @@
 # Image Preloading
 
-Live Activities have strict size limits (4KB per update), which makes displaying remote images challenging. Voltra provides image preloading APIs that download images to shared App Group storage, making them available to both your app and Live Activities.
+This page provides detailed API documentation for Voltra's image preloading system. For an overview of all image handling approaches in Live Activities, see the [Images](images) documentation.
+
+Live Activities have strict size limits (4KB per update), which makes displaying remote images challenging. The image preloading API downloads images to shared App Group storage, making them available to both your app and Live Activities.
 
 ## Overview
 

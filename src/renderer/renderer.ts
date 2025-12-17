@@ -27,9 +27,10 @@ import { StyleSheet } from 'react-native'
 import { isVoltraComponent } from '../jsx/createVoltraComponent'
 import { getComponentId } from '../payload/component-ids'
 import { shorten } from '../payload/short-names'
-import { VoltraElementJson, VoltraJson, VoltraNodeJson, VoltraPropValue } from '../types'
+import { VoltraElementJson, VoltraElementRef, VoltraJson, VoltraNodeJson, VoltraPropValue } from '../types'
 import { ContextRegistry, getContextRegistry } from './context-registry'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher'
+import { createElementRegistry, preScanForDuplicates, type ElementRegistry } from './element-registry'
 import { getRenderCache } from './render-cache'
 import { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry'
 import { VoltraVariants } from './types'
@@ -37,6 +38,8 @@ import { VoltraVariants } from './types'
 type VoltraRenderingContext = {
   registry: ContextRegistry
   stylesheetRegistry?: StylesheetRegistry
+  elementRegistry?: ElementRegistry
+  duplicates?: Set<ReactNode>
   inStringOnlyContext?: boolean
 }
 
@@ -82,6 +85,25 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
     return element.map((child) => renderNode(child, context)).flat() as VoltraNodeJson
   }
 
+  // B. Element Deduplication - check if this element is a duplicate (appears multiple times by reference)
+  if (context.duplicates?.has(element) && context.elementRegistry) {
+    const existingIndex = context.elementRegistry.isRegistered(element)
+    if (existingIndex !== undefined) {
+      // Already rendered - return a reference
+      return { $r: existingIndex } as VoltraElementRef
+    }
+
+    // First encounter of a duplicate - render it, register it, and return a reference
+    const rendered = renderNodeInternal(element, context)
+    const index = context.elementRegistry.register(element, rendered)
+    return { $r: index } as VoltraElementRef
+  }
+
+  // Not a duplicate - render inline as usual
+  return renderNodeInternal(element, context)
+}
+
+function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext): VoltraNodeJson {
   // At this point, element should be an object with type and props properties
   if (typeof element !== 'object' || element === null) {
     throw new Error(`Expected element-like object with type and props, got ${typeof element}`)
@@ -391,6 +413,8 @@ export function transformProps(
       const serializedComponent = renderNode(value, {
         registry: getContextRegistry(),
         stylesheetRegistry: context.stylesheetRegistry,
+        elementRegistry: context.elementRegistry,
+        duplicates: context.duplicates,
         inStringOnlyContext: false,
       })
       const shortKey = shorten(key)
@@ -408,19 +432,87 @@ export function transformProps(
 /** Current payload version - increment when making breaking changes to payload schema */
 export const VOLTRA_PAYLOAD_VERSION = 1
 
+/**
+ * Collect all variant nodes for pre-scanning
+ */
+const collectVariantNodes = (variants: VoltraVariants): ReactNode[] => {
+  const nodes: ReactNode[] = []
+
+  if (variants.lockScreen) {
+    const lockScreenVariant = variants.lockScreen
+    if (typeof lockScreenVariant === 'object' && lockScreenVariant !== null && 'content' in lockScreenVariant) {
+      if (lockScreenVariant.content) nodes.push(lockScreenVariant.content)
+    } else {
+      nodes.push(lockScreenVariant as ReactNode)
+    }
+  }
+
+  if (variants.island) {
+    if (variants.island.expanded) {
+      if (variants.island.expanded.center) nodes.push(variants.island.expanded.center)
+      if (variants.island.expanded.leading) nodes.push(variants.island.expanded.leading)
+      if (variants.island.expanded.trailing) nodes.push(variants.island.expanded.trailing)
+      if (variants.island.expanded.bottom) nodes.push(variants.island.expanded.bottom)
+    }
+    if (variants.island.compact) {
+      if (variants.island.compact.leading) nodes.push(variants.island.compact.leading)
+      if (variants.island.compact.trailing) nodes.push(variants.island.compact.trailing)
+    }
+    if (variants.island.minimal) nodes.push(variants.island.minimal)
+  }
+
+  return nodes
+}
+
+/**
+ * Pre-scan all variant nodes to identify duplicate elements across the entire payload
+ */
+const preScanAllVariants = (variants: VoltraVariants): Set<ReactNode> => {
+  const seen = new Set<ReactNode>()
+  const duplicates = new Set<ReactNode>()
+
+  const nodes = collectVariantNodes(variants)
+
+  // Scan each variant node for duplicates
+  for (const node of nodes) {
+    // Also check if the root node itself is duplicated across variants
+    if (node && typeof node === 'object') {
+      if (seen.has(node)) {
+        duplicates.add(node)
+      } else {
+        seen.add(node)
+      }
+    }
+
+    // Scan children for duplicates
+    const nodeDuplicates = preScanForDuplicates(node)
+    for (const dup of nodeDuplicates) {
+      duplicates.add(dup)
+    }
+  }
+
+  return duplicates
+}
+
 export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
   const result: VoltraJson = {
     v: VOLTRA_PAYLOAD_VERSION,
   }
 
-  // Create a single shared stylesheet registry for all variants
+  // Pre-scan all variants to identify duplicate elements (by reference)
+  const duplicates = preScanAllVariants(variants)
+
+  // Create shared registries for all variants
   const stylesheetRegistry = createStylesheetRegistry()
+  const elementRegistry = createElementRegistry()
 
   const renderVariantToJson = (element: ReactNode): VoltraNodeJson => {
     const registry = getContextRegistry()
     const context: VoltraRenderingContext = {
       registry,
       stylesheetRegistry,
+      elementRegistry,
+      duplicates,
     }
     return renderNode(element, context)
   }
@@ -473,6 +565,12 @@ export const renderVoltraToJson = (variants: VoltraVariants): VoltraJson => {
     if (variants.island.minimal) {
       result.isl_min = renderCache.getOrRender(variants.island.minimal)
     }
+  }
+
+  // Add shared elements at the root level (for deduplication)
+  const sharedElements = elementRegistry.getElements()
+  if (sharedElements.length > 0) {
+    result.e = sharedElements
   }
 
   // Add the shared stylesheet at the root level
