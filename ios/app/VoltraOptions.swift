@@ -20,10 +20,10 @@ public struct SharedVoltraOptions: Record {
 
 /// Options for starting a Live Activity
 public struct StartVoltraOptions: Record {
-  /// The unique identifier of the Live Activity.
+  /// The name of the Live Activity.
   /// Allows you to rebind to the same activity on app restart.
   @Field
-  public var activityId: String?
+  public var activityName: String?
   
   /// URL to open when the Live Activity is tapped.
   @Field

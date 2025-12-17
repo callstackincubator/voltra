@@ -48,9 +48,9 @@ console.log('Succeeded:', result.succeeded)
 console.log('Failed:', result.failed)
 ```
 
-### `reloadLiveActivities(activityIds?: string[]): Promise<void>`
+### `reloadLiveActivities(activityNames?: string[]): Promise<void>`
 
-Reloads Live Activities to pick up newly preloaded images. If no `activityIds` are provided, all active Live Activities will be reloaded.
+Reloads Live Activities to pick up newly preloaded images. If no `activityNames` are provided, all active Live Activities will be reloaded.
 
 ```typescript
 // Reload all Live Activities

@@ -33,7 +33,7 @@ function OrderLiveActivity({ orderId, status }) {
   }
 
   const { start, update, end, isActive } = useVoltra(variants, {
-    activityId: `order-${orderId}`,
+    activityName: `order-${orderId}`,
     autoStart: true, // Automatically start when component mounts
     autoUpdate: true, // Automatically update when variants change
     deepLinkUrl: `myapp://order/${orderId}`,
@@ -55,7 +55,7 @@ function OrderLiveActivity({ orderId, status }) {
 
 **Hook Options:**
 
-- `activityId`: Unique identifier for the Live Activity
+- `activityName`: Name of the Live Activity
 - `autoStart`: Automatically start when component mounts
 - `autoUpdate`: Automatically update when variants change
 - `deepLinkUrl`: URL to open when Live Activity is tapped

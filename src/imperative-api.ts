@@ -23,10 +23,10 @@ export type SharedVoltraOptions = {
 
 export type StartVoltraOptions = {
   /**
-   * The unique identifier of the Live Activity.
+   * The name of the Live Activity.
    * Allows you to rebind to the same activity on app restart.
    */
-  activityId?: string
+  activityName?: string
   /**
    * URL to open when the Live Activity is tapped.
    */
@@ -73,7 +73,7 @@ export const startVoltra = async (variants: VoltraVariants, options?: StartVoltr
   const targetId = await VoltraModule.startVoltra(payload, {
     target: 'liveActivity',
     deepLinkUrl: options?.deepLinkUrl,
-    activityId: options?.activityId,
+    activityId: options?.activityName,
     ...normalizedSharedOptions,
   })
   return targetId
@@ -87,7 +87,6 @@ export const updateVoltra = async (
   if (!assertRunningOnApple()) return Promise.resolve()
 
   const payload = renderVoltraToString(variants)
-  console.log('payload', payload)
 
   const normalizedSharedOptions = normalizeSharedVoltraOptions(options)
   return VoltraModule.updateVoltra(targetId, payload, normalizedSharedOptions)

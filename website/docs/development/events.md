@@ -23,7 +23,6 @@ Use `addVoltraListener` with the `'stateChange'` event type to subscribe to stat
 import { addVoltraListener } from 'voltra'
 
 const subscription = addVoltraListener('stateChange', (event) => {
-  console.log('Activity ID:', event.activityID)
   console.log('Activity name:', event.activityName)
   console.log('New state:', event.activityState)
 
@@ -55,7 +54,6 @@ The `activityState` field can have the following values:
 
 Each state change event contains:
 
-- `activityID`: The unique identifier of the Live Activity
 - `activityName`: The name of the Live Activity (as specified when starting it)
 - `activityState`: The new state of the Live Activity
 
@@ -71,14 +69,13 @@ Activity push tokens are used to update existing Live Activities via push notifi
 import { addVoltraListener } from 'voltra'
 
 const subscription = addVoltraListener('activityTokenReceived', (event) => {
-  console.log('Activity ID:', event.activityID)
   console.log('Activity name:', event.activityName)
-  console.log('Push token:', event.activityPushToken)
+  console.log('Push token:', event.pushToken)
 
   // Send the token to your server
   sendTokenToServer({
-    activityID: event.activityID,
-    activityPushToken: event.activityPushToken,
+    activityName: event.activityName,
+    pushToken: event.pushToken,
   })
 })
 
@@ -95,11 +92,11 @@ Push-to-start tokens (available on iOS 17.2+) allow you to start Live Activities
 import { addVoltraListener } from 'voltra'
 
 const subscription = addVoltraListener('activityPushToStartTokenReceived', (event) => {
-  console.log('Push-to-start token:', event.activityPushToStartToken)
+  console.log('Push-to-start token:', event.pushToStartToken)
 
   // Send the token to your server
   sendTokenToServer({
-    activityPushToStartToken: event.activityPushToStartToken,
+    pushToStartToken: event.pushToStartToken,
   })
 })
 
@@ -121,7 +118,7 @@ import { addVoltraListener } from 'voltra'
 
 const subscription = addVoltraListener('interaction', (event) => {
   console.log('Component interacted:', event.identifier)
-  console.log('Component type:', event.componentType)
+  console.log('Payload:', event.payload)
 
   // Handle the interaction based on the identifier
   if (event.identifier === 'contact-driver') {
