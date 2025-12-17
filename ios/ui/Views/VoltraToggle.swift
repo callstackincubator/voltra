@@ -16,16 +16,24 @@ public struct VoltraToggle: VoltraView {
     }
 
     public var body: some View {
-        Toggle(
-            isOn: params.defaultValue ?? false,
-            intent: VoltraInteractionIntent(
-                activityId: voltraEnvironment.activityId,
-                componentId: element.id ?? "unknown",
-                payload: (params.defaultValue ?? false) ? "false" : "true"
-            )
-        ) {
-            Text(title)
+        if #available(iOS 17.0, *) {
+            Toggle(
+                isOn: params.defaultValue,
+                intent: VoltraInteractionIntent(
+                    activityId: voltraEnvironment.activityId,
+                    componentId: element.id ?? "unknown",
+                    payload: (params.defaultValue) ? "false" : "true"
+                )
+            ) {
+                Text(title)
+            }
+            .applyStyle(element.style)
+        } else {
+            // Fallback for iOS 16.x: Toggle with static value (intents not supported)
+            Toggle(isOn: .constant(params.defaultValue)) {
+                Text(title)
+            }
+            .applyStyle(element.style)
         }
-        .applyStyle(element.style)
     }
 }

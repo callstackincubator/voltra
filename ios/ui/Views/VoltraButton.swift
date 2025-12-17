@@ -1,5 +1,4 @@
 import SwiftUI
-import AppIntents
 
 public struct VoltraButton: VoltraView {
     public typealias Parameters = EmptyParameters
@@ -14,10 +13,19 @@ public struct VoltraButton: VoltraView {
     }
     
     public var body: some View {
-        Button(intent: VoltraInteractionIntent(activityId: voltraEnvironment.activityId, componentId: element.id!), label: {
-            element.children ?? .text("Button")
-        })
-        .buttonStyle(.plain)
-        .applyStyle(element.style)
+        if #available(iOS 17.0, *) {
+            Button(intent: VoltraInteractionIntent(activityId: voltraEnvironment.activityId, componentId: element.id!), label: {
+                element.children ?? .text("Button")
+            })
+            .buttonStyle(.plain)
+            .applyStyle(element.style)
+        } else {
+            // Fallback for iOS 16.x: Button with no action (intents not supported)
+            Button(action: {}) {
+                element.children ?? .text("Button")
+            }
+            .buttonStyle(.plain)
+            .applyStyle(element.style)
+        }
     }
 }

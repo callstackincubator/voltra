@@ -89,6 +89,8 @@ While Live Activities provide powerful interaction capabilities, there are some 
 
 - **Limited interactable elements**: Only buttons and toggles are supported as interactive components. Other UI elements like text fields, sliders, or custom controls are not available in Live Activities.
 
+- **iOS version requirements**: Interactive buttons and toggles require iOS 17.0+. On iOS 16.x, these components will render but will not be interactive.
+
 - **No real-time updates from interactions**: When a user interacts with a button or toggle, the Live Activity UI doesn't update automatically. You'll need to update the Live Activity content manually using the `update` function if you want to reflect state changes.
 
 - **Event delivery timing**: Events are delivered asynchronously. There may be a slight delay between the user's interaction and your event handler being called, especially if the app needs to be launched.
