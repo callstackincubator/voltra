@@ -13,17 +13,15 @@ export type BasicVoltraEvent = {
 export type VoltraActivityState = 'active' | 'dismissed' | 'pending' | 'stale' | 'ended' | string
 export type VoltraActivityTokenReceivedEvent = BasicVoltraEvent & {
   type: 'activityTokenReceived'
-  activityID: string
   activityName: string
-  activityPushToken: string
+  pushToken: string
 }
 export type VoltraActivityPushToStartTokenReceivedEvent = BasicVoltraEvent & {
   type: 'activityPushToStartTokenReceived'
-  activityPushToStartToken: string
+  pushToStartToken: string
 }
 export type VoltraActivityUpdateEvent = BasicVoltraEvent & {
   type: 'stateChange'
-  activityID: string
   activityName: string
   activityState: VoltraActivityState
 }
@@ -31,7 +29,6 @@ export type VoltraActivityUpdateEvent = BasicVoltraEvent & {
 export type VoltraInteractionEvent = BasicVoltraEvent & {
   type: 'interaction'
   identifier: string
-  componentId: string
   payload: string
 }
 

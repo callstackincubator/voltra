@@ -95,7 +95,7 @@ export async function preloadImages(images: PreloadImageOptions[]): Promise<Prel
  * with their current content state, forcing SwiftUI to re-render and load the
  * newly preloaded images from App Group storage.
  *
- * @param activityIds - Optional array of activity IDs to reload. If omitted, reloads all.
+ * @param activityNames - Optional array of activity names to reload. If omitted, reloads all.
  *
  * @example
  * ```typescript
@@ -109,11 +109,11 @@ export async function preloadImages(images: PreloadImageOptions[]): Promise<Prel
  * await reloadLiveActivities()
  * ```
  */
-export async function reloadLiveActivities(activityIds?: string[]): Promise<void> {
+export async function reloadLiveActivities(activityNames?: string[]): Promise<void> {
   if (!assertIOS('reloadLiveActivities')) return
 
   try {
-    await (VoltraModule as any).reloadLiveActivities(activityIds ?? null)
+    await (VoltraModule as any).reloadLiveActivities(activityNames ?? null)
   } catch (error) {
     console.error('Failed to reload Live Activities:', error)
   }

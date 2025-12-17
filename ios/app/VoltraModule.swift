@@ -102,7 +102,7 @@ public class VoltraModule: Module {
         let compressedJson = try BrotliCompression.compress(jsonString: jsonString)
         try validatePayloadSize(compressedJson, operation: "start")
 
-        let activityName = options?.activityId?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let activityName = options?.activityName?.trimmingCharacters(in: .whitespacesAndNewlines)
         
         // Extract staleDate and relevanceScore from options
         let staleDate: Date? = {
@@ -328,15 +328,15 @@ public class VoltraModule: Module {
     
     // Reload Live Activities to pick up preloaded images
     // This triggers an update with the same content state, forcing SwiftUI to re-render
-    AsyncFunction("reloadLiveActivities") { (activityIds: [String]?) async throws in
+    AsyncFunction("reloadLiveActivities") { (activityNames: [String]?) async throws in
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      
+
       let activities = self.liveActivityService.getAllActivities()
-      
+
       for activity in activities {
-        // If activityIds is provided, only reload those specific activities
-        if let ids = activityIds, !ids.isEmpty {
-          guard ids.contains(activity.attributes.name) else { continue }
+        // If activityNames is provided, only reload those specific activities
+        if let names = activityNames, !names.isEmpty {
+          guard names.contains(activity.attributes.name) else { continue }
         }
         
         do {
@@ -576,8 +576,7 @@ private extension VoltraModule {
       for await data in Activity<VoltraAttributes>.pushToStartTokenUpdates {
         let token = data.reduce("") { $0 + String(format: "%02x", $1) }
         sendEvent("activityPushToStartTokenReceived", [
-          "source": "pushToStartToken",
-          "activityPushToStartToken": token,
+          "pushToStartToken": token,
         ])
       }
     }
@@ -586,80 +585,44 @@ private extension VoltraModule {
   func observeLiveActivityUpdates() {
     guard #available(iOS 16.2, *) else { return }
 
-    // First, emit current state of all existing activities so JS knows about them
+    // 1. Handle currently existing activities (e.g., after app restart)
     for activity in Activity<VoltraAttributes>.activities {
-      sendEvent("stateChange", [
-        "source": activity.id,
-        "timestamp": Date().timeIntervalSince1970,
-        "activityID": activity.id,
-        "activityName": activity.attributes.name,
-        "activityState": String(describing: activity.activityState),
-      ])
+      monitorActivity(activity)
+    }
 
-      // Start observing state changes for this activity
-      if activity.activityState == .active {
-        Task {
-          for await state in activity.activityStateUpdates {
-            sendEvent("stateChange", [
-              "source": activity.id,
-              "timestamp": Date().timeIntervalSince1970,
-              "activityID": activity.id,
-              "activityName": activity.attributes.name,
-              "activityState": String(describing: state),
-            ])
-          }
-        }
+    // 2. Listen for NEW activities created in the future (e.g., push-to-start)
+    Task {
+      for await newActivity in Activity<VoltraAttributes>.activityUpdates {
+        monitorActivity(newActivity)
+      }
+    }
+  }
+
+  /// Set up observers for an activity's lifecycle (only once per activity)
+  private func monitorActivity(_ activity: Activity<VoltraAttributes>) {
+    let activityId = activity.id
+
+    // Observe lifecycle state changes (active → dismissed → ended)
+    Task {
+      for await state in activity.activityStateUpdates {
+        sendEvent("stateChange", [
+          "timestamp": Date().timeIntervalSince1970,
+          "activityName": activity.attributes.name,
+          "activityState": String(describing: state),
+        ])
       }
     }
 
-    // Then observe for new activity updates
-    Task {
-      for await activityUpdate in Activity<VoltraAttributes>.activityUpdates {
-        let activityId = activityUpdate.id
-        let activityState = activityUpdate.activityState
-
-        guard
-          let activity = Activity<VoltraAttributes>.activities.first(where: { $0.id == activityId })
-        else { continue }
-
-        if case .active = activityState {
-          // Emit an immediate event so JS can learn about newly-active activities (e.g., push-to-start)
-          sendEvent("stateChange", [
-            "source": activity.id,
+    // Observe push token updates if enabled
+    if pushNotificationsEnabled {
+      Task {
+        for await pushToken in activity.pushTokenUpdates {
+          let pushTokenString = pushToken.reduce("") { $0 + String(format: "%02x", $1) }
+          sendEvent("activityTokenReceived", [
             "timestamp": Date().timeIntervalSince1970,
-            "activityID": activity.id,
             "activityName": activity.attributes.name,
-            "activityState": String(describing: activityState),
+            "pushToken": pushTokenString,
           ])
-
-          // Forward state changes
-          Task {
-            for await state in activity.activityStateUpdates {
-              sendEvent("stateChange", [
-                "source": activity.id,
-                "timestamp": Date().timeIntervalSince1970,
-                "activityID": activity.id,
-                "activityName": activity.attributes.name,
-                "activityState": String(describing: state),
-              ])
-            }
-          }
-
-          // Forward push token updates if enabled
-          if pushNotificationsEnabled {
-            Task {
-              for await pushToken in activity.pushTokenUpdates {
-                let pushTokenString = pushToken.reduce("") { $0 + String(format: "%02x", $1) }
-                sendEvent("activityTokenReceived", [
-                  "source": activity.id,
-                  "timestamp": Date().timeIntervalSince1970,
-                  "activityID": activity.id,
-                  "activityName": activity.attributes.name,
-                  "activityPushToken": pushTokenString,
-                ])
-              }
-            }
-          }
         }
       }
     }

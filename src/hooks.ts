@@ -15,10 +15,10 @@ import { useUpdateOnHMR } from './utils'
 
 export type UseVoltraOptions = {
   /**
-   * The unique identifier of the Live Activity.
+   * The name of the Live Activity.
    * Allows you to rebind to the same activity on app restart.
    */
-  activityId?: string
+  activityName?: string
   /**
    * Automatically start the Live Activity when the component mounts.
    */
@@ -42,8 +42,8 @@ export type UseVoltraResult = {
 
 export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions): UseVoltraResult => {
   const [targetId, setTargetId] = useState<string | null>(() => {
-    if (options?.activityId) {
-      return isVoltraActive(options.activityId) ? options.activityId : null
+    if (options?.activityName) {
+      return isVoltraActive(options.activityName) ? options.activityName : null
     }
 
     return null
