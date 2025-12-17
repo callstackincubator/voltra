@@ -73,7 +73,7 @@ Voltra uses SwiftUI's native positioning model instead of CSS-style absolute/rel
 1. **Use stack `alignment` props** - `ZStack`, `VStack`, and `HStack` all support an `alignment` prop that positions all children
 2. **Use `offsetX`/`offsetY` styles** - Fine-tune individual element positions with offset
 
-See the [Layout & Containers](/api/components/layout) documentation for details on alignment.
+See the [Layout & Containers](../components/layout) documentation for details on alignment.
 
 :::
 

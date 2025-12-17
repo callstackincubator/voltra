@@ -8,7 +8,7 @@ export default withCallstackPreset(
       title: 'Voltra',
       description: 'Build Live Activities with JSX in React Native.',
       editUrl: 'https://github.com/callstackincubator/voltra/edit/main',
-      rootUrl: 'https://voltra.dev',
+      rootUrl: 'https://use-voltra.dev',
       icon: 'docs/public/favicon.ico',
       logoLight: '/logo-light.svg',
       logoDark: '/logo-dark.svg',
@@ -16,9 +16,14 @@ export default withCallstackPreset(
       rootDir: 'docs',
       socials: {
         github: 'https://github.com/callstackincubator/voltra',
+        discord: 'https://discord.gg/gTjbyxNQw2',
       },
     },
     vercelAnalytics: true,
   },
-  defineConfig({})
+  defineConfig({
+    themeConfig: {
+      enableScrollToTop: true,
+    },
+  })
 )

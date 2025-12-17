@@ -172,7 +172,7 @@ await endAllVoltra()
 
 ## Development tools
 
-For development-friendly APIs that provide automatic updates and easier testing, see the [Development documentation](./development.md).
+For development-friendly APIs that provide automatic updates and easier testing, see the [Development documentation](./developing-live-activities.md).
 
 ## Event handling
 
