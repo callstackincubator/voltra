@@ -2,14 +2,8 @@ import ActivityKit
 import Compression
 import ExpoModulesCore
 import Foundation
-import WidgetKit
 
 public class VoltraModule: Module {
-  private let STATIC_WIDGET_SYNTHETIC_ID = "widget"
-  private let DEFAULT_WIDGET_KEY = "1"
-  // Legacy keys retained for backward compatibility if needed
-  private let WIDGET_JSON_KEY = "Voltra_Widget_JSON"
-  private let WIDGET_DEEPLINK_URL_KEY = "Voltra_Widget_DeepLinkURL"
   private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
   private let liveActivityService = VoltraLiveActivityService()
   private var wasLaunchedInBackground: Bool = false
@@ -65,33 +59,6 @@ public class VoltraModule: Module {
     }
 
     AsyncFunction("startVoltra") { (jsonString: String, options: StartVoltraOptions?) async throws -> String in
-      // Route to static widget if requested
-      let target = options?.target ?? "liveActivity"
-      if target == "widget" {
-        // Select widget key (arbitrary string). Default to "1" for backward compatibility.
-        let key = (options?.widgetKey?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : $0 } ?? DEFAULT_WIDGET_KEY
-        // Write JSON into App Group so the Widget extension can render it
-        let payloadBytes = jsonString.lengthOfBytes(using: .utf8)
-        guard writeWidgetJsonString(jsonString, suffix: key) else {
-          throw VoltraErrors.unexpectedError(
-            NSError(
-              domain: "VoltraModule",
-              code: -100,
-              userInfo: [NSLocalizedDescriptionKey: "App Group not configured: set 'groupIdentifier' in the config plugin so the app and widget extension share storage."]
-            )
-          )
-        }
-        if let dl = options?.deepLinkUrl, !dl.isEmpty {
-          _ = writeWidgetDeepLinkUrl(dl, suffix: key)
-        }
-        if #available(iOS 14.0, *) {
-          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraStaticWidget")
-          WidgetCenter.shared.reloadAllTimelines()
-        }
-        print("[Voltra][Widget] start key=\(key) bytes=\(payloadBytes)")
-        return "\(STATIC_WIDGET_SYNTHETIC_ID):\(key)"
-      }
-
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
       guard VoltraLiveActivityService.areActivitiesEnabled() else { 
         throw VoltraErrors.liveActivitiesNotEnabled 
@@ -127,23 +94,6 @@ public class VoltraModule: Module {
         // Create activity using service
         let finalActivityId = try await liveActivityService.createActivity(createRequest)
 
-        // Best-effort local auto-end scheduling (app must be alive)
-        if let autoEndAt = options?.autoEndAt {
-          let endDate = Date(timeIntervalSince1970: autoEndAt / 1000.0)
-          let delay = max(0, endDate.timeIntervalSinceNow)
-          if delay > 0 {
-            Task.detached { [activityId = finalActivityId] in
-              do {
-                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-              } catch {}
-                try? await self.liveActivityService.endActivity(byName: activityId)
-            }
-          } else {
-            // If autoEndAt is in the past, end immediately
-            try await liveActivityService.endActivity(byName: finalActivityId)
-          }
-        }
-
         return finalActivityId
       } catch let error {
         print("Error starting Voltra instance: \(error)")
@@ -163,35 +113,6 @@ public class VoltraModule: Module {
     }
 
     AsyncFunction("updateVoltra") { (activityId: String, jsonString: String, options: UpdateVoltraOptions?) async throws in
-      // Static Widget path
-      if activityId.hasPrefix(STATIC_WIDGET_SYNTHETIC_ID) {
-        guard let key = parseWidgetKey(from: activityId) else {
-          throw VoltraErrors.unexpectedError(
-            NSError(
-              domain: "VoltraModule",
-              code: -102,
-              userInfo: [NSLocalizedDescriptionKey: "Invalid widget identifier \(activityId). Pass IDs in the format 'widget:<your-id>'."]
-            )
-          )
-        }
-        let payloadBytes = jsonString.lengthOfBytes(using: .utf8)
-        guard writeWidgetJsonString(jsonString, suffix: key) else {
-          throw VoltraErrors.unexpectedError(
-            NSError(
-              domain: "VoltraModule",
-              code: -101,
-              userInfo: [NSLocalizedDescriptionKey: "App Group not configured: set 'groupIdentifier' in the config plugin so the app and widget extension share storage."]
-            )
-          )
-        }
-        if #available(iOS 14.0, *) {
-          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraStaticWidget")
-          WidgetCenter.shared.reloadAllTimelines()
-        }
-        print("[Voltra][Widget] update key=\(key) bytes=\(payloadBytes)")
-        return
-      }
-
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
       
       // Compress JSON using brotli level 2
@@ -232,27 +153,6 @@ public class VoltraModule: Module {
     }
 
     AsyncFunction("endVoltra") { (activityId: String, options: EndVoltraOptions?) async throws in
-      // Static Widget path
-      if activityId.hasPrefix(STATIC_WIDGET_SYNTHETIC_ID) {
-        guard let key = parseWidgetKey(from: activityId) else {
-          throw VoltraErrors.unexpectedError(
-            NSError(
-              domain: "VoltraModule",
-              code: -103,
-              userInfo: [NSLocalizedDescriptionKey: "Invalid widget identifier \(activityId). Pass IDs in the format 'widget:<your-id>'."]
-            )
-          )
-        }
-        clearWidgetJson(suffix: key)
-        clearWidgetDeepLinkUrl(suffix: key)
-        if #available(iOS 14.0, *) {
-          WidgetCenter.shared.reloadTimelines(ofKind: "VoltraStaticWidget")
-          WidgetCenter.shared.reloadAllTimelines()
-        }
-        print("[Voltra][Widget] cleared key=\(key)")
-        return
-      }
-
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
 
       // Convert dismissal policy options to ActivityKit type
@@ -384,81 +284,8 @@ public class VoltraModule: Module {
 
 }
 
-// MARK: - Static Widget JSON store
-
+// Convert dismissal policy options to ActivityKit type
 private extension VoltraModule {
-  func appGroupIdentifier() -> String? {
-    Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
-  }
-
-  @discardableResult
-  func writeWidgetJsonString(_ json: String) -> Bool {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return false }
-    defaults.set(json, forKey: WIDGET_JSON_KEY)
-    defaults.synchronize()
-    return true
-  }
-
-  func clearWidgetJson() {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return }
-    defaults.removeObject(forKey: WIDGET_JSON_KEY)
-    defaults.synchronize()
-  }
-
-  // New suffixed variants (slots 1/2/3)
-  @discardableResult
-  func writeWidgetJsonString(_ json: String, suffix: String) -> Bool {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return false }
-    defaults.set(json, forKey: "\(WIDGET_JSON_KEY)_\(suffix)")
-    defaults.synchronize()
-    return true
-  }
-
-  func clearWidgetJson(suffix: String) {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return }
-    defaults.removeObject(forKey: "\(WIDGET_JSON_KEY)_\(suffix)")
-    defaults.synchronize()
-  }
-
-  // Store a deep link URL used by the static widget when tapped
-  @discardableResult
-  func writeWidgetDeepLinkUrl(_ url: String) -> Bool {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return false }
-    defaults.set(url, forKey: WIDGET_DEEPLINK_URL_KEY)
-    defaults.synchronize()
-    return true
-  }
-
-  func clearWidgetDeepLinkUrl() {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return }
-    defaults.removeObject(forKey: WIDGET_DEEPLINK_URL_KEY)
-    defaults.synchronize()
-  }
-
-  // New suffixed variants (slots 1/2/3)
-  @discardableResult
-  func writeWidgetDeepLinkUrl(_ url: String, suffix: String) -> Bool {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return false }
-    defaults.set(url, forKey: "\(WIDGET_DEEPLINK_URL_KEY)_\(suffix)")
-    defaults.synchronize()
-    return true
-  }
-
-  func clearWidgetDeepLinkUrl(suffix: String) {
-    guard let group = appGroupIdentifier(), let defaults = UserDefaults(suiteName: group) else { return }
-    defaults.removeObject(forKey: "\(WIDGET_DEEPLINK_URL_KEY)_\(suffix)")
-    defaults.synchronize()
-  }
-
-  // Parse synthetic widget id "widget:<key>" -> "<key>"
-  func parseWidgetKey(from activityId: String) -> String? {
-    let parts = activityId.split(separator: ":", maxSplits: 1).map(String.init)
-    guard parts.count == 2, parts[0] == STATIC_WIDGET_SYNTHETIC_ID else { return nil }
-    let key = parts[1]
-    return key.isEmpty ? nil : key
-  }
-
-  // Convert dismissal policy options to ActivityKit type
   func convertToActivityKitDismissalPolicy(_ options: DismissalPolicyOptions?) -> ActivityUIDismissalPolicy {
     guard let options = options else {
       return .immediate

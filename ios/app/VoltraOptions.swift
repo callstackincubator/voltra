@@ -44,11 +44,7 @@ public struct StartVoltraOptions: Record {
   /// Internal: Widget key for static widgets
   @Field
   public var widgetKey: String?
-  
-  /// Internal: Auto-end timestamp in milliseconds
-  @Field
-  public var autoEndAt: Double?
-  
+
   public init() {}
 }
 
