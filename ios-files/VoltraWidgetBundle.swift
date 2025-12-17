@@ -14,10 +14,5 @@ struct VoltraWidgetBundle: WidgetBundle {
   var body: some Widget {
     // Live Activity Widget (Dynamic Island + Lock Screen)
     VoltraWidget()
-    
-    // Static Home Screen Widgets (you can remove any you don't need)
-    VoltraSlotWidget1()
-    VoltraSlotWidget2()
-    VoltraSlotWidget3()
   }
 }
