@@ -64,7 +64,6 @@ export function VoltraView({ id, children, style, onInteraction }: VoltraViewPro
           source: event.source,
           timestamp: event.timestamp,
           identifier: event.identifier,
-          componentId: event.componentId,
           payload: event.payload,
         })
       }

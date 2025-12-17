@@ -300,9 +300,9 @@ public class VoltraModule: Module {
       return liveActivityService.getAllActivities().map { $0.id }
     }
 
-    Function("isVoltraActive") { (activityId: String) -> Bool in
+    Function("isVoltraActive") { (activityName: String) -> Bool in
       guard #available(iOS 16.2, *) else { return false }
-      return liveActivityService.isActivityActive(name: activityId)
+      return liveActivityService.isActivityActive(name: activityName)
     }
 
     Function("isHeadless") { () -> Bool in

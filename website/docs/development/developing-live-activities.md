@@ -53,6 +53,51 @@ function OrderLiveActivity({ orderId, status }) {
 }
 ```
 
+## VoltraView Component
+
+For testing and development, Voltra provides a `VoltraView` component that renders Voltra JSX components directly in your React Native app. This is useful for:
+
+- Testing component layouts before deploying to Live Activities
+- Handling user interactions in development
+- Previewing how your Live Activity will look
+
+```tsx
+import { VoltraView, Voltra } from 'voltra'
+
+function MyComponent() {
+  const handleInteraction = (event: VoltraInteractionEvent) => {
+    console.log('User interacted with:', event.identifier)
+    console.log('Payload:', event.payload)
+  }
+
+  return (
+    <VoltraView
+      id="my-test-view"
+      onInteraction={handleInteraction}
+      style={{ height: 200, borderRadius: 12, overflow: 'hidden' }}
+    >
+      <Voltra.VStack style={{ padding: 16, backgroundColor: '#101828' }}>
+        <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>
+          Test Live Activity
+        </Voltra.Text>
+        <Voltra.Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 8 }}>
+          This is how it will look
+        </Voltra.Text>
+        <Voltra.Button title="Test Button" id="test-button" style={{ marginTop: 12 }} />
+      </Voltra.VStack>
+    </VoltraView>
+  )
+}
+```
+
+**Props:**
+
+- `id`: Unique identifier for the view (used for event filtering)
+- `children`: Voltra JSX components to render
+- `style`: React Native style for the container
+- `onInteraction`: Callback for user interactions with buttons/toggles
+```
+
 **Hook Options:**
 
 - `activityName`: Name of the Live Activity

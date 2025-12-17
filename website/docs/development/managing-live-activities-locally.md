@@ -125,12 +125,18 @@ Use `isVoltraActive()` to check if a specific Live Activity is currently active.
 ```typescript
 import { isVoltraActive } from 'voltra'
 
-if (isVoltraActive(activityId)) {
+if (isVoltraActive('order-123')) {
   console.log('Live Activity is active')
 } else {
   console.log('Live Activity is not active')
 }
 ```
+
+**Parameters:**
+
+- `activityName`: The name of the Live Activity to check (same as `activityName` used when starting the activity)
+
+**Returns:** Boolean indicating whether the Live Activity is currently active
 
 ### Utility functions
 
@@ -150,6 +156,19 @@ if (isHeadless()) {
   // Perform background tasks without UI
 }
 ```
+
+#### Ending all Live Activities
+
+Use `endAllVoltra()` to immediately end all active Live Activities in your app.
+
+```typescript
+import { endAllVoltra } from 'voltra'
+
+// End all Live Activities (useful for cleanup or logout scenarios)
+await endAllVoltra()
+```
+
+**Note:** This function ends all Live Activities immediately without applying any dismissal policies. Use this for bulk cleanup scenarios rather than individual activity management.
 
 ## Development tools
 

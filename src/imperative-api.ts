@@ -98,8 +98,8 @@ export const stopVoltra = async (targetId: string, options?: EndVoltraOptions): 
   return VoltraModule.endVoltra(targetId, options)
 }
 
-export const isVoltraActive = (targetId: string): boolean => {
+export const isVoltraActive = (activityName: string): boolean => {
   if (!assertRunningOnApple()) return false
 
-  return VoltraModule.isVoltraActive(targetId)
+  return VoltraModule.isVoltraActive(activityName)
 }

@@ -19,14 +19,6 @@ export async function endAllVoltra(): Promise<void> {
 }
 
 /**
- * Preferred alias mirroring iOS terminology.
- */
-export async function endAllLiveActivities(): Promise<void> {
-  if (!assertIOS('endAllLiveActivities')) return Promise.resolve()
-  return VoltraModule.endAllLiveActivities?.()
-}
-
-/**
  * Return whether Liquid Glass APIs are supported on this device (iOS 26+).
  * This is a convenience gate for authoring fallbacks in JS.
  */
@@ -53,22 +45,10 @@ export function isHeadless(): boolean {
   return VoltraModule.isHeadless?.() ?? false
 }
 
-/**
- * Debug: list current Voltra Live Activity IDs (if any).
- */
-export async function listLiveActivityIds(): Promise<string[]> {
-  if (!assertIOS('listLiveActivityIds')) return Promise.resolve([])
-  try {
-    return (await (VoltraModule as any).listVoltraActivityIds?.()) ?? []
-  } catch {
-    return []
-  }
-}
-
 // New API
 export * from './events'
 export { useVoltra, type UseVoltraOptions, type UseVoltraResult } from './hooks'
-export { startVoltra, stopVoltra, updateVoltra } from './imperative-api'
+export { isVoltraActive, startVoltra, stopVoltra, updateVoltra } from './imperative-api'
 export * as Voltra from './jsx/primitives'
 export {
   clearPreloadedImages,
