@@ -1,108 +1,179 @@
-# Contributing
+# Contributing to Voltra
 
-Thank you for contributing to `voltra`! This document explains the local development workflow, how the iOS config plugin works, and how Voltra Swift sources are vendored locally (no external SPM required).
+## Before you start any work
 
-## Repository overview
+Please open an issue before starting to work on a new feature or a fix to a bug you encountered. This will prevent you from wasting your time on a feature that's not going to be merged, because for instance it's out of scope. If there is an existing issue present for the matter you want to work on, make sure to post a comment saying you are going to work on it. This will make sure there will be only one person working on a given issue.
 
-- `src/` — JS/TS module sources (public API, JSON helpers).
-- `ios/` — Native iOS module sources (Expo Modules).
-- `ios-files/` — Widget/Live Activity template files copied by the config plugin.
-  - `VoltraUIWidget.swift`, `VoltraUIWidgetBundle.swift`, `Assets.xcassets/`
-  - `VoltraUI-main/` — vendored VoltraUI Swift source code from GitHub.
-- `plugin/src/` — Expo config plugin that wires up the iOS extension target.
-- `example/` — Example Expo app used to test the package.
+## Development process
 
-## Local plugin development
+All work on Voltra happens directly on GitHub. Contributors send pull requests which go through the review process.
 
-The config plugin is written in TypeScript under `plugin/src/` and compiled to `plugin/build/`.
+> **Working on your first pull request?** You can learn how from this _free_ series: [How to Contribute to an Open Source Project on GitHub](https://egghead.io/series/how-to-contribute-to-an-open-source-project-on-github).
 
-- Build only the plugin (recommended during development):
+1. Fork the repo and create your branch from `main` (a guide on [how to fork a repository](https://help.github.com/articles/fork-a-repo/)).
+2. Run `npm install` to install all required dependencies.
+3. Build the plugin: `npx tsc -p plugin/tsconfig.json`.
+4. Now you are ready to make changes.
 
-  ```sh
-  npx tsc -p plugin/tsconfig.json
-  ```
+## Architecture overview
 
-- If you previously ran `npm run clean:plugin` (which deletes `plugin/build/`), you must rebuild the plugin before running `expo prebuild` or `expo run:ios` in the example app — the Expo config system loads the plugin from `app.plugin.js` which points to `./plugin/build`.
+### JS/TS code structure
 
-- Full module build scripts:
+The JavaScript/TypeScript code has **two separate entry points** that must be maintained as independent boundaries:
 
-  ```sh
-  npm run build        # Starts expo-module-scripts watch, not required for plugin only
-  npm run clean:plugin # Removes plugin/build and tsbuildinfo
-  ```
+- **Client entry (`src/index.ts`)**: React Native code that runs in the app. Exports JSX components, hooks, and the imperative API for managing Live Activities.
+- **Server entry (`src/server.ts`)**: Node.js code for rendering Voltra components to string payloads. Used for server-side rendering and push notification payloads.
 
-## How Voltra is vendored locally
+⚠️ **Important**: These two entry points must remain separate. Client code should not import server-only dependencies, and server code should not import React Native-specific modules.
 
-To avoid relying on a remote Swift Package, we vendor the Voltra Swift sources directly in this repository under `ios-files/Voltra-main/` (copied from GitHub).
+### Expo config plugin (`plugin/`)
 
-The plugin copies these sources into the widget extension target during prebuild:
+The Expo plugin in `plugin/src/` handles all Xcode project setup during `expo prebuild`:
 
-1. Copies `ios-files/VoltraWidget.swift`, `VoltraWidgetBundle.swift`, and `Assets.xcassets/`.
-2. Copies the entire directory `ios-files/Voltra-main/Sources/Voltra/` into the extension target as `Voltra/`.
-3. Adds all `.swift` files under `Voltra/` to the PBX Sources build phase.
-4. The widget code in `VoltraWidget.swift` references `Voltra` types unconditionally and compiles them from the vendored sources (no `import Voltra` or SPM required).
+1. **Creates the widget extension target** with proper build settings
+2. **Copies template files** from `ios-files/` (widget bundle, assets, Info.plist) into the extension target
+3. **Configures CocoaPods** to include the `Voltra/Widget` subspec in the extension target
+4. **Sets up entitlements** for App Groups (optional, for event forwarding)
+5. **Configures push notifications** (optional)
 
-This is implemented in `plugin/src/lib/getWidgetFiles.ts`.
+### Swift code distribution (`ios/`)
 
-## Example app workflow
+Voltra's Swift code lives in `ios/` and is distributed as a **CocoaPods package** with multiple subspecs:
 
-From the repository root:
+```ruby
+# From ios/Voltra.podspec
+s.subspec 'Core' do |ss|
+  # React Native bridge module (auto-linked by Expo)
+  ss.source_files = ["app/**/*.swift", "shared/**/*.swift", "ui/**/*.swift"]
+end
+
+s.subspec 'Widget' do |ss|
+  # Widget extension code (used by Live Activity target)
+  ss.source_files = ["shared/**/*.swift", "ui/**/*.swift", "target/**/*.swift"]
+end
+```
+
+- **`Core` subspec**: Contains the React Native module (`app/`), shared code (`shared/`), and UI components (`ui/`). Auto-linked by Expo in the main app.
+- **`Widget` subspec**: Contains shared code, UI components, and widget-specific files (`target/`). Used by the Live Activity extension target.
+
+This separation ensures the widget extension doesn't include unnecessary React Native dependencies.
+
+### Template files (`ios-files/`)
+
+Files in `ios-files/` are copied by the config plugin into the generated widget extension:
+
+- `VoltraWidgetBundle.swift` — Widget bundle entry point
+- `Assets.xcassets/` — Asset catalog for the extension
+- `Info.plist` — Extension configuration
+
+## Props synchronization
+
+Component props are kept in sync between TypeScript and Swift via a **custom code generator**. The single source of truth is:
+
+```
+data/components.json
+```
+
+This file defines all components, their parameters, types, and short names used for payload compression.
+
+### Running the generator
 
 ```sh
-# 1) Compile the plugin so app.plugin.js can load ./plugin/build
+npm run generate
+```
+
+This generates:
+
+- **TypeScript prop types**: `src/jsx/props/*.ts`
+- **Swift parameter structs**: `ios/ui/Generated/Parameters/*.swift`
+- **Component ID mappings**: `src/payload/component-ids.ts` and `ios/shared/ComponentTypeID.swift`
+- **Short name mappings**: `src/payload/short-names.ts` and `ios/shared/ShortNames.swift`
+
+⚠️ **Important**: When adding new components or modifying props, always update `data/components.json` first, then run the generator. Do not manually edit generated files (marked with `.generated`).
+
+## Payload size budget
+
+Live Activity payloads have strict size limits imposed by iOS. Voltra includes tests that track payload sizes for real-world examples.
+
+### How it works
+
+The test in `src/__tests__/payload-size.node.test.tsx` renders example components and snapshots their compressed payload size:
+
+```typescript
+it('BasicLiveActivityUI', async () => {
+  const size = await getPayloadSize({
+    lockScreen: <BasicLiveActivityUI />,
+  })
+  expect(size).toMatchSnapshot()
+})
+```
+
+### When payload size changes
+
+If your changes affect payload size, the tests will fail. This is intentional:
+
+- **Size decreased?** Great! Run `npm test -- -u` to update snapshots and lock in the improvement.
+- **Size increased?** Investigate carefully. Is the increase justified? Can it be optimized? Only update snapshots after confirming the increase is necessary.
+
+⚠️ **CI will block merging** if payload size snapshots are out of date. This ensures we don't accidentally regress payload efficiency.
+
+## Testing your changes
+
+The `example/` directory contains an Expo app for testing changes.
+
+### Running the example app
+
+```sh
+# 1) Build the plugin
 npx tsc -p plugin/tsconfig.json
 
-# 2) Install example deps (first time)
+# 2) Install example dependencies
 (cd example && npm install)
 
-# 3) Prebuild the example for iOS
+# 3) Prebuild for iOS
 (cd example && npx expo prebuild -p ios)
 
 # 4) Run on iOS
 (cd example && npx expo run:ios)
 ```
 
-If you’re iterating on the plugin, rerun step (1) after making changes in `plugin/src/**`.
+If iterating on the plugin, rebuild after each change in `plugin/src/`.
 
-## Troubleshooting
+### Running tests
 
-- EISDIR: illegal operation on a directory, read
-  - Cause: Using an old compiled plugin that attempts to copy a directory as a file.
-  - Fix:
-    1. Rebuild the plugin: `npx tsc -p plugin/tsconfig.json`.
-    2. Re-run prebuild in the example app: `(cd example && npx expo prebuild -p ios)`.
+Run the following checks before opening a pull request:
 
-- Cannot find module './plugin/build'
-  - Cause: You ran `npm run clean:plugin` (which deletes `plugin/build/`) and didn’t rebuild.
-  - Fix: `npx tsc -p plugin/tsconfig.json` from the repo root.
+```sh
+# Linting
+npm run lint:libOnly
 
-- Widget target missing Voltra/ folder in Xcode
-  - Ensure the plugin compiled and prebuild ran. Then open the iOS workspace and check the extension target for the `Voltra/` folder and many Swift files (e.g., `Voltra.swift`, `Views/*`, `Helpers/*`).
+# Type checking
+npm run build
 
-## Event forwarding via App Groups (optional)
+# Unit tests
+npm test
 
-The widget writes interaction events to a shared App Group queue. The app polls the queue and emits them via `addVoltraListener`.
+# Format check
+npm run format:check
+```
 
-- To enable, pass `groupIdentifier` to the plugin in your app config.
-- The plugin adds the entitlements file and Info.plist keys for the extension and host app.
+If formatting fails, run `npx prettier --write .` to fix it.
 
-## Coding style
+## Creating a pull request
 
-- TypeScript: follow the lints defined by `eslint.config.js` and `expo-module-scripts`.
-- Swift: keep imports at the top of files; prefer small helpers to keep widgets tidy.
+When you are ready to have your changes incorporated into the main codebase, open a pull request.
 
-## Tests
+This repository follows [the Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/#summary). Please follow this pattern in your pull request titles. Keep in mind your commits will be squashed before merging and the title will be used as a commit title.
 
-- Unit tests for JS/TS live under `src/__tests__/`.
-- Swift tests for the vendored package are not run by default in the example app.
-- Run `npm run lint:libOnly`, `npm test`, and `npm run format:check` before opening a PR. If formatting fails, run `npx prettier --write .`.
-- `npm run prepare` bundles the module and plugin; run it to catch build issues early.
+### Pull request checklist
 
-## Releasing
+- [ ] Tests pass (`npm test`)
+- [ ] Linting passes (`npm run lint:libOnly`)
+- [ ] Formatting is correct (`npm run format:check`)
+- [ ] If props changed, generator was run (`npm run generate`)
+- [ ] If payload size changed, snapshots were intentionally updated
+- [ ] Documentation updated if needed
 
-- Ensure the plugin and module build successfully.
-- Update the README and changelog as needed.
+## License
 
----
-
-If anything in this guide is unclear, please file an issue or open a PR to improve it. Thanks!
+By contributing to Voltra, you agree that your contributions will be licensed under its MIT license.
