@@ -1,4 +1,10 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { ConfigPlugin, withPodfile as withExpoPodfile } from '@expo/config-plugins'
+
+const packageJson = fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8')
+const libraryName = JSON.parse(packageJson).name
 
 const getTargetContent = (targetName: string) => {
   const backtick = '`'
@@ -8,8 +14,8 @@ const getTargetContent = (targetName: string) => {
 target '${targetName}' do
   require 'json'
   project_root = "#{Pod::Config.instance.installation_root}/.."
-  voltra_module = JSON.parse(${backtick}npx expo-modules-autolinking search voltra -p apple --json --project-root #{project_root}${backtick})
-  podspec_dir_path = Pathname.new(File.join(voltra_module['voltra']['path'], 'ios')).relative_path_from(Pathname.new(__dir__)).to_path
+  voltra_module = JSON.parse(${backtick}npx expo-modules-autolinking search -p apple --json --project-root #{project_root}${backtick})
+  podspec_dir_path = Pathname.new(File.join(voltra_module['${libraryName}']['path'], 'ios')).relative_path_from(Pathname.new(__dir__)).to_path
   
   pod 'Voltra/Widget', :path => podspec_dir_path
 end`
