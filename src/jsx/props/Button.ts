@@ -4,4 +4,7 @@
 
 import type { VoltraBaseProps } from '../baseProps'
 
-export type ButtonProps = VoltraBaseProps
+export type ButtonProps = VoltraBaseProps & {
+  /** Visual style of the button */
+  buttonStyle?: 'automatic' | 'bordered' | 'borderedProminent' | 'plain' | 'borderless'
+}

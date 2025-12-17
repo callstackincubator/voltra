@@ -24,7 +24,14 @@
       "description": "Interactive button component",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "hasChildren": true,
-      "parameters": {}
+      "parameters": {
+        "buttonStyle": {
+          "type": "string",
+          "optional": true,
+          "enum": ["automatic", "bordered", "borderedProminent", "plain", "borderless"],
+          "description": "Visual style of the button"
+        }
+      }
     },
     {
       "name": "Label",

@@ -13,48 +13,49 @@ public enum PropNameID: Int, Codable {
     case style = 0
     case alignment = 1
     case autoHideOnEnd = 2
-    case colors = 3
-    case cornerRadius = 4
-    case countDown = 5
-    case currentValueLabel = 6
-    case defaultValue = 7
-    case direction = 8
-    case dither = 9
-    case durationMs = 10
-    case endAtMs = 11
-    case endPoint = 12
-    case gaugeStyle = 13
-    case height = 14
-    case label = 15
-    case lineWidth = 16
-    case maskElement = 17
-    case maximumValue = 18
-    case maximumValueLabel = 19
-    case minLength = 20
-    case minimumValue = 21
-    case minimumValueLabel = 22
-    case multilineTextAlignment = 23
-    case name = 24
-    case numberOfLines = 25
-    case progressColor = 26
-    case resizeMode = 27
-    case scale = 28
-    case size = 29
-    case source = 30
-    case spacing = 31
-    case startAtMs = 32
-    case startPoint = 33
-    case stops = 34
-    case systemImage = 35
-    case textStyle = 36
-    case textTemplates = 37
-    case thumb = 38
-    case tintColor = 39
-    case title = 40
-    case trackColor = 41
-    case type = 42
-    case value = 43
-    case weight = 44
+    case buttonStyle = 3
+    case colors = 4
+    case cornerRadius = 5
+    case countDown = 6
+    case currentValueLabel = 7
+    case defaultValue = 8
+    case direction = 9
+    case dither = 10
+    case durationMs = 11
+    case endAtMs = 12
+    case endPoint = 13
+    case gaugeStyle = 14
+    case height = 15
+    case label = 16
+    case lineWidth = 17
+    case maskElement = 18
+    case maximumValue = 19
+    case maximumValueLabel = 20
+    case minLength = 21
+    case minimumValue = 22
+    case minimumValueLabel = 23
+    case multilineTextAlignment = 24
+    case name = 25
+    case numberOfLines = 26
+    case progressColor = 27
+    case resizeMode = 28
+    case scale = 29
+    case size = 30
+    case source = 31
+    case spacing = 32
+    case startAtMs = 33
+    case startPoint = 34
+    case stops = 35
+    case systemImage = 36
+    case textStyle = 37
+    case textTemplates = 38
+    case thumb = 39
+    case tintColor = 40
+    case title = 41
+    case trackColor = 42
+    case type = 43
+    case value = 44
+    case weight = 45
     
     /// Get the prop name string for this ID
     public var propName: String {
@@ -65,6 +66,8 @@ public enum PropNameID: Int, Codable {
             return "alignment"
         case .autoHideOnEnd:
             return "autoHideOnEnd"
+        case .buttonStyle:
+            return "buttonStyle"
         case .colors:
             return "colors"
         case .cornerRadius:
@@ -160,6 +163,7 @@ public enum PropNameID: Int, Codable {
         case "style": self = .style
         case "alignment": self = .alignment
         case "autoHideOnEnd": self = .autoHideOnEnd
+        case "buttonStyle": self = .buttonStyle
         case "colors": self = .colors
         case "cornerRadius": self = .cornerRadius
         case "countDown": self = .countDown
