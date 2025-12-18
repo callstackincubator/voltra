@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "developing-widgets",
+    "label": "Developing Widgets"
+  },
+  {
+    "type": "file",
     "name": "images",
     "label": "Images"
   },
