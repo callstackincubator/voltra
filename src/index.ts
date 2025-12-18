@@ -60,3 +60,16 @@ export {
 export type { VoltraVariants } from './renderer'
 export type { VoltraElementJson, VoltraJson, VoltraNodeJson, VoltraVariantsJson } from './types'
 export { VoltraView, type VoltraViewProps } from './VoltraView'
+
+// Widget API
+export { VoltraWidgetPreview, type VoltraWidgetPreviewProps } from './VoltraWidgetPreview'
+export {
+  clearAllWidgets,
+  clearWidget,
+  reloadWidgets,
+  updateWidget,
+  type UpdateWidgetOptions,
+  type WidgetContent,
+  type WidgetFamily,
+  type WidgetVariants,
+} from './widget-api'

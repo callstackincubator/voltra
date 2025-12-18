@@ -1,5 +1,8 @@
 //
-//  VoltraUIStaticWidget.swift
+//  VoltraHomeWidget.swift
+//
+//  Generic home screen widget infrastructure for Voltra.
+//  Widget definitions are generated dynamically by the config plugin.
 //
 
 import SwiftUI
@@ -8,75 +11,92 @@ import Foundation
 
 // MARK: - Shared storage helpers
 
-fileprivate enum StaticWidgetStore {
-  static func groupIdentifier() -> String? {
-    Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
+public enum VoltraHomeWidgetStore {
+  public static func groupIdentifier() -> String? {
+    // Check both keys for compatibility (main app uses Voltra_AppGroupIdentifier)
+    Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
+      ?? Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
   }
 
-  static func readJson(key: String) -> Data? {
+  public static func readJson(widgetId: String) -> Data? {
     guard let group = groupIdentifier(),
           let defaults = UserDefaults(suiteName: group),
-          let jsonString = defaults.string(forKey: "Voltra_Widget_JSON_\(key)")
+          let jsonString = defaults.string(forKey: "Voltra_Widget_JSON_\(widgetId)")
     else { return nil }
     return jsonString.data(using: .utf8)
   }
 
-  static func readDeepLinkUrl(key: String) -> String? {
+  public static func readDeepLinkUrl(widgetId: String) -> String? {
     guard let group = groupIdentifier(),
           let defaults = UserDefaults(suiteName: group) else { return nil }
-    return defaults.string(forKey: "Voltra_Widget_DeepLinkURL_\(key)")
+    return defaults.string(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
   }
 }
 
 // MARK: - Timeline + entries
 
-struct VoltraSlotEntry: TimelineEntry {
-  let date: Date
-  let json: Data?
-  let slotId: String
+public struct VoltraHomeWidgetEntry: TimelineEntry {
+  public let date: Date
+  public let json: Data?
+  public let widgetId: String
+  
+  public init(date: Date, json: Data?, widgetId: String) {
+    self.date = date
+    self.json = json
+    self.widgetId = widgetId
+  }
 }
 
-struct VoltraSlotProvider: TimelineProvider {
-  let slotId: String
-
-  func placeholder(in context: Context) -> VoltraSlotEntry {
-    VoltraSlotEntry(date: Date(), json: nil, slotId: slotId)
+public struct VoltraHomeWidgetProvider: TimelineProvider {
+  public let widgetId: String
+  
+  public init(widgetId: String) {
+    self.widgetId = widgetId
   }
 
-  func getSnapshot(in context: Context, completion: @escaping (VoltraSlotEntry) -> Void) {
-    let data = StaticWidgetStore.readJson(key: slotId)
-    completion(VoltraSlotEntry(date: Date(), json: data, slotId: slotId))
+  public func placeholder(in context: Context) -> VoltraHomeWidgetEntry {
+    VoltraHomeWidgetEntry(date: Date(), json: nil, widgetId: widgetId)
   }
 
-  func getTimeline(in context: Context, completion: @escaping (Timeline<VoltraSlotEntry>) -> Void) {
-    let data = StaticWidgetStore.readJson(key: slotId)
-    let entry = VoltraSlotEntry(date: Date(), json: data, slotId: slotId)
+  public func getSnapshot(in context: Context, completion: @escaping (VoltraHomeWidgetEntry) -> Void) {
+    let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId)
+    completion(VoltraHomeWidgetEntry(date: Date(), json: data, widgetId: widgetId))
+  }
+
+  public func getTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
+    let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId)
+    let entry = VoltraHomeWidgetEntry(date: Date(), json: data, widgetId: widgetId)
     completion(Timeline(entries: [entry], policy: .never))
   }
 }
 
-struct VoltraSlotWidgetView: View {
-  var entry: VoltraSlotEntry
+public struct VoltraHomeWidgetView: View {
+  public var entry: VoltraHomeWidgetEntry
+  @Environment(\.widgetFamily) var widgetFamily
+  
+  public init(entry: VoltraHomeWidgetEntry) {
+    self.entry = entry
+  }
 
-  var body: some View {
+  public var body: some View {
     Group {
       if let data = entry.json {
-        let selected = selectLockScreenJson(data)
-        buildStaticContentView(data: selected, source: "static_widget")
-          .widgetURL(resolveStaticDeepLinkURL(selected, key: entry.slotId))
+        let selected = selectContentForFamily(data, family: widgetFamily)
+        buildStaticContentView(data: selected, source: "home_widget")
+          .widgetURL(resolveStaticDeepLinkURL(selected, widgetId: entry.widgetId))
       } else {
-        placeholderView(slotId: entry.slotId)
+        placeholderView(widgetId: entry.widgetId)
       }
     }
     .disableWidgetMarginsIfAvailable()
   }
 
   @ViewBuilder
-  private func placeholderView(slotId: String) -> some View {
+  private func placeholderView(widgetId: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Almost ready")
         .font(.headline)
-      Text("Open the app once to sync data for \(slotDisplayLabel(for: slotId)).")
+      Text("Open the app once to sync data for this widget.")
         .font(.caption)
         .foregroundStyle(.secondary)
     }
@@ -87,65 +107,59 @@ struct VoltraSlotWidgetView: View {
         .fill(Color(UIColor.secondarySystemBackground))
     )
   }
+}
 
-  private func slotDisplayLabel(for slotId: String) -> String {
-    switch slotId {
-    case "1": return "Slot 1"
-    case "2": return "Slot 2"
-    case "3": return "Slot 3"
-    default: return "this widget"
-    }
+// MARK: - Family-aware content selection
+
+/// Maps WidgetFamily to the JSON key
+fileprivate func familyToKey(_ family: WidgetFamily) -> String {
+  switch family {
+  case .systemSmall: return "systemSmall"
+  case .systemMedium: return "systemMedium"
+  case .systemLarge: return "systemLarge"
+  case .systemExtraLarge: return "systemExtraLarge"
+  case .accessoryCircular: return "accessoryCircular"
+  case .accessoryRectangular: return "accessoryRectangular"
+  case .accessoryInline: return "accessoryInline"
+  @unknown default: return "systemMedium"
   }
 }
 
-// MARK: - Widget definitions
-
-public struct VoltraSlotWidget1: Widget {
-  private let slotId = "1"
-
-  public init() {}
-  
-  public var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "VoltraWidgetSlot1", provider: VoltraSlotProvider(slotId: slotId)) { entry in
-      VoltraSlotWidgetView(entry: entry)
-    }
-    .configurationDisplayName("Voltra Widget — Slot 1")
-    .description("Displays data synced to widget slot 1.")
-    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+/// Select content appropriate for the current widget family.
+/// Uses the flat structure like live activities (e.g., "systemSmall", "systemMedium").
+fileprivate func selectContentForFamily(_ data: Data, family: WidgetFamily) -> Data {
+  guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+    // Not valid JSON, return empty
+    return Data("[]".utf8)
   }
+
+  let familyKey = familyToKey(family)
+
+  // Try to get content for the specific family
+  if let familyContent = root[familyKey] {
+    if JSONSerialization.isValidJSONObject(familyContent),
+       let familyData = try? JSONSerialization.data(withJSONObject: familyContent) {
+      return familyData
+    }
+  }
+
+  // Fallback: try families in order of preference
+  let fallbackOrder = ["systemMedium", "systemSmall", "systemLarge", "systemExtraLarge",
+                       "accessoryRectangular", "accessoryCircular", "accessoryInline"]
+  for fallbackKey in fallbackOrder {
+    if let fallbackContent = root[fallbackKey] {
+      if JSONSerialization.isValidJSONObject(fallbackContent),
+         let fallbackData = try? JSONSerialization.data(withJSONObject: fallbackContent) {
+        return fallbackData
+      }
+    }
+  }
+
+  // No content found, return empty
+  return Data("[]".utf8)
 }
 
-public struct VoltraSlotWidget2: Widget {
-  private let slotId = "2"
-
-  public init() {}
-  
-  public var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "VoltraWidgetSlot2", provider: VoltraSlotProvider(slotId: slotId)) { entry in
-      VoltraSlotWidgetView(entry: entry)
-    }
-    .configurationDisplayName("Voltra Widget — Slot 2")
-    .description("Displays data synced to widget slot 2.")
-    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
-  }
-}
-
-public struct VoltraSlotWidget3: Widget {
-  private let slotId = "3"
-
-  public init() {}
-  
-  public var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "VoltraWidgetSlot3", provider: VoltraSlotProvider(slotId: slotId)) { entry in
-      VoltraSlotWidgetView(entry: entry)
-    }
-    .configurationDisplayName("Voltra Widget — Slot 3")
-    .description("Displays data synced to widget slot 3.")
-    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
-  }
-}
-
-// MARK: - Deep link + rendering helpers (borrowed from previous implementation)
+// MARK: - Deep link + rendering helpers
 
 fileprivate func buildStaticContentView(data: Data, source: String) -> AnyView {
   let normalized = normalizeJsonData(data) ?? (try? JSONSerialization.data(withJSONObject: [])) ?? Data("[]".utf8)
@@ -232,15 +246,15 @@ fileprivate func makeDeepLinkURL(_ data: Data, source: String, kind: String) -> 
   return URL(string: "\(scheme)://voltraui?kind=\(kind)&source=\(source)&tag=\(tag)")
 }
 
-fileprivate func resolveStaticDeepLinkURL(_ data: Data, key: String) -> URL? {
-  if let raw = StaticWidgetStore.readDeepLinkUrl(key: key), !raw.isEmpty {
+fileprivate func resolveStaticDeepLinkURL(_ data: Data, widgetId: String) -> URL? {
+  if let raw = VoltraHomeWidgetStore.readDeepLinkUrl(widgetId: widgetId), !raw.isEmpty {
     if raw.contains("://"), let url = URL(string: raw) { return url }
     if let scheme = deepLinkScheme() {
       let path = raw.hasPrefix("/") ? raw : "/\(raw)"
       return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
     }
   }
-  return makeDeepLinkURL(data, source: "static_widget", kind: "widget")
+  return makeDeepLinkURL(data, source: "home_widget", kind: "widget")
 }
 
 fileprivate func normalizeJsonData(_ data: Data) -> Data? {

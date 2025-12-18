@@ -168,6 +168,9 @@ export default function LiveActivitiesScreen() {
           <Link href="/testing-grounds" asChild>
             <Button title="Testing Grounds" variant="secondary" />
           </Link>
+          <Link href="/widget-playground" asChild>
+            <Button title="Widget Playground" variant="secondary" />
+          </Link>
         </View>
 
         <NotificationsCard />
@@ -216,6 +219,8 @@ const styles = StyleSheet.create({
   },
   navigationButtons: {
     marginTop: 16,
+    flexDirection: 'row',
+    gap: 12,
   },
   cardHeader: {
     flexDirection: 'row',

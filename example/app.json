@@ -23,7 +23,15 @@
         "../app.plugin.js",
         {
           "groupIdentifier": "group.callstackincubator.voltraexample",
-          "enablePushNotifications": true
+          "enablePushNotifications": true,
+          "widgets": [
+            {
+              "id": "weather",
+              "displayName": "Weather Widget",
+              "description": "Shows current weather conditions",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
         }
       ],
       "expo-router",

@@ -2,6 +2,7 @@ import ActivityKit
 import Compression
 import ExpoModulesCore
 import Foundation
+import WidgetKit
 
 public class VoltraModule: Module {
   private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
@@ -271,6 +272,44 @@ public class VoltraModule: Module {
       }
     }
 
+    // MARK: - Home Screen Widget Functions
+
+    // Update a home screen widget with new content
+    AsyncFunction("updateWidget") { (widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws in
+      try self.writeWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
+      
+      // Reload the widget timeline
+      WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+      print("[Voltra] Updated widget '\(widgetId)'")
+    }
+
+    // Reload widget timelines to refresh their content
+    AsyncFunction("reloadWidgets") { (widgetIds: [String]?) async in
+      if let ids = widgetIds, !ids.isEmpty {
+        for widgetId in ids {
+          WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+        }
+        print("[Voltra] Reloaded widgets: \(ids.joined(separator: ", "))")
+      } else {
+        WidgetCenter.shared.reloadAllTimelines()
+        print("[Voltra] Reloaded all widgets")
+      }
+    }
+
+    // Clear a widget's stored data
+    AsyncFunction("clearWidget") { (widgetId: String) async in
+      self.clearWidgetData(widgetId: widgetId)
+      WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+      print("[Voltra] Cleared widget '\(widgetId)'")
+    }
+
+    // Clear all widgets' stored data
+    AsyncFunction("clearAllWidgets") { () async in
+      self.clearAllWidgetData()
+      WidgetCenter.shared.reloadAllTimelines()
+      print("[Voltra] Cleared all widgets")
+    }
+
     View(VoltraRN.self) {
       Prop("payload") { (view, payload: String) in
         view.setPayload(payload)
@@ -384,6 +423,69 @@ enum PreloadError: Error, LocalizedError {
       return "Invalid image data for '\(key)'"
     case .appGroupNotConfigured:
       return "App Group not configured. Set 'groupIdentifier' in the Voltra config plugin."
+    }
+  }
+}
+
+// MARK: - Widget Data Management
+
+private extension VoltraModule {
+  var appGroupIdentifier: String? {
+    Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
+  }
+
+  func writeWidgetData(widgetId: String, jsonString: String, deepLinkUrl: String?) throws {
+    guard let groupId = appGroupIdentifier else {
+      throw WidgetError.appGroupNotConfigured
+    }
+    guard let defaults = UserDefaults(suiteName: groupId) else {
+      throw WidgetError.userDefaultsUnavailable
+    }
+
+    // Store the JSON payload
+    defaults.set(jsonString, forKey: "Voltra_Widget_JSON_\(widgetId)")
+
+    // Store or remove deep link URL
+    if let url = deepLinkUrl, !url.isEmpty {
+      defaults.set(url, forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+    } else {
+      defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+    }
+  }
+
+  func clearWidgetData(widgetId: String) {
+    guard let groupId = appGroupIdentifier,
+          let defaults = UserDefaults(suiteName: groupId) else { return }
+
+    defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
+    defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+  }
+
+  func clearAllWidgetData() {
+    guard let groupId = appGroupIdentifier,
+          let defaults = UserDefaults(suiteName: groupId) else { return }
+
+    // Get all widget IDs from Info.plist
+    let widgetIds = Bundle.main.object(forInfoDictionaryKey: "Voltra_WidgetIds") as? [String] ?? []
+
+    for widgetId in widgetIds {
+      defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
+      defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+    }
+  }
+}
+
+/// Errors that can occur during widget operations
+enum WidgetError: Error, LocalizedError {
+  case appGroupNotConfigured
+  case userDefaultsUnavailable
+
+  var errorDescription: String? {
+    switch self {
+    case .appGroupNotConfigured:
+      return "App Group not configured. Set 'groupIdentifier' in the Voltra config plugin to use widgets."
+    case .userDefaultsUnavailable:
+      return "Unable to access UserDefaults for the app group."
     }
   }
 }

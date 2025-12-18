@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Platform } from 'react-native'
-
-export const assertRunningOnApple = (): boolean => {
-  if (Platform.OS !== 'ios') {
-    console.error(`Voltra is available only on iOS!`)
-    return false
-  }
-
-  return true
-}
 
 declare global {
   // HMR accept function
   var __accept: (...args: unknown[]) => void
 }
 
+/**
+ * Taps into the HMR accept function to forcefully re-render the component when any module is updated.
+ * Is only available in development mode.
+ */
 export const useUpdateOnHMR = () => {
   const [, forceUpdate] = useState(0)
 

@@ -50,17 +50,24 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
   })
   const isActive = targetId !== null
   const optionsRef = useRef(options)
+  const variantsRef = useRef(variants)
   const lastUpdateOptionsRef = useRef<UpdateVoltraOptions | undefined>(undefined)
+
+  // Update refs when values change
+  useEffect(() => {
+    optionsRef.current = options
+  }, [options])
+
+  useEffect(() => {
+    variantsRef.current = variants
+  }, [variants])
 
   useUpdateOnHMR()
 
-  const start = useCallback(
-    async (options?: StartVoltraOptions) => {
-      const id = await startVoltra(variants, { ...optionsRef.current, ...options })
-      setTargetId(id)
-    },
-    [variants]
-  )
+  const start = useCallback(async (options?: StartVoltraOptions) => {
+    const id = await startVoltra(variantsRef.current, { ...optionsRef.current, ...options })
+    setTargetId(id)
+  }, [])
 
   const update = useCallback(
     async (options?: UpdateVoltraOptions) => {
@@ -70,9 +77,9 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
 
       const updateOptions = { ...optionsRef.current, ...options }
       lastUpdateOptionsRef.current = updateOptions
-      await updateVoltra(targetId, variants, updateOptions)
+      await updateVoltra(targetId, variantsRef.current, updateOptions)
     },
-    [variants, targetId]
+    [targetId]
   )
 
   const end = useCallback(
@@ -98,7 +105,7 @@ export const useVoltra = (variants: VoltraVariants, options?: UseVoltraOptions):
   useEffect(() => {
     if (!options?.autoUpdate) return
     update(lastUpdateOptionsRef.current)
-  }, [options?.autoUpdate, variants, update])
+  }, [options?.autoUpdate, update, variants])
 
   useEffect(() => {
     if (!targetId) return
