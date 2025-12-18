@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
-import { useVoltra } from 'voltra'
+import { useLiveActivity } from 'voltra'
 
 import { WorkoutLiveActivityUI } from '../../components/live-activities/WorkoutLiveActivityUI'
 import { LiveActivityExampleComponent } from './types'
@@ -34,7 +34,7 @@ const WorkoutLiveActivity: LiveActivityExampleComponent = forwardRef(
       [heartRate, distanceText, pace, startTime]
     )
 
-    const { start, update, end, isActive } = useVoltra(variants, {
+    const { start, update, end, isActive } = useLiveActivity(variants, {
       activityName: 'workout',
       autoUpdate,
       autoStart,

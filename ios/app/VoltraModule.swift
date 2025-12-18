@@ -59,7 +59,7 @@ public class VoltraModule: Module {
       wasLaunchedInBackground = UIApplication.shared.applicationState == .background
     }
 
-    AsyncFunction("startVoltra") { (jsonString: String, options: StartVoltraOptions?) async throws -> String in
+    AsyncFunction("startLiveActivity") { (jsonString: String, options: StartVoltraOptions?) async throws -> String in
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
       guard VoltraLiveActivityService.areActivitiesEnabled() else { 
         throw VoltraErrors.liveActivitiesNotEnabled 
@@ -113,7 +113,7 @@ public class VoltraModule: Module {
       }
     }
 
-    AsyncFunction("updateVoltra") { (activityId: String, jsonString: String, options: UpdateVoltraOptions?) async throws in
+    AsyncFunction("updateLiveActivity") { (activityId: String, jsonString: String, options: UpdateVoltraOptions?) async throws in
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
       
       // Compress JSON using brotli level 2
@@ -153,7 +153,7 @@ public class VoltraModule: Module {
       }
     }
 
-    AsyncFunction("endVoltra") { (activityId: String, options: EndVoltraOptions?) async throws in
+    AsyncFunction("endLiveActivity") { (activityId: String, options: EndVoltraOptions?) async throws in
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
 
       // Convert dismissal policy options to ActivityKit type
@@ -176,12 +176,6 @@ public class VoltraModule: Module {
       }
     }
 
-    // End all running Live Activities created by this module
-    AsyncFunction("endAllVoltra") { () async throws in
-      guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
-      await liveActivityService.endAllActivities()
-    }
-
     // Preferred name mirroring iOS terminology
     AsyncFunction("endAllLiveActivities") { () async throws in
       guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
@@ -201,7 +195,7 @@ public class VoltraModule: Module {
       return liveActivityService.getAllActivities().map { $0.id }
     }
 
-    Function("isVoltraActive") { (activityName: String) -> Bool in
+    Function("isLiveActivityActive") { (activityName: String) -> Bool in
       guard #available(iOS 16.2, *) else { return false }
       return liveActivityService.isActivityActive(name: activityName)
     }

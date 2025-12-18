@@ -1,8 +1,8 @@
 import React from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
 
+import { WidgetFamily } from '../widget-api'
 import { VoltraView, VoltraViewProps } from './VoltraView'
-import { WidgetFamily } from './widget-api'
 
 /**
  * Dimensions for iOS widget families in points (approximate)

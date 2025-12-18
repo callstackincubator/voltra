@@ -1,7 +1,7 @@
 import { Magnetometer } from 'expo-sensors'
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react'
 import { Alert } from 'react-native'
-import { useVoltra } from 'voltra'
+import { useLiveActivity } from 'voltra'
 
 import {
   CompassLiveActivityIslandCompactLeading,
@@ -62,7 +62,7 @@ const CompassLiveActivity: LiveActivityExampleComponent = forwardRef(
       update,
       end,
       isActive,
-    } = useVoltra(variants, {
+    } = useLiveActivity(variants, {
       activityName: 'compass',
       autoUpdate,
       autoStart,

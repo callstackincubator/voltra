@@ -1,8 +1,8 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
-import { addVoltraListener, useVoltra } from 'voltra'
+import { addVoltraListener, useLiveActivity } from 'voltra'
 
+import { MusicPlayerLiveActivityUI, SONGS } from '../../components/live-activities/MusicPlayerLiveActivityUI'
 import { LiveActivityExampleComponent } from './types'
-import { MusicPlayerLiveActivityUI, SONGS, type Song } from '../../components/live-activities/MusicPlayerLiveActivityUI'
 
 const MusicPlayerLiveActivity: LiveActivityExampleComponent = forwardRef(
   ({ autoUpdate = true, autoStart = false, onIsActiveChange }, ref) => {
@@ -18,7 +18,7 @@ const MusicPlayerLiveActivity: LiveActivityExampleComponent = forwardRef(
       [currentSong, isPlaying]
     )
 
-    const { start, update, end, isActive } = useVoltra(variants, {
+    const { start, update, end, isActive } = useLiveActivity(variants, {
       activityName: 'music-player',
       autoUpdate,
       autoStart,

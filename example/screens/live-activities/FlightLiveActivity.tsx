@@ -1,20 +1,20 @@
 import React, { forwardRef, useEffect, useImperativeHandle } from 'react'
-import { useVoltra } from 'voltra'
+import { useLiveActivity } from 'voltra'
 
-import { LiveActivityExampleComponent } from './types'
 import {
-  FlightLiveActivityLockScreen,
-  FlightLiveActivityIslandMinimal,
   FlightLiveActivityIslandCompactLeading,
   FlightLiveActivityIslandCompactTrailing,
+  FlightLiveActivityIslandExpandedBottom,
   FlightLiveActivityIslandExpandedLeading,
   FlightLiveActivityIslandExpandedTrailing,
-  FlightLiveActivityIslandExpandedBottom,
+  FlightLiveActivityIslandMinimal,
+  FlightLiveActivityLockScreen,
 } from '../../components/live-activities/FlightLiveActivityUI'
+import { LiveActivityExampleComponent } from './types'
 
 const FlightLiveActivity: LiveActivityExampleComponent = forwardRef(
   ({ autoUpdate = true, autoStart = false, onIsActiveChange }, ref) => {
-    const { start, update, end, isActive } = useVoltra(
+    const { start, update, end, isActive } = useLiveActivity(
       {
         lockScreen: <FlightLiveActivityLockScreen />,
         island: {

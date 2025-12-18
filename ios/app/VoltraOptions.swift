@@ -1,7 +1,7 @@
 import ExpoModulesCore
 import Foundation
 
-/// Shared options for both startVoltra and updateVoltra
+/// Shared options for both startLiveActivity and updateLiveActivity
 public struct SharedVoltraOptions: Record {
   /// Unix timestamp in milliseconds
   @Field

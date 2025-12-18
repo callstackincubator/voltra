@@ -1,15 +1,15 @@
 import React, { forwardRef, useEffect, useImperativeHandle } from 'react'
-import { useVoltra, Voltra } from 'voltra'
+import { useLiveActivity, Voltra } from 'voltra'
 
-import { LiveActivityExampleComponent } from './types'
 import {
-  VoltraLovesLiveActivity,
   LiquidGlassLiveActivityUI,
+  VoltraLovesLiveActivity,
 } from '../../components/live-activities/LiquidGlassLiveActivityUI'
+import { LiveActivityExampleComponent } from './types'
 
 const LiquidGlassLiveActivity: LiveActivityExampleComponent = forwardRef(
   ({ autoUpdate = true, autoStart = false, onIsActiveChange }, ref) => {
-    const { start, update, end, isActive } = useVoltra(
+    const { start, update, end, isActive } = useLiveActivity(
       {
         island: {
           compact: {

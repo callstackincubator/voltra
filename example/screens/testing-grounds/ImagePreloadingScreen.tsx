@@ -2,7 +2,7 @@ import { Link } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { clearPreloadedImages, preloadImages, reloadLiveActivities, startVoltra, Voltra } from 'voltra'
+import { clearPreloadedImages, preloadImages, reloadLiveActivities, startLiveActivity, Voltra } from 'voltra'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
@@ -35,7 +35,7 @@ export default function ImagePreloadingScreen() {
       }
 
       // Start live activity with the asset key
-      await startVoltra(
+      await startLiveActivity(
         {
           lockScreen: (
             <Voltra.VStack style={{ padding: 16 }}>

@@ -1,12 +1,12 @@
 import React, { forwardRef, useEffect, useImperativeHandle } from 'react'
-import { useVoltra } from 'voltra'
+import { useLiveActivity } from 'voltra'
 
-import { LiveActivityExampleComponent } from './types'
 import { BasicLiveActivityUI } from '../../components/live-activities/BasicLiveActivityUI'
+import { LiveActivityExampleComponent } from './types'
 
 const BasicLiveActivity: LiveActivityExampleComponent = forwardRef(
   ({ autoUpdate = true, autoStart = false, onIsActiveChange }, ref) => {
-    const { start, update, end, isActive } = useVoltra(
+    const { start, update, end, isActive } = useLiveActivity(
       {
         lockScreen: {
           content: <BasicLiveActivityUI />,

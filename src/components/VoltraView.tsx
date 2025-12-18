@@ -2,8 +2,8 @@ import { requireNativeView } from 'expo'
 import React, { ReactNode, useEffect, useMemo } from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
 
-import { addVoltraListener, VoltraInteractionEvent } from './events'
-import { renderVoltraVariantToJson } from './renderer'
+import { addVoltraListener, VoltraInteractionEvent } from '../events'
+import { renderVoltraVariantToJson } from '../renderer'
 
 const NativeVoltraView = requireNativeView('VoltraModule')
 
