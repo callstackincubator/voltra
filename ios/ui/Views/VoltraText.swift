@@ -19,11 +19,6 @@ public struct VoltraText: VoltraView {
         let anyStyle = (element.style ?? [:]).mapValues { $0.toAny() }
         let style = StyleConverter.convert(anyStyle)
         let textStyle = style.3;
-
-        var lineSpacing: CGFloat {
-            guard let lh = textStyle.lineHeight else { return 0 }
-            return max(0, lh - textStyle.fontSize)
-        }
         
         var font: Font {
             var baseFont = Font.system(size: textStyle.fontSize, weight: textStyle.fontWeight)
@@ -47,7 +42,7 @@ public struct VoltraText: VoltraView {
             .font(font)
             .foregroundColor(textStyle.color)
             .multilineTextAlignment(textStyle.alignment)
-            .lineSpacing(lineSpacing)
+            .lineSpacing(textStyle.lineSpacing)
             .voltraIfLet(params.numberOfLines) { view, numberOfLines in
                 view.lineLimit(Int(numberOfLines))
             }

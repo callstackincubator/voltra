@@ -14,48 +14,44 @@ public struct VoltraButton: VoltraView {
 
     public var body: some View {
         if #available(iOS 17.0, *) {
-            Button(intent: VoltraInteractionIntent(activityId: voltraEnvironment.activityId, componentId: element.id!), label: {
+            Button(intent: VoltraInteractionIntent(activityId: voltraEnvironment.activityId, componentId: element.id ?? ""), label: {
                 element.children ?? .text("Button")
             })
-            .voltraIfLet(params.buttonStyle) { view, buttonStyle in
-                switch buttonStyle.lowercased() {
-                    case "automatic":
-                        view.buttonStyle(.automatic)
-                    case "bordered":
-                        view.buttonStyle(.bordered)
-                    case "borderedprominent":
-                        view.buttonStyle(.borderedProminent)
-                    case "borderless":
-                        view.buttonStyle(.borderless)
-                    case "plain":
-                        view.buttonStyle(.plain)
-                    default:
-                        view.buttonStyle(.plain)
-                }
-            }
+            .voltraButtonStyle(params.buttonStyle)
             .applyStyle(element.style)
         } else {
             // Fallback for iOS 16.x: Button with no action (intents not supported)
             Button(action: {}) {
                 element.children ?? .text("Button")
             }
-            .voltraIfLet(params.buttonStyle) { view, buttonStyle in
-                switch buttonStyle.lowercased() {
-                    case "automatic":
-                        view.buttonStyle(.automatic)
-                    case "bordered":
-                        view.buttonStyle(.bordered)
-                    case "borderedprominent":
-                        view.buttonStyle(.borderedProminent)
-                    case "borderless":
-                        view.buttonStyle(.borderless)
-                    case "plain":
-                        view.buttonStyle(.plain)
-                    default:
-                        view.buttonStyle(.plain)
-                }
-            }
+            .voltraButtonStyle(params.buttonStyle)
             .applyStyle(element.style)
+        }
+    }
+}
+
+// MARK: - Button Style Helper
+
+private extension View {
+    @ViewBuilder
+    func voltraButtonStyle(_ style: String?) -> some View {
+        if let style = style {
+            switch style.lowercased() {
+            case "automatic":
+                self.buttonStyle(.automatic)
+            case "bordered":
+                self.buttonStyle(.bordered)
+            case "borderedprominent":
+                self.buttonStyle(.borderedProminent)
+            case "borderless":
+                self.buttonStyle(.borderless)
+            case "plain":
+                self.buttonStyle(.plain)
+            default:
+                self.buttonStyle(.plain)
+            }
+        } else {
+            self
         }
     }
 }

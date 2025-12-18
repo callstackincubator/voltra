@@ -11,10 +11,6 @@ public struct SharedVoltraOptions: Record {
   @Field
   public var relevanceScore: Double?
 
-  /// How the Live Activity should be dismissed after ending
-  @Field
-  public var dismissalPolicy: DismissalPolicyOptions?
-
   public init() {}
 }
 
@@ -36,14 +32,6 @@ public struct StartVoltraOptions: Record {
   /// Double value between 0.0 and 1.0, defaults to 0.0
   @Field
   public var relevanceScore: Double?
-  
-  /// Internal: Target type ("liveActivity" or "widget")
-  @Field
-  public var target: String?
-  
-  /// Internal: Widget key for static widgets
-  @Field
-  public var widgetKey: String?
 
   public init() {}
 }

@@ -9,7 +9,7 @@ struct TextStyle {
     var lineSpacing: CGFloat = 0 // Extra space between lines
     var decoration: TextDecoration = .none
     var letterSpacing: CGFloat = 0 // Kerning
-    var lineHeight: CGFloat? // Used for calculating spacing
+    var lineHeight: CGFloat? // Used for calculating lineSpacing
     var fontVariant: Set<FontVariant> = []
     
 }

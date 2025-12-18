@@ -1,8 +1,8 @@
 import SwiftUI
 
 extension Date {
-  static func toTimerInterval(miliseconds: Double) -> ClosedRange<Self> {
-      Self.now...max(Self.now, Date(timeIntervalSince1970: miliseconds / 1000))
+  static func toTimerInterval(milliseconds: Double) -> ClosedRange<Self> {
+      Self.now...max(Self.now, Date(timeIntervalSince1970: milliseconds / 1000))
   }
 
   static func toTimerInterval(startAtMs: Double?, endAtMs: Double) -> ClosedRange<Self> {

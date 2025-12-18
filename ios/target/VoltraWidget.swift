@@ -6,12 +6,16 @@ import WidgetKit
 public struct VoltraWidget: Widget {
   public init() {}
   
+  /// Convert an array of nodes to a single root node for rendering
+  private func rootNode(for region: VoltraRegion, from state: VoltraAttributes.ContentState) -> VoltraNode {
+    let nodes = state.regions[region] ?? []
+    if nodes.isEmpty { return .empty }
+    return nodes.count == 1 ? nodes[0] : .array(nodes)
+  }
+  
   public var body: some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
-      let nodes = context.state.regions[.lockScreen] ?? []
-      let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-      
-      Voltra(root: root, activityId: context.activityID)
+      Voltra(root: rootNode(for: .lockScreen, from: context.state), activityId: context.activityID)
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
         .voltraIfLet(context.state.activityBackgroundTint) { view, tint in 
           let color = JSColorParser.parse(tint)
@@ -20,43 +24,29 @@ public struct VoltraWidget: Widget {
     } dynamicIsland: { context in
       let dynamicIsland = DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
-          let nodes = context.state.regions[.islandExpandedLeading] ?? []
-          let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-          Voltra(root: root, activityId: context.activityID)
+          Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID)
             .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
         }
         DynamicIslandExpandedRegion(.trailing) {
-          let nodes = context.state.regions[.islandExpandedTrailing] ?? []
-          let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-          Voltra(root: root, activityId: context.activityID)
+          Voltra(root: rootNode(for: .islandExpandedTrailing, from: context.state), activityId: context.activityID)
             .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
         }
         DynamicIslandExpandedRegion(.center) {
-          let nodes = context.state.regions[.islandExpandedCenter] ?? []
-          let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-          Voltra(root: root, activityId: context.activityID)
+          Voltra(root: rootNode(for: .islandExpandedCenter, from: context.state), activityId: context.activityID)
             .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
         }
         DynamicIslandExpandedRegion(.bottom) {
-          let nodes = context.state.regions[.islandExpandedBottom] ?? []
-          let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-          Voltra(root: root, activityId: context.activityID)
+          Voltra(root: rootNode(for: .islandExpandedBottom, from: context.state), activityId: context.activityID)
             .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
         }
       } compactLeading: {
-        let nodes = context.state.regions[.islandCompactLeading] ?? []
-        let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-        Voltra(root: root, activityId: context.activityID)
+        Voltra(root: rootNode(for: .islandCompactLeading, from: context.state), activityId: context.activityID)
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       } compactTrailing: {
-        let nodes = context.state.regions[.islandCompactTrailing] ?? []
-        let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-        Voltra(root: root, activityId: context.activityID)
+        Voltra(root: rootNode(for: .islandCompactTrailing, from: context.state), activityId: context.activityID)
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       } minimal: {
-        let nodes = context.state.regions[.islandMinimal] ?? []
-        let root: VoltraNode = nodes.isEmpty ? .empty : (nodes.count == 1 ? nodes[0] : .array(nodes))
-        Voltra(root: root, activityId: context.activityID)
+        Voltra(root: rootNode(for: .islandMinimal, from: context.state), activityId: context.activityID)
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       }
 

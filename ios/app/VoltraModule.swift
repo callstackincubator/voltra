@@ -426,12 +426,8 @@ enum PreloadError: Error, LocalizedError {
 // MARK: - Widget Data Management
 
 private extension VoltraModule {
-  var appGroupIdentifier: String? {
-    Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
-  }
-
   func writeWidgetData(widgetId: String, jsonString: String, deepLinkUrl: String?) throws {
-    guard let groupId = appGroupIdentifier else {
+    guard let groupId = VoltraConfig.groupIdentifier() else {
       throw WidgetError.appGroupNotConfigured
     }
     guard let defaults = UserDefaults(suiteName: groupId) else {
@@ -450,7 +446,7 @@ private extension VoltraModule {
   }
 
   func clearWidgetData(widgetId: String) {
-    guard let groupId = appGroupIdentifier,
+    guard let groupId = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: groupId) else { return }
 
     defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
@@ -458,7 +454,7 @@ private extension VoltraModule {
   }
 
   func clearAllWidgetData() {
-    guard let groupId = appGroupIdentifier,
+    guard let groupId = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: groupId) else { return }
 
     // Get all widget IDs from Info.plist
