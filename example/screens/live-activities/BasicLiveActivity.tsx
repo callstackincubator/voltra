@@ -16,7 +16,7 @@ const BasicLiveActivity: LiveActivityExampleComponent = forwardRef(
         },
       },
       {
-        activityId: 'basic',
+        activityName: 'basic',
         autoUpdate,
         autoStart,
         deepLinkUrl: '/voltraui/basic',

@@ -35,7 +35,7 @@ const WorkoutLiveActivity: LiveActivityExampleComponent = forwardRef(
     )
 
     const { start, update, end, isActive } = useVoltra(variants, {
-      activityId: 'workout',
+      activityName: 'workout',
       autoUpdate,
       autoStart,
     })

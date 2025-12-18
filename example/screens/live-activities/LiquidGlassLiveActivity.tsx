@@ -26,7 +26,7 @@ const LiquidGlassLiveActivity: LiveActivityExampleComponent = forwardRef(
         },
       },
       {
-        activityId: 'liquid-glass',
+        activityName: 'liquid-glass',
         autoUpdate,
         autoStart,
         deepLinkUrl: '/voltraui/glass',

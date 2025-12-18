@@ -53,7 +53,7 @@ export default function ImagePreloadingScreen() {
           ),
         },
         {
-          activityId: 'image-preload-test',
+          activityName: 'image-preload-test',
         }
       )
 

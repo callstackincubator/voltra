@@ -23,7 +23,7 @@ export default function Layout() {
       screenLayout={({ children }) => <BackgroundWrapper>{children}</BackgroundWrapper>}
     >
       <Stack.Screen
-        name="voltraui/[activityId]"
+        name="voltraui/[activityName]"
         options={{
           presentation: 'formSheet',
           headerShown: false,

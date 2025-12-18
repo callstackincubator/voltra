@@ -63,7 +63,7 @@ const CompassLiveActivity: LiveActivityExampleComponent = forwardRef(
       end,
       isActive,
     } = useVoltra(variants, {
-      activityId: 'compass',
+      activityName: 'compass',
       autoUpdate,
       autoStart,
     })

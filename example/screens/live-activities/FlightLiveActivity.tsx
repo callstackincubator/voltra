@@ -32,7 +32,7 @@ const FlightLiveActivity: LiveActivityExampleComponent = forwardRef(
         },
       },
       {
-        activityId: 'flight',
+        activityName: 'flight',
         autoUpdate,
         autoStart,
         deepLinkUrl: '/voltraui/flight',

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { Button } from '~/components/Button'
 
 export default function DeepLinkIndexScreen() {
-  const { activityId } = useLocalSearchParams<{ activityId: string }>()
+  const { activityName } = useLocalSearchParams<{ activityName: string }>()
   const router = useRouter()
 
   const goBack = () => {
@@ -20,7 +20,7 @@ export default function DeepLinkIndexScreen() {
       <View style={styles.content}>
         <Text style={styles.title}>You&apos;ve been deep linked via Voltra</Text>
 
-        <Text style={styles.activityText}>Activity: {activityId}</Text>
+        <Text style={styles.activityText}>Activity: {activityName}</Text>
 
         <Button title="Go back" onPress={goBack} />
       </View>
