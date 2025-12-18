@@ -139,8 +139,8 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
     throw new Error('Portal is not supported in Voltra.')
   }
 
-  // Fragments
-  if (isFragment(element)) {
+  // Fragments - check both via react-is and direct symbol comparison for robustness
+  if (isFragment(element) || (element as any).type === Symbol.for('react.fragment')) {
     const fragmentElement = element as ReactElement<{ children?: ReactNode }>
     return renderNode(fragmentElement.props.children, context)
   }

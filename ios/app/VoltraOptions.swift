@@ -70,6 +70,15 @@ public struct DismissalPolicyOptions: Record {
   public init() {}
 }
 
+/// Options for updating a home screen widget
+public struct UpdateWidgetOptions: Record {
+  /// URL to open when the widget is tapped
+  @Field
+  public var deepLinkUrl: String?
+
+  public init() {}
+}
+
 /// Options for preloading a single image
 public struct PreloadImageOptions: Record {
   /// The URL to download the image from

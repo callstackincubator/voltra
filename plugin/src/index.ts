@@ -6,6 +6,7 @@ import withPlist from './withPlist'
 import { withPodfile } from './withPodfile'
 import { withPushNotifications } from './withPushNotifications'
 import { withWidgetExtensionEntitlements } from './withWidgetExtensionEntitlements'
+import { withWidgets } from './withWidgets'
 import { withXcode } from './withXcode'
 
 const withVoltra: VoltraConfigPlugin = (config, props) => {
@@ -20,6 +21,8 @@ const withVoltra: VoltraConfigPlugin = (config, props) => {
       NSSupportsLiveActivities: true,
       NSSupportsLiveActivitiesFrequentUpdates: false,
       ...(props?.groupIdentifier ? { Voltra_AppGroupIdentifier: props.groupIdentifier } : {}),
+      // Store widget IDs in Info.plist for native module to access
+      ...(props?.widgets && props.widgets.length > 0 ? { Voltra_WidgetIds: props.widgets.map((w) => w.id) } : {}),
       // Ensure the main app has a URL scheme set so widgetURL can open it (optional feature)
       ...(function ensureURLScheme(existing: Record<string, any>) {
         const scheme =
@@ -55,6 +58,7 @@ const withVoltra: VoltraConfigPlugin = (config, props) => {
     [withWidgetExtensionEntitlements, { targetName, groupIdentifier: props?.groupIdentifier }],
     [withConfig, { targetName, bundleIdentifier, groupIdentifier: props?.groupIdentifier }],
     [withPodfile, { targetName }],
+    [withWidgets, { targetName, widgets: props?.widgets }],
   ])
 
   if (props?.enablePushNotifications) {
