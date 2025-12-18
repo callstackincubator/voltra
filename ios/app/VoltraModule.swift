@@ -8,6 +8,7 @@ public class VoltraModule: Module {
   private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
   private let liveActivityService = VoltraLiveActivityService()
   private var wasLaunchedInBackground: Bool = false
+  private var monitoredActivityIds: Set<String> = []
   
   enum VoltraErrors: Error {
     case unsupportedOS
@@ -52,6 +53,7 @@ public class VoltraModule: Module {
 
     OnStopObserving {
       VoltraEventBus.shared.unsubscribe()
+      monitoredActivityIds.removeAll()
     }
 
     OnCreate {
@@ -498,9 +500,7 @@ private extension VoltraModule {
     Task {
       for await data in Activity<VoltraAttributes>.pushToStartTokenUpdates {
         let token = data.reduce("") { $0 + String(format: "%02x", $1) }
-        sendEvent("activityPushToStartTokenReceived", [
-          "pushToStartToken": token,
-        ])
+        VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
       }
     }
   }
@@ -524,15 +524,20 @@ private extension VoltraModule {
   /// Set up observers for an activity's lifecycle (only once per activity)
   private func monitorActivity(_ activity: Activity<VoltraAttributes>) {
     let activityId = activity.id
+    
+    // Skip if we're already monitoring this activity
+    guard !monitoredActivityIds.contains(activityId) else { return }
+    monitoredActivityIds.insert(activityId)
 
     // Observe lifecycle state changes (active → dismissed → ended)
     Task {
       for await state in activity.activityStateUpdates {
-        sendEvent("stateChange", [
-          "timestamp": Date().timeIntervalSince1970,
-          "activityName": activity.attributes.name,
-          "activityState": String(describing: state),
-        ])
+        VoltraEventBus.shared.send(
+          .stateChange(
+            activityName: activity.attributes.name,
+            state: String(describing: state)
+          )
+        )
       }
     }
 
@@ -541,11 +546,12 @@ private extension VoltraModule {
       Task {
         for await pushToken in activity.pushTokenUpdates {
           let pushTokenString = pushToken.reduce("") { $0 + String(format: "%02x", $1) }
-          sendEvent("activityTokenReceived", [
-            "timestamp": Date().timeIntervalSince1970,
-            "activityName": activity.attributes.name,
-            "pushToken": pushTokenString,
-          ])
+          VoltraEventBus.shared.send(
+            .tokenReceived(
+              activityName: activity.attributes.name,
+              pushToken: pushTokenString
+            )
+          )
         }
       }
     }

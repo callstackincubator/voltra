@@ -26,14 +26,12 @@ public struct VoltraInteractionIntent: LiveActivityIntent {
     }
 
     public func perform() async throws -> some IntentResult {
-        VoltraEventBus.shared.sendEvent(
-            type: "interaction",
-            data: [
-                "source": activityId,
-                "timestamp": Date().timeIntervalSince1970,
-                "identifier": componentId,
-                "payload": payload ?? ""
-            ]
+        VoltraEventBus.shared.send(
+            .interaction(
+                source: activityId,
+                identifier: componentId,
+                payload: payload
+            )
         )
         
         return .result()

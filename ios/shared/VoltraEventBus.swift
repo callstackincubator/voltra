@@ -1,6 +1,8 @@
 import Foundation
 
-/// A centralized event bus that manages Voltra events from both the buffer (cold start) and NotificationCenter (hot events)
+/// A centralized event bus that manages Voltra events
+/// - Persistent events (interactions): routed through UserDefaults for cross-process delivery
+/// - Transient events (state changes, tokens): routed through NotificationCenter for in-process delivery
 public class VoltraEventBus {
     public static let shared = VoltraEventBus()
     
@@ -9,40 +11,54 @@ public class VoltraEventBus {
     
     private init() {}
     
+    /// Send an event. Routing is automatic based on event type:
+    /// - Persistent events → UserDefaults (survives app death, cross-process)
+    /// - Transient events → NotificationCenter (in-memory, same process)
+    public func send(_ event: VoltraEventType) {
+        if event.isPersistent {
+            // Persistent: write to UserDefaults (for widget → app communication)
+            VoltraPersistentEventQueue.write(event)
+        } else {
+            // Transient: post to NotificationCenter (in-process only)
+            NotificationCenter.default.post(
+                name: .voltraEvent,
+                object: nil,
+                userInfo: event.asDictionary
+            )
+        }
+    }
+    
     /// Subscribe to Voltra events. This will:
-    /// 1. Process any buffered events that occurred while the app was not observing
-    /// 2. Set up a NotificationCenter observer for new events
+    /// 1. Replay any persisted events from UserDefaults (cold start)
+    /// 2. Set up a NotificationCenter observer for transient events (hot)
     ///
-    /// - Parameter handler: A closure that receives the event type and event data dictionary
+    /// - Parameter handler: A closure that receives the event name and event data dictionary
     public func subscribe(handler: @escaping (String, [String: Any]) -> Void) {
         lock.lock()
         defer { lock.unlock() }
         
-        // A. Handle Cold Start / Background Wake-up
-        // Check the mailbox for events that happened while JS was loading
-        let pendingEvents = VoltraEventBuffer.shared.popAll()
-        for event in pendingEvents {
-            handler(event.type, event.asDictionary)
+        // 1. Replay persisted events from UserDefaults (interactions from widget)
+        let persistedEvents = VoltraPersistentEventQueue.popAll()
+        for event in persistedEvents {
+            handler(event.name, event.data)
         }
+        print("[VoltraEventBus] Replayed \(persistedEvents.count) persisted events")
         
-        // B. Handle Hot Events
-        // Listen for new events happening while the app is alive
+        // 2. Listen for transient events via NotificationCenter
         observer = NotificationCenter.default.addObserver(
             forName: .voltraEvent,
             object: nil,
             queue: .main
         ) { notification in
-            // Extract VoltraEvent from userInfo
             guard let userInfo = notification.userInfo as? [String: Any],
-                  let event = VoltraEvent(from: userInfo) else {
+                  let eventName = userInfo["type"] as? String else {
                 return
             }
-            
-            handler(event.type, event.asDictionary)
+            handler(eventName, userInfo)
         }
     }
     
-    /// Unsubscribe from Voltra events by removing the NotificationCenter observer
+    /// Unsubscribe from Voltra events
     public func unsubscribe() {
         lock.lock()
         defer { lock.unlock() }
@@ -53,31 +69,7 @@ public class VoltraEventBus {
         }
     }
     
-    /// Send a Voltra event. This will:
-    /// 1. Append the event to the buffer (for cold start scenarios)
-    /// 2. Post the event to NotificationCenter (for hot events when app is running)
-    ///
-    /// - Parameters:
-    ///   - type: The event type (e.g., "interaction")
-    ///   - data: The event data dictionary
-    public func sendEvent(type: String, data: [String: Any]) {
-        let event = VoltraEvent(type: type, data: data)
-        
-        // 1. Always write to the Buffer (The Mailbox)
-        // We do this first to ensure no race condition if the app is waking up
-        VoltraEventBuffer.shared.append(event: event)
-        
-        // 2. Notify the system immediately
-        // (In case the app is ALREADY running and listening)
-        NotificationCenter.default.post(
-            name: .voltraEvent,
-            object: nil,
-            userInfo: event.asDictionary
-        )
-    }
-    
     deinit {
         unsubscribe()
     }
 }
-
