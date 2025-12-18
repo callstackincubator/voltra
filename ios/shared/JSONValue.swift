@@ -75,27 +75,6 @@ public enum JSONValue: Codable, Hashable {
             return value.mapValues { $0.toAny() }
         }
     }
-
-    /// Convert from Any to JSONValue
-    public static func fromAny(_ value: Any) -> JSONValue {
-        if value is NSNull {
-            return .null
-        } else if let bool = value as? Bool {
-            return .bool(bool)
-        } else if let int = value as? Int {
-            return .int(int)
-        } else if let double = value as? Double {
-            return .double(double)
-        } else if let string = value as? String {
-            return .string(string)
-        } else if let array = value as? [Any] {
-            return .array(array.map { fromAny($0) })
-        } else if let dict = value as? [String: Any] {
-            return .object(dict.mapValues { fromAny($0) })
-        } else {
-            return .null
-        }
-    }
 }
 
 // MARK: - Codable

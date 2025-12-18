@@ -5,15 +5,11 @@ import Foundation
 public struct VoltraPersistentEventQueue {
     private static let queueKey = "Voltra_EventsQueue"
     
-    static func groupIdentifier() -> String? {
-        Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
-    }
-    
     /// Write an event to the persistent queue (UserDefaults)
     static func write(_ event: VoltraEventType) {
         let payload = event.asDictionary
         
-        guard let group = groupIdentifier(),
+        guard let group = VoltraConfig.groupIdentifier(),
               let defaults = UserDefaults(suiteName: group),
               JSONSerialization.isValidJSONObject(payload),
               let data = try? JSONSerialization.data(withJSONObject: payload, options: [])
@@ -35,7 +31,7 @@ public struct VoltraPersistentEventQueue {
     /// Read all events from the persistent queue and clear it
     /// Returns an array of (eventName, eventData) tuples
     static func popAll() -> [(name: String, data: [String: Any])] {
-        guard let group = groupIdentifier() else {
+        guard let group = VoltraConfig.groupIdentifier() else {
             print("[VoltraPersistentEventQueue] popAll: No group identifier found")
             return []
         }

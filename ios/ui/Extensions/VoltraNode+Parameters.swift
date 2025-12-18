@@ -9,7 +9,8 @@ extension VoltraNode {
         // Only element cases have parameters
         guard case .element(let element) = self else {
             // For non-element cases, return default instance
-            return (try? JSONDecoder().decode(T.self, from: Data("{}".utf8))) ?? (try! JSONDecoder().decode(T.self, from: Data("{}".utf8)))
+            // Safe to force-unwrap: decoding an empty JSON object always succeeds for ComponentParameters
+            return try! JSONDecoder().decode(T.self, from: Data("{}".utf8))
         }
         // Delegate to VoltraElement's parameters method
         return element.parameters(type)

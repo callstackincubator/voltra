@@ -5,15 +5,9 @@ import UIKit
 public struct VoltraImageStore {
     private static let imageDirectoryName = "voltra_images"
     
-    /// Get the App Group identifier from Info.plist
-    static func groupIdentifier() -> String? {
-        Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
-            ?? Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
-    }
-    
     /// Get the shared container URL for storing images
     public static func imageDirectory() -> URL? {
-        guard let groupId = groupIdentifier(),
+        guard let groupId = VoltraConfig.groupIdentifier(),
               let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupId)
         else { return nil }
         
@@ -115,17 +109,11 @@ public struct VoltraImageStore {
 /// Errors that can occur during image store operations
 public enum VoltraImageStoreError: Error, LocalizedError {
     case appGroupNotConfigured
-    case imageNotFound(key: String)
-    case saveFailed(key: String, underlyingError: Error)
     
     public var errorDescription: String? {
         switch self {
         case .appGroupNotConfigured:
             return "App Group not configured. Set 'groupIdentifier' in the Voltra config plugin."
-        case .imageNotFound(let key):
-            return "Image not found for key: \(key)"
-        case .saveFailed(let key, let error):
-            return "Failed to save image '\(key)': \(error.localizedDescription)"
         }
     }
 }

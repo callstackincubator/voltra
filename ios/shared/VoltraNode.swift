@@ -57,6 +57,32 @@ public indirect enum VoltraNode: Hashable, View {
         if case .empty = self { return true }
         return false
     }
+    
+    /// Parse a VoltraNode from JSON, extracting stylesheet and sharedElements if present
+    /// This is a convenience factory that handles the common pattern of extracting
+    /// stylesheet ("s") and sharedElements ("e") from the root JSON object.
+    /// - Parameter json: The JSON value to parse
+    /// - Returns: A parsed VoltraNode
+    public static func parse(from json: JSONValue) -> VoltraNode {
+        var stylesheet: [[String: JSONValue]]? = nil
+        var sharedElements: [JSONValue]? = nil
+        
+        if case .object(let rootObject) = json {
+            // Extract stylesheet (key "s")
+            if case .array(let stylesheetArray) = rootObject["s"] {
+                stylesheet = stylesheetArray.compactMap { item in
+                    if case .object(let dict) = item { return dict }
+                    return nil
+                }
+            }
+            // Extract shared elements (key "e")
+            if case .array(let elementsArray) = rootObject["e"] {
+                sharedElements = elementsArray
+            }
+        }
+        
+        return VoltraNode(from: json, stylesheet: stylesheet, sharedElements: sharedElements)
+    }
 
     // MARK: - View conformance
 

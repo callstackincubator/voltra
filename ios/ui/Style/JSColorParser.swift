@@ -184,6 +184,42 @@ struct JSColorParser {
         let l = (Double(components[2]) ?? 0) / 100.0
         let a = components.count >= 4 ? (Double(components[3]) ?? 1.0) : 1.0
         
-        return Color(hue: h, saturation: s, brightness: l, opacity: a)
+        // Convert HSL to RGB (HSL != HSB/HSV)
+        let (r, g, b) = hslToRgb(h: h, s: s, l: l)
+        return Color(.sRGB, red: r, green: g, blue: b, opacity: a)
+    }
+    
+    /// Convert HSL to RGB
+    /// - Parameters:
+    ///   - h: Hue (0.0 to 1.0)
+    ///   - s: Saturation (0.0 to 1.0)
+    ///   - l: Lightness (0.0 to 1.0)
+    /// - Returns: RGB tuple with values from 0.0 to 1.0
+    private static func hslToRgb(h: Double, s: Double, l: Double) -> (r: Double, g: Double, b: Double) {
+        // Achromatic case (no saturation)
+        if s == 0 {
+            return (l, l, l)
+        }
+        
+        let q = l < 0.5 ? l * (1 + s) : l + s - l * s
+        let p = 2 * l - q
+        
+        let r = hueToRgb(p: p, q: q, t: h + 1.0/3.0)
+        let g = hueToRgb(p: p, q: q, t: h)
+        let b = hueToRgb(p: p, q: q, t: h - 1.0/3.0)
+        
+        return (r, g, b)
+    }
+    
+    /// Helper function for HSL to RGB conversion
+    private static func hueToRgb(p: Double, q: Double, t: Double) -> Double {
+        var t = t
+        if t < 0 { t += 1 }
+        if t > 1 { t -= 1 }
+        
+        if t < 1.0/6.0 { return p + (q - p) * 6 * t }
+        if t < 1.0/2.0 { return q }
+        if t < 2.0/3.0 { return p + (q - p) * (2.0/3.0 - t) * 6 }
+        return p
     }
 }
