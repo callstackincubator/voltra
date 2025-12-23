@@ -493,9 +493,17 @@ private extension VoltraModule {
 
   func observePushToStartToken() {
     guard #available(iOS 17.2, *), ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+    
+    // Check for initial token if available
+    if let initialTokenData = Activity<VoltraAttributes>.pushToStartToken {
+      let token = initialTokenData.hexString
+      VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
+    }
+    
+    // Observe token updates
     Task {
-      for await data in Activity<VoltraAttributes>.pushToStartTokenUpdates {
-        let token = data.reduce("") { $0 + String(format: "%02x", $1) }
+      for await tokenData in Activity<VoltraAttributes>.pushToStartTokenUpdates {
+        let token = tokenData.hexString
         VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
       }
     }
@@ -540,8 +548,8 @@ private extension VoltraModule {
     // Observe push token updates if enabled
     if pushNotificationsEnabled {
       Task {
-        for await pushToken in activity.pushTokenUpdates {
-          let pushTokenString = pushToken.reduce("") { $0 + String(format: "%02x", $1) }
+        for await pushTokenData in activity.pushTokenUpdates {
+          let pushTokenString = pushTokenData.hexString
           VoltraEventBus.shared.send(
             .tokenReceived(
               activityName: activity.attributes.name,
