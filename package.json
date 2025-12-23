@@ -50,7 +50,7 @@
     "url": "https://github.com/callstackincubator/voltra/issues"
   },
   "license": "MIT",
-  "homepage": "https://github.com/callstackincubator/voltra#readme",
+  "homepage": "https://use-voltra.dev",
   "dependencies": {
     "dedent": "^1.7.1",
     "react-is": "^19.2.0"
@@ -63,13 +63,13 @@
     "ajv": "^8.12.0",
     "eslint": "^9.33.0",
     "eslint-config-expo": "^9.2.0",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "expo": "~53.0.0",
     "expo-module-scripts": "^4.1.10",
-    "prettier": "^3.6.2",
+    "prettier": "^3.7.4",
     "react-native": "0.79.1",
     "ts-node": "^10.9.0"
   },
