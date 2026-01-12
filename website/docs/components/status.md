@@ -44,15 +44,20 @@ A circular progress indicator that displays determinate progress or timer-based 
 
 ### Gauge
 
-A gauge indicator for progress visualization, often used for battery, volume, or other circular value indicators (iOS 16+).
+A gauge indicator for progress visualization, often used for battery, volume, or other value indicators (iOS 16+).
 
 **Parameters:**
 
-- `defaultValue` (number, optional): Current gauge value (0-1 range)
-- `endAtMs` (number, optional): End time in milliseconds since epoch
-- `startAtMs` (number, optional): Start time in milliseconds since epoch
-- `showValueLabel` (boolean, optional): Show the value label
-- `hideValueLabel` (boolean, optional): Hide the value label
+- `value` (number, optional): Current gauge value
+- `minimumValue` (number, optional): Minimum value of the gauge range (default: `0`)
+- `maximumValue` (number, optional): Maximum value of the gauge range (default: `1`)
+- `endAtMs` (number, optional): End time in milliseconds since epoch (for timer-based gauges)
+- `startAtMs` (number, optional): Start time in milliseconds since epoch (for timer-based gauges)
+- `tintColor` (string, optional): Tint color for the gauge
+- `gaugeStyle` (string, optional): Visual style - `"automatic"`, `"accessoryLinear"`, `"accessoryLinearCapacity"`, `"accessoryCircular"`, `"accessoryCircularCapacity"`, or `"linearCapacity"`
+- `currentValueLabel` (ReactNode, optional): Custom component for current value label
+- `minimumValueLabel` (ReactNode, optional): Custom component for minimum value label
+- `maximumValueLabel` (ReactNode, optional): Custom component for maximum value label
 
 **Apple Documentation:** [Gauge](https://developer.apple.com/documentation/swiftui/gauge)
 
