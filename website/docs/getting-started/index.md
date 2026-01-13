@@ -36,11 +36,11 @@ Voltra also supports server-side updates through push notifications. You can use
 The same components you use in your app work on the server:
 
 ```tsx
-import { renderVoltraToString } from 'voltra/server'
+import { renderLiveActivityToString } from 'voltra/server'
 import { Voltra } from 'voltra'
 
 // Render JSX to JSON payload on your server
-const payload = renderVoltraToString({
+const payload = renderLiveActivityToString({
   lockScreen: (
     <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
       <Voltra.Symbol name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />

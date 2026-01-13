@@ -73,10 +73,10 @@ Voltra provides a server-side API that allows you to render React components int
 Import the server-side rendering functions from `voltra/server`:
 
 ```tsx
-import { renderVoltraToString, Voltra } from 'voltra/server'
+import { renderLiveActivityToString, Voltra } from 'voltra/server'
 
 // Render your UI components to a JSON string
-const jsonPayload = renderVoltraToString({
+const jsonPayload = renderLiveActivityToString({
   lockScreen: (
     <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
       <Voltra.Symbol name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
@@ -87,7 +87,7 @@ const jsonPayload = renderVoltraToString({
 })
 ```
 
-The `renderVoltraToString` function accepts a `VoltraVariants` object and returns a JSON string for your APNS payload.
+The `renderLiveActivityToString` function accepts a `LiveActivityVariants` object and returns a compressed, base64-encoded JSON string for your APNS payload.
 
 ## APNS payload format
 
@@ -140,7 +140,7 @@ Replace `<your.app.bundle.id>` with your app's bundle identifier (e.g., `com.exa
 **Key fields:**
 
 - `aps.event`: Set to `"update"` for updating an existing Live Activity, or `"start"` for push-to-start (iOS 17.2+)
-- `aps.content-state.uiJsonData`: The JSON string returned by `renderVoltraToString`, embedded as a string value
+- `aps.content-state.uiJsonData`: The JSON string returned by `renderLiveActivityToString`, embedded as a string value
 - `aps.timestamp`: Unix timestamp in seconds (required for Live Activities)
 - `aps.attributes-type`: For push-to-start, must be `"VoltraAttributes"`
 - `aps.attributes.name`: For push-to-start, a user-defined name for the activity (can be any string you choose)
