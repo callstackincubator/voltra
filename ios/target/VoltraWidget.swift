@@ -50,13 +50,28 @@ public struct VoltraWidget: Widget {
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       }
 
+      let island = dynamicIsland
+        .supplementalActivityFamilies(mapToActivityFamilies(context.state.supplementalActivityFamilies))
+
       // Apply keylineTint if specified
       if let keylineTint = context.state.keylineTint,
          let color = JSColorParser.parse(keylineTint)
       {
-        return dynamicIsland.keylineTint(color)
+        return island.keylineTint(color)
       } else {
-        return dynamicIsland
+        return island
+      }
+    }
+  }
+
+  private func mapToActivityFamilies(_ strings: [String]?) -> [ActivityFamily] {
+    guard let strings = strings else { return [] }
+    return strings.compactMap {
+      switch $0 {
+      case "small": return .small
+      case "medium": return .medium
+      case "expanded": return .expanded
+      default: return nil
       }
     }
   }

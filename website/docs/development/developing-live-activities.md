@@ -30,6 +30,7 @@ The `island` variant defines how your Live Activity appears in the Dynamic Islan
 
 ```typescript
 const variants = {
+  supplementalActivityFamilies: ['small', 'medium'], // Optional supplemental families
   island: {
     keylineTint: '#10B981', // Optional tint color for the Dynamic Island keyline
     minimal: <Voltra.Symbol name="checkmark.circle.fill" tintColor="#10B981" />,

@@ -16,6 +16,7 @@ const FlightLiveActivity: LiveActivityExampleComponent = forwardRef(
   ({ autoUpdate = true, autoStart = false, onIsActiveChange }, ref) => {
     const { start, update, end, isActive } = useLiveActivity(
       {
+        supplementalActivityFamilies: ['small', 'medium'],
         lockScreen: <FlightLiveActivityLockScreen />,
         island: {
           keylineTint: 'yellow',

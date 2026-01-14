@@ -40,6 +40,10 @@ public struct VoltraAttributes: ActivityAttributes {
       payload.keylineTint
     }
 
+    public var supplementalActivityFamilies: [String]? {
+      payload.supplementalActivityFamilies
+    }
+
     public var activityBackgroundTint: String? {
       payload.activityBackgroundTint
     }

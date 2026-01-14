@@ -9,6 +9,9 @@ public struct VoltraLiveActivityPayload: Hashable {
   /// Optional tint color for Dynamic Island keyline
   public let keylineTint: String?
 
+  /// Supplemental activity families
+  public let supplementalActivityFamilies: [String]?
+
   /// Optional background tint for Lock Screen
   public let activityBackgroundTint: String?
 
@@ -24,6 +27,7 @@ public struct VoltraLiveActivityPayload: Hashable {
       // Unsupported version (future version) - render empty
       regions = [:]
       keylineTint = nil
+      supplementalActivityFamilies = nil
       activityBackgroundTint = nil
       isUnsupportedVersion = true
       return
@@ -32,6 +36,7 @@ public struct VoltraLiveActivityPayload: Hashable {
     // Extract regions directly from the parsed tree
     regions = try Self.extractRegions(from: migrated)
     keylineTint = migrated["isl_keyline_tint"]?.stringValue
+    supplementalActivityFamilies = migrated["isl_supp_fam"]?.arrayValue?.compactMap { $0.stringValue }
     activityBackgroundTint = migrated["ls_background_tint"]?.stringValue
     isUnsupportedVersion = false
   }

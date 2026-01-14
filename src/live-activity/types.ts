@@ -6,6 +6,7 @@ import type { VoltraNodeJson } from '../types.js'
  * Live Activity variants - defines content for different states
  */
 export type LiveActivityVariants = {
+  supplementalActivityFamilies?: ('small' | 'medium' | 'expanded')[]
   lockScreen?:
     | ReactNode
     | {
@@ -38,6 +39,7 @@ export type LiveActivityVariantsJson = {
   ls?: VoltraNodeJson
   ls_background_tint?: string
   isl_keyline_tint?: string
+  isl_supp_fam?: ('small' | 'medium' | 'expanded')[]
   isl_exp_c?: VoltraNodeJson
   isl_exp_l?: VoltraNodeJson
   isl_exp_t?: VoltraNodeJson

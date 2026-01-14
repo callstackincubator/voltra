@@ -69,6 +69,10 @@ export const renderLiveActivityToJson = (variants: LiveActivityVariants): LiveAc
     result.isl_keyline_tint = variants.island.keylineTint
   }
 
+  if (variants.supplementalActivityFamilies) {
+    result.isl_supp_fam = variants.supplementalActivityFamilies
+  }
+
   return result
 }
 
