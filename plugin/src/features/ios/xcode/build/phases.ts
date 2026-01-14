@@ -55,12 +55,5 @@ export function addBuildPhases(xcodeProject: XcodeProject, options: AddBuildPhas
   xcodeProject.addBuildPhase([], 'PBXFrameworksBuildPhase', groupName, targetUuid, folderType, buildPath)
 
   // Resources build phase
-  xcodeProject.addBuildPhase(
-    [...assetDirectories],
-    'PBXResourcesBuildPhase',
-    groupName,
-    targetUuid,
-    folderType,
-    buildPath
-  )
+  xcodeProject.addBuildPhase([...assetDirectories], 'PBXResourcesBuildPhase', 'Resources', targetUuid)
 }

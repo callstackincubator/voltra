@@ -32,6 +32,10 @@
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
               "initialStatePath": "./widgets/weather-initial.tsx"
             }
+          ],
+          "fonts": [
+            "node_modules/@expo-google-fonts/merriweather/400Regular/Merriweather_400Regular.ttf",
+            "node_modules/@expo-google-fonts/merriweather/700Bold/Merriweather_700Bold.ttf"
           ]
         }
       ],

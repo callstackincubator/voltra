@@ -1,5 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Payload size regression BasicLiveActivityUI 1`] = `428`;
+exports[`Payload size regression BasicLiveActivityUI 1`] = `456`;
 
 exports[`Payload size regression MusicPlayerLiveActivityUI 1`] = `504`;

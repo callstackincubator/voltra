@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Unified short name mappings for props, style properties, and modifiers
+/// Unified short name mappings for props and style properties
 /// Used to expand compressed payload keys back to their full names
 public enum ShortNames {
   /// Mapping from short names to full names
@@ -43,6 +43,7 @@ public enum ShortNames {
     "fg": "flexGrow",
     "fgw": "flexGrowWidth",
     "fnt": "font",
+    "ff": "fontFamily",
     "fs": "fontSize",
     "fvar": "fontVariant",
     "fw": "fontWeight",

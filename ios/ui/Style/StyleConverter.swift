@@ -120,6 +120,10 @@ enum StyleConverter {
       style.fontWeight = JSStyleParser.fontWeight(weightRaw)
     }
 
+    if let fontFamily = js["fontFamily"] as? String {
+      style.fontFamily = fontFamily
+    }
+
     if let alignRaw = js["textAlign"] {
       style.alignment = JSStyleParser.textAlignment(alignRaw)
     }
