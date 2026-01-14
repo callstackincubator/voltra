@@ -9,9 +9,8 @@ public enum VoltraRegion: String, Codable, Hashable, CaseIterable {
   case islandCompactLeading
   case islandCompactTrailing
   case islandMinimal
-  case supplementalSmall
+  case supplementalActivityFamiliesSmall
 
-  /// The JSON key for this region in the payload
   public var jsonKey: String {
     switch self {
     case .lockScreen:
@@ -30,8 +29,8 @@ public enum VoltraRegion: String, Codable, Hashable, CaseIterable {
       return "isl_cmp_t"
     case .islandMinimal:
       return "isl_min"
-    case .supplementalSmall:
-      return "sup_sm"
+    case .supplementalActivityFamiliesSmall:
+      return "saf_sm"
     }
   }
 }

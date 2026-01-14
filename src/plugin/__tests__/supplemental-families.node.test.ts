@@ -13,53 +13,53 @@ describe('validateLiveActivityConfig', () => {
     expect(() => validateLiveActivityConfig({})).not.toThrow()
   })
 
-  test('valid supplementalFamilies with "small" passes', () => {
+  test('valid supplementalActivityFamilies with "small" passes', () => {
     expect(() =>
       validateLiveActivityConfig({
-        supplementalFamilies: ['small'],
+        supplementalActivityFamilies: ['small'],
       })
     ).not.toThrow()
   })
 
-  test('empty supplementalFamilies array throws', () => {
+  test('empty supplementalActivityFamilies array throws', () => {
     expect(() =>
       validateLiveActivityConfig({
-        supplementalFamilies: [],
+        supplementalActivityFamilies: [],
       })
-    ).toThrow('liveActivity.supplementalFamilies cannot be empty')
+    ).toThrow('liveActivity.supplementalActivityFamilies cannot be empty')
   })
 
   test('invalid family name throws', () => {
     expect(() =>
       validateLiveActivityConfig({
-        supplementalFamilies: ['medium' as any],
+        supplementalActivityFamilies: ['medium' as any],
       })
     ).toThrow("Invalid activity family 'medium'")
   })
 
-  test('non-array supplementalFamilies throws', () => {
+  test('non-array supplementalActivityFamilies throws', () => {
     expect(() =>
       validateLiveActivityConfig({
-        supplementalFamilies: 'small' as any,
+        supplementalActivityFamilies: 'small' as any,
       })
-    ).toThrow('liveActivity.supplementalFamilies must be an array')
+    ).toThrow('liveActivity.supplementalActivityFamilies must be an array')
   })
 })
 
 describe('generateDefaultWidgetBundleSwift', () => {
-  test('without supplemental families uses VoltraWidget directly', () => {
+  test('without supplementalActivityFamilies uses VoltraWidget directly', () => {
     const result = generateDefaultWidgetBundleSwift()
 
     expect(result).toContain('VoltraWidget()')
-    expect(result).not.toContain('VoltraWidgetWithSupplementalFamilies')
+    expect(result).not.toContain('VoltraWidgetWithSupplementalActivityFamilies')
     expect(result).not.toContain('.supplementalActivityFamilies')
   })
 
-  test('with supplemental families generates wrapper', () => {
+  test('with supplementalActivityFamilies generates wrapper', () => {
     const result = generateDefaultWidgetBundleSwift(['small'])
 
-    expect(result).toContain('VoltraWidgetWithSupplementalFamilies()')
-    expect(result).toContain('struct VoltraWidgetWithSupplementalFamilies: Widget')
+    expect(result).toContain('VoltraWidgetWithSupplementalActivityFamilies()')
+    expect(result).toContain('struct VoltraWidgetWithSupplementalActivityFamilies: Widget')
     expect(result).toContain('.supplementalActivityFamilies([.small])')
     expect(result).toContain('#available(iOS 18.0, *)')
   })
@@ -72,19 +72,19 @@ describe('generateWidgetBundleSwift', () => {
     description: 'A test widget',
   }
 
-  test('without supplemental families uses VoltraWidget directly', () => {
+  test('without supplementalActivityFamilies uses VoltraWidget directly', () => {
     const result = generateWidgetBundleSwift([testWidget])
 
     expect(result).toContain('VoltraWidget()')
-    expect(result).not.toContain('VoltraWidgetWithSupplementalFamilies')
+    expect(result).not.toContain('VoltraWidgetWithSupplementalActivityFamilies')
     expect(result).toContain('struct VoltraWidget_test: Widget')
   })
 
-  test('with supplemental families generates wrapper alongside widgets', () => {
+  test('with supplementalActivityFamilies generates wrapper alongside widgets', () => {
     const result = generateWidgetBundleSwift([testWidget], ['small'])
 
-    expect(result).toContain('VoltraWidgetWithSupplementalFamilies()')
-    expect(result).toContain('struct VoltraWidgetWithSupplementalFamilies: Widget')
+    expect(result).toContain('VoltraWidgetWithSupplementalActivityFamilies()')
+    expect(result).toContain('struct VoltraWidgetWithSupplementalActivityFamilies: Widget')
     expect(result).toContain('.supplementalActivityFamilies([.small])')
     expect(result).toContain('struct VoltraWidget_test: Widget')
   })

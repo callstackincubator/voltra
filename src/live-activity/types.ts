@@ -28,9 +28,9 @@ export type LiveActivityVariants = {
   }
   /**
    * Supplemental activity families for iOS 18+ (watchOS Smart Stack, CarPlay)
-   * Requires plugin config: liveActivity.supplementalFamilies: ["small"]
+   * Requires plugin config: liveActivity.supplementalActivityFamilies: ["small"]
    */
-  supplemental?: {
+  supplementalActivityFamilies?: {
     /**
      * Compact view for watchOS Smart Stack and CarPlay (iOS 18+)
      * Should be a simplified version of the lock screen UI
@@ -58,7 +58,7 @@ export type LiveActivityVariantsJson = {
   isl_cmp_t?: VoltraNodeJson
   isl_min?: VoltraNodeJson
   // Supplemental activity families (iOS 18+)
-  sup_sm?: VoltraNodeJson // supplemental.small
+  saf_sm?: VoltraNodeJson // supplementalActivityFamilies.small
 }
 
 /**

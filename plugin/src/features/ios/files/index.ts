@@ -48,7 +48,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         targetPath,
         projectRoot,
         widgets,
-        supplementalFamilies: liveActivity?.supplementalFamilies,
+        supplementalActivityFamilies: liveActivity?.supplementalActivityFamilies,
       })
 
       generateEntitlements({

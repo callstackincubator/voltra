@@ -11,7 +11,7 @@ export interface GenerateSwiftFilesOptions {
   targetPath: string
   projectRoot: string
   widgets?: WidgetConfig[]
-  supplementalFamilies?: ActivityFamily[]
+  supplementalActivityFamilies?: ActivityFamily[]
 }
 
 /**
@@ -22,7 +22,7 @@ export interface GenerateSwiftFilesOptions {
  * - VoltraWidgetBundle.swift (widget bundle definition)
  */
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
-  const { targetPath, projectRoot, widgets, supplementalFamilies } = options
+  const { targetPath, projectRoot, widgets, supplementalActivityFamilies } = options
 
   const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot)
 
@@ -34,8 +34,8 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
 
   const widgetBundleContent =
     widgets && widgets.length > 0
-      ? generateWidgetBundleSwift(widgets, supplementalFamilies)
-      : generateDefaultWidgetBundleSwift(supplementalFamilies)
+      ? generateWidgetBundleSwift(widgets, supplementalActivityFamilies)
+      : generateDefaultWidgetBundleSwift(supplementalActivityFamilies)
 
   const widgetBundlePath = path.join(targetPath, 'VoltraWidgetBundle.swift')
   fs.writeFileSync(widgetBundlePath, widgetBundleContent)

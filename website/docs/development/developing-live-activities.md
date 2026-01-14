@@ -47,13 +47,13 @@ const variants = {
 }
 ```
 
-### Supplemental Families (iOS 18+)
+### Supplemental Activity Families (iOS 18+)
 
-The `supplemental` variant defines how your Live Activity appears on watchOS Smart Stack and CarPlay displays. This requires explicit opt-in via the plugin configuration.
+The `supplementalActivityFamilies` variant defines how your Live Activity appears on watchOS Smart Stack and CarPlay displays. This requires explicit opt-in via the plugin configuration.
 
 ```typescript
 const variants = {
-  supplemental: {
+  supplementalActivityFamilies: {
     small: (
       <Voltra.HStack style={{ padding: 12, gap: 8 }}>
         <Voltra.Text style={{ fontSize: 18, fontWeight: '700' }}>12 min</Voltra.Text>
@@ -64,7 +64,7 @@ const variants = {
 }
 ```
 
-If `supplemental.small` is not provided, the system will automatically fall back to using your `lockScreen` content.
+If `supplementalActivityFamilies.small` is not provided, the system will automatically fall back to using your `lockScreen` content.
 
 See [Supplemental Activity Families](/development/supplemental-activity-families) for detailed configuration and design guidelines.
 

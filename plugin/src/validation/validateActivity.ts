@@ -10,19 +10,19 @@ export function validateLiveActivityConfig(config: LiveActivityConfig | undefine
   if (!config) return
 
   // Validate supplemental families if provided
-  if (config.supplementalFamilies) {
-    if (!Array.isArray(config.supplementalFamilies)) {
-      throw new Error('liveActivity.supplementalFamilies must be an array')
+  if (config.supplementalActivityFamilies) {
+    if (!Array.isArray(config.supplementalActivityFamilies)) {
+      throw new Error('liveActivity.supplementalActivityFamilies must be an array')
     }
 
-    if (config.supplementalFamilies.length === 0) {
+    if (config.supplementalActivityFamilies.length === 0) {
       throw new Error(
-        'liveActivity.supplementalFamilies cannot be empty. ' +
-          'Either provide families or remove the property to disable supplemental families.'
+        'liveActivity.supplementalActivityFamilies cannot be empty. ' +
+          'Either provide families or remove the property to disable supplemental activity families.'
       )
     }
 
-    for (const family of config.supplementalFamilies) {
+    for (const family of config.supplementalActivityFamilies) {
       if (!VALID_ACTIVITY_FAMILIES.has(family)) {
         throw new Error(
           `Invalid activity family '${family}'. ` +

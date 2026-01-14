@@ -7,7 +7,7 @@ Starting with iOS 18, Live Activities can appear on additional surfaces beyond t
 
 Voltra supports the `.small` supplemental activity family, which enables your Live Activities to appear on these new surfaces.
 
-## Enabling supplemental families
+## Enabling supplemental activity families
 
 To enable supplemental activity families, add the `liveActivity` configuration to your plugin:
 
@@ -20,7 +20,7 @@ To enable supplemental activity families, add the `liveActivity` configuration t
         {
           "groupIdentifier": "group.com.example",
           "liveActivity": {
-            "supplementalFamilies": ["small"]
+            "supplementalActivityFamilies": ["small"]
           }
         }
       ]
@@ -33,9 +33,9 @@ To enable supplemental activity families, add the `liveActivity` configuration t
 This is an opt-in feature. Only include `"small"` if you want your Live Activities to appear on watchOS Smart Stack.
 :::
 
-## Providing supplemental content
+## Providing supplemental activity families content
 
-Use the `supplemental.small` property in your variants to provide a compact layout optimized for watch and car surfaces:
+Use the `supplementalActivityFamilies.small` property in your variants to provide a compact layout optimized for watch and car surfaces:
 
 ```tsx
 import { useLiveActivity } from 'voltra/client'
@@ -47,9 +47,7 @@ function DeliveryActivity({ orderId, eta }) {
       // Full lock screen UI
       lockScreen: (
         <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
-          <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>
-            Order #{orderId}
-          </Voltra.Text>
+          <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>Order #{orderId}</Voltra.Text>
           <Voltra.Text style={{ color: '#94A3B8', fontSize: 14, marginTop: 8 }}>
             Driver en route - ETA {eta} min
           </Voltra.Text>
@@ -66,16 +64,12 @@ function DeliveryActivity({ orderId, eta }) {
         minimal: <Voltra.Symbol name="car.fill" tintColor="#10B981" />,
       },
 
-      // Supplemental family for watchOS Smart Stack (iOS 18+)
-      supplemental: {
+      // Supplemental activity families for watchOS Smart Stack (iOS 18+)
+      supplementalActivityFamilies: {
         small: (
           <Voltra.HStack style={{ padding: 12, gap: 8 }}>
-            <Voltra.Text style={{ fontSize: 18, fontWeight: '700', color: '#10B981' }}>
-              {eta} min
-            </Voltra.Text>
-            <Voltra.Text style={{ fontSize: 14, color: '#9CA3AF' }}>
-              En route
-            </Voltra.Text>
+            <Voltra.Text style={{ fontSize: 18, fontWeight: '700', color: '#10B981' }}>{eta} min</Voltra.Text>
+            <Voltra.Text style={{ fontSize: 14, color: '#9CA3AF' }}>En route</Voltra.Text>
           </Voltra.HStack>
         ),
       },
@@ -91,16 +85,16 @@ function DeliveryActivity({ orderId, eta }) {
 
 ## Fallback behavior
 
-If you enable `supplementalFamilies: ["small"]` in your plugin config but don't provide a `supplemental.small` variant in your `useLiveActivity` call, the system will automatically fall back to using your `lockScreen` content.
+If you enable `supplementalActivityFamilies: ["small"]` in your plugin config but don't provide a `supplementalActivityFamilies.small` variant in your `useLiveActivity` call, the system will automatically fall back to using your `lockScreen` content.
 
 This allows you to:
 
 1. Enable the capability once in your plugin config
-2. Gradually add `supplemental.small` variants only where needed
+2. Gradually add `supplementalActivityFamilies.small` variants only where needed
 
 ## Design guidelines
 
-When designing for `supplemental.small`, keep these guidelines in mind:
+When designing for `supplementalActivityFamilies.small`, keep these guidelines in mind:
 
 ### Keep it minimal
 
@@ -108,25 +102,21 @@ Watch surfaces have very limited space. Show only the most essential information
 
 ```tsx
 // Good: Essential information only
-supplemental: {
-  small: (
-    <Voltra.HStack style={{ gap: 8 }}>
-      <Voltra.Text style={{ fontSize: 20, fontWeight: '700' }}>12 min</Voltra.Text>
-      <Voltra.Text style={{ fontSize: 14, color: '#9CA3AF' }}>ETA</Voltra.Text>
-    </Voltra.HStack>
-  )
+supplementalActivityFamilies: {
+  small: <Voltra.HStack style={{ gap: 8 }}>
+    <Voltra.Text style={{ fontSize: 20, fontWeight: '700' }}>12 min</Voltra.Text>
+    <Voltra.Text style={{ fontSize: 14, color: '#9CA3AF' }}>ETA</Voltra.Text>
+  </Voltra.HStack>
 }
 
 // Avoid: Too much detail for watch display
-supplemental: {
-  small: (
-    <Voltra.VStack>
-      <Voltra.Text>Order #12345</Voltra.Text>
-      <Voltra.Text>Driver: John Smith</Voltra.Text>
-      <Voltra.Text>ETA: 12 minutes</Voltra.Text>
-      <Voltra.Text>Distance: 2.3 miles</Voltra.Text>
-    </Voltra.VStack>
-  )
+supplementalActivityFamilies: {
+  small: <Voltra.VStack>
+    <Voltra.Text>Order #12345</Voltra.Text>
+    <Voltra.Text>Driver: John Smith</Voltra.Text>
+    <Voltra.Text>ETA: 12 minutes</Voltra.Text>
+    <Voltra.Text>Distance: 2.3 miles</Voltra.Text>
+  </Voltra.VStack>
 }
 ```
 
@@ -135,11 +125,13 @@ supplemental: {
 Smaller fonts are hard to read at a glance on a watch. Use larger font sizes and bold weights for key information.
 
 ```tsx
-<Voltra.Text style={{ 
-  fontSize: 18, 
-  fontWeight: '700',
-  color: '#F8FAFC' 
-}}>
+<Voltra.Text
+  style={{
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  }}
+>
   25:42
 </Voltra.Text>
 ```
@@ -150,24 +142,24 @@ Ensure your content is readable in various lighting conditions by using high-con
 
 ### No interactive elements
 
-Unlike lock screen, supplemental views are for quick glances only. Avoid buttons or toggles - users cannot interact with them on the watch.
+Unlike lock screen, supplemental activity families views are for quick glances only. Avoid buttons or toggles - users cannot interact with them on the watch.
 
 ## iOS version requirements
 
-| Feature | Minimum iOS Version |
-| ------- | ------------------- |
-| watchOS Smart Stack | iOS 18.0 |
-| CarPlay Dashboard | iOS 26.0 (future) |
+| Feature             | Minimum iOS Version |
+| ------------------- | ------------------- |
+| watchOS Smart Stack | iOS 18.0            |
+| CarPlay Dashboard   | iOS 26.0            |
 
-Live Activities on devices running iOS 16.2-17.x will continue to work normally on the iPhone lock screen and Dynamic Island. The supplemental content is simply ignored on older versions.
+Live Activities on devices running iOS 16.2-17.x will continue to work normally on the iPhone lock screen and Dynamic Island. The supplemental activity families content is simply ignored on older versions.
 
 ## How it works
 
-When you configure `supplementalFamilies`, the Voltra plugin generates a widget wrapper that applies Apple's `.supplementalActivityFamilies()` modifier with an iOS 18 availability check:
+When you configure `supplementalActivityFamilies`, the Voltra plugin generates a widget wrapper that applies Apple's `.supplementalActivityFamilies()` modifier with an iOS 18 availability check:
 
 ```swift
 // Generated by Voltra config plugin
-struct VoltraWidgetWithSupplementalFamilies: Widget {
+struct VoltraWidgetWithSupplementalActivityFamilies: Widget {
   private let wrapped = VoltraWidget()
 
   var body: some WidgetConfiguration {
@@ -188,11 +180,7 @@ The Swift side uses the `@Environment(\.activityFamily)` property to detect whet
 
 ```typescript
 interface LiveActivityConfig {
-  /**
-   * Supplemental activity families to enable (iOS 18+)
-   * Currently only "small" is available
-   */
-  supplementalFamilies?: ('small')[]
+  supplementalActivityFamilies?: 'small'[]
 }
 ```
 
@@ -205,7 +193,7 @@ interface LiveActivityVariants {
   /**
    * Supplemental families for iOS 18+ (watchOS Smart Stack, CarPlay)
    */
-  supplemental?: {
+  supplementalActivityFamilies?: {
     /**
      * Compact view for watchOS Smart Stack and CarPlay
      * Falls back to lockScreen content if not provided
@@ -219,5 +207,5 @@ interface LiveActivityVariants {
 
 - [Developing Live Activities](/development/developing-live-activities) - General Live Activity development
 - [Plugin Configuration](/api/plugin-configuration) - Full plugin configuration reference
-- [Apple: Configuring supplemental activity families](https://developer.apple.com/documentation/activitykit/activityconfiguration/supplementalactivityfamilies(_:))
+- [Apple: Configuring supplemental activity families](<https://developer.apple.com/documentation/activitykit/activityconfiguration/supplementalactivityfamilies(_:)>)
 - [WWDC24: What's new in Live Activities](https://developer.apple.com/videos/play/wwdc2024/10068/)

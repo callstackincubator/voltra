@@ -19,5 +19,5 @@ export interface LiveActivityConfig {
    * When configured, the .supplementalActivityFamilies() modifier is applied
    * to the ActivityConfiguration with availability check for iOS 18.0+
    */
-  supplementalFamilies?: ActivityFamily[]
+  supplementalActivityFamilies?: ActivityFamily[]
 }

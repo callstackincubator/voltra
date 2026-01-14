@@ -21,7 +21,7 @@ public struct VoltraWidget: Widget {
     }
   }
 
-  // MARK: - iOS 18+ Configuration (with adaptive view for supplemental families)
+  // MARK: - iOS 18+ Configuration (with adaptive view for supplemental activity families)
 
   @available(iOS 18.0, *)
   private func ios18Configuration() -> some WidgetConfiguration {
@@ -38,7 +38,7 @@ public struct VoltraWidget: Widget {
     } dynamicIsland: { context in
       dynamicIslandContent(context: context)
     }
-    // NOTE: .supplementalActivityFamilies() is applied by VoltraWidgetWithSupplementalFamilies
+    // NOTE: .supplementalActivityFamilies() is applied by VoltraWidgetWithSupplementalActivityFamilies
     // wrapper when configured via plugin (see VoltraWidgetBundle.swift)
   }
 
@@ -102,7 +102,7 @@ public struct VoltraWidget: Widget {
 // MARK: - Adaptive Lock Screen View (iOS 18+)
 
 /// A view that adapts its content based on the activity family environment
-/// - For .small (watchOS/CarPlay): Uses supplementalSmall content if available, falls back to lockScreen
+/// - For .small (watchOS/CarPlay): Uses supplementalActivityFamiliesSmall content if available, falls back to lockScreen
 /// - For .medium (iPhone lock screen) and unknown: Always uses lockScreen
 @available(iOS 18.0, *)
 struct VoltraAdaptiveLockScreenView: View {
@@ -114,8 +114,8 @@ struct VoltraAdaptiveLockScreenView: View {
   var body: some View {
     switch activityFamily {
     case .small:
-      let region: VoltraRegion = context.state.regions[.supplementalSmall] != nil
-        ? .supplementalSmall
+      let region: VoltraRegion = context.state.regions[.supplementalActivityFamiliesSmall] != nil
+        ? .supplementalActivityFamiliesSmall
         : .lockScreen
       Voltra(root: rootNodeProvider(region, context.state), activityId: context.activityID)
 
