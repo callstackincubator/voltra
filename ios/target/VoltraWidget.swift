@@ -14,6 +14,37 @@ public struct VoltraWidget: Widget {
   }
 
   public var body: some WidgetConfiguration {
+    if #available(iOS 18.0, *) {
+      return ios18Configuration()
+    } else {
+      return legacyConfiguration()
+    }
+  }
+
+  // MARK: - iOS 18+ Configuration (with adaptive view for supplemental families)
+
+  @available(iOS 18.0, *)
+  private func ios18Configuration() -> some WidgetConfiguration {
+    ActivityConfiguration(for: VoltraAttributes.self) { context in
+      VoltraAdaptiveLockScreenView(
+        context: context,
+        rootNodeProvider: rootNode
+      )
+      .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+      .voltraIfLet(context.state.activityBackgroundTint) { view, tint in
+        let color = JSColorParser.parse(tint)
+        view.activityBackgroundTint(color)
+      }
+    } dynamicIsland: { context in
+      dynamicIslandContent(context: context)
+    }
+    // NOTE: .supplementalActivityFamilies() is applied by VoltraWidgetWithSupplementalFamilies
+    // wrapper when configured via plugin (see VoltraWidgetBundle.swift)
+  }
+
+  // MARK: - Legacy Configuration (iOS 16.2 - 17.x)
+
+  private func legacyConfiguration() -> some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
       Voltra(root: rootNode(for: .lockScreen, from: context.state), activityId: context.activityID)
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
@@ -22,42 +53,76 @@ public struct VoltraWidget: Widget {
           view.activityBackgroundTint(color)
         }
     } dynamicIsland: { context in
-      let dynamicIsland = DynamicIsland {
-        DynamicIslandExpandedRegion(.leading) {
-          Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID)
-            .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-        }
-        DynamicIslandExpandedRegion(.trailing) {
-          Voltra(root: rootNode(for: .islandExpandedTrailing, from: context.state), activityId: context.activityID)
-            .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-        }
-        DynamicIslandExpandedRegion(.center) {
-          Voltra(root: rootNode(for: .islandExpandedCenter, from: context.state), activityId: context.activityID)
-            .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-        }
-        DynamicIslandExpandedRegion(.bottom) {
-          Voltra(root: rootNode(for: .islandExpandedBottom, from: context.state), activityId: context.activityID)
-            .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-        }
-      } compactLeading: {
-        Voltra(root: rootNode(for: .islandCompactLeading, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-      } compactTrailing: {
-        Voltra(root: rootNode(for: .islandCompactTrailing, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-      } minimal: {
-        Voltra(root: rootNode(for: .islandMinimal, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-      }
+      dynamicIslandContent(context: context)
+    }
+  }
 
-      // Apply keylineTint if specified
-      if let keylineTint = context.state.keylineTint,
-         let color = JSColorParser.parse(keylineTint)
-      {
-        return dynamicIsland.keylineTint(color)
-      } else {
-        return dynamicIsland
+  // MARK: - Dynamic Island (shared between iOS versions)
+
+  private func dynamicIslandContent(context: ActivityViewContext<VoltraAttributes>) -> DynamicIsland {
+    let dynamicIsland = DynamicIsland {
+      DynamicIslandExpandedRegion(.leading) {
+        Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID)
+          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       }
+      DynamicIslandExpandedRegion(.trailing) {
+        Voltra(root: rootNode(for: .islandExpandedTrailing, from: context.state), activityId: context.activityID)
+          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+      }
+      DynamicIslandExpandedRegion(.center) {
+        Voltra(root: rootNode(for: .islandExpandedCenter, from: context.state), activityId: context.activityID)
+          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+      }
+      DynamicIslandExpandedRegion(.bottom) {
+        Voltra(root: rootNode(for: .islandExpandedBottom, from: context.state), activityId: context.activityID)
+          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+      }
+    } compactLeading: {
+      Voltra(root: rootNode(for: .islandCompactLeading, from: context.state), activityId: context.activityID)
+        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+    } compactTrailing: {
+      Voltra(root: rootNode(for: .islandCompactTrailing, from: context.state), activityId: context.activityID)
+        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+    } minimal: {
+      Voltra(root: rootNode(for: .islandMinimal, from: context.state), activityId: context.activityID)
+        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+    }
+
+    // Apply keylineTint if specified
+    if let keylineTint = context.state.keylineTint,
+       let color = JSColorParser.parse(keylineTint)
+    {
+      return dynamicIsland.keylineTint(color)
+    } else {
+      return dynamicIsland
+    }
+  }
+}
+
+// MARK: - Adaptive Lock Screen View (iOS 18+)
+
+/// A view that adapts its content based on the activity family environment
+/// - For .small (watchOS/CarPlay): Uses supplementalSmall content if available, falls back to lockScreen
+/// - For .medium (iPhone lock screen) and unknown: Always uses lockScreen
+@available(iOS 18.0, *)
+struct VoltraAdaptiveLockScreenView: View {
+  let context: ActivityViewContext<VoltraAttributes>
+  let rootNodeProvider: (VoltraRegion, VoltraAttributes.ContentState) -> VoltraNode
+
+  @Environment(\.activityFamily) private var activityFamily
+
+  var body: some View {
+    switch activityFamily {
+    case .small:
+      // watchOS Smart Stack / CarPlay: prefer supplementalSmall, fallback to lockScreen
+      let region: VoltraRegion = context.state.regions[.supplementalSmall] != nil
+        ? .supplementalSmall
+        : .lockScreen
+      Voltra(root: rootNodeProvider(region, context.state), activityId: context.activityID)
+
+    case .medium, @unknown default:
+      // iPhone lock screen: always use lockScreen
+      Voltra(root: rootNodeProvider(.lockScreen, context.state), activityId: context.activityID)
     }
   }
 }
