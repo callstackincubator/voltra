@@ -26,7 +26,7 @@ const FONT_EXTENSIONS = ['.ttf', '.otf', '.woff', '.woff2']
  * @param targetName - Name of the Live Activity extension target
  * @returns Modified config
  */
-export const withFontsIos: ConfigPlugin<{ fonts: string[]; targetName: string }> = (config, { fonts, targetName }) => {
+export const withFonts: ConfigPlugin<{ fonts: string[]; targetName: string }> = (config, { fonts, targetName }) => {
   if (!fonts || fonts.length === 0) {
     return config
   }

@@ -3,7 +3,7 @@ import { ConfigPlugin, withPlugins } from '@expo/config-plugins'
 import type { WidgetConfig } from '../../types'
 import { configureEasBuild } from './eas'
 import { generateWidgetExtensionFiles } from './files'
-import { withFontsIos } from './fonts'
+import { withFonts } from './fonts'
 import { configureMainAppPlist } from './plist'
 import { configurePodfile } from './podfile'
 import { configureXcodeProject } from './xcode'
@@ -41,7 +41,7 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier }],
 
     // 2. Add custom fonts if provided
-    ...(fonts && fonts.length > 0 ? [[withFontsIos, { fonts, targetName }] as [ConfigPlugin<any>, any]] : []),
+    ...(fonts && fonts.length > 0 ? [[withFonts, { fonts, targetName }] as [ConfigPlugin<any>, any]] : []),
 
     // 3. Configure Xcode project (creates the target - must run before fonts mod executes)
     [configureXcodeProject, { targetName, bundleIdentifier, deploymentTarget }],
