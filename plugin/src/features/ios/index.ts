@@ -12,7 +12,7 @@ export interface WithIOSProps {
   bundleIdentifier: string
   deploymentTarget: string
   widgets?: WidgetConfig[]
-  groupIdentifier: string
+  groupIdentifier?: string
 }
 
 /**
