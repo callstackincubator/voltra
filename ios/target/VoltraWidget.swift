@@ -114,14 +114,15 @@ struct VoltraAdaptiveLockScreenView: View {
   var body: some View {
     switch activityFamily {
     case .small:
-      // watchOS Smart Stack / CarPlay: prefer supplementalSmall, fallback to lockScreen
       let region: VoltraRegion = context.state.regions[.supplementalSmall] != nil
         ? .supplementalSmall
         : .lockScreen
       Voltra(root: rootNodeProvider(region, context.state), activityId: context.activityID)
 
-    case .medium, @unknown default:
-      // iPhone lock screen: always use lockScreen
+    case .medium:
+      Voltra(root: rootNodeProvider(.lockScreen, context.state), activityId: context.activityID)
+
+    @unknown default:
       Voltra(root: rootNodeProvider(.lockScreen, context.state), activityId: context.activityID)
     }
   }
