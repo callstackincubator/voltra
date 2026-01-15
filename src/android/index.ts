@@ -20,3 +20,22 @@ export type { LinearProgressIndicatorProps } from './jsx/LinearProgressIndicator
 export type { RowProps } from './jsx/Row.js'
 export type { SpacerProps } from './jsx/Spacer.js'
 export type { TextProps } from './jsx/Text.js'
+
+// Android Live Update API and types
+export {
+  unstable_endAllAndroidLiveUpdates,
+  unstable_isAndroidLiveUpdateActive,
+  unstable_startAndroidLiveUpdate,
+  unstable_stopAndroidLiveUpdate,
+  unstable_updateAndroidLiveUpdate,
+  unstable_useAndroidLiveUpdate,
+} from './live-update/api.js'
+export type {
+  AndroidLiveUpdateJson,
+  AndroidLiveUpdateVariants,
+  AndroidLiveUpdateVariantsJson,
+  StartAndroidLiveUpdateOptions,
+  UpdateAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateResult,
+} from './live-update/types.js'

@@ -50,3 +50,20 @@ export {
   updateWidget,
   type UpdateWidgetOptions,
 } from './widgets/widget-api.js'
+
+// Android Live Update API (unstable)
+export {
+  unstable_endAllAndroidLiveUpdates,
+  unstable_isAndroidLiveUpdateActive,
+  unstable_startAndroidLiveUpdate,
+  unstable_stopAndroidLiveUpdate,
+  unstable_updateAndroidLiveUpdate,
+  unstable_useAndroidLiveUpdate,
+} from './android/live-update/api.js'
+export type {
+  AndroidLiveUpdateVariants,
+  StartAndroidLiveUpdateOptions,
+  UpdateAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateResult,
+} from './android/live-update/types.js'

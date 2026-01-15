@@ -5,6 +5,13 @@ export type { WidgetVariants } from './widgets/types.js'
 
 // Android namespace and types (unstable)
 export type {
+  AndroidLiveUpdateJson,
+  AndroidLiveUpdateVariants,
+  AndroidLiveUpdateVariantsJson,
+  StartAndroidLiveUpdateOptions,
+  UpdateAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateResult,
   VoltraAndroidBaseProps,
   VoltraAndroidStyleProp,
   VoltraAndroidTextStyle,

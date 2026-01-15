@@ -34,12 +34,29 @@ import { flattenStyle } from './flatten-styles.js'
 import { getRenderCache, type RenderCache } from './render-cache.js'
 import { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry.js'
 
+/**
+ * Component registry interface for looking up component IDs.
+ * This allows different platforms (iOS, Android) to have their own component ID mappings.
+ */
+export type ComponentRegistry = {
+  getComponentId: (name: string) => number
+}
+
+/**
+ * Default component registry using iOS component IDs.
+ * Used for backwards compatibility with existing iOS code.
+ */
+const defaultComponentRegistry: ComponentRegistry = {
+  getComponentId: (name: string) => getComponentId(name),
+}
+
 type VoltraRenderingContext = {
   registry: ContextRegistry
   stylesheetRegistry?: StylesheetRegistry
   elementRegistry?: ElementRegistry
   duplicates?: Set<ReactNode>
   inStringOnlyContext?: boolean
+  componentRegistry: ComponentRegistry
 }
 
 function renderNode(element: ReactNode, context: VoltraRenderingContext): VoltraNodeJson {
@@ -258,7 +275,7 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         const hasProps = Object.keys(transformedProps).length > 0
 
         const voltraHostElement: VoltraElementJson = {
-          t: getComponentId(child.type),
+          t: context.componentRegistry.getComponentId(child.type),
           ...(id ? { i: id } : {}),
           c: renderedChildren,
           ...(hasProps ? { p: transformedProps } : {}),
@@ -280,7 +297,7 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
       const hasChildren = Array.isArray(renderedChildren) ? renderedChildren.length > 0 : true
 
       const voltraHostElement: VoltraElementJson = {
-        t: getComponentId(child.type),
+        t: context.componentRegistry.getComponentId(child.type),
         ...(id ? { i: id } : {}),
         ...(hasChildren ? { c: renderedChildren } : {}),
         ...(hasProps ? { p: transformedProps } : {}),
@@ -341,6 +358,7 @@ export const renderVoltraVariantToJson = (element: ReactNode): VoltraNodeJson =>
   const context: VoltraRenderingContext = {
     registry,
     // No stylesheet registry for backwards compatibility
+    componentRegistry: defaultComponentRegistry,
   }
   return renderNode(element, context)
 }
@@ -419,6 +437,7 @@ export function transformProps(
         elementRegistry: context.elementRegistry,
         duplicates: context.duplicates,
         inStringOnlyContext: false,
+        componentRegistry: context.componentRegistry,
       })
       const shortKey = shorten(key)
       transformed[shortKey] = serializedComponent
@@ -438,8 +457,11 @@ export const VOLTRA_PAYLOAD_VERSION = 1
 /**
  * Factory function that creates a Voltra renderer instance.
  * The renderer is agnostic of whether it's used for live activities or widgets.
+ *
+ * @param componentRegistry - Optional component registry for platform-specific component ID mappings.
+ *                            Defaults to iOS component registry for backwards compatibility.
  */
-export const createVoltraRenderer = () => {
+export const createVoltraRenderer = (componentRegistry: ComponentRegistry = defaultComponentRegistry) => {
   // Collect all root nodes for pre-scanning
   const rootNodes: { name: string; node: ReactNode }[] = []
 
@@ -510,6 +532,7 @@ export const createVoltraRenderer = () => {
         stylesheetRegistry,
         elementRegistry,
         duplicates,
+        componentRegistry,
       }
       return renderNode(element, context)
     }
