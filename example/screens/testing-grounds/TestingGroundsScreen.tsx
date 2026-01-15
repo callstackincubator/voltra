@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router'
 import React from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
@@ -39,15 +38,11 @@ const TESTING_GROUNDS_SECTIONS = [
 ]
 
 export default function TestingGroundsScreen() {
-  const insets = useSafeAreaInsets()
   const router = useRouter()
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={[styles.scrollView]}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
-      >
+      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Testing Grounds</Text>
         <Text style={styles.subheading}>
           Explore different aspects of Voltra development. Each section provides hands-on examples and demonstrations of

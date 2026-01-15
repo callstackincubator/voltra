@@ -62,8 +62,11 @@ export function getComponentName(id: number): string {
 const generateSwiftMapping = (data: ComponentsData): string => {
   const { version, components } = data
 
+  const swiftComponents = components
+    .filter((comp) => comp.swiftAvailability !== 'Not available')
+
   // Generate enum cases for each component
-  const enumCases = components
+  const enumCases = swiftComponents
     .map((comp, index) => {
       // Convert component name to Swift enum case name (handle special cases)
       const caseName = comp.name
@@ -75,8 +78,8 @@ const generateSwiftMapping = (data: ComponentsData): string => {
     .join('\n')
 
   // Generate switch cases for ID to name conversion
-  const switchCases = components
-    .map((comp, index) => {
+  const switchCases = swiftComponents
+    .map((comp) => {
       const caseName = comp.name
         .replace(/([A-Z])/g, '_$1')
         .toUpperCase()
@@ -98,30 +101,68 @@ import Foundation
 /// IDs are assigned sequentially based on order in components.json (0-indexed)
 public enum ComponentTypeID: Int, Codable {
 ${enumCases}
-    
+
     /// Get the component name string for this ID
     public var componentName: String {
         switch self {
 ${switchCases}
         }
     }
-    
+
     /// Initialize from component name string
     /// - Parameter name: Component name (e.g., "Text", "VStack")
     /// - Returns: ComponentTypeID if found, nil otherwise
     public init?(componentName: String) {
         switch componentName {
-${components
-  .map((comp) => {
-    const caseName = comp.name
-      .replace(/([A-Z])/g, '_$1')
-      .toUpperCase()
-      .replace(/^_/, '')
-    return `        case "${comp.name}": self = .${caseName}`
-  })
-  .join('\n')}
+${swiftComponents
+      .map((comp) => {
+        const caseName = comp.name
+          .replace(/([A-Z])/g, '_$1')
+          .toUpperCase()
+          .replace(/^_/, '')
+        return `        case "${comp.name}": self = .${caseName}`
+      })
+      .join('\n')}
         default:
             return nil
+        }
+    }
+}
+`
+}
+
+/**
+ * Generate Kotlin mapping
+ */
+const generateKotlinMapping = (data: ComponentsData): string => {
+  const { version, components } = data
+
+  const idToNameCases = components
+    .filter((comp) => !!comp.androidAvailability)
+    .map((comp, index) => `        ${index} -> "${comp.name}"`)
+    .join('\n')
+
+  return `//
+//  ComponentTypeID.kt
+//
+//  AUTO-GENERATED from data/components.json
+//  DO NOT EDIT MANUALLY - Changes will be overwritten
+//  Schema version: ${version}
+
+package voltra.payload
+
+/**
+ * Component type IDs mapped from data/components.json
+ * IDs are assigned sequentially based on order in components.json (0-indexed)
+ */
+object ComponentTypeID {
+    /**
+     * Get component name from numeric ID
+     */
+    fun getComponentName(id: Int): String? {
+        return when (id) {
+${idToNameCases}
+            else -> null
         }
     }
 }
@@ -136,6 +177,9 @@ export const generateComponentIds = (data: ComponentsData): GeneratedFiles => {
 
   // Generate Swift enum
   files['ComponentTypeID.swift'] = generateSwiftMapping(data)
+
+  // Generate Kotlin mapping
+  files['ComponentTypeID.kt'] = generateKotlinMapping(data)
 
   return files
 }

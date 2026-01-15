@@ -1,7 +1,6 @@
 import { Link } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Voltra } from 'voltra'
 import { clearPreloadedImages, preloadImages, reloadLiveActivities, startLiveActivity } from 'voltra/client'
 
@@ -14,7 +13,6 @@ function generateRandomKey(): string {
 }
 
 export default function ImagePreloadingScreen() {
-  const insets = useSafeAreaInsets()
   const [url, setUrl] = useState(`https://picsum.photos/id/${Math.floor(Math.random() * 120)}/100/100`)
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentAssetKey, setCurrentAssetKey] = useState<string | null>(null)
@@ -95,15 +93,7 @@ export default function ImagePreloadingScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <View
-        style={[
-          styles.scrollView,
-          {
-            paddingTop: insets.top,
-            paddingBottom: insets.bottom,
-          },
-        ]}
-      >
+      <View style={[styles.scrollView, styles.content]}>
         <Text style={styles.heading}>Image Preloading</Text>
         <Text style={styles.subheading}>
           Test image preloading functionality for Live Activities. Download images to App Group storage and verify they

@@ -2,16 +2,27 @@
   "expo": {
     "name": "Voltra Example",
     "slug": "voltra-example",
-    "scheme": "voltraexample",
+    "scheme": "voltra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/voltra-icon.jpg",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "androidNavigationBar": {
+      "visible": "edgeToEdge",
+      "barStyle": "light-content"
+    },
     "splash": {
       "image": "./assets/voltra-splash.jpg",
       "resizeMode": "cover",
       "backgroundColor": "#8232FF"
+    },
+    "android": {
+      "package": "com.callstackincubator.voltraexample",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/voltra-icon.jpg",
+        "backgroundColor": "#8232FF"
+      }
     },
     "ios": {
       "supportsTablet": true,
@@ -32,7 +43,41 @@
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
               "initialStatePath": "./widgets/weather-initial.tsx"
             }
-          ]
+          ],
+          "android": {
+            "widgets": [
+              {
+                "id": "voltra",
+                "displayName": "Voltra Widget",
+                "description": "Voltra logo widget",
+                "minCellWidth": 2,
+                "minCellHeight": 2,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen",
+                "initialStatePath": "./widgets/android-voltra-widget-initial.tsx"
+              },
+              {
+                "id": "interactive_todos",
+                "displayName": "Interactive Todos Widget",
+                "description": "Testing interactive widgets with checkboxes, switches, and buttons",
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen"
+              },
+              {
+                "id": "image_preloading",
+                "displayName": "Image Preloading Widget",
+                "description": "Test image preloading on Android",
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen"
+              }
+            ]
+          }
         }
       ],
       "expo-router",

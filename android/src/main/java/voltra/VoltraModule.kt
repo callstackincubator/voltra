@@ -1,50 +1,296 @@
 package voltra
 
+import android.util.Log
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import java.net.URL
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
+import voltra.events.VoltraEventBus
+import voltra.images.VoltraImageManager
+import voltra.widget.VoltraGlanceWidget
+import voltra.widget.VoltraWidgetManager
 
 class VoltraModule : Module() {
-  // Each module class must implement the definition function. The definition consists of components
-  // that describes the module's functionality and behavior.
-  // See https://docs.expo.dev/modules/module-api for more details about available components.
-  override fun definition() = ModuleDefinition {
-    // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
-    // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
-    // The module will be accessible from `requireNativeModule('VoltraModule')` in JavaScript.
-    Name("VoltraModule")
-
-    // Defines constant property on the module.
-    Constant("PI") {
-      Math.PI
+    companion object {
+        private const val TAG = "VoltraModule"
     }
 
-    // Defines event names that the module can send to JavaScript.
-    Events("onChange")
-
-    // Defines a JavaScript synchronous function that runs the native code on the JavaScript thread.
-    Function("hello") {
-      "Hello world! 👋"
+    private val notificationManager by lazy {
+        VoltraNotificationManager(appContext.reactContext!!)
     }
 
-    // Defines a JavaScript function that always returns a Promise and whose native code
-    // is by default dispatched on the different thread than the JavaScript runtime runs on.
-    AsyncFunction("setValueAsync") { value: String ->
-      // Send an event to JavaScript.
-      sendEvent("onChange", mapOf(
-        "value" to value
-      ))
+    private val widgetManager by lazy {
+        VoltraWidgetManager(appContext.reactContext!!)
     }
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of
-    // the view definition: Prop, Events.
-    View(VoltraModuleView::class) {
-      // Defines a setter for the `url` prop.
-      Prop("url") { view: VoltraModuleView, url: URL ->
-        view.webView.loadUrl(url.toString())
-      }
-      // Defines an event that the view can send to JavaScript.
-      Events("onLoad")
+    private val imageManager by lazy {
+        VoltraImageManager(appContext.reactContext!!)
     }
-  }
+
+    private val eventBus by lazy {
+        VoltraEventBus.getInstance(appContext.reactContext!!)
+    }
+
+    private var eventBusUnsubscribe: (() -> Unit)? = null
+
+    override fun definition() =
+        ModuleDefinition {
+            Name("VoltraModule")
+
+            OnStartObserving {
+                Log.d(TAG, "OnStartObserving: Starting event bus subscription")
+
+                // Replay any persisted events from SharedPreferences (cold start)
+                val persistedEvents = eventBus.popAll()
+                Log.d(TAG, "Replaying ${persistedEvents.size} persisted events")
+
+                persistedEvents.forEach { event ->
+                    sendEvent(event.type, event.toMap())
+                }
+
+                // Subscribe to hot event delivery (broadcast receiver)
+                eventBusUnsubscribe =
+                    eventBus.addListener { event ->
+                        Log.d(TAG, "Received hot event: ${event.type}")
+                        sendEvent(event.type, event.toMap())
+                    }
+            }
+
+            OnStopObserving {
+                Log.d(TAG, "OnStopObserving: Unsubscribing from event bus")
+                eventBusUnsubscribe?.invoke()
+                eventBusUnsubscribe = null
+            }
+
+            // Android Live Update APIs
+
+            AsyncFunction("startAndroidLiveUpdate") {
+                    payload: String,
+                    options: Map<String, Any?>,
+                ->
+
+                Log.d(TAG, "startAndroidLiveUpdate called")
+
+                val updateName = options["updateName"] as? String
+                val channelId = options["channelId"] as? String ?: "voltra_live_updates"
+
+                Log.d(TAG, "updateName=$updateName, channelId=$channelId")
+
+                val result =
+                    runBlocking {
+                        notificationManager.startLiveUpdate(payload, updateName, channelId)
+                    }
+
+                Log.d(TAG, "startAndroidLiveUpdate returning: $result")
+                result
+            }
+
+            AsyncFunction("updateAndroidLiveUpdate") {
+                    notificationId: String,
+                    payload: String,
+                ->
+
+                Log.d(TAG, "updateAndroidLiveUpdate called with notificationId=$notificationId")
+
+                runBlocking {
+                    notificationManager.updateLiveUpdate(notificationId, payload)
+                }
+
+                Log.d(TAG, "updateAndroidLiveUpdate completed")
+            }
+
+            AsyncFunction("stopAndroidLiveUpdate") { notificationId: String ->
+                Log.d(TAG, "stopAndroidLiveUpdate called with notificationId=$notificationId")
+                notificationManager.stopLiveUpdate(notificationId)
+            }
+
+            Function("isAndroidLiveUpdateActive") { updateName: String ->
+                notificationManager.isLiveUpdateActive(updateName)
+            }
+
+            AsyncFunction("endAllAndroidLiveUpdates") {
+                notificationManager.endAllLiveUpdates()
+            }
+
+            // Android Widget APIs
+
+            AsyncFunction("updateAndroidWidget") {
+                    widgetId: String,
+                    jsonString: String,
+                    options: Map<String, Any?>,
+                ->
+
+                Log.d(TAG, "updateAndroidWidget called with widgetId=$widgetId")
+
+                val deepLinkUrl = options["deepLinkUrl"] as? String
+
+                widgetManager.writeWidgetData(widgetId, jsonString, deepLinkUrl)
+
+                runBlocking {
+                    widgetManager.updateWidget(widgetId)
+                }
+
+                Log.d(TAG, "updateAndroidWidget completed")
+            }
+
+            AsyncFunction("reloadAndroidWidgets") { widgetIds: ArrayList<String>? ->
+                Log.d(TAG, "reloadAndroidWidgets called with widgetIds=$widgetIds")
+
+                runBlocking {
+                    widgetManager.reloadWidgets(widgetIds)
+                }
+
+                Log.d(TAG, "reloadAndroidWidgets completed")
+            }
+
+            AsyncFunction("clearAndroidWidget") { widgetId: String ->
+                Log.d(TAG, "clearAndroidWidget called with widgetId=$widgetId")
+
+                widgetManager.clearWidgetData(widgetId)
+
+                runBlocking {
+                    widgetManager.updateWidget(widgetId)
+                }
+
+                Log.d(TAG, "clearAndroidWidget completed")
+            }
+
+            AsyncFunction("clearAllAndroidWidgets") {
+                Log.d(TAG, "clearAllAndroidWidgets called")
+
+                widgetManager.clearAllWidgetData()
+
+                runBlocking {
+                    widgetManager.reloadAllWidgets()
+                }
+
+                Log.d(TAG, "clearAllAndroidWidgets completed")
+            }
+
+            AsyncFunction("requestPinGlanceAppWidget") {
+                    widgetId: String,
+                    options: Map<String, Any?>?,
+                ->
+
+                Log.d(TAG, "requestPinGlanceAppWidget called with widgetId=$widgetId")
+
+                val context = appContext.reactContext!!
+
+                // Construct the receiver class name following the convention
+                val receiverClassName = "${context.packageName}.widget.VoltraWidget_${widgetId}Receiver"
+
+                Log.d(TAG, "Looking for receiver: $receiverClassName")
+
+                // Get the receiver class using reflection
+                val receiverClass =
+                    try {
+                        Class.forName(receiverClassName) as Class<out androidx.glance.appwidget.GlanceAppWidgetReceiver>
+                    } catch (e: ClassNotFoundException) {
+                        Log.e(TAG, "Widget receiver class not found: $receiverClassName", e)
+                        throw IllegalArgumentException("Widget receiver not found for id: $widgetId")
+                    }
+
+                // Get GlanceAppWidgetManager and request pin
+                val glanceManager = GlanceAppWidgetManager(context)
+
+                // Parse preview size from options (optional)
+                // See: https://developer.android.com/develop/ui/compose/glance/pin-in-app
+                val previewSize =
+                    if (options != null) {
+                        val width = (options["previewWidth"] as? Number)?.toFloat()
+                        val height = (options["previewHeight"] as? Number)?.toFloat()
+                        if (width != null && height != null) {
+                            DpSize(width.dp, height.dp)
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+
+                val result =
+                    runBlocking {
+                        // requestPinGlanceAppWidget is a suspend function
+                        // See: https://developer.android.com/develop/ui/compose/glance/pin-in-app
+                        if (previewSize != null) {
+                            // Create preview widget with preview dimensions
+                            val previewWidget = VoltraGlanceWidget(widgetId)
+                            glanceManager.requestPinGlanceAppWidget(
+                                receiver = receiverClass,
+                                preview = previewWidget,
+                                previewState = previewSize,
+                            )
+                        } else {
+                            // Basic pin request without preview
+                            glanceManager.requestPinGlanceAppWidget(receiverClass)
+                        }
+                    }
+
+                Log.d(TAG, "requestPinGlanceAppWidget completed with result=$result")
+                result
+            }
+
+            AsyncFunction("preloadImages") { images: List<Map<String, Any>> ->
+                Log.d(TAG, "preloadImages called with ${images.size} images")
+
+                runBlocking {
+                    val results =
+                        images
+                            .map { img ->
+                                async {
+                                    val url = img["url"] as String
+                                    val key = img["key"] as String
+                                    val method = (img["method"] as? String) ?: "GET"
+
+                                    @Suppress("UNCHECKED_CAST")
+                                    val headers = img["headers"] as? Map<String, String>
+
+                                    val resultKey = imageManager.preloadImage(url, key, method, headers)
+                                    if (resultKey != null) {
+                                        Pair(key, null)
+                                    } else {
+                                        Pair(key, "Failed to download image")
+                                    }
+                                }
+                            }.awaitAll()
+
+                    val succeeded = results.filter { it.second == null }.map { it.first }
+                    val failed =
+                        results.filter { it.second != null }.map {
+                            mapOf("key" to it.first, "error" to it.second)
+                        }
+
+                    mapOf(
+                        "succeeded" to succeeded,
+                        "failed" to failed,
+                    )
+                }
+            }
+
+            AsyncFunction("clearPreloadedImages") { keys: List<String>? ->
+                Log.d(TAG, "clearPreloadedImages called with keys=$keys")
+                imageManager.clearPreloadedImages(keys)
+            }
+
+            AsyncFunction("reloadLiveActivities") { activityNames: List<String>? ->
+                // On Android, we don't have "Live Activities" in the same sense as iOS,
+                // but we might want to refresh widgets or notifications.
+                // For now, this is a no-op to match iOS API if called.
+                Log.d(TAG, "reloadLiveActivities called (no-op on Android)")
+            }
+
+            View(VoltraRN::class) {
+                Prop("payload") { view, payload: String ->
+                    view.setPayload(payload)
+                }
+
+                Prop("viewId") { view, viewId: String ->
+                    view.setViewId(viewId)
+                }
+            }
+        }
 }

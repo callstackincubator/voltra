@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "developing-widgets",
+    "label": "Developing Widgets"
+  },
+  {
+    "type": "file",
+    "name": "styling",
+    "label": "Styling"
+  },
+  {
+    "type": "file",
+    "name": "image-preloading",
+    "label": "Image Preloading"
+  },
+  {
+    "type": "file",
+    "name": "widget-pre-rendering",
+    "label": "Widget Pre-rendering"
+  }
+]

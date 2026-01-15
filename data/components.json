@@ -47,8 +47,22 @@
     "type": "typ",
     "value": "v",
     "weight": "wt",
-
+    "maxLines": "mxl",
+    "contentDescription": "cdesc",
+    "horizontalAlignment": "halig",
+    "verticalAlignment": "valig",
+    "contentAlignment": "ca",
+    "icon": "ic",
+    "contentColor": "cc",
+    "horizontalPadding": "hp",
+    "assetName": "an",
+    "base64": "b64",
+    "checked": "chk",
+    "enabled": "en",
+    "id": "id",
+    "deepLinkUrl": "dlu",
     "padding": "pad",
+    "text": "txt",
     "paddingVertical": "pv",
     "paddingHorizontal": "ph",
     "paddingTop": "pt",
@@ -84,6 +98,8 @@
     "minHeight": "minh",
     "maxHeight": "maxh",
     "flexGrowWidth": "fgw",
+    "fillMaxWidth": "fmw",
+    "fillMaxHeight": "fmh",
     "fixedSizeHorizontal": "fsh",
     "fixedSizeVertical": "fsv",
     "layoutPriority": "lp",
@@ -103,7 +119,6 @@
     "textDecorationLine": "tdl",
     "glassEffect": "ge",
     "transform": "tf",
-
     "frame": "f",
     "offset": "off",
     "foregroundStyle": "fgs",
@@ -162,6 +177,8 @@
     "maxWidth",
     "minHeight",
     "maxHeight",
+    "fillMaxWidth",
+    "fillMaxHeight",
     "flexGrowWidth",
     "fixedSizeHorizontal",
     "fixedSizeVertical",
@@ -217,6 +234,46 @@
       }
     },
     {
+      "name": "AndroidFilledButton",
+      "description": "Android Material Design filled button component for widgets",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "parameters": {
+        "text": {
+          "type": "string",
+          "optional": false,
+          "description": "Text to display"
+        },
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the button is enabled"
+        },
+        "icon": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Optional icon"
+        },
+        "backgroundColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Background color"
+        },
+        "contentColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Text/icon color"
+        },
+        "maxLines": {
+          "type": "number",
+          "optional": true,
+          "description": "Maximum lines for text"
+        }
+      }
+    },
+    {
       "name": "Label",
       "description": "Label with optional icon",
       "swiftAvailability": "iOS 13.0, macOS 10.15",
@@ -234,22 +291,23 @@
       }
     },
     {
-      "name": "Image",
-      "description": "Display images from asset catalog or base64 data",
-      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "name": "AndroidImage",
+      "description": "Android Image component",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
       "parameters": {
         "source": {
           "type": "object",
-          "optional": true,
+          "optional": false,
           "jsonEncoded": true,
-          "description": "Image source - either { assetName: string } for asset catalog images or { base64: string } for base64 encoded images"
+          "description": "Image source"
         },
         "resizeMode": {
           "type": "string",
           "optional": true,
           "enum": ["cover", "contain", "stretch", "repeat", "center"],
           "default": "cover",
-          "description": "How the image should be resized to fit its container"
+          "description": "Resizing mode"
         }
       }
     },
@@ -325,6 +383,81 @@
           "optional": true,
           "default": false,
           "description": "Initial toggle state"
+        }
+      }
+    },
+    {
+      "name": "AndroidSwitch",
+      "description": "Android Switch component",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "parameters": {
+        "id": {
+          "type": "string",
+          "optional": false,
+          "description": "Unique identifier for interaction events"
+        },
+        "checked": {
+          "type": "boolean",
+          "optional": true,
+          "default": false,
+          "description": "Initial checked state"
+        },
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the switch is enabled"
+        }
+      }
+    },
+    {
+      "name": "AndroidCheckBox",
+      "description": "Android CheckBox component",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "parameters": {
+        "id": {
+          "type": "string",
+          "optional": false,
+          "description": "Unique identifier for interaction events"
+        },
+        "checked": {
+          "type": "boolean",
+          "optional": true,
+          "default": false,
+          "description": "Initial checked state"
+        },
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the checkbox is enabled"
+        }
+      }
+    },
+    {
+      "name": "AndroidRadioButton",
+      "description": "Android RadioButton component",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "parameters": {
+        "id": {
+          "type": "string",
+          "optional": false,
+          "description": "Unique identifier for interaction events"
+        },
+        "checked": {
+          "type": "boolean",
+          "optional": true,
+          "default": false,
+          "description": "Initial checked state"
+        },
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the radio button is enabled"
         }
       }
     },
@@ -690,6 +823,324 @@
           "type": "component",
           "optional": false,
           "description": "Voltra element used as the mask - alpha channel determines visibility"
+        }
+      }
+    },
+    {
+      "name": "AndroidBox",
+      "description": "Android Box container",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "hasChildren": true,
+      "parameters": {
+        "contentAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": [
+            "top-start",
+            "top-center",
+            "top-end",
+            "center-start",
+            "center",
+            "center-end",
+            "bottom-start",
+            "bottom-center",
+            "bottom-end"
+          ],
+          "description": "Content alignment within the box"
+        }
+      }
+    },
+    {
+      "name": "AndroidButton",
+      "description": "Android Button component",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "hasChildren": true,
+      "parameters": {
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the button is enabled"
+        }
+      }
+    },
+    {
+      "name": "AndroidCircleIconButton",
+      "description": "Android Circle Icon Button component",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {
+        "icon": {
+          "type": "object",
+          "optional": false,
+          "jsonEncoded": true,
+          "description": "Icon source"
+        },
+        "contentDescription": {
+          "type": "string",
+          "optional": true,
+          "description": "Accessibility description"
+        },
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the button is enabled"
+        },
+        "backgroundColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Background color"
+        },
+        "contentColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Icon color"
+        }
+      }
+    },
+    {
+      "name": "AndroidCircularProgressIndicator",
+      "description": "Android Circular Progress Indicator",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Progress color"
+        }
+      }
+    },
+    {
+      "name": "AndroidColumn",
+      "description": "Android Column container",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "hasChildren": true,
+      "parameters": {
+        "horizontalAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["start", "center-horizontally", "end"],
+          "description": "Horizontal alignment of children"
+        },
+        "verticalAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["top", "center-vertically", "bottom"],
+          "description": "Vertical alignment of children"
+        }
+      }
+    },
+    {
+      "name": "AndroidLazyColumn",
+      "description": "Android LazyColumn container",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "hasChildren": true,
+      "parameters": {
+        "horizontalAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["start", "center-horizontally", "end"],
+          "description": "Horizontal alignment of children"
+        }
+      }
+    },
+    {
+      "name": "AndroidLazyVerticalGrid",
+      "description": "Android LazyVerticalGrid container",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "AndroidLinearProgressIndicator",
+      "description": "Android Linear Progress Indicator",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Progress color"
+        },
+        "backgroundColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Track background color"
+        }
+      }
+    },
+    {
+      "name": "AndroidOutlineButton",
+      "description": "Android Outline Button component",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {
+        "text": {
+          "type": "string",
+          "optional": false,
+          "description": "Text to display"
+        },
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the button is enabled"
+        },
+        "icon": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Optional icon"
+        },
+        "contentColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Text/icon color"
+        },
+        "maxLines": {
+          "type": "number",
+          "optional": true,
+          "description": "Maximum lines for text"
+        }
+      }
+    },
+    {
+      "name": "AndroidRow",
+      "description": "Android Row container",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "hasChildren": true,
+      "parameters": {
+        "horizontalAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["start", "center-horizontally", "end"],
+          "description": "Horizontal alignment of children"
+        },
+        "verticalAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["top", "center-vertically", "bottom"],
+          "description": "Vertical alignment of children"
+        }
+      }
+    },
+    {
+      "name": "AndroidScaffold",
+      "description": "Android Scaffold container",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "hasChildren": true,
+      "parameters": {
+        "backgroundColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Background color"
+        },
+        "horizontalPadding": {
+          "type": "number",
+          "optional": true,
+          "description": "Horizontal padding"
+        }
+      }
+    },
+    {
+      "name": "AndroidSpacer",
+      "description": "Android Spacer component",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {}
+    },
+    {
+      "name": "AndroidSquareIconButton",
+      "description": "Android Square Icon Button component",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {
+        "icon": {
+          "type": "object",
+          "optional": false,
+          "jsonEncoded": true,
+          "description": "Icon source"
+        },
+        "contentDescription": {
+          "type": "string",
+          "optional": true,
+          "description": "Accessibility description"
+        },
+        "enabled": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the button is enabled"
+        },
+        "backgroundColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Background color"
+        },
+        "contentColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Icon color"
+        }
+      }
+    },
+    {
+      "name": "AndroidText",
+      "description": "Android Text component",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {
+        "text": {
+          "type": "string",
+          "optional": false,
+          "description": "Text content"
+        },
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Text color"
+        },
+        "fontSize": {
+          "type": "number",
+          "optional": true,
+          "description": "Font size"
+        },
+        "maxLines": {
+          "type": "number",
+          "optional": true,
+          "description": "Maximum lines"
+        }
+      }
+    },
+    {
+      "name": "AndroidTitleBar",
+      "description": "Android Title Bar component",
+      "androidAvailability": "Android 12+",
+      "swiftAvailability": "Not available",
+      "parameters": {
+        "title": {
+          "type": "string",
+          "optional": false,
+          "description": "Title text"
+        },
+        "backgroundColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Background color"
+        },
+        "contentColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Text color"
         }
       }
     }

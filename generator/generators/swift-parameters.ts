@@ -121,8 +121,10 @@ export const generateSwiftParameters = (data: ComponentsData): GeneratedFiles =>
 
   // Generate parameter structs for each component
   for (const component of data.components) {
-    const content = generateParameterStruct(component, data.version)
-    files[`${component.name}Parameters.swift`] = content
+    if (component.swiftAvailability !== 'Not available') {
+      const content = generateParameterStruct(component, data.version)
+      files[`${component.name}Parameters.swift`] = content
+    }
   }
 
   // Generate marker file

@@ -15,6 +15,7 @@ export type ComponentDefinition = {
   name: string
   description: string
   swiftAvailability: string
+  androidAvailability?: string
   hasChildren?: boolean
   parameters: Record<string, ComponentParameter>
 }

@@ -1,4 +1,24 @@
+buildscript {
+  // 1. ADD THIS BLOCK TO RESOLVE THE PLUGIN
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    // Ensure this version matches your project's Kotlin version (e.g., 2.0.0, 2.0.20)
+    classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.0.0"
+    classpath "org.jetbrains.kotlin:kotlin-serialization:2.0.21"
+  }
+
+  // Existing helper
+  ext.safeExtGet = { prop, fallback ->
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+  }
+}
+
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 
 group = 'voltra'
 version = '0.1.0'
@@ -25,7 +45,7 @@ if (useManagedAndroidSdkVersions) {
   project.android {
     compileSdkVersion safeExtGet("compileSdkVersion", 36)
     defaultConfig {
-      minSdkVersion safeExtGet("minSdkVersion", 24)
+      minSdkVersion safeExtGet("minSdkVersion", 31)
       targetSdkVersion safeExtGet("targetSdkVersion", 36)
     }
   }
@@ -40,4 +60,25 @@ android {
   lintOptions {
     abortOnError false
   }
+  buildFeatures {
+    compose true
+  }
+}
+
+dependencies {
+  // Jetpack Glance - use 'api' instead of 'implementation' to make these available to consuming apps
+  api "androidx.glance:glance:1.2.0-rc01"
+  api "androidx.glance:glance-appwidget:1.2.0-rc01"
+
+  // Compose runtime (required for Glance)
+  api "androidx.compose.runtime:runtime:1.6.8"
+
+  // JSON parsing
+  implementation "com.google.code.gson:gson:2.10.1"
+
+  // Coroutines
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+
+  // Kotlinx Serialization
+  implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
 }

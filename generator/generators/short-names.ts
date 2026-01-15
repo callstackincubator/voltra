@@ -166,7 +166,49 @@ ${shortToNameCases}
 }
 
 /**
- * Generate short names mappings for TypeScript and Swift
+ * Generate Kotlin short names mapping
+ */
+const generateKotlinMapping = (data: ComponentsData): string => {
+  const { version, shortNames } = data
+
+  // Sort entries for consistent output
+  const sortedEntries = Object.entries(shortNames).sort(([a], [b]) => a.localeCompare(b))
+
+  const shortToNameCases = sortedEntries.map(([name, short]) => `        "${short}" to "${name}"`).join(',\n')
+
+  return `//
+//  ShortNames.kt
+//
+//  AUTO-GENERATED from data/components.json
+//  DO NOT EDIT MANUALLY - Changes will be overwritten
+//  Schema version: ${version}
+
+package voltra.generated
+
+/**
+ * Unified short name mappings for props and style properties
+ * Used to expand compressed payload keys back to their full names
+ */
+object ShortNames {
+    /** Mapping from short names to full names */
+    private val shortToName: Map<String, String> = mapOf(
+${shortToNameCases}
+    )
+    
+    /**
+     * Expand a short name to its full form
+     * @param short The short name (e.g., "bg", "al", "sp")
+     * @return The full name (e.g., "backgroundColor", "alignment", "spacing"), or the input if no mapping exists
+     */
+    fun expand(short: String): String {
+        return shortToName[short] ?: short
+    }
+}
+`
+}
+
+/**
+ * Generate short names mappings for TypeScript, Swift and Kotlin
  */
 export const generateShortNames = (data: ComponentsData): GeneratedFiles => {
   const files: GeneratedFiles = {}
@@ -179,6 +221,9 @@ export const generateShortNames = (data: ComponentsData): GeneratedFiles => {
 
   // Generate Swift mapping
   files['ShortNames.swift'] = generateSwiftMapping(data)
+
+  // Generate Kotlin mapping
+  files['ShortNames.kt'] = generateKotlinMapping(data)
 
   return files
 }

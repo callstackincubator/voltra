@@ -24,6 +24,7 @@ import {
 } from 'react-is'
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent.js'
+import { getAndroidComponentId } from '../android/payload/component-ids.js'
 import { getComponentId } from '../payload/component-ids.js'
 import { shorten } from '../payload/short-names.js'
 import { VoltraElementJson, VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'
@@ -34,12 +35,36 @@ import { flattenStyle } from './flatten-styles.js'
 import { getRenderCache, type RenderCache } from './render-cache.js'
 import { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry.js'
 
+/**
+ * Component registry interface for looking up component IDs.
+ * This allows different platforms (iOS, Android) to have their own component ID mappings.
+ */
+export type ComponentRegistry = {
+  getComponentId: (name: string) => number
+}
+
+/**
+ * Default component registry using iOS component IDs.
+ * Used for backwards compatibility with existing iOS code.
+ */
+const defaultComponentRegistry: ComponentRegistry = {
+  getComponentId: (name: string) => getComponentId(name),
+}
+
+/**
+ * Android component registry using Android component IDs.
+ */
+export const androidComponentRegistry: ComponentRegistry = {
+  getComponentId: (name: string) => getAndroidComponentId(name),
+}
+
 type VoltraRenderingContext = {
   registry: ContextRegistry
   stylesheetRegistry?: StylesheetRegistry
   elementRegistry?: ElementRegistry
   duplicates?: Set<ReactNode>
   inStringOnlyContext?: boolean
+  componentRegistry: ComponentRegistry
 }
 
 function renderNode(element: ReactNode, context: VoltraRenderingContext): VoltraNodeJson {
@@ -228,10 +253,11 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         throw new Error(`Expected a string as the type of a React element, but got "${typeof child.type}".`)
       }
 
-      const { children, ...parameters } = child.props as { children?: ReactNode; [key: string]: unknown }
+      const { children, ...parameters } = child.props as { children?: ReactNode;[key: string]: unknown }
 
       // Check if this is a Text component that requires string-only children
-      const isTextComponent = child.type === 'Text'
+      // Renderer should be platform agnostic. I need to revisit this in the future.
+      const isTextComponent = child.type === 'Text' || child.type === 'AndroidText'
       const childContext: VoltraRenderingContext = {
         ...context,
         inStringOnlyContext: isTextComponent,
@@ -249,7 +275,7 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         if (typeof renderedChildren !== 'string') {
           throw new Error(
             'Text component children must resolve to a string. ' +
-              'Nested components are allowed, but they must eventually resolve to a string.'
+            'Nested components are allowed, but they must eventually resolve to a string.'
           )
         }
 
@@ -258,7 +284,7 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         const hasProps = Object.keys(transformedProps).length > 0
 
         const voltraHostElement: VoltraElementJson = {
-          t: getComponentId(child.type),
+          t: context.componentRegistry.getComponentId(child.type),
           ...(id ? { i: id } : {}),
           c: renderedChildren,
           ...(hasProps ? { p: transformedProps } : {}),
@@ -280,7 +306,7 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
       const hasChildren = Array.isArray(renderedChildren) ? renderedChildren.length > 0 : true
 
       const voltraHostElement: VoltraElementJson = {
-        t: getComponentId(child.type),
+        t: context.componentRegistry.getComponentId(child.type),
         ...(id ? { i: id } : {}),
         ...(hasChildren ? { c: renderedChildren } : {}),
         ...(hasProps ? { p: transformedProps } : {}),
@@ -315,7 +341,7 @@ export const renderFunctionalComponent = <TProps>(
     if (result instanceof Promise) {
       throw new Error(
         `Component "${Component.name || 'Anonymous'}" tried to suspend (returned a Promise). ` +
-          `Async components are not supported in this synchronous renderer.`
+        `Async components are not supported in this synchronous renderer.`
       )
     }
 
@@ -341,6 +367,19 @@ export const renderVoltraVariantToJson = (element: ReactNode): VoltraNodeJson =>
   const context: VoltraRenderingContext = {
     registry,
     // No stylesheet registry for backwards compatibility
+    componentRegistry: defaultComponentRegistry,
+  }
+  return renderNode(element, context)
+}
+
+/**
+ * Renders a Voltra variant to JSON using Android component mappings.
+ */
+export const renderAndroidVariantToJson = (element: ReactNode): VoltraNodeJson => {
+  const registry = getContextRegistry()
+  const context: VoltraRenderingContext = {
+    registry,
+    componentRegistry: androidComponentRegistry,
   }
   return renderNode(element, context)
 }
@@ -419,6 +458,7 @@ export function transformProps(
         elementRegistry: context.elementRegistry,
         duplicates: context.duplicates,
         inStringOnlyContext: false,
+        componentRegistry: context.componentRegistry,
       })
       const shortKey = shorten(key)
       transformed[shortKey] = serializedComponent
@@ -438,8 +478,11 @@ export const VOLTRA_PAYLOAD_VERSION = 1
 /**
  * Factory function that creates a Voltra renderer instance.
  * The renderer is agnostic of whether it's used for live activities or widgets.
+ *
+ * @param componentRegistry - Optional component registry for platform-specific component ID mappings.
+ *                            Defaults to iOS component registry for backwards compatibility.
  */
-export const createVoltraRenderer = () => {
+export const createVoltraRenderer = (componentRegistry: ComponentRegistry = defaultComponentRegistry) => {
   // Collect all root nodes for pre-scanning
   const rootNodes: { name: string; node: ReactNode }[] = []
 
@@ -510,6 +553,7 @@ export const createVoltraRenderer = () => {
         stylesheetRegistry,
         elementRegistry,
         duplicates,
+        componentRegistry,
       }
       return renderNode(element, context)
     }

@@ -98,6 +98,67 @@ export interface VoltraModuleSpec {
   isHeadless(): boolean
 
   /**
+   * Android Live Update: Start a new live update notification
+   */
+  startAndroidLiveUpdate(payload: string, options: { updateName?: string; channelId?: string }): Promise<string>
+
+  /**
+   * Android Live Update: Update an existing live update notification
+   */
+  updateAndroidLiveUpdate(notificationId: string, payload: string): Promise<void>
+
+  /**
+   * Android Live Update: Stop a live update notification
+   */
+  stopAndroidLiveUpdate(notificationId: string): Promise<void>
+
+  /**
+   * Android Live Update: Check if a live update is active
+   */
+  isAndroidLiveUpdateActive(updateName: string): boolean
+
+  /**
+   * Android Live Update: End all active live updates
+   */
+  endAllAndroidLiveUpdates(): Promise<void>
+
+  /**
+   * Android Widget: Update a widget with new content
+   */
+  updateAndroidWidget(widgetId: string, jsonString: string, options?: { deepLinkUrl?: string }): Promise<void>
+
+  /**
+   * Android Widget: Reload widget timelines to refresh their content
+   */
+  reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
+
+  /**
+   * Android Widget: Clear a widget's stored data
+   */
+  clearAndroidWidget(widgetId: string): Promise<void>
+
+  /**
+   * Android Widget: Clear all widgets' stored data
+   */
+  clearAllAndroidWidgets(): Promise<void>
+
+  /**
+   * Android Widget: Request to pin a widget to the home screen
+   *
+   * See: https://developer.android.com/develop/ui/compose/glance/pin-in-app
+   *
+   * @param widgetId - The widget identifier to pin
+   * @param options - Optional settings for the pin request
+   * @param options.previewWidth - Optional preview width in dp (default: 245)
+   * @param options.previewHeight - Optional preview height in dp (default: 115)
+   * @returns Promise that resolves to true if the pin request was successful
+   */
+  requestPinGlanceAppWidget(
+    widgetId: string,
+    options?: { previewWidth?: number; previewHeight?: number }
+  ): Promise<boolean>
+
+  /**
    * Preload images to App Group storage for use in Live Activities
    */
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>

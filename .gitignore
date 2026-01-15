@@ -11,6 +11,20 @@ xcuserdata/
 ## Playground app
 /example/ios
 
+# Android/IJ
+#
+.classpath
+.cxx
+.gradle
+.idea
+.project
+.settings
+local.properties
+android.iml
+android/app/libs
+android/keystores/debug.keystore
+build/
+
 ## Node.js
 node_modules/
 npm-debug.log

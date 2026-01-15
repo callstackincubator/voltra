@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "introduction",
+    "label": "Introduction"
+  },
+  {
+    "type": "file",
+    "name": "setup",
+    "label": "Setup"
+  },
+  {
+    "type": "dir",
+    "name": "components",
+    "label": "Components"
+  },
+  {
+    "type": "dir",
+    "name": "development",
+    "label": "Development"
+  },
+  {
+    "type": "dir",
+    "name": "api",
+    "label": "API Reference"
+  }
+]

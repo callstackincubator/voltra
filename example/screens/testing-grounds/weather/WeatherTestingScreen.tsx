@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { reloadWidgets, updateWidget, VoltraWidgetPreview, WidgetFamily } from 'voltra/client'
 
 import { Button } from '~/components/Button'
@@ -54,7 +53,6 @@ const WEATHER_CONDITIONS: { id: WeatherCondition; label: string; emoji: string }
 ]
 
 export default function WeatherTestingScreen() {
-  const insets = useSafeAreaInsets()
   const colorScheme = useColorScheme()
   const router = useRouter()
   const [selectedWeather, setSelectedWeather] = useState<WeatherCondition>('sunny')
@@ -127,10 +125,7 @@ export default function WeatherTestingScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={[styles.scrollView]}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
-      >
+      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Weather Widget Testing</Text>
         <Text style={styles.subheading}>
           Test the weather widget with different conditions and widget sizes. Choose from Sunny, Cloudy, or Rainy

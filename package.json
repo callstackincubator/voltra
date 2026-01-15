@@ -17,6 +17,18 @@
       "types": "./build/server.d.ts",
       "default": "./build/server.js"
     },
+    "./android": {
+      "types": "./build/android/index.d.ts",
+      "default": "./build/android/index.js"
+    },
+    "./android/server": {
+      "types": "./build/android/server.d.ts",
+      "default": "./build/android/server.js"
+    },
+    "./android/client": {
+      "types": "./build/android/client.d.ts",
+      "default": "./build/android/client.js"
+    },
     "./app.plugin.js": "./app.plugin.js",
     "./expo-module.config.json": "./expo-module.config.json"
   },
@@ -25,6 +37,8 @@
     "clean": "expo-module clean",
     "clean:plugin": "rm -rf plugin/build plugin/tsconfig.tsbuildinfo",
     "format:check": "prettier --check .",
+    "format:kotlin:check": "ktlint \"android/**/*.kt\"",
+    "format:kotlin:fix": "ktlint -F \"android/**/*.kt\"",
     "format:swift:check": "swiftformat --lint ios",
     "format:swift:fix": "swiftformat ios",
     "lint": "expo-module eslint",
@@ -55,7 +69,8 @@
   "homepage": "https://use-voltra.dev",
   "dependencies": {
     "dedent": "^1.7.1",
-    "react-is": "^19.2.0"
+    "react-is": "^19.2.0",
+    "vd-tool": "^4.0.2"
   },
   "devDependencies": {
     "@types/dedent": "^0.7.2",
