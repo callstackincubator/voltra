@@ -26,7 +26,7 @@ export interface ConfigPluginProps {
    */
   deploymentTarget?: string
   /**
-   * Configuration for Live Activities (iOS 18+ features)
+   * Configuration for Live Activities
    */
   liveActivity?: LiveActivityConfig
 }
