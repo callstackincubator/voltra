@@ -70,7 +70,10 @@ export function generateWidgetBundleSwift(
   widgets: WidgetConfig[],
   supplementalActivityFamilies?: ActivityFamily[]
 ): string {
+  // Generate widget structs
   const widgetStructs = widgets.map(generateWidgetStruct).join('\n\n')
+
+  // Generate widget bundle body entries
   const widgetInstances = widgets.map((w) => `    VoltraWidget_${w.id}()`).join('\n')
   const familiesSwift = generateSupplementalActivityFamiliesSwift(supplementalActivityFamilies)
   const liveActivityWidget = familiesSwift ? 'VoltraWidgetWithSupplementalActivityFamilies()' : 'VoltraWidget()'
@@ -91,8 +94,10 @@ export function generateWidgetBundleSwift(
     @main
     struct VoltraWidgetBundle: WidgetBundle {
       var body: some Widget {
+        // Live Activity Widget (Dynamic Island + Lock Screen)
         ${liveActivityWidget}
 
+        // Home Screen Widgets
     ${widgetInstances}
       }
     }
@@ -122,11 +127,12 @@ export function generateDefaultWidgetBundleSwift(supplementalActivityFamilies?: 
 
     import SwiftUI
     import WidgetKit
-    import VoltraWidget
+    import VoltraWidget  // Import Voltra widgets
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
       var body: some Widget {
+        // Live Activity Widget (Dynamic Island + Lock Screen)
         ${liveActivityWidget}
       }
     }${wrapperStruct}

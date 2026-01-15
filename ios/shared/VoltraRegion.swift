@@ -11,6 +11,7 @@ public enum VoltraRegion: String, Codable, Hashable, CaseIterable {
   case islandMinimal
   case supplementalActivityFamiliesSmall
 
+  /// The JSON key for this region in the payload
   public var jsonKey: String {
     switch self {
     case .lockScreen:

@@ -30,6 +30,7 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
   const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier, liveActivity } = props
 
   return withPlugins(config, [
+    // 1. Generate widget extension files (must run first so files exist)
     [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier, liveActivity }],
 
     // 2. Configure Xcode project (must run after files are generated)

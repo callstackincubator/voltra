@@ -24,14 +24,17 @@ export interface GenerateSwiftFilesOptions {
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
   const { targetPath, projectRoot, widgets, supplementalActivityFamilies } = options
 
+  // Prerender widget initial states if any widgets have initialStatePath configured
   const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot)
 
+  // Generate the initial states Swift file
   const initialStatesContent = generateInitialStatesSwift(prerenderedStates)
   const initialStatesPath = path.join(targetPath, 'VoltraWidgetInitialStates.swift')
   fs.writeFileSync(initialStatesPath, initialStatesContent)
 
   logger.info(`Generated VoltraWidgetInitialStates.swift with ${prerenderedStates.size} pre-rendered widget states`)
 
+  // Generate the widget bundle Swift file
   const widgetBundleContent =
     widgets && widgets.length > 0
       ? generateWidgetBundleSwift(widgets, supplementalActivityFamilies)

@@ -36,14 +36,18 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
       const { platformProjectRoot, projectRoot } = config.modRequest
       const targetPath = path.join(platformProjectRoot, targetName)
 
+      // Ensure target directory exists
       if (!fs.existsSync(targetPath)) {
         fs.mkdirSync(targetPath, { recursive: true })
       }
 
+      // Generate Info.plist
       generateInfoPlist(targetPath)
 
+      // Generate Assets.xcassets and copy user images
       generateAssets({ targetPath })
 
+      // Generate Swift files (widget bundle, initial states)
       await generateSwiftFiles({
         targetPath,
         projectRoot,
@@ -51,6 +55,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         supplementalActivityFamilies: liveActivity?.supplementalActivityFamilies,
       })
 
+      // Generate entitlements file
       generateEntitlements({
         targetPath,
         targetName,
