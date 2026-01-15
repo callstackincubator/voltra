@@ -60,7 +60,7 @@ const activityId = await startLiveActivity(variants, {
 
 **Parameters:**
 
-- `variants`: A `VoltraVariants` object defining the UI for different display contexts
+- `variants`: A `LiveActivityVariants` object defining the UI for different display contexts
 - `options`: Configuration options (see Configuration Options section below)
 
 **Returns:** A promise that resolves to the Live Activity ID (string)
