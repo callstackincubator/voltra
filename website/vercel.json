@@ -22,7 +22,7 @@
     },
     {
       "source": "/api",
-      "destination": "/api/overview",
+      "destination": "/api/configuration",
       "statusCode": 301
     }
   ],
