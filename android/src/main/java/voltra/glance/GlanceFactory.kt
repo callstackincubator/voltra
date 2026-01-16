@@ -4,8 +4,18 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
+import androidx.glance.ImageProvider
 import androidx.glance.layout.*
 import androidx.glance.text.Text
+import androidx.glance.appwidget.CheckBox
+import androidx.glance.appwidget.RadioButton
+import androidx.glance.appwidget.Switch
+import androidx.glance.appwidget.components.FilledButton
+import androidx.glance.appwidget.components.OutlineButton
+import androidx.glance.appwidget.components.CircleIconButton
+import androidx.glance.appwidget.components.SquareIconButton
+import androidx.glance.unit.ColorProvider
+import androidx.compose.ui.graphics.Color
 import voltra.ComponentRegistry
 import voltra.models.*
 import voltra.styling.GlanceStyleConverter
@@ -50,6 +60,13 @@ class GlanceFactory(
             ComponentRegistry.BUTTON -> RenderButton(element, modifier)
             ComponentRegistry.LINEAR_PROGRESS -> RenderLinearProgress(element, modifier)
             ComponentRegistry.CIRCULAR_PROGRESS -> RenderCircularProgress(element, modifier)
+            ComponentRegistry.SWITCH -> RenderSwitch(element, modifier)
+            ComponentRegistry.RADIO_BUTTON -> RenderRadioButton(element, modifier)
+            ComponentRegistry.CHECK_BOX -> RenderCheckBox(element, modifier)
+            ComponentRegistry.FILLED_BUTTON -> RenderFilledButton(element, modifier)
+            ComponentRegistry.OUTLINE_BUTTON -> RenderOutlineButton(element, modifier)
+            ComponentRegistry.CIRCLE_ICON_BUTTON -> RenderCircleIconButton(element, modifier)
+            ComponentRegistry.SQUARE_ICON_BUTTON -> RenderSquareIconButton(element, modifier)
         }
     }
     
@@ -159,5 +176,108 @@ class GlanceFactory(
         // Note: Glance's CircularProgressIndicator only supports indeterminate mode
         // Animation will reset on each notification update - this is a platform limitation
         androidx.glance.appwidget.CircularProgressIndicator(modifier = modifier)
+    }
+    
+    @Composable
+    private fun RenderSwitch(element: VoltraElement, modifier: GlanceModifier) {
+        val props = element.p
+        val checked = (props?.get("checked") as? Boolean) ?: false
+        
+        Switch(
+            checked = checked,
+            onCheckedChange = null, // Event listeners not bound yet
+            modifier = modifier
+        )
+    }
+    
+    @Composable
+    private fun RenderRadioButton(element: VoltraElement, modifier: GlanceModifier) {
+        val props = element.p
+        val checked = (props?.get("checked") as? Boolean) ?: false
+        
+        RadioButton(
+            checked = checked,
+            onClick = null, // Event listeners not bound yet
+            modifier = modifier
+        )
+    }
+    
+    @Composable
+    private fun RenderCheckBox(element: VoltraElement, modifier: GlanceModifier) {
+        val props = element.p
+        val checked = (props?.get("checked") as? Boolean) ?: false
+        
+        CheckBox(
+            checked = checked,
+            onCheckedChange = null, // Event listeners not bound yet
+            modifier = modifier
+        )
+    }
+    
+    @Composable
+    private fun RenderFilledButton(element: VoltraElement, modifier: GlanceModifier) {
+        val text = extractTextFromChildren(element)
+        
+        FilledButton(
+            text = text,
+            onClick = {}, // Event listeners not bound yet
+            modifier = modifier
+        )
+    }
+    
+    @Composable
+    private fun RenderOutlineButton(element: VoltraElement, modifier: GlanceModifier) {
+        val text = extractTextFromChildren(element)
+        
+        OutlineButton(
+            text = text,
+            contentColor = ColorProvider(Color.Black),
+            onClick = {}, // Event listeners not bound yet
+            modifier = modifier
+        )
+    }
+    
+    @Composable
+    private fun RenderCircleIconButton(element: VoltraElement, modifier: GlanceModifier) {
+        val props = element.p
+        val contentDescription = (props?.get("contentDescription") as? String) ?: ""
+        val imageProvider = extractIconFromProps(props)
+        
+        CircleIconButton(
+            imageProvider = imageProvider,
+            contentDescription = contentDescription,
+            onClick = {}, // Event listeners not bound yet
+            modifier = modifier
+        )
+    }
+    
+    @Composable
+    private fun RenderSquareIconButton(element: VoltraElement, modifier: GlanceModifier) {
+        val props = element.p
+        val contentDescription = (props?.get("contentDescription") as? String) ?: ""
+        val imageProvider = extractIconFromProps(props)
+        
+        SquareIconButton(
+            imageProvider = imageProvider,
+            contentDescription = contentDescription,
+            onClick = {}, // Event listeners not bound yet
+            modifier = modifier
+        )
+    }
+    
+    private fun extractTextFromChildren(element: VoltraElement): String {
+        return when (val children = element.c) {
+            is VoltraNode.Text -> children.text
+            is VoltraNode.Array -> {
+                children.elements.filterIsInstance<VoltraNode.Text>().joinToString("") { it.text }
+            }
+            else -> ""
+        }
+    }
+    
+    private fun extractIconFromProps(props: Map<String, Any>?): ImageProvider {
+        // TODO: Implement proper icon extraction from props (assetName or base64)
+        // For now, return a placeholder
+        return ImageProvider(android.R.drawable.ic_menu_info_details)
     }
 }

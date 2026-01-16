@@ -12,6 +12,13 @@ export const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
   Button: 6,
   LinearProgressIndicator: 7,
   CircularProgressIndicator: 8,
+  Switch: 9,
+  RadioButton: 10,
+  CheckBox: 11,
+  FilledButton: 12,
+  OutlineButton: 13,
+  CircleIconButton: 14,
+  SquareIconButton: 15,
 }
 
 /**
@@ -27,6 +34,13 @@ export const ANDROID_COMPONENT_ID_TO_NAME: Record<number, string> = {
   6: 'Button',
   7: 'LinearProgressIndicator',
   8: 'CircularProgressIndicator',
+  9: 'Switch',
+  10: 'RadioButton',
+  11: 'CheckBox',
+  12: 'FilledButton',
+  13: 'OutlineButton',
+  14: 'CircleIconButton',
+  15: 'SquareIconButton',
 }
 
 /**
