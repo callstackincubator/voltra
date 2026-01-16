@@ -279,6 +279,14 @@ public class VoltraModule: Module {
       print("[Voltra] Updated widget '\(widgetId)'")
     }
 
+    // Schedule a widget timeline with multiple entries
+    AsyncFunction("scheduleWidget") { (widgetId: String, timelineJson: String) async throws in
+      try self.writeWidgetTimeline(widgetId: widgetId, timelineJson: timelineJson)
+
+      // Reload the widget timeline to pick up scheduled entries
+      WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+    }
+
     // Reload widget timelines to refresh their content
     AsyncFunction("reloadWidgets") { (widgetIds: [String]?) async in
       if let ids = widgetIds, !ids.isEmpty {
@@ -445,12 +453,26 @@ private extension VoltraModule {
     }
   }
 
+  func writeWidgetTimeline(widgetId: String, timelineJson: String) throws {
+    guard let groupId = VoltraConfig.groupIdentifier() else {
+      throw WidgetError.appGroupNotConfigured
+    }
+    guard let defaults = UserDefaults(suiteName: groupId) else {
+      throw WidgetError.userDefaultsUnavailable
+    }
+
+    // Store the timeline JSON
+    defaults.set(timelineJson, forKey: "Voltra_Widget_Timeline_\(widgetId)")
+    defaults.synchronize()
+  }
+
   func clearWidgetData(widgetId: String) {
     guard let groupId = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: groupId) else { return }
 
     defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
     defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+    defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
   }
 
   func clearAllWidgetData() {
@@ -463,6 +485,7 @@ private extension VoltraModule {
     for widgetId in widgetIds {
       defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
       defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+      defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
     }
   }
 }
