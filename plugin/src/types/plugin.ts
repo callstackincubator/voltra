@@ -1,5 +1,6 @@
 import { ConfigPlugin } from '@expo/config-plugins'
 
+import type { LiveActivityConfig } from './activity'
 import type { WidgetConfig } from './widget'
 
 /**
@@ -24,6 +25,10 @@ export interface ConfigPluginProps {
    * If not provided, will use the main app's deployment target or fall back to the default
    */
   deploymentTarget?: string
+  /**
+   * Configuration for Live Activities
+   */
+  liveActivity?: LiveActivityConfig
 }
 
 /**
@@ -42,4 +47,5 @@ export interface IOSPluginProps {
   groupIdentifier: string
   projectRoot: string
   platformProjectRoot: string
+  liveActivity?: LiveActivityConfig
 }

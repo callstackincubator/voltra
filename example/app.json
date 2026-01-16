@@ -24,6 +24,9 @@
         {
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
+          "liveActivity": {
+            "supplementalActivityFamilies": ["small"]
+          },
           "widgets": [
             {
               "id": "weather",

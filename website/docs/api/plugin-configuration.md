@@ -33,6 +33,7 @@ The Voltra Expo config plugin accepts several configuration options in your `app
 ### `groupIdentifier` (optional)
 
 App Group identifier for sharing data between your app and the widget extension. Required if you want to:
+
 - Forward component events (like button taps) from Live Activities to your JavaScript code
 - Share images between your app and the extension
 - Use image preloading features
@@ -55,6 +56,35 @@ iOS deployment target version for the widget extension. If not provided, default
 **Example:** `"18.0"`
 
 **Note:** Code signing settings (development team, provisioning profiles) are automatically synchronized from the main app target, but the deployment target can be set independently.
+
+### `liveActivity` (optional)
+
+Configuration for Live Activity features, including iOS 18+ supplemental activity families.
+
+**Type:** `LiveActivityConfig`
+
+```typescript
+interface LiveActivityConfig {
+  /**
+   * Supplemental activity families to enable (iOS 18+)
+   * When configured, Live Activities will appear on watchOS Smart Stack
+   * Currently only "small" is supported
+   */
+  supplementalActivityFamilies?: 'small'[]
+}
+```
+
+**Example:**
+
+```json
+{
+  "liveActivity": {
+    "supplementalActivityFamilies": ["small"]
+  }
+}
+```
+
+See [Supplemental Activity Families](/development/supplemental-activity-families) for detailed usage.
 
 ### `widgets` (optional)
 
@@ -83,4 +113,3 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   ]
 }
 ```
-

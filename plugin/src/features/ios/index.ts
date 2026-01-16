@@ -1,6 +1,6 @@
 import { ConfigPlugin, withPlugins } from '@expo/config-plugins'
 
-import type { WidgetConfig } from '../../types'
+import type { LiveActivityConfig, WidgetConfig } from '../../types'
 import { configureEasBuild } from './eas'
 import { generateWidgetExtensionFiles } from './files'
 import { configureMainAppPlist } from './plist'
@@ -13,6 +13,7 @@ export interface WithIOSProps {
   deploymentTarget: string
   widgets?: WidgetConfig[]
   groupIdentifier: string
+  liveActivity?: LiveActivityConfig
 }
 
 /**
@@ -26,11 +27,11 @@ export interface WithIOSProps {
  * 5. Configure EAS build settings
  */
 export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
-  const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier } = props
+  const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier, liveActivity } = props
 
   return withPlugins(config, [
     // 1. Generate widget extension files (must run first so files exist)
-    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier }],
+    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier, liveActivity }],
 
     // 2. Configure Xcode project (must run after files are generated)
     [configureXcodeProject, { targetName, bundleIdentifier, deploymentTarget }],

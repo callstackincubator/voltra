@@ -54,6 +54,7 @@ const withVoltra: VoltraConfigPlugin = (config, props) => {
     deploymentTarget,
     widgets: props.widgets,
     groupIdentifier: props.groupIdentifier,
+    liveActivity: props.liveActivity,
   })
 
   // Optionally enable push notifications

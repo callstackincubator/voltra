@@ -47,6 +47,27 @@ const variants = {
 }
 ```
 
+### Supplemental Activity Families (iOS 18+)
+
+The `supplementalActivityFamilies` variant defines how your Live Activity appears on watchOS Smart Stack and CarPlay displays. This requires explicit opt-in via the plugin configuration.
+
+```typescript
+const variants = {
+  supplementalActivityFamilies: {
+    small: (
+      <Voltra.HStack style={{ padding: 12, gap: 8 }}>
+        <Voltra.Text style={{ fontSize: 18, fontWeight: '700' }}>12 min</Voltra.Text>
+        <Voltra.Text style={{ fontSize: 14, color: '#9CA3AF' }}>ETA</Voltra.Text>
+      </Voltra.HStack>
+    ),
+  },
+}
+```
+
+If `supplementalActivityFamilies.small` is not provided, the system will automatically fall back to using your `lockScreen` content.
+
+See [Supplemental Activity Families](/development/supplemental-activity-families) for detailed configuration and design guidelines.
+
 ## useLiveActivity
 
 For React development, Voltra provides the `useLiveActivity` hook for integration with the component lifecycle and automatic updates during development.

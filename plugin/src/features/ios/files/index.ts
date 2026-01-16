@@ -2,7 +2,7 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import type { WidgetConfig } from '../../../types'
+import type { LiveActivityConfig, WidgetConfig } from '../../../types'
 import { generateAssets } from './assets'
 import { generateEntitlements } from './entitlements'
 import { generateInfoPlist } from './plist'
@@ -12,6 +12,7 @@ export interface GenerateWidgetExtensionFilesProps {
   targetName: string
   widgets?: WidgetConfig[]
   groupIdentifier: string
+  liveActivity?: LiveActivityConfig
 }
 
 /**
@@ -27,7 +28,7 @@ export interface GenerateWidgetExtensionFilesProps {
  * This should run before configureXcodeProject so the files exist when Xcode project is configured.
  */
 export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
-  const { targetName, widgets, groupIdentifier } = props
+  const { targetName, widgets, groupIdentifier, liveActivity } = props
 
   return withDangerousMod(config, [
     'ios',
@@ -51,6 +52,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         targetPath,
         projectRoot,
         widgets,
+        supplementalActivityFamilies: liveActivity?.supplementalActivityFamilies,
       })
 
       // Generate entitlements file
