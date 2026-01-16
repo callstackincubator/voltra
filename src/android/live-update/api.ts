@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { logger } from '../../logger.js'
 import { useUpdateOnHMR } from '../../utils/index.js'
+import VoltraModule from '../../VoltraModule.js'
 import { renderAndroidLiveUpdateToString } from './renderer.js'
 import type {
   AndroidLiveUpdateVariants,
@@ -49,9 +49,7 @@ export const unstable_useAndroidLiveUpdate = (
 ): UseAndroidLiveUpdateResult => {
   const [targetId, setTargetId] = useState<string | null>(() => {
     if (options?.updateName) {
-      // TODO: Check if update is active on Android
-      // return unstable_isAndroidLiveUpdateActive(options.updateName) ? options.updateName : null
-      return null
+      return unstable_isAndroidLiveUpdateActive(options.updateName) ? options.updateName : null
     }
     return null
   })
@@ -149,24 +147,14 @@ export const unstable_startAndroidLiveUpdate = async (
   variants: AndroidLiveUpdateVariants,
   options?: StartAndroidLiveUpdateOptions
 ): Promise<string> => {
-  // TODO: Implement Android platform check
-  // if (!assertRunningOnAndroid()) return Promise.resolve('')
-
   const payload = renderAndroidLiveUpdateToString(variants)
 
-  logger.warn(
-    '[Android Live Updates] Native module not yet implemented. Payload generated:',
-    payload.substring(0, 100) + '...'
-  )
+  const notificationId = await VoltraModule.startAndroidLiveUpdate(payload, {
+    updateName: options?.updateName,
+    channelId: options?.channelId || variants.channelId || 'voltra_live_updates',
+  })
 
-  // TODO: Call native Android module
-  // const notificationId = await VoltraAndroidModule.startLiveUpdate(payload, {
-  //   updateName: options?.updateName,
-  //   channelId: options?.channelId || variants.channelId || 'voltra_live_updates',
-  // })
-
-  // For now, return a mock ID
-  return Promise.resolve(options?.updateName || `android-update-${Date.now()}`)
+  return notificationId
 }
 
 /**
@@ -193,17 +181,9 @@ export const unstable_updateAndroidLiveUpdate = async (
   variants: AndroidLiveUpdateVariants,
   options?: UpdateAndroidLiveUpdateOptions
 ): Promise<void> => {
-  // TODO: Implement Android platform check
-  // if (!assertRunningOnAndroid()) return Promise.resolve()
-
   const payload = renderAndroidLiveUpdateToString(variants)
 
-  logger.warn(`[Android Live Updates] Native module not yet implemented. Would update notification ${notificationId}`)
-
-  // TODO: Call native Android module
-  // return VoltraAndroidModule.updateLiveUpdate(notificationId, payload)
-
-  return Promise.resolve()
+  return VoltraModule.updateAndroidLiveUpdate(notificationId, payload)
 }
 
 /**
@@ -221,15 +201,7 @@ export const unstable_updateAndroidLiveUpdate = async (
  * ```
  */
 export const unstable_stopAndroidLiveUpdate = async (notificationId: string): Promise<void> => {
-  // TODO: Implement Android platform check
-  // if (!assertRunningOnAndroid()) return Promise.resolve()
-
-  logger.warn(`[Android Live Updates] Native module not yet implemented. Would stop notification ${notificationId}`)
-
-  // TODO: Call native Android module
-  // return VoltraAndroidModule.stopLiveUpdate(notificationId)
-
-  return Promise.resolve()
+  return VoltraModule.stopAndroidLiveUpdate(notificationId)
 }
 
 /**
@@ -250,15 +222,7 @@ export const unstable_stopAndroidLiveUpdate = async (notificationId: string): Pr
  * ```
  */
 export const unstable_isAndroidLiveUpdateActive = (updateName: string): boolean => {
-  // TODO: Implement Android platform check
-  // if (!assertRunningOnAndroid()) return false
-
-  logger.warn('[Android Live Updates] Native module not yet implemented. Returning false.')
-
-  // TODO: Call native Android module
-  // return VoltraAndroidModule.isLiveUpdateActive(updateName)
-
-  return false
+  return VoltraModule.isAndroidLiveUpdateActive(updateName)
 }
 
 /**
@@ -276,13 +240,5 @@ export const unstable_isAndroidLiveUpdateActive = (updateName: string): boolean 
  * ```
  */
 export async function unstable_endAllAndroidLiveUpdates(): Promise<void> {
-  // TODO: Implement Android platform check
-  // if (!assertRunningOnAndroid()) return Promise.resolve()
-
-  logger.warn('[Android Live Updates] Native module not yet implemented.')
-
-  // TODO: Call native Android module
-  // return VoltraAndroidModule.endAllLiveUpdates()
-
-  return Promise.resolve()
+  return VoltraModule.endAllAndroidLiveUpdates()
 }

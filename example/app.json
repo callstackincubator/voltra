@@ -29,7 +29,11 @@
               "id": "weather",
               "displayName": "Weather Widget",
               "description": "Shows current weather conditions",
-              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge"
+              ],
               "initialStatePath": "./widgets/weather-initial.tsx"
             }
           ]
@@ -44,6 +48,9 @@
           }
         }
       ]
-    ]
+    ],
+    "android": {
+      "package": "com.callstackincubator.voltraexample"
+    }
   }
 }

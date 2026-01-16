@@ -19,3 +19,9 @@ export type {
   VoltraAndroidViewStyle,
 } from './android/index.js'
 export * as VoltraAndroid from './android/jsx/primitives.js'
+export { unstable_useAndroidLiveUpdate } from './android/live-update/api.js'
+export { unstable_startAndroidLiveUpdate } from './android/live-update/api.js'
+export { unstable_updateAndroidLiveUpdate } from './android/live-update/api.js'
+export { unstable_stopAndroidLiveUpdate } from './android/live-update/api.js'
+export { unstable_isAndroidLiveUpdateActive } from './android/live-update/api.js'
+export { unstable_endAllAndroidLiveUpdates } from './android/live-update/api.js'

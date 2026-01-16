@@ -98,6 +98,31 @@ export interface VoltraModuleSpec {
   isHeadless(): boolean
 
   /**
+   * Android Live Update: Start a new live update notification
+   */
+  startAndroidLiveUpdate(payload: string, options: { updateName?: string; channelId?: string }): Promise<string>
+
+  /**
+   * Android Live Update: Update an existing live update notification
+   */
+  updateAndroidLiveUpdate(notificationId: string, payload: string): Promise<void>
+
+  /**
+   * Android Live Update: Stop a live update notification
+   */
+  stopAndroidLiveUpdate(notificationId: string): Promise<void>
+
+  /**
+   * Android Live Update: Check if a live update is active
+   */
+  isAndroidLiveUpdateActive(updateName: string): boolean
+
+  /**
+   * Android Live Update: End all active live updates
+   */
+  endAllAndroidLiveUpdates(): Promise<void>
+
+  /**
    * Preload images to App Group storage for use in Live Activities
    */
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>

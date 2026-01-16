@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 group = 'voltra'
 version = '0.1.0'
@@ -40,4 +41,22 @@ android {
   lintOptions {
     abortOnError false
   }
+  buildFeatures {
+    compose true
+  }
+}
+
+dependencies {
+  // Jetpack Glance
+  implementation "androidx.glance:glance:1.2.0-rc01"
+  implementation "androidx.glance:glance-appwidget:1.2.0-rc01"
+  
+  // Compose runtime (required for Glance)
+  implementation "androidx.compose.runtime:runtime:1.6.8"
+  
+  // JSON parsing
+  implementation "com.google.code.gson:gson:2.10.1"
+  
+  // Coroutines
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
 }
