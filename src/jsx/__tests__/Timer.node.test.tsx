@@ -50,4 +50,20 @@ describe('Timer Component', () => {
     const output = renderVoltraVariantToJson(<Timer endAtMs={ts} />)
     expect(output.p.end).toBe(ts)
   })
+
+  test('showHours true (default)', () => {
+    const output = renderVoltraVariantToJson(<Timer endAtMs={futureDate.getTime()} showHours={true} />)
+    expect(output.p.shrs).toBe(true)
+  })
+
+  test('showHours false', () => {
+    const output = renderVoltraVariantToJson(<Timer endAtMs={futureDate.getTime()} showHours={false} />)
+    expect(output.p.shrs).toBe(false)
+  })
+
+  test('showHours omitted uses default', () => {
+    const output = renderVoltraVariantToJson(<Timer endAtMs={futureDate.getTime()} />)
+    // When omitted, the prop should not be in the output (native defaults to false now)
+    expect(output.p.shrs).toBeUndefined()
+  })
 })

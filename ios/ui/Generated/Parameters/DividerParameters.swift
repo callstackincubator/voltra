@@ -9,4 +9,6 @@ import Foundation
 
 /// Parameters for Divider component
 /// Visual divider
-public struct DividerParameters: ComponentParameters {}
+public struct DividerParameters: ComponentParameters {
+
+}

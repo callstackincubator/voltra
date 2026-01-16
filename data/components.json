@@ -40,6 +40,7 @@
     "systemImage": "si",
     "textStyle": "ts",
     "textTemplates": "tt",
+    "showHours": "shrs",
     "thumb": "th",
     "tintColor": "tc",
     "title": "ttl",
@@ -545,6 +546,12 @@
           "optional": true,
           "jsonEncoded": true,
           "description": "JSON-encoded TextTemplates object with running/completed templates"
+        },
+        "showHours": {
+          "type": "boolean",
+          "optional": true,
+          "default": false,
+          "description": "Whether to show hours component when duration exceeds 60 minutes. If false, minutes will exceed 60 (e.g., 94:00 instead of 1:34:00)"
         }
       }
     },

@@ -10,45 +10,50 @@ import Foundation
 /// Parameters for Timer component
 /// Text-based countdown/stopwatch timer component
 public struct TimerParameters: ComponentParameters {
-  /// End time in milliseconds since epoch
-  public let endAtMs: Double?
+    /// End time in milliseconds since epoch
+    public let endAtMs: Double?
 
-  /// Start time in milliseconds since epoch
-  public let startAtMs: Double?
+    /// Start time in milliseconds since epoch
+    public let startAtMs: Double?
 
-  /// Duration in milliseconds
-  public let durationMs: Double?
+    /// Duration in milliseconds
+    public let durationMs: Double?
 
-  /// Count direction
-  public let direction: String
+    /// Count direction
+    public let direction: String
 
-  /// Hide timer when complete
-  public let autoHideOnEnd: Bool?
+    /// Hide timer when complete
+    public let autoHideOnEnd: Bool?
 
-  /// Text formatting style
-  public let textStyle: String
+    /// Text formatting style
+    public let textStyle: String
 
-  /// JSON-encoded TextTemplates object with running/completed templates
-  public let textTemplates: String?
+    /// JSON-encoded TextTemplates object with running/completed templates
+    public let textTemplates: String?
 
-  enum CodingKeys: String, CodingKey {
-    case endAtMs
-    case startAtMs
-    case durationMs
-    case direction
-    case autoHideOnEnd
-    case textStyle
-    case textTemplates
-  }
+    /// Whether to show hours component when duration exceeds 60 minutes. If false, minutes will exceed 60 (e.g., 94:00 instead of 1:34:00)
+    public let showHours: Bool
 
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    endAtMs = try container.decodeIfPresent(Double.self, forKey: .endAtMs)
-    startAtMs = try container.decodeIfPresent(Double.self, forKey: .startAtMs)
-    durationMs = try container.decodeIfPresent(Double.self, forKey: .durationMs)
-    direction = try container.decodeIfPresent(String.self, forKey: .direction) ?? "down"
-    autoHideOnEnd = try container.decodeIfPresent(Bool.self, forKey: .autoHideOnEnd)
-    textStyle = try container.decodeIfPresent(String.self, forKey: .textStyle) ?? "timer"
-    textTemplates = try container.decodeIfPresent(String.self, forKey: .textTemplates)
-  }
+    enum CodingKeys: String, CodingKey {
+        case endAtMs
+        case startAtMs
+        case durationMs
+        case direction
+        case autoHideOnEnd
+        case textStyle
+        case textTemplates
+        case showHours
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        endAtMs = try container.decodeIfPresent(Double.self, forKey: .endAtMs)
+        startAtMs = try container.decodeIfPresent(Double.self, forKey: .startAtMs)
+        durationMs = try container.decodeIfPresent(Double.self, forKey: .durationMs)
+        direction = try container.decodeIfPresent(String.self, forKey: .direction) ?? "down"
+        autoHideOnEnd = try container.decodeIfPresent(Bool.self, forKey: .autoHideOnEnd)
+        textStyle = try container.decodeIfPresent(String.self, forKey: .textStyle) ?? "timer"
+        textTemplates = try container.decodeIfPresent(String.self, forKey: .textTemplates)
+        showHours = try container.decodeIfPresent(Bool.self, forKey: .showHours) ?? false
+    }
 }
