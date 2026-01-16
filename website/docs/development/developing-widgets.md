@@ -89,6 +89,84 @@ await updateWidget('weather', {
 - `variants`: An object mapping widget families to specific content
 - `options.deepLinkUrl`: URL to open when the widget is tapped
 
+## scheduleWidget API
+
+For widgets that need to change throughout the day, `scheduleWidget` lets you batch multiple updates in advance. iOS will automatically display each entry at its scheduled time—even when your app isn't running.
+
+:::tip
+This is perfect for weather forecasts, calendar events, news rotation, or any content that changes on a predictable schedule.
+:::
+
+```typescript
+import { scheduleWidget } from 'voltra/client'
+import { Voltra } from 'voltra'
+
+// Schedule weather updates throughout the day
+await scheduleWidget('weather', [
+  {
+    date: new Date('2026-01-16T09:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Morning: 65°F ☀️</Voltra.Text>,
+      systemMedium: <Voltra.Text>Good morning! 65°F and sunny</Voltra.Text>
+    }
+  },
+  {
+    date: new Date('2026-01-16T15:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Afternoon: 72°F ☀️</Voltra.Text>,
+      systemMedium: <Voltra.Text>Afternoon: 72°F and sunny</Voltra.Text>
+    }
+  },
+  {
+    date: new Date('2026-01-16T21:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Evening: 68°F 🌙</Voltra.Text>,
+      systemMedium: <Voltra.Text>Good evening! 68°F and clear</Voltra.Text>
+    }
+  }
+])
+```
+
+**Parameters:**
+
+- `widgetId`: The widget identifier (as defined in your config plugin)
+- `entries`: Array of timeline entries, each containing:
+  - `date`: When this content should be displayed
+  - `variants`: Widget content for different size families
+  - `deepLinkUrl` (optional): URL to open when tapping this specific entry
+
+**With deep links per entry:**
+
+```typescript
+await scheduleWidget('news', [
+  {
+    date: new Date('2026-01-16T08:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Morning Headlines</Voltra.Text>
+    },
+    deepLinkUrl: '/news/morning'
+  },
+  {
+    date: new Date('2026-01-16T20:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Evening Edition</Voltra.Text>
+    },
+    deepLinkUrl: '/news/evening'
+  }
+])
+```
+
+:::warning iOS System Constraints
+iOS controls when widgets actually update based on battery level, widget visibility, and system load. While you can schedule entries at any interval, iOS typically enforces a minimum of ~15 minutes between updates. Entries scheduled more frequently may be delayed or coalesced.
+:::
+
+**Best practices:**
+
+- Schedule entries at realistic intervals (15+ minutes apart)
+- Don't schedule hundreds of entries—iOS has a daily refresh budget
+- Use `updateWidget` for immediate one-time updates
+- Use `scheduleWidget` for predictable, recurring content changes
+
 ## Widget configuration via Expo plugin
 
 Widgets are configured through the Voltra Expo config plugin. Add the widget configuration to your `app.json` or `app.config.js`:
