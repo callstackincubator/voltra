@@ -5,25 +5,16 @@ import { validateWidgetConfig } from './validateWidget'
  * Validates the plugin props at entry point.
  * Throws an error if validation fails.
  */
-export function validateProps(props: ConfigPluginProps | undefined): void {
-  if (!props) {
-    throw new Error(
-      'Voltra plugin requires configuration. Please provide at least groupIdentifier in your plugin config.'
-    )
-  }
+export function validateProps(props: ConfigPluginProps): void {
+  // Validate group identifier format if provided
+  if (props.groupIdentifier !== undefined) {
+    if (typeof props.groupIdentifier !== 'string') {
+      throw new Error('groupIdentifier must be a string')
+    }
 
-  // Validate group identifier is provided
-  if (!props.groupIdentifier) {
-    throw new Error('groupIdentifier is required. Please provide a groupIdentifier in your Voltra plugin config.')
-  }
-
-  // Validate group identifier format
-  if (typeof props.groupIdentifier !== 'string') {
-    throw new Error('groupIdentifier must be a string')
-  }
-
-  if (!props.groupIdentifier.startsWith('group.')) {
-    throw new Error(`groupIdentifier '${props.groupIdentifier}' must start with 'group.'`)
+    if (!props.groupIdentifier.startsWith('group.')) {
+      throw new Error(`groupIdentifier '${props.groupIdentifier}' must start with 'group.'`)
+    }
   }
 
   // Validate widgets if provided

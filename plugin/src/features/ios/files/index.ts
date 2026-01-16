@@ -11,7 +11,7 @@ import { generateSwiftFiles } from './swift'
 export interface GenerateWidgetExtensionFilesProps {
   targetName: string
   widgets?: WidgetConfig[]
-  groupIdentifier: string
+  groupIdentifier?: string
 }
 
 /**
@@ -53,7 +53,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         widgets,
       })
 
-      // Generate entitlements file
+      // Generate entitlements file (may be empty if no groupIdentifier)
       generateEntitlements({
         targetPath,
         targetName,

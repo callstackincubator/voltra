@@ -23,16 +23,18 @@ export function addApplicationGroupsEntitlement(
 /**
  * Gets the entitlements for the widget extension.
  */
-export function getWidgetExtensionEntitlements(groupIdentifier: string): Record<string, any> {
+export function getWidgetExtensionEntitlements(groupIdentifier?: string): Record<string, any> {
   const entitlements: Record<string, any> = {}
-  addApplicationGroupsEntitlement(entitlements, groupIdentifier)
+  if (groupIdentifier) {
+    addApplicationGroupsEntitlement(entitlements, groupIdentifier)
+  }
   return entitlements
 }
 
 export interface GenerateEntitlementsOptions {
   targetPath: string
   targetName: string
-  groupIdentifier: string
+  groupIdentifier?: string
 }
 
 /**

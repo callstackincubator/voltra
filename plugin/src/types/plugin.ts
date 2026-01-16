@@ -13,7 +13,7 @@ export interface ConfigPluginProps {
   /**
    * App group identifier for sharing data between app and widget extension
    */
-  groupIdentifier: string
+  groupIdentifier?: string
   /**
    * Configuration for home screen widgets
    * Each widget will be available in the widget gallery
@@ -39,7 +39,7 @@ export interface IOSPluginProps {
   bundleIdentifier: string
   deploymentTarget: string
   widgets?: WidgetConfig[]
-  groupIdentifier: string
+  groupIdentifier?: string
   projectRoot: string
   platformProjectRoot: string
 }

@@ -5,7 +5,7 @@ import { join as joinPath } from 'path'
 
 export interface ConfigureMainAppPlistProps {
   targetName: string
-  groupIdentifier: string
+  groupIdentifier?: string
 }
 
 /**
@@ -41,7 +41,11 @@ export const configureMainAppPlist: ConfigPlugin<ConfigureMainAppPlistProps> = (
           CFBundleURLSchemes: [scheme],
         },
       ]
-      ;(content as any)['Voltra_AppGroupIdentifier'] = groupIdentifier
+
+      // Only set group identifier if provided
+      if (groupIdentifier) {
+        ;(content as any)['Voltra_AppGroupIdentifier'] = groupIdentifier
+      }
 
       writeFileSync(filePath, plist.build(content))
     }
