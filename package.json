@@ -1,6 +1,6 @@
 {
   "name": "voltra",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Build Live Activities with JSX in React Native",
   "main": "build/index.js",
   "types": "build/index.d.ts",

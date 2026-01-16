@@ -137,11 +137,7 @@ private func selectContentForFamily(_ data: Data, family: WidgetFamily) -> Data 
 
   // Try to get content for the specific family
   if let familyContent = root[familyKey] {
-    if JSONSerialization.isValidJSONObject(familyContent),
-       let familyData = try? JSONSerialization.data(withJSONObject: familyContent)
-    {
-      return familyData
-    }
+    return reconstructWithSharedData(content: familyContent, root: root)
   }
 
   // Fallback: try families in order of preference
@@ -149,15 +145,53 @@ private func selectContentForFamily(_ data: Data, family: WidgetFamily) -> Data 
                        "accessoryRectangular", "accessoryCircular", "accessoryInline"]
   for fallbackKey in fallbackOrder {
     if let fallbackContent = root[fallbackKey] {
-      if JSONSerialization.isValidJSONObject(fallbackContent),
-         let fallbackData = try? JSONSerialization.data(withJSONObject: fallbackContent)
-      {
-        return fallbackData
-      }
+      return reconstructWithSharedData(content: fallbackContent, root: root)
     }
   }
 
   // No content found, return empty
+  return Data("[]".utf8)
+}
+
+/// Reconstruct JSON with family-specific content plus shared stylesheet and elements.
+/// This ensures VoltraNode.parse can resolve style references and element deduplication.
+private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Data {
+  var result: [String: Any] = [:]
+
+  // If content is a dictionary (single component), wrap it in the result
+  // If content is an array or other type, it will be returned as-is below
+  if let contentDict = content as? [String: Any] {
+    // Copy all keys from the component
+    result = contentDict
+  }
+
+  // Add shared stylesheet if present (key "s")
+  if let stylesheet = root["s"] {
+    result["s"] = stylesheet
+  }
+
+  // Add shared elements if present (key "e")
+  if let sharedElements = root["e"] {
+    result["e"] = sharedElements
+  }
+
+  // If we built a result dict with shared data, serialize it
+  if !result.isEmpty {
+    if JSONSerialization.isValidJSONObject(result),
+       let data = try? JSONSerialization.data(withJSONObject: result)
+    {
+      return data
+    }
+  }
+
+  // Fallback: return content as-is if it's serializable
+  if JSONSerialization.isValidJSONObject(content),
+     let data = try? JSONSerialization.data(withJSONObject: content)
+  {
+    return data
+  }
+
+  // Final fallback: empty array
   return Data("[]".utf8)
 }
 
@@ -233,14 +267,11 @@ private func normalizeJsonData(_ data: Data) -> Data? {
     return data
   }
 
-  // If it's a single component (dictionary), wrap it in an array
-  if let dict = obj as? [String: Any] {
-    guard JSONSerialization.isValidJSONObject([dict]),
-          let wrapped = try? JSONSerialization.data(withJSONObject: [dict])
-    else {
-      return nil
-    }
-    return wrapped
+  // If it's a single component (dictionary), return as-is
+  // Don't wrap in array - VoltraNode.parse handles single objects and needs
+  // to find "s" (stylesheet) and "e" (elements) at the root level
+  if obj is [String: Any] {
+    return data
   }
 
   // Invalid input (string, number, boolean, null) - return nil to indicate error
