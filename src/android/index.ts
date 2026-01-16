@@ -39,3 +39,17 @@ export type {
   UseAndroidLiveUpdateOptions,
   UseAndroidLiveUpdateResult,
 } from './live-update/types.js'
+
+// Android Widget API and types
+export {
+  unstable_clearAndroidWidget,
+  unstable_clearAllAndroidWidgets,
+  unstable_reloadAndroidWidgets,
+  unstable_updateAndroidWidget,
+} from './widgets/api.js'
+export type {
+  AndroidWidgetSize,
+  AndroidWidgetSizeVariant,
+  AndroidWidgetVariants,
+  UpdateAndroidWidgetOptions,
+} from './widgets/types.js'

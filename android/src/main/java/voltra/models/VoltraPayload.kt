@@ -1,12 +1,13 @@
 package voltra.models
 
 /**
- * Root payload matching AndroidLiveUpdateVariantsJson
+ * Root payload for both Live Updates and Widgets
  */
 data class VoltraPayload(
     val v: Int,                                    // Version
-    val collapsed: VoltraNode? = null,             // Collapsed content
-    val expanded: VoltraNode? = null,              // Expanded content
+    val collapsed: VoltraNode? = null,             // Collapsed content (Live Updates)
+    val expanded: VoltraNode? = null,              // Expanded content (Live Updates)
+    val variants: Map<String, VoltraNode>? = null, // Size variants (Widgets)
     val s: List<Map<String, Any>>? = null,         // Shared styles
     val e: List<VoltraNode>? = null,               // Shared elements
     val smallIcon: String? = null,

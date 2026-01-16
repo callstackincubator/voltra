@@ -123,6 +123,26 @@ export interface VoltraModuleSpec {
   endAllAndroidLiveUpdates(): Promise<void>
 
   /**
+   * Android Widget: Update a widget with new content
+   */
+  updateAndroidWidget(widgetId: string, jsonString: string, options?: { deepLinkUrl?: string }): Promise<void>
+
+  /**
+   * Android Widget: Reload widget timelines to refresh their content
+   */
+  reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
+
+  /**
+   * Android Widget: Clear a widget's stored data
+   */
+  clearAndroidWidget(widgetId: string): Promise<void>
+
+  /**
+   * Android Widget: Clear all widgets' stored data
+   */
+  clearAllAndroidWidgets(): Promise<void>
+
+  /**
    * Preload images to App Group storage for use in Live Activities
    */
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>
