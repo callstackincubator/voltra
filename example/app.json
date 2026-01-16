@@ -29,14 +29,25 @@
               "id": "weather",
               "displayName": "Weather Widget",
               "description": "Shows current weather conditions",
-              "supportedFamilies": [
-                "systemSmall",
-                "systemMedium",
-                "systemLarge"
-              ],
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
               "initialStatePath": "./widgets/weather-initial.tsx"
             }
-          ]
+          ],
+          "android": {
+            "widgets": [
+              {
+                "id": "weather",
+                "displayName": "Weather Widget",
+                "description": "Shows current weather conditions",
+                "minWidth": 150,
+                "minHeight": 100,
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen"
+              }
+            ]
+          }
         }
       ],
       "expo-router",

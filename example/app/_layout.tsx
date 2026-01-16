@@ -9,7 +9,7 @@ const STACK_SCREEN_OPTIONS = {
 }
 
 export const unstable_settings = {
-  initialRouteName: 'live-activities',
+  initialRouteName: 'index',
 }
 
 export default function Layout() {
@@ -29,6 +29,7 @@ export default function Layout() {
         }}
       />
       <Stack.Screen name="live-activities" />
+      <Stack.Screen name="android-widgets" />
       <Stack.Screen name="testing-grounds" />
       <Stack.Screen name="+not-found" />
     </Stack>

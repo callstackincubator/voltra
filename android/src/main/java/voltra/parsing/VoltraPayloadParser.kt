@@ -18,7 +18,7 @@ object VoltraPayloadParser {
         
         val result = gson.fromJson(jsonString, VoltraPayload::class.java)
         
-        Log.d(TAG, "Parsed: collapsed=${result.collapsed != null}, expanded=${result.expanded != null}")
+        Log.d(TAG, "Parsed: collapsed=${result.collapsed != null}, expanded=${result.expanded != null}, variants=${result.variants?.keys}")
         
         return result
     }

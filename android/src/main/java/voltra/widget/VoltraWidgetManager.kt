@@ -1,10 +1,11 @@
 package voltra.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -22,30 +23,33 @@ class VoltraWidgetManager(private val context: Context) {
     
     /**
      * Write widget data to SharedPreferences
+     * Uses commit() instead of apply() to ensure data is written before widget update
      */
     fun writeWidgetData(widgetId: String, jsonString: String, deepLinkUrl: String?) {
         Log.d(TAG, "writeWidgetData: widgetId=$widgetId, deepLinkUrl=$deepLinkUrl")
+        Log.d(TAG, "JSON length: ${jsonString.length}, preview: ${jsonString.take(200)}")
         
-        prefs.edit().apply {
-            putString("$KEY_JSON_PREFIX$widgetId", jsonString)
+        val editor = prefs.edit()
+        editor.putString("$KEY_JSON_PREFIX$widgetId", jsonString)
             
             if (deepLinkUrl != null && deepLinkUrl.isNotEmpty()) {
-                putString("$KEY_DEEP_LINK_PREFIX$widgetId", deepLinkUrl)
+            editor.putString("$KEY_DEEP_LINK_PREFIX$widgetId", deepLinkUrl)
             } else {
-                remove("$KEY_DEEP_LINK_PREFIX$widgetId")
-            }
-            
-            apply()
+            editor.remove("$KEY_DEEP_LINK_PREFIX$widgetId")
         }
         
-        Log.d(TAG, "Widget data written successfully")
+        // Use commit() for synchronous write - ensures data is available before widget update
+        val success = editor.commit()
+        Log.d(TAG, "Widget data written. Success: $success, length: ${jsonString.length}")
     }
     
     /**
      * Read widget JSON from SharedPreferences
      */
     fun readWidgetJson(widgetId: String): String? {
-        return prefs.getString("$KEY_JSON_PREFIX$widgetId", null)
+        val json = prefs.getString("$KEY_JSON_PREFIX$widgetId", null)
+        Log.d(TAG, "readWidgetJson: widgetId=$widgetId, found=${json != null}, length=${json?.length ?: 0}")
+        return json
     }
     
     /**
@@ -61,11 +65,10 @@ class VoltraWidgetManager(private val context: Context) {
     fun clearWidgetData(widgetId: String) {
         Log.d(TAG, "clearWidgetData: widgetId=$widgetId")
         
-        prefs.edit().apply {
-            remove("$KEY_JSON_PREFIX$widgetId")
-            remove("$KEY_DEEP_LINK_PREFIX$widgetId")
-            apply()
-        }
+        val editor = prefs.edit()
+        editor.remove("$KEY_JSON_PREFIX$widgetId")
+        editor.remove("$KEY_DEEP_LINK_PREFIX$widgetId")
+        editor.commit()
     }
     
     /**
@@ -79,51 +82,97 @@ class VoltraWidgetManager(private val context: Context) {
             key.startsWith(KEY_JSON_PREFIX) || key.startsWith(KEY_DEEP_LINK_PREFIX)
         }
         
-        prefs.edit().apply {
-            widgetKeys.forEach { key: String -> remove(key) }
-            apply()
-        }
+        val editor = prefs.edit()
+        widgetKeys.forEach { key: String -> editor.remove(key) }
+        editor.commit()
         
         Log.d(TAG, "Cleared ${widgetKeys.size} widget keys")
     }
     
     /**
-     * Update a specific widget by triggering its provider
+     * Update a specific widget using Glance's native update mechanism.
+     * This properly triggers provideGlance() to re-run with fresh data.
+     * 
+     * Uses AppWidgetManager to get widget IDs, then converts them to GlanceIds
+     * and calls update() on the GlanceAppWidget for each one.
      */
-    suspend fun updateWidget(widgetId: String) = withContext(Dispatchers.Default) {
+    suspend fun updateWidget(widgetId: String) = withContext(Dispatchers.IO) {
         Log.d(TAG, "updateWidget: widgetId=$widgetId")
         
-        try {
-            // Update all instances of this widget type
-            // The widget will read the latest data from SharedPreferences
-            VoltraGlanceWidget().updateAll(context)
+        // Build the receiver component name by convention (no reflection needed)
+        val receiverClassName = "${context.packageName}.widget.VoltraWidget_${widgetId}Receiver"
+        val componentName = ComponentName(context.packageName, receiverClassName)
+        Log.d(TAG, "Looking for receiver: $receiverClassName")
             
-            Log.d(TAG, "Widget update triggered successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to update widget: ${e.message}", e)
-            throw e
+        // Get widget IDs using standard Android AppWidgetManager
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+        val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
+            
+        Log.d(TAG, "Found ${appWidgetIds.size} app widget instances for $widgetId: ${appWidgetIds.toList()}")
+            
+        if (appWidgetIds.isNotEmpty()) {
+            // Create the widget instance with the specific widgetId
+            val widget = VoltraGlanceWidget(widgetId)
+            
+            // Get the GlanceAppWidgetManager to convert IDs
+            val glanceManager = GlanceAppWidgetManager(context)
+            
+            // Update each widget instance using Glance's update mechanism
+            for (appWidgetId in appWidgetIds) {
+                try {
+                    val glanceId = glanceManager.getGlanceIdBy(appWidgetId)
+                    Log.d(TAG, "Updating Glance widget instance: appWidgetId=$appWidgetId, glanceId=$glanceId")
+                    widget.update(context, glanceId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update widget instance $appWidgetId: ${e.message}", e)
+                }
+            }
+            Log.d(TAG, "Glance widget update completed for $widgetId")
+        } else {
+            Log.w(TAG, "No widget instances found on home screen for $widgetId")
         }
     }
     
     /**
      * Reload specific widgets or all widgets
      */
-    suspend fun reloadWidgets(widgetIds: List<String>?) = withContext(Dispatchers.Default) {
+    suspend fun reloadWidgets(widgetIds: List<String>?) = withContext(Dispatchers.Main) {
         if (widgetIds != null && widgetIds.isNotEmpty()) {
             Log.d(TAG, "reloadWidgets: specific widgets ${widgetIds.joinToString()}")
+            for (widgetId in widgetIds) {
+                try {
+                    updateWidget(widgetId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to reload widget $widgetId: ${e.message}")
+                }
+            }
         } else {
             Log.d(TAG, "reloadWidgets: all widgets")
+            reloadAllWidgets()
         }
-        // For all cases, we update all instances since Glance doesn't have a way 
-        // to target specific widget IDs by our custom widgetId
-        VoltraGlanceWidget().updateAll(context)
     }
     
     /**
-     * Reload all widgets
+     * Reload all widgets by finding all saved widget data
      */
-    suspend fun reloadAllWidgets() = withContext(Dispatchers.Default) {
+    suspend fun reloadAllWidgets() = withContext(Dispatchers.Main) {
         Log.d(TAG, "reloadAllWidgets")
-        VoltraGlanceWidget().updateAll(context)
+        
+        // Get all widget IDs from saved data
+        val allKeys = prefs.all.keys
+        val widgetIds = allKeys
+            .filter { it.startsWith(KEY_JSON_PREFIX) }
+            .map { it.removePrefix(KEY_JSON_PREFIX) }
+            .toSet()
+        
+        Log.d(TAG, "Found ${widgetIds.size} widgets with saved data: $widgetIds")
+        
+        for (widgetId in widgetIds) {
+            try {
+                updateWidget(widgetId)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to update widget $widgetId: ${e.message}")
+            }
+        }
     }
 }

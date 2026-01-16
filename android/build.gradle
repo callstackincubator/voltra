@@ -47,12 +47,12 @@ android {
 }
 
 dependencies {
-  // Jetpack Glance
-  implementation "androidx.glance:glance:1.2.0-rc01"
-  implementation "androidx.glance:glance-appwidget:1.2.0-rc01"
+  // Jetpack Glance - use 'api' instead of 'implementation' to make these available to consuming apps
+  api "androidx.glance:glance:1.2.0-rc01"
+  api "androidx.glance:glance-appwidget:1.2.0-rc01"
   
   // Compose runtime (required for Glance)
-  implementation "androidx.compose.runtime:runtime:1.6.8"
+  api "androidx.compose.runtime:runtime:1.6.8"
   
   // JSON parsing
   implementation "com.google.code.gson:gson:2.10.1"

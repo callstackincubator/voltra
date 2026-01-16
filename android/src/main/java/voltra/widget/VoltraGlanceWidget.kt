@@ -21,7 +21,7 @@ import voltra.models.VoltraNode
 import voltra.models.VoltraPayload
 import voltra.parsing.VoltraPayloadParser
 
-class VoltraGlanceWidget : GlanceAppWidget() {
+class VoltraGlanceWidget(private val widgetId: String = "default") : GlanceAppWidget() {
     
     companion object {
         private const val TAG = "VoltraGlanceWidget"
@@ -43,17 +43,17 @@ class VoltraGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         // Parse data outside of composition to avoid try/catch in composable
         val widgetManager = VoltraWidgetManager(context)
-        val widgetId = "default"
         val jsonString = widgetManager.readWidgetJson(widgetId)
         
         val payload: VoltraPayload? = if (jsonString != null) {
             try {
                 VoltraPayloadParser.parse(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Error parsing widget payload: ${e.message}", e)
+                Log.e(TAG, "Error parsing widget payload for widgetId=$widgetId: ${e.message}", e)
                 null
             }
         } else {
+            Log.d(TAG, "No JSON data found for widgetId=$widgetId")
             null
         }
         
@@ -66,10 +66,15 @@ class VoltraGlanceWidget : GlanceAppWidget() {
     private fun Content(payload: VoltraPayload?) {
         val currentSize = LocalSize.current
         
+        Log.d(TAG, "Content: widgetId=$widgetId, currentSize=${currentSize.width}x${currentSize.height}")
+        
         if (payload == null) {
+            Log.d(TAG, "Content: payload is null, showing placeholder")
             PlaceholderView()
             return
         }
+        
+        Log.d(TAG, "Content: variants keys=${payload.variants?.keys}, styles=${payload.s?.size ?: 0}, elements=${payload.e?.size ?: 0}")
         
         // Select the best variant for current size
         val variantKey = selectVariantForSize(currentSize, payload.variants?.keys)
@@ -80,9 +85,10 @@ class VoltraGlanceWidget : GlanceAppWidget() {
         }
         
         if (node != null) {
-            Log.d(TAG, "Rendering widget with size variant: $variantKey")
+            Log.d(TAG, "Rendering widget widgetId=$widgetId with size variant: $variantKey")
             GlanceFactory(payload.e, payload.s).RenderNode(node)
         } else {
+            Log.d(TAG, "Content: no matching variant found, showing placeholder")
             PlaceholderView()
         }
     }
@@ -134,7 +140,7 @@ class VoltraGlanceWidget : GlanceAppWidget() {
             kotlin.math.sqrt(widthDiff * widthDiff + heightDiff * heightDiff)
         }
         
-        Log.d(TAG, "Selected variant '${bestMatch?.key}' for size ${currentWidthDp}x${currentHeightDp}")
+        Log.d(TAG, "Selected variant '${bestMatch?.key}' for size ${currentWidthDp}x${currentHeightDp} (widgetId=$widgetId)")
         return bestMatch?.key
     }
 }
