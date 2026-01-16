@@ -157,24 +157,24 @@ private func selectContentForFamily(_ data: Data, family: WidgetFamily) -> Data 
 /// This ensures VoltraNode.parse can resolve style references and element deduplication.
 private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Data {
   var result: [String: Any] = [:]
-  
+
   // If content is a dictionary (single component), wrap it in the result
   // If content is an array or other type, it will be returned as-is below
   if let contentDict = content as? [String: Any] {
     // Copy all keys from the component
     result = contentDict
   }
-  
+
   // Add shared stylesheet if present (key "s")
   if let stylesheet = root["s"] {
     result["s"] = stylesheet
   }
-  
+
   // Add shared elements if present (key "e")
   if let sharedElements = root["e"] {
     result["e"] = sharedElements
   }
-  
+
   // If we built a result dict with shared data, serialize it
   if !result.isEmpty {
     if JSONSerialization.isValidJSONObject(result),
@@ -183,14 +183,14 @@ private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Dat
       return data
     }
   }
-  
+
   // Fallback: return content as-is if it's serializable
   if JSONSerialization.isValidJSONObject(content),
      let data = try? JSONSerialization.data(withJSONObject: content)
   {
     return data
   }
-  
+
   // Final fallback: empty array
   return Data("[]".utf8)
 }
