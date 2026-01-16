@@ -118,6 +118,11 @@ export interface VoltraModuleSpec {
   updateWidget(widgetId: string, jsonString: string, options?: UpdateWidgetOptions): Promise<void>
 
   /**
+   * Schedule a widget timeline with multiple entries to be displayed at future times
+   */
+  scheduleWidget(widgetId: string, timelineJson: string): Promise<void>
+
+  /**
    * Reload widget timelines to refresh their content
    */
   reloadWidgets(widgetIds?: string[] | null): Promise<void>

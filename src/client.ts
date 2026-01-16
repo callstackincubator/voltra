@@ -47,6 +47,10 @@ export {
   clearAllWidgets,
   clearWidget,
   reloadWidgets,
+  type ScheduledWidgetEntry,
+  scheduleWidget,
+  type ScheduleWidgetOptions,
+  type TimelineReloadPolicy,
   updateWidget,
   type UpdateWidgetOptions,
 } from './widgets/widget-api.js'

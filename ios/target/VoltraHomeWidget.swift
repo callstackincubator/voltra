@@ -29,6 +29,92 @@ public enum VoltraHomeWidgetStore {
           let defaults = UserDefaults(suiteName: group) else { return nil }
     return defaults.string(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
   }
+
+  public static func readTimeline(widgetId: String) -> WidgetTimeline? {
+    guard let group = VoltraConfig.groupIdentifier(),
+          let defaults = UserDefaults(suiteName: group),
+          let timelineString = defaults.string(forKey: "Voltra_Widget_Timeline_\(widgetId)"),
+          let timelineData = timelineString.data(using: .utf8),
+          let json = try? JSONSerialization.jsonObject(with: timelineData) as? [String: Any]
+    else {
+      return nil
+    }
+
+    // Parse entries
+    guard let entriesJson = json["entries"] as? [[String: Any]] else {
+      return nil
+    }
+
+    let entries = entriesJson.compactMap { entryJson -> WidgetTimelineEntry? in
+      guard let timestamp = entryJson["date"] as? Double else {
+        // Try Int as fallback
+        if let intTimestamp = entryJson["date"] as? Int {
+          let date = Date(timeIntervalSince1970: Double(intTimestamp) / 1000.0)
+          guard let jsonString = entryJson["json"] as? String,
+                let jsonData = jsonString.data(using: .utf8)
+          else {
+            return nil
+          }
+          let deepLinkUrl = entryJson["deepLinkUrl"] as? String
+          return WidgetTimelineEntry(date: date, json: jsonData, deepLinkUrl: deepLinkUrl)
+        }
+        return nil
+      }
+      
+      guard let jsonString = entryJson["json"] as? String,
+            let jsonData = jsonString.data(using: .utf8)
+      else {
+        return nil
+      }
+
+      let date = Date(timeIntervalSince1970: timestamp / 1000.0)
+      let deepLinkUrl = entryJson["deepLinkUrl"] as? String
+
+      return WidgetTimelineEntry(date: date, json: jsonData, deepLinkUrl: deepLinkUrl)
+    }
+
+    // Parse policy
+    let policy: TimelineReloadPolicyType
+    if let policyJson = json["policy"] as? [String: Any],
+       let policyType = policyJson["type"] as? String
+    {
+      switch policyType {
+      case "atEnd":
+        policy = .atEnd
+      case "after":
+        if let afterTimestamp = policyJson["afterDate"] as? Double {
+          let afterDate = Date(timeIntervalSince1970: afterTimestamp / 1000.0)
+          policy = .after(afterDate)
+        } else {
+          policy = .never
+        }
+      default:
+        policy = .never
+      }
+    } else {
+      policy = .never
+    }
+
+    return WidgetTimeline(entries: entries, policy: policy)
+  }
+}
+
+// Timeline data structures
+public struct WidgetTimelineEntry {
+  let date: Date
+  let json: Data
+  let deepLinkUrl: String?
+}
+
+public struct WidgetTimeline {
+  let entries: [WidgetTimelineEntry]
+  let policy: TimelineReloadPolicyType
+}
+
+public enum TimelineReloadPolicyType {
+  case never
+  case atEnd
+  case after(Date)
 }
 
 // MARK: - Timeline + entries
@@ -37,11 +123,13 @@ public struct VoltraHomeWidgetEntry: TimelineEntry {
   public let date: Date
   public let json: Data?
   public let widgetId: String
+  public let deepLinkUrl: String?
 
-  public init(date: Date, json: Data?, widgetId: String) {
+  public init(date: Date, json: Data?, widgetId: String, deepLinkUrl: String? = nil) {
     self.date = date
     self.json = json
     self.widgetId = widgetId
+    self.deepLinkUrl = deepLinkUrl
   }
 }
 
@@ -64,6 +152,33 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
   }
 
   public func getTimeline(in _: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
+    // 1. Try to read scheduled timeline
+    if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId), !timeline.entries.isEmpty {
+      let entries = timeline.entries.map { timelineEntry in
+        VoltraHomeWidgetEntry(
+          date: timelineEntry.date,
+          json: timelineEntry.json,
+          widgetId: widgetId,
+          deepLinkUrl: timelineEntry.deepLinkUrl
+        )
+      }
+      
+      // Convert policy
+      let policy: TimelineReloadPolicy
+      switch timeline.policy {
+      case .never:
+        policy = .never
+      case .atEnd:
+        policy = .atEnd
+      case .after(let date):
+        policy = .after(date)
+      }
+      
+      completion(Timeline(entries: entries, policy: policy))
+      return
+    }
+    
+    // 2. Fallback: current single-entry behavior
     let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
     let entry = VoltraHomeWidgetEntry(date: Date(), json: data, widgetId: widgetId)
     completion(Timeline(entries: [entry], policy: .never))
@@ -83,7 +198,7 @@ public struct VoltraHomeWidgetView: View {
       if let data = entry.json {
         let selected = selectContentForFamily(data, family: widgetFamily)
         buildStaticContentView(data: selected, source: "home_widget")
-          .widgetURL(resolveStaticDeepLinkURL(selected, widgetId: entry.widgetId))
+          .widgetURL(resolveDeepLinkURL(selected, entry: entry))
       } else {
         placeholderView(widgetId: entry.widgetId)
       }
@@ -257,6 +372,20 @@ private func resolveStaticDeepLinkURL(_ data: Data, widgetId: String) -> URL? {
     }
   }
   return makeDeepLinkURL(data, source: "home_widget", kind: "widget")
+}
+
+private func resolveDeepLinkURL(_ data: Data, entry: VoltraHomeWidgetEntry) -> URL? {
+  // Prefer the timeline entry's deep link URL if available
+  if let entryUrl = entry.deepLinkUrl, !entryUrl.isEmpty {
+    if entryUrl.contains("://"), let url = URL(string: entryUrl) { return url }
+    if let scheme = VoltraDeepLinkResolver.deepLinkScheme() {
+      let path = entryUrl.hasPrefix("/") ? entryUrl : "/\(entryUrl)"
+      return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
+    }
+  }
+  
+  // Fallback to the static deep link URL from UserDefaults
+  return resolveStaticDeepLinkURL(data, widgetId: entry.widgetId)
 }
 
 private func normalizeJsonData(_ data: Data) -> Data? {
