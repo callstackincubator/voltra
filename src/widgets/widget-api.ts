@@ -2,11 +2,11 @@ import type { UpdateWidgetOptions } from '../types.js'
 import { assertRunningOnApple } from '../utils/assertRunningOnApple.js'
 import VoltraModule from '../VoltraModule.js'
 import { renderWidgetToString } from './renderer.js'
-import { ScheduledWidgetEntry, ScheduleWidgetOptions, WidgetVariants } from './types.js'
+import { ScheduledWidgetEntry, WidgetVariants } from './types.js'
 
 // Re-export types for public API
 export type { UpdateWidgetOptions } from '../types.js'
-export type { ScheduledWidgetEntry, ScheduleWidgetOptions, TimelineReloadPolicy } from './types.js'
+export type { ScheduledWidgetEntry } from './types.js'
 
 /**
  * Update a home screen widget with new content.
@@ -164,11 +164,7 @@ export const clearAllWidgets = async (): Promise<void> => {
  * ])
  * ```
  */
-export const scheduleWidget = async (
-  widgetId: string,
-  entries: ScheduledWidgetEntry[],
-  options?: ScheduleWidgetOptions
-): Promise<void> => {
+export const scheduleWidget = async (widgetId: string, entries: ScheduledWidgetEntry[]): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
   // Render each entry's variants to JSON
@@ -178,22 +174,13 @@ export const scheduleWidget = async (
     deepLinkUrl: entry.deepLinkUrl,
   }))
 
-  // Prepare timeline data
+  // Prepare timeline data (always use 'never' policy since widget extension can't regenerate content)
   const timelineData = {
     entries: renderedEntries,
-    policy: options?.policy ?? { type: 'never' },
+    policy: { type: 'never' },
   }
 
-  // Convert policy date to timestamp if present
-  const timelineJson = JSON.stringify({
-    ...timelineData,
-    policy: {
-      ...timelineData.policy,
-      ...(timelineData.policy.type === 'after' && 'date' in timelineData.policy
-        ? { afterDate: timelineData.policy.date.getTime() }
-        : {}),
-    },
-  })
+  const timelineJson = JSON.stringify(timelineData)
 
   return VoltraModule.scheduleWidget(widgetId, timelineJson)
 }

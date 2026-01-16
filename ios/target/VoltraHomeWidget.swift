@@ -60,7 +60,7 @@ public enum VoltraHomeWidgetStore {
         }
         return nil
       }
-      
+
       guard let jsonString = entryJson["json"] as? String,
             let jsonData = jsonString.data(using: .utf8)
       else {
@@ -73,29 +73,7 @@ public enum VoltraHomeWidgetStore {
       return WidgetTimelineEntry(date: date, json: jsonData, deepLinkUrl: deepLinkUrl)
     }
 
-    // Parse policy
-    let policy: TimelineReloadPolicyType
-    if let policyJson = json["policy"] as? [String: Any],
-       let policyType = policyJson["type"] as? String
-    {
-      switch policyType {
-      case "atEnd":
-        policy = .atEnd
-      case "after":
-        if let afterTimestamp = policyJson["afterDate"] as? Double {
-          let afterDate = Date(timeIntervalSince1970: afterTimestamp / 1000.0)
-          policy = .after(afterDate)
-        } else {
-          policy = .never
-        }
-      default:
-        policy = .never
-      }
-    } else {
-      policy = .never
-    }
-
-    return WidgetTimeline(entries: entries, policy: policy)
+    return WidgetTimeline(entries: entries)
   }
 }
 
@@ -108,13 +86,6 @@ public struct WidgetTimelineEntry {
 
 public struct WidgetTimeline {
   let entries: [WidgetTimelineEntry]
-  let policy: TimelineReloadPolicyType
-}
-
-public enum TimelineReloadPolicyType {
-  case never
-  case atEnd
-  case after(Date)
 }
 
 // MARK: - Timeline + entries
@@ -162,22 +133,12 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
           deepLinkUrl: timelineEntry.deepLinkUrl
         )
       }
-      
-      // Convert policy
-      let policy: TimelineReloadPolicy
-      switch timeline.policy {
-      case .never:
-        policy = .never
-      case .atEnd:
-        policy = .atEnd
-      case .after(let date):
-        policy = .after(date)
-      }
-      
-      completion(Timeline(entries: entries, policy: policy))
+
+      // Always use .never policy since widget extension can't regenerate timeline content
+      completion(Timeline(entries: entries, policy: .never))
       return
     }
-    
+
     // 2. Fallback: current single-entry behavior
     let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
     let entry = VoltraHomeWidgetEntry(date: Date(), json: data, widgetId: widgetId)
@@ -383,7 +344,7 @@ private func resolveDeepLinkURL(_ data: Data, entry: VoltraHomeWidgetEntry) -> U
       return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
     }
   }
-  
+
   // Fallback to the static deep link URL from UserDefaults
   return resolveStaticDeepLinkURL(data, widgetId: entry.widgetId)
 }

@@ -208,9 +208,7 @@ export default function WeatherTestingScreen() {
         },
       ]
 
-      await scheduleWidget('weather', entries, {
-        policy: { type: 'atEnd' },
-      })
+      await scheduleWidget('weather', entries)
     } catch (error) {
       console.error('Failed to schedule weather forecast:', error)
     } finally {
