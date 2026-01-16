@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native'
+import { Alert, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Voltra } from 'voltra'
 import { reloadWidgets, scheduleWidget, updateWidget, VoltraWidgetPreview, WidgetFamily } from 'voltra/client'
 
 import { Button } from '~/components/Button'
@@ -209,6 +210,7 @@ export default function WeatherTestingScreen() {
       ]
 
       await scheduleWidget('weather', entries)
+      Alert.alert('Timeline scheduled')
     } catch (error) {
       console.error('Failed to schedule weather forecast:', error)
     } finally {
@@ -301,7 +303,13 @@ export default function WeatherTestingScreen() {
             Schedule multiple weather updates in advance. iOS will automatically display each forecast at the scheduled
             time, even when the app is closed.
           </Card.Text>
-          <Button title="Schedule Timeline" variant="primary" onPress={handleScheduleForecast} disabled={isUpdating} />
+          <Button
+            style={{ marginTop: 16 }}
+            title="Schedule Timeline"
+            variant="primary"
+            onPress={handleScheduleForecast}
+            disabled={isUpdating}
+          />
           <Card.Text style={styles.timelineNote}>
             Schedules 4 numbered entries: 1 (now), 2 (+15min), 3 (+30min), 4 (+45min). Watch the numbers change! iOS
             controls exact timing based on battery/visibility.
