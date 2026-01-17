@@ -44,7 +44,10 @@ export type VoltraViewStyle = Pick<
 }
 
 export type VoltraTextStyle = VoltraViewStyle &
-  Pick<RNTextStyle, 'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant' | 'textDecorationLine'>
+  Pick<
+    RNTextStyle,
+    'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant' | 'textDecorationLine' | 'textAlign'
+  >
 
 export type VoltraStyleProp = StyleProp<VoltraViewStyle>
 export type VoltraTextStyleProp = StyleProp<VoltraTextStyle>
