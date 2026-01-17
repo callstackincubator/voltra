@@ -1,7 +1,7 @@
 [
   {
     "text": "Getting started",
-    "link": "/getting-started"
+    "link": "/getting-started/introduction"
   },
   {
     "text": "Development",
@@ -9,6 +9,6 @@
   },
   {
     "text": "Components",
-    "link": "/components"
+    "link": "/components/overview"
   }
 ]
