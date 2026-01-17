@@ -274,6 +274,9 @@ public class VoltraModule: Module {
     AsyncFunction("updateWidget") { (widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws in
       try self.writeWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
 
+      // Clear any scheduled timeline so single-entry data takes effect
+      self.clearWidgetTimeline(widgetId: widgetId)
+
       // Reload the widget timeline
       WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
       print("[Voltra] Updated widget '\(widgetId)'")
@@ -451,6 +454,8 @@ private extension VoltraModule {
     } else {
       defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
     }
+
+    defaults.synchronize()
   }
 
   func writeWidgetTimeline(widgetId: String, timelineJson: String) throws {
@@ -464,6 +469,7 @@ private extension VoltraModule {
     // Store the timeline JSON
     defaults.set(timelineJson, forKey: "Voltra_Widget_Timeline_\(widgetId)")
     defaults.synchronize()
+    print("[Voltra] writeWidgetTimeline: Timeline stored successfully")
   }
 
   func clearWidgetData(widgetId: String) {
@@ -473,6 +479,7 @@ private extension VoltraModule {
     defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
     defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
     defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
+    defaults.synchronize()
   }
 
   func clearAllWidgetData() {
@@ -487,6 +494,15 @@ private extension VoltraModule {
       defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
       defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
     }
+    defaults.synchronize()
+  }
+
+  func clearWidgetTimeline(widgetId: String) {
+    guard let groupId = VoltraConfig.groupIdentifier(),
+          let defaults = UserDefaults(suiteName: groupId) else { return }
+
+    defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
+    defaults.synchronize()
   }
 }
 

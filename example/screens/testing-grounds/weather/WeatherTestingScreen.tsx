@@ -126,82 +126,84 @@ export default function WeatherTestingScreen() {
     try {
       const now = new Date()
 
+      // Use 1-minute intervals for testing (iOS recommends 5+ minutes in production)
+      // First entry starts 5 seconds in the future to ensure all dates are in the future
       const entries = [
         {
-          date: now, // Entry 1: Display immediately
+          date: new Date(now.getTime() + 5 * 1000), // Entry 1: 5 seconds from now
           variants: {
             systemSmall: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#1a1a2e' }}>
                 <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#FFFFFF' }}>1</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemMedium: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#1a1a2e' }}>
                 <Voltra.Text style={{ fontSize: 64, fontWeight: '700', color: '#FFFFFF' }}>1</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemLarge: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#1a1a2e' }}>
                 <Voltra.Text style={{ fontSize: 80, fontWeight: '700', color: '#FFFFFF' }}>1</Voltra.Text>
               </Voltra.ZStack>
             ),
           },
         },
         {
-          date: new Date(now.getTime() + 15 * 60 * 1000), // Entry 2: 15 minutes
+          date: new Date(now.getTime() + 1 * 60 * 1000), // Entry 2: 1 minute
           variants: {
             systemSmall: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#16213e' }}>
                 <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#00FF00' }}>2</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemMedium: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#16213e' }}>
                 <Voltra.Text style={{ fontSize: 64, fontWeight: '700', color: '#00FF00' }}>2</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemLarge: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#16213e' }}>
                 <Voltra.Text style={{ fontSize: 80, fontWeight: '700', color: '#00FF00' }}>2</Voltra.Text>
               </Voltra.ZStack>
             ),
           },
         },
         {
-          date: new Date(now.getTime() + 30 * 60 * 1000), // Entry 3: 30 minutes
+          date: new Date(now.getTime() + 2 * 60 * 1000), // Entry 3: 2 minutes
           variants: {
             systemSmall: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#0f3460' }}>
                 <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#FF00FF' }}>3</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemMedium: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#0f3460' }}>
                 <Voltra.Text style={{ fontSize: 64, fontWeight: '700', color: '#FF00FF' }}>3</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemLarge: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#0f3460' }}>
                 <Voltra.Text style={{ fontSize: 80, fontWeight: '700', color: '#FF00FF' }}>3</Voltra.Text>
               </Voltra.ZStack>
             ),
           },
         },
         {
-          date: new Date(now.getTime() + 45 * 60 * 1000), // Entry 4: 45 minutes
+          date: new Date(now.getTime() + 3 * 60 * 1000), // Entry 4: 3 minutes
           variants: {
             systemSmall: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#e94560' }}>
                 <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#FFFF00' }}>4</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemMedium: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#e94560' }}>
                 <Voltra.Text style={{ fontSize: 64, fontWeight: '700', color: '#FFFF00' }}>4</Voltra.Text>
               </Voltra.ZStack>
             ),
             systemLarge: (
-              <Voltra.ZStack style={{ flex: 1 }}>
+              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#e94560' }}>
                 <Voltra.Text style={{ fontSize: 80, fontWeight: '700', color: '#FFFF00' }}>4</Voltra.Text>
               </Voltra.ZStack>
             ),
@@ -210,7 +212,15 @@ export default function WeatherTestingScreen() {
       ]
 
       await scheduleWidget('weather', entries)
-      Alert.alert('Timeline scheduled')
+
+      // Show detailed alert with scheduled times
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+      const times = entries.map((e, i) => `${i + 1}: ${formatter.format(e.date)}`).join('\n')
+      Alert.alert('Timeline Scheduled', `Entries:\n${times}\n\nWatch the widget change!`)
     } catch (error) {
       console.error('Failed to schedule weather forecast:', error)
     } finally {
@@ -220,7 +230,25 @@ export default function WeatherTestingScreen() {
 
   useEffect(() => {
     // Initialize with sunny weather
-    handleWeatherChange('sunny')
+    // Note: This calls updateWidget but NOT reloadWidgets to avoid
+    // interfering with any scheduled timeline
+    const initWeather = async () => {
+      setSelectedWeather('sunny')
+      const weatherData = SAMPLE_WEATHER_DATA['sunny']
+      setCurrentWeather(weatherData)
+
+      try {
+        await updateWidget('weather', {
+          systemSmall: <WeatherWidget weather={weatherData} />,
+          systemMedium: <WeatherWidget weather={weatherData} />,
+          systemLarge: <WeatherWidget weather={weatherData} />,
+        })
+        // Don't call reloadWidgets here to avoid resetting scheduled timelines
+      } catch (error) {
+        console.error('Failed to update weather widget:', error)
+      }
+    }
+    initWeather()
   }, [])
 
   return (
@@ -311,8 +339,8 @@ export default function WeatherTestingScreen() {
             disabled={isUpdating}
           />
           <Card.Text style={styles.timelineNote}>
-            Schedules 4 numbered entries: 1 (now), 2 (+15min), 3 (+30min), 4 (+45min). Watch the numbers change! iOS
-            controls exact timing based on battery/visibility.
+            Schedules 4 entries: 1 (+5sec), 2 (+1min), 3 (+2min), 4 (+3min). Each has a different background color.
+            Note: iOS may delay updates based on battery/visibility. Test with Xcode attached for immediate updates.
           </Card.Text>
         </Card>
 

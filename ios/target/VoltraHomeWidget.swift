@@ -35,49 +35,33 @@ public enum VoltraHomeWidgetStore {
           let defaults = UserDefaults(suiteName: group),
           let timelineString = defaults.string(forKey: "Voltra_Widget_Timeline_\(widgetId)"),
           let timelineData = timelineString.data(using: .utf8),
-          let json = try? JSONSerialization.jsonObject(with: timelineData) as? [String: Any]
+          let json = try? JSONSerialization.jsonObject(with: timelineData) as? [String: Any],
+          let entriesJson = json["entries"] as? [[String: Any]]
     else {
       return nil
     }
 
-    // Parse entries
-    guard let entriesJson = json["entries"] as? [[String: Any]] else {
-      return nil
-    }
-
     let entries = entriesJson.compactMap { entryJson -> WidgetTimelineEntry? in
-      guard let timestamp = entryJson["date"] as? Double else {
-        // Try Int as fallback
-        if let intTimestamp = entryJson["date"] as? Int {
-          let date = Date(timeIntervalSince1970: Double(intTimestamp) / 1000.0)
-          guard let jsonString = entryJson["json"] as? String,
-                let jsonData = jsonString.data(using: .utf8)
-          else {
-            return nil
-          }
-          let deepLinkUrl = entryJson["deepLinkUrl"] as? String
-          return WidgetTimelineEntry(date: date, json: jsonData, deepLinkUrl: deepLinkUrl)
-        }
-        return nil
-      }
-
-      guard let jsonString = entryJson["json"] as? String,
+      guard let timestampNumber = entryJson["date"] as? NSNumber,
+            let jsonString = entryJson["json"] as? String,
             let jsonData = jsonString.data(using: .utf8)
       else {
         return nil
       }
 
-      let date = Date(timeIntervalSince1970: timestamp / 1000.0)
+      let timestampMs = timestampNumber.doubleValue
+      let date = Date(timeIntervalSince1970: timestampMs / 1000.0)
       let deepLinkUrl = entryJson["deepLinkUrl"] as? String
 
       return WidgetTimelineEntry(date: date, json: jsonData, deepLinkUrl: deepLinkUrl)
     }
 
-    return WidgetTimeline(entries: entries)
+    let sortedEntries = entries.sorted { $0.date < $1.date }
+    return WidgetTimeline(entries: sortedEntries)
   }
 }
 
-// Timeline data structures
+// Timeline data structures (intermediate storage - still uses Data for flexibility)
 public struct WidgetTimelineEntry {
   let date: Date
   let json: Data
@@ -90,15 +74,17 @@ public struct WidgetTimeline {
 
 // MARK: - Timeline + entries
 
+/// The entry holds a pre-parsed VoltraNode (AST) instead of raw JSON.
+/// This ensures WidgetKit can properly diff entries since VoltraNode is Hashable.
 public struct VoltraHomeWidgetEntry: TimelineEntry {
   public let date: Date
-  public let json: Data?
+  public let rootNode: VoltraNode?
   public let widgetId: String
   public let deepLinkUrl: String?
 
-  public init(date: Date, json: Data?, widgetId: String, deepLinkUrl: String? = nil) {
+  public init(date: Date, rootNode: VoltraNode?, widgetId: String, deepLinkUrl: String? = nil) {
     self.date = date
-    self.json = json
+    self.rootNode = rootNode
     self.widgetId = widgetId
     self.deepLinkUrl = deepLinkUrl
   }
@@ -114,41 +100,73 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
   }
 
   public func placeholder(in _: Context) -> VoltraHomeWidgetEntry {
-    VoltraHomeWidgetEntry(date: Date(), json: nil, widgetId: widgetId)
+    VoltraHomeWidgetEntry(date: Date(), rootNode: nil, widgetId: widgetId)
   }
 
-  public func getSnapshot(in _: Context, completion: @escaping (VoltraHomeWidgetEntry) -> Void) {
+  public func getSnapshot(in context: Context, completion: @escaping (VoltraHomeWidgetEntry) -> Void) {
+    // Prioritize timeline data for consistency with getTimeline
+    if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId),
+       let firstEntry = timeline.entries.first
+    {
+      let node = parseJsonToNode(data: firstEntry.json, family: context.family)
+      completion(VoltraHomeWidgetEntry(
+        date: Date(),
+        rootNode: node,
+        widgetId: widgetId,
+        deepLinkUrl: firstEntry.deepLinkUrl
+      ))
+      return
+    }
+
+    // Fallback to single-entry data
     let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
-    completion(VoltraHomeWidgetEntry(date: Date(), json: data, widgetId: widgetId))
+    let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
+    completion(VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId))
   }
 
-  public func getTimeline(in _: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
-    // 1. Try to read scheduled timeline
+  public func getTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
     if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId), !timeline.entries.isEmpty {
       let entries = timeline.entries.map { timelineEntry in
-        VoltraHomeWidgetEntry(
+        let node = parseJsonToNode(data: timelineEntry.json, family: context.family)
+        return VoltraHomeWidgetEntry(
           date: timelineEntry.date,
-          json: timelineEntry.json,
+          rootNode: node,
           widgetId: widgetId,
           deepLinkUrl: timelineEntry.deepLinkUrl
         )
       }
-
-      // Always use .never policy since widget extension can't regenerate timeline content
       completion(Timeline(entries: entries, policy: .never))
       return
     }
 
-    // 2. Fallback: current single-entry behavior
+    // Fallback to single-entry behavior
     let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
-    let entry = VoltraHomeWidgetEntry(date: Date(), json: data, widgetId: widgetId)
+    let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
+    let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
     completion(Timeline(entries: [entry], policy: .never))
+  }
+
+  /// Parse JSON data into a VoltraNode for the given widget family.
+  /// This moves all parsing work to the Provider (background thread).
+  private func parseJsonToNode(data: Data, family: WidgetFamily) -> VoltraNode? {
+    // 1. Select content for the target family
+    let selectedData = selectContentForFamily(data, family: family)
+
+    // 2. Normalize the JSON
+    guard let normalized = normalizeJsonData(selectedData),
+          let jsonString = String(data: normalized, encoding: .utf8),
+          let json = try? JSONValue.parse(from: jsonString)
+    else {
+      return nil
+    }
+
+    // 3. Parse into VoltraNode AST
+    return VoltraNode.parse(from: json)
   }
 }
 
 public struct VoltraHomeWidgetView: View {
   public var entry: VoltraHomeWidgetEntry
-  @Environment(\.widgetFamily) var widgetFamily
 
   public init(entry: VoltraHomeWidgetEntry) {
     self.entry = entry
@@ -156,15 +174,17 @@ public struct VoltraHomeWidgetView: View {
 
   public var body: some View {
     Group {
-      if let data = entry.json {
-        let selected = selectContentForFamily(data, family: widgetFamily)
-        buildStaticContentView(data: selected, source: "home_widget")
-          .widgetURL(resolveDeepLinkURL(selected, entry: entry))
+      if let root = entry.rootNode {
+        // No parsing here - just render the pre-parsed AST
+        Voltra(root: root, activityId: "widget")
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+          .widgetURL(resolveDeepLinkURL(entry))
       } else {
         placeholderView(widgetId: entry.widgetId)
       }
     }
     .disableWidgetMarginsIfAvailable()
+    .id(entry.date)
   }
 
   @ViewBuilder
@@ -271,27 +291,7 @@ private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Dat
   return Data("[]".utf8)
 }
 
-// MARK: - Deep link + rendering helpers
-
-private func buildStaticContentView(data: Data, source _: String) -> AnyView {
-  let normalized = normalizeJsonData(data) ?? (try? JSONSerialization.data(withJSONObject: [])) ?? Data("[]".utf8)
-
-  guard let jsonString = String(data: normalized, encoding: .utf8),
-        let json = try? JSONValue.parse(from: jsonString)
-  else {
-    return AnyView(
-      Text("Failed to render widget")
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    )
-  }
-
-  let root = VoltraNode.parse(from: json)
-
-  return AnyView(
-    Voltra(root: root, activityId: "widget").frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-  )
-}
+// MARK: - Deep link helpers
 
 private extension View {
   @ViewBuilder
@@ -304,38 +304,7 @@ private extension View {
   }
 }
 
-private func extractRootIdentifier(_ data: Data) -> String? {
-  guard let jsonString = String(data: data, encoding: .utf8),
-        let json = try? JSONValue.parse(from: jsonString)
-  else {
-    return nil
-  }
-
-  let root = VoltraNode.parse(from: json)
-  if case let .element(element) = root {
-    return element.id ?? element.type
-  }
-  return nil
-}
-
-private func makeDeepLinkURL(_ data: Data, source: String, kind: String) -> URL? {
-  guard let scheme = VoltraDeepLinkResolver.deepLinkScheme() else { return nil }
-  let tag = extractRootIdentifier(data) ?? "unknown"
-  return URL(string: "\(scheme)://voltraui?kind=\(kind)&source=\(source)&tag=\(tag)")
-}
-
-private func resolveStaticDeepLinkURL(_ data: Data, widgetId: String) -> URL? {
-  if let raw = VoltraHomeWidgetStore.readDeepLinkUrl(widgetId: widgetId), !raw.isEmpty {
-    if raw.contains("://"), let url = URL(string: raw) { return url }
-    if let scheme = VoltraDeepLinkResolver.deepLinkScheme() {
-      let path = raw.hasPrefix("/") ? raw : "/\(raw)"
-      return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
-    }
-  }
-  return makeDeepLinkURL(data, source: "home_widget", kind: "widget")
-}
-
-private func resolveDeepLinkURL(_ data: Data, entry: VoltraHomeWidgetEntry) -> URL? {
+private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
   // Prefer the timeline entry's deep link URL if available
   if let entryUrl = entry.deepLinkUrl, !entryUrl.isEmpty {
     if entryUrl.contains("://"), let url = URL(string: entryUrl) { return url }
@@ -345,8 +314,24 @@ private func resolveDeepLinkURL(_ data: Data, entry: VoltraHomeWidgetEntry) -> U
     }
   }
 
-  // Fallback to the static deep link URL from UserDefaults
-  return resolveStaticDeepLinkURL(data, widgetId: entry.widgetId)
+  // Fallback to static deep link URL from UserDefaults
+  if let raw = VoltraHomeWidgetStore.readDeepLinkUrl(widgetId: entry.widgetId), !raw.isEmpty {
+    if raw.contains("://"), let url = URL(string: raw) { return url }
+    if let scheme = VoltraDeepLinkResolver.deepLinkScheme() {
+      let path = raw.hasPrefix("/") ? raw : "/\(raw)"
+      return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
+    }
+  }
+
+  // Default deep link with widget info
+  guard let scheme = VoltraDeepLinkResolver.deepLinkScheme() else { return nil }
+
+  var tag = "unknown"
+  if let root = entry.rootNode, case let .element(element) = root {
+    tag = element.id ?? element.type
+  }
+
+  return URL(string: "\(scheme)://voltraui?kind=widget&source=home_widget&tag=\(tag)")
 }
 
 private func normalizeJsonData(_ data: Data) -> Data? {
