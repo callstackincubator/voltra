@@ -217,7 +217,7 @@ describe('renderVoltraVariantToJson', () => {
       const result = renderVoltraVariantToJson(element)
       expect(result).toEqual({
         t: 11,
-        c: [{ t: 0, c: 'Conditional' }],
+        c: { t: 0, c: 'Conditional' },
       })
     })
 
@@ -231,7 +231,6 @@ describe('renderVoltraVariantToJson', () => {
       const result = renderVoltraVariantToJson(element)
       expect(result).toEqual({
         t: 11,
-        c: [],
       })
     })
 
@@ -256,22 +255,22 @@ describe('renderVoltraVariantToJson', () => {
       })
     })
 
-    test('Text component with boolean child stringifies it', () => {
+    test('Text component with boolean child ignores it (matches React Native)', () => {
       const element = <Voltra.Text>{true}</Voltra.Text>
       const result = renderVoltraVariantToJson(element)
-      expect(result).toEqual({ t: 0, c: 'true' })
+      expect(result).toEqual({ t: 0, c: '' })
     })
 
-    test('Text component with false boolean stringifies it', () => {
+    test('Text component with false boolean ignores it (matches React Native)', () => {
       const element = <Voltra.Text>{false}</Voltra.Text>
       const result = renderVoltraVariantToJson(element)
-      expect(result).toEqual({ t: 0, c: 'false' })
+      expect(result).toEqual({ t: 0, c: '' })
     })
 
-    test('Text component with mixed boolean and string children', () => {
+    test('Text component with mixed boolean and string children ignores booleans', () => {
       const element = <Voltra.Text>{true} and text and {false}</Voltra.Text>
       const result = renderVoltraVariantToJson(element)
-      expect(result).toEqual({ t: 0, c: 'true and text and false' })
+      expect(result).toEqual({ t: 0, c: ' and text and ' })
     })
 
     test('Conditional with null/undefined', () => {
