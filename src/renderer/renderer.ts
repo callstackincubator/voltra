@@ -236,7 +236,8 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         ...context,
         inStringOnlyContext: isTextComponent,
       }
-      const renderedChildren = children !== null && children !== undefined ? renderNode(children, childContext) : isTextComponent ? '' : []
+      const renderedChildren =
+        children !== null && children !== undefined ? renderNode(children, childContext) : isTextComponent ? '' : []
 
       // Extract id from parameters and remove from props
       const id = typeof parameters.id === 'string' ? parameters.id : undefined

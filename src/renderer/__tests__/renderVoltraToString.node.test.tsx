@@ -209,11 +209,7 @@ describe('renderVoltraVariantToJson', () => {
 
     test('condition && Component pattern (truthy)', () => {
       const condition = true
-      const element = (
-        <Voltra.VStack>
-          {condition && <Voltra.Text>Conditional</Voltra.Text>}
-        </Voltra.VStack>
-      )
+      const element = <Voltra.VStack>{condition && <Voltra.Text>Conditional</Voltra.Text>}</Voltra.VStack>
       const result = renderVoltraVariantToJson(element)
       expect(result).toEqual({
         t: 11,
@@ -223,11 +219,7 @@ describe('renderVoltraVariantToJson', () => {
 
     test('condition && Component pattern (falsy)', () => {
       const condition = false
-      const element = (
-        <Voltra.VStack>
-          {condition && <Voltra.Text>Conditional</Voltra.Text>}
-        </Voltra.VStack>
-      )
+      const element = <Voltra.VStack>{condition && <Voltra.Text>Conditional</Voltra.Text>}</Voltra.VStack>
       const result = renderVoltraVariantToJson(element)
       expect(result).toEqual({
         t: 11,
@@ -268,7 +260,11 @@ describe('renderVoltraVariantToJson', () => {
     })
 
     test('Text component with mixed boolean and string children ignores booleans', () => {
-      const element = <Voltra.Text>{true} and text and {false}</Voltra.Text>
+      const element = (
+        <Voltra.Text>
+          {true} and text and {false}
+        </Voltra.Text>
+      )
       const result = renderVoltraVariantToJson(element)
       expect(result).toEqual({ t: 0, c: ' and text and ' })
     })
