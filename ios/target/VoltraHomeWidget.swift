@@ -92,9 +92,9 @@ public struct VoltraHomeWidgetEntry: TimelineEntry, Equatable {
     // VoltraNode is Hashable, so this comparison works correctly.
     // If the parsed AST is different, entries are not equal → WidgetKit re-renders.
     lhs.date == rhs.date &&
-    lhs.rootNode == rhs.rootNode &&
-    lhs.widgetId == rhs.widgetId &&
-    lhs.deepLinkUrl == rhs.deepLinkUrl
+      lhs.rootNode == rhs.rootNode &&
+      lhs.widgetId == rhs.widgetId &&
+      lhs.deepLinkUrl == rhs.deepLinkUrl
   }
 }
 

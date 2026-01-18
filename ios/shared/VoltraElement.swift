@@ -31,9 +31,9 @@ public struct VoltraElement: Hashable {
 
   public static func == (lhs: VoltraElement, rhs: VoltraElement) -> Bool {
     lhs.type == rhs.type &&
-    lhs.id == rhs.id &&
-    lhs.children == rhs.children &&
-    lhs._props == rhs._props
+      lhs.id == rhs.id &&
+      lhs.children == rhs.children &&
+      lhs._props == rhs._props
   }
 
   // MARK: - Computed Properties
