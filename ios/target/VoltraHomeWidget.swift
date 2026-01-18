@@ -75,8 +75,7 @@ public struct WidgetTimeline {
 // MARK: - Timeline + entries
 
 /// The entry holds a pre-parsed VoltraNode (AST) instead of raw JSON.
-/// This ensures WidgetKit can properly diff entries since VoltraNode is Hashable.
-public struct VoltraHomeWidgetEntry: TimelineEntry {
+public struct VoltraHomeWidgetEntry: TimelineEntry, Equatable {
   public let date: Date
   public let rootNode: VoltraNode?
   public let widgetId: String
@@ -87,6 +86,15 @@ public struct VoltraHomeWidgetEntry: TimelineEntry {
     self.rootNode = rootNode
     self.widgetId = widgetId
     self.deepLinkUrl = deepLinkUrl
+  }
+
+  public static func == (lhs: VoltraHomeWidgetEntry, rhs: VoltraHomeWidgetEntry) -> Bool {
+    // VoltraNode is Hashable, so this comparison works correctly.
+    // If the parsed AST is different, entries are not equal → WidgetKit re-renders.
+    lhs.date == rhs.date &&
+    lhs.rootNode == rhs.rootNode &&
+    lhs.widgetId == rhs.widgetId &&
+    lhs.deepLinkUrl == rhs.deepLinkUrl
   }
 }
 
@@ -184,7 +192,6 @@ public struct VoltraHomeWidgetView: View {
       }
     }
     .disableWidgetMarginsIfAvailable()
-    .id(entry.date)
   }
 
   @ViewBuilder
