@@ -4,17 +4,22 @@ Voltra provides APIs that make building and testing Home Screen widgets easier d
 
 ## VoltraWidgetPreview component
 
-For testing and development, Voltra provides a `VoltraWidgetPreview` component that renders Voltra JSX components at the exact dimensions of specific iOS widget families. This is useful for:
+`VoltraWidgetPreview` is a **React Native component** for testing and developing Voltra widget content. It renders Voltra JSX components at the exact dimensions of specific iOS widget families. This is useful for:
 
 - Testing component layouts before deploying to widgets
 - Previewing how your widget will look across different sizes
-- Developing widget content within your React Native app
+- Developing and iterating on widget content within your React Native app
+
+:::note
+`VoltraWidgetPreview` is a regular React Native component. Use it in your React Native screens, not inside Voltra components.
+:::
 
 ```tsx
+import { ScrollView, View } from 'react-native'
 import { VoltraWidgetPreview } from 'voltra/client'
 import { Voltra } from 'voltra'
 
-function MyWidgetPreview() {
+function MyWidgetContent() {
   return (
     <Voltra.VStack style={{ padding: 16, backgroundColor: '#101828' }}>
       <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>Weather Widget</Voltra.Text>
@@ -23,22 +28,24 @@ function MyWidgetPreview() {
   )
 }
 
-// Preview different widget sizes
-function WidgetPreviews() {
+// Preview different widget sizes in your React Native screen
+function WidgetTestingScreen() {
   return (
-    <Voltra.VStack style={{ gap: 20 }}>
-      <VoltraWidgetPreview family="systemSmall">
-        <MyWidgetPreview />
-      </VoltraWidgetPreview>
+    <ScrollView style={{ flex: 1 }}>
+      <View style={{ padding: 16, gap: 20 }}>
+        <VoltraWidgetPreview family="systemSmall">
+          <MyWidgetContent />
+        </VoltraWidgetPreview>
 
-      <VoltraWidgetPreview family="systemMedium">
-        <MyWidgetPreview />
-      </VoltraWidgetPreview>
+        <VoltraWidgetPreview family="systemMedium">
+          <MyWidgetContent />
+        </VoltraWidgetPreview>
 
-      <VoltraWidgetPreview family="systemLarge">
-        <MyWidgetPreview />
-      </VoltraWidgetPreview>
-    </Voltra.VStack>
+        <VoltraWidgetPreview family="systemLarge">
+          <MyWidgetContent />
+        </VoltraWidgetPreview>
+      </View>
+    </ScrollView>
   )
 }
 ```
