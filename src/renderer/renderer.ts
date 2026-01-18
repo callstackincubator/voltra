@@ -49,14 +49,14 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
     return []
   }
 
-  // Booleans are treated as strings
+  // Booleans are treated as strings in string-only context, ignored in other contexts
   if (typeof element === 'boolean') {
     if (context.inStringOnlyContext) {
       return String(element)
     }
-    throw new Error(
-      `Expected a React element, but got "boolean". Booleans are only allowed as children of Text components.`
-    )
+    // In non-string contexts, booleans are ignored (following React's behavior)
+    // This allows optional JSX patterns like: {condition && <Component />}
+    return []
   }
 
   // Handle strings: allow in string-only context, throw error otherwise
