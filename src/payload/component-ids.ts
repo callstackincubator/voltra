@@ -8,25 +8,25 @@
  * Component IDs are assigned sequentially based on order in components.json (0-indexed)
  */
 export const COMPONENT_NAME_TO_ID: Record<string, number> = {
-  'Text': 0,
-  'Button': 1,
-  'Label': 2,
-  'Image': 3,
-  'Symbol': 4,
-  'Toggle': 5,
-  'LinearProgressView': 6,
-  'CircularProgressView': 7,
-  'Gauge': 8,
-  'Timer': 9,
-  'LinearGradient': 10,
-  'VStack': 11,
-  'HStack': 12,
-  'ZStack': 13,
-  'GroupBox': 14,
-  'GlassContainer': 15,
-  'Spacer': 16,
-  'Divider': 17,
-  'Mask': 18
+  Text: 0,
+  Button: 1,
+  Label: 2,
+  Image: 3,
+  Symbol: 4,
+  Toggle: 5,
+  LinearProgressView: 6,
+  CircularProgressView: 7,
+  Gauge: 8,
+  Timer: 9,
+  LinearGradient: 10,
+  VStack: 11,
+  HStack: 12,
+  ZStack: 13,
+  GroupBox: 14,
+  GlassContainer: 15,
+  Spacer: 16,
+  Divider: 17,
+  Mask: 18,
 }
 
 /**
@@ -51,7 +51,7 @@ export const COMPONENT_ID_TO_NAME: Record<number, string> = {
   15: 'GlassContainer',
   16: 'Spacer',
   17: 'Divider',
-  18: 'Mask'
+  18: 'Mask',
 }
 
 /**
@@ -61,7 +61,9 @@ export const COMPONENT_ID_TO_NAME: Record<number, string> = {
 export function getComponentId(name: string): number {
   const id = COMPONENT_NAME_TO_ID[name]
   if (id === undefined) {
-    throw new Error(`Unknown component name: "${name}". Available components: ${Object.keys(COMPONENT_NAME_TO_ID).join(', ')}`)
+    throw new Error(
+      `Unknown component name: "${name}". Available components: ${Object.keys(COMPONENT_NAME_TO_ID).join(', ')}`
+    )
   }
   return id
 }
