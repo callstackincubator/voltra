@@ -59,6 +59,39 @@ public enum VoltraHomeWidgetStore {
     let sortedEntries = entries.sorted { $0.date < $1.date }
     return WidgetTimeline(entries: sortedEntries)
   }
+
+  public static func pruneExpiredEntries(widgetId: String) -> Int {
+    guard let group = VoltraConfig.groupIdentifier(),
+          let defaults = UserDefaults(suiteName: group),
+          let timelineString = defaults.string(forKey: "Voltra_Widget_Timeline_\(widgetId)"),
+          let timelineData = timelineString.data(using: .utf8),
+          var json = try? JSONSerialization.jsonObject(with: timelineData) as? [String: Any],
+          let entriesJson = json["entries"] as? [[String: Any]]
+    else {
+      return 0
+    }
+
+    let now = Date()
+    let validEntries = entriesJson.filter { entry in
+      guard let timestamp = entry["date"] as? NSNumber else { return false }
+      let date = Date(timeIntervalSince1970: timestamp.doubleValue / 1000.0)
+      return date > now
+    }
+
+    let prunedCount = entriesJson.count - validEntries.count
+    guard prunedCount > 0 else { return 0 }
+
+    json["entries"] = validEntries
+    if let updatedData = try? JSONSerialization.data(withJSONObject: json),
+       let updatedString = String(data: updatedData, encoding: .utf8)
+    {
+      defaults.set(updatedString, forKey: "Voltra_Widget_Timeline_\(widgetId)")
+      defaults.synchronize()
+      print("[Voltra] Pruned \(prunedCount) expired timeline entries for '\(widgetId)'")
+    }
+
+    return prunedCount
+  }
 }
 
 // Timeline data structures (intermediate storage - still uses Data for flexibility)
@@ -133,6 +166,9 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
   }
 
   public func getTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
+    // Prune expired timeline entries if any exist
+    VoltraHomeWidgetStore.pruneExpiredEntries(widgetId: widgetId)
+
     if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId), !timeline.entries.isEmpty {
       let entries = timeline.entries.map { timelineEntry in
         let node = parseJsonToNode(data: timelineEntry.json, family: context.family)

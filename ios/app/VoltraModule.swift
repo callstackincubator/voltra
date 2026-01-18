@@ -6,6 +6,8 @@ import WidgetKit
 
 public class VoltraModule: Module {
   private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
+  private let WIDGET_JSON_WARNING_SIZE = 50000 // 50KB per widget
+  private let TIMELINE_WARNING_SIZE = 100_000 // 100KB per timeline
   private let liveActivityService = VoltraLiveActivityService()
   private var wasLaunchedInBackground: Bool = false
   private var monitoredActivityIds: Set<String> = []
@@ -59,6 +61,9 @@ public class VoltraModule: Module {
     OnCreate {
       // Track if app was launched in background (headless)
       wasLaunchedInBackground = UIApplication.shared.applicationState == .background
+
+      // Clean up data for widgets that are no longer installed
+      cleanupOrphanedWidgetData()
     }
 
     AsyncFunction("startLiveActivity") { (jsonString: String, options: StartVoltraOptions?) async throws -> String in
@@ -445,6 +450,12 @@ private extension VoltraModule {
       throw WidgetError.userDefaultsUnavailable
     }
 
+    // Check payload size and log warning if too large
+    let dataSize = jsonString.utf8.count
+    if dataSize > WIDGET_JSON_WARNING_SIZE {
+      print("[Voltra] ⚠️ Large widget payload for '\(widgetId)': \(dataSize) bytes (warning threshold: \(WIDGET_JSON_WARNING_SIZE) bytes)")
+    }
+
     // Store the JSON payload
     defaults.set(jsonString, forKey: "Voltra_Widget_JSON_\(widgetId)")
 
@@ -464,6 +475,12 @@ private extension VoltraModule {
     }
     guard let defaults = UserDefaults(suiteName: groupId) else {
       throw WidgetError.userDefaultsUnavailable
+    }
+
+    // Check timeline size and log warning if too large
+    let dataSize = timelineJson.utf8.count
+    if dataSize > TIMELINE_WARNING_SIZE {
+      print("[Voltra] ⚠️ Large timeline for '\(widgetId)': \(dataSize) bytes (warning threshold: \(TIMELINE_WARNING_SIZE) bytes)")
     }
 
     // Store the timeline JSON
@@ -503,6 +520,31 @@ private extension VoltraModule {
 
     defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
     defaults.synchronize()
+  }
+
+  func cleanupOrphanedWidgetData() {
+    guard let groupId = VoltraConfig.groupIdentifier(),
+          let defaults = UserDefaults(suiteName: groupId) else { return }
+
+    let knownWidgetIds = Bundle.main.object(forInfoDictionaryKey: "Voltra_WidgetIds") as? [String] ?? []
+    guard !knownWidgetIds.isEmpty else { return }
+
+    WidgetCenter.shared.getCurrentConfigurations { result in
+      guard case let .success(configs) = result else { return }
+
+      let installedIds = Set(configs.compactMap { config -> String? in
+        let prefix = "Voltra_Widget_"
+        guard config.kind.hasPrefix(prefix) else { return nil }
+        return String(config.kind.dropFirst(prefix.count))
+      })
+
+      for widgetId in knownWidgetIds where !installedIds.contains(widgetId) {
+        defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
+        defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+        defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
+        print("[Voltra] Cleaned up orphaned widget data for '\(widgetId)'")
+      }
+    }
   }
 }
 
