@@ -165,16 +165,24 @@ public struct VoltraTimer: VoltraView {
 // MARK: - Formatters
 
 extension VoltraTimer {
-  private static func timerFormatter(showHours: Bool) -> DateComponentsFormatter {
+  private static let timerFormatterWithHours: DateComponentsFormatter = {
     let formatter = DateComponentsFormatter()
-    if showHours {
-      formatter.allowedUnits = [.hour, .minute, .second]
-    } else {
-      formatter.allowedUnits = [.minute, .second]
-    }
+    formatter.allowedUnits = [.hour, .minute, .second]
     formatter.zeroFormattingBehavior = [.pad]
     formatter.unitsStyle = .positional
     return formatter
+  }()
+
+  private static let timerFormatterWithoutHours: DateComponentsFormatter = {
+    let formatter = DateComponentsFormatter()
+    formatter.allowedUnits = [.minute, .second]
+    formatter.zeroFormattingBehavior = [.pad]
+    formatter.unitsStyle = .positional
+    return formatter
+  }()
+
+  private static func timerFormatter(showHours: Bool) -> DateComponentsFormatter {
+    showHours ? timerFormatterWithHours : timerFormatterWithoutHours
   }
 
   private static let relativeFormatter: RelativeDateTimeFormatter = {
