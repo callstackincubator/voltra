@@ -1,0 +1,31 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "cleanUrls": true,
+  "framework": null,
+  "installCommand": "npm install",
+  "redirects": [
+    {
+      "source": "/getting-started",
+      "destination": "/getting-started/introduction",
+      "statusCode": 301
+    },
+    {
+      "source": "/development",
+      "destination": "/development/developing-live-activities",
+      "statusCode": 301
+    },
+    {
+      "source": "/components",
+      "destination": "/components/overview",
+      "statusCode": 301
+    },
+    {
+      "source": "/api",
+      "destination": "/api/configuration",
+      "statusCode": 301
+    }
+  ],
+  "outputDirectory": "doc_build",
+  "trailingSlash": false
+}

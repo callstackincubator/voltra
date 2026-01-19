@@ -49,14 +49,14 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
     return []
   }
 
-  // Booleans are treated as strings
+  // Booleans are ignored in all contexts (matching React Native's behavior)
+  // In non-string contexts: allows optional JSX patterns like {condition && <Component />}
+  // In string contexts (Text): matches React Native where booleans render as empty
   if (typeof element === 'boolean') {
     if (context.inStringOnlyContext) {
-      return String(element)
+      return ''
     }
-    throw new Error(
-      `Expected a React element, but got "boolean". Booleans are only allowed as children of Text components.`
-    )
+    return []
   }
 
   // Handle strings: allow in string-only context, throw error otherwise
@@ -236,7 +236,8 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         ...context,
         inStringOnlyContext: isTextComponent,
       }
-      const renderedChildren = children ? renderNode(children, childContext) : isTextComponent ? '' : []
+      const renderedChildren =
+        children !== null && children !== undefined ? renderNode(children, childContext) : isTextComponent ? '' : []
 
       // Extract id from parameters and remove from props
       const id = typeof parameters.id === 'string' ? parameters.id : undefined
