@@ -61,7 +61,7 @@ public struct VoltraTimer: VoltraView {
         if style == "relative" {
           Text("0s")
         } else {
-          Text("0:00").monospacedDigit()
+          Text(showHours ? "0:00:00" : "0:00").monospacedDigit()
         }
       }
     }
@@ -115,14 +115,14 @@ public struct VoltraTimer: VoltraView {
       if remaining <= 0 { return "0s" }
       return Self.relativeFormatter.localizedString(fromTimeInterval: remaining)
     }
-    return Self.timerFormatter(showHours: showHours).string(from: max(remaining, 0)) ?? "0:00"
+    return Self.timerFormatter(showHours: showHours).string(from: max(remaining, 0)) ?? (showHours ? "0:00:00" : "0:00")
   }
 
   private func countUpTimeString(elapsed: TimeInterval, textStyle: String, showHours: Bool) -> String {
     if textStyle == "relative" {
       return Self.relativeFormatter.localizedString(fromTimeInterval: -elapsed)
     }
-    return Self.timerFormatter(showHours: showHours).string(from: max(elapsed, 0)) ?? "0:00"
+    return Self.timerFormatter(showHours: showHours).string(from: max(elapsed, 0)) ?? (showHours ? "0:00:00" : "0:00")
   }
 
   private func renderTemplate(template: String, time: String, monospaced: Bool) -> Text {
