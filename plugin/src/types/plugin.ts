@@ -24,6 +24,12 @@ export interface ConfigPluginProps {
    * If not provided, will use the main app's deployment target or fall back to the default
    */
   deploymentTarget?: string
+  /**
+   * Custom target name for the widget extension
+   * If not provided, defaults to "{AppName}LiveActivity"
+   * Useful for matching existing provisioning profiles or credentials
+   */
+  targetName?: string
 }
 
 /**

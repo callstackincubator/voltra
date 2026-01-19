@@ -12,6 +12,7 @@ The Voltra Expo config plugin accepts several configuration options in your `app
           "groupIdentifier": "group.your.bundle.identifier",
           "enablePushNotifications": true,
           "deploymentTarget": "18.0",
+          "targetName": "MyAppLiveActivity",
           "widgets": [
             {
               "id": "weather",
@@ -50,11 +51,40 @@ Enable server-side updates for Live Activities via Apple Push Notification Servi
 
 iOS deployment target version for the widget extension. If not provided, defaults to `17.0`. This allows the widget extension to have its own deployment target independent of the main app.
 
-**Type:** `string`  
-**Default:** `"17.0"`  
+**Type:** `string`
+**Default:** `"17.0"`
 **Example:** `"18.0"`
 
 **Note:** Code signing settings (development team, provisioning profiles) are automatically synchronized from the main app target, but the deployment target can be set independently.
+
+### `targetName` (optional)
+
+Custom target name for the widget extension. If not provided, defaults to `{AppName}LiveActivity` where `AppName` is your app's sanitized name.
+
+This is useful when:
+- Migrating from other Live Activity solutions (e.g., `@bacons/apple-targets`)
+- Matching existing provisioning profiles or credentials
+- Using a specific naming convention for your organization
+
+**Type:** `string`
+**Default:** `"{AppName}LiveActivity"`
+**Example:** `"widget"`, `"MyAppLiveActivity"`
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "voltra",
+        {
+          "groupIdentifier": "group.your.bundle.identifier",
+          "targetName": "widget"
+        }
+      ]
+    ]
+  }
+}
+```
 
 ### `widgets` (optional)
 
