@@ -128,10 +128,25 @@ A grouped content container that visually groups related content with a styled b
 
 ### GlassContainer
 
-A Liquid Glass container that provides a modern glassmorphism effect for grouping content (iOS 18+).
+A Liquid Glass container that wraps Apple's [`GlassEffectContainer`](https://developer.apple.com/documentation/swiftui/glasseffectcontainer) to provide a modern glassmorphism effect for grouping content.
+
+:::warning iOS 26 SDK Required
+This component uses Apple's `GlassEffectContainer` API which requires **Xcode with iOS 26 SDK** to build. If you're using an older Xcode version, you'll encounter build errors:
+
+```
+- value of type 'some View' has no member 'glassEffect'
+- cannot find 'GlassEffectContainer' in scope
+```
+
+**Workaround:** Avoid using this component until iOS 26 SDK is available in your Xcode version. At runtime, devices with iOS < 26 will gracefully fall back to a regular container without the glass effect.
+:::
 
 **Parameters:**
 
 - `spacing` (number, optional): Spacing between glass elements
 
-**Apple Documentation:** [GlassContainer](https://developer.apple.com/documentation/swiftui/glasscontainer)
+**Availability:**
+- **Build:** Requires Xcode with iOS 26 SDK (uses `GlassEffectContainer` API)
+- **Runtime:** iOS 26+ for glass effect, graceful fallback on earlier versions
+
+**Apple Documentation:** [GlassEffectContainer](https://developer.apple.com/documentation/swiftui/glasseffectcontainer)
