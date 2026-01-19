@@ -34,7 +34,9 @@
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module",
     "open:ios": "xed example/ios",
-    "generate": "ts-node generator/generate-types.ts"
+    "generate": "ts-node generator/generate-types.ts",
+    "harness:ios": "npm run harness:ios --prefix example",
+    "harness:android": "npm run harness:android --prefix example"
   },
   "keywords": [
     "react-native",
