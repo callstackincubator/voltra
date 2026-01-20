@@ -90,18 +90,13 @@ public indirect enum VoltraNode: Hashable, View {
   public var body: some View {
     switch self {
     case let .element(element):
-      // Apply .id() modifier if key is present
-      if let key = element.key {
-        VoltraElementView(element: element).id(key)
-      } else {
-        VoltraElementView(element: element)
-      }
+      VoltraElementView(element: element)
     case let .array(nodes):
-      // Use stable identifiers: prefer key > index fallback
+      // Use stable identifiers: prefer element.id, fall back to index
       let items: [(id: String, node: VoltraNode)] = nodes.enumerated().map { offset, node in
         let id: String
-        if case let .element(element) = node, let key = element.key {
-          id = key
+        if case let .element(element) = node, let elementId = element.id {
+          id = elementId
         } else {
           id = "idx_\(offset)"
         }
