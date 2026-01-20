@@ -3,6 +3,7 @@ export type VoltraPropValue = string | number | boolean | null | VoltraNodeJson 
 export type VoltraElementJson = {
   t: number
   i?: string
+  k?: string
   c?: VoltraNodeJson
   p?: Record<string, VoltraPropValue>
 }
