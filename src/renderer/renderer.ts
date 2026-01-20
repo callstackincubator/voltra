@@ -24,7 +24,6 @@ import {
 } from 'react-is'
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent.js'
-import { logger } from '../logger.js'
 import { getComponentId } from '../payload/component-ids.js'
 import { shorten } from '../payload/short-names.js'
 import { VoltraElementJson, VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'
@@ -97,25 +96,6 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
       }
       return results.join('')
     }
-
-    // Warn about missing keys in development (arrays with 2+ elements)
-    if (__DEV__ && element.length >= 2) {
-      const elementsWithKeys = element.filter((child) => {
-        // Check if child has a key property (React stores key on element, not in props)
-        if (child && typeof child === 'object' && 'key' in child) {
-          return child.key !== null && child.key !== undefined
-        }
-        return false
-      })
-
-      if (elementsWithKeys.length === 0) {
-        logger.warn(
-          'Each child in an array should have a unique "key" prop. ' +
-            'Keys help Voltra identify which items have changed, are added, or removed.'
-        )
-      }
-    }
-
     return element.map((child) => renderNode(child, context)).flat() as VoltraNodeJson
   }
 
@@ -259,13 +239,11 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
       const renderedChildren =
         children !== null && children !== undefined ? renderNode(children, childContext) : isTextComponent ? '' : []
 
-      // Extract id and key from parameters and remove from props
+      // Extract id from parameters and remove from props
       const id = typeof parameters.id === 'string' ? parameters.id : undefined
-      // Extract key from React element (React stores key separately, not in props)
-      const key = typeof reactElement.key === 'string' ? reactElement.key : undefined
 
-      // Remove id and key from parameters so they don't end up in props
-      const { id: _id, key: _key, ...cleanParameters } = parameters
+      // Remove id from parameters so it doesn't end up in props
+      const { id: _id, ...cleanParameters } = parameters
 
       if (isTextComponent) {
         // Text component must resolve to a string
@@ -283,7 +261,6 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         const voltraHostElement: VoltraElementJson = {
           t: getComponentId(child.type),
           ...(id ? { i: id } : {}),
-          ...(key !== undefined ? { k: key } : {}),
           c: renderedChildren,
           ...(hasProps ? { p: transformedProps } : {}),
         }
@@ -306,7 +283,6 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
       const voltraHostElement: VoltraElementJson = {
         t: getComponentId(child.type),
         ...(id ? { i: id } : {}),
-        ...(key !== undefined ? { k: key } : {}),
         ...(hasChildren ? { c: renderedChildren } : {}),
         ...(hasProps ? { p: transformedProps } : {}),
       }

@@ -8,9 +8,6 @@ public struct VoltraElement: Hashable {
   /// Optional identifier for the element
   public let id: String?
 
-  /// Optional key for list item identity (used in ForEach)
-  public let key: String?
-
   /// Child nodes or text content
   public let children: VoltraNode?
 
@@ -28,12 +25,11 @@ public struct VoltraElement: Hashable {
   public func hash(into hasher: inout Hasher) {
     hasher.combine(type)
     hasher.combine(id)
-    hasher.combine(key)
     // Note: props are not included in hash for performance
   }
 
   public static func == (lhs: VoltraElement, rhs: VoltraElement) -> Bool {
-    lhs.type == rhs.type && lhs.id == rhs.id && lhs.key == rhs.key
+    lhs.type == rhs.type && lhs.id == rhs.id
   }
 
   // MARK: - Computed Properties
@@ -104,9 +100,6 @@ public struct VoltraElement: Hashable {
 
     // Extract id
     id = dict["i"]?.stringValue
-
-    // Extract key
-    key = dict["k"]?.stringValue
 
     // Extract children
     if let childrenValue = dict["c"] {
