@@ -30,9 +30,7 @@ describe('Key Prop Support', () => {
   })
 
   test('extracts key from element', () => {
-    const output = renderVoltraVariantToJson(
-      <Text key="item-1">First</Text>
-    )
+    const output = renderVoltraVariantToJson(<Text key="item-1">First</Text>)
     assertVoltraElement(output)
     expect(output.k).toBe('item-1')
   })
@@ -42,7 +40,9 @@ describe('Key Prop Support', () => {
     // However, only key is used for SwiftUI .id() modifier for view identity
     // The id property serves other purposes (accessibility, etc.)
     const output = renderVoltraVariantToJson(
-      <Text key="k1" id="id1">Hello</Text>
+      <Text key="k1" id="id1">
+        Hello
+      </Text>
     )
     assertVoltraElement(output)
     expect(output.k).toBe('k1')
@@ -51,18 +51,14 @@ describe('Key Prop Support', () => {
 
   test('id property does not affect view identity', () => {
     // Element with id but no key - id is stored but NOT used for .id() modifier
-    const output = renderVoltraVariantToJson(
-      <Text id="test-id">Hello</Text>
-    )
+    const output = renderVoltraVariantToJson(<Text id="test-id">Hello</Text>)
     assertVoltraElement(output)
     expect(output.i).toBe('test-id')
     expect('k' in output).toBe(false)
   })
 
   test('array items with keys', () => {
-    const items = ['a', 'b', 'c'].map(letter => (
-      <Text key={letter}>Letter {letter}</Text>
-    ))
+    const items = ['a', 'b', 'c'].map((letter) => <Text key={letter}>Letter {letter}</Text>)
     const output = renderVoltraVariantToJson(<VStack>{items}</VStack>)
     assertVoltraElement(output)
     expect(Array.isArray(output.c)).toBe(true)
@@ -77,9 +73,7 @@ describe('Key Prop Support', () => {
     // eslint-disable-next-line react/jsx-key
     const items = [<Text>A</Text>, <Text>B</Text>]
     renderVoltraVariantToJson(<VStack>{items}</VStack>)
-    expect(mockWarn).toHaveBeenCalledWith(
-      expect.stringContaining('should have a unique "key" prop')
-    )
+    expect(mockWarn).toHaveBeenCalledWith(expect.stringContaining('should have a unique "key" prop'))
   })
 
   test('prints warning message for array without keys', () => {
@@ -96,11 +90,7 @@ describe('Key Prop Support', () => {
 
   test('does not print warning when array has keys', () => {
     const mockWarn = jest.spyOn(logger, 'warn')
-    const items = [
-      <Text key="item-1">Item 1</Text>,
-      <Text key="item-2">Item 2</Text>,
-      <Text key="item-3">Item 3</Text>
-    ]
+    const items = [<Text key="item-1">Item 1</Text>, <Text key="item-2">Item 2</Text>, <Text key="item-3">Item 3</Text>]
     renderVoltraVariantToJson(<VStack>{items}</VStack>)
 
     expect(mockWarn).not.toHaveBeenCalled()
@@ -118,36 +108,25 @@ describe('Key Prop Support', () => {
 
   test('does not warn when all items have keys', () => {
     const mockWarn = jest.spyOn(logger, 'warn')
-    const items = [
-      <Text key="a">A</Text>,
-      <Text key="b">B</Text>
-    ]
+    const items = [<Text key="a">A</Text>, <Text key="b">B</Text>]
     renderVoltraVariantToJson(<VStack>{items}</VStack>)
     expect(mockWarn).not.toHaveBeenCalled()
   })
 
   test('does not warn for string context', () => {
     const mockWarn = jest.spyOn(logger, 'warn')
-    renderVoltraVariantToJson(
-      <Text>
-        {['string1', 'string2']}
-      </Text>
-    )
+    renderVoltraVariantToJson(<Text>{['string1', 'string2']}</Text>)
     expect(mockWarn).not.toHaveBeenCalled()
   })
 
   test('omits key field when not provided', () => {
-    const output = renderVoltraVariantToJson(
-      <Text>No key</Text>
-    )
+    const output = renderVoltraVariantToJson(<Text>No key</Text>)
     assertVoltraElement(output)
     expect('k' in output).toBe(false)
   })
 
   test('key preserved in large arrays', () => {
-    const items = Array.from({ length: 100 }, (_, i) => (
-      <Text key={`item-${i}`}>Item {i}</Text>
-    ))
+    const items = Array.from({ length: 100 }, (_, i) => <Text key={`item-${i}`}>Item {i}</Text>)
     const output = renderVoltraVariantToJson(<VStack>{items}</VStack>)
     assertVoltraElement(output)
     expect(Array.isArray(output.c)).toBe(true)
@@ -163,7 +142,7 @@ describe('Key Prop Support', () => {
       <Text key="a">A</Text>,
       // eslint-disable-next-line react/jsx-key
       <Text>B</Text>,
-      <Text key="c">C</Text>
+      <Text key="c">C</Text>,
     ]
     const output = renderVoltraVariantToJson(<VStack>{items}</VStack>)
     assertVoltraElement(output)
@@ -180,18 +159,14 @@ describe('Key Prop Support', () => {
   })
 
   test('allows empty string as key', () => {
-    const output = renderVoltraVariantToJson(
-      <Text key="">Empty key</Text>
-    )
+    const output = renderVoltraVariantToJson(<Text key="">Empty key</Text>)
     assertVoltraElement(output)
     expect(output.k).toBe('')
   })
 
   test('numeric key converted to string by React', () => {
     // React converts numeric keys to strings
-    const output = renderVoltraVariantToJson(
-      <Text key={123}>Item</Text>
-    )
+    const output = renderVoltraVariantToJson(<Text key={123}>Item</Text>)
     // React converts numeric key to string '123'
     assertVoltraElement(output)
     expect(output.k).toBe('123')

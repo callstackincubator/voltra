@@ -100,7 +100,7 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
 
     // Warn about missing keys in development (arrays with 2+ elements)
     if (__DEV__ && element.length >= 2) {
-      const elementsWithKeys = element.filter(child => {
+      const elementsWithKeys = element.filter((child) => {
         // Check if child has a key property (React stores key on element, not in props)
         if (child && typeof child === 'object' && 'key' in child) {
           return child.key !== null && child.key !== undefined
@@ -111,7 +111,7 @@ function renderNode(element: ReactNode, context: VoltraRenderingContext): Voltra
       if (elementsWithKeys.length === 0) {
         logger.warn(
           'Each child in an array should have a unique "key" prop. ' +
-          'Keys help Voltra identify which items have changed, are added, or removed.'
+            'Keys help Voltra identify which items have changed, are added, or removed.'
         )
       }
     }
