@@ -1,3 +1,3 @@
 module.exports = {
-    preset: 'react-native-harness',
+  preset: 'react-native-harness',
 }
