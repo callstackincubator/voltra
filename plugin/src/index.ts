@@ -15,16 +15,9 @@ import { validateProps } from './validation'
  * - Home Screen Widgets
  * - Push Notifications for Live Activities (optional)
  */
-const withVoltra: VoltraConfigPlugin = (config, props) => {
+const withVoltra: VoltraConfigPlugin = (config, props = {}) => {
   // Validate props at entry point
   validateProps(props)
-
-  // After validation, props is guaranteed to be defined and have groupIdentifier
-  if (!props) {
-    throw new Error(
-      'Voltra plugin requires configuration. Please provide at least groupIdentifier in your plugin config.'
-    )
-  }
 
   // Use deploymentTarget from props if provided, otherwise fall back to default
   const deploymentTarget = props.deploymentTarget || IOS.DEPLOYMENT_TARGET
@@ -42,9 +35,10 @@ const withVoltra: VoltraConfigPlugin = (config, props) => {
       ...config.ios?.infoPlist,
       NSSupportsLiveActivities: true,
       NSSupportsLiveActivitiesFrequentUpdates: false,
-      Voltra_AppGroupIdentifier: props.groupIdentifier,
+      // Only add group identifier if provided
+      ...(props?.groupIdentifier ? { Voltra_AppGroupIdentifier: props.groupIdentifier } : {}),
       // Store widget IDs in Info.plist for native module to access
-      ...(props.widgets && props.widgets.length > 0 ? { Voltra_WidgetIds: props.widgets.map((w) => w.id) } : {}),
+      ...(props?.widgets && props.widgets.length > 0 ? { Voltra_WidgetIds: props.widgets.map((w) => w.id) } : {}),
     },
   }
 
@@ -53,9 +47,9 @@ const withVoltra: VoltraConfigPlugin = (config, props) => {
     targetName,
     bundleIdentifier,
     deploymentTarget,
-    widgets: props.widgets,
-    groupIdentifier: props.groupIdentifier,
-    fonts: props.fonts,
+    widgets: props?.widgets,
+    ...(props?.groupIdentifier ? { groupIdentifier: props.groupIdentifier } : {}),
+    ...(props?.fonts ? { fonts: props.fonts } : {}),
   })
 
   // Optionally enable push notifications
