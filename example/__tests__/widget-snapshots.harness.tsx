@@ -1,12 +1,24 @@
 import { screen } from '@react-native-harness/ui'
 import { View } from 'react-native'
-import { describe, expect, render, test } from 'react-native-harness'
+import { afterAll, beforeAll, describe, expect, Mock, render, spyOn, test } from 'react-native-harness'
 import { VoltraWidgetPreview } from 'voltra/client'
 
 import { SAMPLE_WEATHER_DATA } from '../widgets/weather-types'
 import { WeatherWidget } from '../widgets/WeatherWidget'
 
 describe('Widget snapshots', () => {
+  const mockDate = new Date('2026-01-20T08:00:00Z')
+  let dateSpy: Mock<DateConstructor>
+
+  beforeAll(() => {
+    // Make sure the time is always the same for the widget snapshots
+    dateSpy = spyOn(global, 'Date').mockImplementation(() => mockDate)
+  })
+
+  afterAll(() => {
+    dateSpy.mockRestore()
+  })
+
   const previewWrapperStyle = {
     backgroundColor: '#FFF',
     width: '100%',
