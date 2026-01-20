@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "harness:ios": "react-native-harness --harnessRunner=ios",
-    "harness:android": "react-native-harness --harnessRunner=android"
+    "harness:android": "react-native-harness --harnessRunner=android",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@react-native-community/datetimepicker": "^8.4.1",
@@ -40,6 +41,7 @@
     "@react-native-harness/platform-apple": "1.0.0-alpha.23",
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
+    "patch-package": "^8.0.1",
     "react-native-harness": "1.0.0-alpha.23",
     "typescript": "~5.8.3"
   },
