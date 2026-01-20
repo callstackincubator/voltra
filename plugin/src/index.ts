@@ -28,7 +28,8 @@ const withVoltra: VoltraConfigPlugin = (config, props) => {
 
   // Use deploymentTarget from props if provided, otherwise fall back to default
   const deploymentTarget = props.deploymentTarget || IOS.DEPLOYMENT_TARGET
-  const targetName = `${IOSConfig.XcodeUtils.sanitizedName(config.name)}LiveActivity`
+  // Use custom targetName if provided, otherwise fall back to default "{AppName}LiveActivity"
+  const targetName = props.targetName || `${IOSConfig.XcodeUtils.sanitizedName(config.name)}LiveActivity`
   const bundleIdentifier = `${config.ios?.bundleIdentifier}.${targetName}`
 
   // Ensure URL scheme is set for widget deep linking

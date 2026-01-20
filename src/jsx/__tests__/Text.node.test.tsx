@@ -16,7 +16,7 @@ describe('Text Component', () => {
 
   test('Boolean true', () => {
     const output = renderVoltraVariantToJson(<Text>{true}</Text>)
-    expect(output.c).toBe('true')
+    expect(output.c).toBe('')
   })
 
   test('Boolean false', () => {

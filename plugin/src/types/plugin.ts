@@ -25,6 +25,12 @@ export interface ConfigPluginProps {
    */
   deploymentTarget?: string
   /**
+   * Custom target name for the widget extension
+   * If not provided, defaults to "{AppName}LiveActivity"
+   * Useful for matching existing provisioning profiles or credentials
+   */
+  targetName?: string
+  /**
    * Custom fonts to include in the Live Activity extension.
    * Provide an array of font file paths or directories containing fonts.
    * Supports .ttf, .otf, .woff, and .woff2 formats.

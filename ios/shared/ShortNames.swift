@@ -107,6 +107,7 @@ public enum ShortNames {
     "sho": "shadowOffset",
     "shop": "shadowOpacity",
     "shr": "shadowRadius",
+    "shrs": "showHours",
     "sz": "size",
     "smc": "smallCaps",
     "src": "source",

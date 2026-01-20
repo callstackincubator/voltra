@@ -31,6 +31,9 @@ public struct TimerParameters: ComponentParameters {
   /// JSON-encoded TextTemplates object with running/completed templates
   public let textTemplates: String?
 
+  /// Whether to show hours component when duration exceeds 60 minutes. If false, minutes will exceed 60 (e.g., 94:00 instead of 1:34:00)
+  public let showHours: Bool
+
   enum CodingKeys: String, CodingKey {
     case endAtMs
     case startAtMs
@@ -39,6 +42,7 @@ public struct TimerParameters: ComponentParameters {
     case autoHideOnEnd
     case textStyle
     case textTemplates
+    case showHours
   }
 
   public init(from decoder: Decoder) throws {
@@ -50,5 +54,6 @@ public struct TimerParameters: ComponentParameters {
     autoHideOnEnd = try container.decodeIfPresent(Bool.self, forKey: .autoHideOnEnd)
     textStyle = try container.decodeIfPresent(String.self, forKey: .textStyle) ?? "timer"
     textTemplates = try container.decodeIfPresent(String.self, forKey: .textTemplates)
+    showHours = try container.decodeIfPresent(Bool.self, forKey: .showHours) ?? false
   }
 }
