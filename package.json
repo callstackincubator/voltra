@@ -31,6 +31,7 @@
     "lint:libOnly": "expo-module eslint ./src",
     "test": "expo-module test",
     "prepare": "expo-module prepare && rm .eslintrc.js",
+    "postprepare": "echo '{\"type\": \"module\"}' > build/package.json",
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module",
     "open:ios": "xed example/ios",

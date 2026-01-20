@@ -3,7 +3,7 @@ import path from 'node:path'
 import vm from 'node:vm'
 
 import * as babel from '@babel/core'
-import { renderWidgetToString, type WidgetVariants } from 'voltra/server'
+import type { WidgetVariants } from 'voltra/server'
 
 import { MODULE_EXTENSIONS } from '../../../../constants'
 import type { WidgetConfig } from '../../../../types'
@@ -143,6 +143,10 @@ function evaluateWidgetModule(projectRoot: string, filePath: string): WidgetVari
  * @returns Map of widgetId -> prerendered widget state as JSON string
  */
 export async function prerenderWidgetState(widgets: WidgetConfig[], projectRoot: string): Promise<Map<string, string>> {
+  // Dynamic import for ESM module compatibility
+  // voltra/server is an ESM module, but the plugin is compiled to CommonJS
+  const { renderWidgetToString } = await import('voltra/server')
+
   const prerenderedStates = new Map<string, string>()
 
   for (const widget of widgets) {
