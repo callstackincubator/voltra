@@ -52,7 +52,7 @@ Add the config plugin to your `app.json`:
 
 Then run `npx expo prebuild --clean` to generate the iOS extension target.
 
-See the [documentation](https://use-voltra.dev/docs/getting-started/quick-start) for detailed setup instructions.
+See the [documentation](https://use-voltra.dev/getting-started/quick-start) for detailed setup instructions.
 
 ## Quick example
 
