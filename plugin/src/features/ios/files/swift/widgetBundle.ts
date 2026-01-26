@@ -41,9 +41,7 @@ function generateWidgetStruct(widget: WidgetConfig): string {
 /**
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
-export function generateWidgetBundleSwift(
-  widgets: WidgetConfig[]
-): string {
+export function generateWidgetBundleSwift(widgets: WidgetConfig[]): string {
   // Generate widget structs
   const widgetStructs = widgets.map(generateWidgetStruct).join('\n\n')
 

@@ -7,11 +7,11 @@ import type { VoltraNodeJson } from '../types.js'
  */
 export type LiveActivityVariants = {
   lockScreen?:
-  | ReactNode
-  | {
-    content?: ReactNode
-    activityBackgroundTint?: string
-  }
+    | ReactNode
+    | {
+        content?: ReactNode
+        activityBackgroundTint?: string
+      }
   island?: {
     keylineTint?: string
     expanded?: {

@@ -256,7 +256,6 @@ public class VoltraLiveActivityService {
     }
   }
 
-
   // MARK: - Monitoring
 
   private var monitoredActivityIds: Set<String> = []
