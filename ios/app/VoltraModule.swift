@@ -2,6 +2,7 @@ import ActivityKit
 import Compression
 import ExpoModulesCore
 import Foundation
+import os
 import WidgetKit
 
 public class VoltraModule: Module {
@@ -10,9 +11,7 @@ public class VoltraModule: Module {
   private let TIMELINE_WARNING_SIZE = 100_000 // 100KB per timeline
   private let liveActivityService = VoltraLiveActivityService()
   private var wasLaunchedInBackground: Bool = false
-  /// Serial queue to synchronize access to monitoredActivityIds across async tasks
-  private let monitoredActivityIdsQueue = DispatchQueue(label: "com.voltra.monitoredActivityIds")
-  private var monitoredActivityIds: Set<String> = []
+  private let monitoredActivityIds = OSAllocatedUnfairLock<Set<String>>(initialState: [])
 
   enum VoltraErrors: Error {
     case unsupportedOS
@@ -57,9 +56,7 @@ public class VoltraModule: Module {
 
     OnStopObserving {
       VoltraEventBus.shared.unsubscribe()
-      monitoredActivityIdsQueue.sync {
-        monitoredActivityIds.removeAll()
-      }
+      monitoredActivityIds.withLock { $0.removeAll() }
     }
 
     OnCreate {
@@ -612,40 +609,38 @@ private extension VoltraModule {
 
   /// Set up observers for an activity's lifecycle (only once per activity)
   private func monitorActivity(_ activity: Activity<VoltraAttributes>) {
-    // Safety check: skip if activity is already ended to avoid accessing stale references
     guard activity.activityState != .ended else { return }
 
     let activityId = activity.id
+    let activityName = activity.attributes.name
+    let pushEnabled = pushNotificationsEnabled
 
-    // Thread-safe check-and-insert to prevent race conditions when multiple
-    // async tasks call monitorActivity simultaneously
-    let shouldMonitor = monitoredActivityIdsQueue.sync { () -> Bool in
-      guard !monitoredActivityIds.contains(activityId) else { return false }
-      monitoredActivityIds.insert(activityId)
+    // Thread-safe check-and-insert
+    let shouldMonitor = monitoredActivityIds.withLock { ids -> Bool in
+      guard !ids.contains(activityId) else { return false }
+      ids.insert(activityId)
       return true
     }
     guard shouldMonitor else { return }
 
-    // Observe lifecycle state changes (active → dismissed → ended)
     Task {
       for await state in activity.activityStateUpdates {
         VoltraEventBus.shared.send(
           .stateChange(
-            activityName: activity.attributes.name,
+            activityName: activityName,
             state: String(describing: state)
           )
         )
       }
     }
 
-    // Observe push token updates if enabled
-    if pushNotificationsEnabled {
+    if pushEnabled {
       Task {
         for await pushTokenData in activity.pushTokenUpdates {
           let pushTokenString = pushTokenData.hexString
           VoltraEventBus.shared.send(
             .tokenReceived(
-              activityName: activity.attributes.name,
+              activityName: activityName,
               pushToken: pushTokenString
             )
           )
