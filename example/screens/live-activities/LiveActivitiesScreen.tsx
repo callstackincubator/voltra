@@ -12,7 +12,7 @@ import CompassLiveActivity from '~/screens/live-activities/CompassLiveActivity'
 import FlightLiveActivity from '~/screens/live-activities/FlightLiveActivity'
 import LiquidGlassLiveActivity from '~/screens/live-activities/LiquidGlassLiveActivity'
 import MusicPlayerLiveActivity from '~/screens/live-activities/MusicPlayerLiveActivity'
-import WatchLiveActivity from '~/screens/live-activities/WatchLiveActivity'
+import SupplementalFamiliesLiveActivity from '~/screens/live-activities/SupplementalFamiliesLiveActivity'
 import WorkoutLiveActivity from '~/screens/live-activities/WorkoutLiveActivity'
 
 import { LiveActivityExampleComponentRef } from './types'
@@ -45,8 +45,8 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
     description: 'Real-time compass using magnetometer with rotating arrow indicator.',
   },
   watch: {
-    title: 'Watch Demo (iOS 18+)',
-    description: 'Demonstrates supplementalActivityFamilies.small for watchOS Smart Stack appearance.',
+    title: 'Supplemental Families (iOS 18+)',
+    description: 'Demonstrates supplemental activity families: small (Watch/CarPlay) with compact Dynamic Island fallback. StandBy displays lock screen.',
   },
 }
 
@@ -55,7 +55,6 @@ const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass', 'flight', 'wo
 export default function LiveActivitiesScreen() {
   const insets = useSafeAreaInsets()
 
-  const [useSupplementalFamilies, setUseSupplementalFamilies] = useState(false)
 
   const [activeMap, setActiveMap] = useState<Record<ActivityKey, boolean>>({
     basic: false,
@@ -190,17 +189,10 @@ export default function LiveActivitiesScreen() {
           <View style={styles.settingsCardHeader}>
             <View style={styles.settingsTitleContainer}>
               <Card.Title>Watch/CarPlay Support</Card.Title>
-              <Switch
-                value={useSupplementalFamilies}
-                onValueChange={setUseSupplementalFamilies}
-                style={styles.switch}
-              />
             </View>
           </View>
           <Card.Text>
-            {useSupplementalFamilies
-              ? 'Live Activities will display on Apple Watch and CarPlay'
-              : 'Live Activities are iPhone-only'}
+            Live Activities now always support Apple Watch and CarPlay with automatic fallbacks
           </Card.Text>
         </Card>
 
@@ -216,37 +208,30 @@ export default function LiveActivitiesScreen() {
         <BasicLiveActivity
           ref={basicRef}
           onIsActiveChange={handleBasicStatusChange}
-          activityType={useSupplementalFamilies ? 'supplemental-families' : 'standard'}
         />
         <MusicPlayerLiveActivity
           ref={stylesheetRef}
           onIsActiveChange={handleStylesheetStatusChange}
-          activityType={useSupplementalFamilies ? 'supplemental-families' : 'standard'}
         />
         <LiquidGlassLiveActivity
           ref={glassRef}
           onIsActiveChange={handleGlassStatusChange}
-          activityType={useSupplementalFamilies ? 'supplemental-families' : 'standard'}
         />
         <FlightLiveActivity
           ref={flightRef}
           onIsActiveChange={handleFlightStatusChange}
-          activityType={useSupplementalFamilies ? 'supplemental-families' : 'standard'}
         />
         <WorkoutLiveActivity
           ref={workoutRef}
           onIsActiveChange={handleWorkoutStatusChange}
-          activityType={useSupplementalFamilies ? 'supplemental-families' : 'standard'}
         />
         <CompassLiveActivity
           ref={compassRef}
           onIsActiveChange={handleCompassStatusChange}
-          activityType={useSupplementalFamilies ? 'supplemental-families' : 'standard'}
         />
-        <WatchLiveActivity
+        <SupplementalFamiliesLiveActivity
           ref={watchRef}
           onIsActiveChange={handleWatchStatusChange}
-          activityType={useSupplementalFamilies ? 'supplemental-families' : 'standard'}
         />
       </ScrollView>
     </View>

@@ -1,5 +1,4 @@
 import type { ConfigPluginProps } from '../types'
-import { validateLiveActivityConfig } from './validateActivity'
 import { validateWidgetConfig } from './validateWidget'
 
 /**
@@ -34,9 +33,5 @@ export function validateProps(props: ConfigPluginProps): void {
       }
       seenIds.add(widget.id)
     }
-  }
-
-  if (props.liveActivity) {
-    validateLiveActivityConfig(props.liveActivity)
   }
 }

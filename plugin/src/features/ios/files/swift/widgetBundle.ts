@@ -1,7 +1,7 @@
 import dedent from 'dedent'
 
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../../../constants'
-import type { ActivityFamily, WidgetConfig } from '../../../../types'
+import type { WidgetConfig } from '../../../../types'
 
 /**
  * Generates Swift code for a single widget struct
@@ -42,8 +42,7 @@ function generateWidgetStruct(widget: WidgetConfig): string {
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
 export function generateWidgetBundleSwift(
-  widgets: WidgetConfig[],
-  supplementalActivityFamilies?: ActivityFamily[]
+  widgets: WidgetConfig[]
 ): string {
   // Generate widget structs
   const widgetStructs = widgets.map(generateWidgetStruct).join('\n\n')
@@ -66,11 +65,8 @@ export function generateWidgetBundleSwift(
     @main
     struct VoltraWidgetBundle: WidgetBundle {
       var body: some Widget {
-        // Standard Live Activity (iPhone-only)
+        // Live Activity (with Watch/CarPlay support)
         VoltraWidget()
-
-        // Live Activity with Watch/CarPlay support
-        VoltraWidgetWithSupplementalActivityFamilies()
 
         // Home Screen Widgets
     ${widgetInstances}
@@ -87,7 +83,7 @@ export function generateWidgetBundleSwift(
  * Generates the VoltraWidgetBundle.swift file content when no widgets are configured
  * (only Live Activities)
  */
-export function generateDefaultWidgetBundleSwift(supplementalActivityFamilies?: ActivityFamily[]): string {
+export function generateDefaultWidgetBundleSwift(): string {
   return dedent`
     //
     //  VoltraWidgetBundle.swift
@@ -103,11 +99,8 @@ export function generateDefaultWidgetBundleSwift(supplementalActivityFamilies?: 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
       var body: some Widget {
-        // Standard Live Activity (iPhone-only)
+        // Live Activity (with Watch/CarPlay support)
         VoltraWidget()
-
-        // Live Activity with Watch/CarPlay support
-        VoltraWidgetWithSupplementalActivityFamilies()
       }
     }
   `

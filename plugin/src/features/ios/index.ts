@@ -1,6 +1,6 @@
 import { ConfigPlugin, withPlugins } from '@expo/config-plugins'
 
-import type { LiveActivityConfig, WidgetConfig } from '../../types'
+import type { WidgetConfig } from '../../types'
 import { configureEasBuild } from './eas'
 import { generateWidgetExtensionFiles } from './files'
 import { withFonts } from './fonts'
@@ -15,7 +15,6 @@ export interface WithIOSProps {
   widgets?: WidgetConfig[]
   groupIdentifier?: string
   fonts?: string[]
-  liveActivity?: LiveActivityConfig
 }
 
 /**
@@ -35,11 +34,11 @@ export interface WithIOSProps {
  * so fonts must be registered before configureXcodeProject.
  */
 export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
-  const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier, fonts, liveActivity } = props
+  const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier, fonts } = props
 
   const plugins: [ConfigPlugin<any>, any][] = [
     // 1. Generate widget extension files (must run first so files exist)
-    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier, liveActivity }],
+    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier }],
 
     // 2. Add custom fonts if provided
     ...(fonts && fonts.length > 0 ? [[withFonts, { fonts, targetName }] as [ConfigPlugin<any>, any]] : []),

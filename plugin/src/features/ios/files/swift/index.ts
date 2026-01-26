@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import type { ActivityFamily, WidgetConfig } from '../../../../types'
+import type { WidgetConfig } from '../../../../types'
 import { logger } from '../../../../utils'
 import { generateInitialStatesSwift } from './initialStates'
 import { prerenderWidgetState } from './prerender'
@@ -11,7 +11,6 @@ export interface GenerateSwiftFilesOptions {
   targetPath: string
   projectRoot: string
   widgets?: WidgetConfig[]
-  supplementalActivityFamilies?: ActivityFamily[]
 }
 
 /**
@@ -22,7 +21,7 @@ export interface GenerateSwiftFilesOptions {
  * - VoltraWidgetBundle.swift (widget bundle definition)
  */
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
-  const { targetPath, projectRoot, widgets, supplementalActivityFamilies } = options
+  const { targetPath, projectRoot, widgets } = options
 
   // Prerender widget initial states if any widgets have initialStatePath configured
   const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot)
@@ -37,8 +36,8 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   // Generate the widget bundle Swift file
   const widgetBundleContent =
     widgets && widgets.length > 0
-      ? generateWidgetBundleSwift(widgets, supplementalActivityFamilies)
-      : generateDefaultWidgetBundleSwift(supplementalActivityFamilies)
+      ? generateWidgetBundleSwift(widgets)
+      : generateDefaultWidgetBundleSwift()
 
   const widgetBundlePath = path.join(targetPath, 'VoltraWidgetBundle.swift')
   fs.writeFileSync(widgetBundlePath, widgetBundleContent)

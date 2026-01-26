@@ -10,17 +10,17 @@ public class VoltraModuleImpl {
   private let WIDGET_JSON_WARNING_SIZE = 50000 // 50KB per widget
   private let TIMELINE_WARNING_SIZE = 100_000 // 100KB per timeline
   private let liveActivityService = VoltraLiveActivityService()
-  
+
   public var wasLaunchedInBackground: Bool = false
 
   public init() {
     // Track if app was launched in background (headless)
     wasLaunchedInBackground = UIApplication.shared.applicationState == .background
-    
+
     // Clean up data for widgets that are no longer installed
     cleanupOrphanedWidgetData()
   }
-  
+
   var pushNotificationsEnabled: Bool {
     // Support both keys for compatibility with older plugin and new Voltra naming
     let main = Bundle.main
@@ -28,23 +28,23 @@ public class VoltraModuleImpl {
   }
 
   // MARK: - Lifecycle & Monitoring
-  
+
   func startMonitoring() {
-    VoltraEventBus.shared.subscribe { [weak self] eventType, eventData in
+    VoltraEventBus.shared.subscribe { [weak self] _, _ in
       // This needs to be handled by the Module instance to emit events
       // We'll expose a callback or delegate pattern if needed, but for now
       // the Module handles the subscription directly.
       // However, startMonitoring on the service is called here.
     }
-    
+
     liveActivityService.startMonitoring(enablePush: pushNotificationsEnabled)
   }
-  
+
   func stopMonitoring() {
     VoltraEventBus.shared.unsubscribe()
     liveActivityService.stopMonitoring()
   }
-  
+
   // MARK: - Live Activities
 
   func startLiveActivity(jsonString: String, options: StartVoltraOptions?) async throws -> String {
@@ -77,8 +77,7 @@ public class VoltraModuleImpl {
         staleDate: staleDate,
         relevanceScore: relevanceScore,
         pushType: pushNotificationsEnabled ? .token : nil,
-        endExistingWithSameName: true,
-        activityType: options?.activityType ?? "standard"
+        endExistingWithSameName: true
       )
 
       // Create activity using service
@@ -136,36 +135,36 @@ public class VoltraModuleImpl {
     guard #available(iOS 16.2, *) else { throw VoltraModule.VoltraErrors.unsupportedOS }
     await liveActivityService.endAllActivities()
   }
-  
+
   func getLatestVoltraActivityId() -> String? {
     guard #available(iOS 16.2, *) else { return nil }
     return liveActivityService.getLatestActivity()?.id
   }
-  
+
   func listVoltraActivityIds() -> [String] {
     guard #available(iOS 16.2, *) else { return [] }
     return liveActivityService.getAllActivities().map(\.id)
   }
-  
+
   func isLiveActivityActive(name: String) -> Bool {
     guard #available(iOS 16.2, *) else { return false }
     return liveActivityService.isActivityActive(name: name)
   }
-  
+
   func reloadLiveActivities(activityNames: [String]?) async throws {
     guard #available(iOS 16.2, *) else { throw VoltraModule.VoltraErrors.unsupportedOS }
 
-    let activities = self.liveActivityService.getAllActivities()
+    let activities = liveActivityService.getAllActivities()
 
     for activity in activities {
       // If activityNames is provided, only reload those specific activities
       if let names = activityNames, !names.isEmpty {
-        guard names.contains(activity.name) else { continue }
+        guard names.contains(activity.attributes.name) else { continue }
       }
 
       do {
         let newState = try VoltraAttributes.ContentState(
-          uiJsonData: activity.contentState.uiJsonData
+          uiJsonData: activity.content.state.uiJsonData
         )
 
         await activity.update(
@@ -175,9 +174,9 @@ public class VoltraModuleImpl {
             relevanceScore: 0.0
           )
         )
-        print("[Voltra] Reloaded Live Activity '\(activity.name)'")
+        print("[Voltra] Reloaded Live Activity '\(activity.attributes.name)'")
       } catch {
-        print("[Voltra] Failed to reload Live Activity '\(activity.name)': \(error)")
+        print("[Voltra] Failed to reload Live Activity '\(activity.attributes.name)': \(error)")
       }
     }
   }
@@ -190,7 +189,7 @@ public class VoltraModuleImpl {
 
     for imageOptions in images {
       do {
-        try await self.downloadAndSaveImage(imageOptions)
+        try await downloadAndSaveImage(imageOptions)
         succeeded.append(imageOptions.key)
       } catch {
         failed.append(PreloadImageFailure(key: imageOptions.key, error: error.localizedDescription))
@@ -199,7 +198,7 @@ public class VoltraModuleImpl {
 
     return PreloadImagesResult(succeeded: succeeded, failed: failed)
   }
-  
+
   func clearPreloadedImages(keys: [String]?) async {
     if let keys = keys, !keys.isEmpty {
       // Clear specific images

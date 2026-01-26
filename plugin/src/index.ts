@@ -50,7 +50,6 @@ const withVoltra: VoltraConfigPlugin = (config, props = {}) => {
     widgets: props?.widgets,
     ...(props?.groupIdentifier ? { groupIdentifier: props.groupIdentifier } : {}),
     ...(props?.fonts ? { fonts: props.fonts } : {}),
-    ...(props?.liveActivity ? { liveActivity: props.liveActivity } : {}),
   })
 
   // Optionally enable push notifications

@@ -100,54 +100,23 @@ public class VoltraLiveActivityService {
 
   // MARK: - Query Operations
 
-  /// Find an activity by its name across both activity types
-  /// Searches standard activities first for backward compatibility
-  public func findActivity(byName name: String) -> VoltraActivity? {
+  /// Find an activity by its name (activityId)
+  public func findActivity(byName name: String) -> Activity<VoltraAttributes>? {
     guard Self.isSupported() else { return nil }
     let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-
-    // Check standard activities first for backward compatibility
-    if let activity = Activity<VoltraAttributes>.activities.first(where: { $0.attributes.name == trimmedName }) {
-      return .standard(activity)
-    }
-
-    // Check supplemental families activities
-    if let activity = Activity<VoltraAttributesWithSupplementalFamilies>.activities.first(where: { $0.attributes.name == trimmedName }) {
-      return .withSupplementalFamilies(activity)
-    }
-
-    return nil
+    return Activity<VoltraAttributes>.activities.first { $0.attributes.name == trimmedName }
   }
 
-  /// Find all activities with the same name across both activity types
-  public func findActivities(byName name: String) -> [VoltraActivity] {
+  /// Find all activities with the same name
+  public func findActivities(byName name: String) -> [Activity<VoltraAttributes>] {
     guard Self.isSupported() else { return [] }
-    var results: [VoltraActivity] = []
-
-    // Collect standard activities
-    results.append(contentsOf: Activity<VoltraAttributes>.activities
-      .filter { $0.attributes.name == name }
-      .map { .standard($0) }
-    )
-
-    // Collect supplemental families activities
-    results.append(contentsOf: Activity<VoltraAttributesWithSupplementalFamilies>.activities
-      .filter { $0.attributes.name == name }
-      .map { .withSupplementalFamilies($0) }
-    )
-
-    return results
+    return Activity<VoltraAttributes>.activities.filter { $0.attributes.name == name }
   }
 
-  /// Get all active Voltra activities across both types
-  public func getAllActivities() -> [VoltraActivity] {
+  /// Get all active Voltra activities
+  public func getAllActivities() -> [Activity<VoltraAttributes>] {
     guard Self.isSupported() else { return [] }
-    var results: [VoltraActivity] = []
-
-    results.append(contentsOf: Activity<VoltraAttributes>.activities.map { .standard($0) })
-    results.append(contentsOf: Activity<VoltraAttributesWithSupplementalFamilies>.activities.map { .withSupplementalFamilies($0) })
-
-    return results
+    return Array(Activity<VoltraAttributes>.activities)
   }
 
   /// Get the latest (most recently created) activity across both types
@@ -186,22 +155,20 @@ public class VoltraLiveActivityService {
       try await endActivities(byName: finalActivityId)
     }
 
-    // Create initial state (shared between both types)
-    let initialState = try VoltraContentState(uiJsonData: request.jsonString)
+    // Create attributes and initial state
+    let attributes = VoltraAttributes(name: finalActivityId, deepLinkUrl: request.deepLinkUrl)
+    let initialState = try VoltraAttributes.ContentState(uiJsonData: request.jsonString)
 
-    // Create activity of the requested type
-    switch request.activityType {
-    case "supplemental-families":
-      let attributes = VoltraAttributesWithSupplementalFamilies(name: finalActivityId, deepLinkUrl: request.deepLinkUrl)
-      _ = try Activity.request(
-        attributes: attributes,
-        content: .init(
-          state: initialState,
-          staleDate: request.staleDate,
-          relevanceScore: request.relevanceScore
-        ),
-        pushType: request.pushType
-      )
+    // Request the activity
+    let activity = try Activity.request(
+      attributes: attributes,
+      content: .init(
+        state: initialState,
+        staleDate: request.staleDate,
+        relevanceScore: request.relevanceScore
+      ),
+      pushType: request.pushType
+    )
 
     default: // "standard" or any unrecognized value defaults to standard
       let attributes = VoltraAttributes(name: finalActivityId, deepLinkUrl: request.deepLinkUrl)
@@ -269,7 +236,10 @@ public class VoltraLiveActivityService {
     dismissalPolicy: ActivityUIDismissalPolicy = .immediate
   ) async {
     guard Self.isSupported() else { return }
-    await activity.end(dismissalPolicy)
+    await activity.end(
+      ActivityContent(state: activity.content.state, staleDate: nil),
+      dismissalPolicy: dismissalPolicy
+    )
   }
 
   /// End an activity by name
@@ -302,125 +272,6 @@ public class VoltraLiveActivityService {
     let activities = getAllActivities()
     for activity in activities {
       await endActivity(activity)
-    }
-  }
-
-  // MARK: - Monitoring
-
-  private var monitoredActivityIds: Set<String> = []
-  private var monitoringTasks: [Task<Void, Never>] = []
-
-  /// Start monitoring all Live Activities and Push Tokens
-  public func startMonitoring(enablePush: Bool) {
-    guard Self.isSupported() else { return }
-
-    // 1. Monitor Push-to-Start Tokens
-    if enablePush {
-      if #available(iOS 17.2, *) {
-        startPushToStartTokenObservation()
-      }
-    }
-
-    // 2. Monitor Live Activity Updates (Creation & Lifecycle)
-    startActivityUpdatesObservation(enablePush: enablePush)
-  }
-
-  /// Stop all monitoring tasks
-  public func stopMonitoring() {
-    monitoredActivityIds.removeAll()
-    monitoringTasks.forEach { $0.cancel() }
-    monitoringTasks.removeAll()
-  }
-
-  @available(iOS 17.2, *)
-  private func startPushToStartTokenObservation() {
-    // Standard Activities
-    if let initialTokenData = Activity<VoltraAttributes>.pushToStartToken {
-      let token = initialTokenData.hexString
-      VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
-    }
-    let standardTask = Task {
-      for await tokenData in Activity<VoltraAttributes>.pushToStartTokenUpdates {
-        let token = tokenData.hexString
-        VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
-      }
-    }
-    monitoringTasks.append(standardTask)
-
-    // Supplemental Activities
-    if let initialTokenData = Activity<VoltraAttributesWithSupplementalFamilies>.pushToStartToken {
-      let token = initialTokenData.hexString
-      VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
-    }
-    let supplementalTask = Task {
-      for await tokenData in Activity<VoltraAttributesWithSupplementalFamilies>.pushToStartTokenUpdates {
-        let token = tokenData.hexString
-        VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
-      }
-    }
-    monitoringTasks.append(supplementalTask)
-  }
-
-  private func startActivityUpdatesObservation(enablePush: Bool) {
-    // 1. Handle currently existing activities
-    for activity in Activity<VoltraAttributes>.activities {
-      monitorActivity(activity, enablePush: enablePush)
-    }
-    for activity in Activity<VoltraAttributesWithSupplementalFamilies>.activities {
-      monitorActivity(activity, enablePush: enablePush)
-    }
-
-    // 2. Listen for NEW activities
-    let standardUpdatesTask = Task {
-      for await newActivity in Activity<VoltraAttributes>.activityUpdates {
-        monitorActivity(newActivity, enablePush: enablePush)
-      }
-    }
-    monitoringTasks.append(standardUpdatesTask)
-
-    let supplementalUpdatesTask = Task {
-      for await newActivity in Activity<VoltraAttributesWithSupplementalFamilies>.activityUpdates {
-        monitorActivity(newActivity, enablePush: enablePush)
-      }
-    }
-    monitoringTasks.append(supplementalUpdatesTask)
-  }
-
-  /// Set up observers for an activity's lifecycle
-  private func monitorActivity<Attributes: VoltraActivityAttributes>(_ activity: Activity<Attributes>, enablePush: Bool) {
-    let activityId = activity.id
-
-    // Avoid duplicate monitoring
-    guard !monitoredActivityIds.contains(activityId) else { return }
-    monitoredActivityIds.insert(activityId)
-
-    // Lifecycle state changes
-    let stateTask = Task {
-      for await state in activity.activityStateUpdates {
-        VoltraEventBus.shared.send(
-          .stateChange(
-            activityName: activity.attributes.name,
-            state: String(describing: state)
-          )
-        )
-      }
-    }
-    monitoringTasks.append(stateTask)
-
-    // Push token updates
-    if enablePush {
-      let tokenTask = Task {
-        for await pushTokenData in activity.pushTokenUpdates {
-          let pushTokenString = pushTokenData.hexString
-          VoltraEventBus.shared.send(
-            .tokenReceived(
-              activityName: activity.attributes.name,
-              pushToken: pushTokenString
-            )
-          )
-        }
-      }
-      monitoringTasks.append(tokenTask)
     }
   }
 }
