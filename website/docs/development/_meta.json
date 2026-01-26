@@ -11,11 +11,6 @@
   },
   {
     "type": "file",
-    "name": "supplemental-activity-families",
-    "label": "Supplemental Activity Families"
-  },
-  {
-    "type": "file",
     "name": "developing-widgets",
     "label": "Developing Widgets"
   },

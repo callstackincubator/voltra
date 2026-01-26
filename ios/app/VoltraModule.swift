@@ -25,6 +25,12 @@ public class VoltraModule: Module {
     }
 
     OnStartObserving {
+      // Subscribe to event bus and forward events to React Native
+      VoltraEventBus.shared.subscribe { [weak self] eventType, eventData in
+        self?.sendEvent(eventType, eventData)
+      }
+
+      // Start monitoring live activities and push tokens
       self.impl.startMonitoring()
     }
 

@@ -30,13 +30,7 @@ public class VoltraModuleImpl {
   // MARK: - Lifecycle & Monitoring
 
   func startMonitoring() {
-    VoltraEventBus.shared.subscribe { [weak self] _, _ in
-      // This needs to be handled by the Module instance to emit events
-      // We'll expose a callback or delegate pattern if needed, but for now
-      // the Module handles the subscription directly.
-      // However, startMonitoring on the service is called here.
-    }
-
+    // Note: Event bus subscription is handled by VoltraModule since it has access to sendEvent()
     liveActivityService.startMonitoring(enablePush: pushNotificationsEnabled)
   }
 
