@@ -1,6 +1,6 @@
 import { Link } from 'expo-router'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { endAllLiveActivities } from 'voltra/client'
 
@@ -17,7 +17,7 @@ import WorkoutLiveActivity from '~/screens/live-activities/WorkoutLiveActivity'
 
 import { LiveActivityExampleComponentRef } from './types'
 
-type ActivityKey = 'basic' | 'stylesheet' | 'glass' | 'flight' | 'workout' | 'compass' | 'watch'
+type ActivityKey = 'basic' | 'stylesheet' | 'glass' | 'flight' | 'workout' | 'compass' | 'supplementalFamilies'
 
 const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: string }> = {
   basic: {
@@ -44,13 +44,13 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
     title: 'Compass',
     description: 'Real-time compass using magnetometer with rotating arrow indicator.',
   },
-  watch: {
+  supplementalFamilies: {
     title: 'Supplemental Families (iOS 18+)',
     description: 'Demonstrates supplemental activity families: small (Watch/CarPlay) with compact Dynamic Island fallback. StandBy displays lock screen.',
   },
 }
 
-const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass', 'flight', 'workout', 'compass', 'watch']
+const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass', 'flight', 'workout', 'compass', 'supplementalFamilies']
 
 export default function LiveActivitiesScreen() {
   const insets = useSafeAreaInsets()
@@ -63,7 +63,7 @@ export default function LiveActivitiesScreen() {
     flight: false,
     workout: false,
     compass: false,
-    watch: false,
+    supplementalFamilies: false,
   })
 
   const basicRef = useRef<LiveActivityExampleComponentRef>(null)
@@ -72,7 +72,7 @@ export default function LiveActivitiesScreen() {
   const flightRef = useRef<LiveActivityExampleComponentRef>(null)
   const workoutRef = useRef<LiveActivityExampleComponentRef>(null)
   const compassRef = useRef<LiveActivityExampleComponentRef>(null)
-  const watchRef = useRef<LiveActivityExampleComponentRef>(null)
+  const supplementalFamiliesRef = useRef<LiveActivityExampleComponentRef>(null)
 
   const activityRefs = useMemo(
     () => ({
@@ -82,7 +82,7 @@ export default function LiveActivitiesScreen() {
       flight: flightRef,
       workout: workoutRef,
       compass: compassRef,
-      watch: watchRef,
+      supplementalFamilies: supplementalFamiliesRef,
     }),
     []
   )
@@ -118,8 +118,8 @@ export default function LiveActivitiesScreen() {
     (isActive: boolean) => handleStatusChange('compass', isActive),
     [handleStatusChange]
   )
-  const handleWatchStatusChange = useCallback(
-    (isActive: boolean) => handleStatusChange('watch', isActive),
+  const handleSupplementalFamiliesStatusChange = useCallback(
+    (isActive: boolean) => handleStatusChange('supplementalFamilies', isActive),
     [handleStatusChange]
   )
 
@@ -185,17 +185,6 @@ export default function LiveActivitiesScreen() {
 
         <NotificationsCard />
 
-        <Card>
-          <View style={styles.settingsCardHeader}>
-            <View style={styles.settingsTitleContainer}>
-              <Card.Title>Watch/CarPlay Support</Card.Title>
-            </View>
-          </View>
-          <Card.Text>
-            Live Activities now always support Apple Watch and CarPlay with automatic fallbacks
-          </Card.Text>
-        </Card>
-
         {CARD_ORDER.map(renderCard)}
 
         <Button
@@ -230,8 +219,8 @@ export default function LiveActivitiesScreen() {
           onIsActiveChange={handleCompassStatusChange}
         />
         <SupplementalFamiliesLiveActivity
-          ref={watchRef}
-          onIsActiveChange={handleWatchStatusChange}
+          ref={supplementalFamiliesRef}
+          onIsActiveChange={handleSupplementalFamiliesStatusChange}
         />
       </ScrollView>
     </View>
@@ -298,19 +287,5 @@ const styles = StyleSheet.create({
   },
   endAllButtonText: {
     color: '#8232FF',
-  },
-  settingsCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  settingsTitleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  switch: {
-    marginLeft: 12,
   },
 })

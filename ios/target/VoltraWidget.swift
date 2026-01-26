@@ -7,7 +7,7 @@ public struct VoltraWidget: Widget {
   public init() {}
 
   /// Convert an array of nodes to a single root node for rendering
-  private func rootNode(for region: VoltraRegion, from state: VoltraContentState) -> VoltraNode {
+  private func rootNode(for region: VoltraRegion, from state: VoltraAttributes.ContentState) -> VoltraNode {
     let nodes = state.regions[region] ?? []
     if nodes.isEmpty { return .empty }
     return nodes.count == 1 ? nodes[0] : .array(nodes)
@@ -107,7 +107,7 @@ public struct VoltraWidget: Widget {
 @available(iOS 18.0, *)
 private struct VoltraAdaptiveLockScreenView: View {
   let context: ActivityViewContext<VoltraAttributes>
-  let rootNodeProvider: (VoltraRegion, VoltraContentState) -> VoltraNode
+  let rootNodeProvider: (VoltraRegion, VoltraAttributes.ContentState) -> VoltraNode
 
   @Environment(\.activityFamily) private var activityFamily
 

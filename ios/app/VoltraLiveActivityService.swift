@@ -182,7 +182,7 @@ public class VoltraLiveActivityService {
       throw VoltraLiveActivityError.unsupportedOS
     }
 
-    let newState = try VoltraContentState(uiJsonData: request.jsonString)
+    let newState = try VoltraAttributes.ContentState(uiJsonData: request.jsonString)
     await activity.update(
       ActivityContent(
         state: newState,
@@ -286,31 +286,17 @@ public class VoltraLiveActivityService {
 
   @available(iOS 17.2, *)
   private func startPushToStartTokenObservation() {
-    // Standard Activities
     if let initialTokenData = Activity<VoltraAttributes>.pushToStartToken {
       let token = initialTokenData.hexString
       VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
     }
-    let standardTask = Task {
+    let task = Task {
       for await tokenData in Activity<VoltraAttributes>.pushToStartTokenUpdates {
         let token = tokenData.hexString
         VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
       }
     }
-    monitoringTasks.append(standardTask)
-
-    // Supplemental Activities
-    if let initialTokenData = Activity<VoltraAttributesWithSupplementalFamilies>.pushToStartToken {
-      let token = initialTokenData.hexString
-      VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
-    }
-    let supplementalTask = Task {
-      for await tokenData in Activity<VoltraAttributesWithSupplementalFamilies>.pushToStartTokenUpdates {
-        let token = tokenData.hexString
-        VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
-      }
-    }
-    monitoringTasks.append(supplementalTask)
+    monitoringTasks.append(task)
   }
 
   private func startActivityUpdatesObservation(enablePush: Bool) {
@@ -318,28 +304,18 @@ public class VoltraLiveActivityService {
     for activity in Activity<VoltraAttributes>.activities {
       monitorActivity(activity, enablePush: enablePush)
     }
-    for activity in Activity<VoltraAttributesWithSupplementalFamilies>.activities {
-      monitorActivity(activity, enablePush: enablePush)
-    }
 
     // 2. Listen for NEW activities
-    let standardUpdatesTask = Task {
+    let updatesTask = Task {
       for await newActivity in Activity<VoltraAttributes>.activityUpdates {
         monitorActivity(newActivity, enablePush: enablePush)
       }
     }
-    monitoringTasks.append(standardUpdatesTask)
-
-    let supplementalUpdatesTask = Task {
-      for await newActivity in Activity<VoltraAttributesWithSupplementalFamilies>.activityUpdates {
-        monitorActivity(newActivity, enablePush: enablePush)
-      }
-    }
-    monitoringTasks.append(supplementalUpdatesTask)
+    monitoringTasks.append(updatesTask)
   }
 
   /// Set up observers for an activity's lifecycle
-  private func monitorActivity<Attributes: VoltraActivityAttributes>(_ activity: Activity<Attributes>, enablePush: Bool) {
+  private func monitorActivity(_ activity: Activity<VoltraAttributes>, enablePush: Bool) {
     let activityId = activity.id
 
     // Avoid duplicate monitoring
