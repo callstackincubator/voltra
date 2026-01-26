@@ -10,6 +10,8 @@ public class VoltraModule: Module {
   private let TIMELINE_WARNING_SIZE = 100_000 // 100KB per timeline
   private let liveActivityService = VoltraLiveActivityService()
   private var wasLaunchedInBackground: Bool = false
+  /// Serial queue to synchronize access to monitoredActivityIds across async tasks
+  private let monitoredActivityIdsQueue = DispatchQueue(label: "com.voltra.monitoredActivityIds")
   private var monitoredActivityIds: Set<String> = []
 
   enum VoltraErrors: Error {
@@ -55,7 +57,9 @@ public class VoltraModule: Module {
 
     OnStopObserving {
       VoltraEventBus.shared.unsubscribe()
-      monitoredActivityIds.removeAll()
+      monitoredActivityIdsQueue.sync {
+        monitoredActivityIds.removeAll()
+      }
     }
 
     OnCreate {
@@ -608,11 +612,19 @@ private extension VoltraModule {
 
   /// Set up observers for an activity's lifecycle (only once per activity)
   private func monitorActivity(_ activity: Activity<VoltraAttributes>) {
+    // Safety check: skip if activity is already ended to avoid accessing stale references
+    guard activity.activityState != .ended else { return }
+
     let activityId = activity.id
 
-    // Skip if we're already monitoring this activity
-    guard !monitoredActivityIds.contains(activityId) else { return }
-    monitoredActivityIds.insert(activityId)
+    // Thread-safe check-and-insert to prevent race conditions when multiple
+    // async tasks call monitorActivity simultaneously
+    let shouldMonitor = monitoredActivityIdsQueue.sync { () -> Bool in
+      guard !monitoredActivityIds.contains(activityId) else { return false }
+      monitoredActivityIds.insert(activityId)
+      return true
+    }
+    guard shouldMonitor else { return }
 
     // Observe lifecycle state changes (active → dismissed → ended)
     Task {
