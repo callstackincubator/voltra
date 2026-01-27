@@ -35,6 +35,9 @@
         {
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
+          "liveActivity": {
+            "supplementalActivityFamilies": ["small"]
+          },
           "widgets": [
             {
               "id": "weather",
@@ -79,7 +82,11 @@
                 "widgetCategory": "home_screen"
               }
             ]
-          }
+          },
+          "fonts": [
+            "node_modules/@expo-google-fonts/merriweather/400Regular/Merriweather_400Regular.ttf",
+            "node_modules/@expo-google-fonts/merriweather/700Bold/Merriweather_700Bold.ttf"
+          ]
         }
       ],
       "expo-router",

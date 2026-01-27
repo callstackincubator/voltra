@@ -168,4 +168,120 @@ describe('renderVoltraVariantToJson', () => {
       { t: 0, c: 'Element 3' },
     ])
   })
+
+  describe('Conditional rendering (optional JSX)', () => {
+    test('false && Component renders nothing', () => {
+      const element = (
+        <Voltra.VStack>
+          <Voltra.Text>Start</Voltra.Text>
+          {false && <Voltra.Text>Hidden</Voltra.Text>}
+          <Voltra.Text>End</Voltra.Text>
+        </Voltra.VStack>
+      )
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({
+        t: 11,
+        c: [
+          { t: 0, c: 'Start' },
+          { t: 0, c: 'End' },
+        ],
+      })
+    })
+
+    test('true && Component renders the component', () => {
+      const element = (
+        <Voltra.VStack>
+          <Voltra.Text>Start</Voltra.Text>
+          {true && <Voltra.Text>Visible</Voltra.Text>}
+          <Voltra.Text>End</Voltra.Text>
+        </Voltra.VStack>
+      )
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({
+        t: 11,
+        c: [
+          { t: 0, c: 'Start' },
+          { t: 0, c: 'Visible' },
+          { t: 0, c: 'End' },
+        ],
+      })
+    })
+
+    test('condition && Component pattern (truthy)', () => {
+      const condition = true
+      const element = <Voltra.VStack>{condition && <Voltra.Text>Conditional</Voltra.Text>}</Voltra.VStack>
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({
+        t: 11,
+        c: { t: 0, c: 'Conditional' },
+      })
+    })
+
+    test('condition && Component pattern (falsy)', () => {
+      const condition = false
+      const element = <Voltra.VStack>{condition && <Voltra.Text>Conditional</Voltra.Text>}</Voltra.VStack>
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({
+        t: 11,
+      })
+    })
+
+    test('Multiple conditional children', () => {
+      const show1 = true
+      const show2 = false
+      const show3 = true
+      const element = (
+        <Voltra.VStack>
+          {show1 && <Voltra.Text>First</Voltra.Text>}
+          {show2 && <Voltra.Text>Second</Voltra.Text>}
+          {show3 && <Voltra.Text>Third</Voltra.Text>}
+        </Voltra.VStack>
+      )
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({
+        t: 11,
+        c: [
+          { t: 0, c: 'First' },
+          { t: 0, c: 'Third' },
+        ],
+      })
+    })
+
+    test('Text component with boolean child ignores it (matches React Native)', () => {
+      const element = <Voltra.Text>{true}</Voltra.Text>
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({ t: 0, c: '' })
+    })
+
+    test('Text component with false boolean ignores it (matches React Native)', () => {
+      const element = <Voltra.Text>{false}</Voltra.Text>
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({ t: 0, c: '' })
+    })
+
+    test('Text component with mixed boolean and string children ignores booleans', () => {
+      const element = (
+        <Voltra.Text>
+          {true} and text and {false}
+        </Voltra.Text>
+      )
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({ t: 0, c: ' and text and ' })
+    })
+
+    test('Conditional with null/undefined', () => {
+      const element = (
+        <Voltra.VStack>
+          {null && <Voltra.Text>Hidden</Voltra.Text>}
+          {undefined && <Voltra.Text>Hidden</Voltra.Text>}
+          <Voltra.Text>Visible</Voltra.Text>
+        </Voltra.VStack>
+      )
+      const result = renderVoltraVariantToJson(element)
+      expect(result).toEqual({
+        t: 11,
+        c: [{ t: 0, c: 'Visible' }],
+      })
+    })
+  })
 })

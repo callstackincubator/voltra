@@ -161,11 +161,16 @@ To update existing Live Activities, use activity push tokens:
 import { addVoltraListener } from 'voltra/client'
 
 useEffect(() => {
-  const subscription = addVoltraListener('activityTokenReceived', ({ activityID, activityName, activityPushToken }) => {
+  const subscription = addVoltraListener('activityTokenReceived', ({
+    activityName,
+    pushToken,
+    timestamp,
+    type
+  }) => {
     // Send the token to your server for updating this specific Live Activity
     sendTokenToServer({
       activityID,
-      token: activityPushToken,
+      token: pushToken,
       type: 'update',
     })
   })
@@ -182,10 +187,10 @@ To start Live Activities remotely (push-to-start), use push-to-start tokens:
 
 ```tsx
 useEffect(() => {
-  const subscription = addVoltraListener('activityPushToStartTokenReceived', ({ activityPushToStartToken }) => {
+  const subscription = addVoltraListener('activityPushToStartTokenReceived', ({ pushToStartToken, type }) => {
     // Send the token to your server for starting new Live Activities
     sendTokenToServer({
-      token: activityPushToStartToken,
+      token: pushToStartToken,
       type: 'start',
     })
   })

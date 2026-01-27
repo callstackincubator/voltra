@@ -24,9 +24,10 @@ Voltra turns React Native JSX into SwiftUI so you can ship custom Live Activitie
 
 The documentation is available at [use-voltra.dev](https://use-voltra.dev). You can also use the following links to jump to specific topics:
 
-- [Quick Start](https://use-voltra.dev/docs/getting-started/quick-start)
-- [API Reference](https://use-voltra.dev/docs/api/overview)
-- [Examples](https://use-voltra.dev/docs/examples)
+- [Quick Start](https://use-voltra.dev/getting-started/quick-start)
+- [Development](https://www.use-voltra.dev/development/developing-live-activities)
+- [Components](https://www.use-voltra.dev/components/overview)
+- [API Reference](https://use-voltra.dev/api/configuration)
 
 ## Getting started
 
@@ -51,7 +52,7 @@ Add the config plugin to your `app.json`:
 
 Then run `npx expo prebuild --clean` to generate the iOS extension target.
 
-See the [documentation](https://use-voltra.dev/docs/getting-started/quick-start) for detailed setup instructions.
+See the [documentation](https://use-voltra.dev/getting-started/quick-start) for detailed setup instructions.
 
 ## Quick example
 

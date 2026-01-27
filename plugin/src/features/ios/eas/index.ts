@@ -5,7 +5,7 @@ import { addApplicationGroupsEntitlement, getWidgetExtensionEntitlements } from 
 export interface ConfigureEasBuildProps {
   bundleIdentifier: string
   targetName: string
-  groupIdentifier: string
+  groupIdentifier?: string
 }
 
 /**
@@ -55,7 +55,7 @@ export const configureEasBuild: ConfigPlugin<ConfigureEasBuildProps> = (
     configIndex = (config.extra?.eas?.build?.experimental?.ios?.appExtensions?.length ?? 1) - 1
   }
 
-  // Configure entitlements
+  // Configure entitlements (may be empty if no groupIdentifier)
   if (configIndex != null && config.extra) {
     const widgetsExtensionConfig = config.extra.eas.build.experimental.ios.appExtensions[configIndex]
 
@@ -64,11 +64,13 @@ export const configureEasBuild: ConfigPlugin<ConfigureEasBuildProps> = (
       ...getWidgetExtensionEntitlements(groupIdentifier),
     }
 
-    config.ios = {
-      ...config.ios,
-      entitlements: {
-        ...addApplicationGroupsEntitlement(config.ios?.entitlements ?? {}, groupIdentifier),
-      },
+    if (groupIdentifier) {
+      config.ios = {
+        ...config.ios,
+        entitlements: {
+          ...addApplicationGroupsEntitlement(config.ios?.entitlements ?? {}, groupIdentifier),
+        },
+      }
     }
   }
 

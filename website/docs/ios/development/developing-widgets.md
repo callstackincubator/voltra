@@ -4,17 +4,22 @@ Voltra provides APIs that make building and testing Home Screen widgets easier d
 
 ## VoltraWidgetPreview component
 
-For testing and development, Voltra provides a `VoltraWidgetPreview` component that renders Voltra JSX components at the exact dimensions of specific iOS widget families. This is useful for:
+`VoltraWidgetPreview` is a **React Native component** for testing and developing Voltra widget content. It renders Voltra JSX components at the exact dimensions of specific iOS widget families. This is useful for:
 
 - Testing component layouts before deploying to widgets
 - Previewing how your widget will look across different sizes
-- Developing widget content within your React Native app
+- Developing and iterating on widget content within your React Native app
+
+:::note
+`VoltraWidgetPreview` is a regular React Native component. Use it in your React Native screens, not inside Voltra components.
+:::
 
 ```tsx
+import { ScrollView, View } from 'react-native'
 import { VoltraWidgetPreview } from 'voltra/client'
 import { Voltra } from 'voltra'
 
-function MyWidgetPreview() {
+function MyWidgetContent() {
   return (
     <Voltra.VStack style={{ padding: 16, backgroundColor: '#101828' }}>
       <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>Weather Widget</Voltra.Text>
@@ -23,22 +28,24 @@ function MyWidgetPreview() {
   )
 }
 
-// Preview different widget sizes
-function WidgetPreviews() {
+// Preview different widget sizes in your React Native screen
+function WidgetTestingScreen() {
   return (
-    <Voltra.VStack style={{ gap: 20 }}>
-      <VoltraWidgetPreview family="systemSmall">
-        <MyWidgetPreview />
-      </VoltraWidgetPreview>
+    <ScrollView style={{ flex: 1 }}>
+      <View style={{ padding: 16, gap: 20 }}>
+        <VoltraWidgetPreview family="systemSmall">
+          <MyWidgetContent />
+        </VoltraWidgetPreview>
 
-      <VoltraWidgetPreview family="systemMedium">
-        <MyWidgetPreview />
-      </VoltraWidgetPreview>
+        <VoltraWidgetPreview family="systemMedium">
+          <MyWidgetContent />
+        </VoltraWidgetPreview>
 
-      <VoltraWidgetPreview family="systemLarge">
-        <MyWidgetPreview />
-      </VoltraWidgetPreview>
-    </Voltra.VStack>
+        <VoltraWidgetPreview family="systemLarge">
+          <MyWidgetContent />
+        </VoltraWidgetPreview>
+      </View>
+    </ScrollView>
   )
 }
 ```
@@ -88,6 +95,84 @@ await updateWidget('weather', {
 - `widgetId`: The widget identifier (as defined in your config plugin)
 - `variants`: An object mapping widget families to specific content
 - `options.deepLinkUrl`: URL to open when the widget is tapped
+
+## scheduleWidget API
+
+For widgets that need to change throughout the day, `scheduleWidget` lets you batch multiple updates in advance. iOS will automatically display each entry at its scheduled time—even when your app isn't running.
+
+:::tip
+This is perfect for weather forecasts, calendar events, news rotation, or any content that changes on a predictable schedule.
+:::
+
+```typescript
+import { scheduleWidget } from 'voltra/client'
+import { Voltra } from 'voltra'
+
+// Schedule weather updates throughout the day
+await scheduleWidget('weather', [
+  {
+    date: new Date('2026-01-16T09:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Morning: 65°F ☀️</Voltra.Text>,
+      systemMedium: <Voltra.Text>Good morning! 65°F and sunny</Voltra.Text>
+    }
+  },
+  {
+    date: new Date('2026-01-16T15:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Afternoon: 72°F ☀️</Voltra.Text>,
+      systemMedium: <Voltra.Text>Afternoon: 72°F and sunny</Voltra.Text>
+    }
+  },
+  {
+    date: new Date('2026-01-16T21:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Evening: 68°F 🌙</Voltra.Text>,
+      systemMedium: <Voltra.Text>Good evening! 68°F and clear</Voltra.Text>
+    }
+  }
+])
+```
+
+**Parameters:**
+
+- `widgetId`: The widget identifier (as defined in your config plugin)
+- `entries`: Array of timeline entries, each containing:
+  - `date`: When this content should be displayed
+  - `variants`: Widget content for different size families
+  - `deepLinkUrl` (optional): URL to open when tapping this specific entry
+
+**With deep links per entry:**
+
+```typescript
+await scheduleWidget('news', [
+  {
+    date: new Date('2026-01-16T08:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Morning Headlines</Voltra.Text>
+    },
+    deepLinkUrl: '/news/morning'
+  },
+  {
+    date: new Date('2026-01-16T20:00:00'),
+    variants: {
+      systemSmall: <Voltra.Text>Evening Edition</Voltra.Text>
+    },
+    deepLinkUrl: '/news/evening'
+  }
+])
+```
+
+:::warning iOS System Constraints
+iOS controls when widgets actually update based on battery level, widget visibility, and system load. While you can schedule entries at any interval, iOS typically enforces a minimum of ~15 minutes between updates. Entries scheduled more frequently may be delayed or coalesced.
+:::
+
+**Best practices:**
+
+- Schedule entries at realistic intervals (15+ minutes apart)
+- Don't schedule hundreds of entries—iOS has a daily refresh budget
+- Use `updateWidget` for immediate one-time updates
+- Use `scheduleWidget` for predictable, recurring content changes
 
 ## Widget configuration via Expo plugin
 

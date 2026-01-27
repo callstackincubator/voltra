@@ -47,6 +47,35 @@ const variants = {
 }
 ```
 
+### Supplemental Activity Families (iOS 18+, watchOS 11+)
+
+The `supplementalActivityFamilies` variant defines how your Live Activity appears on Apple Watch Smart Stack and CarPlay displays. This variant is optional and works seamlessly with your existing lock screen and Dynamic Island variants.
+
+```typescript
+const variants = {
+  lockScreen: (
+    <Voltra.VStack>
+      {/* iPhone lock screen content */}
+    </Voltra.VStack>
+  ),
+  island: {
+    /* Dynamic Island variants for iPhone */
+  },
+  supplementalActivityFamilies: {
+    small: (
+      <Voltra.HStack style={{ padding: 12, gap: 8 }}>
+        <Voltra.Text style={{ fontSize: 18, fontWeight: '700' }}>12 min</Voltra.Text>
+        <Voltra.Text style={{ fontSize: 14, color: '#9CA3AF' }}>ETA</Voltra.Text>
+      </Voltra.HStack>
+    ),
+  },
+}
+```
+
+If `supplementalActivityFamilies.small` is not provided, Voltra will automatically construct it from your Dynamic Island `compact` variant by combining the leading and trailing content in an HStack.
+
+See [Supplemental Activity Families](/development/supplemental-activity-families) for detailed design guidelines.
+
 ## useLiveActivity
 
 For React development, Voltra provides the `useLiveActivity` hook for integration with the component lifecycle and automatic updates during development.

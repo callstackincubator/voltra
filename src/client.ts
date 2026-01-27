@@ -47,6 +47,8 @@ export {
   clearAllWidgets,
   clearWidget,
   reloadWidgets,
+  type ScheduledWidgetEntry,
+  scheduleWidget,
   updateWidget,
   type UpdateWidgetOptions,
 } from './widgets/widget-api.js'

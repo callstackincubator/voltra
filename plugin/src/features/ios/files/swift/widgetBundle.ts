@@ -63,7 +63,7 @@ export function generateWidgetBundleSwift(widgets: WidgetConfig[]): string {
     @main
     struct VoltraWidgetBundle: WidgetBundle {
       var body: some Widget {
-        // Live Activity Widget (Dynamic Island + Lock Screen)
+        // Live Activity (with Watch/CarPlay support)
         VoltraWidget()
 
         // Home Screen Widgets
@@ -97,7 +97,7 @@ export function generateDefaultWidgetBundleSwift(): string {
     @main
     struct VoltraWidgetBundle: WidgetBundle {
       var body: some Widget {
-        // Live Activity Widget (Dynamic Island + Lock Screen)
+        // Live Activity (with Watch/CarPlay support)
         VoltraWidget()
       }
     }

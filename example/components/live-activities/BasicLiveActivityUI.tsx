@@ -33,6 +33,7 @@ export function BasicLiveActivityUI() {
             fontSize: 28,
             fontWeight: '700',
             letterSpacing: -0.5,
+            fontFamily: 'Merriweather-Regular',
           }}
         >
           Hello, Voltra!

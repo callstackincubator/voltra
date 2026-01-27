@@ -113,13 +113,14 @@ public class VoltraLiveActivityService {
     return Array(Activity<VoltraAttributes>.activities)
   }
 
-  /// Get the latest (most recently created) activity
-  public func getLatestActivity() -> Activity<VoltraAttributes>? {
+  /// Get the latest (most recently created) activity across both types
+  public func getLatestActivity() -> VoltraActivity? {
     guard Self.isSupported() else { return nil }
-    return Activity<VoltraAttributes>.activities.last
+    let allActivities = getAllActivities()
+    return allActivities.last
   }
 
-  /// Check if an activity with the given name exists
+  /// Check if an activity with the given name exists across both types
   public func isActivityActive(name: String) -> Bool {
     findActivity(byName: name) != nil
   }
@@ -153,7 +154,7 @@ public class VoltraLiveActivityService {
     let initialState = try VoltraAttributes.ContentState(uiJsonData: request.jsonString)
 
     // Request the activity
-    let activity = try Activity.request(
+    _ = try Activity.request(
       attributes: attributes,
       content: .init(
         state: initialState,
@@ -174,7 +175,7 @@ public class VoltraLiveActivityService {
   ///   - request: Parameters for updating the activity
   /// - Throws: Error if update fails
   public func updateActivity(
-    _ activity: Activity<VoltraAttributes>,
+    _ activity: VoltraActivity,
     request: UpdateActivityRequest
   ) async throws {
     guard Self.isSupported() else {
@@ -212,7 +213,7 @@ public class VoltraLiveActivityService {
   /// - Parameter activity: The activity to end
   /// - Parameter dismissalPolicy: How the activity should be dismissed
   public func endActivity(
-    _ activity: Activity<VoltraAttributes>,
+    _ activity: VoltraActivity,
     dismissalPolicy: ActivityUIDismissalPolicy = .immediate
   ) async {
     guard Self.isSupported() else { return }
@@ -252,6 +253,101 @@ public class VoltraLiveActivityService {
     let activities = getAllActivities()
     for activity in activities {
       await endActivity(activity)
+    }
+  }
+
+  // MARK: - Monitoring
+
+  private var monitoredActivityIds: Set<String> = []
+  private var monitoringTasks: [Task<Void, Never>] = []
+
+  /// Start monitoring all Live Activities and Push Tokens
+  public func startMonitoring(enablePush: Bool) {
+    guard Self.isSupported() else { return }
+
+    // 1. Monitor Push-to-Start Tokens
+    if enablePush {
+      if #available(iOS 17.2, *) {
+        startPushToStartTokenObservation()
+      }
+    }
+
+    // 2. Monitor Live Activity Updates (Creation & Lifecycle)
+    startActivityUpdatesObservation(enablePush: enablePush)
+  }
+
+  /// Stop all monitoring tasks
+  public func stopMonitoring() {
+    monitoredActivityIds.removeAll()
+    monitoringTasks.forEach { $0.cancel() }
+    monitoringTasks.removeAll()
+  }
+
+  @available(iOS 17.2, *)
+  private func startPushToStartTokenObservation() {
+    if let initialTokenData = Activity<VoltraAttributes>.pushToStartToken {
+      let token = initialTokenData.hexString
+      VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
+    }
+    let task = Task {
+      for await tokenData in Activity<VoltraAttributes>.pushToStartTokenUpdates {
+        let token = tokenData.hexString
+        VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
+      }
+    }
+    monitoringTasks.append(task)
+  }
+
+  private func startActivityUpdatesObservation(enablePush: Bool) {
+    // 1. Handle currently existing activities
+    for activity in Activity<VoltraAttributes>.activities {
+      monitorActivity(activity, enablePush: enablePush)
+    }
+
+    // 2. Listen for NEW activities
+    let updatesTask = Task {
+      for await newActivity in Activity<VoltraAttributes>.activityUpdates {
+        monitorActivity(newActivity, enablePush: enablePush)
+      }
+    }
+    monitoringTasks.append(updatesTask)
+  }
+
+  /// Set up observers for an activity's lifecycle
+  private func monitorActivity(_ activity: Activity<VoltraAttributes>, enablePush: Bool) {
+    let activityId = activity.id
+
+    // Avoid duplicate monitoring
+    guard !monitoredActivityIds.contains(activityId) else { return }
+    monitoredActivityIds.insert(activityId)
+
+    // Lifecycle state changes
+    let stateTask = Task {
+      for await state in activity.activityStateUpdates {
+        VoltraEventBus.shared.send(
+          .stateChange(
+            activityName: activity.attributes.name,
+            state: String(describing: state)
+          )
+        )
+      }
+    }
+    monitoringTasks.append(stateTask)
+
+    // Push token updates
+    if enablePush {
+      let tokenTask = Task {
+        for await pushTokenData in activity.pushTokenUpdates {
+          let pushTokenString = pushTokenData.hexString
+          VoltraEventBus.shared.send(
+            .tokenReceived(
+              activityName: activity.attributes.name,
+              pushToken: pushTokenString
+            )
+          )
+        }
+      }
+      monitoringTasks.append(tokenTask)
     }
   }
 }

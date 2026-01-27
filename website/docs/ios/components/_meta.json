@@ -1,6 +1,11 @@
 [
   {
     "type": "file",
+    "name": "overview",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
     "name": "layout",
     "label": "Layout & Containers"
   },
