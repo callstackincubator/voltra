@@ -1,13 +1,13 @@
 import type { ComponentRegistry } from '../../renderer/index.js'
 import { createVoltraRenderer } from '../../renderer/index.js'
-import { getComponentId } from '../../payload/component-ids.js'
+import { getAndroidComponentId } from '../payload/component-ids.js'
 import type { AndroidLiveUpdateJson, AndroidLiveUpdateVariants } from './types.js'
 
 /**
  * Android component registry that uses Android component ID mappings
  */
 const androidComponentRegistry: ComponentRegistry = {
-  getComponentId: (name: string) => getComponentId(name),
+  getComponentId: (name: string) => getAndroidComponentId(name),
 }
 
 /**

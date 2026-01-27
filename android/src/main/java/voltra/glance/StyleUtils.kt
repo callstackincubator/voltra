@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
-import voltra.ComponentRegistry
+import voltra.payload.ComponentTypeID
 import voltra.glance.renderers.getOnClickAction
 import voltra.styling.CompositeStyle
 import voltra.styling.StyleConverter
@@ -70,7 +70,7 @@ private fun resolveStyle(
  * @param props The component props
  * @param elementId The element's ID (from element.i)
  * @param widgetId The widget ID for the action callback
- * @param componentType The component type (from ComponentRegistry)
+ * @param componentType The component type (from ComponentTypeID)
  * @param elementHashCode The hash code of the element for generating fallback IDs
  * @return The modifier with clickable applied if needed, otherwise unchanged
  */
@@ -94,13 +94,13 @@ fun applyClickableIfNeeded(
     // Skip components that already have built-in click handlers
     val exclusionList =
         setOf(
-            ComponentRegistry.FILLED_BUTTON,
-            ComponentRegistry.OUTLINE_BUTTON,
-            ComponentRegistry.CIRCLE_ICON_BUTTON,
-            ComponentRegistry.SQUARE_ICON_BUTTON,
-            ComponentRegistry.SWITCH,
-            ComponentRegistry.RADIO_BUTTON,
-            ComponentRegistry.CHECK_BOX,
+            ComponentTypeID.FILLED_BUTTON,
+            ComponentTypeID.OUTLINE_BUTTON,
+            ComponentTypeID.CIRCLE_ICON_BUTTON,
+            ComponentTypeID.SQUARE_ICON_BUTTON,
+            ComponentTypeID.SWITCH,
+            ComponentTypeID.RADIO_BUTTON,
+            ComponentTypeID.CHECK_BOX,
         )
 
     if (componentType in exclusionList) {

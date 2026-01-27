@@ -1,6 +1,7 @@
 package voltra
 
 import android.content.Context
+import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.ui.unit.DpSize
@@ -144,6 +145,14 @@ class VoltraRN(
                                 if (childCount > 1) {
                                     frameLayout.removeViews(0, childCount - 1)
                                 }
+
+                                // CRITICAL FIX: Manually trigger layout for the new content.
+                                // Since we are adding this async, the parent won't do it for us automatically.
+                                frameLayout.measure(
+                                    View.MeasureSpec.makeMeasureSpec(frameLayout.width, View.MeasureSpec.EXACTLY),
+                                    View.MeasureSpec.makeMeasureSpec(frameLayout.height, View.MeasureSpec.EXACTLY)
+                                )
+                                frameLayout.layout(frameLayout.left, frameLayout.top, frameLayout.right, frameLayout.bottom)
 
                                 // Update tracking state
                                 lastRenderedPayload = payloadStr

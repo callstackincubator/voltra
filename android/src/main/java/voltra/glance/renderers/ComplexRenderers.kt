@@ -10,7 +10,7 @@ import androidx.glance.appwidget.components.TitleBar
 import androidx.glance.text.FontFamily
 import androidx.glance.unit.ColorProvider
 import com.google.gson.Gson
-import voltra.ComponentRegistry
+import voltra.payload.ComponentTypeID
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
@@ -138,10 +138,10 @@ private fun extractScaffoldChildren(
             val titleBar =
                 children.elements.find { child ->
                     when (child) {
-                        is VoltraNode.Element -> child.element.t == ComponentRegistry.TITLE_BAR
+                        is VoltraNode.Element -> child.element.t == ComponentTypeID.TITLE_BAR
                         is VoltraNode.Ref -> {
                             val resolved = context.sharedElements?.getOrNull(child.ref)
-                            resolved is VoltraNode.Element && resolved.element.t == ComponentRegistry.TITLE_BAR
+                            resolved is VoltraNode.Element && resolved.element.t == ComponentTypeID.TITLE_BAR
                         }
                         else -> false
                     }
@@ -150,10 +150,10 @@ private fun extractScaffoldChildren(
             val bodyElements =
                 children.elements.filter { child ->
                     when (child) {
-                        is VoltraNode.Element -> child.element.t != ComponentRegistry.TITLE_BAR
+                        is VoltraNode.Element -> child.element.t != ComponentTypeID.TITLE_BAR
                         is VoltraNode.Ref -> {
                             val resolved = context.sharedElements?.getOrNull(child.ref)
-                            !(resolved is VoltraNode.Element && resolved.element.t == ComponentRegistry.TITLE_BAR)
+                            !(resolved is VoltraNode.Element && resolved.element.t == ComponentTypeID.TITLE_BAR)
                         }
                         else -> true
                     }
@@ -163,7 +163,7 @@ private fun extractScaffoldChildren(
             titleBar to body
         }
         is VoltraNode.Element -> {
-            if (children.element.t == ComponentRegistry.TITLE_BAR) {
+            if (children.element.t == ComponentTypeID.TITLE_BAR) {
                 children to null
             } else {
                 null to children

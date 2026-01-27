@@ -12,12 +12,12 @@ export function generateWidgetInfoXml(widget: AndroidWidgetConfig): string {
 
   let minWidth = widget.minWidth
   if (minWidth === undefined && widget.minCellWidth !== undefined) {
-    minWidth = widget.minCellWidth * 73 - 16
+    minWidth = widget.minCellWidth * 70 - 30
   }
 
   let minHeight = widget.minHeight
   if (minHeight === undefined && widget.minCellHeight !== undefined) {
-    minHeight = widget.minCellHeight * 73 - 16
+    minHeight = widget.minCellHeight * 70 - 30
   }
 
   const minWidthAttr = minWidth !== undefined ? `\n    android:minWidth="${minWidth}dp"` : ''

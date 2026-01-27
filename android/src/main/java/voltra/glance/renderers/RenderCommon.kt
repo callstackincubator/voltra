@@ -14,7 +14,7 @@ import androidx.glance.LocalContext
 import androidx.glance.layout.ContentScale
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import voltra.ComponentRegistry
+import voltra.payload.ComponentTypeID
 import voltra.glance.LocalVoltraRenderContext
 import voltra.images.VoltraImageManager
 import voltra.models.VoltraElement
@@ -151,26 +151,26 @@ fun RenderNode(node: VoltraNode?) {
 @Composable
 private fun RenderElement(element: VoltraElement) {
     when (element.t) {
-        ComponentRegistry.TEXT -> RenderText(element)
-        ComponentRegistry.COLUMN -> RenderColumn(element)
-        ComponentRegistry.ROW -> RenderRow(element)
-        ComponentRegistry.BOX -> RenderBox(element)
-        ComponentRegistry.SPACER -> RenderSpacer(element)
-        ComponentRegistry.IMAGE -> RenderImage(element)
-        ComponentRegistry.BUTTON -> RenderButton(element)
-        ComponentRegistry.LINEAR_PROGRESS -> RenderLinearProgress(element)
-        ComponentRegistry.CIRCULAR_PROGRESS -> RenderCircularProgress(element)
-        ComponentRegistry.SWITCH -> RenderSwitch(element)
-        ComponentRegistry.RADIO_BUTTON -> RenderRadioButton(element)
-        ComponentRegistry.CHECK_BOX -> RenderCheckBox(element)
-        ComponentRegistry.FILLED_BUTTON -> RenderFilledButton(element)
-        ComponentRegistry.OUTLINE_BUTTON -> RenderOutlineButton(element)
-        ComponentRegistry.CIRCLE_ICON_BUTTON -> RenderCircleIconButton(element)
-        ComponentRegistry.SQUARE_ICON_BUTTON -> RenderSquareIconButton(element)
-        ComponentRegistry.TITLE_BAR -> RenderTitleBar(element)
-        ComponentRegistry.SCAFFOLD -> RenderScaffold(element)
-        ComponentRegistry.LAZY_COLUMN -> RenderLazyColumn(element)
-        ComponentRegistry.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element)
+        ComponentTypeID.TEXT -> RenderText(element)
+        ComponentTypeID.COLUMN -> RenderColumn(element)
+        ComponentTypeID.ROW -> RenderRow(element)
+        ComponentTypeID.BOX -> RenderBox(element)
+        ComponentTypeID.SPACER -> RenderSpacer(element)
+        ComponentTypeID.IMAGE -> RenderImage(element)
+        ComponentTypeID.BUTTON -> RenderButton(element)
+        ComponentTypeID.LINEAR_PROGRESS_INDICATOR -> RenderLinearProgress(element)
+        ComponentTypeID.CIRCULAR_PROGRESS_INDICATOR -> RenderCircularProgress(element)
+        ComponentTypeID.SWITCH -> RenderSwitch(element)
+        ComponentTypeID.RADIO_BUTTON -> RenderRadioButton(element)
+        ComponentTypeID.CHECK_BOX -> RenderCheckBox(element)
+        ComponentTypeID.FILLED_BUTTON -> RenderFilledButton(element)
+        ComponentTypeID.OUTLINE_BUTTON -> RenderOutlineButton(element)
+        ComponentTypeID.CIRCLE_ICON_BUTTON -> RenderCircleIconButton(element)
+        ComponentTypeID.SQUARE_ICON_BUTTON -> RenderSquareIconButton(element)
+        ComponentTypeID.TITLE_BAR -> RenderTitleBar(element)
+        ComponentTypeID.SCAFFOLD -> RenderScaffold(element)
+        ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element)
+        ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element)
     }
 }
 
@@ -185,25 +185,25 @@ fun RenderElementWithModifier(
     compositeStyle: CompositeStyle?,
 ) {
     when (element.t) {
-        ComponentRegistry.TEXT -> RenderText(element, modifier, compositeStyle)
-        ComponentRegistry.COLUMN -> RenderColumn(element, modifier)
-        ComponentRegistry.ROW -> RenderRow(element, modifier)
-        ComponentRegistry.BOX -> RenderBox(element, modifier)
-        ComponentRegistry.SPACER -> RenderSpacer(element, modifier)
-        ComponentRegistry.IMAGE -> RenderImage(element, modifier)
-        ComponentRegistry.BUTTON -> RenderButton(element, modifier)
-        ComponentRegistry.LINEAR_PROGRESS -> RenderLinearProgress(element, modifier)
-        ComponentRegistry.CIRCULAR_PROGRESS -> RenderCircularProgress(element, modifier)
-        ComponentRegistry.SWITCH -> RenderSwitch(element, modifier)
-        ComponentRegistry.RADIO_BUTTON -> RenderRadioButton(element, modifier)
-        ComponentRegistry.CHECK_BOX -> RenderCheckBox(element, modifier)
-        ComponentRegistry.FILLED_BUTTON -> RenderFilledButton(element, modifier)
-        ComponentRegistry.OUTLINE_BUTTON -> RenderOutlineButton(element, modifier)
-        ComponentRegistry.CIRCLE_ICON_BUTTON -> RenderCircleIconButton(element, modifier)
-        ComponentRegistry.SQUARE_ICON_BUTTON -> RenderSquareIconButton(element, modifier)
-        ComponentRegistry.TITLE_BAR -> RenderTitleBar(element, modifier)
-        ComponentRegistry.SCAFFOLD -> RenderScaffold(element, modifier)
-        ComponentRegistry.LAZY_COLUMN -> RenderLazyColumn(element, modifier)
-        ComponentRegistry.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element, modifier)
+        ComponentTypeID.TEXT -> RenderText(element, modifier, compositeStyle)
+        ComponentTypeID.COLUMN -> RenderColumn(element, modifier)
+        ComponentTypeID.ROW -> RenderRow(element, modifier)
+        ComponentTypeID.BOX -> RenderBox(element, modifier)
+        ComponentTypeID.SPACER -> RenderSpacer(element, modifier)
+        ComponentTypeID.IMAGE -> RenderImage(element, modifier)
+        ComponentTypeID.BUTTON -> RenderButton(element, modifier)
+        ComponentTypeID.LINEAR_PROGRESS_INDICATOR -> RenderLinearProgress(element, modifier)
+        ComponentTypeID.CIRCULAR_PROGRESS_INDICATOR -> RenderCircularProgress(element, modifier)
+        ComponentTypeID.SWITCH -> RenderSwitch(element, modifier)
+        ComponentTypeID.RADIO_BUTTON -> RenderRadioButton(element, modifier)
+        ComponentTypeID.CHECK_BOX -> RenderCheckBox(element, modifier)
+        ComponentTypeID.FILLED_BUTTON -> RenderFilledButton(element, modifier)
+        ComponentTypeID.OUTLINE_BUTTON -> RenderOutlineButton(element, modifier)
+        ComponentTypeID.CIRCLE_ICON_BUTTON -> RenderCircleIconButton(element, modifier)
+        ComponentTypeID.SQUARE_ICON_BUTTON -> RenderSquareIconButton(element, modifier)
+        ComponentTypeID.TITLE_BAR -> RenderTitleBar(element, modifier)
+        ComponentTypeID.SCAFFOLD -> RenderScaffold(element, modifier)
+        ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element, modifier)
+        ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element, modifier)
     }
 }

@@ -14,6 +14,7 @@ const ROOT_DIR = path.join(__dirname, '..')
 const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
+const TS_ANDROID_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/android/payload')
 const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/ui/Generated')
 const SWIFT_PARAMETERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Parameters')
 const SWIFT_SHARED_OUTPUT_DIR = path.join(ROOT_DIR, 'ios/shared')
@@ -106,11 +107,15 @@ const main = () => {
   const componentIdFiles = generateComponentIds(componentsData)
   // Split files by destination
   const tsComponentIdFiles: Record<string, string> = {}
+  const tsAndroidComponentIdFiles: Record<string, string> = {}
   const swiftComponentIdFiles: Record<string, string> = {}
   const kotlinComponentIdFiles: Record<string, string> = {}
   for (const [filename, content] of Object.entries(componentIdFiles)) {
-    if (filename.endsWith('.ts')) {
+    if (filename === 'component-ids.ts') {
       tsComponentIdFiles[filename] = content
+    } else if (filename === 'android-component-ids.ts') {
+      // Rename to component-ids.ts when writing to Android directory
+      tsAndroidComponentIdFiles['component-ids.ts'] = content
     } else if (filename.endsWith('.swift')) {
       swiftComponentIdFiles[filename] = content
     } else if (filename.endsWith('.kt')) {
@@ -118,6 +123,7 @@ const main = () => {
     }
   }
   writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsComponentIdFiles)
+  writeFiles(TS_ANDROID_PAYLOAD_OUTPUT_DIR, tsAndroidComponentIdFiles)
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
   writeFiles(KOTLIN_PAYLOAD_OUTPUT_DIR, kotlinComponentIdFiles)
   console.log()
@@ -157,9 +163,11 @@ const main = () => {
     } files in android/src/main/java/voltra/models/parameters/`
   )
   console.log(
-    `   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${
-      Object.keys(swiftComponentIdFiles).length
-    } Swift files, ${Object.keys(kotlinComponentIdFiles).length} Kotlin files`
+    `   Component IDs: ${Object.keys(tsComponentIdFiles).length} iOS TypeScript files, ${
+      Object.keys(tsAndroidComponentIdFiles).length
+    } Android TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files, ${
+      Object.keys(kotlinComponentIdFiles).length
+    } Kotlin files`
   )
   console.log(
     `   Short names: ${Object.keys(tsShortNameFiles).length} TypeScript files, ${

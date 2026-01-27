@@ -7,13 +7,6 @@ import { Card } from '~/components/Card'
 
 const ANDROID_SECTIONS = [
   {
-    id: 'interactive-widgets',
-    title: 'Interactive Widgets',
-    description:
-      'Test interactive Android widgets with checkboxes, switches, and buttons. Real-time event handling between widgets and your app.',
-    route: '/android-widgets/interactive',
-  },
-  {
     id: 'pin-widgets',
     title: 'Pin Widgets',
     description:

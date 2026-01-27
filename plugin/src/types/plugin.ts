@@ -27,11 +27,11 @@ export interface AndroidWidgetConfig {
    */
   minHeight?: number
   /**
-   * Minimum width in cells. Used to derive minWidth if not provided: (N * 73) - 16
+   * Minimum width in cells. Used to derive minWidth if not provided: (N * 70) - 30
    */
   minCellWidth?: number
   /**
-   * Minimum height in cells. Used to derive minHeight if not provided: (N * 73) - 16
+   * Minimum height in cells. Used to derive minHeight if not provided: (N * 70) - 30
    */
   minCellHeight?: number
   /**

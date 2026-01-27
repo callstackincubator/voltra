@@ -4,6 +4,8 @@ import { addVoltraListener } from 'voltra/client'
 
 export const useVoltraEvents = (): void => {
   useEffect(() => {
+    if (Platform.OS !== 'ios') return
+
     const subscription = addVoltraListener('interaction', (event) => {
       console.log('Voltra event:', event)
     })
