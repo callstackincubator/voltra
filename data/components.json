@@ -294,6 +294,26 @@
       }
     },
     {
+      "name": "Image",
+      "description": "Display images from asset catalog or base64 data",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {
+        "source": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Image source - either { assetName: string } for asset catalog images or { base64: string } for base64 encoded images"
+        },
+        "resizeMode": {
+          "type": "string",
+          "optional": true,
+          "enum": ["cover", "contain", "stretch", "repeat", "center"],
+          "default": "cover",
+          "description": "How the image should be resized to fit its container"
+        }
+      }
+    },
+    {
       "name": "AndroidImage",
       "description": "Android Image component",
       "swiftAvailability": "Not available",

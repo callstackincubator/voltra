@@ -13,21 +13,22 @@ public enum ComponentTypeID: Int, Codable {
   case TEXT = 0
   case BUTTON = 1
   case LABEL = 2
-  case SYMBOL = 3
-  case TOGGLE = 4
-  case LINEAR_PROGRESS_VIEW = 5
-  case CIRCULAR_PROGRESS_VIEW = 6
-  case GAUGE = 7
-  case TIMER = 8
-  case LINEAR_GRADIENT = 9
-  case V_STACK = 10
-  case H_STACK = 11
-  case Z_STACK = 12
-  case GROUP_BOX = 13
-  case GLASS_CONTAINER = 14
-  case SPACER = 15
-  case DIVIDER = 16
-  case MASK = 17
+  case IMAGE = 3
+  case SYMBOL = 4
+  case TOGGLE = 5
+  case LINEAR_PROGRESS_VIEW = 6
+  case CIRCULAR_PROGRESS_VIEW = 7
+  case GAUGE = 8
+  case TIMER = 9
+  case LINEAR_GRADIENT = 10
+  case V_STACK = 11
+  case H_STACK = 12
+  case Z_STACK = 13
+  case GROUP_BOX = 14
+  case GLASS_CONTAINER = 15
+  case SPACER = 16
+  case DIVIDER = 17
+  case MASK = 18
 
   /// Get the component name string for this ID
   public var componentName: String {
@@ -38,6 +39,8 @@ public enum ComponentTypeID: Int, Codable {
       return "Button"
     case .LABEL:
       return "Label"
+    case .IMAGE:
+      return "Image"
     case .SYMBOL:
       return "Symbol"
     case .TOGGLE:
@@ -79,6 +82,7 @@ public enum ComponentTypeID: Int, Codable {
     case "Text": self = .TEXT
     case "Button": self = .BUTTON
     case "Label": self = .LABEL
+    case "Image": self = .IMAGE
     case "Symbol": self = .SYMBOL
     case "Toggle": self = .TOGGLE
     case "LinearProgressView": self = .LINEAR_PROGRESS_VIEW

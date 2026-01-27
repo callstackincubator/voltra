@@ -37,6 +37,7 @@
     "clean": "expo-module clean",
     "clean:plugin": "rm -rf plugin/build plugin/tsconfig.tsbuildinfo",
     "format:check": "prettier --check .",
+    "format:fix": "prettier --write .",
     "format:kotlin:check": "ktlint \"android/**/*.kt\"",
     "format:kotlin:fix": "ktlint -F \"android/**/*.kt\"",
     "format:swift:check": "swiftformat --lint ios",
