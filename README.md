@@ -1,24 +1,24 @@
 ![voltra-banner](https://use-voltra.dev/voltra-baner.jpg)
 
-### Build Live Activities with JSX in React Native
+### Build Live Activities and Widgets with JSX in React Native
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-Voltra turns React Native JSX into SwiftUI so you can ship custom Live Activities, Dynamic Island layouts without touching Xcode. Author everything in React, keep hot reload, and let the config plugin handle the extension targets.
+Voltra turns React Native JSX into SwiftUI and Jetpack Compose Glance so you can ship custom Live Activities, Dynamic Island layouts, and Android Widgets without touching native code. Author everything in React, keep hot reload, and let the config plugin handle the native extension targets.
 
 ## Features
 
-- **Ship Native iOS Surfaces**: Create Live Activities, Dynamic Island variants, and static widgets directly from React components - no Swift or Xcode required.
+- **Ship Native Surfaces**: Create iOS Live Activities, Dynamic Island variants, and Android Home Screen widgets directly from React components - no Swift, Kotlin, or Xcode/Android Studio UI work required.
 
-- **Fast Development Workflow**: Hooks respect Fast Refresh and both JS and native layers enforce ActivityKit payload budgets.
+- **Fast Development Workflow**: Hooks respect Fast Refresh and both JS and native layers enforce platform-specific payload budgets.
 
-- **Production-Ready Push Notifications**: Collect ActivityKit push tokens and push-to-start tokens, stream lifecycle updates, and build server-driven refreshes.
+- **Production-Ready Push Notifications**: Support for ActivityKit push tokens (iOS) and FCM (Android) to stream lifecycle updates and build server-driven refreshes.
 
-- **Familiar Styling**: Use React Native style props and ordered SwiftUI modifiers in one place.
+- **Familiar Styling**: Use React Native style props and platform-native modifiers (SwiftUI/Glance) in one place.
 
 - **Type-Safe & Developer-Friendly**: The Voltra schema, hooks, and examples ship with TypeScript definitions, tests, and docs so AI coding agents stay productive.
 
-- **Works With Your Setup**: Compatible with Expo Dev Client and bare React Native projects. The config plugin automatically wires iOS extension targets for you.
+- **Works With Your Setup**: Compatible with Expo Dev Client and bare React Native projects. The config plugin automatically wires native extension targets for you.
 
 ## Documentation
 
@@ -50,7 +50,7 @@ Add the config plugin to your `app.json`:
 }
 ```
 
-Then run `npx expo prebuild --clean` to generate the iOS extension target.
+Then run `npx expo prebuild --clean` to generate the native extension targets.
 
 See the [documentation](https://use-voltra.dev/getting-started/quick-start) for detailed setup instructions.
 
@@ -83,7 +83,9 @@ export function OrderTracker({ orderId }: { orderId: string }) {
 
 ## Platform compatibility
 
-**Note:** This module is intended for use on **iOS devices only**.
+Voltra is a cross-platform library that supports:
+- **iOS**: Live Activities and Dynamic Island (SwiftUI).
+- **Android**: Home Screen Widgets (Jetpack Compose Glance).
 
 ## Authors
 

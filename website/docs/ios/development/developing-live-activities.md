@@ -74,8 +74,6 @@ const variants = {
 
 If `supplementalActivityFamilies.small` is not provided, Voltra will automatically construct it from your Dynamic Island `compact` variant by combining the leading and trailing content in an HStack.
 
-See [Supplemental Activity Families](/development/supplemental-activity-families) for detailed design guidelines.
-
 ## useLiveActivity
 
 For React development, Voltra provides the `useLiveActivity` hook for integration with the component lifecycle and automatic updates during development.
