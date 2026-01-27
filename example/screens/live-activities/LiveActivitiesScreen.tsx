@@ -46,15 +46,23 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
   },
   supplementalFamilies: {
     title: 'Supplemental Families (iOS 18+)',
-    description: 'Demonstrates supplemental activity families: small (Watch/CarPlay) with compact Dynamic Island fallback. StandBy displays lock screen.',
+    description:
+      'Demonstrates supplemental activity families: small (Watch/CarPlay) with compact Dynamic Island fallback. StandBy displays lock screen.',
   },
 }
 
-const CARD_ORDER: ActivityKey[] = ['basic', 'stylesheet', 'glass', 'flight', 'workout', 'compass', 'supplementalFamilies']
+const CARD_ORDER: ActivityKey[] = [
+  'basic',
+  'stylesheet',
+  'glass',
+  'flight',
+  'workout',
+  'compass',
+  'supplementalFamilies',
+]
 
 export default function LiveActivitiesScreen() {
   const insets = useSafeAreaInsets()
-
 
   const [activeMap, setActiveMap] = useState<Record<ActivityKey, boolean>>({
     basic: false,
@@ -194,30 +202,12 @@ export default function LiveActivitiesScreen() {
           style={styles.endAllButton}
         />
 
-        <BasicLiveActivity
-          ref={basicRef}
-          onIsActiveChange={handleBasicStatusChange}
-        />
-        <MusicPlayerLiveActivity
-          ref={stylesheetRef}
-          onIsActiveChange={handleStylesheetStatusChange}
-        />
-        <LiquidGlassLiveActivity
-          ref={glassRef}
-          onIsActiveChange={handleGlassStatusChange}
-        />
-        <FlightLiveActivity
-          ref={flightRef}
-          onIsActiveChange={handleFlightStatusChange}
-        />
-        <WorkoutLiveActivity
-          ref={workoutRef}
-          onIsActiveChange={handleWorkoutStatusChange}
-        />
-        <CompassLiveActivity
-          ref={compassRef}
-          onIsActiveChange={handleCompassStatusChange}
-        />
+        <BasicLiveActivity ref={basicRef} onIsActiveChange={handleBasicStatusChange} />
+        <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
+        <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
+        <FlightLiveActivity ref={flightRef} onIsActiveChange={handleFlightStatusChange} />
+        <WorkoutLiveActivity ref={workoutRef} onIsActiveChange={handleWorkoutStatusChange} />
+        <CompassLiveActivity ref={compassRef} onIsActiveChange={handleCompassStatusChange} />
         <SupplementalFamiliesLiveActivity
           ref={supplementalFamiliesRef}
           onIsActiveChange={handleSupplementalFamiliesStatusChange}

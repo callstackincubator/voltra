@@ -42,7 +42,6 @@ export function SupplementalFamiliesCompactTrailing() {
   )
 }
 
-
 export function SupplementalFamiliesMinimal() {
   return (
     <Voltra.VStack id="supplemental-families-minimal" alignment="center" style={{ padding: 6 }}>
