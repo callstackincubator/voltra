@@ -5,7 +5,11 @@ import type { AndroidWidgetConfig } from '../../../../types'
 /**
  * Generates widget provider info XML for a single widget
  */
-export function generateWidgetInfoXml(widget: AndroidWidgetConfig): string {
+export function generateWidgetInfoXml(
+  widget: AndroidWidgetConfig,
+  previewImageResourceName?: string,
+  previewLayoutResourceName?: string
+): string {
   const { targetCellWidth, targetCellHeight } = widget
   const resizeMode = widget.resizeMode || 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory || 'home_screen'
@@ -22,6 +26,12 @@ export function generateWidgetInfoXml(widget: AndroidWidgetConfig): string {
 
   const minWidthAttr = minWidth !== undefined ? `\n    android:minWidth="${minWidth}dp"` : ''
   const minHeightAttr = minHeight !== undefined ? `\n    android:minHeight="${minHeight}dp"` : ''
+  const previewImageAttr = previewImageResourceName
+    ? `\n    android:previewImage="@drawable/${previewImageResourceName}"`
+    : ''
+  const previewLayoutAttr = previewLayoutResourceName
+    ? `\n    android:previewLayout="@layout/${previewLayoutResourceName}"`
+    : ''
 
   return dedent`
     <?xml version="1.0" encoding="utf-8"?>
@@ -32,7 +42,7 @@ export function generateWidgetInfoXml(widget: AndroidWidgetConfig): string {
         android:initialLayout="@layout/voltra_widget_placeholder"
         android:resizeMode="${resizeMode}"
         android:widgetCategory="${widgetCategory}"
-        android:description="@string/voltra_widget_${widget.id}_description">
+        android:description="@string/voltra_widget_${widget.id}_description"${previewImageAttr}${previewLayoutAttr}>
     </appwidget-provider>
   `
 }

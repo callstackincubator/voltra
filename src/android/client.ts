@@ -38,7 +38,7 @@ export { clearPreloadedImages, preloadImages, reloadWidgets } from './preload.js
 // Android Preview Components
 export { VoltraView, type VoltraViewProps } from './components/VoltraView.js'
 export {
+  type AndroidWidgetFamily,
   VoltraWidgetPreview,
   type VoltraWidgetPreviewProps,
-  type AndroidWidgetFamily,
 } from './components/VoltraWidgetPreview.js'

@@ -2,14 +2,19 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import { DEFAULT_ANDROID_USER_IMAGES_PATH } from '../../../../constants'
+import type { AndroidWidgetConfig } from '../../../../types'
 import { logger } from '../../../../utils'
 import { copyUserImagesToAndroid } from './images'
+import { copyPreviewImagesToAndroid } from './preview'
 
 export interface GenerateAndroidAssetsOptions {
   platformProjectRoot: string
   projectRoot: string
   userImagesPath?: string
+  widgets: AndroidWidgetConfig[]
 }
+
+export { copyPreviewImagesToAndroid }
 
 /**
  * Generates all asset files for Android widgets.
@@ -17,10 +22,13 @@ export interface GenerateAndroidAssetsOptions {
  * This creates:
  * - res/drawable/ directory structure
  * - Copies user images to drawable resources as Android-compatible resources
+ * - Copies widget preview images to drawable resources
  * - Validates image sizes for widget compatibility
+ *
+ * @returns Map of widgetId to preview image drawable resource name
  */
-export async function generateAndroidAssets(options: GenerateAndroidAssetsOptions): Promise<void> {
-  const { platformProjectRoot, projectRoot, userImagesPath = DEFAULT_ANDROID_USER_IMAGES_PATH } = options
+export async function generateAndroidAssets(options: GenerateAndroidAssetsOptions): Promise<Map<string, string>> {
+  const { platformProjectRoot, projectRoot, userImagesPath = DEFAULT_ANDROID_USER_IMAGES_PATH, widgets } = options
 
   // Create res/drawable directory
   const drawablePath = path.join(platformProjectRoot, 'app', 'src', 'main', 'res', 'drawable')
@@ -59,4 +67,13 @@ export async function generateAndroidAssets(options: GenerateAndroidAssetsOption
   if (copiedImages.length > 0) {
     logger.info(`Copied ${copiedImages.length} user image(s) to Android drawable resources`)
   }
+
+  // Copy preview images to drawable resources
+  const previewImageMap = await copyPreviewImagesToAndroid(widgets, projectRoot, drawablePath)
+
+  if (previewImageMap.size > 0) {
+    logger.info(`Copied ${previewImageMap.size} preview image(s) to Android drawable resources`)
+  }
+
+  return previewImageMap
 }

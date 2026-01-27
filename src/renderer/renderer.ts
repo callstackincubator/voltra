@@ -23,8 +23,8 @@ import {
   isSuspense,
 } from 'react-is'
 
-import { isVoltraComponent } from '../jsx/createVoltraComponent.js'
 import { getAndroidComponentId } from '../android/payload/component-ids.js'
+import { isVoltraComponent } from '../jsx/createVoltraComponent.js'
 import { getComponentId } from '../payload/component-ids.js'
 import { shorten } from '../payload/short-names.js'
 import { VoltraElementJson, VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'

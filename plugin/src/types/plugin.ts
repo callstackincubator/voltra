@@ -57,6 +57,18 @@ export interface AndroidWidgetConfig {
    * This will be pre-rendered at build time and bundled into the app.
    */
   initialStatePath?: string
+  /**
+   * Path to preview image for widget picker (PNG/JPG/WebP).
+   * Sets android:previewImage attribute. Works on all Android versions.
+   * On Android 12+, combine with previewLayout for better results.
+   */
+  previewImage?: string
+  /**
+   * Path to custom XML layout for RemoteViews preview (Android 12+).
+   * Sets android:previewLayout attribute for scalable previews.
+   * If not provided but previewImage is set, an auto-layout will be generated.
+   */
+  previewLayout?: string
 }
 
 /**

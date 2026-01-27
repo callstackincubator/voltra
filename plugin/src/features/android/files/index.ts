@@ -29,14 +29,15 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
   return withDangerousMod(config, [
     'android',
     async (config) => {
-      const { platformProjectRoot } = config.modRequest
+      const { platformProjectRoot, projectRoot } = config.modRequest
       const packageName = config.android?.package || 'com.example.app'
 
-      // Generate assets (drawable images)
-      await generateAndroidAssets({
+      // Generate assets (drawable images and preview images)
+      const previewImageMap = await generateAndroidAssets({
         platformProjectRoot,
-        projectRoot: config.modRequest.projectRoot,
+        projectRoot,
         userImagesPath,
+        widgets,
       })
 
       // Generate Kotlin receiver classes
@@ -46,10 +47,12 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
         widgets,
       })
 
-      // Generate XML files (widget info, layouts, strings)
+      // Generate XML files (widget info, layouts, strings, preview layouts)
       await generateXmlFiles({
         platformProjectRoot,
+        projectRoot,
         widgets,
+        previewImageMap,
       })
 
       // Generate initial states (pre-rendered widgets)

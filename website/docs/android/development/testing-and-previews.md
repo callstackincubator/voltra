@@ -1,6 +1,11 @@
 # Testing and Previews (Android)
 
-Voltra provides specialized components that allow you to preview your Android widget layouts directly within your React Native app. This significantly speeds up development by eliminating the need to constantly check the home screen.
+Voltra provides multiple ways to preview your Android widgets:
+
+1. **In-App Previews** - Preview layouts within your development app using `VoltraWidgetPreview`
+2. **Widget Picker Previews** - Customize what users see in the Android widget picker when adding your widget
+
+This page covers in-app previews for development. For widget picker previews, see [Plugin Configuration - Widget Picker Previews](../api/plugin-configuration#widget-picker-previews).
 
 ## VoltraWidgetPreview
 

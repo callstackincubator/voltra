@@ -1,7 +1,7 @@
 export {
   type ComponentRegistry,
   createVoltraRenderer,
-  renderVoltraVariantToJson,
   renderAndroidVariantToJson,
+  renderVoltraVariantToJson,
   VOLTRA_PAYLOAD_VERSION,
 } from './renderer.js'

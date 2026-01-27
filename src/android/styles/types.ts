@@ -80,9 +80,7 @@ export type VoltraAndroidViewStyle = {
   visibility?: 'visible' | 'hidden' | 'invisible'
 
   /** Transform effects (Note: Not supported in Glance) */
-  transform?: Array<
-    { rotate: string } | { rotateZ: string } | { scale: number } | { scaleX: number } | { scaleY: number }
-  >
+  transform?: ({ rotate: string } | { rotateZ: string } | { scale: number } | { scaleX: number } | { scaleY: number })[]
 
   /** Shadow properties (Note: Not supported in Glance) */
   shadowColor?: string
@@ -110,7 +108,7 @@ export type VoltraAndroidTextStyle = VoltraAndroidViewStyle & {
   /** Letter spacing (Note: Not supported in Glance) */
   letterSpacing?: number
   /** Font variants (Note: Not supported in Glance) */
-  fontVariant?: Array<'small-caps' | 'tabular-nums'>
+  fontVariant?: ('small-caps' | 'tabular-nums')[]
   /** Maximum number of lines to display (maps to lineLimit) */
   numberOfLines?: number
 }

@@ -61,5 +61,15 @@ Unlike standard React Native or iOS Stacks, Android Glance layouts are more rest
 ## Advanced Features
 
 - **[Testing and Previews](./testing-and-previews):** Preview layouts within your app.
+- **[Widget Picker Previews](../api/plugin-configuration#widget-picker-previews):** Configure how your widget appears in the Android widget picker.
 - **[Image Preloading](./image-preloading):** Cache remote images for use in widgets.
 - **[Widget Pre-rendering](./widget-pre-rendering):** Provide initial state for widgets before the app first runs.
+
+## Widget Picker Previews
+
+When users browse the widget picker to add your widget to their home screen, they see a preview. You can customize this preview using:
+
+- **`previewImage`:** Static image (PNG/JPG/WebP) that shows in the picker on all Android versions
+- **`previewLayout`:** Custom XML layout that renders a scalable preview on Android 12+
+
+See [Plugin Configuration - Widget Picker Previews](../api/plugin-configuration#widget-picker-previews) for configuration details and examples.

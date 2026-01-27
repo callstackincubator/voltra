@@ -1,10 +1,13 @@
+import * as fs from 'fs'
+import * as path from 'path'
+
 import type { AndroidWidgetConfig } from '../types'
 
 /**
  * Validates an Android widget configuration.
  * Throws an error if validation fails.
  */
-export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig): void {
+export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): void {
   // Validate widget ID
   if (!widget.id || typeof widget.id !== 'string') {
     throw new Error('Widget ID is required and must be a string')
@@ -58,6 +61,47 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig): void {
       widget.minCellHeight < 1
     ) {
       throw new Error(`Widget '${widget.id}': minCellHeight must be a positive integer`)
+    }
+  }
+
+  // Validate previewImage if provided
+  if (widget.previewImage !== undefined) {
+    if (typeof widget.previewImage !== 'string' || !widget.previewImage.trim()) {
+      throw new Error(`Widget '${widget.id}': previewImage must be a non-empty string`)
+    }
+
+    const ext = path.extname(widget.previewImage).toLowerCase()
+    const validImageExts = ['.png', '.jpg', '.jpeg', '.webp']
+    if (!validImageExts.includes(ext)) {
+      throw new Error(`Widget '${widget.id}': previewImage must be a PNG, JPG, JPEG, or WebP file. Got: ${ext}`)
+    }
+
+    // Check file exists if projectRoot is provided
+    if (projectRoot) {
+      const fullPath = path.join(projectRoot, widget.previewImage)
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`Widget '${widget.id}': previewImage file not found at ${widget.previewImage}`)
+      }
+    }
+  }
+
+  // Validate previewLayout if provided
+  if (widget.previewLayout !== undefined) {
+    if (typeof widget.previewLayout !== 'string' || !widget.previewLayout.trim()) {
+      throw new Error(`Widget '${widget.id}': previewLayout must be a non-empty string`)
+    }
+
+    const ext = path.extname(widget.previewLayout).toLowerCase()
+    if (ext !== '.xml') {
+      throw new Error(`Widget '${widget.id}': previewLayout must be an XML file. Got: ${ext}`)
+    }
+
+    // Check file exists if projectRoot is provided
+    if (projectRoot) {
+      const fullPath = path.join(projectRoot, widget.previewLayout)
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`Widget '${widget.id}': previewLayout file not found at ${widget.previewLayout}`)
+      }
     }
   }
 }
