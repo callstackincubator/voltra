@@ -10,6 +10,6 @@ import Foundation
 /// Parameters for GlassContainer component
 /// iOS 26+ Liquid Glass container
 public struct GlassContainerParameters: ComponentParameters {
-    /// Spacing between glass elements
-    public let spacing: Double?
+  /// Spacing between glass elements
+  public let spacing: Double?
 }

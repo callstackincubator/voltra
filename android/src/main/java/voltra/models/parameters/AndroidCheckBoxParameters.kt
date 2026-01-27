@@ -17,10 +17,8 @@ import kotlinx.serialization.Serializable
 data class AndroidCheckBoxParameters(
     /** Unique identifier for interaction events */
     val id: String,
-
     /** Initial checked state */
     val checked: Boolean? = null,
-
     /** Whether the checkbox is enabled */
-    val enabled: Boolean? = null
+    val enabled: Boolean? = null,
 )

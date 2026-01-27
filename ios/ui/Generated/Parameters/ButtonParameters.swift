@@ -10,6 +10,6 @@ import Foundation
 /// Parameters for Button component
 /// Interactive button component
 public struct ButtonParameters: ComponentParameters {
-    /// Visual style of the button
-    public let buttonStyle: String?
+  /// Visual style of the button
+  public let buttonStyle: String?
 }

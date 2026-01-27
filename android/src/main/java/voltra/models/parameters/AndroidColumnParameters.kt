@@ -17,7 +17,6 @@ import kotlinx.serialization.Serializable
 data class AndroidColumnParameters(
     /** Horizontal alignment of children */
     val horizontalAlignment: String? = null,
-
     /** Vertical alignment of children */
-    val verticalAlignment: String? = null
+    val verticalAlignment: String? = null,
 )

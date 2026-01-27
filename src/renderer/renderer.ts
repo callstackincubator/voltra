@@ -253,7 +253,7 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         throw new Error(`Expected a string as the type of a React element, but got "${typeof child.type}".`)
       }
 
-      const { children, ...parameters } = child.props as { children?: ReactNode;[key: string]: unknown }
+      const { children, ...parameters } = child.props as { children?: ReactNode; [key: string]: unknown }
 
       // Check if this is a Text component that requires string-only children
       // Renderer should be platform agnostic. I need to revisit this in the future.
@@ -276,7 +276,7 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
         if (typeof renderedChildren !== 'string') {
           throw new Error(
             'Text component children must resolve to a string. ' +
-            'Nested components are allowed, but they must eventually resolve to a string.'
+              'Nested components are allowed, but they must eventually resolve to a string.'
           )
         }
 
@@ -342,7 +342,7 @@ export const renderFunctionalComponent = <TProps>(
     if (result instanceof Promise) {
       throw new Error(
         `Component "${Component.name || 'Anonymous'}" tried to suspend (returned a Promise). ` +
-        `Async components are not supported in this synchronous renderer.`
+          `Async components are not supported in this synchronous renderer.`
       )
     }
 

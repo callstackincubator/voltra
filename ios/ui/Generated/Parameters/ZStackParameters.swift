@@ -10,6 +10,6 @@ import Foundation
 /// Parameters for ZStack component
 /// Depth-based stack container
 public struct ZStackParameters: ComponentParameters {
-    /// Child alignment
-    public let alignment: String?
+  /// Child alignment
+  public let alignment: String?
 }

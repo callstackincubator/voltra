@@ -10,92 +10,92 @@ import Foundation
 /// Component type IDs mapped from data/components.json
 /// IDs are assigned sequentially based on order in components.json (0-indexed)
 public enum ComponentTypeID: Int, Codable {
-    case TEXT = 0
-    case BUTTON = 1
-    case LABEL = 2
-    case SYMBOL = 3
-    case TOGGLE = 4
-    case LINEAR_PROGRESS_VIEW = 5
-    case CIRCULAR_PROGRESS_VIEW = 6
-    case GAUGE = 7
-    case TIMER = 8
-    case LINEAR_GRADIENT = 9
-    case V_STACK = 10
-    case H_STACK = 11
-    case Z_STACK = 12
-    case GROUP_BOX = 13
-    case GLASS_CONTAINER = 14
-    case SPACER = 15
-    case DIVIDER = 16
-    case MASK = 17
+  case TEXT = 0
+  case BUTTON = 1
+  case LABEL = 2
+  case SYMBOL = 3
+  case TOGGLE = 4
+  case LINEAR_PROGRESS_VIEW = 5
+  case CIRCULAR_PROGRESS_VIEW = 6
+  case GAUGE = 7
+  case TIMER = 8
+  case LINEAR_GRADIENT = 9
+  case V_STACK = 10
+  case H_STACK = 11
+  case Z_STACK = 12
+  case GROUP_BOX = 13
+  case GLASS_CONTAINER = 14
+  case SPACER = 15
+  case DIVIDER = 16
+  case MASK = 17
 
-    /// Get the component name string for this ID
-    public var componentName: String {
-        switch self {
-        case .TEXT:
-            return "Text"
-        case .BUTTON:
-            return "Button"
-        case .LABEL:
-            return "Label"
-        case .SYMBOL:
-            return "Symbol"
-        case .TOGGLE:
-            return "Toggle"
-        case .LINEAR_PROGRESS_VIEW:
-            return "LinearProgressView"
-        case .CIRCULAR_PROGRESS_VIEW:
-            return "CircularProgressView"
-        case .GAUGE:
-            return "Gauge"
-        case .TIMER:
-            return "Timer"
-        case .LINEAR_GRADIENT:
-            return "LinearGradient"
-        case .V_STACK:
-            return "VStack"
-        case .H_STACK:
-            return "HStack"
-        case .Z_STACK:
-            return "ZStack"
-        case .GROUP_BOX:
-            return "GroupBox"
-        case .GLASS_CONTAINER:
-            return "GlassContainer"
-        case .SPACER:
-            return "Spacer"
-        case .DIVIDER:
-            return "Divider"
-        case .MASK:
-            return "Mask"
-        }
+  /// Get the component name string for this ID
+  public var componentName: String {
+    switch self {
+    case .TEXT:
+      return "Text"
+    case .BUTTON:
+      return "Button"
+    case .LABEL:
+      return "Label"
+    case .SYMBOL:
+      return "Symbol"
+    case .TOGGLE:
+      return "Toggle"
+    case .LINEAR_PROGRESS_VIEW:
+      return "LinearProgressView"
+    case .CIRCULAR_PROGRESS_VIEW:
+      return "CircularProgressView"
+    case .GAUGE:
+      return "Gauge"
+    case .TIMER:
+      return "Timer"
+    case .LINEAR_GRADIENT:
+      return "LinearGradient"
+    case .V_STACK:
+      return "VStack"
+    case .H_STACK:
+      return "HStack"
+    case .Z_STACK:
+      return "ZStack"
+    case .GROUP_BOX:
+      return "GroupBox"
+    case .GLASS_CONTAINER:
+      return "GlassContainer"
+    case .SPACER:
+      return "Spacer"
+    case .DIVIDER:
+      return "Divider"
+    case .MASK:
+      return "Mask"
     }
+  }
 
-    /// Initialize from component name string
-    /// - Parameter name: Component name (e.g., "Text", "VStack")
-    /// - Returns: ComponentTypeID if found, nil otherwise
-    public init?(componentName: String) {
-        switch componentName {
-        case "Text": self = .TEXT
-        case "Button": self = .BUTTON
-        case "Label": self = .LABEL
-        case "Symbol": self = .SYMBOL
-        case "Toggle": self = .TOGGLE
-        case "LinearProgressView": self = .LINEAR_PROGRESS_VIEW
-        case "CircularProgressView": self = .CIRCULAR_PROGRESS_VIEW
-        case "Gauge": self = .GAUGE
-        case "Timer": self = .TIMER
-        case "LinearGradient": self = .LINEAR_GRADIENT
-        case "VStack": self = .V_STACK
-        case "HStack": self = .H_STACK
-        case "ZStack": self = .Z_STACK
-        case "GroupBox": self = .GROUP_BOX
-        case "GlassContainer": self = .GLASS_CONTAINER
-        case "Spacer": self = .SPACER
-        case "Divider": self = .DIVIDER
-        case "Mask": self = .MASK
-        default:
-            return nil
-        }
+  /// Initialize from component name string
+  /// - Parameter name: Component name (e.g., "Text", "VStack")
+  /// - Returns: ComponentTypeID if found, nil otherwise
+  public init?(componentName: String) {
+    switch componentName {
+    case "Text": self = .TEXT
+    case "Button": self = .BUTTON
+    case "Label": self = .LABEL
+    case "Symbol": self = .SYMBOL
+    case "Toggle": self = .TOGGLE
+    case "LinearProgressView": self = .LINEAR_PROGRESS_VIEW
+    case "CircularProgressView": self = .CIRCULAR_PROGRESS_VIEW
+    case "Gauge": self = .GAUGE
+    case "Timer": self = .TIMER
+    case "LinearGradient": self = .LINEAR_GRADIENT
+    case "VStack": self = .V_STACK
+    case "HStack": self = .H_STACK
+    case "ZStack": self = .Z_STACK
+    case "GroupBox": self = .GROUP_BOX
+    case "GlassContainer": self = .GLASS_CONTAINER
+    case "Spacer": self = .SPACER
+    case "Divider": self = .DIVIDER
+    case "Mask": self = .MASK
+    default:
+      return nil
     }
+  }
 }

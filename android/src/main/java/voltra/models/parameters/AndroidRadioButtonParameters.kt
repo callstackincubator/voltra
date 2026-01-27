@@ -17,10 +17,8 @@ import kotlinx.serialization.Serializable
 data class AndroidRadioButtonParameters(
     /** Unique identifier for interaction events */
     val id: String,
-
     /** Initial checked state */
     val checked: Boolean? = null,
-
     /** Whether the radio button is enabled */
-    val enabled: Boolean? = null
+    val enabled: Boolean? = null,
 )

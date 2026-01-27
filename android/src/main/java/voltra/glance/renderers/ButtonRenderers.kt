@@ -205,9 +205,15 @@ fun RenderSquareIconButton(
 
 private fun extractTextFromNode(node: voltra.models.VoltraNode?): String =
     when (node) {
-        is voltra.models.VoltraNode.Text -> node.text
+        is voltra.models.VoltraNode.Text -> {
+            node.text
+        }
+
         is voltra.models.VoltraNode.Array -> {
             node.elements.filterIsInstance<voltra.models.VoltraNode.Text>().joinToString("") { it.text }
         }
-        else -> ""
+
+        else -> {
+            ""
+        }
     }

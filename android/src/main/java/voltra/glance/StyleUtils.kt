@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
-import voltra.payload.ComponentTypeID
 import voltra.glance.renderers.getOnClickAction
+import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
 import voltra.styling.StyleConverter
 import voltra.styling.applyStyle
@@ -53,12 +53,16 @@ private fun resolveStyle(
             val index = styleRef.toInt()
             sharedStyles?.getOrNull(index)
         }
+
         is Map<*, *> -> {
             // It's already an inline style
             @Suppress("UNCHECKED_CAST")
             styleRef as? Map<String, Any>
         }
-        else -> null
+
+        else -> {
+            null
+        }
     }
 }
 

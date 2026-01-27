@@ -1,7 +1,5 @@
 package voltra.glance.renderers
 
-import androidx.glance.action.Action
-import androidx.glance.appwidget.action.actionStartActivity
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -11,14 +9,16 @@ import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.action.Action
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.layout.ContentScale
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import voltra.payload.ComponentTypeID
 import voltra.glance.LocalVoltraRenderContext
 import voltra.images.VoltraImageManager
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
+import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
 
 private val gson = Gson()
@@ -76,11 +76,15 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
                     null
                 }
             }
+
             is Map<*, *> -> {
                 @Suppress("UNCHECKED_CAST")
                 sourceProp as? Map<String, Any>
             }
-            else -> null
+
+            else -> {
+                null
+            }
         } ?: return null
 
     val assetName = sourceMap["assetName"] as? String
@@ -132,15 +136,23 @@ fun RenderNode(node: VoltraNode?) {
     val context = LocalVoltraRenderContext.current
 
     when (node) {
-        is VoltraNode.Element -> RenderElement(node.element)
+        is VoltraNode.Element -> {
+            RenderElement(node.element)
+        }
+
         is VoltraNode.Array -> {
             node.elements.forEach { RenderNode(it) }
         }
+
         is VoltraNode.Ref -> {
             val resolved = context.sharedElements?.getOrNull(node.ref)
             RenderNode(resolved)
         }
-        is VoltraNode.Text -> androidx.glance.text.Text(node.text)
+
+        is VoltraNode.Text -> {
+            androidx.glance.text.Text(node.text)
+        }
+
         null -> { /* Empty */ }
     }
 }

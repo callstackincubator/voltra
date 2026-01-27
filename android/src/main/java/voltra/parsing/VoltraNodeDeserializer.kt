@@ -12,8 +12,9 @@ class VoltraNodeDeserializer : JsonDeserializer<VoltraNode> {
     ): VoltraNode =
         when {
             // String → Text node
-            json.isJsonPrimitive && json.asJsonPrimitive.isString ->
+            json.isJsonPrimitive && json.asJsonPrimitive.isString -> {
                 VoltraNode.Text(json.asString)
+            }
 
             // Array → Array of nodes
             json.isJsonArray -> {
@@ -25,8 +26,9 @@ class VoltraNodeDeserializer : JsonDeserializer<VoltraNode> {
             }
 
             // Object with $r → Reference
-            json.isJsonObject && json.asJsonObject.has("\$r") ->
+            json.isJsonObject && json.asJsonObject.has("\$r") -> {
                 VoltraNode.Ref(json.asJsonObject.get("\$r").asInt)
+            }
 
             // Object with t → Element
             json.isJsonObject && json.asJsonObject.has("t") -> {
@@ -34,6 +36,8 @@ class VoltraNodeDeserializer : JsonDeserializer<VoltraNode> {
                 VoltraNode.Element(element)
             }
 
-            else -> throw JsonParseException("Unknown VoltraNode format: $json")
+            else -> {
+                throw JsonParseException("Unknown VoltraNode format: $json")
+            }
         }
 }

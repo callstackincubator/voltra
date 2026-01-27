@@ -16,5 +16,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidLazyColumnParameters(
     /** Horizontal alignment of children */
-    val horizontalAlignment: String? = null
+    val horizontalAlignment: String? = null,
 )

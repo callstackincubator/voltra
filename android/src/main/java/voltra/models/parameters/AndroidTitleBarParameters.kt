@@ -17,10 +17,8 @@ import kotlinx.serialization.Serializable
 data class AndroidTitleBarParameters(
     /** Title text */
     val title: String,
-
     /** Background color */
     val backgroundColor: String? = null,
-
     /** Text color */
-    val contentColor: String? = null
+    val contentColor: String? = null,
 )

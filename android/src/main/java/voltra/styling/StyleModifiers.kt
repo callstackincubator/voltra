@@ -257,13 +257,22 @@ fun TextStyle.toGlanceTextStyle(): GlanceTextStyle {
     // Text decoration (limited support)
     val glanceDecoration =
         when (decoration) {
-            TextDecoration.UNDERLINE -> GlanceTextDecoration.Underline
-            TextDecoration.LINE_THROUGH -> GlanceTextDecoration.LineThrough
+            TextDecoration.UNDERLINE -> {
+                GlanceTextDecoration.Underline
+            }
+
+            TextDecoration.LINE_THROUGH -> {
+                GlanceTextDecoration.LineThrough
+            }
+
             TextDecoration.UNDERLINE_LINE_THROUGH -> {
                 Log.w("StyleModifier", "Combined underline + line-through not supported, using underline")
                 GlanceTextDecoration.Underline
             }
-            TextDecoration.NONE -> null
+
+            TextDecoration.NONE -> {
+                null
+            }
         }
 
     if (glanceDecoration != null) {

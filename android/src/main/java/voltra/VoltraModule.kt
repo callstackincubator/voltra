@@ -69,8 +69,8 @@ class VoltraModule : Module() {
             // Android Live Update APIs
 
             AsyncFunction("startAndroidLiveUpdate") {
-                    payload: String,
-                    options: Map<String, Any?>,
+                payload: String,
+                options: Map<String, Any?>,
                 ->
 
                 Log.d(TAG, "startAndroidLiveUpdate called")
@@ -90,8 +90,8 @@ class VoltraModule : Module() {
             }
 
             AsyncFunction("updateAndroidLiveUpdate") {
-                    notificationId: String,
-                    payload: String,
+                notificationId: String,
+                payload: String,
                 ->
 
                 Log.d(TAG, "updateAndroidLiveUpdate called with notificationId=$notificationId")
@@ -119,9 +119,9 @@ class VoltraModule : Module() {
             // Android Widget APIs
 
             AsyncFunction("updateAndroidWidget") {
-                    widgetId: String,
-                    jsonString: String,
-                    options: Map<String, Any?>,
+                widgetId: String,
+                jsonString: String,
+                options: Map<String, Any?>,
                 ->
 
                 Log.d(TAG, "updateAndroidWidget called with widgetId=$widgetId")
@@ -172,8 +172,8 @@ class VoltraModule : Module() {
             }
 
             AsyncFunction("requestPinGlanceAppWidget") {
-                    widgetId: String,
-                    options: Map<String, Any?>?,
+                widgetId: String,
+                options: Map<String, Any?>?,
                 ->
 
                 Log.d(TAG, "requestPinGlanceAppWidget called with widgetId=$widgetId")

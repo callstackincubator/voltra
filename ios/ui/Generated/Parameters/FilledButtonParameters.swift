@@ -10,20 +10,20 @@ import Foundation
 /// Parameters for FilledButton component
 /// Android Material Design filled button component for widgets
 public struct FilledButtonParameters: ComponentParameters {
-    /// Text to display on the button
-    public let text: String?
+  /// Text to display on the button
+  public let text: String?
 
-    /// Whether the button is enabled
-    public let enabled: Bool
+  /// Whether the button is enabled
+  public let enabled: Bool
 
-    enum CodingKeys: String, CodingKey {
-        case text
-        case enabled
-    }
+  enum CodingKeys: String, CodingKey {
+    case text
+    case enabled
+  }
 
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        text = try container.decodeIfPresent(String.self, forKey: .text)
-        enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
-    }
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    text = try container.decodeIfPresent(String.self, forKey: .text)
+    enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+  }
 }

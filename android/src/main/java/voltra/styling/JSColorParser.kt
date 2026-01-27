@@ -69,6 +69,7 @@ object JSColorParser {
                         val blue = (rgb and 0xF) / 15.0
                         listOf(red, green, blue, 1.0)
                     }
+
                     4 -> { // #RGBA
                         val red = ((rgb shr 12) and 0xF) / 15.0
                         val green = ((rgb shr 8) and 0xF) / 15.0
@@ -76,12 +77,14 @@ object JSColorParser {
                         val alpha = (rgb and 0xF) / 15.0
                         listOf(red, green, blue, alpha)
                     }
+
                     6 -> { // #RRGGBB
                         val red = ((rgb shr 16) and 0xFF) / 255.0
                         val green = ((rgb shr 8) and 0xFF) / 255.0
                         val blue = (rgb and 0xFF) / 255.0
                         listOf(red, green, blue, 1.0)
                     }
+
                     8 -> { // #RRGGBBAA
                         val red = ((rgb shr 24) and 0xFF) / 255.0
                         val green = ((rgb shr 16) and 0xFF) / 255.0
@@ -89,7 +92,10 @@ object JSColorParser {
                         val alpha = (rgb and 0xFF) / 255.0
                         listOf(red, green, blue, alpha)
                     }
-                    else -> return null
+
+                    else -> {
+                        return null
+                    }
                 }
 
             Color(

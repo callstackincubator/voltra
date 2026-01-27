@@ -10,9 +10,9 @@ import Foundation
 /// Parameters for Label component
 /// Label with optional icon
 public struct LabelParameters: ComponentParameters {
-    /// Text content for the label
-    public let title: String?
+  /// Text content for the label
+  public let title: String?
 
-    /// SF Symbol name for the label icon
-    public let systemImage: String?
+  /// SF Symbol name for the label icon
+  public let systemImage: String?
 }

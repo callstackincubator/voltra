@@ -10,15 +10,15 @@ import Foundation
 /// Parameters for Toggle component
 /// Toggle switch control
 public struct ToggleParameters: ComponentParameters {
-    /// Initial toggle state
-    public let defaultValue: Bool
+  /// Initial toggle state
+  public let defaultValue: Bool
 
-    enum CodingKeys: String, CodingKey {
-        case defaultValue
-    }
+  enum CodingKeys: String, CodingKey {
+    case defaultValue
+  }
 
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        defaultValue = try container.decodeIfPresent(Bool.self, forKey: .defaultValue) ?? false
-    }
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    defaultValue = try container.decodeIfPresent(Bool.self, forKey: .defaultValue) ?? false
+  }
 }

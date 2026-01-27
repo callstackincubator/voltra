@@ -100,9 +100,15 @@ fun RenderImage(
 
 private fun extractTextFromNode(node: VoltraNode?): String =
     when (node) {
-        is VoltraNode.Text -> node.text
+        is VoltraNode.Text -> {
+            node.text
+        }
+
         is VoltraNode.Array -> {
             node.elements.filterIsInstance<VoltraNode.Text>().joinToString("") { it.text }
         }
-        else -> ""
+
+        else -> {
+            ""
+        }
     }

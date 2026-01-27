@@ -88,16 +88,34 @@ object StyleConverter {
      */
     private fun parseSizeValue(value: Any?): SizeValue? =
         when (value) {
-            is Number -> SizeValue.Fixed(value.toFloat().dp)
-            "100%" -> SizeValue.Fill
-            "auto" -> SizeValue.Wrap
-            null -> SizeValue.Wrap
+            is Number -> {
+                SizeValue.Fixed(value.toFloat().dp)
+            }
+
+            "100%" -> {
+                SizeValue.Fill
+            }
+
+            "auto" -> {
+                SizeValue.Wrap
+            }
+
+            null -> {
+                SizeValue.Wrap
+            }
+
             else -> {
                 // Try to parse as string percentage or number
                 val str = value.toString()
                 when {
-                    str == "100%" -> SizeValue.Fill
-                    str == "auto" -> SizeValue.Wrap
+                    str == "100%" -> {
+                        SizeValue.Fill
+                    }
+
+                    str == "auto" -> {
+                        SizeValue.Wrap
+                    }
+
                     else -> {
                         // Try to parse as number
                         str.toFloatOrNull()?.let { SizeValue.Fixed(it.dp) } ?: SizeValue.Wrap

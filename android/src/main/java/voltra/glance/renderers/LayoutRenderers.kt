@@ -56,6 +56,7 @@ fun RenderColumn(
                     RenderChildWithWeight(child)
                 }
             }
+
             else -> {
                 RenderChildWithWeight(children)
             }
@@ -107,6 +108,7 @@ fun RenderRow(
                     RenderChildWithWeight(child)
                 }
             }
+
             else -> {
                 RenderChildWithWeight(children)
             }
@@ -187,14 +189,19 @@ private fun ColumnScope.RenderChildWithWeight(child: VoltraNode?) {
             val finalModifier = applyFlex(baseModifier, weight)
             RenderElementWithModifier(child.element, finalModifier, compositeStyle)
         }
+
         is VoltraNode.Array -> {
             child.elements.forEach { RenderChildWithWeight(it) }
         }
+
         is VoltraNode.Ref -> {
             val resolved = context.sharedElements?.getOrNull(child.ref)
             RenderChildWithWeight(resolved)
         }
-        is VoltraNode.Text -> Text(child.text)
+
+        is VoltraNode.Text -> {
+            Text(child.text)
+        }
     }
 }
 
@@ -211,14 +218,19 @@ private fun RowScope.RenderChildWithWeight(child: VoltraNode?) {
             val finalModifier = applyFlex(baseModifier, weight)
             RenderElementWithModifier(child.element, finalModifier, compositeStyle)
         }
+
         is VoltraNode.Array -> {
             child.elements.forEach { RenderChildWithWeight(it) }
         }
+
         is VoltraNode.Ref -> {
             val resolved = context.sharedElements?.getOrNull(child.ref)
             RenderChildWithWeight(resolved)
         }
-        is VoltraNode.Text -> Text(child.text)
+
+        is VoltraNode.Text -> {
+            Text(child.text)
+        }
     }
 }
 
@@ -228,12 +240,18 @@ private fun extractWeightFromChild(
 ): Float? {
     val element =
         when (child) {
-            is VoltraNode.Element -> child.element
+            is VoltraNode.Element -> {
+                child.element
+            }
+
             is VoltraNode.Ref -> {
                 val resolved = context.sharedElements?.getOrNull(child.ref)
                 if (resolved is VoltraNode.Element) resolved.element else null
             }
-            else -> null
+
+            else -> {
+                null
+            }
         } ?: return null
 
     val (_, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)

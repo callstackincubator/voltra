@@ -16,5 +16,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidLazyVerticalGridParameters(
     /** Dummy parameter to satisfy data class requirements */
-    val _dummy: Unit = Unit
+    val _dummy: Unit = Unit,
 )

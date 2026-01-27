@@ -10,12 +10,12 @@ import androidx.glance.appwidget.components.TitleBar
 import androidx.glance.text.FontFamily
 import androidx.glance.unit.ColorProvider
 import com.google.gson.Gson
-import voltra.payload.ComponentTypeID
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
+import voltra.payload.ComponentTypeID
 import voltra.styling.JSColorParser
 
 private const val TAG = "ComplexRenderers"
@@ -138,30 +138,43 @@ private fun extractScaffoldChildren(
             val titleBar =
                 children.elements.find { child ->
                     when (child) {
-                        is VoltraNode.Element -> child.element.t == ComponentTypeID.TITLE_BAR
+                        is VoltraNode.Element -> {
+                            child.element.t == ComponentTypeID.TITLE_BAR
+                        }
+
                         is VoltraNode.Ref -> {
                             val resolved = context.sharedElements?.getOrNull(child.ref)
                             resolved is VoltraNode.Element && resolved.element.t == ComponentTypeID.TITLE_BAR
                         }
-                        else -> false
+
+                        else -> {
+                            false
+                        }
                     }
                 }
 
             val bodyElements =
                 children.elements.filter { child ->
                     when (child) {
-                        is VoltraNode.Element -> child.element.t != ComponentTypeID.TITLE_BAR
+                        is VoltraNode.Element -> {
+                            child.element.t != ComponentTypeID.TITLE_BAR
+                        }
+
                         is VoltraNode.Ref -> {
                             val resolved = context.sharedElements?.getOrNull(child.ref)
                             !(resolved is VoltraNode.Element && resolved.element.t == ComponentTypeID.TITLE_BAR)
                         }
-                        else -> true
+
+                        else -> {
+                            true
+                        }
                     }
                 }
             val body = if (bodyElements.isNotEmpty()) VoltraNode.Array(bodyElements) else null
 
             titleBar to body
         }
+
         is VoltraNode.Element -> {
             if (children.element.t == ComponentTypeID.TITLE_BAR) {
                 children to null
@@ -169,5 +182,8 @@ private fun extractScaffoldChildren(
                 null to children
             }
         }
-        else -> null to children
+
+        else -> {
+            null to children
+        }
     }

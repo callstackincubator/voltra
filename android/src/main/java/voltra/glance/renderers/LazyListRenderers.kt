@@ -43,6 +43,7 @@ fun RenderLazyColumn(
                     RenderNode(children.elements[index])
                 }
             }
+
             is VoltraNode.Ref -> {
                 val resolved = context.sharedElements?.getOrNull(children.ref)
                 if (resolved is VoltraNode.Array) {
@@ -53,7 +54,9 @@ fun RenderLazyColumn(
                     item { RenderNode(resolved) }
                 }
             }
+
             null -> { /* Empty list */ }
+
             else -> {
                 item { RenderNode(children) }
             }
@@ -81,12 +84,18 @@ fun RenderLazyVerticalGrid(
     // Extract grid configuration from props
     val gridCells =
         when (val columns = element.p?.get("columns")) {
-            is Number -> GridCells.Fixed(columns.toInt())
+            is Number -> {
+                GridCells.Fixed(columns.toInt())
+            }
+
             "adaptive" -> {
                 val minSize = (element.p?.get("minSize") as? Number)?.toInt() ?: 100
                 GridCells.Adaptive(minSize.dp)
             }
-            else -> GridCells.Fixed(2) // Default to 2 columns
+
+            else -> {
+                GridCells.Fixed(2)
+            } // Default to 2 columns
         }
 
     val horizontalAlignment = extractHorizontalAlignment(element.p)
@@ -102,6 +111,7 @@ fun RenderLazyVerticalGrid(
                     RenderNode(children.elements[index])
                 }
             }
+
             is VoltraNode.Ref -> {
                 val resolved = context.sharedElements?.getOrNull(children.ref)
                 if (resolved is VoltraNode.Array) {
@@ -112,7 +122,9 @@ fun RenderLazyVerticalGrid(
                     item { RenderNode(resolved) }
                 }
             }
+
             null -> { /* Empty grid */ }
+
             else -> {
                 item { RenderNode(children) }
             }

@@ -76,9 +76,31 @@ object JSStyleParser {
         // Determine the expanded names based on prefix
         val keys =
             when (prefix) {
-                "padding" -> arrayOf("padding", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight", "paddingVertical", "paddingHorizontal")
-                "margin" -> arrayOf("margin", "marginTop", "marginBottom", "marginLeft", "marginRight", "marginVertical", "marginHorizontal")
-                else ->
+                "padding" -> {
+                    arrayOf(
+                        "padding",
+                        "paddingTop",
+                        "paddingBottom",
+                        "paddingLeft",
+                        "paddingRight",
+                        "paddingVertical",
+                        "paddingHorizontal",
+                    )
+                }
+
+                "margin" -> {
+                    arrayOf(
+                        "margin",
+                        "marginTop",
+                        "marginBottom",
+                        "marginLeft",
+                        "marginRight",
+                        "marginVertical",
+                        "marginHorizontal",
+                    )
+                }
+
+                else -> {
                     arrayOf(
                         prefix,
                         "${prefix}Top",
@@ -88,6 +110,7 @@ object JSStyleParser {
                         "${prefix}Vertical",
                         "${prefix}Horizontal",
                     )
+                }
             }
 
         val allKey = keys[0]
@@ -124,13 +147,20 @@ object JSStyleParser {
 
         return when (string) {
             "bold", "700" -> FontWeight.Bold
+
             "medium", "500" -> FontWeight.Medium
+
             "normal", "400", "regular" -> FontWeight.Normal
+
             // Glance doesn't support these weights, but we map to closest
             "semibold", "600" -> FontWeight.Bold
+
             "light", "300" -> FontWeight.Normal
+
             "thin", "100", "200" -> FontWeight.Normal
+
             "heavy", "800", "900", "black" -> FontWeight.Bold
+
             else -> null
         }
     }
@@ -225,6 +255,7 @@ object JSStyleParser {
                         }?.let { variants.add(it) }
                 }
             }
+
             is String -> {
                 FontVariant
                     .values()
@@ -291,11 +322,13 @@ object JSStyleParser {
             trimmed.endsWith("deg") -> {
                 trimmed.dropLast(3).toFloatOrNull()
             }
+
             trimmed.endsWith("rad") -> {
                 trimmed.dropLast(3).toFloatOrNull()?.let {
                     it * 180f / Math.PI.toFloat()
                 }
             }
+
             else -> {
                 // Try parsing as plain number (assume degrees)
                 trimmed.toFloatOrNull()

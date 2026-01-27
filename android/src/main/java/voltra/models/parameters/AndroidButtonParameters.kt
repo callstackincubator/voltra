@@ -16,5 +16,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidButtonParameters(
     /** Whether the button is enabled */
-    val enabled: Boolean? = null
+    val enabled: Boolean? = null,
 )

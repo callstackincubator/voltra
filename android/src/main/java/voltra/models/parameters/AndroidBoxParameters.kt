@@ -16,5 +16,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidBoxParameters(
     /** Content alignment within the box */
-    val contentAlignment: String? = null
+    val contentAlignment: String? = null,
 )

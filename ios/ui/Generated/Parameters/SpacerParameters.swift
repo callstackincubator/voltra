@@ -10,6 +10,6 @@ import Foundation
 /// Parameters for Spacer component
 /// Flexible space
 public struct SpacerParameters: ComponentParameters {
-    /// Minimum length
-    public let minLength: Double?
+  /// Minimum length
+  public let minLength: Double?
 }

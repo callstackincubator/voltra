@@ -16,5 +16,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidCircularProgressIndicatorParameters(
     /** Progress color */
-    val color: String? = null
+    val color: String? = null,
 )

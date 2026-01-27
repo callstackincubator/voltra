@@ -17,16 +17,12 @@ import kotlinx.serialization.Serializable
 data class AndroidCircleIconButtonParameters(
     /** Icon source */
     val icon: String,
-
     /** Accessibility description */
     val contentDescription: String? = null,
-
     /** Whether the button is enabled */
     val enabled: Boolean? = null,
-
     /** Background color */
     val backgroundColor: String? = null,
-
     /** Icon color */
-    val contentColor: String? = null
+    val contentColor: String? = null,
 )
