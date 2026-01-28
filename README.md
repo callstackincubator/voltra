@@ -84,6 +84,7 @@ export function OrderTracker({ orderId }: { orderId: string }) {
 ## Platform compatibility
 
 Voltra is a cross-platform library that supports:
+
 - **iOS**: Live Activities and Dynamic Island (SwiftUI).
 - **Android**: Home Screen Widgets (Jetpack Compose Glance).
 

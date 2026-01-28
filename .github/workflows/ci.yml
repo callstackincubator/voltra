@@ -102,5 +102,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Install ktlint
+        run: brew install ktlint
+
       - name: Check Kotlin formatting
         run: npm run format:kotlin:check

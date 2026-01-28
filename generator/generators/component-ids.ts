@@ -123,8 +123,7 @@ export function getAndroidComponentName(id: number): string {
 const generateSwiftMapping = (data: ComponentsData): string => {
   const { version, components } = data
 
-  const swiftComponents = components
-    .filter((comp) => comp.swiftAvailability !== 'Not available')
+  const swiftComponents = components.filter((comp) => comp.swiftAvailability !== 'Not available')
 
   // Generate enum cases for each component
   const enumCases = swiftComponents
@@ -176,14 +175,14 @@ ${switchCases}
     public init?(componentName: String) {
         switch componentName {
 ${swiftComponents
-      .map((comp) => {
-        const caseName = comp.name
-          .replace(/([A-Z])/g, '_$1')
-          .toUpperCase()
-          .replace(/^_/, '')
-        return `        case "${comp.name}": self = .${caseName}`
-      })
-      .join('\n')}
+  .map((comp) => {
+    const caseName = comp.name
+      .replace(/([A-Z])/g, '_$1')
+      .toUpperCase()
+      .replace(/^_/, '')
+    return `        case "${comp.name}": self = .${caseName}`
+  })
+  .join('\n')}
         default:
             return nil
         }
@@ -220,9 +219,7 @@ const generateKotlinMapping = (data: ComponentsData): string => {
     .join('\n')
 
   // Generate getName cases
-  const idToNameCases = androidComponents
-    .map((comp, index) => `            ${index} -> "${comp.name}"`)
-    .join('\n')
+  const idToNameCases = androidComponents.map((comp, index) => `            ${index} -> "${comp.name}"`).join('\n')
 
   return `//
 //  ComponentTypeID.kt
