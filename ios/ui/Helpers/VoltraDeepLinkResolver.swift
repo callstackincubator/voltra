@@ -18,12 +18,26 @@ enum VoltraDeepLinkResolver {
     _ attributes: VoltraAttributes
   ) -> URL? {
     if let raw = attributes.deepLinkUrl, !raw.isEmpty {
-      if raw.contains("://"), let url = URL(string: raw) { return url }
-      if let scheme = deepLinkScheme() {
-        let path = raw.hasPrefix("/") ? raw : "/\(raw)"
-        return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
-      }
+      return resolveUrl(raw)
     }
+    return nil
+  }
+
+  /// Resolves a URL string, supporting both absolute and relative paths
+  /// - Parameter raw: The URL string (e.g., "myapp://path", "/path", or "path")
+  /// - Returns: A resolved URL, or nil if invalid
+  static func resolveUrl(_ raw: String) -> URL? {
+    guard !raw.isEmpty else { return nil }
+
+    // If it's already an absolute URL, use it as-is
+    if raw.contains("://"), let url = URL(string: raw) { return url }
+
+    // Otherwise, prepend the app's URL scheme
+    if let scheme = deepLinkScheme() {
+      let path = raw.hasPrefix("/") ? raw : "/\(raw)"
+      return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
+    }
+
     return nil
   }
 }

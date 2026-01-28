@@ -29,6 +29,7 @@ public enum ComponentTypeID: Int, Codable {
   case SPACER = 16
   case DIVIDER = 17
   case MASK = 18
+  case LINK = 19
 
   /// Get the component name string for this ID
   public var componentName: String {
@@ -71,6 +72,8 @@ public enum ComponentTypeID: Int, Codable {
       return "Divider"
     case .MASK:
       return "Mask"
+    case .LINK:
+      return "Link"
     }
   }
 
@@ -98,6 +101,7 @@ public enum ComponentTypeID: Int, Codable {
     case "Spacer": self = .SPACER
     case "Divider": self = .DIVIDER
     case "Mask": self = .MASK
+    case "Link": self = .LINK
     default:
       return nil
     }

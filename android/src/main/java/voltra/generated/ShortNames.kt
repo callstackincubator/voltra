@@ -42,6 +42,7 @@ object ShortNames {
             "cvl" to "currentValueLabel",
             "dlu" to "deepLinkUrl",
             "dv" to "defaultValue",
+            "dest" to "destination",
             "dir" to "direction",
             "dth" to "dither",
             "dur" to "durationMs",

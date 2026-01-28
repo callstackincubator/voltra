@@ -39,6 +39,7 @@ public enum ShortNames {
     "cvl": "currentValueLabel",
     "dlu": "deepLinkUrl",
     "dv": "defaultValue",
+    "dest": "destination",
     "dir": "direction",
     "dth": "dither",
     "dur": "durationMs",

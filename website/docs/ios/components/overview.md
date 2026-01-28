@@ -42,8 +42,8 @@ Components for displaying data and status information. This includes progress in
 
 [See all data visualization & status components →](./status)
 
-### Interactive Controls
+### Interactive Controls & Navigation
 
-User interface controls that respond to user interaction. This category includes Button and Toggle components that enable interactive Live Activities.
+User interface controls that respond to user interaction and navigation. This category includes Button and Toggle components for interactive Live Activities, plus Link for semantic URL navigation.
 
-[See all interactive control components →](./interactive)
+[See all interactive control & navigation components →](./interactive)

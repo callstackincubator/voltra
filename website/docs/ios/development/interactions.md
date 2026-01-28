@@ -8,11 +8,13 @@ ActivityKit provides a limited set of interactions with Live Activities. The onl
 
 - **Live Activity view**: Tapping anywhere on the Live Activity itself can launch your app via a deep link, allowing users to access more detailed information or perform specific actions.
 
-- **Buttons**: Interactive buttons that can trigger actions within your app. Buttons are implemented using AppIntents and work on both the Lock Screen and Dynamic Island.
+- **Links**: Navigation elements that open URLs when tapped. Links use SwiftUI's native Link component and work across all Live Activity contexts (iOS 14.0+).
 
-- **Toggles**: Interactive toggle switches that allow users to change boolean states. Like buttons, toggles use AppIntents and are supported across all Live Activity contexts.
+- **Buttons**: Interactive buttons that trigger in-app events. Buttons are implemented using AppIntents and work on both the Lock Screen and Dynamic Island (iOS 17.0+).
 
-These interactions are powered by Apple's AppIntents framework, which enables Live Activities to communicate with your app even when it's not running.
+- **Toggles**: Interactive toggle switches that allow users to change boolean states. Like buttons, toggles use AppIntents and are supported across all Live Activity contexts (iOS 17.0+).
+
+These interactions are powered by Apple's AppIntents framework and SwiftUI's Link component, which enable Live Activities to communicate with your app even when it's not running.
 
 ## Handling interactions
 
@@ -61,7 +63,9 @@ If you don't provide an explicit `id` prop, Voltra will automatically generate a
 
 ## Deep linking
 
-When users tap on the Live Activity itself (not on a button or toggle), your app can be launched via a deep link. Configure the deep link URL when starting a Live Activity:
+### Activity-level deep links
+
+When users tap on the Live Activity itself (not on a button or link), your app can be launched via a deep link. Configure the deep link URL when starting a Live Activity:
 
 ```typescript
 import { useLiveActivity } from 'voltra/client'
@@ -83,6 +87,30 @@ The deep link URL can be:
 - A path that will be prefixed with your app's URL scheme (e.g., `/activity-detail`)
 
 When the Live Activity is tapped, your app will be launched (or brought to the foreground) and the deep link will be handled by your routing system.
+
+### Component-level deep links
+
+Individual components can also open URLs when tapped, providing granular navigation within your Live Activity.
+
+#### Link Component
+
+The `Link` component provides semantic navigation to URLs. It uses SwiftUI's native Link and works on iOS 14.0+:
+
+```tsx
+<Voltra.Link destination="myapp://orders/123">
+  <Voltra.HStack spacing={8}>
+    <Voltra.Symbol name="bag.fill" tintColor="#F59E0B" size={20} />
+    <Voltra.Text>Order #123</Voltra.Text>
+  </Voltra.HStack>
+</Voltra.Link>
+```
+
+Links support URL normalization:
+- Absolute URLs: `"myapp://path"`, `"https://example.com"`
+- Relative paths: `"/settings"` → `"myapp://settings"`
+- Simple paths: `"help"` → `"myapp://help"`
+
+For styled navigation buttons, wrap a Link with custom children to achieve button-like appearance while maintaining URL navigation functionality.
 
 ## Limitations
 
