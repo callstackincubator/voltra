@@ -16,14 +16,7 @@ import WorkoutLiveActivity from '~/screens/live-activities/WorkoutLiveActivity'
 
 import { LiveActivityExampleComponentRef } from './types'
 
-type ActivityKey =
-  | 'basic'
-  | 'stylesheet'
-  | 'glass'
-  | 'flight'
-  | 'workout'
-  | 'compass'
-  | 'supplementalFamilies'
+type ActivityKey = 'basic' | 'stylesheet' | 'glass' | 'flight' | 'workout' | 'compass' | 'supplementalFamilies'
 
 const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: string }> = {
   basic: {
