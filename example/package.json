@@ -8,8 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "harness:ios": "react-native-harness --harnessRunner=ios",
-    "harness:android": "react-native-harness --harnessRunner=android",
+    "harness:ios": "react-native-harness ./__tests__/ios --harnessRunner=ios",
+    "harness:android": "react-native-harness ./__tests__/android --harnessRunner=android",
     "postinstall": "patch-package"
   },
   "dependencies": {

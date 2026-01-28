@@ -11,7 +11,7 @@ import {
   MusicPlayerLiveActivityUI,
   SONGS,
   WorkoutLiveActivityUI,
-} from '../components/live-activities'
+} from '../../components/live-activities'
 
 describe('Live Activity snapshots', () => {
   const previewWrapperStyle = {
