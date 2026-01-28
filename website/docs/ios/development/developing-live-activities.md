@@ -153,7 +153,9 @@ function MyComponent() {
       <Voltra.VStack style={{ padding: 16, backgroundColor: '#101828' }}>
         <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>Test Live Activity</Voltra.Text>
         <Voltra.Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 8 }}>This is how it will look</Voltra.Text>
-        <Voltra.Button title="Test Button" id="test-button" style={{ marginTop: 12 }} />
+        <Voltra.Button id="test-button" style={{ marginTop: 12 }}>
+          <Voltra.Text>Test Button</Voltra.Text>
+        </Voltra.Button>
       </Voltra.VStack>
     </VoltraView>
   )

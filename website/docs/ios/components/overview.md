@@ -14,7 +14,9 @@ const MyComponent = () => {
   return (
     <Voltra.VStack spacing={8}>
       <Voltra.Text>Hello Live Activity!</Voltra.Text>
-      <Voltra.Button title="Tap me" />
+      <Voltra.Button>
+        <Voltra.Text>Tap me</Voltra.Text>
+      </Voltra.Button>
     </Voltra.VStack>
   )
 }
