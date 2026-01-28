@@ -103,7 +103,9 @@ jobs:
           cache: 'npm'
 
       - name: Install ktlint
-        run: brew install ktlint
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install ktlint
 
       - name: Check Kotlin formatting
         run: npm run format:kotlin:check

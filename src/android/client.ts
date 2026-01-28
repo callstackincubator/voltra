@@ -1,11 +1,11 @@
 // Android Live Update API and types
 export {
-  unstable_endAllAndroidLiveUpdates,
-  unstable_isAndroidLiveUpdateActive,
-  unstable_startAndroidLiveUpdate,
-  unstable_stopAndroidLiveUpdate,
-  unstable_updateAndroidLiveUpdate,
-  unstable_useAndroidLiveUpdate,
+  endAllAndroidLiveUpdates,
+  isAndroidLiveUpdateActive,
+  startAndroidLiveUpdate,
+  stopAndroidLiveUpdate,
+  updateAndroidLiveUpdate,
+  useAndroidLiveUpdate,
 } from './live-update/api.js'
 export type {
   AndroidLiveUpdateJson,

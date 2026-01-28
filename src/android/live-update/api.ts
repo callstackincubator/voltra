@@ -22,10 +22,10 @@ import type {
  *
  * @example
  * ```tsx
- * import { VoltraAndroid, unstable_useAndroidLiveUpdate } from 'voltra'
+ * import { VoltraAndroid, useAndroidLiveUpdate } from 'voltra'
  *
  * const MyLiveUpdate = () => {
- *   const { start, update, end, isActive } = unstable_useAndroidLiveUpdate({
+ *   const { start, update, end, isActive } = useAndroidLiveUpdate({
  *     collapsed: <VoltraAndroid.Text>Delivery arriving</VoltraAndroid.Text>,
  *     expanded: <VoltraAndroid.Column>...</VoltraAndroid.Column>,
  *     channelId: 'delivery_updates',
@@ -43,13 +43,13 @@ import type {
  * }
  * ```
  */
-export const unstable_useAndroidLiveUpdate = (
+export const useAndroidLiveUpdate = (
   variants: AndroidLiveUpdateVariants,
   options?: UseAndroidLiveUpdateOptions
 ): UseAndroidLiveUpdateResult => {
   const [targetId, setTargetId] = useState<string | null>(() => {
     if (options?.updateName) {
-      return unstable_isAndroidLiveUpdateActive(options.updateName) ? options.updateName : null
+      return isAndroidLiveUpdateActive(options.updateName) ? options.updateName : null
     }
     return null
   })
@@ -71,7 +71,7 @@ export const unstable_useAndroidLiveUpdate = (
   useUpdateOnHMR()
 
   const start = useCallback(async (options?: StartAndroidLiveUpdateOptions) => {
-    const id = await unstable_startAndroidLiveUpdate(variantsRef.current, {
+    const id = await startAndroidLiveUpdate(variantsRef.current, {
       ...optionsRef.current,
       ...options,
     })
@@ -86,7 +86,7 @@ export const unstable_useAndroidLiveUpdate = (
 
       const updateOptions = { ...optionsRef.current, ...options }
       lastUpdateOptionsRef.current = updateOptions
-      await unstable_updateAndroidLiveUpdate(targetId, variantsRef.current, updateOptions)
+      await updateAndroidLiveUpdate(targetId, variantsRef.current, updateOptions)
     },
     [targetId]
   )
@@ -96,7 +96,7 @@ export const unstable_useAndroidLiveUpdate = (
       return
     }
 
-    await unstable_stopAndroidLiveUpdate(targetId)
+    await stopAndroidLiveUpdate(targetId)
     setTargetId(null)
   }, [targetId])
 
@@ -132,9 +132,9 @@ export const unstable_useAndroidLiveUpdate = (
  *
  * @example
  * ```tsx
- * import { VoltraAndroid, unstable_startAndroidLiveUpdate } from 'voltra'
+ * import { VoltraAndroid, startAndroidLiveUpdate } from 'voltra'
  *
- * const notificationId = await unstable_startAndroidLiveUpdate({
+ * const notificationId = await startAndroidLiveUpdate({
  *   collapsed: <VoltraAndroid.Text>Delivery arriving</VoltraAndroid.Text>,
  *   expanded: <VoltraAndroid.Column>...</VoltraAndroid.Column>,
  *   channelId: 'delivery_updates',
@@ -143,7 +143,7 @@ export const unstable_useAndroidLiveUpdate = (
  * })
  * ```
  */
-export const unstable_startAndroidLiveUpdate = async (
+export const startAndroidLiveUpdate = async (
   variants: AndroidLiveUpdateVariants,
   options?: StartAndroidLiveUpdateOptions
 ): Promise<string> => {
@@ -168,15 +168,15 @@ export const unstable_startAndroidLiveUpdate = async (
  *
  * @example
  * ```tsx
- * import { VoltraAndroid, unstable_updateAndroidLiveUpdate } from 'voltra'
+ * import { VoltraAndroid, updateAndroidLiveUpdate } from 'voltra'
  *
- * await unstable_updateAndroidLiveUpdate('notification-123', {
+ * await updateAndroidLiveUpdate('notification-123', {
  *   collapsed: <VoltraAndroid.Text>Updated: Delivery arriving</VoltraAndroid.Text>,
  *   expanded: <VoltraAndroid.Column>...</VoltraAndroid.Column>,
  * })
  * ```
  */
-export const unstable_updateAndroidLiveUpdate = async (
+export const updateAndroidLiveUpdate = async (
   notificationId: string,
   variants: AndroidLiveUpdateVariants,
   options?: UpdateAndroidLiveUpdateOptions
@@ -195,12 +195,12 @@ export const unstable_updateAndroidLiveUpdate = async (
  *
  * @example
  * ```tsx
- * import { unstable_stopAndroidLiveUpdate } from 'voltra'
+ * import { stopAndroidLiveUpdate } from 'voltra'
  *
- * await unstable_stopAndroidLiveUpdate('notification-123')
+ * await stopAndroidLiveUpdate('notification-123')
  * ```
  */
-export const unstable_stopAndroidLiveUpdate = async (notificationId: string): Promise<void> => {
+export const stopAndroidLiveUpdate = async (notificationId: string): Promise<void> => {
   return VoltraModule.stopAndroidLiveUpdate(notificationId)
 }
 
@@ -214,14 +214,14 @@ export const unstable_stopAndroidLiveUpdate = async (notificationId: string): Pr
  *
  * @example
  * ```tsx
- * import { unstable_isAndroidLiveUpdateActive } from 'voltra'
+ * import { isAndroidLiveUpdateActive } from 'voltra'
  *
- * if (unstable_isAndroidLiveUpdateActive('my-live-update')) {
+ * if (isAndroidLiveUpdateActive('my-live-update')) {
  *   console.log('Update is running')
  * }
  * ```
  */
-export const unstable_isAndroidLiveUpdateActive = (updateName: string): boolean => {
+export const isAndroidLiveUpdateActive = (updateName: string): boolean => {
   return VoltraModule.isAndroidLiveUpdateActive(updateName)
 }
 
@@ -234,11 +234,11 @@ export const unstable_isAndroidLiveUpdateActive = (updateName: string): boolean 
  *
  * @example
  * ```tsx
- * import { unstable_endAllAndroidLiveUpdates } from 'voltra'
+ * import { endAllAndroidLiveUpdates } from 'voltra'
  *
- * await unstable_endAllAndroidLiveUpdates()
+ * await endAllAndroidLiveUpdates()
  * ```
  */
-export async function unstable_endAllAndroidLiveUpdates(): Promise<void> {
+export async function endAllAndroidLiveUpdates(): Promise<void> {
   return VoltraModule.endAllAndroidLiveUpdates()
 }
