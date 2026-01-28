@@ -93,6 +93,8 @@ The `renderLiveActivityToString` function accepts a `LiveActivityVariants` objec
 
 When sending push notifications to update Live Activities, you need to structure your APNS payload correctly. For detailed information about APNS payload structure, see Apple's [official ActivityKit push notification documentation](https://developer.apple.com/documentation/activitykit/starting-and-updating-live-activities-with-activitykit-push-notifications).
 
+You can also use Apple’s [CloudKit - Push Notifications tool](https://icloud.developer.apple.com/dashboard/notifications/) to send test push notifications during development.
+
 ### Required APNS headers
 
 ```
@@ -132,7 +134,11 @@ Replace `<your.app.bundle.id>` with your app's bundle identifier (e.g., `com.exa
       "name": "some-name",
       "deepLinkUrl": "app://some-deep-link-url"
     },
-    "timestamp": 1764145755
+    "timestamp": 1764145755,
+    "alert": {
+      "title": "Driver arrived",
+      "body": "Ready for pickup"
+    }
   }
 }
 ```
@@ -140,10 +146,11 @@ Replace `<your.app.bundle.id>` with your app's bundle identifier (e.g., `com.exa
 **Key fields:**
 
 - `aps.event`: Set to `"update"` for updating an existing Live Activity, or `"start"` for push-to-start (iOS 17.2+)
-- `aps.content-state.uiJsonData`: The JSON string returned by `renderLiveActivityToString`, embedded as a string value
+- `aps.content-state.uiJsonData`: The JSON string returned by `renderLiveActivityToString`, embedded as a string value eg. `ixOAeyJ2IjoxLCJscyI6eyJ0IjowLCJjIjoiSGVsbG8sIHdvcmxkISJ9fQM=`
 - `aps.timestamp`: Unix timestamp in seconds (required for Live Activities)
 - `aps.attributes-type`: For push-to-start, must be `"VoltraAttributes"`
 - `aps.attributes.name`: For push-to-start, a user-defined name for the activity (can be any string you choose)
+- `aps.alert`: Required field for push-to-start
 
 :::danger
 ActivityKit enforces a strict payload size limit of approximately 4 KB. Keep your UI JSON minimal to stay within this limit. Avoid deeply nested component trees and excessive styling to ensure your payloads fit within the constraint.
