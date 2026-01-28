@@ -36,6 +36,7 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
           $: {
             'android:name': receiverClassName,
             'android:exported': 'true' as const,
+            'android:label': `@string/voltra_widget_${widget.id}_label`,
           },
           'intent-filter': [
             {

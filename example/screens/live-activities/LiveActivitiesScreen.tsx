@@ -6,7 +6,6 @@ import { endAllLiveActivities } from 'voltra/client'
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { NotificationsCard } from '~/components/NotificationsCard'
-import BasicAndroidLiveUpdate from '~/screens/live-activities/BasicAndroidLiveUpdate'
 import BasicLiveActivity from '~/screens/live-activities/BasicLiveActivity'
 import CompassLiveActivity from '~/screens/live-activities/CompassLiveActivity'
 import FlightLiveActivity from '~/screens/live-activities/FlightLiveActivity'
@@ -18,7 +17,6 @@ import WorkoutLiveActivity from '~/screens/live-activities/WorkoutLiveActivity'
 import { LiveActivityExampleComponentRef } from './types'
 
 type ActivityKey =
-  | 'android-basic'
   | 'basic'
   | 'stylesheet'
   | 'glass'
@@ -31,10 +29,6 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
   basic: {
     title: 'Basic live activity',
     description: 'Inline JSX styles with core stacks, labels, and buttons.',
-  },
-  'android-basic': {
-    title: 'Android Live Update',
-    description: 'Ongoing notification powered by Jetpack Glance with dynamic UI updates.',
   },
   stylesheet: {
     title: 'Music Player',
@@ -64,7 +58,6 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
 }
 
 const CARD_ORDER: ActivityKey[] = [
-  'android-basic',
   'basic',
   'stylesheet',
   'glass',
@@ -76,7 +69,6 @@ const CARD_ORDER: ActivityKey[] = [
 
 export default function LiveActivitiesScreen() {
   const [activeMap, setActiveMap] = useState<Record<ActivityKey, boolean>>({
-    'android-basic': false,
     basic: false,
     stylesheet: false,
     glass: false,
@@ -116,10 +108,6 @@ export default function LiveActivitiesScreen() {
     })
   }, [])
 
-  const handleAndroidBasicStatusChange = useCallback(
-    (isActive: boolean) => handleStatusChange('android-basic', isActive),
-    [handleStatusChange]
-  )
   const handleBasicStatusChange = useCallback(
     (isActive: boolean) => handleStatusChange('basic', isActive),
     [handleStatusChange]
@@ -217,7 +205,6 @@ export default function LiveActivitiesScreen() {
           style={styles.endAllButton}
         />
 
-        <BasicAndroidLiveUpdate ref={androidBasicRef} onIsActiveChange={handleAndroidBasicStatusChange} />
         <BasicLiveActivity ref={basicRef} onIsActiveChange={handleBasicStatusChange} />
         <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
         <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
