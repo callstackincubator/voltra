@@ -26,7 +26,9 @@ const activityUI = (
     <Voltra.Symbol name="car.fill" type="hierarchical" scale="large" tintColor="#38BDF8" />
     <Voltra.Text style={{ color: '#F8FAFC', fontSize: 18, fontWeight: '600' }}>Driver en route</Voltra.Text>
     <Voltra.Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 8 }}>Building A · Lobby pickup</Voltra.Text>
-    <Voltra.Button title="Contact driver" id="contact-driver" style={{ marginTop: 12 }} />
+    <Voltra.Button id="contact-driver" style={{ marginTop: 12 }}>
+      <Voltra.Text>Contact driver</Voltra.Text>
+    </Voltra.Button>
   </Voltra.VStack>
 )
 

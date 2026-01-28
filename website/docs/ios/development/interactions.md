@@ -55,7 +55,9 @@ Each interaction event contains:
 To receive interaction events, make sure your interactive components have unique identifiers:
 
 ```typescript
-<Voltra.Button title="Contact driver" id="contact-driver" />
+<Voltra.Button id="contact-driver">
+  <Voltra.Text>Contact driver</Voltra.Text>
+</Voltra.Button>
 <Voltra.Toggle title="Enable notifications" id="notifications-toggle" />
 ```
 
@@ -140,8 +142,12 @@ function MyLiveActivity() {
       lockScreen: (
         <Voltra.VStack>
           <Voltra.Text>Music Player</Voltra.Text>
-          <Voltra.Button title="Play" id="play-button" />
-          <Voltra.Button title="Pause" id="pause-button" />
+          <Voltra.Button id="play-button">
+            <Voltra.Text>Play</Voltra.Text>
+          </Voltra.Button>
+          <Voltra.Button id="pause-button">
+            <Voltra.Text>Pause</Voltra.Text>
+          </Voltra.Button>
           <Voltra.Toggle title="Shuffle" id="shuffle-toggle" />
         </Voltra.VStack>
       ),
