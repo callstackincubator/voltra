@@ -255,7 +255,13 @@ public class VoltraModuleImpl {
         switch result {
         case let .success(widgetInfos):
           let mapped = widgetInfos.map { widget -> [String: String] in
+            let prefix = "Voltra_Widget_"
+            let name = widget.kind.hasPrefix(prefix)
+              ? String(widget.kind.dropFirst(prefix.count))
+              : widget.kind
+
             return [
+              "name": name,
               "kind": widget.kind,
               "family": self.mapWidgetFamily(widget.family),
             ]

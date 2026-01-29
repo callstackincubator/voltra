@@ -195,11 +195,21 @@ class VoltraModule : Module() {
                         val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
                         val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
 
-                        // Get short class name (e.g. ".MyWidget")
+                        // Get short class name (e.g. ".widget.VoltraWidget_weatherReceiver")
                         val shortClassName = providerInfo.provider.shortClassName
+
+                        val prefix = ".widget.VoltraWidget_"
+                        val suffix = "Receiver"
+                        val name =
+                            if (shortClassName.startsWith(prefix) && shortClassName.endsWith(suffix)) {
+                                shortClassName.substring(prefix.length, shortClassName.length - suffix.length)
+                            } else {
+                                shortClassName
+                            }
 
                         activeWidgets.add(
                             mapOf(
+                                "name" to name,
                                 "widgetId" to id,
                                 "providerClassName" to shortClassName,
                                 "label" to providerInfo.loadLabel(context.packageManager).toString(),
