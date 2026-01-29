@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import React from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
+import { ActiveWidgetsAndroidCard } from '~/components/ActiveWidgetsAndroidCard'
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 
@@ -40,6 +41,8 @@ export default function AndroidScreen() {
           Voltra for Android lets you build custom Android Widgets and Live Updates using React Native - no need to
           write Kotlin or XML anymore.
         </Text>
+
+        <ActiveWidgetsAndroidCard />
 
         {ANDROID_SECTIONS.map((section) => (
           <Card key={section.id}>

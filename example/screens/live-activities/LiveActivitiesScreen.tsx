@@ -5,6 +5,7 @@ import { endAllLiveActivities } from 'voltra/client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ActiveWidgetsIOSCard } from '~/components/ActiveWidgetsIOSCard'
 import { NotificationsCard } from '~/components/NotificationsCard'
 import BasicLiveActivity from '~/screens/live-activities/BasicLiveActivity'
 import CompassLiveActivity from '~/screens/live-activities/CompassLiveActivity'
@@ -207,6 +208,8 @@ export default function LiveActivitiesScreen() {
             <Button title="Testing Grounds" variant="secondary" />
           </Link>
         </View>
+
+        <ActiveWidgetsIOSCard />
 
         <NotificationsCard />
 
