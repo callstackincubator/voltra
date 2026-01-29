@@ -250,7 +250,7 @@ public class VoltraModuleImpl {
   }
 
   func getActiveWidgets() async throws -> [[String: String]] {
-    return try await withCheckedThrowingContinuation { continuation in
+    try await withCheckedThrowingContinuation { continuation in
       WidgetCenter.shared.getCurrentConfigurations { result in
         switch result {
         case let .success(widgetInfos):
