@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "querying-active-widgets",
+    "label": "Querying Active Widgets"
+  },
+  {
+    "type": "file",
     "name": "styling",
     "label": "Styling"
   },

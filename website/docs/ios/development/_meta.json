@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "querying-active-widgets",
+    "label": "Querying Active Widgets"
+  },
+  {
+    "type": "file",
     "name": "widget-pre-rendering",
     "label": "Widget pre-rendering"
   },

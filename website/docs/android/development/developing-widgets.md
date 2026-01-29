@@ -60,6 +60,7 @@ Unlike standard React Native or iOS Stacks, Android Glance layouts are more rest
 
 ## Advanced Features
 
+- **[Querying Active Widgets](./querying-active-widgets):** Detect active widget instances and their sizes.
 - **[Testing and Previews](./testing-and-previews):** Preview layouts within your app.
 - **[Widget Picker Previews](../api/plugin-configuration#widget-picker-previews):** Configure how your widget appears in the Android widget picker.
 - **[Image Preloading](./image-preloading):** Cache remote images for use in widgets.

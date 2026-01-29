@@ -233,6 +233,19 @@ await updateWidget('minimal', {
 
 ## Additional widget APIs
 
+### getActiveWidgets
+
+Detect which widgets are currently installed on the user's home screen:
+
+```typescript
+import { getActiveWidgets } from 'voltra/client'
+
+const widgets = await getActiveWidgets()
+// [{ name: 'weather', family: 'systemSmall', kind: '...' }]
+```
+
+See [Querying Active Widgets](./querying-active-widgets) for more details.
+
 ### reloadWidgets
 
 Force widget timelines to refresh their content after updating shared resources like preloaded images:
