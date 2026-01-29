@@ -199,6 +199,11 @@ export interface VoltraModuleSpec {
   clearAllWidgets(): Promise<void>
 
   /**
+   * Fetches all active widget configurations/instances
+   */
+  getActiveWidgets<T = any>(): Promise<T[]>
+
+  /**
    * Add an event listener
    */
   addListener(event: string, listener: (event: any) => void): EventSubscription

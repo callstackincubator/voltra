@@ -42,10 +42,11 @@ export {
 export type { DismissalPolicy, LiveActivityVariants } from './live-activity/types.js'
 
 // Widget API
-export type { WidgetFamily, WidgetVariants } from './widgets/types.js'
+export type { WidgetFamily, WidgetInfo, WidgetVariants } from './widgets/types.js'
 export {
   clearAllWidgets,
   clearWidget,
+  getActiveWidgets,
   reloadWidgets,
   type ScheduledWidgetEntry,
   scheduleWidget,

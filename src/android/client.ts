@@ -21,6 +21,7 @@ export type {
 export {
   clearAllAndroidWidgets,
   clearAndroidWidget,
+  getActiveWidgets,
   reloadAndroidWidgets,
   requestPinAndroidWidget,
   updateAndroidWidget,
@@ -30,6 +31,7 @@ export type {
   AndroidWidgetSizeVariant,
   AndroidWidgetVariants,
   UpdateAndroidWidgetOptions,
+  WidgetInfo,
 } from './widgets/types.js'
 
 // Preload API

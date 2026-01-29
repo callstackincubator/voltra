@@ -1,5 +1,6 @@
 package voltra
 
+import android.appwidget.AppWidgetManager
 import android.util.Log
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -169,6 +170,47 @@ class VoltraModule : Module() {
                 }
 
                 Log.d(TAG, "clearAllAndroidWidgets completed")
+            }
+
+            AsyncFunction("getActiveWidgets") {
+                val context = appContext.reactContext ?: return@AsyncFunction emptyList<Map<String, Any>>()
+                val manager = AppWidgetManager.getInstance(context)
+                val packageName = context.packageName
+
+                // 1. Get all providers defined in this app
+                val installedProviders =
+                    manager.installedProviders.filter {
+                        it.provider.packageName == packageName
+                    }
+
+                val activeWidgets = mutableListOf<Map<String, Any>>()
+
+                // 2. Iterate over every provider
+                for (providerInfo in installedProviders) {
+                    val ids = manager.getAppWidgetIds(providerInfo.provider)
+
+                    // 3. Iterate over every instance of that widget
+                    for (id in ids) {
+                        val options = manager.getAppWidgetOptions(id)
+                        val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+                        val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+
+                        // Get short class name (e.g. ".MyWidget")
+                        val shortClassName = providerInfo.provider.shortClassName
+
+                        activeWidgets.add(
+                            mapOf(
+                                "widgetId" to id,
+                                "providerClassName" to shortClassName,
+                                "label" to providerInfo.loadLabel(context.packageManager).toString(),
+                                "width" to minWidth,
+                                "height" to minHeight,
+                            ),
+                        )
+                    }
+                }
+
+                activeWidgets
             }
 
             AsyncFunction("requestPinGlanceAppWidget") {

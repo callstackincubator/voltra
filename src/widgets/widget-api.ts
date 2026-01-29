@@ -2,11 +2,11 @@ import type { UpdateWidgetOptions } from '../types.js'
 import { assertRunningOnApple } from '../utils/assertRunningOnApple.js'
 import VoltraModule from '../VoltraModule.js'
 import { renderWidgetToString } from './renderer.js'
-import { ScheduledWidgetEntry, WidgetVariants } from './types.js'
+import { ScheduledWidgetEntry, WidgetInfo, WidgetVariants } from './types.js'
 
 // Re-export types for public API
 export type { UpdateWidgetOptions } from '../types.js'
-export type { ScheduledWidgetEntry } from './types.js'
+export type { ScheduledWidgetEntry, WidgetInfo } from './types.js'
 
 /**
  * Update a home screen widget with new content.
@@ -183,4 +183,21 @@ export const scheduleWidget = async (widgetId: string, entries: ScheduledWidgetE
   const timelineJson = JSON.stringify(timelineData)
 
   return VoltraModule.scheduleWidget(widgetId, timelineJson)
+}
+
+/**
+ * Fetches all active widget configurations for the containing app on iOS.
+ *
+ * @returns A promise that resolves to an array of active widget configurations.
+ *
+ * @example
+ * ```typescript
+ * const widgets = await getActiveWidgets()
+ * console.log('Active widgets:', widgets)
+ * ```
+ */
+export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
+  if (!assertRunningOnApple()) return []
+
+  return VoltraModule.getActiveWidgets()
 }

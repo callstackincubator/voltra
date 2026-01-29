@@ -19,6 +19,16 @@ export type WidgetFamily =
 export type WidgetVariants = Partial<Record<WidgetFamily, ReactNode>>
 
 /**
+ * Information about an active widget configuration on iOS
+ */
+export interface WidgetInfo {
+  /** The 'kind' string defined in your WidgetExtension */
+  kind: string
+  /** The visual size of the widget */
+  family: WidgetFamily
+}
+
+/**
  * A single entry in a widget timeline with scheduled display time and content
  */
 export type ScheduledWidgetEntry = {

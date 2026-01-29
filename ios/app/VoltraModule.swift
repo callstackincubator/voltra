@@ -117,6 +117,10 @@ public class VoltraModule: Module {
       await self.impl.clearAllWidgets()
     }
 
+    AsyncFunction("getActiveWidgets") { () async throws -> [[String: String]] in
+      return try await self.impl.getActiveWidgets()
+    }
+
     View(VoltraRN.self) {
       Prop("payload") { (view, payload: String) in
         view.setPayload(payload)

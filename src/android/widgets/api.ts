@@ -1,6 +1,6 @@
 import VoltraModule from '../../VoltraModule.js'
 import { renderAndroidWidgetToString } from './renderer.js'
-import type { AndroidWidgetVariants, UpdateAndroidWidgetOptions } from './types.js'
+import type { AndroidWidgetVariants, UpdateAndroidWidgetOptions, WidgetInfo } from './types.js'
 
 // Re-export types for public API
 export type {
@@ -8,6 +8,7 @@ export type {
   AndroidWidgetSizeVariant,
   AndroidWidgetVariants,
   UpdateAndroidWidgetOptions,
+  WidgetInfo,
 } from './types.js'
 
 /**
@@ -147,4 +148,19 @@ export const requestPinAndroidWidget = async (
   options?: { previewWidth?: number; previewHeight?: number }
 ): Promise<boolean> => {
   return VoltraModule.requestPinGlanceAppWidget(widgetId, options)
+}
+
+/**
+ * Fetches all active widget instances for the containing app on Android.
+ *
+ * @returns A promise that resolves to an array of active widget instances.
+ *
+ * @example
+ * ```typescript
+ * const widgets = await getActiveWidgets()
+ * console.log('Active widgets:', widgets)
+ * ```
+ */
+export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
+  return VoltraModule.getActiveWidgets()
 }
