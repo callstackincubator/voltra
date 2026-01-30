@@ -43,6 +43,7 @@ export function addXCConfigurationList(xcodeProject: XcodeProject, options: AddC
     SWIFT_OPTIMIZATION_LEVEL: `"-Onone"`,
     CODE_SIGN_ENTITLEMENTS: `"${targetName}/${targetName}.entitlements"`,
     APPLICATION_EXTENSION_API_ONLY: '"YES"',
+    ASSETCATALOG_COMPILER_APPICON_NAME: '""',
   }
 
   // Synchronize code signing settings from main app target
