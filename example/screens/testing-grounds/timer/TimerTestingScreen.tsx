@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Switch, Text, TextInput, useColorScheme, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
 import { Voltra } from 'voltra'
 import { VoltraWidgetPreview } from 'voltra/client'
 
@@ -17,6 +17,7 @@ export default function TimerTestingScreen() {
   const colorScheme = useColorScheme()
 
   // Timer State
+  const [mode, setMode] = useState<'timer' | 'stopwatch'>('timer')
   const [direction, setDirection] = useState<'up' | 'down'>('down')
   const [textStyle, setTextStyle] = useState<'timer' | 'relative'>('timer')
   const [showHours, setShowHours] = useState(false)
@@ -37,18 +38,27 @@ export default function TimerTestingScreen() {
     const duration = (parseInt(durationSec) || 0) * 1000
     const now = Date.now()
 
-    if (direction === 'down') {
+    if (mode === 'stopwatch') {
       setTimerState({
         startAtMs: now,
-        endAtMs: now + duration,
-        durationMs: duration,
+        endAtMs: undefined,
+        durationMs: undefined,
       })
+      setDirection('up')
     } else {
-      setTimerState({
-        startAtMs: now,
-        endAtMs: now + duration, // optional for count up, but defines range
-        durationMs: duration,
-      })
+      if (direction === 'down') {
+        setTimerState({
+          startAtMs: now,
+          endAtMs: now + duration,
+          durationMs: duration,
+        })
+      } else {
+        setTimerState({
+          startAtMs: now,
+          endAtMs: now + duration,
+          durationMs: duration,
+        })
+      }
     }
   }
 
@@ -66,7 +76,7 @@ export default function TimerTestingScreen() {
           startAtMs={timerState.startAtMs}
           endAtMs={timerState.endAtMs}
           durationMs={timerState.durationMs}
-          direction={direction}
+          direction={mode === 'stopwatch' ? 'up' : direction}
           textStyle={textStyle}
           showHours={showHours}
           textTemplates={templateJson}
@@ -99,22 +109,54 @@ export default function TimerTestingScreen() {
           <Card.Title>Configuration</Card.Title>
 
           <View style={styles.row}>
-            <Text style={styles.label}>Direction</Text>
+            <Text style={styles.label}>Mode</Text>
             <View style={styles.toggleGroup}>
               <Button
-                title="Down"
-                variant={direction === 'down' ? 'primary' : 'secondary'}
-                onPress={() => setDirection('down')}
+                title="Timer"
+                variant={mode === 'timer' ? 'primary' : 'secondary'}
+                onPress={() => setMode('timer')}
                 style={styles.smButton}
               />
               <Button
-                title="Up"
-                variant={direction === 'up' ? 'primary' : 'secondary'}
-                onPress={() => setDirection('up')}
+                title="Stopwatch"
+                variant={mode === 'stopwatch' ? 'primary' : 'secondary'}
+                onPress={() => setMode('stopwatch')}
                 style={styles.smButton}
               />
             </View>
           </View>
+
+          {mode === 'timer' && (
+            <>
+              <View style={styles.row}>
+                <Text style={styles.label}>Direction</Text>
+                <View style={styles.toggleGroup}>
+                  <Button
+                    title="Down"
+                    variant={direction === 'down' ? 'primary' : 'secondary'}
+                    onPress={() => setDirection('down')}
+                    style={styles.smButton}
+                  />
+                  <Button
+                    title="Up"
+                    variant={direction === 'up' ? 'primary' : 'secondary'}
+                    onPress={() => setDirection('up')}
+                    style={styles.smButton}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.row}>
+                <Text style={styles.label}>Duration (seconds)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={durationSec}
+                  onChangeText={setDurationSec}
+                  keyboardType="numeric"
+                />
+              </View>
+            </>
+          )}
 
           <View style={styles.row}>
             <Text style={styles.label}>Style</Text>
@@ -135,13 +177,21 @@ export default function TimerTestingScreen() {
           </View>
 
           <View style={styles.row}>
-            <Text style={styles.label}>Duration (seconds)</Text>
-            <TextInput style={styles.input} value={durationSec} onChangeText={setDurationSec} keyboardType="numeric" />
-          </View>
-
-          <View style={styles.row}>
             <Text style={styles.label}>Show Hours</Text>
-            <Switch value={showHours} onValueChange={setShowHours} />
+            <View style={styles.toggleGroup}>
+              <Button
+                title="Off"
+                variant={!showHours ? 'primary' : 'secondary'}
+                onPress={() => setShowHours(false)}
+                style={styles.smButton}
+              />
+              <Button
+                title="On"
+                variant={showHours ? 'primary' : 'secondary'}
+                onPress={() => setShowHours(true)}
+                style={styles.smButton}
+              />
+            </View>
           </View>
 
           <View style={styles.col}>

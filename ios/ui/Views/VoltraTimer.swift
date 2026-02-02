@@ -10,7 +10,18 @@ public struct VoltraTimer: VoltraView {
   }
 
   private func progressRange(params: TimerParameters) -> ClosedRange<Date>? {
-    VoltraProgressDriver.resolveRange(
+    // Stopwatch support: if counting up (not down) and we have a start time
+    // but no end time or duration, treat it as an open-ended stopwatch.
+    if !countsDown(params: params),
+       let startAtMs = params.startAtMs,
+       params.endAtMs == nil,
+       params.durationMs == nil
+    {
+      let start = Date(timeIntervalSince1970: startAtMs / 1000)
+      return start ... Date.distantFuture
+    }
+
+    return VoltraProgressDriver.resolveRange(
       startAtMs: params.startAtMs,
       endAtMs: params.endAtMs,
       durationMs: params.durationMs
@@ -79,13 +90,8 @@ public struct VoltraTimer: VoltraView {
       Text(targetDate, style: .relative)
     } else {
       // Live Activities require Text(timerInterval:...) for automatic updates
-      if #available(iOS 16.0, *) {
-        Text(timerInterval: range, countsDown: isCountDown, showsHours: showHours)
-          .monospacedDigit()
-      } else {
-        Text(showHours ? "0:00:00" : "0:00")
-          .monospacedDigit()
-      }
+      Text(timerInterval: range, countsDown: isCountDown, showsHours: showHours)
+        .monospacedDigit()
     }
   }
 
