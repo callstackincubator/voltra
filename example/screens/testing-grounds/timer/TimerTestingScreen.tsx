@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, View, Switch, useColorScheme } from 'react-native'
+import { ScrollView, StyleSheet, Switch, Text, TextInput, useColorScheme, View } from 'react-native'
 import { Voltra } from 'voltra'
 import { VoltraWidgetPreview } from 'voltra/client'
 
