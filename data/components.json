@@ -3,7 +3,6 @@
   "shortNames": {
     "style": "s",
     "alignment": "al",
-    "autoHideOnEnd": "ahe",
     "buttonStyle": "bs",
     "colors": "cls",
     "cornerRadius": "cr",
@@ -684,11 +683,6 @@
           "enum": ["up", "down"],
           "default": "down",
           "description": "Count direction"
-        },
-        "autoHideOnEnd": {
-          "type": "boolean",
-          "optional": true,
-          "description": "Hide timer when complete"
         },
         "textStyle": {
           "type": "string",

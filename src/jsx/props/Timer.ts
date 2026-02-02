@@ -13,8 +13,6 @@ export type TimerProps = VoltraBaseProps & {
   durationMs?: number
   /** Count direction */
   direction?: 'up' | 'down'
-  /** Hide timer when complete */
-  autoHideOnEnd?: boolean
   /** Text formatting style */
   textStyle?: 'timer' | 'relative'
   /** JSON-encoded TextTemplates object with running/completed templates */

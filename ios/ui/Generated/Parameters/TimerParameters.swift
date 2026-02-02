@@ -22,9 +22,6 @@ public struct TimerParameters: ComponentParameters {
   /// Count direction
   public let direction: String
 
-  /// Hide timer when complete
-  public let autoHideOnEnd: Bool?
-
   /// Text formatting style
   public let textStyle: String
 
@@ -39,7 +36,6 @@ public struct TimerParameters: ComponentParameters {
     case startAtMs
     case durationMs
     case direction
-    case autoHideOnEnd
     case textStyle
     case textTemplates
     case showHours
@@ -51,7 +47,6 @@ public struct TimerParameters: ComponentParameters {
     startAtMs = try container.decodeIfPresent(Double.self, forKey: .startAtMs)
     durationMs = try container.decodeIfPresent(Double.self, forKey: .durationMs)
     direction = try container.decodeIfPresent(String.self, forKey: .direction) ?? "down"
-    autoHideOnEnd = try container.decodeIfPresent(Bool.self, forKey: .autoHideOnEnd)
     textStyle = try container.decodeIfPresent(String.self, forKey: .textStyle) ?? "timer"
     textTemplates = try container.decodeIfPresent(String.self, forKey: .textTemplates)
     showHours = try container.decodeIfPresent(Bool.self, forKey: .showHours) ?? false

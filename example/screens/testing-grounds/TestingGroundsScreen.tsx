@@ -14,6 +14,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/weather',
   },
   {
+    id: 'timer',
+    title: 'Timer',
+    description:
+      'Test the VoltraTimer component with different styles (Timer/Relative), count directions, and templates. Verifies native Live Activity behavior.',
+    route: '/testing-grounds/timer',
+  },
+  {
     id: 'styling',
     title: 'Styling',
     description:

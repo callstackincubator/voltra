@@ -17,18 +17,14 @@ public struct VoltraTimer: VoltraView {
     )
   }
 
-  private func resolvedStartDate(params: TimerParameters) -> Date? { progressRange(params: params)?.lowerBound }
   private func resolvedEndDate(params: TimerParameters) -> Date? { progressRange(params: params)?.upperBound }
+
   private func countsDown(params: TimerParameters) -> Bool {
     (params.direction.lowercased()) != "up"
   }
 
   private func textStyle(params: TimerParameters) -> String {
     params.textStyle.lowercased()
-  }
-
-  private func autoHideOnEnd(params: TimerParameters) -> Bool {
-    params.autoHideOnEnd ?? false
   }
 
   private struct TextTemplates: Codable {
@@ -42,122 +38,83 @@ public struct VoltraTimer: VoltraView {
     return try? JSONDecoder().decode(TextTemplates.self, from: data)
   }
 
-  private func countdownTextView(params: TimerParameters, range: ClosedRange<Date>) -> some View {
-    let style = textStyle(params: params)
+  @ViewBuilder
+  public var body: some View {
+    if let range = progressRange(params: params) {
+      timerView(params: params, range: range)
+        .applyStyle(element.style)
+    }
+  }
+
+  @ViewBuilder
+  private func timerView(params: TimerParameters, range: ClosedRange<Date>) -> some View {
+    let isFinished = Date() >= range.upperBound
     let templates = textTemplates(params: params)
+    let style = textStyle(params: params)
     let showHours = params.showHours
-    return TimelineView(.animation) { context in
-      let remaining = range.upperBound.timeIntervalSince(context.date)
-      if let text = formattedCountdownText(remaining: remaining, templates: templates, textStyle: style, showHours: showHours) {
-        text
-      } else if remaining > 0 {
-        if style == "relative" {
-          Text(range.upperBound, style: .relative)
-        } else {
-          Text(timerInterval: context.date ... range.upperBound, countsDown: true, showsHours: showHours)
-            .monospacedDigit()
+
+    if isFinished, let completedTemplate = templates?.completed {
+      renderTemplate(template: completedTemplate) {
+        staticZeroText(style: style, showHours: showHours)
+      }
+    } else {
+      if let runningTemplate = templates?.running {
+        renderTemplate(template: runningTemplate) {
+          activeTimerText(params: params, range: range)
         }
       } else {
-        if style == "relative" {
-          Text("0s")
-        } else {
-          Text(showHours ? "0:00:00" : "0:00").monospacedDigit()
-        }
+        activeTimerText(params: params, range: range)
       }
     }
   }
 
-  private func countUpTextView(params: TimerParameters, range: ClosedRange<Date>) -> some View {
+  @ViewBuilder
+  private func activeTimerText(params: TimerParameters, range: ClosedRange<Date>) -> some View {
     let style = textStyle(params: params)
-    let templates = textTemplates(params: params)
+    let isCountDown = countsDown(params: params)
     let showHours = params.showHours
-    return TimelineView(.animation) { context in
-      let elapsedRaw = context.date.timeIntervalSince(range.lowerBound)
-      let total = range.upperBound.timeIntervalSince(range.lowerBound)
-      let elapsed = total > 0 ? min(max(0, elapsedRaw), total) : max(0, elapsedRaw)
-      if let text = formattedCountUpText(elapsed: elapsed, templates: templates, textStyle: style, showHours: showHours) {
-        text
-      } else if style == "relative" {
-        Text(range.lowerBound, style: .relative)
+
+    if style == "relative" {
+      let targetDate = isCountDown ? range.upperBound : range.lowerBound
+      Text(targetDate, style: .relative)
+    } else {
+      // Live Activities require Text(timerInterval:...) for automatic updates
+      if #available(iOS 16.0, *) {
+        Text(timerInterval: range, countsDown: isCountDown, showsHours: showHours)
+          .monospacedDigit()
       } else {
-        Text(timerInterval: range.lowerBound ... context.date, countsDown: false, showsHours: showHours)
+        Text(showHours ? "0:00:00" : "0:00")
           .monospacedDigit()
       }
     }
   }
 
-  private func formattedCountdownText(remaining: TimeInterval, templates: TextTemplates?, textStyle: String, showHours: Bool) -> Text? {
-    guard let templates = templates else { return nil }
-    let monospaced = textStyle != "relative"
-    if remaining > 0 {
-      if let template = templates.running {
-        let formatted = countdownTimeString(remaining: remaining, textStyle: textStyle, showHours: showHours)
-        return renderTemplate(template: template, time: formatted, monospaced: monospaced)
-      }
+  @ViewBuilder
+  private func staticZeroText(style: String, showHours: Bool) -> some View {
+    if style == "relative" {
+      Text("0s")
     } else {
-      if let template = templates.completed {
-        let formatted = countdownTimeString(remaining: 0, textStyle: textStyle, showHours: showHours)
-        return renderTemplate(template: template, time: formatted, monospaced: monospaced)
-      }
+      Text(showHours ? "0:00:00" : "0:00")
+        .monospacedDigit()
     }
-    return nil
-  }
-
-  private func formattedCountUpText(elapsed: TimeInterval, templates: TextTemplates?, textStyle: String, showHours: Bool) -> Text? {
-    guard let template = templates?.running else { return nil }
-    let formatted = countUpTimeString(elapsed: elapsed, textStyle: textStyle, showHours: showHours)
-    let monospaced = textStyle != "relative"
-    return renderTemplate(template: template, time: formatted, monospaced: monospaced)
-  }
-
-  private func countdownTimeString(remaining: TimeInterval, textStyle: String, showHours: Bool) -> String {
-    if textStyle == "relative" {
-      if remaining <= 0 { return "0s" }
-      return Self.relativeFormatter.localizedString(fromTimeInterval: remaining)
-    }
-    return Self.timerFormatter(showHours: showHours).string(from: max(remaining, 0)) ?? (showHours ? "0:00:00" : "0:00")
-  }
-
-  private func countUpTimeString(elapsed: TimeInterval, textStyle: String, showHours: Bool) -> String {
-    if textStyle == "relative" {
-      return Self.relativeFormatter.localizedString(fromTimeInterval: -elapsed)
-    }
-    return Self.timerFormatter(showHours: showHours).string(from: max(elapsed, 0)) ?? (showHours ? "0:00:00" : "0:00")
-  }
-
-  private func renderTemplate(template: String, time: String, monospaced: Bool) -> Text {
-    let placeholder = "{time}"
-    let segments = template.components(separatedBy: placeholder)
-    guard segments.count > 1 else {
-      return Text(template)
-    }
-
-    var text = Text(verbatim: segments.first ?? "")
-    for segment in segments.dropFirst() {
-      let timeText = Text(time)
-      let formattedTime = monospaced ? timeText.monospacedDigit() : timeText
-      text = text + formattedTime
-      if !segment.isEmpty {
-        text = text + Text(verbatim: segment)
-      }
-    }
-
-    return text
   }
 
   @ViewBuilder
-  public var body: some View {
-    if let range = progressRange(params: params) {
-      if !autoHideOnEnd(params: params) || resolvedEndDate(params: params).map({ Date() < $0 }) ?? true {
-        // Timer component now only supports text mode
-        if countsDown(params: params) {
-          countdownTextView(params: params, range: range)
-            .applyStyle(element.style)
-        } else {
-          countUpTextView(params: params, range: range)
-            .applyStyle(element.style)
+  private func renderTemplate<T: View>(template: String, @ViewBuilder timeView: @escaping () -> T) -> some View {
+    let placeholder = "{time}"
+    let segments = template.components(separatedBy: placeholder)
+
+    if segments.count > 1 {
+      HStack(spacing: 0) {
+        ForEach(Array(segments.enumerated()), id: \.offset) { index, segment in
+          Text(verbatim: segment)
+          if index < segments.count - 1 {
+            timeView()
+          }
         }
       }
+    } else {
+      Text(template)
     }
   }
 }
@@ -165,29 +122,5 @@ public struct VoltraTimer: VoltraView {
 // MARK: - Formatters
 
 extension VoltraTimer {
-  private static let timerFormatterWithHours: DateComponentsFormatter = {
-    let formatter = DateComponentsFormatter()
-    formatter.allowedUnits = [.hour, .minute, .second]
-    formatter.zeroFormattingBehavior = [.pad]
-    formatter.unitsStyle = .positional
-    return formatter
-  }()
-
-  private static let timerFormatterWithoutHours: DateComponentsFormatter = {
-    let formatter = DateComponentsFormatter()
-    formatter.allowedUnits = [.minute, .second]
-    formatter.zeroFormattingBehavior = [.pad]
-    formatter.unitsStyle = .positional
-    return formatter
-  }()
-
-  private static func timerFormatter(showHours: Bool) -> DateComponentsFormatter {
-    showHours ? timerFormatterWithHours : timerFormatterWithoutHours
-  }
-
-  private static let relativeFormatter: RelativeDateTimeFormatter = {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = .short
-    return formatter
-  }()
+  // Formatters are no longer needed for live updates but kept if we need static fallbacks.
 }

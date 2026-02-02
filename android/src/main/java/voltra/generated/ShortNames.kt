@@ -19,7 +19,6 @@ object ShortNames {
             "al" to "alignment",
             "ar" to "aspectRatio",
             "an" to "assetName",
-            "ahe" to "autoHideOnEnd",
             "bkg" to "background",
             "bg" to "backgroundColor",
             "bgs" to "backgroundStyle",

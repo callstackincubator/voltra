@@ -16,7 +16,6 @@ public enum ShortNames {
     "al": "alignment",
     "ar": "aspectRatio",
     "an": "assetName",
-    "ahe": "autoHideOnEnd",
     "bkg": "background",
     "bg": "backgroundColor",
     "bgs": "backgroundStyle",
