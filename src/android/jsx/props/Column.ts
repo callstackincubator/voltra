@@ -5,4 +5,6 @@ export type ColumnProps = VoltraAndroidBaseProps & {
   horizontalAlignment?: 'start' | 'center-horizontally' | 'end'
   /** Vertical alignment of children */
   verticalAlignment?: 'top' | 'center-vertically' | 'bottom'
+  /** Spacing between children */
+  spacing?: number
 }
