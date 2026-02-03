@@ -37,6 +37,7 @@ export type VoltraViewStyle = Pick<
   | 'aspectRatio'
   | 'left'
   | 'top'
+  | 'position'
   | 'zIndex'
   | 'transform'
 > & {

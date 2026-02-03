@@ -220,6 +220,7 @@ export function WorkoutLiveActivityUI({ heartRate, distance, pace, startTime }: 
 
           <Voltra.VStack
             style={{
+              position: 'absolute',
               top: 3,
               left: getCirclePosition() + 16,
               width: 16,

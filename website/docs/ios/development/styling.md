@@ -24,8 +24,10 @@ The following React Native style properties are supported:
 
 **Positioning:**
 
-- `offsetX` - Horizontal offset from the element's natural position (positive = right, negative = left)
-- `offsetY` - Vertical offset from the element's natural position (positive = down, negative = up)
+- `position` - Positioning mode: `'static'` (default), `'relative'`, or `'absolute'`
+- `left` - Horizontal position coordinate (used with `position`)
+- `top` - Vertical position coordinate (used with `position`)
+- `zIndex` - Z-order of the element
 
 **Style:**
 
@@ -64,15 +66,18 @@ Properties not listed above are ignored during rendering. This includes common R
 - Most flexbox layout properties (`flexDirection`, `justifyContent`, `alignItems`, etc.) - Note: `flex`, `flexGrow`, and `flexShrink` are supported
 - `gap` and spacing properties
 - Percentage-based widths and heights
-- CSS-style positioning (`position`, `top`, `left`, `right`, `bottom`) - Use SwiftUI-native positioning instead (see below)
+- `right` and `bottom` positioning properties - Only `left` and `top` are supported
 - Most text styling properties beyond `fontSize`, `fontWeight`, `fontFamily`, `color`, `letterSpacing`, and `fontVariant`
 
 :::tip Positioning in Voltra
 
-Voltra uses SwiftUI's native positioning model instead of CSS-style absolute/relative positioning:
+Voltra supports CSS-style positioning with three modes:
 
-1. **Use stack `alignment` props** - `ZStack`, `VStack`, and `HStack` all support an `alignment` prop that positions all children
-2. **Use `offsetX`/`offsetY` styles** - Fine-tune individual element positions with offset
+- **`position: 'static'`** (default) - Normal layout flow. `left` and `top` are ignored.
+- **`position: 'relative'`** - Offsets the element from its natural position using `left` and `top`. The offset moves the element right (positive `left`) and down (positive `top`).
+- **`position: 'absolute'`** - Positions the element's **center** at the coordinates specified by `left` and `top`. This differs from CSS which positions from the top-left corner, but matches SwiftUI's native behavior.
+
+For most layouts, prefer using stack `alignment` props (`ZStack`, `VStack`, `HStack`) which provide better layout control. Use positioning for fine-tuning or overlays.
 
 See the [Layout & Containers](../components/layout) documentation for details on alignment.
 

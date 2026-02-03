@@ -21,6 +21,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/styling',
   },
   {
+    id: 'positioning',
+    title: 'Positioning',
+    description:
+      'Learn about static, relative, and absolute positioning modes. See how left, top, and zIndex properties work with visual examples.',
+    route: '/testing-grounds/positioning',
+  },
+  {
     id: 'components',
     title: 'Components',
     description:
