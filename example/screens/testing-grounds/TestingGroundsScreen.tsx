@@ -35,6 +35,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/positioning',
   },
   {
+    id: 'progress',
+    title: 'Progress Indicators',
+    description:
+      'Explore linear and circular progress indicators. Test determinate, indeterminate, and timer-based modes with custom labels and styling.',
+    route: '/testing-grounds/progress',
+  },
+  {
     id: 'components',
     title: 'Components',
     description:

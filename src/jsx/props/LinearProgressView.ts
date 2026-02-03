@@ -27,4 +27,8 @@ export type LinearProgressViewProps = VoltraBaseProps & {
   height?: number
   /** Custom thumb component to display at progress position */
   thumb?: ReactNode
+  /** Label content for the progress indicator */
+  label?: ReactNode
+  /** Custom text for current value label */
+  currentValueLabel?: ReactNode
 }

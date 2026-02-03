@@ -37,9 +37,6 @@ public struct LinearProgressViewParameters: ComponentParameters {
   /// Explicit height for the progress bar
   public let height: Double?
 
-  /// Custom thumb component to display at progress position
-  public let thumb: String?
-
   enum CodingKeys: String, CodingKey {
     case value
     case countDown
@@ -50,7 +47,6 @@ public struct LinearProgressViewParameters: ComponentParameters {
     case progressColor
     case cornerRadius
     case height
-    case thumb
   }
 
   public init(from decoder: Decoder) throws {
@@ -64,6 +60,5 @@ public struct LinearProgressViewParameters: ComponentParameters {
     progressColor = try container.decodeIfPresent(String.self, forKey: .progressColor)
     cornerRadius = try container.decodeIfPresent(Double.self, forKey: .cornerRadius)
     height = try container.decodeIfPresent(Double.self, forKey: .height)
-    thumb = try container.decodeIfPresent(String.self, forKey: .thumb)
   }
 }

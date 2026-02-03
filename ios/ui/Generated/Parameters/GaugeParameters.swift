@@ -31,15 +31,6 @@ public struct GaugeParameters: ComponentParameters {
   /// Visual style of the gauge
   public let gaugeStyle: String?
 
-  /// Custom text for current value label
-  public let currentValueLabel: String?
-
-  /// Text for minimum value label
-  public let minimumValueLabel: String?
-
-  /// Text for maximum value label
-  public let maximumValueLabel: String?
-
   enum CodingKeys: String, CodingKey {
     case value
     case minimumValue
@@ -48,9 +39,6 @@ public struct GaugeParameters: ComponentParameters {
     case startAtMs
     case tintColor
     case gaugeStyle
-    case currentValueLabel
-    case minimumValueLabel
-    case maximumValueLabel
   }
 
   public init(from decoder: Decoder) throws {
@@ -62,8 +50,5 @@ public struct GaugeParameters: ComponentParameters {
     startAtMs = try container.decodeIfPresent(Double.self, forKey: .startAtMs)
     tintColor = try container.decodeIfPresent(String.self, forKey: .tintColor)
     gaugeStyle = try container.decodeIfPresent(String.self, forKey: .gaugeStyle)
-    currentValueLabel = try container.decodeIfPresent(String.self, forKey: .currentValueLabel)
-    minimumValueLabel = try container.decodeIfPresent(String.self, forKey: .minimumValueLabel)
-    maximumValueLabel = try container.decodeIfPresent(String.self, forKey: .maximumValueLabel)
   }
 }
