@@ -1,9 +1,9 @@
 import { ConfigPlugin, withAndroidManifest } from '@expo/config-plugins'
 import { AndroidConfig } from 'expo/config-plugins'
 
-import type { AndroidWidgetConfig } from '../../../types'
+import type { AndroidWidgetConfig } from '../types'
 
-export interface ConfigureAndroidManifestProps {
+export interface ConfigureAndroidWidgetReceiversProps {
   widgets: AndroidWidgetConfig[]
 }
 
@@ -15,7 +15,7 @@ export interface ConfigureAndroidManifestProps {
  * - APPWIDGET_UPDATE intent filter
  * - Widget provider metadata reference
  */
-export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProps> = (config, props) => {
+export const configureAndroidWidgetReceivers: ConfigPlugin<ConfigureAndroidWidgetReceiversProps> = (config, props) => {
   const { widgets } = props
 
   return withAndroidManifest(config, (config) => {

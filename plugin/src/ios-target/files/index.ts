@@ -15,7 +15,7 @@ export interface GenerateWidgetExtensionFilesProps {
 }
 
 /**
- * Plugin step that generates all widget extension files.
+ * Plugin step that generates all widget extension target files.
  *
  * This creates:
  * - Info.plist (required extension manifest)
@@ -24,14 +24,19 @@ export interface GenerateWidgetExtensionFilesProps {
  * - VoltraWidgetInitialStates.swift (pre-rendered widget states)
  * - {targetName}.entitlements (entitlements file)
  *
- * This should run before configureXcodeProject so the files exist when Xcode project is configured.
+ * This should run before configureTargetXcodeProject so the files exist when Xcode project is configured.
  */
-export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
+export const generateTargetFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
   const { targetName, widgets, groupIdentifier } = props
 
   return withDangerousMod(config, [
     'ios',
     async (config) => {
+      // Check for introspection mode - skip file operations during dry-run
+      if (config.modRequest.introspect) {
+        return config
+      }
+
       const { platformProjectRoot, projectRoot } = config.modRequest
       const targetPath = path.join(platformProjectRoot, targetName)
 

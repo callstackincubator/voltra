@@ -7,7 +7,7 @@ import { ConfigPlugin, withEntitlementsPlist, withInfoPlist } from '@expo/config
  * - Adds the aps-environment entitlement for push notifications
  * - Adds Voltra_EnablePushNotifications flag to Info.plist
  */
-export const withPushNotifications: ConfigPlugin = (config) =>
+export const configureIOSPushNotifications: ConfigPlugin = (config) =>
   withInfoPlist(
     withEntitlementsPlist(config, (mod) => {
       // NOTE: For App Store builds, provisioning profiles typically inject 'production'.

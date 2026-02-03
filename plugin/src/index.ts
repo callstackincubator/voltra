@@ -1,11 +1,21 @@
-import { IOSConfig } from 'expo/config-plugins'
+import { ConfigPlugin, IOSConfig, withPlugins } from 'expo/config-plugins'
 
+// Android plugins
+import { generateAndroidFiles } from './android/files'
+import { configureAndroidWidgetReceivers } from './android/manifest'
 import { IOS } from './constants'
-import { withAndroid } from './features/android'
-import { withIOS } from './features/ios'
-import { withPushNotifications } from './features/pushNotifications'
+// iOS main app plugins
+import { configureIOSMainAppEntitlements } from './ios/entitlements'
+import { configureIOSMainAppInfoPlist } from './ios/infoPlist'
+import { configureIOSPushNotifications } from './ios/pushNotifications'
+// iOS target plugins
+import { configureTargetEASBuild } from './ios-target/eas'
+import { generateTargetFiles } from './ios-target/files'
+import { configureTargetFonts } from './ios-target/fonts'
+import { configureTargetInfoPlist } from './ios-target/infoPlist'
+import { configureTargetPodfile } from './ios-target/podfile'
+import { configureTargetXcodeProject } from './ios-target/xcode'
 import type { VoltraConfigPlugin } from './types'
-import { ensureURLScheme } from './utils'
 import { validateProps } from './validation'
 
 /**
@@ -20,49 +30,39 @@ const withVoltra: VoltraConfigPlugin = (config, props = {}) => {
   // Validate props at entry point
   validateProps(props)
 
-  // Use deploymentTarget from props if provided, otherwise fall back to default
+  // Calculate derived values
   const deploymentTarget = props.deploymentTarget || IOS.DEPLOYMENT_TARGET
-  // Use custom targetName if provided, otherwise fall back to default "{AppName}LiveActivity"
   const targetName = props.targetName || `${IOSConfig.XcodeUtils.sanitizedName(config.name)}LiveActivity`
   const bundleIdentifier = `${config.ios?.bundleIdentifier}.${targetName}`
 
-  // Ensure URL scheme is set for widget deep linking
-  config = ensureURLScheme(config)
+  // Phase 1: Configure iOS main app (independent plugins)
+  const iosMainAppPlugins: [ConfigPlugin<any>, any][] = [
+    [configureIOSMainAppInfoPlist, { widgets: props.widgets, groupIdentifier: props.groupIdentifier }],
+    ...(props.groupIdentifier
+      ? [[configureIOSMainAppEntitlements, { groupIdentifier: props.groupIdentifier }] as [ConfigPlugin<any>, any]]
+      : []),
+    ...(props.enablePushNotifications ? [[configureIOSPushNotifications, {}] as [ConfigPlugin<any>, any]] : []),
+  ]
+  config = withPlugins(config, iosMainAppPlugins)
 
-  // Add Live Activities support to main app Info.plist
-  config.ios = {
-    ...config.ios,
-    infoPlist: {
-      ...config.ios?.infoPlist,
-      NSSupportsLiveActivities: true,
-      NSSupportsLiveActivitiesFrequentUpdates: false,
-      // Only add group identifier if provided
-      ...(props?.groupIdentifier ? { Voltra_AppGroupIdentifier: props.groupIdentifier } : {}),
-      // Store widget IDs in Info.plist for native module to access
-      ...(props?.widgets && props.widgets.length > 0 ? { Voltra_WidgetIds: props.widgets.map((w) => w.id) } : {}),
-    },
-  }
+  // Phase 2: Configure iOS widget extension target (sequential dependencies - reverse execution order)
+  const iosTargetPlugins: [ConfigPlugin<any>, any][] = [
+    [generateTargetFiles, { targetName, widgets: props.widgets, groupIdentifier: props.groupIdentifier }],
+    ...(props.fonts ? [[configureTargetFonts, { fonts: props.fonts, targetName }] as [ConfigPlugin<any>, any]] : []),
+    [configureTargetXcodeProject, { targetName, bundleIdentifier, deploymentTarget }],
+    [configureTargetPodfile, { targetName }],
+    [configureTargetInfoPlist, { targetName, groupIdentifier: props.groupIdentifier }],
+    [configureTargetEASBuild, { targetName, bundleIdentifier, groupIdentifier: props.groupIdentifier }],
+  ]
+  config = withPlugins(config, iosTargetPlugins)
 
-  // Apply iOS configuration (files, xcode, podfile, plist, eas)
-  config = withIOS(config, {
-    targetName,
-    bundleIdentifier,
-    deploymentTarget,
-    widgets: props?.widgets,
-    ...(props?.groupIdentifier ? { groupIdentifier: props.groupIdentifier } : {}),
-    ...(props?.fonts ? { fonts: props.fonts } : {}),
-  })
-
-  // Apply Android configuration (files, manifest)
+  // Phase 3: Configure Android (if provided)
   if (props.android) {
-    config = withAndroid(config, {
-      widgets: props.android.widgets ?? [],
-    })
-  }
-
-  // Optionally enable push notifications
-  if (props.enablePushNotifications) {
-    config = withPushNotifications(config)
+    const androidPlugins: [ConfigPlugin<any>, any][] = [
+      [generateAndroidFiles, { widgets: props.android.widgets, userImagesPath: props.android.userImagesPath }],
+      [configureAndroidWidgetReceivers, { widgets: props.android.widgets }],
+    ]
+    config = withPlugins(config, androidPlugins)
   }
 
   return config

@@ -1,6 +1,6 @@
 import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 
-import type { AndroidWidgetConfig } from '../../../types'
+import type { AndroidWidgetConfig } from '../../types'
 import { generateAndroidAssets } from './assets'
 import { generateInitialStates } from './initialStates'
 import { generateKotlinFiles } from './kotlin'
@@ -21,14 +21,19 @@ export interface GenerateAndroidWidgetFilesProps {
  * - res/values/voltra_widgets.xml (widget descriptions)
  * - res/drawable/ images (user images as drawable resources)
  *
- * This should run before configureAndroidManifest so the files exist when the manifest is configured.
+ * This should run before configureAndroidWidgetReceivers so the files exist when the manifest is configured.
  */
-export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFilesProps> = (config, props) => {
+export const generateAndroidFiles: ConfigPlugin<GenerateAndroidWidgetFilesProps> = (config, props) => {
   const { widgets, userImagesPath } = props
 
   return withDangerousMod(config, [
     'android',
     async (config) => {
+      // Check for introspection mode - skip file operations during dry-run
+      if (config.modRequest.introspect) {
+        return config
+      }
+
       const { platformProjectRoot, projectRoot } = config.modRequest
       const packageName = config.android?.package || 'com.example.app'
 

@@ -3,24 +3,29 @@ import plist from '@expo/plist'
 import { readFileSync, writeFileSync } from 'fs'
 import { join as joinPath } from 'path'
 
-export interface ConfigureMainAppPlistProps {
+export interface ConfigureTargetInfoPlistProps {
   targetName: string
   groupIdentifier?: string
 }
 
 /**
- * Plugin step that configures the Info.plist files.
+ * Plugin step that configures the widget extension target's Info.plist.
  *
  * This:
  * - Updates the widget extension's Info.plist with URL schemes
  * - Removes incompatible NSExtension keys for WidgetKit
  * - Adds group identifier if configured
  */
-export const configureMainAppPlist: ConfigPlugin<ConfigureMainAppPlistProps> = (
+export const configureTargetInfoPlist: ConfigPlugin<ConfigureTargetInfoPlistProps> = (
   expoConfig,
   { targetName, groupIdentifier }
 ) =>
   withInfoPlist(expoConfig, (plistConfig) => {
+    // Skip file operations during introspection
+    if (plistConfig.modRequest?.introspect) {
+      return plistConfig
+    }
+
     const scheme = typeof expoConfig.scheme === 'string' ? expoConfig.scheme : expoConfig.ios?.bundleIdentifier
 
     if (scheme) {

@@ -1,5 +1,5 @@
 /**
- * Font configuration for Live Activity extension.
+ * Font configuration for Live Activity extension target.
  *
  * This code is adapted from expo-font to support custom fonts in Live Activities.
  * @see https://github.com/expo/expo/tree/main/packages/expo-font/plugin
@@ -14,19 +14,22 @@ import { readFileSync, writeFileSync } from 'fs'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 
-import { logger } from '../../utils'
+import { logger } from '../utils'
 
 const FONT_EXTENSIONS = ['.ttf', '.otf', '.woff', '.woff2']
 
 /**
- * Plugin that adds custom fonts to the Live Activity extension.
+ * Plugin that adds custom fonts to the Live Activity extension target.
  *
  * @param config - The Expo config
  * @param fonts - Array of font file paths or directories
  * @param targetName - Name of the Live Activity extension target
  * @returns Modified config
  */
-export const withFonts: ConfigPlugin<{ fonts: string[]; targetName: string }> = (config, { fonts, targetName }) => {
+export const configureTargetFonts: ConfigPlugin<{ fonts: string[]; targetName: string }> = (
+  config,
+  { fonts, targetName }
+) => {
   if (!fonts || fonts.length === 0) {
     return config
   }
@@ -78,6 +81,11 @@ function addFontsToTarget(config: ExpoConfig, fonts: string[], targetName: strin
  */
 function addFontsToPlist(config: ExpoConfig, fonts: string[], targetName: string) {
   return withXcodeProject(config, async (config) => {
+    // Check for introspection mode - skip file operations during dry-run
+    if (config.modRequest?.introspect) {
+      return config
+    }
+
     const resolvedFonts = await resolveFontPaths(fonts, config.modRequest.projectRoot)
     const platformProjectRoot = config.modRequest.platformProjectRoot
 

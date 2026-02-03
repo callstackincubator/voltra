@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import { ConfigPlugin, withPodfile as withExpoPodfile } from '@expo/config-plugins'
 
-const packageJson = fs.readFileSync(path.join(__dirname, '..', '..', '..', '..', '..', 'package.json'), 'utf8')
+const packageJson = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'package.json'), 'utf8')
 const libraryName = JSON.parse(packageJson).name
 
 /**
@@ -22,19 +22,19 @@ target '${targetName}' do
   project_root = "#{Pod::Config.instance.installation_root}/.."
   voltra_module = JSON.parse(${backtick}npx expo-modules-autolinking search -p apple --json --project-root #{project_root}${backtick})
   podspec_dir_path = Pathname.new(File.join(voltra_module['${libraryName}']['path'], 'ios')).relative_path_from(Pathname.new(__dir__)).to_path
-  
+
   pod 'VoltraWidget', :path => podspec_dir_path
 end`
 }
 
-export interface ConfigurePodfileProps {
+export interface ConfigureTargetPodfileProps {
   targetName: string
 }
 
 /**
- * Plugin step that adds the Podfile target for the widget extension.
+ * Plugin step that adds the Podfile target for the widget extension target.
  */
-export const configurePodfile: ConfigPlugin<ConfigurePodfileProps> = (config, { targetName }) => {
+export const configureTargetPodfile: ConfigPlugin<ConfigureTargetPodfileProps> = (config, { targetName }) => {
   return withExpoPodfile(config, (podfile) => {
     const targetContent = getTargetContent(targetName)
 

@@ -1,21 +1,21 @@
 import { ConfigPlugin } from '@expo/config-plugins'
 
-import { addApplicationGroupsEntitlement, getWidgetExtensionEntitlements } from '../files/entitlements'
+import { getWidgetExtensionEntitlements } from '../utils/entitlements'
 
-export interface ConfigureEasBuildProps {
+export interface ConfigureTargetEASBuildProps {
   bundleIdentifier: string
   targetName: string
   groupIdentifier?: string
 }
 
 /**
- * Plugin step that configures EAS build settings for the widget extension.
+ * Plugin step that configures EAS build settings for the widget extension target.
  *
  * This:
  * - Adds the widget extension to the EAS build experimental iOS appExtensions
- * - Configures entitlements for both the extension and main app
+ * - Configures entitlements for the extension
  */
-export const configureEasBuild: ConfigPlugin<ConfigureEasBuildProps> = (
+export const configureTargetEASBuild: ConfigPlugin<ConfigureTargetEASBuildProps> = (
   config,
   { bundleIdentifier, targetName, groupIdentifier }
 ) => {
@@ -62,15 +62,6 @@ export const configureEasBuild: ConfigPlugin<ConfigureEasBuildProps> = (
     widgetsExtensionConfig.entitlements = {
       ...widgetsExtensionConfig.entitlements,
       ...getWidgetExtensionEntitlements(groupIdentifier),
-    }
-
-    if (groupIdentifier) {
-      config.ios = {
-        ...config.ios,
-        entitlements: {
-          ...addApplicationGroupsEntitlement(config.ios?.entitlements ?? {}, groupIdentifier),
-        },
-      }
     }
   }
 

@@ -1,7 +1,7 @@
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins'
 import * as path from 'path'
 
-import { getWidgetFiles } from '../../../utils'
+import { getWidgetFiles } from '../../utils'
 import { configureBuild } from './build'
 import { addXCConfigurationList } from './build/configurationList'
 import { addPbxGroup } from './groups'
@@ -16,7 +16,7 @@ export interface ConfigureXcodeProjectProps {
 }
 
 /**
- * Plugin step that configures the Xcode project for the widget extension.
+ * Plugin step that configures the Xcode project for the widget extension target.
  *
  * This:
  * - Adds XCConfigurationList with Debug/Release configurations
@@ -25,9 +25,9 @@ export interface ConfigureXcodeProjectProps {
  * - Adds build phases (Sources, CopyFiles, Frameworks, Resources)
  * - Adds PBXGroup for widget files
  *
- * This should run after generateWidgetExtensionFiles so the files exist.
+ * This should run after generateTargetFiles so the files exist.
  */
-export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (config, props) => {
+export const configureTargetXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (config, props) => {
   const { targetName, bundleIdentifier, deploymentTarget } = props
 
   return withXcodeProject(config, (config) => {
