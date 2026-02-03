@@ -73,9 +73,11 @@ Properties not listed above are ignored during rendering. This includes common R
 
 Voltra supports CSS-style positioning with three modes:
 
-- **`position: 'static'`** (default) - Normal layout flow. `left` and `top` are ignored.
+- **`position: 'static'`** - Normal layout flow. `left` and `top` are ignored.
 - **`position: 'relative'`** - Offsets the element from its natural position using `left` and `top`. The offset moves the element right (positive `left`) and down (positive `top`).
-- **`position: 'absolute'`** - Positions the element's **center** at the coordinates specified by `left` and `top`. This differs from CSS which positions from the top-left corner, but matches SwiftUI's native behavior.
+- **`position: 'absolute'`** (default when `left`/`top` provided) - Positions the element's **center** at the coordinates specified by `left` and `top`. This differs from CSS which positions from the top-left corner, but matches SwiftUI's native behavior.
+
+**Note**: If you provide `left` or `top` without specifying `position`, it defaults to `'absolute'` for backward compatibility. To ignore `left`/`top`, explicitly set `position: 'static'`.
 
 For most layouts, prefer using stack `alignment` props (`ZStack`, `VStack`, `HStack`) which provide better layout control. Use positioning for fine-tuning or overlays.
 

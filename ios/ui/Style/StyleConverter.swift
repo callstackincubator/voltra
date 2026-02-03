@@ -16,19 +16,21 @@ enum StyleConverter {
     let priority: Double? = finalFlex > 0 ? 1.0 : nil
 
     // Position parsing with mode support
-    let positionMode = js["position"] as? String
     let left = JSStyleParser.number(js["left"])
     let top = JSStyleParser.number(js["top"])
 
     var absolutePosition: CGPoint?
     var relativeOffset: CGPoint?
 
-    // Only apply positioning if position mode is set
-    if let mode = positionMode, left != nil || top != nil {
+    // Only apply positioning if left or top are provided
+    if left != nil || top != nil {
       let x = left ?? 0
       let y = top ?? 0
 
-      switch mode.lowercased() {
+      // Default to 'absolute' if position mode not specified (backward compatibility)
+      let positionMode = js["position"] as? String ?? "absolute"
+
+      switch positionMode.lowercased() {
       case "absolute":
         absolutePosition = CGPoint(x: x, y: y)
       case "relative":

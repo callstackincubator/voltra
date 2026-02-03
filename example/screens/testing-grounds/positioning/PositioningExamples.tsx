@@ -13,6 +13,7 @@ export function StaticPositioningExample({ testID }: PositioningExampleProps) {
         {/* This box has left/top but NO position - should be centered and ignore left/top */}
         <Voltra.VStack
           style={{
+            position: 'static',
             backgroundColor: '#3B82F6',
             width: 80,
             height: 60,
