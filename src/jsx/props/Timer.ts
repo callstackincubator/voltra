@@ -13,10 +13,10 @@ export type TimerProps = VoltraBaseProps & {
   durationMs?: number
   /** Count direction */
   direction?: 'up' | 'down'
-  /** Hide timer when complete */
-  autoHideOnEnd?: boolean
   /** Text formatting style */
   textStyle?: 'timer' | 'relative'
   /** JSON-encoded TextTemplates object with running/completed templates */
   textTemplates?: string
+  /** Whether to show hours component when duration exceeds 60 minutes. If false, minutes will exceed 60 (e.g., 94:00 instead of 1:34:00) */
+  showHours?: boolean
 }

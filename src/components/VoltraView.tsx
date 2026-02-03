@@ -1,6 +1,6 @@
 import { requireNativeView } from 'expo'
 import React, { ReactNode, useEffect, useMemo } from 'react'
-import { StyleProp, ViewStyle } from 'react-native'
+import { StyleProp, View, ViewStyle } from 'react-native'
 
 import { addVoltraListener, VoltraInteractionEvent } from '../events.js'
 import { renderVoltraVariantToJson } from '../renderer/index.js'
@@ -9,6 +9,10 @@ const NativeVoltraView = requireNativeView('VoltraModule')
 
 // Generate a unique ID for views that don't have one
 const generateViewId = () => `voltra-view-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+const voltraViewStyle: ViewStyle = {
+  flex: 1,
+}
 
 export type VoltraViewProps = {
   /**
@@ -30,6 +34,10 @@ export type VoltraViewProps = {
    * Events are filtered by this view's id (source).
    */
   onInteraction?: (event: VoltraInteractionEvent) => void
+  /**
+   * Test ID for the view
+   */
+  testID?: string
 }
 
 /**
@@ -45,7 +53,7 @@ export type VoltraViewProps = {
  * </VoltraView>
  * ```
  */
-export function VoltraView({ id, children, style, onInteraction }: VoltraViewProps) {
+export function VoltraView({ id, children, style, onInteraction, testID }: VoltraViewProps) {
   // Generate a stable ID if not provided
   const viewId = useMemo(() => id || generateViewId(), [id])
 
@@ -72,5 +80,9 @@ export function VoltraView({ id, children, style, onInteraction }: VoltraViewPro
     return () => subscription.remove()
   }, [viewId, onInteraction])
 
-  return <NativeVoltraView payload={payload} viewId={viewId} style={style} />
+  return (
+    <View testID={testID} style={style}>
+      <NativeVoltraView payload={payload} viewId={viewId} style={voltraViewStyle} />
+    </View>
+  )
 }

@@ -2,21 +2,16 @@
   {
     "type": "dir",
     "name": "getting-started",
-    "label": "Getting started"
+    "label": "Getting Started"
   },
   {
     "type": "dir",
-    "name": "development",
-    "label": "Development"
+    "name": "ios",
+    "label": "iOS"
   },
   {
     "type": "dir",
-    "name": "components",
-    "label": "Components"
-  },
-  {
-    "type": "dir",
-    "name": "api",
-    "label": "API Reference"
+    "name": "android",
+    "label": "Android"
   }
 ]

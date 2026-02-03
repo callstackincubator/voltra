@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react'
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export type BackgroundWrapperProps = {
   children: ReactNode
@@ -15,13 +16,16 @@ export const BackgroundWrapper = ({ children }: BackgroundWrapperProps) => {
         style={[styles.image, { width, height }]}
         resizeMode="cover"
       />
-      {children}
+      <SafeAreaView style={styles.safeArea}>{children}</SafeAreaView>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  safeArea: {
     flex: 1,
   },
   image: {

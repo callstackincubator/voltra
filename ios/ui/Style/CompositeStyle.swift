@@ -18,7 +18,12 @@ struct CompositeStyleModifier: ViewModifier {
         content.background(.clear).padding(margin)
       }
 
-      .voltraIfLet(layout.position) { content, position in
+      // Apply relative positioning (offset from natural position)
+      .voltraIfLet(layout.relativeOffset) { content, offset in
+        content.offset(x: offset.x, y: offset.y)
+      }
+      // Apply absolute positioning (center-based)
+      .voltraIfLet(layout.absolutePosition) { content, position in
         content.position(x: position.x, y: position.y)
       }
       .voltraIfLet(layout.zIndex) { content, zIndex in

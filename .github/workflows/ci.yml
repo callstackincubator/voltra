@@ -88,3 +88,25 @@ jobs:
 
       - name: Check Swift formatting
         run: npm run format:swift:check
+
+  # TODO: Add ktlint back at some point (it takes over 2 minutes to install)
+  # ktlint:
+  #   name: ktlint Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '22'
+  #         cache: 'npm'
+
+  #     - name: Install ktlint
+  #       run: |
+  #         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  #         brew install ktlint
+
+  #     - name: Check Kotlin formatting
+  #       run: npm run format:kotlin:check

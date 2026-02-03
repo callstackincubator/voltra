@@ -37,6 +37,7 @@ export type VoltraViewStyle = Pick<
   | 'aspectRatio'
   | 'left'
   | 'top'
+  | 'position'
   | 'zIndex'
   | 'transform'
 > & {
@@ -46,7 +47,15 @@ export type VoltraViewStyle = Pick<
 export type VoltraTextStyle = VoltraViewStyle &
   Pick<
     RNTextStyle,
-    'fontSize' | 'fontWeight' | 'color' | 'letterSpacing' | 'fontVariant' | 'textDecorationLine' | 'textAlign'
+    | 'fontSize'
+    | 'fontWeight'
+    | 'fontFamily'
+    | 'color'
+    | 'letterSpacing'
+    | 'fontVariant'
+    | 'textDecorationLine'
+    | 'lineHeight'
+    | 'textAlign'
   >
 
 export type VoltraStyleProp = StyleProp<VoltraViewStyle>

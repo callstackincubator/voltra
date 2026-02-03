@@ -1,7 +1,6 @@
 import { Link } from 'expo-router'
 import React from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Voltra } from 'voltra'
 import { VoltraView } from 'voltra/client'
 
@@ -251,8 +250,6 @@ const STYLING_DATA = [
 ]
 
 export default function StylingScreen() {
-  const insets = useSafeAreaInsets()
-
   const renderHeader = () => (
     <>
       <Text style={styles.heading}>Styling Examples</Text>
@@ -283,7 +280,7 @@ export default function StylingScreen() {
     <View style={styles.container}>
       <FlatList
         style={[styles.scrollView]}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+        contentContainerStyle={styles.content}
         data={STYLING_DATA}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}

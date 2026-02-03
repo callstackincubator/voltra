@@ -26,6 +26,18 @@ export type LiveActivityVariants = {
     }
     minimal?: ReactNode
   }
+  /**
+   * Supplemental activity families for iOS 18+ (watchOS Smart Stack, CarPlay)
+   * Always enabled for all Live Activities
+   */
+  supplementalActivityFamilies?: {
+    /**
+     * Small family for watchOS Smart Stack and CarPlay (iOS 18+)
+     * Should be a simplified version of the lock screen UI
+     * Falls back to compact island regions (leading + trailing) if not provided
+     */
+    small?: ReactNode
+  }
 }
 
 /**
@@ -45,6 +57,8 @@ export type LiveActivityVariantsJson = {
   isl_cmp_l?: VoltraNodeJson
   isl_cmp_t?: VoltraNodeJson
   isl_min?: VoltraNodeJson
+  // Supplemental activity families (iOS 18+)
+  saf_sm?: VoltraNodeJson // supplementalActivityFamilies.small (watchOS/CarPlay)
 }
 
 /**

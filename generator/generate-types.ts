@@ -3,6 +3,7 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 import { generateComponentIds } from './generators/component-ids'
+import { generateKotlinParameters } from './generators/kotlin-parameters'
 import { generateShortNames } from './generators/short-names'
 import { generateSwiftParameters } from './generators/swift-parameters'
 import { generateTypeScriptJSX } from './generators/typescript-jsx'
@@ -13,9 +14,13 @@ const ROOT_DIR = path.join(__dirname, '..')
 const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
+const TS_ANDROID_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/android/payload')
 const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/ui/Generated')
 const SWIFT_PARAMETERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Parameters')
 const SWIFT_SHARED_OUTPUT_DIR = path.join(ROOT_DIR, 'ios/shared')
+const KOTLIN_GENERATED_DIR = path.join(ROOT_DIR, 'android/src/main/java/voltra/generated')
+const KOTLIN_PARAMETERS_OUTPUT_DIR = path.join(ROOT_DIR, 'android/src/main/java/voltra/models/parameters')
+const KOTLIN_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'android/src/main/java/voltra/payload')
 
 const ensureDirectoryExists = (dir: string) => {
   if (!fs.existsSync(dir)) {
@@ -91,21 +96,36 @@ const main = () => {
   writeFiles(SWIFT_PARAMETERS_OUTPUT_DIR, swiftParameterFiles)
   console.log()
 
+  // Step 5b: Generate Kotlin parameter types
+  console.log('Step 5b: Generating Kotlin parameter types...')
+  const kotlinParameterFiles = generateKotlinParameters(componentsData)
+  writeFiles(KOTLIN_PARAMETERS_OUTPUT_DIR, kotlinParameterFiles)
+  console.log()
+
   // Step 6: Generate component ID mappings
   console.log('Step 6: Generating component ID mappings...')
   const componentIdFiles = generateComponentIds(componentsData)
   // Split files by destination
   const tsComponentIdFiles: Record<string, string> = {}
+  const tsAndroidComponentIdFiles: Record<string, string> = {}
   const swiftComponentIdFiles: Record<string, string> = {}
+  const kotlinComponentIdFiles: Record<string, string> = {}
   for (const [filename, content] of Object.entries(componentIdFiles)) {
-    if (filename.endsWith('.ts')) {
+    if (filename === 'component-ids.ts') {
       tsComponentIdFiles[filename] = content
+    } else if (filename === 'android-component-ids.ts') {
+      // Rename to component-ids.ts when writing to Android directory
+      tsAndroidComponentIdFiles['component-ids.ts'] = content
     } else if (filename.endsWith('.swift')) {
       swiftComponentIdFiles[filename] = content
+    } else if (filename.endsWith('.kt')) {
+      kotlinComponentIdFiles[filename] = content
     }
   }
   writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsComponentIdFiles)
+  writeFiles(TS_ANDROID_PAYLOAD_OUTPUT_DIR, tsAndroidComponentIdFiles)
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
+  writeFiles(KOTLIN_PAYLOAD_OUTPUT_DIR, kotlinComponentIdFiles)
   console.log()
 
   // Step 7: Generate unified short names mappings
@@ -114,15 +134,19 @@ const main = () => {
   // Split files by destination
   const tsShortNameFiles: Record<string, string> = {}
   const swiftShortNameFiles: Record<string, string> = {}
+  const kotlinShortNameFiles: Record<string, string> = {}
   for (const [filename, content] of Object.entries(shortNameFiles)) {
     if (filename.endsWith('.ts')) {
       tsShortNameFiles[filename] = content
     } else if (filename.endsWith('.swift')) {
       swiftShortNameFiles[filename] = content
+    } else if (filename.endsWith('.kt')) {
+      kotlinShortNameFiles[filename] = content
     }
   }
   writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsShortNameFiles)
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftShortNameFiles)
+  writeFiles(KOTLIN_GENERATED_DIR, kotlinShortNameFiles)
   console.log()
 
   console.log('✅ Generation complete!\n')
@@ -134,14 +158,21 @@ const main = () => {
   )
   console.log(`   Swift parameters: ${Object.keys(swiftParameterFiles).length} files in ios/ui/Generated/Parameters/`)
   console.log(
-    `   Component IDs: ${Object.keys(tsComponentIdFiles).length} TypeScript files, ${
-      Object.keys(swiftComponentIdFiles).length
-    } Swift files`
+    `   Kotlin parameters: ${
+      Object.keys(kotlinParameterFiles).length
+    } files in android/src/main/java/voltra/models/parameters/`
+  )
+  console.log(
+    `   Component IDs: ${Object.keys(tsComponentIdFiles).length} iOS TypeScript files, ${
+      Object.keys(tsAndroidComponentIdFiles).length
+    } Android TypeScript files, ${Object.keys(swiftComponentIdFiles).length} Swift files, ${
+      Object.keys(kotlinComponentIdFiles).length
+    } Kotlin files`
   )
   console.log(
     `   Short names: ${Object.keys(tsShortNameFiles).length} TypeScript files, ${
       Object.keys(swiftShortNameFiles).length
-    } Swift files`
+    } Swift files, ${Object.keys(kotlinShortNameFiles).length} Kotlin files`
   )
   console.log()
   console.log('Next steps:')

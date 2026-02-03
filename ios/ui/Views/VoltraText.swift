@@ -21,6 +21,22 @@ public struct VoltraText: VoltraView {
     let textStyle = style.3
 
     var font: Font {
+      // If custom fontFamily is specified, use it
+      if let fontFamily = textStyle.fontFamily {
+        var baseFont = Font.custom(fontFamily, size: textStyle.fontSize)
+
+        if textStyle.fontVariant.contains(.smallCaps) {
+          baseFont = baseFont.smallCaps()
+        }
+
+        if textStyle.fontVariant.contains(.tabularNums) {
+          baseFont = baseFont.monospacedDigit()
+        }
+
+        return baseFont
+      }
+
+      // Otherwise use system font with weight
       var baseFont = Font.system(size: textStyle.fontSize, weight: textStyle.fontWeight)
 
       if textStyle.fontVariant.contains(.smallCaps) {

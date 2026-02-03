@@ -4,11 +4,11 @@
     "link": "/getting-started/introduction"
   },
   {
-    "text": "Development",
-    "link": "/development/developing-live-activities"
+    "text": "iOS",
+    "link": "/ios/introduction"
   },
   {
-    "text": "Components",
-    "link": "/components/overview"
+    "text": "Android",
+    "link": "/android/introduction"
   }
 ]

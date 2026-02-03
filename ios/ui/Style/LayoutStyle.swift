@@ -26,7 +26,8 @@ struct LayoutStyle {
   var margin: EdgeInsets?
 
   // 6. Positioning
-  var position: CGPoint? // x,y coordinates
+  var absolutePosition: CGPoint? // for position: 'absolute'
+  var relativeOffset: CGPoint? // for position: 'relative'
   var zIndex: Double?
 }
 

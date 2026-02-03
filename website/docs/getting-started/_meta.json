@@ -6,12 +6,12 @@
   },
   {
     "type": "file",
-    "name": "quick-start",
-    "label": "Quick start"
+    "name": "installation",
+    "label": "Installation"
   },
   {
     "type": "file",
     "name": "prior-art",
-    "label": "Prior art"
+    "label": "Prior Art"
   }
 ]

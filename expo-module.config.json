@@ -1,6 +1,9 @@
 {
-  "platforms": ["apple", "web"],
+  "platforms": ["apple", "android", "web"],
   "apple": {
     "modules": ["VoltraModule"]
+  },
+  "android": {
+    "modules": ["voltra.VoltraModule"]
   }
 }

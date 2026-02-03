@@ -3,8 +3,8 @@ import * as path from 'path'
 
 import type { WidgetConfig } from '../../../../types'
 import { logger } from '../../../../utils'
+import { prerenderWidgetState } from '../../../../utils/prerender'
 import { generateInitialStatesSwift } from './initialStates'
-import { prerenderWidgetState } from './prerender'
 import { generateDefaultWidgetBundleSwift, generateWidgetBundleSwift } from './widgetBundle'
 
 export interface GenerateSwiftFilesOptions {
@@ -23,8 +23,12 @@ export interface GenerateSwiftFilesOptions {
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
   const { targetPath, projectRoot, widgets } = options
 
+  // Dynamic import for ESM module compatibility
+  // voltra/server is an ESM module, but the plugin is compiled to CommonJS
+  const { renderWidgetToString } = await import('voltra/server')
+
   // Prerender widget initial states if any widgets have initialStatePath configured
-  const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot)
+  const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot, renderWidgetToString)
 
   // Generate the initial states Swift file
   const initialStatesContent = generateInitialStatesSwift(prerenderedStates)

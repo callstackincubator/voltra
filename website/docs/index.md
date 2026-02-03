@@ -8,7 +8,7 @@ hero:
       dark: /logo-dark.svg
     alt: Voltra
   name: 'Live Activities & Widgets in React'
-  tagline: 'Voltra lets React Native developers build native iOS Live Activities, Dynamic Island layouts, and widgets as React components without writing Swift. It supports hot reload, push updates, and includes a config plugin that wires everything automatically.'
+  tagline: 'Voltra lets React Native developers build native Live Activities and widgets on iOS and Android using React components — no Swift or Kotlin required. It supports hot reload, push updates on iOS, and a config plugin that wires everything automatically.'
   actions:
     - theme: brand
       text: Get Started
@@ -17,13 +17,13 @@ hero:
     text: Beta
     type: info
 features:
-  - title: SwiftUI primitives in JSX
-    details: Compose Live Activities using VStack, HStack, Text, Symbol, and LinearGradient directly in JSX. Your React components render as native SwiftUI primitives.
+  - title: Native Primitives in JSX
+    details: Compose native interfaces using SwiftUI (iOS) and Jetpack Compose Glance (Android) primitives directly in JSX.
     icon: <img src="/icons/card-id.svg" />
-  - title: Dynamic Island support
-    details: Define minimal, compact, and expanded presentations for the Dynamic Island using the same JSX components. Full control over Live Activity regions.
+  - title: Live Activities & Widgets
+    details: Build Dynamic Island experiences and Live Activities for iOS, plus Home Screen widgets for both iOS and Android using a unified React workflow.
     icon: <img src="/icons/subscriptions.svg" />
-  - title: Push-to-update from JS servers
+  - title: Push-to-update for Live Activities
     details: Stream real-time updates to Live Activities via push notifications from any JavaScript runtime. Keep activities current without app interaction.
     icon: <img src="/icons/radio-signal.svg" />
 ---

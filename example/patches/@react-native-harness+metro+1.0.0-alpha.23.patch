@@ -1,0 +1,14 @@
+diff --git a/node_modules/@react-native-harness/metro/dist/withRnHarness.js b/node_modules/@react-native-harness/metro/dist/withRnHarness.js
+index 47ae044..238761d 100644
+--- a/node_modules/@react-native-harness/metro/dist/withRnHarness.js
++++ b/node_modules/@react-native-harness/metro/dist/withRnHarness.js
+@@ -43,7 +43,8 @@ const withRnHarness = (config, isInvokedByHarness = false) => {
+             resolver: {
+                 ...metroConfig.resolver,
+                 // Unlock __tests__ directory
+-                blockList: undefined,
++                // [Voltra]: This is needed for the example app to work.
++                // blockList: undefined,
+                 resolveRequest: harnessResolver,
+             },
+             transformer: {

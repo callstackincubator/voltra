@@ -15,14 +15,33 @@ enum StyleConverter {
     // Only set layoutPriority when flex is active; nil means "don't apply modifier".
     let priority: Double? = finalFlex > 0 ? 1.0 : nil
 
-    // Position parsing (offsetX/offsetY -> CGPoint)
-    var position: CGPoint?
-    if let offsetX = JSStyleParser.number(js["left"]), let offsetY = JSStyleParser.number(js["top"]) {
-      position = CGPoint(x: offsetX, y: offsetY)
-    } else if let offsetX = JSStyleParser.number(js["left"]) {
-      position = CGPoint(x: offsetX, y: 0)
-    } else if let offsetY = JSStyleParser.number(js["top"]) {
-      position = CGPoint(x: 0, y: offsetY)
+    // Position parsing with mode support
+    let left = JSStyleParser.number(js["left"])
+    let top = JSStyleParser.number(js["top"])
+
+    var absolutePosition: CGPoint?
+    var relativeOffset: CGPoint?
+
+    // Only apply positioning if left or top are provided
+    if left != nil || top != nil {
+      let x = left ?? 0
+      let y = top ?? 0
+
+      // Default to 'absolute' if position mode not specified (backward compatibility)
+      let positionMode = js["position"] as? String ?? "absolute"
+
+      switch positionMode.lowercased() {
+      case "absolute":
+        absolutePosition = CGPoint(x: x, y: y)
+      case "relative":
+        relativeOffset = CGPoint(x: x, y: y)
+      case "static":
+        // Do nothing - ignore left/top
+        break
+      default:
+        // Unknown position value - ignore
+        break
+      }
     }
 
     // zIndex: only set if explicitly provided in JS
@@ -47,7 +66,8 @@ enum StyleConverter {
       margin: JSStyleParser.parseInsets(from: js, prefix: "margin"),
 
       // Positioning
-      position: position,
+      absolutePosition: absolutePosition,
+      relativeOffset: relativeOffset,
       zIndex: zIndex.map { Double($0) }
     )
   }
@@ -118,6 +138,10 @@ enum StyleConverter {
 
     if let weightRaw = js["fontWeight"] {
       style.fontWeight = JSStyleParser.fontWeight(weightRaw)
+    }
+
+    if let fontFamily = js["fontFamily"] as? String {
+      style.fontFamily = fontFamily
     }
 
     if let alignRaw = js["textAlign"] {

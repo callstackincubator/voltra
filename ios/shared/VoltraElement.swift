@@ -25,11 +25,15 @@ public struct VoltraElement: Hashable {
   public func hash(into hasher: inout Hasher) {
     hasher.combine(type)
     hasher.combine(id)
-    // Note: props are not included in hash for performance
+    hasher.combine(children)
+    hasher.combine(_props)
   }
 
   public static func == (lhs: VoltraElement, rhs: VoltraElement) -> Bool {
-    lhs.type == rhs.type && lhs.id == rhs.id
+    lhs.type == rhs.type &&
+      lhs.id == rhs.id &&
+      lhs.children == rhs.children &&
+      lhs._props == rhs._props
   }
 
   // MARK: - Computed Properties

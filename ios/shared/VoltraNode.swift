@@ -122,6 +122,9 @@ struct VoltraElementView: View {
     case "Button":
       VoltraButton(element)
 
+    case "Link":
+      VoltraLink(element)
+
     case "VStack":
       VoltraVStack(element)
 

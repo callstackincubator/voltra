@@ -1,0 +1,84 @@
+buildscript {
+  // 1. ADD THIS BLOCK TO RESOLVE THE PLUGIN
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    // Ensure this version matches your project's Kotlin version (e.g., 2.0.0, 2.0.20)
+    classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.0.0"
+    classpath "org.jetbrains.kotlin:kotlin-serialization:2.0.21"
+  }
+
+  // Existing helper
+  ext.safeExtGet = { prop, fallback ->
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+  }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
+
+group = 'voltra'
+version = '0.1.0'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useExpoPublishing()
+
+// If you want to use the managed Android SDK versions from expo-modules-core, set this to true.
+// The Android SDK versions will be bumped from time to time in SDK releases and may introduce breaking changes in your module code.
+// Most of the time, you may like to manage the Android SDK versions yourself.
+def useManagedAndroidSdkVersions = false
+if (useManagedAndroidSdkVersions) {
+  useDefaultAndroidSdkVersions()
+} else {
+  buildscript {
+    // Simple helper that allows the root project to override versions declared by this library.
+    ext.safeExtGet = { prop, fallback ->
+      rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+    }
+  }
+  project.android {
+    compileSdkVersion safeExtGet("compileSdkVersion", 36)
+    defaultConfig {
+      minSdkVersion safeExtGet("minSdkVersion", 31)
+      targetSdkVersion safeExtGet("targetSdkVersion", 36)
+    }
+  }
+}
+
+android {
+  namespace "voltra"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+  buildFeatures {
+    compose true
+  }
+}
+
+dependencies {
+  // Jetpack Glance - use 'api' instead of 'implementation' to make these available to consuming apps
+  api "androidx.glance:glance:1.2.0-rc01"
+  api "androidx.glance:glance-appwidget:1.2.0-rc01"
+
+  // Compose runtime (required for Glance)
+  api "androidx.compose.runtime:runtime:1.6.8"
+
+  // JSON parsing
+  implementation "com.google.code.gson:gson:2.10.1"
+
+  // Coroutines
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+
+  // Kotlinx Serialization
+  implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
+}
