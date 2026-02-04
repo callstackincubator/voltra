@@ -21,7 +21,7 @@ public struct VoltraLinearProgressView: VoltraView {
     let thumbComponent = element.componentProp("thumb")
 
     let isTimer = p.endAtMs != nil
-    
+
     // Linear progress bar only supports Determinate and Timer modes.
     // If no value or timer is provided, we fall back to a 0% determinate state
     // as linear indeterminate progress is not supported.

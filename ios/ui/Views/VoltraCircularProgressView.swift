@@ -19,7 +19,7 @@ public struct VoltraCircularProgressView: VoltraView {
     // Circular variant does not support timer-based progress ring via built-in ProgressView on iOS.
     // We remove the timer option as it would only display an indeterminate spinner.
     let isDeterminate = p.value != nil
-    
+
     // Custom style provides the "ring" appearance for determinate progress.
     let hasCustomProps = trackColor != nil || lineWidth != nil
     let useCustomStyle = hasCustomProps && isDeterminate
@@ -37,7 +37,7 @@ public struct VoltraCircularProgressView: VoltraView {
           progressTint: progressColor,
           trackTint: trackColor ?? Color.gray.opacity(0.2),
           lineWidth: lineWidth,
-          staticFraction: nil 
+          staticFraction: nil
         ))
       }
       .voltraIf(!useCustomStyle) {
