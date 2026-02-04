@@ -68,6 +68,7 @@ Properties not listed above are ignored during rendering. This includes common R
 - Percentage-based widths and heights
 - `right` and `bottom` positioning properties - Only `left` and `top` are supported
 - Most text styling properties beyond `fontSize`, `fontWeight`, `fontFamily`, `color`, `letterSpacing`, and `fontVariant`
+- **Live Update Overrides**: Certain styling properties (like `height` or `borderRadius` on progress bars) may be ignored when using live-updating features like `timerInterval` to ensure compatibility with smooth system animations.
 
 :::tip Positioning in Voltra
 
