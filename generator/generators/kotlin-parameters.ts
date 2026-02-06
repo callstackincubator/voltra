@@ -29,7 +29,9 @@ const toKotlinType = (param: ComponentParameter): string => {
 }
 
 const generateParameterClass = (component: ComponentDefinition, version: string): string => {
-  const params = Object.entries(component.parameters)
+  const allParams = Object.entries(component.parameters)
+  // Filter out component type params as they are handled separately
+  const params = allParams.filter(([_, param]) => param.type !== 'component')
 
   const header = `//
 //  ${component.name}Parameters.kt

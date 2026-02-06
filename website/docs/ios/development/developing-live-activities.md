@@ -74,6 +74,20 @@ const variants = {
 
 If `supplementalActivityFamilies.small` is not provided, Voltra will automatically construct it from your Dynamic Island `compact` variant by combining the leading and trailing content in an HStack.
 
+## Limitations
+
+### Animations and Live Updates
+
+There are specific constraints on how content can animate or update:
+
+- **Continuous Animations**: Custom continuous animations, such as rotating icons or elements moving along a path, are not supported.
+- **Smooth Updates**: Per-second "live" updates are only supported by specific components designed for this purpose:
+  - `Timer`: For countdowns and stopwatches.
+  - `LinearProgressView`: When used with `timerInterval`.
+- **Styling Trade-offs**: To enable smooth, system-driven animations (like a progress bar filling up in real-time), certain components may ignore custom styling properties (e.g., custom heights or thumb components) and fallback to standard system appearances.
+
+All other components only update their visual state when a new activity state is pushed from your application.
+
 ## useLiveActivity
 
 For React development, Voltra provides the `useLiveActivity` hook for integration with the component lifecycle and automatic updates during development.

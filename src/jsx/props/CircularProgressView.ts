@@ -2,6 +2,8 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { ReactNode } from 'react'
+
 import type { VoltraBaseProps } from '../baseProps'
 
 export type CircularProgressViewProps = VoltraBaseProps & {
@@ -21,4 +23,8 @@ export type CircularProgressViewProps = VoltraBaseProps & {
   progressColor?: string
   /** Width of the stroke line */
   lineWidth?: number
+  /** Label content for the progress indicator */
+  label?: ReactNode
+  /** Custom text for current value label */
+  currentValueLabel?: ReactNode
 }

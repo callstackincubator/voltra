@@ -11,52 +11,57 @@ public struct VoltraCircularProgressView: VoltraView {
 
   @ViewBuilder
   public var body: some View {
-    let endAtMs = params.endAtMs
-    let startAtMs = params.startAtMs
+    let p = params
+    let progressColor = p.progressColor.flatMap { JSColorParser.parse($0) }
+    let trackColor = p.trackColor.flatMap { JSColorParser.parse($0) }
+    let lineWidth = p.lineWidth.map { CGFloat($0) }
 
-    // Extract colors and styling from direct props
-    let trackColor = params.trackColor.flatMap { JSColorParser.parse($0) }
-    let progressColor = params.progressColor.flatMap { JSColorParser.parse($0) }
-    let lineWidth = params.lineWidth.map { CGFloat($0) }
+    // Circular variant does not support timer-based progress ring via built-in ProgressView on iOS.
+    // We remove the timer option as it would only display an indeterminate spinner.
+    let isDeterminate = p.value != nil
 
-    // Determine if we need custom style
-    let needsCustomStyle = trackColor != nil || lineWidth != nil || params.value != nil
+    // Custom style provides the "ring" appearance for determinate progress.
+    let hasCustomProps = trackColor != nil || lineWidth != nil
+    let useCustomStyle = hasCustomProps && isDeterminate
 
-    // Group containing the ProgressView variations
-    let progressContent = Group {
-      if let endAtMs = endAtMs {
-        // Timer-based progress
-        let timeRange = Date.toTimerInterval(startAtMs: startAtMs, endAtMs: endAtMs)
-
-        ProgressView(timerInterval: timeRange)
-      } else if let value = params.value {
-        // Determinate progress
-        ProgressView(
-          value: value,
-          total: params.maximumValue ?? 100
-        )
-      } else {
-        // Indeterminate progress (only supported for circular)
-        ProgressView()
+    if let value = p.value {
+      // Determinate progress
+      ProgressView(value: value, total: p.maximumValue) {
+        element.componentProp("label")
+      } currentValueLabel: {
+        element.componentProp("currentValueLabel")
       }
-    }
-
-    // Apply the style conditionally
-    if needsCustomStyle {
-      let customStyle = VoltraCircularProgressStyle(
-        progressTint: progressColor,
-        trackTint: trackColor ?? Color.gray.opacity(0.2),
-        lineWidth: lineWidth
-      )
-
-      progressContent
-        .progressViewStyle(customStyle)
-        .applyStyle(element.style)
+      .tint(progressColor)
+      .voltraIf(useCustomStyle) {
+        $0.progressViewStyle(VoltraCircularProgressStyle(
+          progressTint: progressColor,
+          trackTint: trackColor ?? Color.gray.opacity(0.2),
+          lineWidth: lineWidth,
+          staticFraction: nil
+        ))
+      }
+      .voltraIf(!useCustomStyle) {
+        // Fallback to custom style for determinate even if no custom props,
+        // because built-in .circular is a spinner, not a ring.
+        $0.progressViewStyle(VoltraCircularProgressStyle(
+          progressTint: progressColor,
+          trackTint: Color.gray.opacity(0.2),
+          lineWidth: 4,
+          staticFraction: nil
+        ))
+      }
+      .applyStyle(element.style)
     } else {
-      progressContent
+      // Indeterminate progress (Built-in spinner)
+      // Wrapping in VStack to ensure stable geometry for the animation
+      VStack(spacing: 0) {
+        ProgressView {
+          element.componentProp("label")
+        }
         .progressViewStyle(.circular)
         .tint(progressColor)
-        .applyStyle(element.style)
+      }
+      .applyStyle(element.style)
     }
   }
 }
@@ -66,16 +71,17 @@ private struct VoltraCircularProgressStyle: ProgressViewStyle {
   var progressTint: Color?
   var trackTint: Color
   var lineWidth: CGFloat?
+  var staticFraction: Double?
 
   func makeBody(configuration: Configuration) -> some View {
-    let fraction = max(0, min(configuration.fractionCompleted ?? 0, 1))
+    let fraction = max(0, min(staticFraction ?? configuration.fractionCompleted ?? 0, 1))
     let strokeWidth = lineWidth ?? 4
 
-    return GeometryReader { geometry in
-      let size = min(geometry.size.width, geometry.size.height)
+    VStack(spacing: 8) {
+      configuration.label
 
       ZStack {
-        // Track (background circle)
+        // Track
         Circle()
           .stroke(trackTint, lineWidth: strokeWidth)
 
@@ -89,7 +95,9 @@ private struct VoltraCircularProgressStyle: ProgressViewStyle {
           .rotationEffect(.degrees(-90))
           .animation(.linear, value: fraction)
       }
-      .frame(width: size, height: size)
+      .aspectRatio(1, contentMode: .fit)
+
+      configuration.currentValueLabel
     }
   }
 }

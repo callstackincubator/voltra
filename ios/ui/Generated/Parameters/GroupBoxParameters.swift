@@ -9,7 +9,4 @@ import Foundation
 
 /// Parameters for GroupBox component
 /// Grouped content container
-public struct GroupBoxParameters: ComponentParameters {
-  /// Label content for the group box
-  public let label: String?
-}
+public struct GroupBoxParameters: ComponentParameters {}

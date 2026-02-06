@@ -150,10 +150,21 @@ const COMPONENTS_DATA = [
     title: 'Progress Components',
     description: 'Linear and circular progress indicators for showing completion states.',
     renderExample: () => (
-      <VoltraView style={{ width: '100%', height: 120, backgroundColor: '#1E293B', padding: 16 }}>
-        <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12 }}>
-          <Voltra.LinearProgressView value={50} progressColor="#8232FF" />
-          <Voltra.CircularProgressView value={50} progressColor="#8232FF" />
+      <VoltraView style={{ width: '100%', height: 160, backgroundColor: '#1E293B', padding: 16 }}>
+        <Voltra.VStack style={{ backgroundColor: '#334155', padding: 12 }} spacing={12}>
+          <Voltra.LinearProgressView
+            value={75}
+            progressColor="#8232FF"
+            label={<Voltra.Text>Downloading...</Voltra.Text>}
+            currentValueLabel={<Voltra.Text>75%</Voltra.Text>}
+          />
+          <Voltra.CircularProgressView
+            value={45}
+            progressColor="#00D1FF"
+            label={<Voltra.Text style={{ fontSize: 10 }}>Uptime</Voltra.Text>}
+            currentValueLabel={<Voltra.Text style={{ fontSize: 10 }}>45%</Voltra.Text>}
+            style={{ width: 60, height: 60 }}
+          />
         </Voltra.VStack>
       </VoltraView>
     ),

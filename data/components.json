@@ -539,6 +539,16 @@
           "type": "component",
           "optional": true,
           "description": "Custom thumb component to display at progress position"
+        },
+        "label": {
+          "type": "component",
+          "optional": true,
+          "description": "Label content for the progress indicator"
+        },
+        "currentValueLabel": {
+          "type": "component",
+          "optional": true,
+          "description": "Custom text for current value label"
         }
       }
     },
@@ -587,6 +597,16 @@
           "type": "number",
           "optional": true,
           "description": "Width of the stroke line"
+        },
+        "label": {
+          "type": "component",
+          "optional": true,
+          "description": "Label content for the progress indicator"
+        },
+        "currentValueLabel": {
+          "type": "component",
+          "optional": true,
+          "description": "Custom text for current value label"
         }
       }
     },

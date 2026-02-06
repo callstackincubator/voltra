@@ -6,11 +6,19 @@ Components specifically designed to show dynamic values or states over time in L
 
 A horizontal progress bar that displays determinate progress or timer-based progress.
 
+#### Limitations
+
+- When using `timerInterval` for smooth animations, custom styling properties such as `height`, `trackColor`, `cornerRadius`, and the `thumb` component are ignored. The component will use the default system appearance in this mode.
+
 ---
 
 ### CircularProgressView
 
 A circular progress indicator that displays determinate progress or timer-based progress.
+
+#### Limitations
+
+- While `timerInterval` is supported, the progress ring will not animate continuously. It only updates its visual state when the component state is refreshed. For a smooth, live-animating progress bar, use `LinearProgressView`.
 
 ---
 
