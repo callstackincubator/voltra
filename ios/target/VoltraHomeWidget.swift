@@ -72,10 +72,20 @@ public enum VoltraHomeWidgetStore {
     }
 
     let now = Date()
-    let validEntries = entriesJson.filter { entry in
-      guard let timestamp = entry["date"] as? NSNumber else { return false }
+    let parsedEntries: [(date: Date, json: [String: Any])] = entriesJson.compactMap { entry in
+      guard let timestamp = entry["date"] as? NSNumber else { return nil }
       let date = Date(timeIntervalSince1970: timestamp.doubleValue / 1000.0)
-      return date > now
+      return (date: date, json: entry)
+    }
+
+    // Keep all future entries, plus the most recent past entry (current state).
+    let pastEntries = parsedEntries.filter { $0.date <= now }.sorted { $0.date < $1.date }
+    let latestPastEntry = pastEntries.last?.json
+    let futureEntries = parsedEntries.filter { $0.date > now }.map { $0.json }
+
+    var validEntries = futureEntries
+    if let latestPastEntry {
+      validEntries.insert(latestPastEntry, at: 0)
     }
 
     let prunedCount = entriesJson.count - validEntries.count
