@@ -131,6 +131,9 @@ struct VoltraElementView: View {
     case "HStack":
       VoltraHStack(element)
 
+    case "View":
+      VoltraFlexView(element)
+
     case "ZStack":
       VoltraZStack(element)
 

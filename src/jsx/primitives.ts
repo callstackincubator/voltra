@@ -1,3 +1,4 @@
+export * from './View.js'
 export * from './Button.js'
 export * from './CircularProgressView.js'
 export * from './Divider.js'

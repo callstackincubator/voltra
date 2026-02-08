@@ -56,6 +56,7 @@ object ShortNames {
             "fsv" to "fixedSizeVertical",
             "fl" to "flex",
             "fb" to "flexBasis",
+            "fdir" to "flexDirection",
             "fg" to "flexGrow",
             "fgw" to "flexGrowWidth",
             "fk" to "flexShrink",

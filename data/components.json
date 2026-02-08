@@ -122,6 +122,7 @@
     "alignSelf": "as",
     "justifyContent": "jc",
     "layout": "ly",
+    "flexDirection": "fdir",
     "lineHeight": "lh",
     "textAlign": "ta",
     "textDecorationLine": "tdl",
@@ -817,6 +818,20 @@
           "optional": true,
           "enum": ["stack", "flex"],
           "description": "Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox."
+        }
+      }
+    },
+    {
+      "name": "View",
+      "description": "Flex container with configurable direction. Always uses flexbox layout.",
+      "swiftAvailability": "iOS 16.0, macOS 13.0",
+      "hasChildren": true,
+      "parameters": {
+        "spacing": {
+          "type": "number",
+          "default": 0,
+          "optional": true,
+          "description": "Spacing between children"
         }
       }
     },

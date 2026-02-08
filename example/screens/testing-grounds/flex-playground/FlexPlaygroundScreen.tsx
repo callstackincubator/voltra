@@ -7,10 +7,11 @@ import { VoltraView } from 'voltra/client'
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 
-type FlexDirection = 'horizontal' | 'vertical'
+type FlexDirection = 'row' | 'column'
 type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'stretch'
 type JustifyContent = 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly'
 
+const FLEX_DIRECTION_OPTIONS: FlexDirection[] = ['column', 'row']
 const ALIGN_ITEMS_OPTIONS: AlignItems[] = ['flex-start', 'center', 'flex-end', 'stretch']
 const JUSTIFY_CONTENT_OPTIONS: JustifyContent[] = [
   'flex-start',
@@ -20,6 +21,11 @@ const JUSTIFY_CONTENT_OPTIONS: JustifyContent[] = [
   'space-around',
   'space-evenly',
 ]
+
+const FLEX_DIRECTION_LABELS: Record<FlexDirection, string> = {
+  column: 'Column',
+  row: 'Row',
+}
 
 const ALIGN_ITEMS_LABELS: Record<AlignItems, string> = {
   'flex-start': 'flex-start',
@@ -38,14 +44,16 @@ const JUSTIFY_CONTENT_LABELS: Record<JustifyContent, string> = {
 }
 
 export default function FlexPlaygroundScreen() {
-  const [flexDirection, setFlexDirection] = useState<FlexDirection>('vertical')
+  const [flexDirection, setFlexDirection] = useState<FlexDirection>('column')
   const [alignItems, setAlignItems] = useState<AlignItems>('stretch')
   const [justifyContent, setJustifyContent] = useState<JustifyContent>('flex-start')
   const [spacing, setSpacing] = useState<number>(8)
   const [containerPadding, setContainerPadding] = useState<number>(16)
 
-  const toggleFlexDirection = () => {
-    setFlexDirection((prev) => (prev === 'vertical' ? 'horizontal' : 'vertical'))
+  const cycleFlexDirection = () => {
+    const currentIndex = FLEX_DIRECTION_OPTIONS.indexOf(flexDirection)
+    const nextIndex = (currentIndex + 1) % FLEX_DIRECTION_OPTIONS.length
+    setFlexDirection(FLEX_DIRECTION_OPTIONS[nextIndex])
   }
 
   const cycleAlignItems = () => {
@@ -66,14 +74,12 @@ export default function FlexPlaygroundScreen() {
   const increasePadding = () => setContainerPadding((prev) => Math.min(prev + 4, 32))
   const decreasePadding = () => setContainerPadding((prev) => Math.max(prev - 4, 0))
 
-  const StackComponent = flexDirection === 'vertical' ? Voltra.VStack : Voltra.HStack
-
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Flex Layout Playground</Text>
         <Text style={styles.subheading}>
-          Experiment with flex properties to understand how they affect layout in Voltra components.
+          Experiment with flex properties using the new View component with dynamic flexDirection.
         </Text>
 
         {/* Controls */}
@@ -83,11 +89,7 @@ export default function FlexPlaygroundScreen() {
           {/* Flex Direction */}
           <View style={styles.controlRow}>
             <Text style={styles.controlLabel}>Flex Direction:</Text>
-            <Button
-              title={flexDirection === 'vertical' ? 'Vertical' : 'Horizontal'}
-              onPress={toggleFlexDirection}
-              variant="secondary"
-            />
+            <Button title={FLEX_DIRECTION_LABELS[flexDirection]} onPress={cycleFlexDirection} variant="secondary" />
           </View>
 
           {/* Align Items */}
@@ -127,176 +129,55 @@ export default function FlexPlaygroundScreen() {
           <Text style={styles.previewSubtext}>See how your flex settings affect the layout below</Text>
 
           <VoltraView style={{ width: '100%', height: 300, backgroundColor: '#1E293B', padding: 8, marginTop: 12 }}>
-            <StackComponent
-              layout="flex"
+            <Voltra.View
               spacing={spacing}
               style={{
                 backgroundColor: '#334155',
                 padding: containerPadding,
                 width: '100%',
                 height: '100%',
+                flexDirection,
                 alignItems,
                 justifyContent,
               }}
             >
-              <Voltra.VStack
+              <Voltra.View
                 style={{
                   backgroundColor: '#EF4444',
                   padding: 12,
                   borderRadius: 8,
-                  width: flexDirection === 'horizontal' ? 80 : undefined,
-                  height: flexDirection === 'vertical' ? 60 : undefined,
+                  width: flexDirection === 'row' ? 80 : undefined,
+                  height: flexDirection === 'column' ? 60 : undefined,
                 }}
               >
                 <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 1</Voltra.Text>
-              </Voltra.VStack>
+              </Voltra.View>
 
-              <Voltra.VStack
+              <Voltra.View
                 style={{
                   backgroundColor: '#3B82F6',
                   padding: 12,
                   borderRadius: 8,
-                  width: flexDirection === 'horizontal' ? 100 : undefined,
-                  height: flexDirection === 'vertical' ? 80 : undefined,
+                  width: flexDirection === 'row' ? 100 : undefined,
+                  height: flexDirection === 'column' ? 80 : undefined,
                 }}
               >
                 <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 2</Voltra.Text>
-              </Voltra.VStack>
+              </Voltra.View>
 
-              <Voltra.VStack
+              <Voltra.View
                 style={{
                   backgroundColor: '#10B981',
                   padding: 12,
                   borderRadius: 8,
-                  width: flexDirection === 'horizontal' ? 60 : undefined,
-                  height: flexDirection === 'vertical' ? 50 : undefined,
+                  width: flexDirection === 'row' ? 60 : undefined,
+                  height: flexDirection === 'column' ? 50 : undefined,
                 }}
               >
                 <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 3</Voltra.Text>
-              </Voltra.VStack>
-            </StackComponent>
+              </Voltra.View>
+            </Voltra.View>
           </VoltraView>
-        </Card>
-
-        {/* Flex Properties Explanation */}
-        <Card>
-          <Card.Title>Understanding Flex Properties</Card.Title>
-
-          <View style={styles.explanation}>
-            <Text style={styles.explanationTitle}>flexDirection</Text>
-            <Text style={styles.explanationText}>
-              Defines the main axis direction. &apos;vertical&apos; stacks children top to bottom,
-              &apos;horizontal&apos; arranges them left to right.
-            </Text>
-          </View>
-
-          <View style={styles.explanation}>
-            <Text style={styles.explanationTitle}>alignItems</Text>
-            <Text style={styles.explanationText}>
-              Aligns children along the cross axis (perpendicular to main axis). Options: flex-start, center, flex-end,
-              stretch.
-            </Text>
-          </View>
-
-          <View style={styles.explanation}>
-            <Text style={styles.explanationTitle}>justifyContent</Text>
-            <Text style={styles.explanationText}>
-              Distributes children along the main axis. Options: flex-start, center, flex-end, space-between,
-              space-around, space-evenly.
-            </Text>
-          </View>
-
-          <View style={styles.explanation}>
-            <Text style={styles.explanationTitle}>spacing</Text>
-            <Text style={styles.explanationText}>Sets the gap between children in the flex container.</Text>
-          </View>
-
-          <View style={styles.explanation}>
-            <Text style={styles.explanationTitle}>padding</Text>
-            <Text style={styles.explanationText}>
-              Adds space inside the container, between the container edges and its children.
-            </Text>
-          </View>
-        </Card>
-
-        {/* Advanced Examples */}
-        <Card>
-          <Card.Title>Common Patterns</Card.Title>
-
-          <View style={styles.pattern}>
-            <Text style={styles.patternTitle}>Centered Content</Text>
-            <VoltraView style={{ width: '100%', height: 120, backgroundColor: '#1E293B', padding: 8, marginTop: 8 }}>
-              <Voltra.VStack
-                layout="flex"
-                style={{
-                  backgroundColor: '#334155',
-                  padding: 16,
-                  width: '100%',
-                  height: '100%',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Voltra.VStack style={{ backgroundColor: '#8B5CF6', padding: 16, borderRadius: 8 }}>
-                  <Voltra.Text style={{ color: '#FFFFFF' }}>Centered</Voltra.Text>
-                </Voltra.VStack>
-              </Voltra.VStack>
-            </VoltraView>
-          </View>
-
-          <View style={styles.pattern}>
-            <Text style={styles.patternTitle}>Space Between Navigation</Text>
-            <VoltraView style={{ width: '100%', height: 80, backgroundColor: '#1E293B', padding: 8, marginTop: 8 }}>
-              <Voltra.HStack
-                layout="flex"
-                style={{
-                  backgroundColor: '#334155',
-                  padding: 12,
-                  width: '100%',
-                  height: '100%',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Voltra.VStack style={{ backgroundColor: '#EC4899', padding: 8, borderRadius: 4 }}>
-                  <Voltra.Text style={{ color: '#FFFFFF', fontSize: 10 }}>Back</Voltra.Text>
-                </Voltra.VStack>
-                <Voltra.VStack style={{ backgroundColor: '#EC4899', padding: 8, borderRadius: 4 }}>
-                  <Voltra.Text style={{ color: '#FFFFFF', fontSize: 10 }}>Title</Voltra.Text>
-                </Voltra.VStack>
-                <Voltra.VStack style={{ backgroundColor: '#EC4899', padding: 8, borderRadius: 4 }}>
-                  <Voltra.Text style={{ color: '#FFFFFF', fontSize: 10 }}>Menu</Voltra.Text>
-                </Voltra.VStack>
-              </Voltra.HStack>
-            </VoltraView>
-          </View>
-
-          <View style={styles.pattern}>
-            <Text style={styles.patternTitle}>Evenly Spaced Row</Text>
-            <VoltraView style={{ width: '100%', height: 80, backgroundColor: '#1E293B', padding: 8, marginTop: 8 }}>
-              <Voltra.HStack
-                layout="flex"
-                style={{
-                  backgroundColor: '#334155',
-                  padding: 12,
-                  width: '100%',
-                  height: '100%',
-                  alignItems: 'center',
-                  justifyContent: 'space-evenly',
-                }}
-              >
-                <Voltra.VStack style={{ backgroundColor: '#F59E0B', padding: 8, borderRadius: 4 }}>
-                  <Voltra.Text style={{ color: '#FFFFFF', fontSize: 10 }}>A</Voltra.Text>
-                </Voltra.VStack>
-                <Voltra.VStack style={{ backgroundColor: '#F59E0B', padding: 8, borderRadius: 4 }}>
-                  <Voltra.Text style={{ color: '#FFFFFF', fontSize: 10 }}>B</Voltra.Text>
-                </Voltra.VStack>
-                <Voltra.VStack style={{ backgroundColor: '#F59E0B', padding: 8, borderRadius: 4 }}>
-                  <Voltra.Text style={{ color: '#FFFFFF', fontSize: 10 }}>C</Voltra.Text>
-                </Voltra.VStack>
-              </Voltra.HStack>
-            </VoltraView>
-          </View>
         </Card>
 
         <View style={styles.footer}>
@@ -351,29 +232,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#94A3B8',
     marginTop: 4,
-  },
-  explanation: {
-    marginBottom: 16,
-  },
-  explanationTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  explanationText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#CBD5F5',
-  },
-  pattern: {
-    marginBottom: 16,
-  },
-  patternTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
   },
   footer: {
     marginTop: 24,

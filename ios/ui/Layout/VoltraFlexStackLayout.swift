@@ -117,7 +117,7 @@ struct VoltraFlexStackLayout: Layout {
       if let basis = values.flexBasis {
         switch basis {
         case let .fixed(v): mainBasis = v
-        case .fill: mainBasis = availableMain
+        case .fill: mainBasis = availableMain.isFinite ? availableMain : measureIntrinsicMain(subview, availableCross: availableCross, values: values)
         case .wrap: mainBasis = measureIntrinsicMain(subview, availableCross: availableCross, values: values)
         }
       } else {
@@ -126,8 +126,9 @@ struct VoltraFlexStackLayout: Layout {
       }
 
       // Determine cross-axis size
+      // Only stretch to a finite available cross; infinite means intrinsic measurement
       let effectiveAlign = values.alignSelf ?? alignItems
-      let crossProposal: CGFloat? = (effectiveAlign == .stretch) ? availableCross : nil
+      let crossProposal: CGFloat? = (effectiveAlign == .stretch && availableCross.isFinite) ? availableCross : nil
       let crossSize = resolveCrossSize(subview, values: values, proposal: crossProposal, availableCross: availableCross)
 
       // Min/max on main axis
@@ -220,7 +221,7 @@ struct VoltraFlexStackLayout: Layout {
     if let explicit = explicitMain {
       switch explicit {
       case let .fixed(v): return v
-      case .fill: return availableMain
+      case .fill: return availableMain.isFinite ? availableMain : measureIntrinsicMain(subview, availableCross: availableCross, values: values)
       case .wrap: break
       }
     }
@@ -238,12 +239,12 @@ struct VoltraFlexStackLayout: Layout {
     if let explicit = explicitCross {
       switch explicit {
       case let .fixed(v): return v
-      case .fill: return availableCross
+      case .fill: return availableCross.isFinite ? availableCross : crossAxis(subview.sizeThatFits(ProposedViewSize(width: nil, height: nil)))
       case .wrap: break
       }
     }
-    // If stretch and no explicit cross size, use full cross axis
-    if let proposal = proposal { return proposal }
+    // If stretch and no explicit cross size, use full cross axis (only finite values)
+    if let proposal = proposal, proposal.isFinite { return proposal }
     // Otherwise, measure intrinsic
     let size = subview.sizeThatFits(ProposedViewSize(width: nil, height: nil))
     return crossAxis(size)
@@ -366,9 +367,10 @@ struct VoltraFlexStackLayout: Layout {
   }
 
   private func availableSize(from proposal: ProposedViewSize) -> CGSize {
+    // nil proposal = intrinsic sizing → treat as unconstrained (.infinity)
     CGSize(
-      width: max(0, (proposal.width ?? 0) - containerPadding.leading - containerPadding.trailing),
-      height: max(0, (proposal.height ?? 0) - containerPadding.top - containerPadding.bottom)
+      width: max(0, (proposal.width ?? .infinity) - containerPadding.leading - containerPadding.trailing),
+      height: max(0, (proposal.height ?? .infinity) - containerPadding.top - containerPadding.bottom)
     )
   }
 

@@ -53,6 +53,7 @@ public enum ShortNames {
     "fsv": "fixedSizeVertical",
     "fl": "flex",
     "fb": "flexBasis",
+    "fdir": "flexDirection",
     "fg": "flexGrow",
     "fgw": "flexGrowWidth",
     "fk": "flexShrink",

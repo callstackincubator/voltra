@@ -1,0 +1,94 @@
+import SwiftUI
+
+// MARK: - Shared Flex Container Rendering
+
+/// Shared values computed from a flex container's style
+struct FlexContainerValues {
+  let padding: EdgeInsets
+  let alignItems: FlexAlign
+  let justifyContent: FlexJustify
+  let layout: LayoutStyle
+  let decoration: DecorationStyle
+  let rendering: RenderingStyle
+}
+
+enum FlexContainerHelper {
+  /// Parse flex container values from an element's style dictionary.
+  /// `alignmentMapping` converts component-specific alignment strings (e.g. "leading", "top")
+  /// to FlexAlign values, used as fallback when alignItems isn't set in style.
+  static func parseValues(
+    from element: VoltraElement,
+    alignmentFallback: FlexAlign = .stretch
+  ) -> FlexContainerValues {
+    let anyStyle = element.style?.mapValues { $0.toAny() } ?? [:]
+    let (layout, decoration, rendering, _) = StyleConverter.convert(anyStyle)
+
+    let alignItemsFromStyle = (anyStyle["alignItems"] as? String).flatMap { FlexAlign(fromStyle: $0) }
+    let justifyContentFromStyle = (anyStyle["justifyContent"] as? String).flatMap { FlexJustify(fromStyle: $0) }
+
+    let finalAlignItems = alignItemsFromStyle ?? alignmentFallback
+    let justifyContent = justifyContentFromStyle ?? .flexStart
+
+    return FlexContainerValues(
+      padding: layout.padding ?? EdgeInsets(),
+      alignItems: finalAlignItems,
+      justifyContent: justifyContent,
+      layout: layout,
+      decoration: decoration,
+      rendering: rendering
+    )
+  }
+
+  /// Map a VStack alignment string to a FlexAlign fallback
+  static func verticalAlignmentFallback(_ alignment: String) -> FlexAlign {
+    switch alignment.lowercased() {
+    case "leading": return .flexStart
+    case "trailing": return .flexEnd
+    case "center": return .center
+    default: return .stretch
+    }
+  }
+
+  /// Map an HStack alignment string to a FlexAlign fallback
+  static func horizontalAlignmentFallback(_ alignment: String) -> FlexAlign {
+    switch alignment.lowercased() {
+    case "top": return .flexStart
+    case "bottom": return .flexEnd
+    case "center": return .center
+    default: return .stretch
+    }
+  }
+}
+
+// MARK: - Flex Container View Modifier
+
+/// Applies layout, decoration, rendering, margin, offset, positioning, and zIndex
+/// to a flex container — everything except padding (handled by the flex engine).
+struct FlexContainerStyleModifier: ViewModifier {
+  let values: FlexContainerValues
+
+  func body(content: Content) -> some View {
+    let layoutWithoutPadding: LayoutStyle = {
+      var l = values.layout
+      l.padding = nil
+      return l
+    }()
+
+    content
+      .modifier(LayoutModifier(style: layoutWithoutPadding))
+      .modifier(DecorationModifier(style: values.decoration))
+      .modifier(RenderingModifier(style: values.rendering))
+      .voltraIfLet(values.layout.margin) { c, margin in
+        c.background(.clear).padding(margin)
+      }
+      .voltraIfLet(values.layout.relativeOffset) { c, offset in
+        c.offset(x: offset.x, y: offset.y)
+      }
+      .voltraIfLet(values.layout.absolutePosition) { c, position in
+        c.position(x: position.x, y: position.y)
+      }
+      .voltraIfLet(values.layout.zIndex) { c, z in
+        c.zIndex(z)
+      }
+  }
+}

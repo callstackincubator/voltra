@@ -23,13 +23,14 @@ public enum ComponentTypeID: Int, Codable {
   case LINEAR_GRADIENT = 10
   case V_STACK = 11
   case H_STACK = 12
-  case Z_STACK = 13
-  case GROUP_BOX = 14
-  case GLASS_CONTAINER = 15
-  case SPACER = 16
-  case DIVIDER = 17
-  case MASK = 18
-  case LINK = 19
+  case VIEW = 13
+  case Z_STACK = 14
+  case GROUP_BOX = 15
+  case GLASS_CONTAINER = 16
+  case SPACER = 17
+  case DIVIDER = 18
+  case MASK = 19
+  case LINK = 20
 
   /// Get the component name string for this ID
   public var componentName: String {
@@ -60,6 +61,8 @@ public enum ComponentTypeID: Int, Codable {
       return "VStack"
     case .H_STACK:
       return "HStack"
+    case .VIEW:
+      return "View"
     case .Z_STACK:
       return "ZStack"
     case .GROUP_BOX:
@@ -95,6 +98,7 @@ public enum ComponentTypeID: Int, Codable {
     case "LinearGradient": self = .LINEAR_GRADIENT
     case "VStack": self = .V_STACK
     case "HStack": self = .H_STACK
+    case "View": self = .VIEW
     case "ZStack": self = .Z_STACK
     case "GroupBox": self = .GROUP_BOX
     case "GlassContainer": self = .GLASS_CONTAINER

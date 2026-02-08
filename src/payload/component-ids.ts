@@ -21,13 +21,14 @@ export const COMPONENT_NAME_TO_ID: Record<string, number> = {
   LinearGradient: 10,
   VStack: 11,
   HStack: 12,
-  ZStack: 13,
-  GroupBox: 14,
-  GlassContainer: 15,
-  Spacer: 16,
-  Divider: 17,
-  Mask: 18,
-  Link: 19,
+  View: 13,
+  ZStack: 14,
+  GroupBox: 15,
+  GlassContainer: 16,
+  Spacer: 17,
+  Divider: 18,
+  Mask: 19,
+  Link: 20,
 }
 
 /**
@@ -47,13 +48,14 @@ export const COMPONENT_ID_TO_NAME: Record<number, string> = {
   10: 'LinearGradient',
   11: 'VStack',
   12: 'HStack',
-  13: 'ZStack',
-  14: 'GroupBox',
-  15: 'GlassContainer',
-  16: 'Spacer',
-  17: 'Divider',
-  18: 'Mask',
-  19: 'Link',
+  13: 'View',
+  14: 'ZStack',
+  15: 'GroupBox',
+  16: 'GlassContainer',
+  17: 'Spacer',
+  18: 'Divider',
+  19: 'Mask',
+  20: 'Link',
 }
 
 /**
