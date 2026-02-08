@@ -17,6 +17,10 @@ Each stack type has different alignment options based on its layout direction.
 
 A vertical stack container that arranges its children in a column.
 
+:::tip Flexbox Option
+VStack can optionally use a flexbox layout engine by setting `layout="flex"`. This enables React Native-style flexbox properties like `justifyContent` and `alignItems` via the `style` prop. See [Flexbox Layout](../development/flexbox-layout) for details.
+:::
+
 **Parameters:**
 
 - `spacing` (number, optional): Spacing between children in points
@@ -24,6 +28,7 @@ A vertical stack container that arranges its children in a column.
   - `"leading"` - Align to left edge
   - `"center"` (default) - Align to center
   - `"trailing"` - Align to right edge
+- `layout` (string, optional): Layout mode - `"stack"` (default) or `"flex"`. When set to `"flex"`, enables flexbox properties via style prop.
 
 **Apple Documentation:** [VStack](https://developer.apple.com/documentation/swiftui/vstack)
 
@@ -32,6 +37,10 @@ A vertical stack container that arranges its children in a column.
 ### HStack
 
 A horizontal stack container that arranges its children in a row.
+
+:::tip Flexbox Option
+HStack can optionally use a flexbox layout engine by setting `layout="flex"`. This enables React Native-style flexbox properties like `justifyContent` and `alignItems` via the `style` prop. See [Flexbox Layout](../development/flexbox-layout) for details.
+:::
 
 **Parameters:**
 
@@ -42,6 +51,7 @@ A horizontal stack container that arranges its children in a row.
   - `"bottom"` - Align to bottom edge
   - `"firstTextBaseline"` - Align to first text baseline
   - `"lastTextBaseline"` - Align to last text baseline
+- `layout` (string, optional): Layout mode - `"stack"` (default) or `"flex"`. When set to `"flex"`, enables flexbox properties via style prop.
 
 **Apple Documentation:** [HStack](https://developer.apple.com/documentation/swiftui/hstack)
 
@@ -101,6 +111,75 @@ In SwiftUI (and Voltra), positioning works differently than CSS. The `alignment`
 :::tip
 Use `offsetX` and `offsetY` style properties to fine-tune individual element positions after alignment. Positive `offsetX` moves right, positive `offsetY` moves down.
 :::
+
+---
+
+### View
+
+A flexible container component that **always uses flexbox layout**. Unlike VStack and HStack which use native SwiftUI stacks by default, View is specifically designed for React Native-style flexbox layouts.
+
+:::tip Flexbox-First Component
+The View component is purpose-built for flexbox layouts and always uses the flexbox layout engine. You don't need to add `layout="flex"` – it's flexbox by default. See the [Flexbox Layout](../development/flexbox-layout) guide for comprehensive documentation.
+:::
+
+**Style Properties:**
+
+View responds to flexbox style properties set via the `style` prop:
+
+- `flexDirection`: `'row'` | `'column'` (default: `'column'`)
+- `alignItems`: `'flex-start'` | `'center'` | `'flex-end'` | `'stretch'`
+- `justifyContent`: `'flex-start'` | `'center'` | `'flex-end'` | `'space-between'` | `'space-around'` | `'space-evenly'`
+- `gap`: Spacing between children in points
+
+**Example:**
+
+```tsx
+// Horizontal layout with space between
+<Voltra.View
+  style={{
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    backgroundColor: '#101828',
+    borderRadius: 12
+  }}
+>
+  <Voltra.Text style={{ color: '#FFFFFF' }}>Left</Voltra.Text>
+  <Voltra.Text style={{ color: '#FFFFFF' }}>Center</Voltra.Text>
+  <Voltra.Text style={{ color: '#FFFFFF' }}>Right</Voltra.Text>
+</Voltra.View>
+
+// Vertical layout with centered items
+<Voltra.View
+  style={{
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+    padding: 16
+  }}
+>
+  <Voltra.Symbol name="checkmark.circle" tintColor="#10B981" />
+  <Voltra.Text style={{ color: '#10B981' }}>Success</Voltra.Text>
+</Voltra.View>
+```
+
+**When to use View:**
+
+- You need React Native-style flexbox behavior
+- You want dynamic `flexDirection` (switching between row/column)
+- You need `justifyContent` spacing modes
+
+**When to use VStack/HStack:**
+
+- Simple vertical or horizontal layouts
+- You want SwiftUI's native stack performance
+- You need SwiftUI-specific alignment (like firstTextBaseline)
+
+**Availability:** iOS 16.0+
+
+**Learn More:** [Flexbox Layout Guide](../development/flexbox-layout)
 
 ---
 

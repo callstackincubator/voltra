@@ -46,6 +46,11 @@
   },
   {
     "type": "file",
+    "name": "flexbox-layout",
+    "label": "Flexbox Layout"
+  },
+  {
+    "type": "file",
     "name": "interactions",
     "label": "Interactions"
   },

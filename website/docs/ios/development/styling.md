@@ -59,12 +59,33 @@ The following React Native style properties are supported:
 
 - `overflow: 'hidden'` - Clips content to bounds (maps to `clipped` modifier)
 
+### Flexbox Properties (Opt-in)
+
+When using the `View` component or enabling flexbox mode on `VStack`/`HStack` with `layout="flex"`, additional flexbox properties become available via the `style` prop:
+
+**Container Properties:**
+- `flexDirection`: `'row'` | `'column'` - Main axis direction
+- `alignItems`: `'flex-start'` | `'center'` | `'flex-end'` | `'stretch'` - Cross-axis alignment
+- `justifyContent`: `'flex-start'` | `'center'` | `'flex-end'` | `'space-between'` | `'space-around'` | `'space-evenly'` - Main-axis distribution
+- `gap`: number - Spacing between children along the main axis (one-axis only, no columnGap/rowGap)
+
+**Child Properties:**
+- `flex`: number - Shorthand for flexGrow/flexShrink
+- `flexGrow`: number - Growth factor
+- `flexShrink`: number - Shrink factor
+- `flexBasis`: number | 'auto' - Base size
+- `alignSelf`: Override parent's alignItems
+
+:::note
+Flexbox properties only work when flexbox layout is enabled. See [Flexbox Layout](./flexbox-layout) for comprehensive documentation.
+:::
+
 ### Limitations
 
 Properties not listed above are ignored during rendering. This includes common React Native properties like:
 
-- Most flexbox layout properties (`flexDirection`, `justifyContent`, `alignItems`, etc.) - Note: `flex`, `flexGrow`, and `flexShrink` are supported
-- `gap` and spacing properties
+- Flexbox layout properties (`flexDirection`, `justifyContent`, `alignItems`, `gap`, etc.) are only available when using flexbox layout. Use the `View` component or set `layout="flex"` on VStack/HStack to enable these properties. See [Flexbox Layout](./flexbox-layout) for details. Properties `flex`, `flexGrow`, `flexShrink`, `flexBasis`, and `alignSelf` work on children inside flexbox containers.
+- `columnGap`, `rowGap`, and `flexWrap` properties - Voltra only supports a single `gap` value along the main axis, and does not support wrapping
 - Percentage-based widths and heights
 - `right` and `bottom` positioning properties - Only `left` and `top` are supported
 - Most text styling properties beyond `fontSize`, `fontWeight`, `fontFamily`, `color`, `letterSpacing`, and `fontVariant`
