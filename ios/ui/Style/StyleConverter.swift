@@ -8,12 +8,31 @@ enum StyleConverter {
   private static func parseLayout(_ js: [String: Any]) -> LayoutStyle {
     // RN: "flex: 1" implies grow. "flexGrow" is specific.
     let flexVal = JSStyleParser.number(js["flex"]) ?? 0
-    let flexGrow = JSStyleParser.number(js["flexGrow"]) ?? 0
-    let finalFlex = max(flexVal, flexGrow)
+    let flexGrowVal = JSStyleParser.number(js["flexGrow"]) ?? 0
+    let flexShrinkVal = JSStyleParser.number(js["flexShrink"])
+    let flexBasisVal = JSStyleParser.sizeValue(js["flexBasis"])
 
-    // If it flexes, give it priority 1 so it beats fixed items.
-    // Only set layoutPriority when flex is active; nil means "don't apply modifier".
+    // Legacy flex: max of flex and flexGrow for backward compat
+    let finalFlex = max(flexVal, flexGrowVal)
     let priority: Double? = finalFlex > 0 ? 1.0 : nil
+
+    // RN flex shorthand: flex > 0 → grow=flex, shrink=1, basis=0
+    let resolvedFlexGrow: CGFloat
+    let resolvedFlexShrink: CGFloat
+    let resolvedFlexBasis: SizeValue?
+
+    if flexVal > 0 {
+      resolvedFlexGrow = flexGrowVal > 0 ? flexGrowVal : flexVal
+      resolvedFlexShrink = flexShrinkVal ?? 1
+      resolvedFlexBasis = flexBasisVal ?? .fixed(0)
+    } else {
+      resolvedFlexGrow = flexGrowVal
+      resolvedFlexShrink = flexShrinkVal ?? 0
+      resolvedFlexBasis = flexBasisVal // nil = auto
+    }
+
+    // alignSelf
+    let alignSelf: FlexAlign? = (js["alignSelf"] as? String).flatMap { FlexAlign(fromStyle: $0) }
 
     // Position parsing with mode support
     let left = JSStyleParser.number(js["left"])
@@ -48,9 +67,9 @@ enum StyleConverter {
     let zIndex = JSStyleParser.number(js["zIndex"])
 
     return LayoutStyle(
-      // Dimensions
-      width: JSStyleParser.number(js["width"]),
-      height: JSStyleParser.number(js["height"]),
+      // Dimensions (now using SizeValue)
+      width: JSStyleParser.sizeValue(js["width"]),
+      height: JSStyleParser.sizeValue(js["height"]),
       minWidth: JSStyleParser.number(js["minWidth"]),
       maxWidth: JSStyleParser.number(js["maxWidth"]),
       minHeight: JSStyleParser.number(js["minHeight"]),
@@ -58,6 +77,10 @@ enum StyleConverter {
 
       // Flex Logic
       flex: finalFlex,
+      flexGrow: resolvedFlexGrow,
+      flexShrink: resolvedFlexShrink,
+      flexBasis: resolvedFlexBasis,
+      alignSelf: alignSelf,
       layoutPriority: priority,
       aspectRatio: JSStyleParser.number(js["aspectRatio"]),
 

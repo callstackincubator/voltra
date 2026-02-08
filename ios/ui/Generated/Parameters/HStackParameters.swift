@@ -16,14 +16,19 @@ public struct HStackParameters: ComponentParameters {
   /// Vertical alignment
   public let alignment: String
 
+  /// Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox.
+  public let layout: String
+
   enum CodingKeys: String, CodingKey {
     case spacing
     case alignment
+    case layout
   }
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     spacing = try container.decodeIfPresent(Double.self, forKey: .spacing) ?? 0
     alignment = try container.decodeIfPresent(String.self, forKey: .alignment) ?? "center"
+    layout = try container.decodeIfPresent(String.self, forKey: .layout) ?? "stack"
   }
 }

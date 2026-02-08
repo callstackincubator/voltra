@@ -9,6 +9,21 @@ enum JSStyleParser {
     return nil
   }
 
+  static func sizeValue(_ value: Any?) -> SizeValue? {
+    // Numeric → Fixed
+    if let n = number(value) { return .fixed(n) }
+    // String → Fill / Wrap / try numeric
+    guard let str = value as? String else { return nil }
+    switch str {
+    case "100%": return .fill
+    case "auto": return .wrap
+    default:
+      // Try parsing as numeric string
+      if let n = Double(str) { return .fixed(CGFloat(n)) }
+      return nil
+    }
+  }
+
   static func size(_ value: Any?) -> CGSize? {
     guard let dict = value as? [String: Any] else { return nil }
     let w = number(dict["width"]) ?? 0

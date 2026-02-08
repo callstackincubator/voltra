@@ -116,6 +116,12 @@
     "bottom": "b",
     "flex": "fl",
     "flexGrow": "fg",
+    "flexShrink": "fk",
+    "flexBasis": "fb",
+    "alignItems": "ai",
+    "alignSelf": "as",
+    "justifyContent": "jc",
+    "layout": "ly",
     "lineHeight": "lh",
     "textAlign": "ta",
     "textDecorationLine": "tdl",
@@ -776,6 +782,13 @@
           "optional": true,
           "enum": ["leading", "center", "trailing"],
           "description": "Horizontal alignment"
+        },
+        "layout": {
+          "type": "string",
+          "default": "stack",
+          "optional": true,
+          "enum": ["stack", "flex"],
+          "description": "Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox."
         }
       }
     },
@@ -797,6 +810,13 @@
           "optional": true,
           "enum": ["top", "center", "bottom"],
           "description": "Vertical alignment"
+        },
+        "layout": {
+          "type": "string",
+          "default": "stack",
+          "optional": true,
+          "enum": ["stack", "flex"],
+          "description": "Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox."
         }
       }
     },

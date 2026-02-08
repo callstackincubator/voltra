@@ -49,6 +49,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/components',
   },
   {
+    id: 'flex-playground',
+    title: 'Flex Layout Playground',
+    description:
+      'Interactive playground for experimenting with flex layout properties. Test alignItems, justifyContent, flexDirection, spacing, and padding with live visual feedback.',
+    route: '/testing-grounds/flex-playground',
+  },
+  {
     id: 'image-preloading',
     title: 'Image Preloading',
     description:

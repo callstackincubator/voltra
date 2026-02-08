@@ -9,4 +9,6 @@ export type HStackProps = VoltraBaseProps & {
   spacing?: number
   /** Vertical alignment */
   alignment?: 'top' | 'center' | 'bottom'
+  /** Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox. */
+  layout?: 'stack' | 'flex'
 }
