@@ -7,6 +7,7 @@ struct FlexContainerValues {
   let padding: EdgeInsets
   let alignItems: FlexAlign
   let justifyContent: FlexJustify
+  let gap: CGFloat
   let layout: LayoutStyle
   let decoration: DecorationStyle
   let rendering: RenderingStyle
@@ -28,11 +29,13 @@ enum FlexContainerHelper {
 
     let finalAlignItems = alignItemsFromStyle ?? alignmentFallback
     let justifyContent = justifyContentFromStyle ?? .flexStart
+    let gap = layout.gap ?? 0
 
     return FlexContainerValues(
       padding: layout.padding ?? EdgeInsets(),
       alignItems: finalAlignItems,
       justifyContent: justifyContent,
+      gap: gap,
       layout: layout,
       decoration: decoration,
       rendering: rendering

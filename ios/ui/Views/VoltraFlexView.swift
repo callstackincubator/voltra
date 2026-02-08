@@ -20,7 +20,7 @@ public struct VoltraFlexView: VoltraView {
 
     VoltraFlexStackLayout(
       axis: axis,
-      spacing: params.spacing,
+      spacing: values.gap,
       alignItems: values.alignItems,
       justifyContent: values.justifyContent,
       containerPadding: values.padding

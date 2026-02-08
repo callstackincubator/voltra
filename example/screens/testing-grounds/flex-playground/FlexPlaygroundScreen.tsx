@@ -47,7 +47,7 @@ export default function FlexPlaygroundScreen() {
   const [flexDirection, setFlexDirection] = useState<FlexDirection>('column')
   const [alignItems, setAlignItems] = useState<AlignItems>('stretch')
   const [justifyContent, setJustifyContent] = useState<JustifyContent>('flex-start')
-  const [spacing, setSpacing] = useState<number>(8)
+  const [gap, setGap] = useState<number>(8)
   const [containerPadding, setContainerPadding] = useState<number>(16)
 
   const cycleFlexDirection = () => {
@@ -68,8 +68,8 @@ export default function FlexPlaygroundScreen() {
     setJustifyContent(JUSTIFY_CONTENT_OPTIONS[nextIndex])
   }
 
-  const increaseSpacing = () => setSpacing((prev) => Math.min(prev + 4, 32))
-  const decreaseSpacing = () => setSpacing((prev) => Math.max(prev - 4, 0))
+  const increaseGap = () => setGap((prev) => Math.min(prev + 4, 32))
+  const decreaseGap = () => setGap((prev) => Math.max(prev - 4, 0))
 
   const increasePadding = () => setContainerPadding((prev) => Math.min(prev + 4, 32))
   const decreasePadding = () => setContainerPadding((prev) => Math.max(prev - 4, 0))
@@ -104,12 +104,12 @@ export default function FlexPlaygroundScreen() {
             <Button title={JUSTIFY_CONTENT_LABELS[justifyContent]} onPress={cycleJustifyContent} variant="secondary" />
           </View>
 
-          {/* Spacing */}
+          {/* Gap */}
           <View style={styles.controlRow}>
-            <Text style={styles.controlLabel}>Spacing: {spacing}px</Text>
+            <Text style={styles.controlLabel}>Gap: {gap}px</Text>
             <View style={styles.buttonGroup}>
-              <Button title="-" onPress={decreaseSpacing} variant="secondary" />
-              <Button title="+" onPress={increaseSpacing} variant="secondary" />
+              <Button title="-" onPress={decreaseGap} variant="secondary" />
+              <Button title="+" onPress={increaseGap} variant="secondary" />
             </View>
           </View>
 
@@ -130,7 +130,6 @@ export default function FlexPlaygroundScreen() {
 
           <VoltraView style={{ width: '100%', height: 300, backgroundColor: '#1E293B', padding: 8, marginTop: 12 }}>
             <Voltra.View
-              spacing={spacing}
               style={{
                 backgroundColor: '#334155',
                 padding: containerPadding,
@@ -139,6 +138,7 @@ export default function FlexPlaygroundScreen() {
                 flexDirection,
                 alignItems,
                 justifyContent,
+                gap,
               }}
             >
               <Voltra.View

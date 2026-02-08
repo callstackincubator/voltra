@@ -29,7 +29,12 @@ public struct VoltraHStack: VoltraView {
     default: .center
     }
 
-    HStack(alignment: alignment, spacing: params.spacing) {
+    // Extract gap from style for legacy mode too
+    let anyStyle = element.style?.mapValues { $0.toAny() } ?? [:]
+    let (layout, _, _, _) = StyleConverter.convert(anyStyle)
+    let gap = layout.gap ?? 0
+
+    HStack(alignment: alignment, spacing: gap) {
       element.children ?? .empty
     }
     .applyStyle(element.style)
@@ -42,7 +47,7 @@ public struct VoltraHStack: VoltraView {
 
     VoltraFlexStackLayout(
       axis: .horizontal,
-      spacing: params.spacing,
+      spacing: values.gap,
       alignItems: values.alignItems,
       justifyContent: values.justifyContent,
       containerPadding: values.padding

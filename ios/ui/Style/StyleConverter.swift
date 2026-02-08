@@ -34,6 +34,9 @@ enum StyleConverter {
     // alignSelf
     let alignSelf: FlexAlign? = (js["alignSelf"] as? String).flatMap { FlexAlign(fromStyle: $0) }
 
+    // gap
+    let gap = JSStyleParser.number(js["gap"])
+
     // Position parsing with mode support
     let left = JSStyleParser.number(js["left"])
     let top = JSStyleParser.number(js["top"])
@@ -81,6 +84,7 @@ enum StyleConverter {
       flexShrink: resolvedFlexShrink,
       flexBasis: resolvedFlexBasis,
       alignSelf: alignSelf,
+      gap: gap,
       layoutPriority: priority,
       aspectRatio: JSStyleParser.number(js["aspectRatio"]),
 

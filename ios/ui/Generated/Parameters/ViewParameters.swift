@@ -9,16 +9,4 @@ import Foundation
 
 /// Parameters for View component
 /// Flex container with configurable direction. Always uses flexbox layout.
-public struct ViewParameters: ComponentParameters {
-  /// Spacing between children
-  public let spacing: Double
-
-  enum CodingKeys: String, CodingKey {
-    case spacing
-  }
-
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    spacing = try container.decodeIfPresent(Double.self, forKey: .spacing) ?? 0
-  }
-}
+public struct ViewParameters: ComponentParameters {}

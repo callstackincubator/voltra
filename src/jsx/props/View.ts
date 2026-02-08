@@ -4,7 +4,4 @@
 
 import type { VoltraBaseProps } from '../baseProps'
 
-export type ViewProps = VoltraBaseProps & {
-  /** Spacing between children */
-  spacing?: number
-}
+export type ViewProps = VoltraBaseProps

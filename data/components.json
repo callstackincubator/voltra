@@ -123,6 +123,7 @@
     "justifyContent": "jc",
     "layout": "ly",
     "flexDirection": "fdir",
+    "gap": "g",
     "lineHeight": "lh",
     "textAlign": "ta",
     "textDecorationLine": "tdl",
@@ -771,12 +772,6 @@
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "hasChildren": true,
       "parameters": {
-        "spacing": {
-          "type": "number",
-          "default": 0,
-          "optional": true,
-          "description": "Spacing between children"
-        },
         "alignment": {
           "type": "string",
           "default": "center",
@@ -799,12 +794,6 @@
       "swiftAvailability": "iOS 13.0, macOS 10.15",
       "hasChildren": true,
       "parameters": {
-        "spacing": {
-          "type": "number",
-          "default": 0,
-          "optional": true,
-          "description": "Spacing between children"
-        },
         "alignment": {
           "type": "string",
           "default": "center",
@@ -826,14 +815,7 @@
       "description": "Flex container with configurable direction. Always uses flexbox layout.",
       "swiftAvailability": "iOS 16.0, macOS 13.0",
       "hasChildren": true,
-      "parameters": {
-        "spacing": {
-          "type": "number",
-          "default": 0,
-          "optional": true,
-          "description": "Spacing between children"
-        }
-      }
+      "parameters": {}
     },
     {
       "name": "ZStack",

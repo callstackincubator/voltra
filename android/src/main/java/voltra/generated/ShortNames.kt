@@ -67,6 +67,7 @@ object ShortNames {
             "fw" to "fontWeight",
             "fgs" to "foregroundStyle",
             "f" to "frame",
+            "g" to "gap",
             "gs" to "gaugeStyle",
             "ge" to "glassEffect",
             "h" to "height",

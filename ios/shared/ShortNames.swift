@@ -64,6 +64,7 @@ public enum ShortNames {
     "fw": "fontWeight",
     "fgs": "foregroundStyle",
     "f": "frame",
+    "g": "gap",
     "gs": "gaugeStyle",
     "ge": "glassEffect",
     "h": "height",

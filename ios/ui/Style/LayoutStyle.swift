@@ -72,6 +72,7 @@ struct LayoutStyle {
   var flexShrink: CGFloat = 0
   var flexBasis: SizeValue? // nil = auto
   var alignSelf: FlexAlign? // nil = auto (inherit from container)
+  var gap: CGFloat? // Spacing between flex children
 
   // 3. Priority (legacy only, derived from flex)
   var layoutPriority: Double?

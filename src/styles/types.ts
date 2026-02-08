@@ -10,6 +10,7 @@ export type VoltraViewStyle = Pick<
   | 'alignSelf'
   | 'justifyContent'
   | 'flexDirection'
+  | 'gap'
   | 'minWidth'
   | 'maxWidth'
   | 'width'
