@@ -2,6 +2,8 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { ReactNode } from 'react'
+
 import type { VoltraBaseProps } from '../baseProps'
 
 export type ImageProps = VoltraBaseProps & {
@@ -9,4 +11,8 @@ export type ImageProps = VoltraBaseProps & {
   source?: Record<string, any>
   /** How the image should be resized to fit its container */
   resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center'
+  /** Background color used when the image is missing */
+  fallbackColor?: string
+  /** Custom fallback content rendered when the image is missing */
+  fallback?: ReactNode
 }

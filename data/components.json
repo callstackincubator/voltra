@@ -91,6 +91,8 @@
     "color": "c",
     "letterSpacing": "ls",
     "fontVariant": "fvar",
+    "fallback": "fb",
+    "fallbackColor": "fbc",
     "width": "w",
     "opacity": "op",
     "overflow": "ov",
@@ -310,6 +312,16 @@
           "enum": ["cover", "contain", "stretch", "repeat", "center"],
           "default": "cover",
           "description": "How the image should be resized to fit its container"
+        },
+        "fallbackColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Background color used when the image is missing"
+        },
+        "fallback": {
+          "type": "component",
+          "optional": true,
+          "description": "Custom fallback content rendered when the image is missing"
         }
       }
     },
@@ -331,6 +343,16 @@
           "enum": ["cover", "contain", "stretch", "repeat", "center"],
           "default": "cover",
           "description": "Resizing mode"
+        },
+        "fallbackColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Background color used when the image is missing"
+        },
+        "fallback": {
+          "type": "component",
+          "optional": true,
+          "description": "Custom fallback content rendered when the image is missing"
         }
       }
     },

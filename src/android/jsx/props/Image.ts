@@ -2,6 +2,8 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { ReactNode } from 'react'
+
 import type { VoltraAndroidBaseProps } from '../baseProps.js'
 
 export type ImageProps = VoltraAndroidBaseProps & {
@@ -17,4 +19,8 @@ export type ImageProps = VoltraAndroidBaseProps & {
   alpha?: number
   /** Tint color */
   tintColor?: string
+  /** Background color used when the image is missing */
+  fallbackColor?: string
+  /** Custom fallback content rendered when the image is missing */
+  fallback?: ReactNode
 }

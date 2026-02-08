@@ -127,6 +127,64 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
 }
 
 /**
+ * Parse a prop value into a VoltraNode (used for component-typed props).
+ */
+@Suppress("UNCHECKED_CAST")
+fun parseVoltraNode(value: Any?): VoltraNode? {
+    return when (value) {
+        null -> {
+            null
+        }
+
+        is VoltraNode -> {
+            value
+        }
+
+        is String -> {
+            VoltraNode.Text(value)
+        }
+
+        is Number -> {
+            VoltraNode.Text(value.toString())
+        }
+
+        is Boolean -> {
+            VoltraNode.Text(value.toString())
+        }
+
+        is List<*> -> {
+            val elements = value.mapNotNull { parseVoltraNode(it) }
+            if (elements.isEmpty()) null else VoltraNode.Array(elements)
+        }
+
+        is Map<*, *> -> {
+            val map = value as Map<String, Any>
+            val ref = map["\$r"] as? Number
+            if (ref != null) {
+                return VoltraNode.Ref(ref.toInt())
+            }
+
+            val typeId = map["t"] as? Number ?: return null
+            val id = map["i"] as? String
+            val child = parseVoltraNode(map["c"])
+            val props = map["p"] as? Map<String, Any>
+            VoltraNode.Element(
+                VoltraElement(
+                    t = typeId.toInt(),
+                    i = id,
+                    c = child,
+                    p = props,
+                ),
+            )
+        }
+
+        else -> {
+            null
+        }
+    }
+}
+
+/**
  * Main dispatcher for rendering any VoltraNode.
  * Handles Element, Array, Ref, Text, and null cases.
  * Children rendering is delegated to RenderNode - each component doesn't need to care about node types.

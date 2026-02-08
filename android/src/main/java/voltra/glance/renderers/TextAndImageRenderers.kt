@@ -3,15 +3,16 @@ package voltra.glance.renderers
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
-import androidx.glance.LocalContext
+import androidx.glance.background
 import androidx.glance.text.Text
+import androidx.glance.unit.ColorProvider
 import com.google.gson.Gson
 import voltra.glance.LocalVoltraRenderContext
-import voltra.glance.ResolvedStyle
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
+import voltra.styling.JSColorParser
 import voltra.styling.toGlanceTextStyle
 
 private const val TAG = "TextAndImageRenderers"
@@ -94,7 +95,24 @@ fun RenderImage(
             alpha = alpha,
         )
     } else {
-        androidx.glance.layout.Box(modifier = finalModifier) {}
+        val fallbackProp = element.p?.get("fallback") ?: element.p?.get("fb")
+        val fallbackNode = parseVoltraNode(fallbackProp)
+        if (fallbackNode != null) {
+            androidx.glance.layout.Box(modifier = finalModifier) {
+                RenderNode(fallbackNode)
+            }
+        } else {
+            val fallbackColorProp = (element.p?.get("fallbackColor") ?: element.p?.get("fbc")) as? String
+            val fallbackColor =
+                JSColorParser.parse(fallbackColorProp) ?: JSColorParser.parse("#E0E0E0")
+            val backgroundModifier =
+                if (fallbackColor != null) {
+                    finalModifier.background(ColorProvider(fallbackColor))
+                } else {
+                    finalModifier
+                }
+            androidx.glance.layout.Box(modifier = backgroundModifier) {}
+        }
     }
 }
 

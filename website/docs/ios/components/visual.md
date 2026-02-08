@@ -31,6 +31,8 @@ Displays bitmap images from the asset catalog or base64 encoded data.
 
 - `source` (object, optional): Image source object (`assetName` or `base64`)
 - `resizeMode` (string, optional): `"cover"`, `"contain"`, `"stretch"`, `"repeat"`, or `"center"`
+- `fallbackColor` (string, optional): Background color used when the image is missing (defaults to `#E0E0E0`)
+- `fallback` (ReactNode, optional): Custom content rendered when the image is missing
 
 ---
 

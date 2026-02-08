@@ -48,6 +48,8 @@ object ShortNames {
             "en" to "enabled",
             "end" to "endAtMs",
             "ep" to "endPoint",
+            "fb" to "fallback",
+            "fbc" to "fallbackColor",
             "fmh" to "fillMaxHeight",
             "fmw" to "fillMaxWidth",
             "fsh" to "fixedSizeHorizontal",

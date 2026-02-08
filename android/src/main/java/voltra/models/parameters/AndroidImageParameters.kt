@@ -19,4 +19,6 @@ data class AndroidImageParameters(
     val source: String,
     /** Resizing mode */
     val resizeMode: String? = null,
+    /** Background color used when the image is missing */
+    val fallbackColor: String? = null,
 )

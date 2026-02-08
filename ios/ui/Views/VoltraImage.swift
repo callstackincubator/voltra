@@ -11,16 +11,13 @@ public struct VoltraImage: VoltraView {
     self.element = element
   }
 
-  /// Creates an Image from the source parameter, falling back to a system photo icon if invalid or not found
-  private func createImage(from source: String?) -> Image {
-    // Fallback image when source is invalid or not found
-    let fallbackImage = Image(systemName: "photo")
-
+  /// Creates an Image from the source parameter, returning nil if invalid or not found
+  private func createImage(from source: String?) -> Image? {
     guard let sourceString = source,
           let sourceData = sourceString.data(using: .utf8),
           let sourceDict = try? JSONSerialization.jsonObject(with: sourceData) as? [String: Any]
     else {
-      return fallbackImage
+      return nil
     }
 
     // Check for base64 first
@@ -48,55 +45,69 @@ public struct VoltraImage: VoltraView {
       }
     }
 
-    // Asset not found or invalid, use fallback
-    return fallbackImage
+    // Asset not found or invalid
+    return nil
   }
 
   @ViewBuilder
   public var body: some View {
     let resizeMode = params.resizeMode.lowercased()
-    let baseImage = createImage(from: params.source)
+    if let baseImage = createImage(from: params.source) {
+      switch resizeMode {
+      case "cover":
+        // Fill container, may crop
+        baseImage
+          .resizable()
+          .scaledToFill()
+          .clipped()
+          .applyStyle(element.style)
 
-    switch resizeMode {
-    case "cover":
-      // Fill container, may crop
-      baseImage
-        .resizable()
-        .scaledToFill()
-        .clipped()
-        .applyStyle(element.style)
+      case "contain":
+        // Fit within container, may leave space
+        baseImage
+          .resizable()
+          .scaledToFit()
+          .applyStyle(element.style)
 
-    case "contain":
-      // Fit within container, may leave space
-      baseImage
-        .resizable()
-        .scaledToFit()
-        .applyStyle(element.style)
+      case "stretch":
+        // Stretch to fill, may distort
+        baseImage
+          .resizable()
+          .applyStyle(element.style)
 
-    case "stretch":
-      // Stretch to fill, may distort
-      baseImage
-        .resizable()
-        .applyStyle(element.style)
+      case "repeat":
+        // Tile the image
+        baseImage
+          .resizable(resizingMode: .tile)
+          .applyStyle(element.style)
 
-    case "repeat":
-      // Tile the image
-      baseImage
-        .resizable(resizingMode: .tile)
-        .applyStyle(element.style)
+      case "center":
+        // Center without scaling
+        baseImage
+          .applyStyle(element.style)
 
-    case "center":
-      // Center without scaling
-      baseImage
-        .applyStyle(element.style)
-
-    default:
-      // Default to cover
-      baseImage
-        .resizable()
-        .scaledToFill()
-        .clipped()
-        .applyStyle(element.style)
+      default:
+        // Default to cover
+        baseImage
+          .resizable()
+          .scaledToFill()
+          .clipped()
+          .applyStyle(element.style)
+      }
+    } else {
+      let fallbackNode = element.componentProp("fallback")
+      if !fallbackNode.isEmpty {
+        fallbackNode
+          .applyStyle(element.style)
+      } else {
+        let fallbackColor =
+          JSColorParser.parse(params.fallbackColor) ??
+          JSColorParser.parse("#E0E0E0") ??
+          Color.gray
+        Rectangle()
+          .fill(fallbackColor)
+          .applyStyle(element.style)
+      }
     }
   }
 }

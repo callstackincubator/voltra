@@ -2,6 +2,7 @@ import React from 'react'
 
 import { renderVoltraVariantToJson } from '../../renderer/renderer'
 import { Image } from '../Image'
+import { Text } from '../Text'
 
 describe('Image Component', () => {
   test('Asset name source', () => {
@@ -26,6 +27,17 @@ describe('Image Component', () => {
     // @ts-ignore
     const output = renderVoltraVariantToJson(<Image />)
     expect(output.p?.src).toBeUndefined()
+  })
+
+  test('fallbackColor', () => {
+    const output = renderVoltraVariantToJson(<Image source={{ assetName: 'x' }} fallbackColor="#E0E0E0" />)
+    expect(output.p.fbc).toBe('#E0E0E0')
+  })
+
+  test('fallback node', () => {
+    const output = renderVoltraVariantToJson(<Image source={{ assetName: 'x' }} fallback={<Text>Missing</Text>} />)
+    expect(output.p.fb).toBeDefined()
+    expect((output.p.fb as any).t).toBeDefined()
   })
 
   test('resizeMode cover', () => {
