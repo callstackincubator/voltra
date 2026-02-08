@@ -8,39 +8,39 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 
 type FlexDirection = 'horizontal' | 'vertical'
-type AlignItems = 'flexStart' | 'center' | 'flexEnd' | 'stretch'
-type JustifyContent = 'flexStart' | 'center' | 'flexEnd' | 'spaceBetween' | 'spaceAround' | 'spaceEvenly'
+type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'stretch'
+type JustifyContent = 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly'
 
-const ALIGN_ITEMS_OPTIONS: AlignItems[] = ['flexStart', 'center', 'flexEnd', 'stretch']
+const ALIGN_ITEMS_OPTIONS: AlignItems[] = ['flex-start', 'center', 'flex-end', 'stretch']
 const JUSTIFY_CONTENT_OPTIONS: JustifyContent[] = [
-  'flexStart',
+  'flex-start',
   'center',
-  'flexEnd',
-  'spaceBetween',
-  'spaceAround',
-  'spaceEvenly',
+  'flex-end',
+  'space-between',
+  'space-around',
+  'space-evenly',
 ]
 
 const ALIGN_ITEMS_LABELS: Record<AlignItems, string> = {
-  flexStart: 'flex-start',
+  'flex-start': 'flex-start',
   center: 'center',
-  flexEnd: 'flex-end',
+  'flex-end': 'flex-end',
   stretch: 'stretch',
 }
 
 const JUSTIFY_CONTENT_LABELS: Record<JustifyContent, string> = {
-  flexStart: 'flex-start',
+  'flex-start': 'flex-start',
   center: 'center',
-  flexEnd: 'flex-end',
-  spaceBetween: 'space-between',
-  spaceAround: 'space-around',
-  spaceEvenly: 'space-evenly',
+  'flex-end': 'flex-end',
+  'space-between': 'space-between',
+  'space-around': 'space-around',
+  'space-evenly': 'space-evenly',
 }
 
 export default function FlexPlaygroundScreen() {
   const [flexDirection, setFlexDirection] = useState<FlexDirection>('vertical')
   const [alignItems, setAlignItems] = useState<AlignItems>('stretch')
-  const [justifyContent, setJustifyContent] = useState<JustifyContent>('flexStart')
+  const [justifyContent, setJustifyContent] = useState<JustifyContent>('flex-start')
   const [spacing, setSpacing] = useState<number>(8)
   const [containerPadding, setContainerPadding] = useState<number>(16)
 
@@ -255,7 +255,7 @@ export default function FlexPlaygroundScreen() {
                   width: '100%',
                   height: '100%',
                   alignItems: 'center',
-                  justifyContent: 'spaceBetween',
+                  justifyContent: 'space-between',
                 }}
               >
                 <Voltra.VStack style={{ backgroundColor: '#EC4899', padding: 8, borderRadius: 4 }}>
@@ -282,7 +282,7 @@ export default function FlexPlaygroundScreen() {
                   width: '100%',
                   height: '100%',
                   alignItems: 'center',
-                  justifyContent: 'spaceEvenly',
+                  justifyContent: 'space-evenly',
                 }}
               >
                 <Voltra.VStack style={{ backgroundColor: '#F59E0B', padding: 8, borderRadius: 4 }}>
