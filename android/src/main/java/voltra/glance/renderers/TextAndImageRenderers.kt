@@ -102,16 +102,7 @@ fun RenderImage(
                 RenderNode(fallbackNode)
             }
         } else {
-            val fallbackColorProp = (element.p?.get("fallbackColor") ?: element.p?.get("fbc")) as? String
-            val fallbackColor =
-                JSColorParser.parse(fallbackColorProp) ?: JSColorParser.parse("#E0E0E0")
-            val backgroundModifier =
-                if (fallbackColor != null) {
-                    finalModifier.background(ColorProvider(fallbackColor))
-                } else {
-                    finalModifier
-                }
-            androidx.glance.layout.Box(modifier = backgroundModifier) {}
+            androidx.glance.layout.Box(modifier = finalModifier) {}
         }
     }
 }

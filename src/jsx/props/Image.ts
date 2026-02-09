@@ -11,8 +11,6 @@ export type ImageProps = VoltraBaseProps & {
   source?: Record<string, any>
   /** How the image should be resized to fit its container */
   resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center'
-  /** Background color used when the image is missing */
-  fallbackColor?: string
   /** Custom fallback content rendered when the image is missing */
   fallback?: ReactNode
 }

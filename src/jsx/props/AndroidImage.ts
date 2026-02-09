@@ -11,8 +11,6 @@ export type AndroidImageProps = VoltraBaseProps & {
   source: Record<string, any>
   /** Resizing mode */
   resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center'
-  /** Background color used when the image is missing */
-  fallbackColor?: string
   /** Custom fallback content rendered when the image is missing */
   fallback?: ReactNode
 }

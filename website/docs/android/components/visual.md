@@ -26,8 +26,18 @@ Displays bitmap images from the asset catalog or base64 encoded data.
 - `contentDescription` (string, optional): Accessibility description for the image.
 - `alpha` (number, optional): Opacity value from 0.0 to 1.0.
 - `tintColor` (string, optional): Color to tint the image with.
-- `fallbackColor` (string, optional): Background color used when the image is missing (defaults to `#E0E0E0`).
 - `fallback` (ReactNode, optional): Custom content rendered when the image is missing.
+
+**Styling the fallback:**
+
+To add a background color when an image is missing, use `backgroundColor` in the `style` prop:
+
+```jsx
+<Image
+  source={{ assetName: 'photo' }}
+  style={{ backgroundColor: '#E0E0E0', borderRadius: 12 }}
+/>
+```
 
 :::tip Image Preloading
 For dynamic images from remote URLs, use the [Image Preloading](../development/image-preloading) API to cache them locally for use in widgets.

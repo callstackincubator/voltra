@@ -97,15 +97,11 @@ public struct VoltraImage: VoltraView {
     } else {
       let fallbackNode = element.componentProp("fallback")
       if !fallbackNode.isEmpty {
-        fallbackNode
+        Color.clear
+          .overlay(fallbackNode)
           .applyStyle(element.style)
       } else {
-        let fallbackColor =
-          JSColorParser.parse(params.fallbackColor) ??
-          JSColorParser.parse("#E0E0E0") ??
-          Color.gray
-        Rectangle()
-          .fill(fallbackColor)
+        Color.clear
           .applyStyle(element.style)
       }
     }

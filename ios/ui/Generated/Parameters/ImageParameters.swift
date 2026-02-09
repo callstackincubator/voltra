@@ -16,19 +16,14 @@ public struct ImageParameters: ComponentParameters {
   /// How the image should be resized to fit its container
   public let resizeMode: String
 
-  /// Background color used when the image is missing
-  public let fallbackColor: String?
-
   enum CodingKeys: String, CodingKey {
     case source
     case resizeMode
-    case fallbackColor
   }
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     source = try container.decodeIfPresent(String.self, forKey: .source)
     resizeMode = try container.decodeIfPresent(String.self, forKey: .resizeMode) ?? "cover"
-    fallbackColor = try container.decodeIfPresent(String.self, forKey: .fallbackColor)
   }
 }

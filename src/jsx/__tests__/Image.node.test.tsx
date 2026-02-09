@@ -29,11 +29,6 @@ describe('Image Component', () => {
     expect(output.p?.src).toBeUndefined()
   })
 
-  test('fallbackColor', () => {
-    const output = renderVoltraVariantToJson(<Image source={{ assetName: 'x' }} fallbackColor="#E0E0E0" />)
-    expect(output.p.fbc).toBe('#E0E0E0')
-  })
-
   test('fallback node', () => {
     const output = renderVoltraVariantToJson(<Image source={{ assetName: 'x' }} fallback={<Text>Missing</Text>} />)
     expect(output.p.fb).toBeDefined()
