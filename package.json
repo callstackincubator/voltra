@@ -1,6 +1,7 @@
 {
   "name": "voltra",
   "version": "1.2.0",
+  "packageManager": "npm@10.8.2",
   "description": "Build Live Activities with JSX in React Native",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -94,7 +95,8 @@
     "expo-module-scripts": "^4.1.10",
     "prettier": "2.8.8",
     "react-native": "0.79.1",
-    "ts-node": "^10.9.0"
+    "ts-node": "^10.9.0",
+    "turbo": "^2.8.3"
   },
   "peerDependencies": {
     "expo": "*",
