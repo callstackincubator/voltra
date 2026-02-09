@@ -31,6 +31,10 @@ enum StyleConverter {
       resolvedFlexBasis = flexBasisVal // nil = auto
     }
 
+    // Apply defaults here: 0 if not set (instead of in modifiers)
+    let finalFlexGrow: CGFloat = resolvedFlexGrow
+    let finalFlexShrink: CGFloat = resolvedFlexShrink
+
     // alignSelf
     let alignSelf: FlexAlign? = (js["alignSelf"] as? String).flatMap { FlexAlign(fromStyle: $0) }
 
@@ -79,9 +83,9 @@ enum StyleConverter {
       maxHeight: JSStyleParser.number(js["maxHeight"]),
 
       // Flex Logic
-      flex: finalFlex,
-      flexGrow: resolvedFlexGrow,
-      flexShrink: resolvedFlexShrink,
+      flex: finalFlex > 0 ? finalFlex : nil,
+      flexGrow: finalFlexGrow,
+      flexShrink: finalFlexShrink,
       flexBasis: resolvedFlexBasis,
       alignSelf: alignSelf,
       gap: gap,

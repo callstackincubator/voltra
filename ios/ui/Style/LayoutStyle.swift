@@ -1,5 +1,8 @@
 import SwiftUI
 
+// DO NOT PUT DEFAULT VALUES IN THE STRUCTURES.
+// ONLY USE OPTIONALS.
+
 // MARK: - Size Value
 
 enum SizeValue: Equatable {
@@ -66,10 +69,10 @@ struct LayoutStyle {
   var minHeight: CGFloat?
   var maxHeight: CGFloat?
 
-  // 2. Flex properties
-  var flex: CGFloat = 0 // Shorthand (legacy compat)
-  var flexGrow: CGFloat = 0
-  var flexShrink: CGFloat = 0
+  // 2. Flex properties (defaults applied in StyleConverter, not here)
+  var flex: CGFloat? // Shorthand (legacy compat)
+  var flexGrow: CGFloat // Default: 0 (applied in StyleConverter)
+  var flexShrink: CGFloat // Default: 0 (applied in StyleConverter)
   var flexBasis: SizeValue? // nil = auto
   var alignSelf: FlexAlign? // nil = auto (inherit from container)
   var gap: CGFloat? // Spacing between flex children
@@ -131,7 +134,7 @@ struct LayoutModifier: ViewModifier {
         maxHeight: shouldExpandHeight ? .infinity : nil,
         // SwiftUI defaults frame alignment to center. When expanding to fill,
         // we want RN-like flex-start behavior so content stays top/leading.
-        alignment: style.flex > 0 ? .topLeading : .center
+        alignment: (style.flex ?? 0) > 0 ? .topLeading : .center
       )
 
       // D. Layout Priority (Flex Grow/Shrink arbitration)
@@ -148,10 +151,10 @@ struct LayoutModifier: ViewModifier {
 
   // Expand if flex > 0 OR width/height is .fill
   private var shouldExpandWidth: Bool {
-    style.flex > 0 || style.width == .fill
+    (style.flex ?? 0) > 0 || style.width == .fill
   }
 
   private var shouldExpandHeight: Bool {
-    style.flex > 0 || style.height == .fill
+    (style.flex ?? 0) > 0 || style.height == .fill
   }
 }

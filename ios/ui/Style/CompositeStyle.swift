@@ -15,6 +15,7 @@ struct CompositeStyleModifier: ViewModifier {
         // 2. Apply padding (inner spacing is still the child's responsibility)
         // 3. Apply decoration + rendering
         // 4. Attach LayoutValueKey for parent flex layout to read
+
         content
           .voltraIfLet(layout.padding) { c, p in c.padding(p) }
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

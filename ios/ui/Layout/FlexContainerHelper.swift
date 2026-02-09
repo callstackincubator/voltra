@@ -67,12 +67,14 @@ enum FlexContainerHelper {
 
 /// Applies layout, decoration, rendering, margin, offset, positioning, and zIndex
 /// to a flex container — everything except padding (handled by the flex engine).
+/// Also sets FlexItemLayoutKey so this view can be a flex child of another container.
 struct FlexContainerStyleModifier: ViewModifier {
   let values: FlexContainerValues
 
   func body(content: Content) -> some View {
+    let layout = values.layout
     let layoutWithoutPadding: LayoutStyle = {
-      var l = values.layout
+      var l = layout
       l.padding = nil
       return l
     }()
@@ -81,17 +83,32 @@ struct FlexContainerStyleModifier: ViewModifier {
       .modifier(LayoutModifier(style: layoutWithoutPadding))
       .modifier(DecorationModifier(style: values.decoration))
       .modifier(RenderingModifier(style: values.rendering))
-      .voltraIfLet(values.layout.margin) { c, margin in
+      .voltraIfLet(layout.margin) { c, margin in
         c.background(.clear).padding(margin)
       }
-      .voltraIfLet(values.layout.relativeOffset) { c, offset in
+      .voltraIfLet(layout.relativeOffset) { c, offset in
         c.offset(x: offset.x, y: offset.y)
       }
-      .voltraIfLet(values.layout.absolutePosition) { c, position in
+      .voltraIfLet(layout.absolutePosition) { c, position in
         c.position(x: position.x, y: position.y)
       }
-      .voltraIfLet(values.layout.zIndex) { c, z in
+      .voltraIfLet(layout.zIndex) { c, z in
         c.zIndex(z)
       }
+      // Set FlexItemLayoutKey so this container can be a flex child of another container
+      .layoutValue(key: FlexItemLayoutKey.self, value: FlexItemValues(
+        flexGrow: layout.flexGrow,
+        flexShrink: layout.flexShrink,
+        flexBasis: layout.flexBasis,
+        width: layout.width,
+        height: layout.height,
+        minWidth: layout.minWidth,
+        maxWidth: layout.maxWidth,
+        minHeight: layout.minHeight,
+        maxHeight: layout.maxHeight,
+        alignSelf: layout.alignSelf,
+        margin: layout.margin,
+        aspectRatio: layout.aspectRatio
+      ))
   }
 }
