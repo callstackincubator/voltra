@@ -51,3 +51,52 @@ sealed class VoltraNode {
         val text: String,
     ) : VoltraNode()
 }
+
+/**
+ * Resolve a raw prop value into a VoltraNode with shared context.
+ * Unlike parseVoltraNode, this eagerly resolves $r references (matching iOS behavior).
+ */
+@Suppress("UNCHECKED_CAST")
+fun resolveToVoltraNode(
+    value: Any?,
+    sharedStyles: List<Map<String, Any>>?,
+    sharedElements: List<VoltraNode>?,
+): VoltraNode? {
+    return when (value) {
+        null -> null
+        is VoltraNode -> value
+        is String -> VoltraNode.Text(value)
+        is Number -> VoltraNode.Text(value.toString())
+        is Boolean -> VoltraNode.Text(value.toString())
+        is List<*> -> {
+            val elements = value.mapNotNull { resolveToVoltraNode(it, sharedStyles, sharedElements) }
+            if (elements.isEmpty()) null else VoltraNode.Array(elements)
+        }
+        is Map<*, *> -> {
+            val map = value as Map<String, Any>
+            val ref = map["\$r"] as? Number
+            if (ref != null) {
+                return sharedElements?.getOrNull(ref.toInt())
+            }
+            val typeId = map["t"] as? Number ?: return null
+            val id = map["i"] as? String
+            val child = resolveToVoltraNode(map["c"], sharedStyles, sharedElements)
+            val props = map["p"] as? Map<String, Any>
+            VoltraNode.Element(VoltraElement(t = typeId.toInt(), i = id, c = child, p = props))
+        }
+        else -> null
+    }
+}
+
+/**
+ * Extract a ReactNode-typed prop from this element, resolving it with shared context.
+ * Mirrors iOS's VoltraElement.componentProp(_:).
+ */
+fun VoltraElement.componentProp(
+    propName: String,
+    sharedStyles: List<Map<String, Any>>?,
+    sharedElements: List<VoltraNode>?,
+): VoltraNode? {
+    val value = p?.get(propName) ?: return null
+    return resolveToVoltraNode(value, sharedStyles, sharedElements)
+}

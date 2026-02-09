@@ -22,6 +22,13 @@ const ANDROID_SECTIONS = [
     route: '/android-widgets/image-preloading',
   },
   {
+    id: 'image-fallback',
+    title: 'Image Fallback',
+    description:
+      'Test the new image fallback behavior using backgroundColor from styles. See how missing images render with different style properties.',
+    route: '/android-widgets/image-fallback',
+  },
+  {
     id: 'preview-widgets',
     title: 'Widget Previews',
     description: 'Preview your Android widget layouts directly within the app using VoltraWidgetPreview.',

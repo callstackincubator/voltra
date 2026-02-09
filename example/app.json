@@ -80,6 +80,16 @@
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
                 "widgetCategory": "home_screen"
+              },
+              {
+                "id": "image_fallback",
+                "displayName": "Image Fallback Widget",
+                "description": "Test image fallback with backgroundColor from styles",
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen",
+                "initialStatePath": "./widgets/android-image-fallback-initial.tsx"
               }
             ]
           },

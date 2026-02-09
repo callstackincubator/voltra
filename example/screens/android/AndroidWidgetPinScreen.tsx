@@ -20,6 +20,13 @@ const AVAILABLE_WIDGETS = [
     defaultPreviewWidth: 250,
     defaultPreviewHeight: 150,
   },
+  {
+    id: 'image_fallback',
+    name: 'Image Fallback Widget',
+    description: 'Test image fallback with backgroundColor from styles',
+    defaultPreviewWidth: 250,
+    defaultPreviewHeight: 150,
+  },
 ]
 
 export default function AndroidWidgetPinScreen() {

@@ -6,17 +6,14 @@ import androidx.glance.Image
 import androidx.glance.background
 import androidx.glance.text.Text
 import androidx.glance.unit.ColorProvider
-import com.google.gson.Gson
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
+import voltra.models.componentProp
 import voltra.styling.JSColorParser
 import voltra.styling.toGlanceTextStyle
-
-private const val TAG = "TextAndImageRenderers"
-private val gson = Gson()
 
 @Composable
 fun RenderText(
@@ -85,6 +82,7 @@ fun RenderImage(
 
     val imageProvider = extractImageProvider(element.p?.get("source"))
 
+
     if (imageProvider != null) {
         Image(
             provider = imageProvider,
@@ -95,8 +93,12 @@ fun RenderImage(
             alpha = alpha,
         )
     } else {
-        val fallbackProp = element.p?.get("fallback") ?: element.p?.get("fb")
-        val fallbackNode = parseVoltraNode(fallbackProp)
+        val fallbackNode = element.componentProp(
+            "fallback",
+            renderContext.sharedStyles,
+            renderContext.sharedElements,
+        )
+
         if (fallbackNode != null) {
             androidx.glance.layout.Box(modifier = finalModifier) {
                 RenderNode(fallbackNode)

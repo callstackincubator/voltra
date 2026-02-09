@@ -55,6 +55,13 @@ const TESTING_GROUNDS_SECTIONS = [
       'Test image preloading functionality for Live Activities. Download images to App Group storage and verify they appear in Live Activities.',
     route: '/testing-grounds/image-preloading',
   },
+  {
+    id: 'image-fallback',
+    title: 'Image Fallback',
+    description:
+      'Explore the new image fallback behavior using backgroundColor from styles. Test missing images with various styling approaches.',
+    route: '/testing-grounds/image-fallback',
+  },
   // Add more sections here as they are implemented
 ]
 
