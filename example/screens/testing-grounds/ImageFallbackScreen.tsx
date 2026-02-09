@@ -63,9 +63,7 @@ export default function ImageFallbackScreen() {
                         <Voltra.Text style={{ fontSize: 14, fontWeight: '600', color: '#F1F5F9' }}>
                           Red Background
                         </Voltra.Text>
-                        <Voltra.Text style={{ fontSize: 12, color: '#94A3B8' }}>
-                          backgroundColor: '#EF4444'
-                        </Voltra.Text>
+                        <Voltra.Text style={{ fontSize: 12, color: '#94A3B8' }}>backgroundColor: '#EF4444'</Voltra.Text>
                       </Voltra.VStack>
                     </Voltra.HStack>
                   </Voltra.VStack>
@@ -232,14 +230,8 @@ export default function ImageFallbackScreen() {
                       source={{ assetName: 'missing-custom' }}
                       fallback={
                         <Voltra.VStack style={{ flex: 1 }} spacing={4} alignment="center">
-                          <Voltra.Symbol
-                            name="photo"
-                            size={32}
-                            tintColor="#64748B"
-                          />
-                          <Voltra.Text style={{ fontSize: 10, color: '#64748B' }}>
-                            No Image
-                          </Voltra.Text>
+                          <Voltra.Symbol name="photo" size={32} tintColor="#64748B" />
+                          <Voltra.Text style={{ fontSize: 10, color: '#64748B' }}>No Image</Voltra.Text>
                         </Voltra.VStack>
                       }
                       style={{
@@ -261,8 +253,8 @@ export default function ImageFallbackScreen() {
         <Card>
           <Card.Title>6. Mixed: Valid and Missing Images</Card.Title>
           <Card.Text>
-            Display a mix of valid and missing images to show consistent styling behavior. Valid images display
-            normally while missing ones show the styled fallback.
+            Display a mix of valid and missing images to show consistent styling behavior. Valid images display normally
+            while missing ones show the styled fallback.
           </Card.Text>
           <View style={styles.buttonRow}>
             <Button
@@ -272,9 +264,7 @@ export default function ImageFallbackScreen() {
                 handleShowExample(
                   'Mixed Images',
                   <Voltra.VStack style={{ padding: 16, backgroundColor: '#111827' }} spacing={12}>
-                    <Voltra.Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}>
-                      Image Grid
-                    </Voltra.Text>
+                    <Voltra.Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}>Image Grid</Voltra.Text>
                     <Voltra.HStack spacing={8}>
                       <Voltra.Image
                         source={{ assetName: 'missing-1' }}
@@ -318,8 +308,7 @@ export default function ImageFallbackScreen() {
           <Text style={styles.infoTitle}>Migration Note</Text>
           <Text style={styles.infoText}>
             The <Text style={styles.code}>fallbackColor</Text> prop has been removed. Use{' '}
-            <Text style={styles.code}>backgroundColor</Text> in the <Text style={styles.code}>style</Text> prop
-            instead.
+            <Text style={styles.code}>backgroundColor</Text> in the <Text style={styles.code}>style</Text> prop instead.
           </Text>
           <Text style={[styles.infoText, { marginTop: 8 }]}>
             Before: <Text style={styles.code}>fallbackColor="#E0E0E0"</Text>

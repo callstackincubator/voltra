@@ -82,7 +82,6 @@ fun RenderImage(
 
     val imageProvider = extractImageProvider(element.p?.get("source"))
 
-
     if (imageProvider != null) {
         Image(
             provider = imageProvider,
@@ -93,11 +92,12 @@ fun RenderImage(
             alpha = alpha,
         )
     } else {
-        val fallbackNode = element.componentProp(
-            "fallback",
-            renderContext.sharedStyles,
-            renderContext.sharedElements,
-        )
+        val fallbackNode =
+            element.componentProp(
+                "fallback",
+                renderContext.sharedStyles,
+                renderContext.sharedElements,
+            )
 
         if (fallbackNode != null) {
             androidx.glance.layout.Box(modifier = finalModifier) {

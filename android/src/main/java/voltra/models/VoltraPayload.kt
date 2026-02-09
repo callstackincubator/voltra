@@ -63,15 +63,31 @@ fun resolveToVoltraNode(
     sharedElements: List<VoltraNode>?,
 ): VoltraNode? {
     return when (value) {
-        null -> null
-        is VoltraNode -> value
-        is String -> VoltraNode.Text(value)
-        is Number -> VoltraNode.Text(value.toString())
-        is Boolean -> VoltraNode.Text(value.toString())
+        null -> {
+            null
+        }
+
+        is VoltraNode -> {
+            value
+        }
+
+        is String -> {
+            VoltraNode.Text(value)
+        }
+
+        is Number -> {
+            VoltraNode.Text(value.toString())
+        }
+
+        is Boolean -> {
+            VoltraNode.Text(value.toString())
+        }
+
         is List<*> -> {
             val elements = value.mapNotNull { resolveToVoltraNode(it, sharedStyles, sharedElements) }
             if (elements.isEmpty()) null else VoltraNode.Array(elements)
         }
+
         is Map<*, *> -> {
             val map = value as Map<String, Any>
             val ref = map["\$r"] as? Number
@@ -84,7 +100,10 @@ fun resolveToVoltraNode(
             val props = map["p"] as? Map<String, Any>
             VoltraNode.Element(VoltraElement(t = typeId.toInt(), i = id, c = child, p = props))
         }
-        else -> null
+
+        else -> {
+            null
+        }
     }
 }
 

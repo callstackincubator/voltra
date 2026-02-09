@@ -12,6 +12,7 @@ import voltra.models.*
 object VoltraDecompressor {
     private const val TAG = "VoltraDecompressor"
     private val gson = Gson()
+
     /**
      * Decompress the entire payload recursively.
      */
@@ -52,27 +53,39 @@ object VoltraDecompressor {
                         val mapValue = value as Map<String, Any>
                         // Detect if this is a VoltraElement structure
                         if (mapValue["t"] is Number) {
-                            Log.d(TAG, "decompressMap: Detected element structure in prop '$key' (expanded: '$expandedKey')")
+                            Log.d(
+                                TAG,
+                                "decompressMap: Detected element structure in prop '$key' (expanded: '$expandedKey')",
+                            )
                             decompressElementStructure(mapValue)
                         } else {
                             decompressMap(mapValue)
                         }
                     }
-                    is List<*> -> value.map {
-                        when (it) {
-                            is Map<*, *> -> {
-                                val mapItem = it as Map<String, Any>
-                                // Detect elements in lists too
-                                if (mapItem["t"] is Number) {
-                                    decompressElementStructure(mapItem)
-                                } else {
-                                    decompressMap(mapItem)
+
+                    is List<*> -> {
+                        value.map {
+                            when (it) {
+                                is Map<*, *> -> {
+                                    val mapItem = it as Map<String, Any>
+                                    // Detect elements in lists too
+                                    if (mapItem["t"] is Number) {
+                                        decompressElementStructure(mapItem)
+                                    } else {
+                                        decompressMap(mapItem)
+                                    }
+                                }
+
+                                else -> {
+                                    it
                                 }
                             }
-                            else -> it
                         }
                     }
-                    else -> value
+
+                    else -> {
+                        value
+                    }
                 }
             result[expandedKey] = expandedValue
         }
@@ -111,8 +124,8 @@ object VoltraDecompressor {
      * Decompress a value that represents a VoltraNode (element, array, text, or ref).
      */
     @Suppress("UNCHECKED_CAST")
-    private fun decompressNodeValue(value: Any): Any {
-        return when (value) {
+    private fun decompressNodeValue(value: Any): Any =
+        when (value) {
             is Map<*, *> -> {
                 val mapValue = value as Map<String, Any>
                 // Check if it's an element structure
@@ -123,6 +136,7 @@ object VoltraDecompressor {
                     mapValue
                 }
             }
+
             is List<*> -> {
                 // Array of nodes - recursively decompress each item
                 value.map { item ->
@@ -133,10 +147,10 @@ object VoltraDecompressor {
                     }
                 }
             }
+
             else -> {
                 // Text nodes (strings, numbers) or null - pass through
                 value
             }
         }
-    }
 }
