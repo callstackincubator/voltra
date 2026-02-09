@@ -55,6 +55,13 @@ const TESTING_GROUNDS_SECTIONS = [
       'Test image preloading functionality for Live Activities. Download images to App Group storage and verify they appear in Live Activities.',
     route: '/testing-grounds/image-preloading',
   },
+  {
+    id: 'widget-scheduling',
+    title: 'Widget Scheduling',
+    description:
+      'Test widget timeline scheduling with multiple states. Configure timing for each state and watch widgets automatically transition between them.',
+    route: '/testing-grounds/widget-scheduling',
+  },
   // Add more sections here as they are implemented
 ]
 
