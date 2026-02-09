@@ -44,6 +44,9 @@ npm-debug.log
 ## Plugin
 /plugin/build
 
+## Turborepo
+.turbo
+
 ## Build
 /build
 /ios/.build/
