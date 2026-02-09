@@ -17,6 +17,9 @@
     },
     "clean": {
       "cache": false
+    },
+    "version-packages": {
+      "cache": false
     }
   }
 }

@@ -55,7 +55,10 @@
     "open:ios": "xed example/ios",
     "generate": "ts-node generator/generate-types.ts",
     "harness:ios": "npm run harness:ios --prefix example",
-    "harness:android": "npm run harness:android --prefix example"
+    "harness:android": "npm run harness:android --prefix example",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "keywords": [
     "react-native",
@@ -80,6 +83,7 @@
     "vd-tool": "^4.0.2"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@types/dedent": "^0.7.2",
     "@types/node": "^20.19.25",
     "@types/react": "~19.0.0",
