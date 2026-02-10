@@ -230,10 +230,9 @@ export default function WidgetSchedulingScreen() {
         <Card>
           <Card.Title>📅 Schedule Timeline</Card.Title>
           <Card.Text>
-            Schedules three widget states:{'\n\n'}
-            • State 1 (Blue): Yesterday - shows as current{'\n'}
-            • State 2 (Green): {minutesUntilSecond || '2'} minutes from now{'\n'}
-            • State 3 (Purple): {minutesUntilThird || '5'} minutes from now{'\n\n'}
+            Schedules three widget states:{'\n\n'}• State 1 (Blue): Yesterday - shows as current{'\n'}• State 2 (Green):{' '}
+            {minutesUntilSecond || '2'} minutes from now{'\n'}• State 3 (Purple): {minutesUntilThird || '5'} minutes
+            from now{'\n\n'}
             Add the widget to your home screen to see it transition between states.
           </Card.Text>
           <View style={styles.buttonGroup}>
@@ -304,7 +303,9 @@ export default function WidgetSchedulingScreen() {
                 <Voltra.VStack spacing={8} alignment="center">
                   <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#F1C40F' }}>STATE 2</Voltra.Text>
                   <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Second State</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>+{minutesUntilSecond || '2'} minutes</Voltra.Text>
+                  <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>
+                    +{minutesUntilSecond || '2'} minutes
+                  </Voltra.Text>
                 </Voltra.VStack>
               </Voltra.ZStack>
             </VoltraWidgetPreview>
@@ -317,7 +318,9 @@ export default function WidgetSchedulingScreen() {
                 <Voltra.VStack spacing={8} alignment="center">
                   <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#E74C3C' }}>STATE 3</Voltra.Text>
                   <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Third State</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>+{minutesUntilThird || '5'} minutes</Voltra.Text>
+                  <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>
+                    +{minutesUntilThird || '5'} minutes
+                  </Voltra.Text>
                 </Voltra.VStack>
               </Voltra.ZStack>
             </VoltraWidgetPreview>

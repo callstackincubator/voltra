@@ -91,7 +91,7 @@
     "color": "c",
     "letterSpacing": "ls",
     "fontVariant": "fvar",
-    "fallback": "fb",
+    "fallback": "flb",
     "width": "w",
     "opacity": "op",
     "overflow": "ov",

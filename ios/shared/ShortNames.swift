@@ -47,7 +47,7 @@ public enum ShortNames {
     "en": "enabled",
     "end": "endAtMs",
     "ep": "endPoint",
-    "fb": "fallback",
+    "flb": "fallback",
     "fmh": "fillMaxHeight",
     "fmw": "fillMaxWidth",
     "fsh": "fixedSizeHorizontal",

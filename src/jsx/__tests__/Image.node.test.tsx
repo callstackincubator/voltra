@@ -31,8 +31,8 @@ describe('Image Component', () => {
 
   test('fallback node', () => {
     const output = renderVoltraVariantToJson(<Image source={{ assetName: 'x' }} fallback={<Text>Missing</Text>} />)
-    expect(output.p.fb).toBeDefined()
-    expect((output.p.fb as any).t).toBeDefined()
+    expect(output.p.flb).toBeDefined()
+    expect((output.p.flb as any).t).toBeDefined()
   })
 
   test('resizeMode cover', () => {

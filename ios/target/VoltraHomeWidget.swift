@@ -81,7 +81,7 @@ public enum VoltraHomeWidgetStore {
     // Keep all future entries, plus the most recent past entry (current state).
     let pastEntries = parsedEntries.filter { $0.date <= now }.sorted { $0.date < $1.date }
     let latestPastEntry = pastEntries.last?.json
-    let futureEntries = parsedEntries.filter { $0.date > now }.map { $0.json }
+    let futureEntries = parsedEntries.filter { $0.date > now }.map(\.json)
 
     var validEntries = futureEntries
     if let latestPastEntry {
