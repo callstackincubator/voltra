@@ -30,7 +30,8 @@ public struct VoltraVStack: View {
     // Extract gap from style for legacy mode too
     let anyStyle = element.style?.mapValues { $0.toAny() } ?? [:]
     let (layout, _, _, _) = StyleConverter.convert(anyStyle)
-    let gap = layout.gap ?? 0
+    // spacing prop takes precedence over gap style
+    let gap = params.spacing ?? layout.gap ?? 0
 
     let hasFillWidth = layout.width == .fill
 
@@ -47,10 +48,12 @@ public struct VoltraVStack: View {
   private func flexBody(params: VStackParameters) -> some View {
     let alignmentFallback = FlexContainerHelper.verticalAlignmentFallback(params.alignment)
     let values = FlexContainerHelper.parseValues(from: element, alignmentFallback: alignmentFallback)
+    // spacing prop takes precedence over gap style
+    let spacing = params.spacing ?? values.gap
 
     VoltraFlexStackLayout(
       axis: .vertical,
-      spacing: values.gap,
+      spacing: spacing,
       alignItems: values.alignItems,
       justifyContent: values.justifyContent,
       containerPadding: values.padding

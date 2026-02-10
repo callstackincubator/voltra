@@ -796,6 +796,11 @@
           "optional": true,
           "enum": ["stack", "flex"],
           "description": "Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox."
+        },
+        "spacing": {
+          "type": "number",
+          "optional": true,
+          "description": "Spacing between children. Takes precedence over gap style property."
         }
       }
     },
@@ -818,6 +823,11 @@
           "optional": true,
           "enum": ["stack", "flex"],
           "description": "Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox."
+        },
+        "spacing": {
+          "type": "number",
+          "optional": true,
+          "description": "Spacing between children. Takes precedence over gap style property."
         }
       }
     },
