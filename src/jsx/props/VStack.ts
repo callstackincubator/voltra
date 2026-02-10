@@ -5,8 +5,8 @@
 import type { VoltraBaseProps } from '../baseProps'
 
 export type VStackProps = VoltraBaseProps & {
-  /** Spacing between children */
-  spacing?: number
   /** Horizontal alignment */
   alignment?: 'leading' | 'center' | 'trailing'
+  /** Layout mode. 'stack' uses native SwiftUI stacks. 'flex' uses RN-like flexbox. */
+  layout?: 'stack' | 'flex'
 }

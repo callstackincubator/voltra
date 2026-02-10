@@ -24,7 +24,6 @@ export async function generateInitialStates(options: GenerateInitialStatesOption
   // voltra/android/server is an ESM module, but the plugin is compiled to CommonJS
   const { renderAndroidWidgetToString } = await import('voltra/android/server')
 
-
   // Prerender widget states
   const prerenderedStates = await prerenderWidgetState(widgets, projectRoot, renderAndroidWidgetToString)
 

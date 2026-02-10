@@ -4,6 +4,13 @@ export type VoltraViewStyle = Pick<
   RNViewStyle,
   | 'flex'
   | 'flexGrow'
+  | 'flexShrink'
+  | 'flexBasis'
+  | 'alignItems'
+  | 'alignSelf'
+  | 'justifyContent'
+  | 'flexDirection'
+  | 'gap'
   | 'minWidth'
   | 'maxWidth'
   | 'width'

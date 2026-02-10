@@ -1,21 +1,83 @@
 import SwiftUI
 
+// DO NOT PUT DEFAULT VALUES IN THE STRUCTURES.
+// ONLY USE OPTIONALS.
+
+// MARK: - Size Value
+
+enum SizeValue: Equatable {
+  case fixed(CGFloat) // Explicit numeric value (e.g., 100)
+  case fill // "100%" — expand to fill available space
+  case wrap // "auto" or missing — size to content
+}
+
+// MARK: - Flex Alignment
+
+enum FlexAlign: String {
+  case flexStart = "flex-start"
+  case center
+  case flexEnd = "flex-end"
+  case stretch
+
+  /// Accept both kebab-case ("flex-start") and camelCase ("flexStart")
+  init?(fromStyle value: String) {
+    if let v = FlexAlign(rawValue: value) {
+      self = v
+    } else {
+      switch value {
+      case "flexStart": self = .flexStart
+      case "flexEnd": self = .flexEnd
+      default: return nil
+      }
+    }
+  }
+}
+
+enum FlexJustify: String {
+  case flexStart = "flex-start"
+  case center
+  case flexEnd = "flex-end"
+  case spaceBetween = "space-between"
+  case spaceAround = "space-around"
+  case spaceEvenly = "space-evenly"
+
+  /// Accept both kebab-case ("space-between") and camelCase ("spaceBetween")
+  init?(fromStyle value: String) {
+    if let v = FlexJustify(rawValue: value) {
+      self = v
+    } else {
+      switch value {
+      case "flexStart": self = .flexStart
+      case "flexEnd": self = .flexEnd
+      case "spaceBetween": self = .spaceBetween
+      case "spaceAround": self = .spaceAround
+      case "spaceEvenly": self = .spaceEvenly
+      default: return nil
+      }
+    }
+  }
+}
+
+// MARK: - Layout Style
+
 struct LayoutStyle {
-  // 1. Size Constraints (flexBasis + constraints)
-  var width: CGFloat?
-  var height: CGFloat?
+  // 1. Size Constraints (now SizeValue for "auto"/"100%" support)
+  var width: SizeValue?
+  var height: SizeValue?
   var minWidth: CGFloat?
   var maxWidth: CGFloat?
   var minHeight: CGFloat?
   var maxHeight: CGFloat?
 
-  // 2. Flexibility
-  // flex: 1 means "grow to fill available space"
-  // flex: 0 means "size to content" (or fixed width)
-  var flex: CGFloat = 0
+  // 2. Flex properties (defaults applied in StyleConverter, not here)
+  var flex: CGFloat? // Shorthand (legacy compat)
+  var flexGrow: CGFloat // Default: 0 (applied in StyleConverter)
+  var flexShrink: CGFloat // Default: 0 (applied in StyleConverter)
+  var flexBasis: SizeValue? // nil = auto
+  var alignSelf: FlexAlign? // nil = auto (inherit from container)
+  var gap: CGFloat? // Spacing between flex children
 
-  // 3. Priority (flexGrow equivalent)
-  // Higher priority wins when space is tight
+  // 3. Priority (legacy only, derived from flex)
   var layoutPriority: Double?
 
   // 4. Aspect Ratio
@@ -31,8 +93,21 @@ struct LayoutStyle {
   var zIndex: Double?
 }
 
+// MARK: - Layout Modifier
+
 struct LayoutModifier: ViewModifier {
   let style: LayoutStyle
+
+  // Extract CGFloat from SizeValue for frame constraints
+  private var widthValue: CGFloat? {
+    guard case let .fixed(v) = style.width else { return nil }
+    return v
+  }
+
+  private var heightValue: CGFloat? {
+    guard case let .fixed(v) = style.height else { return nil }
+    return v
+  }
 
   func body(content: Content) -> some View {
     content
@@ -45,19 +120,21 @@ struct LayoutModifier: ViewModifier {
       // We apply min/max/fixed constraints first to establish the "base" size.
       .frame(
         minWidth: style.minWidth,
-        idealWidth: style.width,
-        maxWidth: style.width ?? style.maxWidth, // If width is set, it becomes the max
+        idealWidth: widthValue,
+        maxWidth: widthValue ?? style.maxWidth,
         minHeight: style.minHeight,
-        idealHeight: style.height,
-        maxHeight: style.height ?? style.maxHeight
+        idealHeight: heightValue,
+        maxHeight: heightValue ?? style.maxHeight
       )
 
-      // C. Flex / Grow Logic
-      // If flex > 0, we override the max constraints to .infinity
-      // allowing the view to expand to fill the stack.
+      // C. Flex / Grow Logic (legacy: expand to infinity)
+      // If flex > 0 OR width/height is .fill, expand to .infinity
       .frame(
-        maxWidth: style.flex > 0 ? .infinity : nil,
-        maxHeight: style.flex > 0 ? .infinity : nil
+        maxWidth: shouldExpandWidth ? .infinity : nil,
+        maxHeight: shouldExpandHeight ? .infinity : nil,
+        // SwiftUI defaults frame alignment to center. When expanding to fill,
+        // we want RN-like flex-start behavior so content stays top/leading.
+        alignment: (style.flex ?? 0) > 0 ? .topLeading : .center
       )
 
       // D. Layout Priority (Flex Grow/Shrink arbitration)
@@ -70,5 +147,14 @@ struct LayoutModifier: ViewModifier {
       .voltraIfLet(style.padding) { content, padding in
         content.padding(padding)
       }
+  }
+
+  // Expand if flex > 0 OR width/height is .fill
+  private var shouldExpandWidth: Bool {
+    (style.flex ?? 0) > 0 || style.width == .fill
+  }
+
+  private var shouldExpandHeight: Bool {
+    (style.flex ?? 0) > 0 || style.height == .fill
   }
 }

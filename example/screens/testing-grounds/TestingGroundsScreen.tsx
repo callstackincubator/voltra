@@ -49,6 +49,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/components',
   },
   {
+    id: 'flex-playground',
+    title: 'Flex Layout Playground',
+    description:
+      'Interactive playground for experimenting with flex layout properties. Test alignItems, justifyContent, flexDirection, spacing, and padding with live visual feedback.',
+    route: '/testing-grounds/flex-playground',
+  },
+  {
     id: 'image-preloading',
     title: 'Image Preloading',
     description:
@@ -61,6 +68,13 @@ const TESTING_GROUNDS_SECTIONS = [
     description:
       'Explore the new image fallback behavior using backgroundColor from styles. Test missing images with various styling approaches.',
     route: '/testing-grounds/image-fallback',
+  },
+  {
+    id: 'widget-scheduling',
+    title: 'Widget Scheduling',
+    description:
+      'Test widget timeline scheduling with multiple states. Configure timing for each state and watch widgets automatically transition between them.',
+    route: '/testing-grounds/widget-scheduling',
   },
   // Add more sections here as they are implemented
 ]

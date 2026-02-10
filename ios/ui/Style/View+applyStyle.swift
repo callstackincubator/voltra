@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - View Extension
+
 extension View {
   func applyStyle(_ optionalStyle: [String: JSONValue]?) -> some View {
     voltraIfLet(optionalStyle) { _, rawStyle in

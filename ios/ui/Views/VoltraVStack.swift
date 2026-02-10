@@ -9,19 +9,50 @@ public struct VoltraVStack: View {
 
   public var body: some View {
     let params = element.parameters(VStackParameters.self)
-    let spacing = params.spacing
-    let alignmentStr = params.alignment.lowercased()
 
+    if params.layout == "flex" {
+      flexBody(params: params)
+    } else {
+      legacyBody(params: params)
+    }
+  }
+
+  @ViewBuilder
+  private func legacyBody(params: VStackParameters) -> some View {
+    let alignmentStr = params.alignment.lowercased()
     let alignment: HorizontalAlignment = switch alignmentStr {
     case "leading": .leading
     case "trailing": .trailing
     case "center": .center
-    default: .leading
+    default: .center
     }
 
-    VStack(alignment: alignment, spacing: spacing) {
+    // Extract gap from style for legacy mode too
+    let anyStyle = element.style?.mapValues { $0.toAny() } ?? [:]
+    let (layout, _, _, _) = StyleConverter.convert(anyStyle)
+    let gap = layout.gap ?? 0
+
+    VStack(alignment: alignment, spacing: gap) {
       element.children ?? .empty
     }
     .applyStyle(element.style)
+  }
+
+  @ViewBuilder
+  private func flexBody(params: VStackParameters) -> some View {
+    let alignmentFallback = FlexContainerHelper.verticalAlignmentFallback(params.alignment)
+    let values = FlexContainerHelper.parseValues(from: element, alignmentFallback: alignmentFallback)
+
+    VoltraFlexStackLayout(
+      axis: .vertical,
+      spacing: values.gap,
+      alignItems: values.alignItems,
+      justifyContent: values.justifyContent,
+      containerPadding: values.padding
+    ) {
+      (element.children ?? .empty)
+        .environment(\.isInFlexContainer, true)
+    }
+    .modifier(FlexContainerStyleModifier(values: values))
   }
 }
