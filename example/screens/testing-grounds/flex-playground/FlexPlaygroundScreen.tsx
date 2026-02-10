@@ -180,6 +180,40 @@ export default function FlexPlaygroundScreen() {
           </VoltraView>
         </Card>
 
+        {/* Text Align Test */}
+        <Card>
+          <Card.Title>Text Align in Flex</Card.Title>
+          <Text style={styles.previewSubtext}>Text alignment within stretched flex children</Text>
+
+          <VoltraView style={{ width: '100%', height: 200, backgroundColor: '#1E293B', padding: 8, marginTop: 12 }}>
+            <Voltra.View
+              style={{
+                backgroundColor: '#334155',
+                padding: 8,
+                width: '100%',
+                height: '100%',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                gap: 8,
+              }}
+            >
+              <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
+                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'left' }}>textAlign: left</Voltra.Text>
+              </Voltra.View>
+              <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
+                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'center' }}>
+                  textAlign: center
+                </Voltra.Text>
+              </Voltra.View>
+              <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
+                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'right' }}>
+                  textAlign: right
+                </Voltra.Text>
+              </Voltra.View>
+            </Voltra.View>
+          </VoltraView>
+        </Card>
+
         <View style={styles.footer}>
           <Link href="/testing-grounds" asChild>
             <Button title="Back to Testing Grounds" variant="ghost" />

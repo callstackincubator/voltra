@@ -6,6 +6,7 @@ struct CompositeStyleModifier: ViewModifier {
   let layout: LayoutStyle
   let decoration: DecorationStyle
   let rendering: RenderingStyle
+  var contentAlignment: Alignment = .topLeading
 
   func body(content: Content) -> some View {
     Group {
@@ -18,7 +19,7 @@ struct CompositeStyleModifier: ViewModifier {
 
         content
           .voltraIfLet(layout.padding) { c, p in c.padding(p) }
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentAlignment)
           .modifier(DecorationModifier(style: decoration))
           .modifier(RenderingModifier(style: rendering))
           .layoutValue(key: FlexItemLayoutKey.self, value: FlexItemValues(

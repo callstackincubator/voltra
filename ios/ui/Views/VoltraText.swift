@@ -50,6 +50,14 @@ public struct VoltraText: VoltraView {
       return baseFont
     }
 
+    let alignment: TextAlignment = {
+      // Parameter takes precedence over style
+      if let mta = params.multilineTextAlignment {
+        return JSStyleParser.textAlignment(mta)
+      }
+      return textStyle.alignment
+    }()
+
     Text(.init(textContent))
       .kerning(textStyle.letterSpacing)
       .underline(textStyle.decoration == .underline || textStyle.decoration == .underlineLineThrough)
@@ -57,7 +65,7 @@ public struct VoltraText: VoltraView {
       // These technically work on View, but good to keep close
       .font(font)
       .foregroundColor(textStyle.color)
-      .multilineTextAlignment(textStyle.alignment)
+      .multilineTextAlignment(alignment)
       .lineSpacing(textStyle.lineSpacing)
       .voltraIfLet(params.numberOfLines) { view, numberOfLines in
         view.lineLimit(Int(numberOfLines))

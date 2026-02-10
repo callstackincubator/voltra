@@ -62,6 +62,7 @@ export type VoltraTextStyle = VoltraViewStyle &
     | 'fontVariant'
     | 'textDecorationLine'
     | 'lineHeight'
+    | 'textAlign'
   >
 
 export type VoltraStyleProp = StyleProp<VoltraViewStyle>
