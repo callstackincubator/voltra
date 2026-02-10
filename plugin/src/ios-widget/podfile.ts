@@ -45,28 +45,20 @@ export interface ConfigurePodfileProps {
 }
 
 function getLibraryName(): string {
-  const candidatePaths = [
-    path.join(__dirname, '..', '..', '..', 'package.json'),
-    path.join(__dirname, '..', '..', '..', '..', 'package.json'),
-  ]
-
-  for (const candidatePath of candidatePaths) {
-    if (!fs.existsSync(candidatePath)) {
-      continue
+  let dir = __dirname
+  while (dir !== path.dirname(dir)) {
+    const candidate = path.join(dir, 'package.json')
+    if (fs.existsSync(candidate)) {
+      try {
+        const name = JSON.parse(fs.readFileSync(candidate, 'utf8')).name
+        if (typeof name === 'string' && name.trim()) {
+          return name
+        }
+      } catch {}
     }
-
-    try {
-      const packageJson = fs.readFileSync(candidatePath, 'utf8')
-      const name = JSON.parse(packageJson).name
-      if (typeof name === 'string' && name.trim()) {
-        return name
-      }
-    } catch (error) {
-      logger.warn(`Failed to read package name from ${candidatePath}: ${error}`)
-    }
+    dir = path.dirname(dir)
   }
-
-  logger.warn('Could not resolve package name for Voltra plugin. Falling back to "voltra".')
+  logger.warn('Could not resolve package name. Falling back to "voltra".')
   return 'voltra'
 }
 
@@ -75,10 +67,6 @@ function getLibraryName(): string {
  */
 export const configurePodfile: ConfigPlugin<ConfigurePodfileProps> = (config, { targetName }) => {
   return withExpoPodfile(config, (podfile) => {
-    if (podfile.modRequest.introspect) {
-      return podfile
-    }
-
     const libraryName = getLibraryName()
     const targetContent = getTargetContent(targetName, libraryName)
 

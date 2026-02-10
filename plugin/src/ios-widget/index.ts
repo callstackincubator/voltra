@@ -4,8 +4,8 @@ import type { WidgetConfig } from '../types'
 import { configureEasBuild } from './eas'
 import { generateWidgetExtensionFiles } from './files'
 import { withFonts } from './fonts'
-import { configureWidgetExtensionPlist } from './widgetPlist'
 import { configurePodfile } from './podfile'
+import { configureWidgetExtensionPlist } from './widgetPlist'
 import { configureXcodeProject } from './xcode'
 
 export interface WithIOSProps {

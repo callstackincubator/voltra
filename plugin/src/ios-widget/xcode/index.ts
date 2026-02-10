@@ -5,9 +5,9 @@ import { getWidgetFiles } from '../../utils/fileDiscovery'
 import { addBuildPhases, ensureBuildPhases } from './buildPhases'
 import { addXCConfigurationList, ensureXCConfigurationList } from './configurationList'
 import { addPbxGroup, ensurePbxGroup } from './groups'
+import { getMainAppTargetSettings } from './mainAppSettings'
 import { addProductFile, ensureProductFile } from './productFile'
 import { configureTarget, ensureTargetAttributes, ensureTargetDependency } from './target'
-import { getMainAppTargetSettings } from './mainAppSettings'
 
 export interface ConfigureXcodeProjectProps {
   targetName: string

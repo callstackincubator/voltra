@@ -1,8 +1,8 @@
 import type { ExpoConfig } from 'expo/config'
 
+import { configureEas } from './eas'
 import { configureEntitlements } from './entitlements'
 import { configureInfoPlist } from './infoPlist'
-import { configureEas } from './eas'
 
 export interface IOSConfigProps {
   groupIdentifier?: string

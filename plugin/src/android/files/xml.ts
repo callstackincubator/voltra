@@ -35,13 +35,6 @@ export async function generateWidgetInfoFiles(props: {
     fs.mkdirSync(valuesPath, { recursive: true })
   }
 
-  // Generate widget info XML for each widget (without preview info for now)
-  for (const widget of widgets) {
-    const widgetInfoPath = path.join(xmlPath, `voltra_widget_${widget.id}_info.xml`)
-    const widgetInfoContent = generateWidgetInfoXml(widget, undefined, undefined)
-    fs.writeFileSync(widgetInfoPath, widgetInfoContent, 'utf8')
-  }
-
   // Generate string resources for all widgets
   const stringsPath = path.join(valuesPath, 'voltra_widgets.xml')
   const stringsContent = generateStringResourcesXml(widgets)
@@ -78,15 +71,13 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
   // Generate preview layouts and get the map
   const previewLayoutMap = await generatePreviewLayouts(widgets, projectRoot, layoutPath, previewImageMap)
 
-  // Update widget info files with preview layout references
+  // Write widget info XML for all widgets, including preview references where available
   for (const widget of widgets) {
-    if (previewLayoutMap.has(widget.id) || previewImageMap.has(widget.id)) {
-      const widgetInfoPath = path.join(xmlPath, `voltra_widget_${widget.id}_info.xml`)
-      const previewImageResourceName = previewImageMap.get(widget.id)
-      const previewLayoutResourceName = previewLayoutMap.get(widget.id)
-      const widgetInfoContent = generateWidgetInfoXml(widget, previewImageResourceName, previewLayoutResourceName)
-      fs.writeFileSync(widgetInfoPath, widgetInfoContent, 'utf8')
-    }
+    const widgetInfoPath = path.join(xmlPath, `voltra_widget_${widget.id}_info.xml`)
+    const previewImageResourceName = previewImageMap.get(widget.id)
+    const previewLayoutResourceName = previewLayoutMap.get(widget.id)
+    const widgetInfoContent = generateWidgetInfoXml(widget, previewImageResourceName, previewLayoutResourceName)
+    fs.writeFileSync(widgetInfoPath, widgetInfoContent, 'utf8')
   }
 }
 

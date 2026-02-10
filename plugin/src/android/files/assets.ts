@@ -39,7 +39,7 @@ export async function generateAndroidAssets(options: GenerateAndroidAssetsOption
   const assets: string[] = []
   const fullUserImagesPath = path.join(projectRoot, userImagesPath)
 
-  function collectAssetsRecursively(dirPath: string, relativeBase: string) {
+  function collectAssetsRecursively(dirPath: string) {
     if (!fs.existsSync(dirPath) || !fs.lstatSync(dirPath).isDirectory()) {
       return
     }
@@ -51,7 +51,7 @@ export async function generateAndroidAssets(options: GenerateAndroidAssetsOption
 
       if (stat.isDirectory()) {
         // Recursively collect from subdirectories
-        collectAssetsRecursively(sourcePath, relativeBase)
+        collectAssetsRecursively(sourcePath)
       } else {
         // Add relative path to assets array
         const relativePath = path.relative(projectRoot, sourcePath)
@@ -60,7 +60,7 @@ export async function generateAndroidAssets(options: GenerateAndroidAssetsOption
     }
   }
 
-  collectAssetsRecursively(fullUserImagesPath, userImagesPath)
+  collectAssetsRecursively(fullUserImagesPath)
 
   // Copy user images to drawable resources
   const copiedImages = await copyUserImagesToAndroid(assets, projectRoot, drawablePath)
@@ -266,7 +266,7 @@ async function copyPreviewImagesToAndroid(
       continue
     }
 
-    // Check image size
+    // Warn if image exceeds size limit (does not block copy for Android widgets)
     checkImageSize(sourcePath)
 
     // Generate drawable resource name
