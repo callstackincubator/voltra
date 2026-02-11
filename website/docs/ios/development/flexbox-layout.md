@@ -1,7 +1,7 @@
 # Flexbox Layout
 
 :::warning Experimental Feature
-Flexbox layout is a **new layout system** in Voltra. While it covers common use cases, you may encounter bugs or edge cases. Please [report any issues](https://github.com/margelo/voltra/issues) you find.
+Flexbox layout is a **new layout system** in Voltra. While it covers common use cases, you may encounter bugs or edge cases. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
 :::
 
 Voltra supports React Native-style flexbox layout through the `Voltra.View` component.
