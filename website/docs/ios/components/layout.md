@@ -17,10 +17,6 @@ Each stack type has different alignment options based on its layout direction.
 
 A vertical stack container that arranges its children in a column.
 
-:::tip Flexbox Option
-VStack can optionally use a flexbox layout engine by setting `layout="flex"`. This enables React Native-style flexbox properties like `justifyContent` and `alignItems` via the `style` prop. See [Flexbox Layout](../development/flexbox-layout) for details.
-:::
-
 **Parameters:**
 
 - `spacing` (number, optional): Spacing between children in points
@@ -28,7 +24,6 @@ VStack can optionally use a flexbox layout engine by setting `layout="flex"`. Th
   - `"leading"` - Align to left edge
   - `"center"` (default) - Align to center
   - `"trailing"` - Align to right edge
-- `layout` (string, optional): Layout mode - `"stack"` (default) or `"flex"`. When set to `"flex"`, enables flexbox properties via style prop.
 
 **Apple Documentation:** [VStack](https://developer.apple.com/documentation/swiftui/vstack)
 
@@ -37,10 +32,6 @@ VStack can optionally use a flexbox layout engine by setting `layout="flex"`. Th
 ### HStack
 
 A horizontal stack container that arranges its children in a row.
-
-:::tip Flexbox Option
-HStack can optionally use a flexbox layout engine by setting `layout="flex"`. This enables React Native-style flexbox properties like `justifyContent` and `alignItems` via the `style` prop. See [Flexbox Layout](../development/flexbox-layout) for details.
-:::
 
 **Parameters:**
 
@@ -51,7 +42,6 @@ HStack can optionally use a flexbox layout engine by setting `layout="flex"`. Th
   - `"bottom"` - Align to bottom edge
   - `"firstTextBaseline"` - Align to first text baseline
   - `"lastTextBaseline"` - Align to last text baseline
-- `layout` (string, optional): Layout mode - `"stack"` (default) or `"flex"`. When set to `"flex"`, enables flexbox properties via style prop.
 
 **Apple Documentation:** [HStack](https://developer.apple.com/documentation/swiftui/hstack)
 
@@ -89,7 +79,7 @@ In SwiftUI (and Voltra), positioning works differently than CSS. The `alignment`
     source={{ assetName: 'avatar' }}
     style={{ width: 60, height: 60, borderRadius: 30 }}
   />
-  
+
   {/* Badge is positioned at top-right, then nudged with offset */}
   <Voltra.Text
     style={{
@@ -119,7 +109,7 @@ Use `offsetX` and `offsetY` style properties to fine-tune individual element pos
 A flexible container component that **always uses flexbox layout**. Unlike VStack and HStack which use native SwiftUI stacks by default, View is specifically designed for React Native-style flexbox layouts.
 
 :::tip Flexbox-First Component
-The View component is purpose-built for flexbox layouts and always uses the flexbox layout engine. You don't need to add `layout="flex"` – it's flexbox by default. See the [Flexbox Layout](../development/flexbox-layout) guide for comprehensive documentation.
+The View component is purpose-built for flexbox layouts and always uses the flexbox layout engine. See the [Flexbox Layout](../development/flexbox-layout) guide for comprehensive documentation.
 :::
 
 **Style Properties:**
