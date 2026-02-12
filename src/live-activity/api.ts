@@ -34,6 +34,12 @@ export type StartLiveActivityOptions = {
    * URL to open when the Live Activity is tapped.
    */
   deepLinkUrl?: string
+  /**
+   * Channel ID for broadcast push notifications (iOS 18+).
+   * When provided, the Live Activity subscribes to broadcast updates on this channel
+   * instead of receiving individual push tokens.
+   */
+  channelId?: string
 } & SharedLiveActivityOptions
 
 export type UpdateLiveActivityOptions = SharedLiveActivityOptions
@@ -60,6 +66,10 @@ export type UseLiveActivityOptions = {
    * URL to open when the Live Activity is tapped.
    */
   deepLinkUrl?: string
+  /**
+   * Channel ID for broadcast push notifications (iOS 18+).
+   */
+  channelId?: string
 }
 
 export type UseLiveActivityResult = {
@@ -271,6 +281,7 @@ export const startLiveActivity = async (
     target: 'liveActivity',
     deepLinkUrl: options?.deepLinkUrl,
     activityId: options?.activityName,
+    channelId: options?.channelId,
     ...normalizedSharedOptions,
   })
   return targetId
