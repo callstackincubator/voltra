@@ -179,7 +179,7 @@ export const startAndroidLiveUpdate = async (
 export const updateAndroidLiveUpdate = async (
   notificationId: string,
   variants: AndroidLiveUpdateVariants,
-  options?: UpdateAndroidLiveUpdateOptions
+  _options?: UpdateAndroidLiveUpdateOptions
 ): Promise<void> => {
   const payload = renderAndroidLiveUpdateToString(variants)
 
