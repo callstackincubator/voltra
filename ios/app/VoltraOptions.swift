@@ -33,6 +33,10 @@ public struct StartVoltraOptions: Record {
   @Field
   public var relevanceScore: Double?
 
+  /// Channel ID for broadcast push notifications (iOS 18+).
+  @Field
+  public var channelId: String?
+
   public init() {}
 }
 

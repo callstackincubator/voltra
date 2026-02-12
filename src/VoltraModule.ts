@@ -27,6 +27,11 @@ export type StartVoltraOptions = {
    * Double value between 0.0 and 1.0, defaults to 0.0
    */
   relevanceScore?: number
+  /**
+   * Channel ID for broadcast push notifications (iOS 18+).
+   * When provided, the Live Activity subscribes to broadcast updates on this channel.
+   */
+  channelId?: string
 }
 
 /**
