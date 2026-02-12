@@ -50,8 +50,9 @@ const variants = {
 }
 
 const activityId = await startLiveActivity(variants, {
-  activityId: 'order-123', // Optional: for re-binding on app restart
+  activityName: 'order-123', // Optional: for re-binding on app restart
   deepLinkUrl: 'myapp://order/123', // Optional: URL to open when tapped
+  channelId: 'CTrNsYq/Ee8AALLzHQaVlA==', // Optional: broadcast channel (iOS 18+)
   dismissalPolicy: { after: 30 },
   staleDate: Date.now() + 60 * 60 * 1000, // 1 hour
   relevanceScore: 0.8,
@@ -256,6 +257,20 @@ await startLiveActivity(variants, {
 ```
 
 Live Activities can receive updates even when your app is in the background or terminated, but they cannot execute JavaScript code. For real-time updates from backgrounded apps, use server-side push notifications.
+
+### Channel ID (broadcast push, iOS 18+)
+
+Subscribes the Live Activity to a broadcast channel for server-side updates. When provided, the activity receives updates via broadcast push notifications instead of individual device tokens—one server notification updates all activities on that channel.
+
+```typescript
+// For shared content (e.g., live sports, flight status)
+await startLiveActivity(variants, {
+  activityName: 'match-123',
+  channelId: 'CTrNsYq/Ee8AALLzHQaVlA==', // From APNs channel management
+})
+```
+
+Requires `enablePushNotifications: true` in the Voltra plugin and the Broadcast Capability enabled in your Apple Developer account. See [Server-side updates](./server-side-updates.md#broadcast-push-notifications-ios-18) for details.
 
 ## Best practices
 
