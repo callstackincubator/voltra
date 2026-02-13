@@ -64,7 +64,7 @@ export const getHooksDispatcher = (registry: ContextRegistry): ReactHooksDispatc
   },
   useState: <S>(initial?: S | (() => S)) => [
     typeof initial === 'function' ? (initial as () => S)() : initial,
-    () => { }, // No-op setter
+    () => {}, // No-op setter
   ],
   useReducer: <S, I, A extends React.AnyActionArg>(
     _: (prevState: S, ...args: A) => S,
@@ -72,19 +72,19 @@ export const getHooksDispatcher = (registry: ContextRegistry): ReactHooksDispatc
     init?: (i: I) => S
   ): [S, React.ActionDispatch<A>] => {
     const state = init ? init(initialArg) : initialArg
-    return [state as S, () => { }]
+    return [state as S, () => {}]
   },
   // Direct pass-throughs
   useMemo: (factory) => factory(),
   useCallback: (cb) => cb,
   useRef: (initial) => ({ current: initial }),
   // No-ops for effects
-  useEffect: () => { },
-  useLayoutEffect: () => { },
-  useInsertionEffect: () => { },
+  useEffect: () => {},
+  useLayoutEffect: () => {},
+  useInsertionEffect: () => {},
   useId: () => Math.random().toString(36).substr(2, 9),
-  useDebugValue: () => { },
-  useImperativeHandle: () => { },
+  useDebugValue: () => {},
+  useImperativeHandle: () => {},
   useDeferredValue: <T>(value: T) => value,
   useTransition: () => [false, (func: () => void) => func()],
   useSyncExternalStore: (_, getSnapshot) => {
@@ -92,8 +92,8 @@ export const getHooksDispatcher = (registry: ContextRegistry): ReactHooksDispatc
   },
   // No-op stubs for React 19 hooks
   useActionState: <S>(_: unknown, initialState: S, _permalink?: string) =>
-    [initialState, () => { }, false] as [S, () => void, boolean],
-  useOptimistic: <T>(passthrough: T) => [passthrough, () => { }] as [T, (action: unknown) => void],
+    [initialState, () => {}, false] as [S, () => void, boolean],
+  useOptimistic: <T>(passthrough: T) => [passthrough, () => {}] as [T, (action: unknown) => void],
   useEffectEvent: <T extends Function>(callback: T): T => callback,
   useMemoCache: (size: number) => {
     const data = new Array<unknown>(size)
@@ -102,7 +102,7 @@ export const getHooksDispatcher = (registry: ContextRegistry): ReactHooksDispatc
     }
     return data
   },
-  useCacheRefresh: () => () => { },
+  useCacheRefresh: () => () => {},
 })
 
 export const getReactCurrentDispatcher = (): ReactDispatcher => {
