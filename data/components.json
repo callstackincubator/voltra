@@ -149,7 +149,13 @@
     "scaleEffect": "sce",
     "rotationEffect": "re",
     "border": "bd",
-    "clipped": "clip"
+    "clipped": "clip",
+    "chartScrollableAxes": "csa",
+    "foregroundStyleScale": "fss",
+    "legendVisibility": "lgv",
+    "marks": "mrk",
+    "xAxisVisibility": "xav",
+    "yAxisVisibility": "yav"
   },
   "styleProperties": [
     "padding",
@@ -1238,6 +1244,50 @@
       "swiftAvailability": "iOS 16.0, macOS 13.0",
       "hasChildren": true,
       "parameters": {}
+    },
+    {
+      "name": "Chart",
+      "description": "SwiftUI Charts component for data visualization",
+      "swiftAvailability": "iOS 16.0, macOS 13.0",
+      "hasChildren": true,
+      "parameters": {
+        "marks": {
+          "type": "array",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Compact mark data encoded from children by toJSON"
+        },
+        "xAxisVisibility": {
+          "type": "string",
+          "optional": true,
+          "enum": ["automatic", "visible", "hidden"],
+          "description": "Show or hide the x-axis"
+        },
+        "yAxisVisibility": {
+          "type": "string",
+          "optional": true,
+          "enum": ["automatic", "visible", "hidden"],
+          "description": "Show or hide the y-axis"
+        },
+        "legendVisibility": {
+          "type": "string",
+          "optional": true,
+          "enum": ["automatic", "visible", "hidden"],
+          "description": "Show or hide the chart legend"
+        },
+        "foregroundStyleScale": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Map of series name to color string"
+        },
+        "chartScrollableAxes": {
+          "type": "string",
+          "optional": true,
+          "enum": ["horizontal", "vertical"],
+          "description": "Enable scrolling on the given axis"
+        }
+      }
     }
   ]
 }

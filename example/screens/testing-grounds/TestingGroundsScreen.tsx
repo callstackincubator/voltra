@@ -56,6 +56,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/flex-playground',
   },
   {
+    id: 'chart-playground',
+    title: 'Chart Playground',
+    description:
+      'Explore all SwiftUI chart mark types: BarMark, LineMark, AreaMark, PointMark, RuleMark, and SectorMark. Randomize data to see animated transitions.',
+    route: '/testing-grounds/chart-playground',
+  },
+  {
     id: 'image-preloading',
     title: 'Image Preloading',
     description:
