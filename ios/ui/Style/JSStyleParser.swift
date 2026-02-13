@@ -35,6 +35,18 @@ enum JSStyleParser {
     JSColorParser.parse(value)
   }
 
+  static func background(_ value: Any?) -> BackgroundValue? {
+    guard let string = value as? String else { return nil }
+    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    if let gradient = JSGradientParser.parse(trimmed) {
+      return gradient
+    }
+    if let color = JSColorParser.parse(string) {
+      return .color(color)
+    }
+    return nil
+  }
+
   static func boolean(_ value: Any?) -> Bool {
     guard let value = value else { return false }
 

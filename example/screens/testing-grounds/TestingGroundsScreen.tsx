@@ -56,6 +56,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/flex-playground',
   },
   {
+    id: 'gradient-playground',
+    title: 'Gradient Playground',
+    description:
+      'Test CSS gradient strings as backgroundColor. Experiment with linear, radial, and conic gradients, direction/angle controls, color presets, stop positions, and borderRadius clipping.',
+    route: '/testing-grounds/gradient-playground',
+  },
+  {
     id: 'image-preloading',
     title: 'Image Preloading',
     description:

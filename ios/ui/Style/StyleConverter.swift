@@ -134,7 +134,7 @@ enum StyleConverter {
     let overflow = JSStyleParser.overflow(js["overflow"])
 
     return DecorationStyle(
-      backgroundColor: JSStyleParser.color(js["backgroundColor"]),
+      backgroundColor: JSStyleParser.background(js["backgroundColor"]),
       cornerRadius: JSStyleParser.number(js["borderRadius"]),
       border: border,
       shadow: shadow,

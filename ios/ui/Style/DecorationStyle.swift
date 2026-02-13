@@ -1,7 +1,14 @@
 import SwiftUI
 
+enum BackgroundValue {
+  case color(Color)
+  case linearGradient(gradient: Gradient, startPoint: UnitPoint, endPoint: UnitPoint)
+  case radialGradient(gradient: Gradient, center: UnitPoint, startRadius: CGFloat, endRadius: CGFloat)
+  case angularGradient(gradient: Gradient, center: UnitPoint, angle: Angle)
+}
+
 struct DecorationStyle {
-  var backgroundColor: Color?
+  var backgroundColor: BackgroundValue?
   var cornerRadius: CGFloat?
   var border: (width: CGFloat, color: Color)?
   var shadow: (radius: CGFloat, color: Color, opacity: Double, offset: CGSize)?
@@ -14,8 +21,17 @@ struct DecorationModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .voltraIfLet(style.backgroundColor) { content, color in
-        content.background(color)
+      .voltraIfLet(style.backgroundColor) { content, bg in
+        switch bg {
+        case let .color(color):
+          content.background(color)
+        case let .linearGradient(gradient, start, end):
+          content.background(LinearGradient(gradient: gradient, startPoint: start, endPoint: end))
+        case let .radialGradient(gradient, center, startRadius, endRadius):
+          content.background(RadialGradient(gradient: gradient, center: center, startRadius: startRadius, endRadius: endRadius))
+        case let .angularGradient(gradient, center, angle):
+          content.background(AngularGradient(gradient: gradient, center: center, angle: angle))
+        }
       }
       // If we have a corner radius, we must handle the border specifically here
       .voltraIfLet(style.cornerRadius) { content, radius in
