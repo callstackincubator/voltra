@@ -6,28 +6,30 @@ const REACT_CONTEXT_TYPE = Symbol.for('react.context')
 const REACT_MEMO_CACHE_SENTINEL = Symbol.for('react.memo_cache_sentinel')
 
 declare module 'react' {
+  type HookFn = (...args: any[]) => any
+
   export type ReactHooksDispatcher = {
-    useState: typeof import('react').useState
-    useReducer: typeof import('react').useReducer
-    useEffect: typeof import('react').useEffect
-    useLayoutEffect: typeof import('react').useLayoutEffect
-    useInsertionEffect: typeof import('react').useInsertionEffect
-    useCallback: typeof import('react').useCallback
-    useMemo: typeof import('react').useMemo
-    useRef: typeof import('react').useRef
-    useContext: typeof import('react').useContext
-    useId: typeof import('react').useId
-    useImperativeHandle: typeof import('react').useImperativeHandle
-    useDebugValue: typeof import('react').useDebugValue
-    useDeferredValue: typeof import('react').useDeferredValue
-    useTransition: typeof import('react').useTransition
-    useSyncExternalStore: typeof import('react').useSyncExternalStore
-    use: typeof import('react').use
-    useActionState: typeof import('react').useActionState
-    useOptimistic: typeof import('react').useOptimistic
-    useEffectEvent: typeof import('react').useEffectEvent
-    useMemoCache: (size: number) => unknown[]
-    useCacheRefresh: (...args: unknown[]) => unknown
+    useState: HookFn
+    useReducer: HookFn
+    useEffect: HookFn
+    useLayoutEffect: HookFn
+    useInsertionEffect: HookFn
+    useCallback: HookFn
+    useMemo: HookFn
+    useRef: HookFn
+    useContext: HookFn
+    useId: HookFn
+    useImperativeHandle: HookFn
+    useDebugValue: HookFn
+    useDeferredValue: HookFn
+    useTransition: HookFn
+    useSyncExternalStore: HookFn
+    use: HookFn
+    useActionState: HookFn
+    useOptimistic: HookFn
+    useEffectEvent: HookFn
+    useMemoCache: HookFn
+    useCacheRefresh: HookFn
   }
 
   export type ReactDispatcher = {
