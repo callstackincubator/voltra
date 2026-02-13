@@ -31,7 +31,7 @@ The following React Native style properties are supported:
 
 **Style:**
 
-- `backgroundColor` - Background color (hex strings or color names)
+- `backgroundColor` - Background color (hex strings, color names, or CSS gradient strings — see [Gradients](#gradients))
 - `opacity` - Opacity value between 0 and 1
 - `borderRadius` - Corner radius value
 - `borderWidth` - Border width
@@ -132,6 +132,107 @@ const element = (
   </Voltra.VStack>
 )
 ```
+
+## Gradients
+
+The `backgroundColor` style property accepts CSS gradient strings in addition to solid colors. Gradients are rendered natively using SwiftUI gradient modifiers and are automatically clipped by `borderRadius`.
+
+### Linear gradients
+
+```tsx
+// Named direction
+<Voltra.View style={{ backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)' }} />
+
+// Diagonal
+<Voltra.View style={{ backgroundColor: 'linear-gradient(to bottom right, #0EA5E9, #8B5CF6)' }} />
+
+// Angle in degrees
+<Voltra.View style={{ backgroundColor: 'linear-gradient(45deg, #FF6B6B, #FFD93D)' }} />
+```
+
+Supported directions: `to right`, `to left`, `to top`, `to bottom`, `to top right`, `to top left`, `to bottom right`, `to bottom left`.
+
+### Color stops
+
+Explicit percentage positions are supported:
+
+```tsx
+<Voltra.View
+  style={{
+    backgroundColor: 'linear-gradient(to right, red 0%, yellow 50%, blue 100%)',
+  }}
+/>
+```
+
+When positions are omitted, stops are distributed evenly — matching CSS default behavior.
+
+### RGBA colors inside gradients
+
+```tsx
+<Voltra.View
+  style={{
+    backgroundColor: 'linear-gradient(to right, rgba(255,0,0,0.8), rgba(0,0,255,0.3))',
+  }}
+/>
+```
+
+### Radial gradients
+
+```tsx
+<Voltra.View style={{ backgroundColor: 'radial-gradient(#FF6B6B, #6366F1)' }} />
+```
+
+:::note
+SwiftUI's radial gradient is always circular. CSS's default elliptical farthest-corner behavior is approximated with a fixed radius. For precise control over radial gradient sizing, use the [`<LinearGradient>`](../components/visual) component instead.
+:::
+
+### Conic gradients
+
+```tsx
+<Voltra.View style={{ backgroundColor: 'conic-gradient(from 45deg, red, blue)' }} />
+```
+
+### With border radius
+
+Gradients are clipped by `borderRadius` automatically — no extra configuration needed:
+
+```tsx
+<Voltra.View
+  style={{
+    backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)',
+    borderRadius: 16,
+    padding: 16,
+  }}
+>
+  <Voltra.Text style={{ color: '#FFFFFF' }}>Rounded gradient card</Voltra.Text>
+</Voltra.View>
+```
+
+### Solid colors still work unchanged
+
+Passing a plain color string to `backgroundColor` continues to work exactly as before:
+
+```tsx
+<Voltra.View style={{ backgroundColor: '#3B82F6' }} />
+<Voltra.View style={{ backgroundColor: 'red' }} />
+<Voltra.View style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} />
+```
+
+### Comparison with `<LinearGradient>` component
+
+| Feature | `backgroundColor` gradient | `<LinearGradient>` component |
+|---|---|---|
+| CSS string syntax | ✓ | — |
+| Named directions (`to right`) | ✓ | ✓ |
+| Angle in degrees | ✓ | ✓ via `{x,y}` |
+| `{x, y}` coordinate control | — | ✓ |
+| Explicit stop locations | ✓ via `%` | ✓ via `locations` prop |
+| `radial-gradient` | ✓ (approximate) | — |
+| `conic-gradient` | ✓ | — |
+| Dithering | — | ✓ |
+| Children layered on top | ✓ (as background) | ✓ (as container) |
+
+Use `backgroundColor` gradient strings for convenience and web-style syntax. Use `<LinearGradient>` when you need precise `{x, y}` coordinate control or dithering.
 
 ## Custom Fonts
 
