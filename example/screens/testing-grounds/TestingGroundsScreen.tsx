@@ -76,6 +76,13 @@ const TESTING_GROUNDS_SECTIONS = [
       'Test widget timeline scheduling with multiple states. Configure timing for each state and watch widgets automatically transition between them.',
     route: '/testing-grounds/widget-scheduling',
   },
+  {
+    id: 'text-scaling',
+    title: 'Text Scaling',
+    description:
+      'Test font size scaling behavior including adjustsFontSizeToFit, minimumFontScale, allowFontScaling, and maxFontSizeMultiplier.',
+    route: '/testing-grounds/text-scaling',
+  },
   // Add more sections here as they are implemented
 ]
 

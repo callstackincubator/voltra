@@ -100,6 +100,10 @@
     "maxWidth": "maxw",
     "minHeight": "minh",
     "maxHeight": "maxh",
+    "adjustsFontSizeToFit": "afsf",
+    "minimumFontScale": "mfs",
+    "allowFontScaling": "afs",
+    "maxFontSizeMultiplier": "mfsm",
     "flexGrowWidth": "fgw",
     "fillMaxWidth": "fmw",
     "fillMaxHeight": "fmh",
@@ -228,6 +232,27 @@
           "optional": true,
           "enum": ["left", "center", "right", "auto"],
           "description": "Text alignment for multiline text"
+        },
+        "adjustsFontSizeToFit": {
+          "type": "boolean",
+          "optional": true,
+          "description": "Specifies whether the font should be scaled down automatically to fit given style constraints"
+        },
+        "minimumFontScale": {
+          "type": "number",
+          "optional": true,
+          "description": "Specifies the smallest possible scale factor that the font can use"
+        },
+        "allowFontScaling": {
+          "type": "boolean",
+          "optional": true,
+          "default": true,
+          "description": "Whether the font should scale with system accessibility settings"
+        },
+        "maxFontSizeMultiplier": {
+          "type": "number",
+          "optional": true,
+          "description": "Limits how much the font can grow via Dynamic Type"
         }
       }
     },

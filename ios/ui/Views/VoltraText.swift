@@ -58,15 +58,31 @@ public struct VoltraText: VoltraView {
       return textStyle.alignment
     }()
 
-    Text(.init(textContent))
+    let dynamicTypeRange: ClosedRange<DynamicTypeSize> = {
+      let minSize = DynamicTypeSize.xSmall
+      if params.allowFontScaling == false {
+        return minSize ... DynamicTypeSize.large
+      }
+      if let multiplier = params.maxFontSizeMultiplier {
+        return minSize ... DynamicTypeSize.from(multiplier: multiplier)
+      }
+      return minSize ... DynamicTypeSize.accessibility5
+    }()
+
+    let baseText = Text(.init(textContent))
       .kerning(textStyle.letterSpacing)
-      .underline(textStyle.decoration == .underline || textStyle.decoration == .underlineLineThrough)
-      .strikethrough(textStyle.decoration == .lineThrough || textStyle.decoration == .underlineLineThrough)
-      // These technically work on View, but good to keep close
+      .underline(textStyle.decoration == TextDecoration.underline || textStyle.decoration == TextDecoration.underlineLineThrough)
+      .strikethrough(textStyle.decoration == TextDecoration.lineThrough || textStyle.decoration == TextDecoration.underlineLineThrough)
       .font(font)
       .foregroundColor(textStyle.color)
       .multilineTextAlignment(alignment)
       .lineSpacing(textStyle.lineSpacing)
+
+    return baseText
+      .dynamicTypeSize(dynamicTypeRange)
+      .voltraIf(params.adjustsFontSizeToFit == true) { view in
+        view.minimumScaleFactor(params.minimumFontScale ?? 0.01)
+      }
       .voltraIfLet(params.numberOfLines) { view, numberOfLines in
         view.lineLimit(Int(numberOfLines))
       }
