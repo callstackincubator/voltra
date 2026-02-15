@@ -437,7 +437,7 @@ function isReactNode(value: unknown): value is ReactNode {
 export function transformProps(
   props: Record<string, unknown>,
   context: VoltraRenderingContext,
-  componentName?: string
+  _componentName?: string
 ): Record<string, VoltraPropValue> {
   const transformed: Record<string, VoltraPropValue> = {}
 
