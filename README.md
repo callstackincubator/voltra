@@ -90,7 +90,7 @@ Voltra is a cross-platform library that supports:
 
 ## Authors
 
-`voltra` is an open source collaboration between [Saúl Sharma](https://github.com/saul-sharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
+`voltra` is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
 
 If you think it's cool, please star it 🌟. This project will always remain free to use.
 
