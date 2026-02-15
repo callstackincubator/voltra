@@ -31,6 +31,7 @@ public enum ComponentTypeID: Int, Codable {
   case MASK = 18
   case LINK = 19
   case VIEW = 20
+  case CHART = 21
 
   /// Get the component name string for this ID
   public var componentName: String {
@@ -77,6 +78,8 @@ public enum ComponentTypeID: Int, Codable {
       return "Link"
     case .VIEW:
       return "View"
+    case .CHART:
+      return "Chart"
     }
   }
 
@@ -106,6 +109,7 @@ public enum ComponentTypeID: Int, Codable {
     case "Mask": self = .MASK
     case "Link": self = .LINK
     case "View": self = .VIEW
+    case "Chart": self = .CHART
     default:
       return nil
     }

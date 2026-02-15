@@ -182,6 +182,13 @@ struct VoltraElementView: View {
     case "Mask":
       VoltraMask(element)
 
+    case "Chart":
+      if #available(iOS 16.0, macOS 13.0, *) {
+        VoltraChart(element)
+      } else {
+        EmptyView()
+      }
+
     default:
       EmptyView()
     }
