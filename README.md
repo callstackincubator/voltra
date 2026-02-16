@@ -22,7 +22,7 @@ Voltra turns React Native JSX into SwiftUI and Jetpack Compose Glance so you can
 
 ## Documentation
 
-The documentation is available at [use-voltra.dev](https://use-voltra.dev). You can also use the following links to jump to specific topics:
+The documentation is available at [use-voltra.dev]([https://use-voltra.dev](https://www.use-voltra.dev/getting-started)). You can also use the following links to jump to specific topics:
 
 - [Quick Start](https://use-voltra.dev/getting-started/quick-start)
 - [Development](https://www.use-voltra.dev/development/developing-live-activities)
