@@ -1,4 +1,19 @@
-import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
+import React, {
+  createContext,
+  Usable,
+  use,
+  useActionState,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useOptimistic,
+  useReducer,
+  useRef,
+  useState,
+} from 'react'
 
 import { Text } from '../../jsx/Text'
 import { renderVoltraVariantToJson } from '../renderer'
@@ -199,5 +214,86 @@ describe('Hooks', () => {
     }
     const output = renderVoltraVariantToJson(<Component />)
     expect(output.c).toBe('2')
+  })
+
+  test('16. use(context) reads context value', () => {
+    const ThemeContext = createContext('light')
+    const Consumer = () => {
+      const theme = use(ThemeContext)
+      return <Text>{theme}</Text>
+    }
+    const output = renderVoltraVariantToJson(
+      <ThemeContext.Provider value="dark">
+        <Consumer />
+      </ThemeContext.Provider>
+    )
+    expect(output.c).toBe('dark')
+  })
+
+  test('17. use(context) without provider returns default', () => {
+    const ThemeContext = createContext('light')
+    const Consumer = () => {
+      const theme = use(ThemeContext)
+      return <Text>{theme}</Text>
+    }
+    const output = renderVoltraVariantToJson(<Consumer />)
+    expect(output.c).toBe('light')
+  })
+
+  test('18. use(promise) throws', () => {
+    const Component = () => {
+      use(Promise.resolve('value'))
+      return <Text>test</Text>
+    }
+    expect(() => renderVoltraVariantToJson(<Component />)).toThrow('use() with promises is not supported in Voltra')
+  })
+
+  test('19. use(unsupportedValue) throws', () => {
+    const Component = () => {
+      use('not a context or promise' as unknown as Usable<unknown>)
+      return <Text>test</Text>
+    }
+    expect(() => renderVoltraVariantToJson(<Component />)).toThrow('An unsupported type was passed to use()')
+  })
+
+  test('20. useActionState returns [initialState, dispatch, false]', () => {
+    const action = jest.fn()
+    let state, dispatch, isPending
+    const Component = () => {
+      ;[state, dispatch, isPending] = useActionState(action, { count: 0 })
+      return <Text>{state.count}</Text>
+    }
+    const output = renderVoltraVariantToJson(<Component />)
+    expect(output.c).toBe('0')
+    expect(state).toEqual({ count: 0 })
+    expect(typeof dispatch).toBe('function')
+    expect(isPending).toBe(false)
+    dispatch()
+    expect(action).not.toHaveBeenCalled()
+  })
+
+  test('21. useOptimistic returns [passthrough, setter]', () => {
+    let value, setOptimistic
+    const Component = () => {
+      ;[value, setOptimistic] = useOptimistic('real')
+      return <Text>{value}</Text>
+    }
+    const output = renderVoltraVariantToJson(<Component />)
+    expect(output.c).toBe('real')
+    expect(value).toBe('real')
+    expect(typeof setOptimistic).toBe('function')
+    setOptimistic('optimistic')
+    expect(value).toBe('real')
+  })
+
+  test('22. useEffectEvent returns callback identity', () => {
+    const fn = jest.fn()
+    let eventFn
+    const Component = () => {
+      eventFn = useEffectEvent(fn)
+      return <Text>test</Text>
+    }
+    renderVoltraVariantToJson(<Component />)
+    expect(eventFn).toBe(fn)
   })
 })
