@@ -63,6 +63,16 @@ public class VoltraModuleImpl {
       }()
       let relevanceScore: Double = options?.relevanceScore ?? 0.0
 
+      let pushType: PushType? = {
+        if let channelId = options?.channelId {
+          if #available(iOS 18.0, *) {
+            return .channel(channelId)
+          }
+          return nil
+        }
+        return pushNotificationsEnabled ? .token : nil
+      }()
+
       // Create request struct with compressed JSON
       let createRequest = CreateActivityRequest(
         activityId: activityName,
@@ -70,7 +80,7 @@ public class VoltraModuleImpl {
         jsonString: compressedJson,
         staleDate: staleDate,
         relevanceScore: relevanceScore,
-        pushType: pushNotificationsEnabled ? .token : nil,
+        pushType: pushType,
         endExistingWithSameName: true
       )
 
