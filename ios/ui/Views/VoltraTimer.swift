@@ -13,12 +13,12 @@ public struct VoltraTimer: VoltraView {
     // Stopwatch support: if counting up (not down) and we have a start time
     // but no end time or duration, treat it as an open-ended stopwatch.
     if !countsDown(params: params),
-       let startAtMs = params.startAtMs,
-       params.endAtMs == nil,
-       params.durationMs == nil
+      let startAtMs = params.startAtMs,
+      params.endAtMs == nil,
+      params.durationMs == nil
     {
       let start = Date(timeIntervalSince1970: startAtMs / 1000)
-      return start ... Date.distantFuture
+      return start...Date.distantFuture
     }
 
     return VoltraProgressDriver.resolveRange(
@@ -28,7 +28,9 @@ public struct VoltraTimer: VoltraView {
     )
   }
 
-  private func resolvedEndDate(params: TimerParameters) -> Date? { progressRange(params: params)?.upperBound }
+  private func resolvedEndDate(params: TimerParameters) -> Date? {
+    progressRange(params: params)?.upperBound
+  }
 
   private func countsDown(params: TimerParameters) -> Bool {
     (params.direction.lowercased()) != "up"
@@ -45,7 +47,8 @@ public struct VoltraTimer: VoltraView {
 
   private func textTemplates(params: TimerParameters) -> TextTemplates? {
     guard let raw = params.textTemplates,
-          let data = raw.data(using: .utf8) else { return nil }
+      let data = raw.data(using: .utf8)
+    else { return nil }
     return try? JSONDecoder().decode(TextTemplates.self, from: data)
   }
 
@@ -87,7 +90,7 @@ public struct VoltraTimer: VoltraView {
 
     if style == "relative" {
       let targetDate = isCountDown ? range.upperBound : range.lowerBound
-      Text(targetDate, style: .relative)
+      Text(targetDate, style: .relative).monospacedDigit()
     } else {
       // Live Activities require Text(timerInterval:...) for automatic updates
       Text(timerInterval: range, countsDown: isCountDown, showsHours: showHours)
@@ -98,7 +101,7 @@ public struct VoltraTimer: VoltraView {
   @ViewBuilder
   private func staticZeroText(style: String, showHours: Bool) -> some View {
     if style == "relative" {
-      Text("0s")
+      Text("0s").monospacedDigit()
     } else {
       Text(showHours ? "0:00:00" : "0:00")
         .monospacedDigit()
@@ -106,7 +109,9 @@ public struct VoltraTimer: VoltraView {
   }
 
   @ViewBuilder
-  private func renderTemplate<T: View>(template: String, @ViewBuilder timeView: @escaping () -> T) -> some View {
+  private func renderTemplate<T: View>(template: String, @ViewBuilder timeView: @escaping () -> T)
+    -> some View
+  {
     let placeholder = "{time}"
     let segments = template.components(separatedBy: placeholder)
 
