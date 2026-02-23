@@ -6,7 +6,7 @@ import {
   WEATHER_EMOJIS,
   WEATHER_GRADIENTS,
   type WeatherData,
-} from './weather-types'
+} from '../weather-types'
 
 const formatTime = (date: Date) => {
   return date.toLocaleTimeString('en-US', {
@@ -20,7 +20,7 @@ interface WeatherWidgetProps {
   weather?: WeatherData
 }
 
-export const WeatherWidget = ({ weather = DEFAULT_WEATHER }: WeatherWidgetProps) => {
+export const IosWeatherWidget = ({ weather = DEFAULT_WEATHER }: WeatherWidgetProps) => {
   const gradient = WEATHER_GRADIENTS[weather.condition]
   const emoji = WEATHER_EMOJIS[weather.condition]
   const description = WEATHER_DESCRIPTIONS[weather.condition]

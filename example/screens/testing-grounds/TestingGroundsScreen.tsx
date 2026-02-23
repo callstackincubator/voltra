@@ -76,6 +76,13 @@ const TESTING_GROUNDS_SECTIONS = [
       'Test widget timeline scheduling with multiple states. Configure timing for each state and watch widgets automatically transition between them.',
     route: '/testing-grounds/widget-scheduling',
   },
+  {
+    id: 'server-driven-widgets',
+    title: 'Server-Driven Widgets',
+    description:
+      'Test server-driven widget updates. Widgets fetch fresh content from a remote server without the user opening the app. Manage auth credentials and trigger reloads.',
+    route: '/testing-grounds/server-driven-widgets',
+  },
   // Add more sections here as they are implemented
 ]
 

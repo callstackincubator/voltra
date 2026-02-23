@@ -5,7 +5,7 @@ import { requestPinAndroidWidget, updateAndroidWidget } from 'voltra/android/cli
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
-import { AndroidImageFallbackWidget } from '~/widgets/AndroidImageFallbackWidget'
+import { AndroidImageFallbackWidget } from '~/widgets/android/AndroidImageFallbackWidget'
 
 const WIDGET_ID = 'image_fallback'
 

@@ -39,6 +39,8 @@ const withVoltra: VoltraConfigPlugin = (config, props = {}) => {
     config = withIOS(config, {
       groupIdentifier: props?.groupIdentifier,
       widgetIds: props?.widgets && props.widgets.length > 0 ? props.widgets.map((w) => w.id) : undefined,
+      widgets: props?.widgets,
+      keychainGroup: props?.keychainGroup,
     })
 
     // Configure iOS widget extension (files, xcode, podfile, plist, eas)
@@ -50,6 +52,7 @@ const withVoltra: VoltraConfigPlugin = (config, props = {}) => {
       version,
       buildNumber,
       ...(props?.groupIdentifier ? { groupIdentifier: props.groupIdentifier } : {}),
+      ...(props?.keychainGroup ? { keychainGroup: props.keychainGroup } : {}),
       ...(props?.fonts ? { fonts: props.fonts } : {}),
     })
   }
@@ -75,8 +78,10 @@ export default withVoltra
 export type {
   AndroidPluginConfig,
   AndroidWidgetConfig,
+  AndroidWidgetServerUpdateConfig,
   ConfigPluginProps,
   VoltraConfigPlugin,
   WidgetConfig,
   WidgetFamily,
+  WidgetServerUpdateConfig,
 } from './types'

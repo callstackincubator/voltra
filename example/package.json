@@ -5,8 +5,10 @@
   "scripts": {
     "clean": "rm -rf .expo ios",
     "start": "expo start --dev-client --clear",
+    "prebuild": "expo prebuild --clean",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "server": "tsx server/widget-server.tsx",
     "web": "expo start --web",
     "harness:ios": "react-native-harness ./__tests__/ios --harnessRunner=ios",
     "harness:android": "react-native-harness ./__tests__/android --harnessRunner=android",
@@ -44,6 +46,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "patch-package": "^8.0.1",
     "react-native-harness": "1.0.0-alpha.23",
+    "tsx": "^4.19.0",
     "typescript": "~5.8.3"
   },
   "private": true,

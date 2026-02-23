@@ -73,6 +73,12 @@ dependencies {
   // Compose runtime (required for Glance)
   api "androidx.compose.runtime:runtime:1.6.8"
 
+  // WorkManager (for periodic server-driven widget updates)
+  api "androidx.work:work-runtime-ktx:2.9.1"
+
+  // DataStore (secure credential storage for widget server updates)
+  api "androidx.datastore:datastore-preferences:1.1.4"
+
   // JSON parsing
   implementation "com.google.code.gson:gson:2.10.1"
 

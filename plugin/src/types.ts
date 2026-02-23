@@ -47,6 +47,30 @@ export interface WidgetConfig {
    * This will be pre-rendered at build time and bundled into the iOS app.
    */
   initialStatePath?: string
+  /**
+   * Configuration for server-driven widget updates.
+   * When configured, the widget will periodically fetch new content from a remote server
+   * running Voltra SSR, without requiring the user to open the app.
+   */
+  serverUpdate?: WidgetServerUpdateConfig
+}
+
+/**
+ * Configuration for server-driven widget updates.
+ * Enables widgets to pull updates from a remote Voltra SSR service.
+ */
+export interface WidgetServerUpdateConfig {
+  /**
+   * The URL of the Voltra SSR endpoint that returns widget JSON.
+   * The widget ID and family will be appended as query parameters.
+   */
+  url: string
+  /**
+   * How often the widget should fetch updates, in minutes.
+   * iOS WidgetKit may throttle requests; minimum effective interval is ~15 minutes.
+   * @default 15
+   */
+  intervalMinutes?: number
 }
 
 /**
@@ -121,6 +145,12 @@ export interface AndroidWidgetConfig {
    */
   initialStatePath?: string
   /**
+   * Configuration for server-driven widget updates.
+   * When configured, the widget will periodically fetch new content from a remote server
+   * running Voltra SSR, without requiring the user to open the app.
+   */
+  serverUpdate?: AndroidWidgetServerUpdateConfig
+  /**
    * Path to preview image for widget picker (PNG/JPG/WebP).
    * Sets android:previewImage attribute. Works on all Android versions.
    * On Android 12+, combine with previewLayout for better results.
@@ -132,6 +162,24 @@ export interface AndroidWidgetConfig {
    * If not provided but previewImage is set, an auto-layout will be generated.
    */
   previewLayout?: string
+}
+
+/**
+ * Configuration for server-driven Android widget updates.
+ */
+export interface AndroidWidgetServerUpdateConfig {
+  /**
+   * The URL of the Voltra SSR endpoint that returns widget JSON.
+   * The widget ID will be appended as a query parameter.
+   * Example: "https://api.example.com/widgets/render"
+   */
+  url: string
+  /**
+   * How often the widget should fetch updates, in minutes.
+   * Uses WorkManager PeriodicWorkRequest; minimum interval is 15 minutes.
+   * @default 60
+   */
+  intervalMinutes?: number
 }
 
 /**
@@ -186,6 +234,15 @@ export interface ConfigPluginProps {
    * @see https://docs.expo.dev/versions/latest/sdk/font/
    */
   fonts?: string[]
+  /**
+   * Keychain Access Group for sharing credentials between the main app and widget extension.
+   * Required when using server-driven widget updates with authentication.
+   * This should match a Keychain Sharing capability group configured in your Apple Developer account.
+   * Example: "$(AppIdentifierPrefix)com.example.shared"
+   *
+   * If not provided, a default will be derived from the bundle identifier.
+   */
+  keychainGroup?: string
   /**
    * Android-specific configuration
    */

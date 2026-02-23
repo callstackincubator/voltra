@@ -9,4 +9,10 @@ public enum VoltraConfig {
     Bundle.main.object(forInfoDictionaryKey: "Voltra_AppGroupIdentifier") as? String
       ?? Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String
   }
+
+  /// Get the Keychain Access Group from Info.plist
+  /// Used for sharing credentials between the main app and widget extension
+  public static func keychainGroup() -> String? {
+    Bundle.main.object(forInfoDictionaryKey: "Voltra_KeychainGroup") as? String
+  }
 }

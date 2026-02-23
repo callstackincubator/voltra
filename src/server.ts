@@ -12,6 +12,14 @@ export * as Voltra from './jsx/primitives.js'
 export { renderWidgetToString } from './widgets/renderer.js'
 export type { WidgetVariants } from './widgets/types.js'
 
+// Widget Server Update Handler
+export {
+  createWidgetUpdateHandler,
+  type WidgetPlatform,
+  type WidgetRenderRequest,
+  type WidgetUpdateHandlerOptions,
+} from './widget-server.js'
+
 const brotliCompressAsync = promisify(brotliCompress)
 
 const compressPayload = async (jsonString: string): Promise<string> => {

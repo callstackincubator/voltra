@@ -12,6 +12,7 @@ export interface GenerateWidgetExtensionFilesProps {
   targetName: string
   widgets?: WidgetConfig[]
   groupIdentifier?: string
+  keychainGroup?: string
   version: string
   buildNumber: string
 }
@@ -29,7 +30,7 @@ export interface GenerateWidgetExtensionFilesProps {
  * This should run before configureXcodeProject so the files exist when Xcode project is configured.
  */
 export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
-  const { targetName, widgets, groupIdentifier, version, buildNumber } = props
+  const { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber } = props
 
   return withDangerousMod(config, [
     'ios',
@@ -59,11 +60,12 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         widgets,
       })
 
-      // Generate entitlements file (may be empty if no groupIdentifier)
+      // Generate entitlements file (may be empty if no groupIdentifier or keychainGroup)
       generateEntitlements({
         targetPath,
         targetName,
         groupIdentifier,
+        keychainGroup,
       })
 
       return config

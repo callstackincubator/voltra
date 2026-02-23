@@ -121,6 +121,21 @@ public class VoltraModule: Module {
       return try await self.impl.getActiveWidgets()
     }
 
+    // Widget Server Credentials
+    AsyncFunction("setWidgetServerCredentials") { (credentials: [String: Any]) in
+      guard let token = credentials["token"] as? String else {
+        throw VoltraErrors.unexpectedError(
+          NSError(domain: "VoltraModule", code: -20, userInfo: [NSLocalizedDescriptionKey: "token is required in credentials"])
+        )
+      }
+      let headers = credentials["headers"] as? [String: String]
+      self.impl.setWidgetServerCredentials(token: token, headers: headers)
+    }
+
+    AsyncFunction("clearWidgetServerCredentials") { () in
+      self.impl.clearWidgetServerCredentials()
+    }
+
     View(VoltraRN.self) {
       Prop("payload") { (view, payload: String) in
         view.setPayload(payload)

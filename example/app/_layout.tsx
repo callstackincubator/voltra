@@ -3,7 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { BackgroundWrapper } from '~/components/BackgroundWrapper'
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
-import { updateAndroidVoltraWidget } from '~/widgets/updateAndroidVoltraWidget'
+import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
 updateAndroidVoltraWidget({ width: 300, height: 200 })
 

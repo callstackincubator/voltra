@@ -328,6 +328,39 @@ class VoltraModule : Module() {
                 imageManager.clearPreloadedImages(keys)
             }
 
+            // Widget Server Credentials APIs
+
+            AsyncFunction("setWidgetServerCredentials") { credentials: Map<String, Any?> ->
+                Log.d(TAG, "setWidgetServerCredentials called")
+
+                val context = appContext.reactContext!!
+                val token = credentials["token"] as? String
+                    ?: throw IllegalArgumentException("token is required in credentials")
+
+                @Suppress("UNCHECKED_CAST")
+                val headers = credentials["headers"] as? Map<String, String>
+
+                runBlocking {
+                    voltra.widget.VoltraWidgetCredentialStore.saveToken(context, token)
+                    if (headers != null && headers.isNotEmpty()) {
+                        voltra.widget.VoltraWidgetCredentialStore.saveHeaders(context, headers)
+                    }
+                }
+
+                Log.d(TAG, "Widget server credentials saved")
+            }
+
+            AsyncFunction("clearWidgetServerCredentials") {
+                Log.d(TAG, "clearWidgetServerCredentials called")
+
+                val context = appContext.reactContext!!
+                runBlocking {
+                    voltra.widget.VoltraWidgetCredentialStore.clearAll(context)
+                }
+
+                Log.d(TAG, "Widget server credentials cleared")
+            }
+
             AsyncFunction("reloadLiveActivities") { activityNames: List<String>? ->
                 // On Android, we don't have "Live Activities" in the same sense as iOS,
                 // but we might want to refresh widgets or notifications.

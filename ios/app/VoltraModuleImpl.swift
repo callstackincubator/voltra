@@ -274,6 +274,24 @@ public class VoltraModuleImpl {
     }
   }
 
+  func setWidgetServerCredentials(token: String, headers: [String: String]?) {
+    VoltraKeychainHelper.saveToken(token)
+    if let headers = headers {
+      VoltraKeychainHelper.saveHeaders(headers)
+    } else {
+      VoltraKeychainHelper.deleteHeaders()
+    }
+    print("[Voltra] Widget server credentials saved to Keychain")
+
+    // Reload all widgets so they can pick up the new credentials immediately
+    WidgetCenter.shared.reloadAllTimelines()
+  }
+
+  func clearWidgetServerCredentials() {
+    VoltraKeychainHelper.clearAll()
+    print("[Voltra] Widget server credentials cleared from Keychain")
+  }
+
   // MARK: - Private Helpers
 
   private func mapWidgetFamily(_ family: WidgetFamily) -> String {

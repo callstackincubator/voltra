@@ -80,3 +80,20 @@ export type UpdateWidgetOptions = {
    */
   deepLinkUrl?: string
 }
+
+/**
+ * Configuration for widget server credentials.
+ * These are stored securely (Keychain on iOS, EncryptedSharedPreferences on Android)
+ * and used by the widget extension to authenticate with the Voltra SSR server.
+ */
+export type WidgetServerCredentials = {
+  /**
+   * Authentication token (e.g., JWT access token) to include in server requests.
+   * Sent as `Authorization: Bearer <token>` header.
+   */
+  token: string
+  /**
+   * Optional additional headers to include in server requests.
+   */
+  headers?: Record<string, string>
+}

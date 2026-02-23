@@ -34,6 +34,13 @@ export type {
   WidgetInfo,
 } from './widgets/types.js'
 
+// Android Widget Server Credentials API
+export {
+  clearWidgetServerCredentials,
+  setWidgetServerCredentials,
+  type WidgetServerCredentials,
+} from './widgets/server-credentials.js'
+
 // Preload API
 export { clearPreloadedImages, preloadImages, reloadWidgets } from './preload.js'
 

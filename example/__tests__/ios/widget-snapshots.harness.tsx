@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, Mock, render, spyOn, test } from
 import { VoltraWidgetPreview } from 'voltra/client'
 
 import { SAMPLE_WEATHER_DATA } from '../../widgets/weather-types'
-import { WeatherWidget } from '../../widgets/WeatherWidget'
+import { WeatherWidget } from '../../widgets/ios/IosWeatherWidget'
 
 describe('Widget snapshots', () => {
   const mockDate = new Date('2026-01-20T08:00:00Z')

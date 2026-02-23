@@ -53,3 +53,10 @@ export {
   updateWidget,
   type UpdateWidgetOptions,
 } from './widgets/widget-api.js'
+
+// Widget Server Credentials API
+export {
+  clearWidgetServerCredentials,
+  setWidgetServerCredentials,
+  type WidgetServerCredentials,
+} from './widgets/server-credentials.js'

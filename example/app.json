@@ -34,6 +34,7 @@
         "../app.plugin.js",
         {
           "groupIdentifier": "group.callstackincubator.voltraexample",
+          "keychainGroup": "$(AppIdentifierPrefix)group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
           "liveActivity": {
             "supplementalActivityFamilies": ["small"]
@@ -44,7 +45,18 @@
               "displayName": "Weather Widget",
               "description": "Shows current weather conditions",
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-              "initialStatePath": "./widgets/weather-initial.tsx"
+              "initialStatePath": "./widgets/ios/ios-weather-initial.tsx"
+            },
+            {
+              "id": "dynamic_weather",
+              "displayName": "Dynamic Weather Widget",
+              "description": "Shows current weather conditions with server-driven updates",
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "initialStatePath": "./widgets/ios/ios-weather-dynamic-initial.tsx",
+              "serverUpdate": {
+                "url": "http://localhost:3333",
+                "intervalMinutes": 15
+              }
             }
           ],
           "android": {
@@ -59,7 +71,7 @@
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
                 "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android-voltra-widget-initial.tsx",
+                "initialStatePath": "./widgets/android/android-voltra-widget-initial.tsx",
                 "previewImage": "./assets/voltra-icon.jpg"
               },
               {
@@ -89,7 +101,21 @@
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
                 "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android-image-fallback-initial.tsx"
+                "initialStatePath": "./widgets/android/android-image-fallback-initial.tsx"
+              },
+              {
+                "id": "dynamic_weather",
+                "displayName": "Dynamic Weather Widget",
+                "description": "Shows current weather conditions with server-driven updates",
+                "targetCellWidth": 2,
+                "targetCellHeight": 1,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen",
+                "initialStatePath": "./widgets/android/android-dynamic-weather-initial.tsx",
+                "serverUpdate": {
+                  "url": "http://10.0.2.2:3333",
+                  "intervalMinutes": 15
+                }
               }
             ]
           },

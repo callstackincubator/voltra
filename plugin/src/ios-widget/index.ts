@@ -14,6 +14,7 @@ export interface WithIOSProps {
   deploymentTarget: string
   widgets?: WidgetConfig[]
   groupIdentifier?: string
+  keychainGroup?: string
   fonts?: string[]
   version: string
   buildNumber: string
@@ -36,7 +37,17 @@ export interface WithIOSProps {
  * so fonts must be registered before configureXcodeProject.
  */
 export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
-  const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier, fonts, version, buildNumber } = props
+  const {
+    targetName,
+    bundleIdentifier,
+    deploymentTarget,
+    widgets,
+    groupIdentifier,
+    keychainGroup,
+    fonts,
+    version,
+    buildNumber,
+  } = props
 
   const plugins: [ConfigPlugin<any>, any][] = [
     // 1. Add custom fonts if provided
@@ -49,13 +60,13 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     [configurePodfile, { targetName }],
 
     // 4. Configure main app Info.plist (URL schemes, widget extension plist)
-    [configureWidgetExtensionPlist, { targetName, groupIdentifier }],
+    [configureWidgetExtensionPlist, { targetName, groupIdentifier, widgets, keychainGroup }],
 
     // 5. Configure EAS build settings
     [configureEasBuild, { targetName, bundleIdentifier, groupIdentifier }],
 
     // 6. Generate widget extension files (dangerous mod should run before plist patchers)
-    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier, version, buildNumber }],
+    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber }],
   ]
 
   return withPlugins(config, plugins)

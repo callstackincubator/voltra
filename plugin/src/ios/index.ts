@@ -7,6 +7,8 @@ import { configureInfoPlist } from './infoPlist'
 export interface IOSConfigProps {
   groupIdentifier?: string
   widgetIds?: string[]
+  widgets?: import('../types').WidgetConfig[]
+  keychainGroup?: string
 }
 
 /**
@@ -15,6 +17,7 @@ export interface IOSConfigProps {
  * This configures the main app (not the widget extension) for:
  * - Live Activities support (Info.plist)
  * - App groups for widget communication (entitlements)
+ * - Keychain sharing for widget server credentials (entitlements)
  * - EAS build configuration
  */
 export function withIOS(config: ExpoConfig, props: IOSConfigProps): ExpoConfig {
@@ -22,11 +25,14 @@ export function withIOS(config: ExpoConfig, props: IOSConfigProps): ExpoConfig {
   config = configureInfoPlist(config, {
     groupIdentifier: props.groupIdentifier,
     widgetIds: props.widgetIds,
+    widgets: props.widgets,
+    keychainGroup: props.keychainGroup,
   })
 
   // Configure entitlements
   config = configureEntitlements(config, {
     groupIdentifier: props.groupIdentifier,
+    keychainGroup: props.keychainGroup,
   })
 
   // Configure EAS

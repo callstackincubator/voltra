@@ -179,6 +179,60 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
     // Prune expired timeline entries if any exist
     VoltraHomeWidgetStore.pruneExpiredEntries(widgetId: widgetId)
 
+    // Check if server-driven updates are configured for this widget
+    if VoltraWidgetServerFetcher.serverUrl(for: widgetId) != nil {
+      getServerDrivenTimeline(in: context, completion: completion)
+      return
+    }
+
+    // Local-only mode: use existing data from UserDefaults
+    getLocalTimeline(in: context, completion: completion)
+  }
+
+  // MARK: - Server-Driven Timeline
+
+  /// Fetch widget content from a remote Voltra SSR server and build a timeline.
+  private func getServerDrivenTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
+    let familyKey = familyToKey(context.family)
+    let intervalMinutes = VoltraWidgetServerFetcher.updateInterval(for: widgetId)
+
+    Task {
+      do {
+        let data = try await VoltraWidgetServerFetcher.fetchWidgetContent(
+          widgetId: widgetId,
+          family: familyKey
+        )
+
+        // Store the fetched data in UserDefaults so it persists across timeline refreshes
+        if let group = VoltraConfig.groupIdentifier(),
+           let defaults = UserDefaults(suiteName: group),
+           let jsonString = String(data: data, encoding: .utf8)
+        {
+          defaults.set(jsonString, forKey: "Voltra_Widget_JSON_\(widgetId)")
+          defaults.synchronize()
+        }
+
+        let node = parseJsonToNode(data: data, family: context.family)
+        let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
+
+        // Schedule next update based on configured interval
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? Date().addingTimeInterval(900)
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+
+        print("[Voltra] Server-driven update succeeded for widget '\(widgetId)', next update in \(intervalMinutes) minutes")
+      } catch {
+        print("[Voltra] Server-driven update failed for widget '\(widgetId)': \(error.localizedDescription)")
+
+        // Fall back to local data on network failure
+        getLocalTimeline(in: context, completion: completion)
+      }
+    }
+  }
+
+  // MARK: - Local Timeline
+
+  /// Build a timeline from locally stored data (UserDefaults / initial state).
+  private func getLocalTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
     if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId), !timeline.entries.isEmpty {
       let entries = timeline.entries.map { timelineEntry in
         let node = parseJsonToNode(data: timelineEntry.json, family: context.family)
@@ -197,7 +251,14 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
     let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
     let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
     let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
-    completion(Timeline(entries: [entry], policy: .never))
+
+    // If server updates are configured but we're in fallback, retry sooner
+    if VoltraWidgetServerFetcher.serverUrl(for: widgetId) != nil {
+      let retryDate = Date().addingTimeInterval(900) // Retry in 15 minutes
+      completion(Timeline(entries: [entry], policy: .after(retryDate)))
+    } else {
+      completion(Timeline(entries: [entry], policy: .never))
+    }
   }
 
   /// Parse JSON data into a VoltraNode for the given widget family.
