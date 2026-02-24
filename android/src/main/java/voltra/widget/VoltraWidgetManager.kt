@@ -267,7 +267,12 @@ class VoltraWidgetManager(
     }
 
     /**
-     * Reload specific widgets or all widgets
+     * Reload specific widgets or all widgets.
+     *
+     * For server-driven widgets (those with a registered server URL),
+     * this enqueues an immediate WorkManager fetch so the widget gets
+     * fresh content from the server. For local-only widgets it
+     * re-renders from the cached SharedPreferences data.
      */
     suspend fun reloadWidgets(widgetIds: List<String>?) =
         withContext(Dispatchers.Main) {
@@ -275,7 +280,7 @@ class VoltraWidgetManager(
                 Log.d(TAG, "reloadWidgets: specific widgets ${widgetIds.joinToString()}")
                 for (widgetId in widgetIds) {
                     try {
-                        updateWidget(widgetId)
+                        reloadSingleWidget(widgetId)
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to reload widget $widgetId: ${e.message}")
                     }
@@ -285,6 +290,21 @@ class VoltraWidgetManager(
                 reloadAllWidgets()
             }
         }
+
+    /**
+     * Reload a single widget.
+     * If the widget is server-driven, enqueues an immediate server fetch.
+     * Otherwise, re-renders from cached data.
+     */
+    private suspend fun reloadSingleWidget(widgetId: String) {
+        val didEnqueue = VoltraWidgetUpdateScheduler.requestImmediateUpdate(context, widgetId)
+        if (didEnqueue) {
+            Log.d(TAG, "reloadSingleWidget: enqueued immediate server fetch for $widgetId")
+        } else {
+            Log.d(TAG, "reloadSingleWidget: no server URL for $widgetId, updating from cache")
+            updateWidget(widgetId)
+        }
+    }
 
     /**
      * Reload all widgets by finding all saved widget data
@@ -301,11 +321,15 @@ class VoltraWidgetManager(
                     .map { it.removePrefix(KEY_JSON_PREFIX) }
                     .toSet()
 
-            Log.d(TAG, "Found ${widgetIds.size} widgets with saved data: $widgetIds")
+            // Also include server-driven widgets that may not have cached data yet
+            val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
+            val allWidgetIds = widgetIds + serverDrivenIds
 
-            for (widgetId in widgetIds) {
+            Log.d(TAG, "Found ${allWidgetIds.size} widgets to reload (${widgetIds.size} cached, ${serverDrivenIds.size} server-driven)")
+
+            for (widgetId in allWidgetIds) {
                 try {
-                    updateWidget(widgetId)
+                    reloadSingleWidget(widgetId)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to update widget $widgetId: ${e.message}")
                 }

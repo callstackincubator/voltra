@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { reloadAndroidWidgets } from 'voltra/android/client'
+import { reloadAndroidWidgets, VoltraWidgetPreview as AndroidVoltraWidgetPreview } from 'voltra/android/client'
 import {
   clearWidgetServerCredentials,
   reloadWidgets,
@@ -11,6 +10,8 @@ import {
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { AndroidDynamicWeatherWidget } from '~/widgets/android/AndroidDynamicWeatherWidget'
+import { IosDynamicWeatherWidget } from '~/widgets/ios/IosDynamicWeatherWidget'
 
 export default function ServerDrivenWidgetsScreen() {
   const [serverUrl, setServerUrl] = useState('http://localhost:3333')
@@ -184,9 +185,6 @@ export default function ServerDrivenWidgetsScreen() {
           <Card.Text>
             Reload widget timelines to trigger an immediate server fetch. Normally the widget fetches at the configured
             interval.
-            {Platform.OS === 'android'
-              ? '\n\nOn Android, WorkManager has a minimum interval of 15 minutes. The first fetch may take a few minutes after adding the widget.'
-              : ''}
           </Card.Text>
           <View style={styles.buttonContainer}>
             <Button title="Reload Dynamic Weather Widgets" variant="primary" onPress={handleReloadWidgets} />
@@ -217,26 +215,15 @@ export default function ServerDrivenWidgetsScreen() {
             configured, the widget extension will periodically replace this with fresh server-rendered content.
           </Card.Text>
           <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family="systemMedium" style={styles.widgetPreview}>
-              <Voltra.LinearGradient colors={['#FFD700', '#FFA500']} start="top" end="bottom" style={{ flex: 1 }}>
-                <Voltra.VStack style={{ flex: 1, padding: 16 }}>
-                  <Voltra.HStack alignment="center" spacing={8}>
-                    <Voltra.Text style={{ fontSize: 42, fontWeight: '300', color: '#FFFFFF' }}>72°</Voltra.Text>
-                    <Voltra.Spacer />
-                    <Voltra.Text style={{ fontSize: 32 }}>☀️</Voltra.Text>
-                  </Voltra.HStack>
-                  <Voltra.Text
-                    style={{ fontSize: 16, fontWeight: '500', color: '#FFFFFF', opacity: 0.9, marginTop: 4 }}
-                  >
-                    Sunny
-                  </Voltra.Text>
-                  <Voltra.Spacer />
-                  <Voltra.Text style={{ fontSize: 10, color: '#FFFFFF', opacity: 0.6 }}>
-                    Server-driven · Initial state
-                  </Voltra.Text>
-                </Voltra.VStack>
-              </Voltra.LinearGradient>
-            </VoltraWidgetPreview>
+            {Platform.OS === 'android' ? (
+              <AndroidVoltraWidgetPreview family="mediumWide" style={styles.widgetPreview}>
+                <AndroidDynamicWeatherWidget />
+              </AndroidVoltraWidgetPreview>
+            ) : (
+              <VoltraWidgetPreview family="systemMedium" style={styles.widgetPreview}>
+                <IosDynamicWeatherWidget />
+              </VoltraWidgetPreview>
+            )}
           </View>
         </Card>
 
@@ -321,6 +308,7 @@ const styles = StyleSheet.create({
   },
   widgetPreview: {
     borderRadius: 16,
+    overflow: 'hidden',
   },
   bottomSpacer: {
     height: 40,
