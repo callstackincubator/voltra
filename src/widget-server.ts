@@ -45,7 +45,7 @@ export interface WidgetUpdateHandlerOptions {
    * @param request - The widget render request context
    * @returns Widget variants to render, or null to return 404
    */
-  render: (request: WidgetRenderRequest) => Promise<WidgetVariants | null> | WidgetVariants | null
+  renderIos: (request: WidgetRenderRequest) => Promise<WidgetVariants | null> | WidgetVariants | null
 
   /**
    * Render function that returns Android widget variants for a given request.
@@ -76,58 +76,19 @@ export interface WidgetUpdateHandlerOptions {
  * 3. Calls your render function to generate widget content
  * 4. Returns the rendered JSON payload
  *
- * @example With Node.js HTTP server
- * ```typescript
- * import { createServer } from 'node:http'
- * import { createWidgetUpdateHandler, Voltra } from 'voltra/server'
- *
- * const handler = createWidgetUpdateHandler({
- *   render: async (req) => {
- *     const data = await fetchWeatherData(req.token)
- *     return {
- *       systemSmall: <Voltra.Text>{data.temp}°F</Voltra.Text>,
- *       systemMedium: (
- *         <Voltra.HStack>
- *           <Voltra.Text>{data.temp}°F</Voltra.Text>
- *           <Voltra.Text>{data.condition}</Voltra.Text>
- *         </Voltra.HStack>
- *       ),
- *     }
- *   },
- *   validateToken: async (token) => {
- *     return await verifyJWT(token)
- *   },
- * })
- *
- * createServer(handler).listen(3000)
- * ```
- *
- * @example With Express
- * ```typescript
- * import express from 'express'
- * import { createWidgetUpdateHandler, Voltra } from 'voltra/server'
- *
- * const app = express()
- * app.get('/widgets/render', createWidgetUpdateHandler({
- *   render: async (req) => ({
- *     systemSmall: <Voltra.Text>Hello Widget!</Voltra.Text>,
- *   }),
- * }))
- * ```
  */
 export function createWidgetUpdateHandler(
   options: WidgetUpdateHandlerOptions
 ): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
-  const { render, renderAndroid, validateToken } = options
+  const { renderIos, renderAndroid, validateToken } = options
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     try {
-      // Parse URL and query parameters
       const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
       const widgetId = url.searchParams.get('widgetId')
       const family = url.searchParams.get('family') || undefined
 
-      // Detect platform: iOS sends `family` query param, Android does not
+      // Detect platform
       const platform: WidgetPlatform = family ? 'ios' : 'android'
 
       if (!widgetId) {
@@ -166,7 +127,6 @@ export function createWidgetUpdateHandler(
       }
 
       if (platform === 'android') {
-        // Android path: use renderAndroid callback and Android renderer
         if (!renderAndroid) {
           res.writeHead(404, { 'Content-Type': 'application/json' })
           res.end(JSON.stringify({ error: `No Android render handler configured for widget: ${widgetId}` }))
@@ -190,8 +150,7 @@ export function createWidgetUpdateHandler(
         })
         res.end(jsonPayload)
       } else {
-        // iOS path: use render callback and iOS renderer
-        const variants = await render(request)
+        const variants = await renderIos(request)
 
         if (!variants) {
           res.writeHead(404, { 'Content-Type': 'application/json' })

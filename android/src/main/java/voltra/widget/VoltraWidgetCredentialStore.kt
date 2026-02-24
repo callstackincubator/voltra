@@ -16,9 +16,6 @@ import kotlinx.coroutines.runBlocking
  * Secure credential storage for widget server-driven updates.
  * Uses Jetpack DataStore with Preferences for storing auth tokens and custom headers.
  *
- * Note: DataStore provides file-based atomic writes and coroutine-safe access.
- * For additional encryption at rest, consider combining with Tink.
- *
  * Since Android widgets are part of the main app binary, they inherently share
  * this storage; no special grouping or sharing configuration is required.
  */

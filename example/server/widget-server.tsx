@@ -30,7 +30,7 @@ function getWeather() {
 }
 
 const handler = createWidgetUpdateHandler({
-  render: async (req) => {
+  renderIos: async (req: any) => {
     const weather = getWeather()
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
 
@@ -74,7 +74,7 @@ const handler = createWidgetUpdateHandler({
     }
   },
 
-  renderAndroid: async (req) => {
+  renderAndroid: async (req: any) => {
     const weather = getWeather()
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
 
@@ -116,6 +116,10 @@ const handler = createWidgetUpdateHandler({
       { size: { width: 200, height: 200 }, content },
       { size: { width: 300, height: 200 }, content },
     ]
+  },
+  validateToken: (token: string) => {
+    const validToken = token === 'demo-token'
+    return validToken
   },
 })
 
