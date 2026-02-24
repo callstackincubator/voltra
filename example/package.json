@@ -8,8 +8,8 @@
     "prebuild": "expo prebuild --clean",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "server": "tsx server/widget-server.tsx",
     "web": "expo start --web",
+    "widget:server": "tsx server/widget-server.tsx",
     "harness:ios": "react-native-harness ./__tests__/ios --harnessRunner=ios",
     "harness:android": "react-native-harness ./__tests__/android --harnessRunner=android",
     "postinstall": "patch-package"

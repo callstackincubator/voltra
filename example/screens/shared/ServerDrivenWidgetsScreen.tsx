@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Voltra } from 'voltra'
+import { reloadAndroidWidgets } from 'voltra/android/client'
 import {
   clearWidgetServerCredentials,
   reloadWidgets,
@@ -10,14 +11,6 @@ import {
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
-
-let reloadAndroidWidgetsFn: ((widgetIds?: string[]) => Promise<void>) | undefined
-if (Platform.OS === 'android') {
-  try {
-    const androidModule = require('voltra/android')
-    reloadAndroidWidgetsFn = androidModule.reloadAndroidWidgets
-  } catch {}
-}
 
 export default function ServerDrivenWidgetsScreen() {
   const [serverUrl, setServerUrl] = useState('http://localhost:3333')
@@ -61,8 +54,8 @@ export default function ServerDrivenWidgetsScreen() {
 
   const handleReloadWidgets = async () => {
     try {
-      if (Platform.OS === 'android' && reloadAndroidWidgetsFn) {
-        await reloadAndroidWidgetsFn(['dynamic_weather'])
+      if (Platform.OS === 'android') {
+        await reloadAndroidWidgets(['dynamic_weather'])
         Alert.alert('Success', 'Android widgets reloaded. WorkManager will fetch fresh content from the server.')
       } else {
         await reloadWidgets(['dynamic_weather'])
@@ -97,7 +90,7 @@ export default function ServerDrivenWidgetsScreen() {
             <View style={[styles.codeBlock, { backgroundColor: '#1a1a2e', marginTop: 8 }]}>
               <Text style={[styles.codeText, { color: '#fbbf24' }]}>
                 ⚠️ Android emulator: use 10.0.2.2 instead of localhost to reach the host machine. Real devices need the
-                host's LAN IP.
+                host`s LAN IP.
               </Text>
             </View>
           ) : null}
@@ -196,11 +189,7 @@ export default function ServerDrivenWidgetsScreen() {
               : ''}
           </Card.Text>
           <View style={styles.buttonContainer}>
-            <Button
-              title={Platform.OS === 'android' ? 'Reload Dynamic Weather Widget' : 'Reload Weather Widget'}
-              variant="primary"
-              onPress={handleReloadWidgets}
-            />
+            <Button title="Reload Dynamic Weather Widgets" variant="primary" onPress={handleReloadWidgets} />
           </View>
         </Card>
 
@@ -224,7 +213,7 @@ export default function ServerDrivenWidgetsScreen() {
         <Card>
           <Card.Title>Widget Preview</Card.Title>
           <Card.Text>
-            This is the weather widget's initial state. When <Text style={styles.code}>serverUpdate</Text> is
+            This is the weather widget`s initial state. When <Text style={styles.code}>serverUpdate</Text> is
             configured, the widget extension will periodically replace this with fresh server-rendered content.
           </Card.Text>
           <View style={styles.previewContainer}>

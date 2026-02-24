@@ -34,6 +34,13 @@ const ANDROID_SECTIONS = [
     description: 'Preview your Android widget layouts directly within the app using VoltraWidgetPreview.',
     route: '/android-widgets/preview',
   },
+  {
+    id: 'server-driven-widgets',
+    title: 'Server-Driven Widgets',
+    description:
+      'Serve dynamic widget content from a remote server using Voltra SSR. This example includes a sample widget server implementation.',
+    route: '/android-widgets/server-driven',
+  },
   // Add more Android-specific sections here as they are implemented
 ]
 
