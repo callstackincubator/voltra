@@ -3,8 +3,8 @@ import { View } from 'react-native'
 import { afterAll, beforeAll, describe, expect, Mock, render, spyOn, test } from 'react-native-harness'
 import { VoltraWidgetPreview } from 'voltra/client'
 
+import { IosWeatherWidget } from '../../widgets/ios/IosWeatherWidget'
 import { SAMPLE_WEATHER_DATA } from '../../widgets/weather-types'
-import { WeatherWidget } from '../../widgets/ios/IosWeatherWidget'
 
 describe('Widget snapshots', () => {
   const mockDate = new Date('2026-01-20T08:00:00Z')
@@ -34,7 +34,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <WeatherWidget weather={SAMPLE_WEATHER_DATA.sunny} />
+            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.sunny} />
           </VoltraWidgetPreview>
         </View>
       </View>
@@ -52,7 +52,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <WeatherWidget weather={SAMPLE_WEATHER_DATA.rainy} />
+            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.rainy} />
           </VoltraWidgetPreview>
         </View>
       </View>
@@ -70,7 +70,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <WeatherWidget weather={SAMPLE_WEATHER_DATA.snowy} />
+            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.snowy} />
           </VoltraWidgetPreview>
         </View>
       </View>
@@ -88,7 +88,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <WeatherWidget weather={SAMPLE_WEATHER_DATA.stormy} />
+            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.stormy} />
           </VoltraWidgetPreview>
         </View>
       </View>
