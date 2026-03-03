@@ -37,17 +37,23 @@ export default function GradientPlaygroundScreen() {
   const [borderRadius, setBorderRadius] = useState(12)
 
   const colors = PRESETS[preset].colors
+  const positionedStops = colors
+    .map((color, idx) => {
+      const pct = colors.length === 1 ? 0 : Math.round((idx / (colors.length - 1)) * 100)
+      return `${color} ${pct}%`
+    })
+    .join(', ')
 
   const buildGradient = (): string => {
     if (gradientType === 'radial') {
-      return `radial-gradient(${colors.join(', ')})`
+      return `radial-gradient(circle at center, ${positionedStops})`
     }
     if (gradientType === 'conic') {
-      return `conic-gradient(from ${angle}deg, ${colors.join(', ')})`
+      return `conic-gradient(from ${angle}deg at center, ${positionedStops})`
     }
     // linear
     const dir = useAngle ? `${angle}deg` : direction
-    return `linear-gradient(${dir}, ${colors.join(', ')})`
+    return `linear-gradient(${dir}, ${positionedStops})`
   }
 
   const gradient = buildGradient()
@@ -79,6 +85,10 @@ export default function GradientPlaygroundScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Gradient Playground</Text>
         <Text style={styles.subheading}>Test CSS gradient strings as backgroundColor on Voltra views.</Text>
+        <Text style={styles.warningText}>
+          Playground uses parser-compatible CSS syntax only. If a preview is blank, this indicates a gradient parser bug
+          in iOS rendering.
+        </Text>
 
         {/* Controls */}
         <Card>
@@ -146,7 +156,7 @@ export default function GradientPlaygroundScreen() {
           <VoltraView style={{ width: '100%', height: 220, backgroundColor: '#0F172A', padding: 16, marginTop: 12 }}>
             <Voltra.View
               style={{
-                flex: 1,
+                height: '100%',
                 backgroundColor: gradient,
                 borderRadius,
                 width: '100%',
@@ -168,7 +178,7 @@ export default function GradientPlaygroundScreen() {
           <VoltraView style={{ width: '100%', height: 80, backgroundColor: '#0F172A', padding: 16, marginTop: 12 }}>
             <Voltra.View
               style={{
-                flex: 1,
+                height: '100%',
                 backgroundColor: 'linear-gradient(to right, red 10%, yellow 50%, blue 90%)',
                 borderRadius: 8,
                 width: '100%',
@@ -180,13 +190,13 @@ export default function GradientPlaygroundScreen() {
         {/* rgba inside gradient */}
         <Card>
           <Card.Title>RGBA Inside Gradient</Card.Title>
-          <Text style={styles.previewSubtext}>linear-gradient(to right, rgba(255,0,0,0.8), rgba(0,0,255,0.3))</Text>
+          <Text style={styles.previewSubtext}>linear-gradient(to right, rgba(255,0,0,0.8) 0%, rgba(0,0,255,0.3) 100%)</Text>
 
           <VoltraView style={{ width: '100%', height: 80, backgroundColor: '#0F172A', padding: 16, marginTop: 12 }}>
             <Voltra.View
               style={{
-                flex: 1,
-                backgroundColor: 'linear-gradient(to right, rgba(255,0,0,0.8), rgba(0,0,255,0.3))',
+                height: '100%',
+                backgroundColor: 'linear-gradient(to right, rgba(255,0,0,0.8) 0%, rgba(0,0,255,0.3) 100%)',
                 borderRadius: 8,
                 width: '100%',
               }}
@@ -202,7 +212,7 @@ export default function GradientPlaygroundScreen() {
           <VoltraView style={{ width: '100%', height: 80, backgroundColor: '#0F172A', padding: 16, marginTop: 12 }}>
             <Voltra.View
               style={{
-                flex: 1,
+                height: '100%',
                 backgroundColor: '#3B82F6',
                 borderRadius: 8,
                 width: '100%',
@@ -246,6 +256,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: '#CBD5F5',
+    marginBottom: 8,
+  },
+  warningText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#FCA5A5',
     marginBottom: 20,
   },
   controlRow: {

@@ -37,7 +37,7 @@ enum JSStyleParser {
 
   static func background(_ value: Any?) -> BackgroundValue? {
     guard let string = value as? String else { return nil }
-    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
     if let gradient = JSGradientParser.parse(trimmed) {
       return gradient
     }
