@@ -46,3 +46,4 @@ npm-debug.log
 
 ## Build
 /build
+/ios/.build/
