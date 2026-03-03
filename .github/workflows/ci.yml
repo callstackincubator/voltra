@@ -89,6 +89,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Android native project
+        run: cd example && npx expo prebuild --platform android --non-interactive
+
       - name: Run Kotlin native tests
         run: npm run test:kotlin
 
