@@ -12,6 +12,10 @@ let package = Package(
       name: "VoltraSharedCore",
       targets: ["VoltraSharedCore"]
     ),
+    .library(
+      name: "VoltraStyleCore",
+      targets: ["VoltraStyleCore"]
+    ),
   ],
   targets: [
     .target(
@@ -44,6 +48,21 @@ let package = Package(
       name: "VoltraSharedTests",
       dependencies: ["VoltraSharedCore"],
       path: "Tests/VoltraSharedTests"
+    ),
+    .target(
+      name: "VoltraStyleCore",
+      path: "ui",
+      sources: [
+        "Style/BackgroundValue.swift",
+        "Style/JSColorParser.swift",
+        "Style/JSGradientParser.swift",
+      ]
+    ),
+    .testTarget(
+      name: "VoltraStyleTests",
+      dependencies: ["VoltraStyleCore"],
+      path: "tests",
+      sources: ["JSGradientParserTests.swift"]
     ),
   ]
 )
