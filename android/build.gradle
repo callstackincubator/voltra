@@ -63,6 +63,17 @@ android {
   buildFeatures {
     compose true
   }
+  testOptions {
+    unitTests.all {
+      testLogging {
+        events "passed", "failed", "skipped"
+        exceptionFormat "full"
+        showCauses true
+        showExceptions true
+        showStackTraces true
+      }
+    }
+  }
 }
 
 dependencies {
