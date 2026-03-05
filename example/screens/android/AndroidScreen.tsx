@@ -34,6 +34,13 @@ const ANDROID_SECTIONS = [
     description: 'Preview your Android widget layouts directly within the app using VoltraWidgetPreview.',
     route: '/android-widgets/preview',
   },
+  {
+    id: 'chart-widgets',
+    title: 'Chart Widgets',
+    description:
+      'Preview chart widgets rendered via Canvas bitmap. Supports bar, line, area, point, rule, and pie/donut charts.',
+    route: '/android-widgets/charts',
+  },
   // Add more Android-specific sections here as they are implemented
 ]
 

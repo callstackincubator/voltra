@@ -1247,8 +1247,9 @@
     },
     {
       "name": "Chart",
-      "description": "SwiftUI Charts component for data visualization",
+      "description": "Charts component for data visualization",
       "swiftAvailability": "iOS 16.0, macOS 13.0",
+      "androidAvailability": "Android 12+",
       "hasChildren": true,
       "parameters": {
         "marks": {
