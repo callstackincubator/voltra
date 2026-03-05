@@ -2,8 +2,6 @@ import { VoltraAndroid } from 'voltra/android'
 
 const { BarMark, LineMark, AreaMark, PointMark, RuleMark, SectorMark } = VoltraAndroid
 
-// ── Bar Chart ────────────────────────────────────────────────────────────────
-
 const barData = [
   { x: 'Mon', y: 3 },
   { x: 'Tue', y: 7 },
@@ -27,8 +25,6 @@ export const BarChartWidget = () => (
     </VoltraAndroid.Column>
   </VoltraAndroid.Box>
 )
-
-// ── Line Chart ───────────────────────────────────────────────────────────────
 
 const lineData1 = [
   { x: 'Jan', y: 30, series: 'Revenue' },
@@ -65,8 +61,6 @@ export const LineChartWidget = () => (
   </VoltraAndroid.Box>
 )
 
-// ── Area Chart ───────────────────────────────────────────────────────────────
-
 const areaData = [
   { x: 'Q1', y: 40, series: 'Mobile' },
   { x: 'Q2', y: 55, series: 'Mobile' },
@@ -93,8 +87,6 @@ export const AreaChartWidget = () => (
     </VoltraAndroid.Column>
   </VoltraAndroid.Box>
 )
-
-// ── Pie / Donut Chart ────────────────────────────────────────────────────────
 
 const pieData = [
   { value: 35, category: 'React Native' },
