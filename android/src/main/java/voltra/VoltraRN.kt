@@ -60,6 +60,10 @@ class VoltraRN(
         val widthDp = frameLayout.width.toFloat() / density
         val heightDp = frameLayout.height.toFloat() / density
 
+        // Don't render until we have real dimensions from layout.
+        // onLayout() will call updateView() once dimensions are available.
+        if (widthDp <= 1f || heightDp <= 1f) return
+
         // Avoid redundant updates if nothing significant changed and we already have a view
         if (frameLayout.childCount > 0 &&
             payloadStr == lastRenderedPayload &&
@@ -94,14 +98,7 @@ class VoltraRN(
                         return@launch
                     }
 
-                    // Determine size for Glance composition.
-                    // Glance needs a non-zero size. If we don't have one yet, use a fallback.
-                    val composeSize =
-                        if (widthDp > 1f && heightDp > 1f) {
-                            DpSize(widthDp.dp, heightDp.dp)
-                        } else {
-                            DpSize(300.dp, 200.dp)
-                        }
+                    val composeSize = DpSize(widthDp.dp, heightDp.dp)
 
                     val glanceRemoteViews = GlanceRemoteViews()
                     val factory = GlanceFactory(id, voltraPayload.e, voltraPayload.s)
@@ -117,6 +114,14 @@ class VoltraRN(
 
                     val remoteViews = result.remoteViews
 
+                    // Check if the frameLayout dimensions have changed since we started composing.
+                    // If so, skip this render — a new updateView() will be triggered by onLayout.
+                    val currentWidthDp = frameLayout.width.toFloat() / density
+                    val currentHeightDp = frameLayout.height.toFloat() / density
+                    if (abs(currentWidthDp - widthDp) >= 1.0f || abs(currentHeightDp - heightDp) >= 1.0f) {
+                        return@launch
+                    }
+
                     withContext(Dispatchers.Main) {
                         try {
                             // Try to reapply to the existing view first to avoid flickering/replacing
@@ -126,11 +131,8 @@ class VoltraRN(
                                     val existingView = frameLayout.getChildAt(0)
                                     remoteViews.reapply(context, existingView)
                                     applied = true
-                                    // Update tracking state
-                                    lastRenderedPayload = payloadStr
-                                    lastRenderedWidthDp = widthDp
-                                    lastRenderedHeightDp = heightDp
                                 } catch (e: Exception) {
+                                    // reapply failed (layout structure changed), fall through to full inflate
                                 }
                             }
 
@@ -145,25 +147,29 @@ class VoltraRN(
                                 if (childCount > 1) {
                                     frameLayout.removeViews(0, childCount - 1)
                                 }
-
-                                // CRITICAL FIX: Manually trigger layout for the new content.
-                                // Since we are adding this async, the parent won't do it for us automatically.
-                                frameLayout.measure(
-                                    View.MeasureSpec.makeMeasureSpec(frameLayout.width, View.MeasureSpec.EXACTLY),
-                                    View.MeasureSpec.makeMeasureSpec(frameLayout.height, View.MeasureSpec.EXACTLY),
-                                )
-                                frameLayout.layout(
-                                    frameLayout.left,
-                                    frameLayout.top,
-                                    frameLayout.right,
-                                    frameLayout.bottom,
-                                )
-
-                                // Update tracking state
-                                lastRenderedPayload = payloadStr
-                                lastRenderedWidthDp = widthDp
-                                lastRenderedHeightDp = heightDp
                             }
+
+                            // Always re-measure and re-layout after applying RemoteViews.
+                            // This is critical because:
+                            // 1) After fresh inflate: the view was added asynchronously so the parent
+                            //    won't trigger layout automatically.
+                            // 2) After reapply: text content or styles may have changed, requiring
+                            //    re-measurement to avoid stale layout constraints (e.g. truncated text).
+                            frameLayout.measure(
+                                View.MeasureSpec.makeMeasureSpec(frameLayout.width, View.MeasureSpec.EXACTLY),
+                                View.MeasureSpec.makeMeasureSpec(frameLayout.height, View.MeasureSpec.EXACTLY),
+                            )
+                            frameLayout.layout(
+                                frameLayout.left,
+                                frameLayout.top,
+                                frameLayout.right,
+                                frameLayout.bottom,
+                            )
+
+                            // Update tracking state
+                            lastRenderedPayload = payloadStr
+                            lastRenderedWidthDp = widthDp
+                            lastRenderedHeightDp = heightDp
                         } catch (e: Exception) {
                         }
                     }
