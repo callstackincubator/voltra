@@ -240,7 +240,8 @@ export interface ConfigPluginProps {
    * This should match a Keychain Sharing capability group configured in your Apple Developer account.
    * Example: "$(AppIdentifierPrefix)com.example.shared"
    *
-   * If not provided, a default will be derived from the bundle identifier.
+   * If not provided and any widget has `serverUpdate` configured, defaults to
+   * `$(AppIdentifierPrefix)<bundleIdentifier>` (the app's own keychain access group).
    */
   keychainGroup?: string
   /**
