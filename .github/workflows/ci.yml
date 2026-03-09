@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
+  js-lint:
+    name: JS Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -29,10 +29,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check formatting
-        run: npm run format:check
+      - name: Check JS formatting
+        run: npm run format:js:check
 
-      - name: Run linter
+      - name: Run JS linter
         run: npm run lint:libOnly
 
   typecheck:
@@ -133,24 +133,35 @@ jobs:
       - name: Check Swift formatting
         run: npm run format:swift:check
 
-  # TODO: Add ktlint back at some point (it takes over 2 minutes to install)
-  # ktlint:
-  #   name: ktlint Check
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+  ktlint:
+    name: ktlint Check
+    runs-on: ubuntu-latest
+    env:
+      KTLINT_VERSION: 1.8.0
+      KTLINT_SHA256: a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '22'
-  #         cache: 'npm'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-  #     - name: Install ktlint
-  #       run: |
-  #         eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-  #         brew install ktlint
+      # Downloading the pinned release binary is much faster in CI than installing ktlint via Homebrew.
+      - name: Install ktlint
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          curl -fsSL \
+            "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint" \
+            -o "$RUNNER_TEMP/bin/ktlint"
+          echo "${KTLINT_SHA256}  $RUNNER_TEMP/bin/ktlint" | sha256sum --check --
+          chmod +x "$RUNNER_TEMP/bin/ktlint"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
-  #     - name: Check Kotlin formatting
-  #       run: npm run format:kotlin:check
+      - name: Check ktlint version
+        run: ktlint --version
+
+      - name: Check Kotlin formatting
+        run: npm run format:kotlin:check
