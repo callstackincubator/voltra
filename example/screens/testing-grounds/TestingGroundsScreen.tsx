@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import React from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
@@ -83,6 +83,17 @@ const TESTING_GROUNDS_SECTIONS = [
       'Test widget timeline scheduling with multiple states. Configure timing for each state and watch widgets automatically transition between them.',
     route: '/testing-grounds/widget-scheduling',
   },
+  ...(Platform.OS === 'ios'
+    ? [
+        {
+          id: 'channel-updates',
+          title: 'Channel-Based Updates',
+          description:
+            'Start a minimal Live Activity bound to a broadcast channel ID and test server-driven updates.',
+          route: '/testing-grounds/channel-updates',
+        },
+      ]
+    : []),
   // Add more sections here as they are implemented
 ]
 

@@ -236,7 +236,7 @@ const activityId = await startLiveActivity(variants, {
 })
 ```
 
-When `channelId` is provided, the Live Activity subscribes to broadcast updates. On iOS versions before 18, `channelId` is ignored and the activity starts without push support.
+When `channelId` is provided, the Live Activity subscribes to broadcast updates on iOS 18+. On iOS versions before 18, broadcast is unavailable and Voltra falls back to token-based Live Activity push updates.
 
 ### Sending broadcast updates
 

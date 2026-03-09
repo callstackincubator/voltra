@@ -63,15 +63,7 @@ public class VoltraModuleImpl {
       }()
       let relevanceScore: Double = options?.relevanceScore ?? 0.0
 
-      let pushType: PushType? = {
-        if let channelId = options?.channelId {
-          if #available(iOS 18.0, *) {
-            return .channel(channelId)
-          }
-          return nil
-        }
-        return pushNotificationsEnabled ? .token : nil
-      }()
+      let pushType = try resolvePushType(channelId: options?.channelId)
 
       // Create request struct with compressed JSON
       let createRequest = CreateActivityRequest(
@@ -300,6 +292,10 @@ public class VoltraModuleImpl {
   }
 
   private func mapError(_ error: Error) -> Error {
+    if let moduleError = error as? VoltraModule.VoltraErrors {
+      return moduleError
+    }
+
     if let serviceError = error as? VoltraLiveActivityError {
       switch serviceError {
       case .unsupportedOS:
@@ -311,6 +307,40 @@ public class VoltraModuleImpl {
       }
     }
     return VoltraModule.VoltraErrors.unexpectedError(error)
+  }
+
+  private func resolvePushType(channelId rawChannelId: String?) throws -> PushType? {
+    guard let rawChannelId else {
+      return pushNotificationsEnabled ? .token : nil
+    }
+
+    let channelId = rawChannelId.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !channelId.isEmpty else {
+      throw VoltraModule.VoltraErrors.unexpectedError(
+        NSError(
+          domain: "VoltraModule",
+          code: -20,
+          userInfo: [NSLocalizedDescriptionKey: "channelId must be a non-empty string."]
+        )
+      )
+    }
+
+    guard pushNotificationsEnabled else {
+      throw VoltraModule.VoltraErrors.unexpectedError(
+        NSError(
+          domain: "VoltraModule",
+          code: -21,
+          userInfo: [NSLocalizedDescriptionKey: "channelId requires enablePushNotifications: true in the Voltra plugin config."]
+        )
+      )
+    }
+
+    if #available(iOS 18.0, *) {
+      return .channel(channelId)
+    }
+
+    // On iOS <18, broadcast channels are unavailable, so fall back to token-based updates.
+    return .token
   }
 
   private func validatePayloadSize(_ compressedPayload: String, operation: String) throws {
