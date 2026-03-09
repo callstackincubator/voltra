@@ -15,6 +15,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import voltra.BuildConfig
 
 /**
  * Background Worker that fetches widget content from a remote Voltra SSR server
@@ -65,7 +66,7 @@ class VoltraWidgetUpdateWorker(
                     connection.connectTimeout = 15000
                     connection.readTimeout = 15000
                     connection.setRequestProperty("Accept", "application/json")
-                    connection.setRequestProperty("User-Agent", "VoltraWidget/1.0")
+                    connection.setRequestProperty("User-Agent", "VoltraWidget/${BuildConfig.VOLTRA_VERSION}")
 
                     // 2. Add auth token from encrypted storage
                     val token = VoltraWidgetCredentialStore.readToken(applicationContext)

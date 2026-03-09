@@ -51,11 +51,20 @@ if (useManagedAndroidSdkVersions) {
   }
 }
 
+// Read version from package.json for BuildConfig
+def packageJsonFile = new File(project.projectDir.parentFile, "package.json")
+def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
+def voltraVersion = packageJson.version
+
 android {
   namespace "voltra"
   defaultConfig {
     versionCode 1
     versionName "0.1.0"
+    buildConfigField "String", "VOLTRA_VERSION", "\"${voltraVersion}\""
+  }
+  buildFeatures {
+    buildConfig true
   }
   lintOptions {
     abortOnError false
