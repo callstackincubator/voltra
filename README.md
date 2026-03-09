@@ -24,14 +24,18 @@ Voltra turns React Native JSX into SwiftUI and Jetpack Compose Glance so you can
 
 The documentation is available at [use-voltra.dev](https://use-voltra.dev). You can also use the following links to jump to specific topics:
 
-- [Quick Start](https://use-voltra.dev/getting-started/quick-start)
-- [Development](https://www.use-voltra.dev/development/developing-live-activities)
-- [Components](https://www.use-voltra.dev/components/overview)
-- [API Reference](https://use-voltra.dev/api/configuration)
+- [Getting Started](https://use-voltra.dev/getting-started/introduction)
+- [Installation](https://use-voltra.dev/getting-started/installation)
+- [iOS Setup](https://use-voltra.dev/ios/setup)
+- [Android Setup](https://use-voltra.dev/android/setup)
+- [iOS Development](https://use-voltra.dev/ios/development/developing-live-activities)
+- [Android Development](https://use-voltra.dev/android/development/developing-widgets)
+- [iOS API Reference](https://use-voltra.dev/ios/api/configuration)
+- [Android API Reference](https://use-voltra.dev/android/api/plugin-configuration)
 
 ## Getting started
 
-> [!NOTE]  
+> [!NOTE]
 > The library isn't supported in Expo Go. To set it up correctly, you need to use [Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/).
 
 Install the package:
@@ -52,7 +56,7 @@ Add the config plugin to your `app.json`:
 
 Then run `npx expo prebuild --clean` to generate the native extension targets.
 
-See the [documentation](https://use-voltra.dev/getting-started/quick-start) for detailed setup instructions.
+See the [documentation](https://use-voltra.dev/getting-started/installation) for detailed setup instructions.
 
 ## Quick example
 
