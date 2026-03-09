@@ -21,6 +21,8 @@ export async function setWidgetServerCredentials(credentials: WidgetServerCreden
 
 /**
  * Clear stored server credentials for Android widget updates.
+ * All widgets are automatically reloaded after clearing credentials so they
+ * revert to their default/unauthenticated state.
  */
 export async function clearWidgetServerCredentials(): Promise<void> {
   return VoltraModule.clearWidgetServerCredentials()

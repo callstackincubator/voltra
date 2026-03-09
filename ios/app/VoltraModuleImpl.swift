@@ -290,6 +290,8 @@ public class VoltraModuleImpl {
   func clearWidgetServerCredentials() {
     VoltraKeychainHelper.clearAll()
     print("[Voltra] Widget server credentials cleared from Keychain")
+
+    WidgetCenter.shared.reloadAllTimelines()
   }
 
   // MARK: - Private Helpers

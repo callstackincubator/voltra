@@ -44,6 +44,8 @@ export async function setWidgetServerCredentials(credentials: WidgetServerCreden
  * Clear stored server credentials for widget updates.
  *
  * Call this when the user logs out to stop authenticated widget updates.
+ * All widgets are automatically reloaded after clearing credentials so they
+ * revert to their default/unauthenticated state.
  *
  * @example
  * ```typescript

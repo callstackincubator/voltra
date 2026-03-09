@@ -359,6 +359,11 @@ class VoltraModule : Module() {
                 }
 
                 Log.d(TAG, "Widget server credentials cleared")
+
+                val widgetManager = voltra.widget.VoltraWidgetManager(context)
+                runBlocking {
+                    widgetManager.reloadAllWidgets()
+                }
             }
 
             AsyncFunction("reloadLiveActivities") { activityNames: List<String>? ->
