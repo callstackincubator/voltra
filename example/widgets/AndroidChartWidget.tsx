@@ -51,7 +51,7 @@ export const LineChartWidget = () => (
         Revenue vs Expenses
       </VoltraAndroid.Text>
       <VoltraAndroid.Chart
-        style={{ width: 280, height: 160 }}
+        style={{ width: '100%', height: '100%' }}
         foregroundStyleScale={{ Revenue: '#22D3EE', Expenses: '#F87171' }}
       >
         <LineMark data={[...lineData1, ...lineData2]} lineWidth={2} />
@@ -79,7 +79,7 @@ export const AreaChartWidget = () => (
         Traffic by Platform
       </VoltraAndroid.Text>
       <VoltraAndroid.Chart
-        style={{ width: 280, height: 160 }}
+        style={{ width: '100%', height: '100%' }}
         foregroundStyleScale={{ Mobile: '#34D399', Desktop: '#A78BFA' }}
       >
         <AreaMark data={areaData} />
