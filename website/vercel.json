@@ -3,6 +3,9 @@
   "buildCommand": "npm run build",
   "cleanUrls": true,
   "framework": null,
+  "git": {
+    "deploymentEnabled": false
+  },
   "installCommand": "npm install",
   "redirects": [
     {

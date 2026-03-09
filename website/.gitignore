@@ -12,3 +12,4 @@ doc_build/
 .vscode/*
 !.vscode/extensions.json
 .idea
+.vercel
