@@ -1,6 +1,8 @@
 /build
+/android/build
 /example/.expo
 /example/ios
+/ios/.build
 /plugin/build
 /.eslintrc.js
 /.expo
