@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   js-lint:
-    name: JS Lint
+    name: '[JS] Format & Lint'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -36,7 +36,7 @@ jobs:
         run: npm run lint:libOnly
 
   typecheck:
-    name: Type Check
+    name: '[JS] Types validation'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -55,7 +55,7 @@ jobs:
         run: npx tsc --noEmit
 
   test:
-    name: Test JavaScript
+    name: '[JS] Test'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -74,7 +74,7 @@ jobs:
         run: npm run test:js
 
   native-kotlin-test:
-    name: Test Kotlin
+    name: '[Kotlin] Test'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -99,7 +99,7 @@ jobs:
         run: npm run test:kotlin
 
   native-swift-test:
-    name: Test Swift
+    name: '[Swift] Test'
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -118,7 +118,7 @@ jobs:
         run: npm run test:swift
 
   swiftformat:
-    name: SwiftFormat Check
+    name: '[Swift] Format & Lint'
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -134,7 +134,7 @@ jobs:
         run: npm run format:swift:check
 
   ktlint:
-    name: ktlint Check
+    name: '[Kotlin] Format & Lint'
     runs-on: ubuntu-latest
     env:
       KTLINT_VERSION: 1.8.0
