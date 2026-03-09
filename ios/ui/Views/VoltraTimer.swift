@@ -13,12 +13,12 @@ public struct VoltraTimer: VoltraView {
     // Stopwatch support: if counting up (not down) and we have a start time
     // but no end time or duration, treat it as an open-ended stopwatch.
     if !countsDown(params: params),
-      let startAtMs = params.startAtMs,
-      params.endAtMs == nil,
-      params.durationMs == nil
+       let startAtMs = params.startAtMs,
+       params.endAtMs == nil,
+       params.durationMs == nil
     {
       let start = Date(timeIntervalSince1970: startAtMs / 1000)
-      return start...Date.distantFuture
+      return start ... Date.distantFuture
     }
 
     return VoltraProgressDriver.resolveRange(
@@ -47,7 +47,7 @@ public struct VoltraTimer: VoltraView {
 
   private func textTemplates(params: TimerParameters) -> TextTemplates? {
     guard let raw = params.textTemplates,
-      let data = raw.data(using: .utf8)
+          let data = raw.data(using: .utf8)
     else { return nil }
     return try? JSONDecoder().decode(TextTemplates.self, from: data)
   }
@@ -128,10 +128,4 @@ public struct VoltraTimer: VoltraView {
       Text(template)
     }
   }
-}
-
-// MARK: - Formatters
-
-extension VoltraTimer {
-  // Formatters are no longer needed for live updates but kept if we need static fallbacks.
 }
