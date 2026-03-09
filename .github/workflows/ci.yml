@@ -55,7 +55,7 @@ jobs:
         run: npx tsc --noEmit
 
   test:
-    name: Test
+    name: Test JavaScript
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -71,7 +71,51 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm run test
+        run: npm run test:js
+
+  native-kotlin-test:
+    name: Test Kotlin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install example dependencies
+        run: cd example && npm ci
+
+      - name: Generate Android native project
+        run: cd example && npx expo prebuild --platform android --non-interactive
+
+      - name: Run Kotlin native tests
+        run: npm run test:kotlin
+
+  native-swift-test:
+    name: Test Swift
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Swift native tests
+        run: npm run test:swift
 
   swiftformat:
     name: SwiftFormat Check

@@ -147,49 +147,246 @@ enum JSColorParser {
 
   // MARK: - RGB Parser
 
-  // rgb(255, 0, 0) / rgba(255, 0, 0, 0.5)
+  // Supports:
+  // - rgb(255, 0, 0), rgba(255, 0, 0, 0.5)
+  // - rgb(255 0 0 / 80%), rgba(255 0 0 / 0.8)
   private static func parseRGB(_ string: String) -> Color? {
-    let cleaned = string
-      .replacingOccurrences(of: "rgba", with: "")
-      .replacingOccurrences(of: "rgb", with: "")
-      .replacingOccurrences(of: "(", with: "")
-      .replacingOccurrences(of: ")", with: "")
-      .replacingOccurrences(of: " ", with: "")
+    guard let function = parseFunctionCall(string, allowedNames: ["rgb", "rgba"]) else { return nil }
 
-    let components = cleaned.split(separator: ",")
-    guard components.count >= 3 else { return nil }
+    let isRgba = function.name == "rgba"
+    let parsed: (r: Double, g: Double, b: Double, a: Double)?
+    if function.arguments.contains(",") {
+      parsed = parseRGBCommaSyntax(arguments: function.arguments, expectsAlpha: isRgba)
+    } else {
+      parsed = parseRGBSpaceSyntax(arguments: function.arguments, expectsAlpha: isRgba)
+    }
+    guard let parsed else { return nil }
 
-    let r = Double(components[0]) ?? 0
-    let g = Double(components[1]) ?? 0
-    let b = Double(components[2]) ?? 0
-    let a = components.count >= 4 ? (Double(components[3]) ?? 1.0) : 1.0
-
-    return Color(.sRGB, red: r / 255.0, green: g / 255.0, blue: b / 255.0, opacity: a)
+    return Color(.sRGB, red: parsed.r, green: parsed.g, blue: parsed.b, opacity: parsed.a)
   }
 
   // MARK: - HSL Parser
 
-  // hsl(120, 100%, 50%) / hsla(...)
+  // Supports:
+  // - hsl(120, 100%, 50%), hsla(120, 100%, 50%, 0.5)
+  // - hsl(120 100% 50% / 30%), hsla(120 100% 50% / 0.3)
   private static func parseHSL(_ string: String) -> Color? {
-    let cleaned = string
-      .replacingOccurrences(of: "hsla", with: "")
-      .replacingOccurrences(of: "hsl", with: "")
-      .replacingOccurrences(of: "(", with: "")
-      .replacingOccurrences(of: ")", with: "")
-      .replacingOccurrences(of: " ", with: "")
-      .replacingOccurrences(of: "%", with: "")
+    guard let function = parseFunctionCall(string, allowedNames: ["hsl", "hsla"]) else { return nil }
 
-    let components = cleaned.split(separator: ",")
-    guard components.count >= 3 else { return nil }
+    let isHsla = function.name == "hsla"
+    let parsed: (h: Double, s: Double, l: Double, a: Double)?
+    if function.arguments.contains(",") {
+      parsed = parseHSLCommaSyntax(arguments: function.arguments, expectsAlpha: isHsla)
+    } else {
+      parsed = parseHSLSpaceSyntax(arguments: function.arguments, expectsAlpha: isHsla)
+    }
+    guard let parsed else { return nil }
 
-    let h = (Double(components[0]) ?? 0) / 360.0
-    let s = (Double(components[1]) ?? 0) / 100.0
-    let l = (Double(components[2]) ?? 0) / 100.0
-    let a = components.count >= 4 ? (Double(components[3]) ?? 1.0) : 1.0
+    let h = parsed.h
+    let s = parsed.s
+    let l = parsed.l
+    let a = parsed.a
 
     // Convert HSL to RGB (HSL != HSB/HSV)
     let (r, g, b) = hslToRgb(h: h, s: s, l: l)
     return Color(.sRGB, red: r, green: g, blue: b, opacity: a)
+  }
+
+  private struct FunctionCall {
+    var name: String
+    var arguments: String
+  }
+
+  private static func parseFunctionCall(_ input: String, allowedNames: Set<String>) -> FunctionCall? {
+    let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    guard let open = trimmed.firstIndex(of: "("), trimmed.hasSuffix(")") else { return nil }
+
+    let name = String(trimmed[..<open]).trimmingCharacters(in: .whitespacesAndNewlines)
+    guard allowedNames.contains(name), !name.isEmpty else { return nil }
+
+    let argsStart = trimmed.index(after: open)
+    let argsEnd = trimmed.index(before: trimmed.endIndex)
+    guard argsStart <= argsEnd else { return nil }
+
+    let arguments = String(trimmed[argsStart..<argsEnd]).trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !arguments.isEmpty else { return nil }
+    return FunctionCall(name: name, arguments: arguments)
+  }
+
+  private static func parseRGBCommaSyntax(arguments: String, expectsAlpha: Bool) -> (r: Double, g: Double, b: Double, a: Double)? {
+    let parts = splitCommaSeparated(arguments)
+    let expected = expectsAlpha ? 4 : 3
+    guard parts.count == expected else { return nil }
+
+    guard
+      let r = parseRGBChannel(parts[0]),
+      let g = parseRGBChannel(parts[1]),
+      let b = parseRGBChannel(parts[2])
+    else { return nil }
+
+    let alpha: Double
+    if expectsAlpha {
+      guard let parsedAlpha = parseAlpha(parts[3]) else { return nil }
+      alpha = parsedAlpha
+    } else {
+      alpha = 1.0
+    }
+
+    return (r, g, b, alpha)
+  }
+
+  private static func parseRGBSpaceSyntax(arguments: String, expectsAlpha: Bool) -> (r: Double, g: Double, b: Double, a: Double)? {
+    let split = splitLeftAndOptionalAlpha(arguments)
+    guard let split else { return nil }
+    let channels = splitWhitespaceSeparated(split.left)
+    guard channels.count == 3 else { return nil }
+
+    guard
+      let r = parseRGBChannel(channels[0]),
+      let g = parseRGBChannel(channels[1]),
+      let b = parseRGBChannel(channels[2])
+    else { return nil }
+
+    let alpha: Double
+    if let alphaToken = split.alpha {
+      guard let parsedAlpha = parseAlpha(alphaToken) else { return nil }
+      alpha = parsedAlpha
+    } else {
+      guard !expectsAlpha else { return nil }
+      alpha = 1.0
+    }
+
+    return (r, g, b, alpha)
+  }
+
+  private static func parseHSLCommaSyntax(arguments: String, expectsAlpha: Bool) -> (h: Double, s: Double, l: Double, a: Double)? {
+    let parts = splitCommaSeparated(arguments)
+    let expected = expectsAlpha ? 4 : 3
+    guard parts.count == expected else { return nil }
+
+    guard
+      let h = parseHue(parts[0]),
+      let s = parsePercentage(parts[1]),
+      let l = parsePercentage(parts[2])
+    else { return nil }
+
+    let alpha: Double
+    if expectsAlpha {
+      guard let parsedAlpha = parseAlpha(parts[3]) else { return nil }
+      alpha = parsedAlpha
+    } else {
+      alpha = 1.0
+    }
+
+    return (h, s, l, alpha)
+  }
+
+  private static func parseHSLSpaceSyntax(arguments: String, expectsAlpha: Bool) -> (h: Double, s: Double, l: Double, a: Double)? {
+    let split = splitLeftAndOptionalAlpha(arguments)
+    guard let split else { return nil }
+    let channels = splitWhitespaceSeparated(split.left)
+    guard channels.count == 3 else { return nil }
+
+    guard
+      let h = parseHue(channels[0]),
+      let s = parsePercentage(channels[1]),
+      let l = parsePercentage(channels[2])
+    else { return nil }
+
+    let alpha: Double
+    if let alphaToken = split.alpha {
+      guard let parsedAlpha = parseAlpha(alphaToken) else { return nil }
+      alpha = parsedAlpha
+    } else {
+      guard !expectsAlpha else { return nil }
+      alpha = 1.0
+    }
+
+    return (h, s, l, alpha)
+  }
+
+  private static func splitCommaSeparated(_ arguments: String) -> [String] {
+    let parts = arguments
+      .split(separator: ",", omittingEmptySubsequences: false)
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+    if parts.contains(where: \.isEmpty) {
+      return []
+    }
+    return parts
+  }
+
+  private static func splitWhitespaceSeparated(_ input: String) -> [String] {
+    input
+      .split { $0.isWhitespace }
+      .map(String.init)
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+  }
+
+  private static func splitLeftAndOptionalAlpha(_ arguments: String) -> (left: String, alpha: String?)? {
+    let parts = arguments.split(separator: "/", omittingEmptySubsequences: false).map {
+      $0.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    guard (1...2).contains(parts.count) else { return nil }
+    guard let left = parts.first, !left.isEmpty else { return nil }
+
+    if parts.count == 1 {
+      return (left, nil)
+    }
+
+    let alpha = parts[1]
+    guard !alpha.isEmpty else { return nil }
+    return (left, alpha)
+  }
+
+  private static func parseRGBChannel(_ token: String) -> Double? {
+    if token.hasSuffix("%") {
+      guard let pct = Double(token.dropLast()) else { return nil }
+      return clamp01(pct / 100.0)
+    }
+    guard let value = Double(token) else { return nil }
+    return clamp01(value / 255.0)
+  }
+
+  private static func parsePercentage(_ token: String) -> Double? {
+    guard token.hasSuffix("%"), let value = Double(token.dropLast()) else { return nil }
+    return clamp01(value / 100.0)
+  }
+
+  private static func parseAlpha(_ token: String) -> Double? {
+    if token.hasSuffix("%") {
+      guard let pct = Double(token.dropLast()) else { return nil }
+      return clamp01(pct / 100.0)
+    }
+    guard let value = Double(token) else { return nil }
+    return clamp01(value)
+  }
+
+  private static func parseHue(_ token: String) -> Double? {
+    let normalized: Double?
+    if token.hasSuffix("deg"), let value = Double(token.dropLast(3)) {
+      normalized = value / 360.0
+    } else if token.hasSuffix("rad"), let value = Double(token.dropLast(3)) {
+      normalized = value / (2 * .pi)
+    } else if token.hasSuffix("turn"), let value = Double(token.dropLast(4)) {
+      normalized = value
+    } else {
+      normalized = Double(token).map { $0 / 360.0 }
+    }
+
+    guard let value = normalized else { return nil }
+    return normalizeUnit(value)
+  }
+
+  private static func clamp01(_ value: Double) -> Double {
+    Swift.max(0, Swift.min(1, value))
+  }
+
+  private static func normalizeUnit(_ value: Double) -> Double {
+    var result = value.truncatingRemainder(dividingBy: 1)
+    if result < 0 { result += 1 }
+    return result
   }
 
   /// Convert HSL to RGB

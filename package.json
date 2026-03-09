@@ -1,5 +1,6 @@
 {
   "name": "voltra",
+  "packageManager": "npm@10.8.2",
   "version": "1.2.0",
   "description": "Build Live Activities with JSX in React Native",
   "main": "build/index.js",
@@ -47,6 +48,11 @@
     "lint": "expo-module eslint",
     "lint:libOnly": "expo-module eslint ./src",
     "test": "expo-module test",
+    "test:js": "npm run test",
+    "test:kotlin": "cd example/android && ./gradlew :voltra:testDebugUnitTest",
+    "test:swift": "cd ios && swift test",
+    "test:native": "npm run test:kotlin && npm run test:swift",
+    "test:all": "npm run test:js && npm run test:native",
     "prepare": "expo-module prepare && rm .eslintrc.js",
     "postprepare": "echo '{\"type\": \"module\"}' > build/package.json",
     "prepublishOnly": "expo-module prepublishOnly",
@@ -54,7 +60,10 @@
     "open:ios": "xed example/ios",
     "generate": "ts-node generator/generate-types.ts",
     "harness:ios": "npm run harness:ios --prefix example",
-    "harness:android": "npm run harness:android --prefix example"
+    "harness:android": "npm run harness:android --prefix example",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "keywords": [
     "react-native",
@@ -79,6 +88,7 @@
     "vd-tool": "^4.0.2"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@types/dedent": "^0.7.2",
     "@types/node": "^20.19.25",
     "@types/react": "~19.0.0",
@@ -94,7 +104,8 @@
     "expo-module-scripts": "^4.1.10",
     "prettier": "2.8.8",
     "react-native": "0.79.1",
-    "ts-node": "^10.9.0"
+    "ts-node": "^10.9.0",
+    "turbo": "^2.8.3"
   },
   "peerDependencies": {
     "expo": "*",

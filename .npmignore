@@ -24,6 +24,11 @@ __tests__
 /android/src/test/
 /android/build/
 
+# Swift test infrastructure (repo-only)
+/ios/Package.swift
+/ios/Tests/
+/ios/.build/
+
 # Source files (we publish the built version)
 /src/
 
