@@ -38,6 +38,8 @@ class VoltraWidgetUpdateWorker(
         const val KEY_WIDGET_ID = "widget_id"
         const val KEY_SERVER_URL = "server_url"
         const val WORK_NAME_PREFIX = "voltra_widget_update_"
+        /** Stop retrying after this many consecutive failures to avoid infinite retry loops. */
+        const val MAX_RETRIES = 3
     }
 
     override suspend fun doWork(): Result =
@@ -83,8 +85,13 @@ class VoltraWidgetUpdateWorker(
                     // 4. Execute request
                     val responseCode = connection.responseCode
                     if (responseCode !in 200..299) {
-                        Log.e(TAG, "Server returned HTTP $responseCode for widget '$widgetId'")
-                        return@withContext Result.retry()
+                        Log.e(TAG, "Server returned HTTP $responseCode for widget '$widgetId' (attempt $runAttemptCount)")
+                        return@withContext if (runAttemptCount >= MAX_RETRIES) {
+                            Log.w(TAG, "Max retries ($MAX_RETRIES) reached for widget '$widgetId', giving up")
+                            Result.failure()
+                        } else {
+                            Result.retry()
+                        }
                     }
 
                     // 5. Read response
@@ -93,8 +100,13 @@ class VoltraWidgetUpdateWorker(
                     reader.close()
 
                     if (jsonString.isEmpty()) {
-                        Log.e(TAG, "Empty response from server for widget '$widgetId'")
-                        return@withContext Result.retry()
+                        Log.e(TAG, "Empty response from server for widget '$widgetId' (attempt $runAttemptCount)")
+                        return@withContext if (runAttemptCount >= MAX_RETRIES) {
+                            Log.w(TAG, "Max retries ($MAX_RETRIES) reached for widget '$widgetId', giving up")
+                            Result.failure()
+                        } else {
+                            Result.retry()
+                        }
                     }
 
                     Log.d(TAG, "Received ${jsonString.length} bytes for widget '$widgetId'")
@@ -150,8 +162,13 @@ class VoltraWidgetUpdateWorker(
                     connection.disconnect()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Server update failed for widget '$widgetId': ${e.message}", e)
-                Result.retry()
+                Log.e(TAG, "Server update failed for widget '$widgetId' (attempt $runAttemptCount): ${e.message}", e)
+                if (runAttemptCount >= MAX_RETRIES) {
+                    Log.w(TAG, "Max retries ($MAX_RETRIES) reached for widget '$widgetId', giving up")
+                    Result.failure()
+                } else {
+                    Result.retry()
+                }
             }
         }
 }

@@ -63,5 +63,10 @@
     "type": "file",
     "name": "server-side-updates",
     "label": "Server-side updates"
+  },
+  {
+    "type": "file",
+    "name": "server-driven-widgets",
+    "label": "Server-driven widgets"
   }
 ]

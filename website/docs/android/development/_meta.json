@@ -28,5 +28,10 @@
     "type": "file",
     "name": "widget-pre-rendering",
     "label": "Widget Pre-rendering"
+  },
+  {
+    "type": "file",
+    "name": "server-driven-widgets",
+    "label": "Server-driven widgets"
   }
 ]

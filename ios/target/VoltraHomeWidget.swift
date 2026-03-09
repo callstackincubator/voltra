@@ -194,8 +194,12 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
           family: familyKey
         )
 
-        // Store the fetched data in UserDefaults so it persists across timeline refreshes
-        if let group = VoltraConfig.groupIdentifier(),
+        let node = parseJsonToNode(data: data, family: context.family)
+
+        // Only cache the data after successful parsing to avoid overwriting
+        // good cached content with unparseable responses
+        if node != nil,
+           let group = VoltraConfig.groupIdentifier(),
            let defaults = UserDefaults(suiteName: group),
            let jsonString = String(data: data, encoding: .utf8)
         {
@@ -203,7 +207,6 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
           defaults.synchronize()
         }
 
-        let node = parseJsonToNode(data: data, family: context.family)
         let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
 
         // Schedule next update based on configured interval
