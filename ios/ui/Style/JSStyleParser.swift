@@ -35,6 +35,18 @@ enum JSStyleParser {
     JSColorParser.parse(value)
   }
 
+  static func background(_ value: Any?) -> BackgroundValue? {
+    guard let string = value as? String else { return nil }
+    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let gradient = JSGradientParser.parse(trimmed) {
+      return gradient
+    }
+    if let color = JSColorParser.parse(string) {
+      return .color(color)
+    }
+    return nil
+  }
+
   static func boolean(_ value: Any?) -> Bool {
     guard let value = value else { return false }
 
@@ -47,8 +59,8 @@ enum JSStyleParser {
     return false
   }
 
-  // Helper to resolve CSS Edge Precedence:
-  // Specific (Left) > Axis (Horizontal) > Generic (All)
+  /// Helper to resolve CSS Edge Precedence:
+  /// Specific (Left) > Axis (Horizontal) > Generic (All)
   static func parseInsets(from dict: [String: Any], prefix: String) -> EdgeInsets {
     let all = number(dict[prefix]) ?? 0
     let v = number(dict["\(prefix)Vertical"]) ?? all
@@ -62,7 +74,7 @@ enum JSStyleParser {
     )
   }
 
-  // Maps "bold", "600", "normal" -> Font.Weight
+  /// Maps "bold", "600", "normal" -> Font.Weight
   static func fontWeight(_ value: Any?) -> Font.Weight {
     guard let string = value as? String else { return .regular }
 
@@ -77,7 +89,7 @@ enum JSStyleParser {
     }
   }
 
-  // Maps "center", "right", "justify" -> TextAlignment
+  /// Maps "center", "right", "justify" -> TextAlignment
   static func textAlignment(_ value: Any?) -> TextAlignment {
     guard let string = value as? String else { return .leading }
 

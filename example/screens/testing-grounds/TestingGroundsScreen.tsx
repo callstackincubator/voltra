@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import React from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
@@ -56,6 +56,13 @@ const TESTING_GROUNDS_SECTIONS = [
     route: '/testing-grounds/flex-playground',
   },
   {
+    id: 'gradient-playground',
+    title: 'Gradient Playground',
+    description:
+      'Test CSS gradient strings as backgroundColor. Experiment with linear, radial, and conic gradients, direction/angle controls, color presets, stop positions, and borderRadius clipping.',
+    route: '/testing-grounds/gradient-playground',
+  },
+  {
     id: 'image-preloading',
     title: 'Image Preloading',
     description:
@@ -83,6 +90,16 @@ const TESTING_GROUNDS_SECTIONS = [
       'Test server-driven widget updates. Widgets fetch fresh content from a remote server without the user opening the app. Manage auth credentials and trigger reloads.',
     route: '/testing-grounds/server-driven-widgets',
   },
+  ...(Platform.OS === 'ios'
+    ? [
+        {
+          id: 'channel-updates',
+          title: 'Channel-Based Updates',
+          description: 'Start a minimal Live Activity bound to a broadcast channel ID and test server-driven updates.',
+          route: '/testing-grounds/channel-updates',
+        },
+      ]
+    : []),
   // Add more sections here as they are implemented
 ]
 

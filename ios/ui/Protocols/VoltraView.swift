@@ -23,5 +23,7 @@ public struct EmptyParameters: ComponentParameters {}
 
 /// Convenience extension for views with no parameters
 public extension VoltraView where Parameters == EmptyParameters {
-  var params: EmptyParameters { EmptyParameters() }
+  var params: EmptyParameters {
+    EmptyParameters()
+  }
 }

@@ -5,11 +5,11 @@ public struct VoltraInteractionIntent: LiveActivityIntent {
   public static var title: LocalizedStringResource = "Interact"
   public static var isDiscoverable: Bool = false
 
-  // The ID of the activity
+  /// The ID of the activity
   @Parameter(title: "Activity ID")
   var activityId: String
 
-  // The ID of the component in your JSON (e.g., "button_1", "pause_btn")
+  /// The ID of the component in your JSON (e.g., "button_1", "pause_btn")
   @Parameter(title: "Component ID")
   var componentId: String
 

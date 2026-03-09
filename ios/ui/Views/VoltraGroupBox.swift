@@ -20,7 +20,6 @@ public struct VoltraGroupBox: VoltraView {
     .applyStyle(element.style)
   }
 
-  @ViewBuilder
   private func buildNestedView(_ nestedView: VoltraNode) -> some View {
     nestedView
   }

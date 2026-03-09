@@ -4,7 +4,7 @@ import Foundation
 
 /// All Voltra event types with their associated data
 public enum VoltraEventType {
-  // Persistent events (widget → app, survives app death)
+  /// Persistent events (widget → app, survives app death)
   case interaction(source: String, identifier: String, payload: String?)
 
   // Transient events (main app only, in-memory)

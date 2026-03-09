@@ -91,8 +91,14 @@ struct VoltraFlexStackLayout: Layout {
     let mainMarginTrailing: CGFloat
     let crossMarginLeading: CGFloat
     let crossMarginTrailing: CGFloat
-    var mainMargin: CGFloat { mainMarginLeading + mainMarginTrailing }
-    var crossMargin: CGFloat { crossMarginLeading + crossMarginTrailing }
+    var mainMargin: CGFloat {
+      mainMarginLeading + mainMarginTrailing
+    }
+
+    var crossMargin: CGFloat {
+      crossMarginLeading + crossMarginTrailing
+    }
+
     let alignSelf: FlexAlign?
   }
 
@@ -325,10 +331,21 @@ struct VoltraFlexStackLayout: Layout {
       : containerPadding.leading + containerPadding.trailing
   }
 
-  private var leadingPad: CGFloat { containerPadding.leading }
-  private var trailingPad: CGFloat { containerPadding.trailing }
-  private var topPad: CGFloat { containerPadding.top }
-  private var bottomPad: CGFloat { containerPadding.bottom }
+  private var leadingPad: CGFloat {
+    containerPadding.leading
+  }
+
+  private var trailingPad: CGFloat {
+    containerPadding.trailing
+  }
+
+  private var topPad: CGFloat {
+    containerPadding.top
+  }
+
+  private var bottomPad: CGFloat {
+    containerPadding.bottom
+  }
 
   private var crossPaddingLeading: CGFloat {
     axis == .horizontal ? containerPadding.top : containerPadding.leading

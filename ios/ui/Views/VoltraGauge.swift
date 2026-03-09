@@ -59,7 +59,6 @@ public struct VoltraGauge: VoltraView {
     }
   }
 
-  @ViewBuilder
   private func buildNestedView(_ nestedView: VoltraNode) -> some View {
     nestedView
   }

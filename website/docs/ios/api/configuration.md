@@ -94,6 +94,21 @@ await startLiveActivity(variants, {
 
 **Valid range:** 0.0 to 1.0 (default: 0.0)
 
+### Channel ID (broadcast push, iOS 18+)
+
+The `channelId` option subscribes the Live Activity to a broadcast channel for server-side updates. When provided, the activity receives updates via broadcast push notifications instead of individual device tokens—one server notification updates all activities on that channel. Requires `enablePushNotifications: true` and the Broadcast Capability enabled in your Apple Developer account.
+
+```typescript
+import { startLiveActivity } from 'voltra/client'
+
+await startLiveActivity(variants, {
+  activityName: 'match-123',
+  channelId: 'CTrNsYq/Ee8AALLzHQaVlA==', // From APNs channel management
+})
+```
+
+For full broadcast setup, see [Server-side updates - Broadcast push notifications](../development/server-side-updates.md#broadcast-push-notifications-ios-18).
+
 These options can be used together with dismissal policy and other configuration options:
 
 ```typescript
