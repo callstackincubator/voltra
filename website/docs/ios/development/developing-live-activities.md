@@ -20,6 +20,32 @@ const variants = {
 }
 ```
 
+To customize the system Lock Screen chrome, pass an object with `content` and `activityBackgroundTint`:
+
+```typescript
+const variants = {
+  lockScreen: {
+    activityBackgroundTint: '#101828',
+    content: (
+      <Voltra.VStack>
+        <Voltra.Text>Your content here</Voltra.Text>
+      </Voltra.VStack>
+    ),
+  },
+}
+```
+
+`activityBackgroundTint` is applied via SwiftUI's `activityBackgroundTint(...)` modifier on iOS. Voltra currently accepts the same color formats handled by the native iOS parser:
+
+- Hex colors such as `#RGB`, `#RGBA`, `#RRGGBB`, and `#RRGGBBAA`
+- `rgb(...)` and `rgba(...)`
+- `hsl(...)` and `hsla(...)`
+- Named colors: `red`, `orange`, `yellow`, `green`, `mint`, `teal`, `cyan`, `blue`, `indigo`, `purple`, `pink`, `brown`, `white`, `gray`, `black`, `clear`, `transparent`, `primary`, `secondary`
+
+Use `clear` or `transparent` to make the Live Activity background transparent.
+
+If the string cannot be parsed as one of those formats, iOS ignores the tint.
+
 ### Dynamic Island
 
 The `island` variant defines how your Live Activity appears in the Dynamic Island (available on iPhone 14 Pro and later). The Dynamic Island has three display states:
@@ -46,6 +72,8 @@ const variants = {
   },
 }
 ```
+
+`keylineTint` uses the same iOS color parser and accepted formats as `activityBackgroundTint`.
 
 ### Supplemental Activity Families (iOS 18+, watchOS 11+)
 
