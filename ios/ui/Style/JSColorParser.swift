@@ -107,7 +107,7 @@ enum JSColorParser {
 
   // MARK: - Hex Parser
 
-  // Supports #RGB, #RGBA, #RRGGBB, #RRGGBBAA
+  /// Supports #RGB, #RGBA, #RRGGBB, #RRGGBBAA
   private static func parseHex(_ hex: String) -> Color? {
     let hexSanitized = hex.replacingOccurrences(of: "#", with: "")
 
@@ -147,9 +147,9 @@ enum JSColorParser {
 
   // MARK: - RGB Parser
 
-  // Supports:
-  // - rgb(255, 0, 0), rgba(255, 0, 0, 0.5)
-  // - rgb(255 0 0 / 80%), rgba(255 0 0 / 0.8)
+  /// Supports:
+  /// - rgb(255, 0, 0), rgba(255, 0, 0, 0.5)
+  /// - rgb(255 0 0 / 80%), rgba(255 0 0 / 0.8)
   private static func parseRGB(_ string: String) -> Color? {
     guard let function = parseFunctionCall(string, allowedNames: ["rgb", "rgba"]) else { return nil }
 
@@ -167,9 +167,9 @@ enum JSColorParser {
 
   // MARK: - HSL Parser
 
-  // Supports:
-  // - hsl(120, 100%, 50%), hsla(120, 100%, 50%, 0.5)
-  // - hsl(120 100% 50% / 30%), hsla(120 100% 50% / 0.3)
+  /// Supports:
+  /// - hsl(120, 100%, 50%), hsla(120, 100%, 50%, 0.5)
+  /// - hsl(120 100% 50% / 30%), hsla(120 100% 50% / 0.3)
   private static func parseHSL(_ string: String) -> Color? {
     guard let function = parseFunctionCall(string, allowedNames: ["hsl", "hsla"]) else { return nil }
 
@@ -208,7 +208,7 @@ enum JSColorParser {
     let argsEnd = trimmed.index(before: trimmed.endIndex)
     guard argsStart <= argsEnd else { return nil }
 
-    let arguments = String(trimmed[argsStart..<argsEnd]).trimmingCharacters(in: .whitespacesAndNewlines)
+    let arguments = String(trimmed[argsStart ..< argsEnd]).trimmingCharacters(in: .whitespacesAndNewlines)
     guard !arguments.isEmpty else { return nil }
     return FunctionCall(name: name, arguments: arguments)
   }
@@ -328,7 +328,7 @@ enum JSColorParser {
       $0.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    guard (1...2).contains(parts.count) else { return nil }
+    guard (1 ... 2).contains(parts.count) else { return nil }
     guard let left = parts.first, !left.isEmpty else { return nil }
 
     if parts.count == 1 {

@@ -190,7 +190,9 @@ export default function GradientPlaygroundScreen() {
         {/* rgba inside gradient */}
         <Card>
           <Card.Title>RGBA Inside Gradient</Card.Title>
-          <Text style={styles.previewSubtext}>linear-gradient(to right, rgba(255,0,0,0.8) 0%, rgba(0,0,255,0.3) 100%)</Text>
+          <Text style={styles.previewSubtext}>
+            linear-gradient(to right, rgba(255,0,0,0.8) 0%, rgba(0,0,255,0.3) 100%)
+          </Text>
 
           <VoltraView style={{ width: '100%', height: 80, backgroundColor: '#0F172A', padding: 16, marginTop: 12 }}>
             <Voltra.View

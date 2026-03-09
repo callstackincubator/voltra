@@ -1,6 +1,6 @@
-import XCTest
 import SwiftUI
 @testable import VoltraStyleCore
+import XCTest
 
 final class JSGradientParserTests: XCTestCase {
   private func assertLinearGradient(

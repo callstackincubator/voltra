@@ -36,7 +36,8 @@ export interface WithIOSProps {
  * so fonts must be registered before configureXcodeProject.
  */
 export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
-  const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier, fonts, version, buildNumber } = props
+  const { targetName, bundleIdentifier, deploymentTarget, widgets, groupIdentifier, fonts, version, buildNumber } =
+    props
 
   const plugins: [ConfigPlugin<any>, any][] = [
     // 1. Add custom fonts if provided

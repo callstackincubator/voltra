@@ -85,7 +85,6 @@ struct DecorationModifier: ViewModifier {
     }
   }
 
-  @ViewBuilder
   private func radialGradientBackground(_ spec: RadialGradientSpec) -> some View {
     GeometryReader { proxy in
       let size = proxy.size

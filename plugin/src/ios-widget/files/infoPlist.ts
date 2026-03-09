@@ -10,7 +10,7 @@ import { logger } from '../../utils/logger'
  * Version keys are written directly to the plist following the Expo pattern.
  */
 function generateInfoPlistContent(targetName: string, version: string, buildNumber: string): string {
-	return `<?xml version="1.0" encoding="UTF-8"?>
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -51,7 +51,7 @@ function generateInfoPlistContent(targetName: string, version: string, buildNumb
  * @param buildNumber - The build number (CFBundleVersion)
  */
 export function generateInfoPlist(targetPath: string, targetName: string, version: string, buildNumber: string): void {
-	const infoPlistPath = path.join(targetPath, 'Info.plist')
-	fs.writeFileSync(infoPlistPath, generateInfoPlistContent(targetName, version, buildNumber))
-	logger.info('Generated Info.plist')
+  const infoPlistPath = path.join(targetPath, 'Info.plist')
+  fs.writeFileSync(infoPlistPath, generateInfoPlistContent(targetName, version, buildNumber))
+  logger.info('Generated Info.plist')
 }

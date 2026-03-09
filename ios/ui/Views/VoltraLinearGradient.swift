@@ -9,7 +9,7 @@ public struct VoltraLinearGradient: VoltraView {
     self.element = element
   }
 
-  // Map string to UnitPoint
+  /// Map string to UnitPoint
   private func parsePoint(_ s: String?) -> UnitPoint {
     guard let raw = s else { return .center }
 
@@ -39,7 +39,7 @@ public struct VoltraLinearGradient: VoltraView {
     }
   }
 
-  // Build Gradient from parameters
+  /// Build Gradient from parameters
   private func buildGradient(params: LinearGradientParameters) -> Gradient {
     // Prefer explicit stops over color array
     if let stopsStr = params.stops {

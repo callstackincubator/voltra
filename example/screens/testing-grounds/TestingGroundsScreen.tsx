@@ -88,8 +88,7 @@ const TESTING_GROUNDS_SECTIONS = [
         {
           id: 'channel-updates',
           title: 'Channel-Based Updates',
-          description:
-            'Start a minimal Live Activity bound to a broadcast channel ID and test server-driven updates.',
+          description: 'Start a minimal Live Activity bound to a broadcast channel ID and test server-driven updates.',
           route: '/testing-grounds/channel-updates',
         },
       ]

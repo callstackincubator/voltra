@@ -58,9 +58,7 @@ export default function ChannelUpdatesTestingScreen() {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Channel-Based Updates</Text>
-        <Text style={styles.subheading}>
-          Start a minimal Live Activity subscribed to a specific broadcast channel.
-        </Text>
+        <Text style={styles.subheading}>Start a minimal Live Activity subscribed to a specific broadcast channel.</Text>
 
         <Card>
           <Card.Title>Live Activity Channel</Card.Title>

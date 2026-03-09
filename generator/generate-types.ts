@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 
@@ -40,6 +41,21 @@ const writeFiles = (outputDir: string, files: Record<string, string>) => {
   }
 }
 
+const runFormatScript = (scriptName: string, stepLabel: string) => {
+  console.log(`Step ${stepLabel}: Running npm run ${scriptName}...`)
+  try {
+    const result = execSync(`npm run ${scriptName}`, { encoding: 'utf-8', cwd: ROOT_DIR })
+    if (result.trim()) {
+      console.log(result.trim())
+    }
+  } catch (error: any) {
+    console.warn(`   Warning: npm run ${scriptName} exited with code ${error.status ?? 'unknown'}`)
+    if (error.stdout) console.log('   stdout:', error.stdout.trim())
+    if (error.stderr) console.log('   stderr:', error.stderr.trim())
+  }
+  console.log()
+}
+
 const main = () => {
   console.log('🚀 Generating types from schemas...\n')
 
@@ -65,29 +81,6 @@ const main = () => {
   console.log('Step 3: Generating TypeScript component props types and component exports...')
   const tsJsxResult = generateTypeScriptJSX(componentsData)
   writeFiles(TS_PROPS_OUTPUT_DIR, tsJsxResult.props)
-  console.log()
-
-  // Step 4: Lint and fix generated TypeScript files
-  console.log('Step 4: Running eslint --fix on generated TypeScript files...')
-  const generatedTsFiles = Object.keys(tsJsxResult.props).map((filename) => path.join(TS_PROPS_OUTPUT_DIR, filename))
-  if (generatedTsFiles.length > 0) {
-    const eslintCommand = `npx eslint --fix ${generatedTsFiles.join(' ')}`
-    try {
-      const result = require('child_process').execSync(eslintCommand, { encoding: 'utf-8', cwd: ROOT_DIR })
-      if (result) {
-        console.log('   ESLint output:', result.trim())
-      }
-    } catch (error: any) {
-      // ESLint might exit with code 1 if it fixed issues, which is normal
-      if (error.status !== 0 && error.status !== 1) {
-        console.warn('   Warning: ESLint exited with code', error.status)
-        if (error.stdout) console.log('   stdout:', error.stdout.trim())
-        if (error.stderr) console.log('   stderr:', error.stderr.trim())
-      } else if (error.stdout) {
-        console.log('   ESLint output:', error.stdout.trim())
-      }
-    }
-  }
   console.log()
 
   // Step 5: Generate Swift parameter types
@@ -148,6 +141,11 @@ const main = () => {
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftShortNameFiles)
   writeFiles(KOTLIN_GENERATED_DIR, kotlinShortNameFiles)
   console.log()
+
+  // Step 8: Format generated output
+  runFormatScript('format:js:fix', '8')
+  runFormatScript('format:kotlin:fix', '9')
+  runFormatScript('format:swift:fix', '10')
 
   console.log('✅ Generation complete!\n')
   console.log('Generated files:')

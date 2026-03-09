@@ -104,7 +104,7 @@ public enum VoltraHomeWidgetStore {
   }
 }
 
-// Timeline data structures (intermediate storage - still uses Data for flexibility)
+/// Timeline data structures (intermediate storage - still uses Data for flexibility)
 public struct WidgetTimelineEntry {
   let date: Date
   let json: Data
@@ -129,15 +129,6 @@ public struct VoltraHomeWidgetEntry: TimelineEntry, Equatable {
     self.rootNode = rootNode
     self.widgetId = widgetId
     self.deepLinkUrl = deepLinkUrl
-  }
-
-  public static func == (lhs: VoltraHomeWidgetEntry, rhs: VoltraHomeWidgetEntry) -> Bool {
-    // VoltraNode is Hashable, so this comparison works correctly.
-    // If the parsed AST is different, entries are not equal → WidgetKit re-renders.
-    lhs.date == rhs.date &&
-      lhs.rootNode == rhs.rootNode &&
-      lhs.widgetId == rhs.widgetId &&
-      lhs.deepLinkUrl == rhs.deepLinkUrl
   }
 }
 
@@ -240,7 +231,6 @@ public struct VoltraHomeWidgetView: View {
     .disableWidgetMarginsIfAvailable()
   }
 
-  @ViewBuilder
   private func placeholderView(widgetId _: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Almost ready")

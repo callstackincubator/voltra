@@ -77,10 +77,10 @@ struct LayoutStyle {
   var alignSelf: FlexAlign? // nil = auto (inherit from container)
   var gap: CGFloat? // Spacing between flex children
 
-  // 3. Priority (legacy only, derived from flex)
+  /// 3. Priority (legacy only, derived from flex)
   var layoutPriority: Double?
 
-  // 4. Aspect Ratio
+  /// 4. Aspect Ratio
   var aspectRatio: CGFloat?
 
   // 5. Spacing
@@ -99,7 +99,7 @@ struct LayoutModifier: ViewModifier {
   let style: LayoutStyle
   var contentAlignment: Alignment = .center
 
-  // Extract CGFloat from SizeValue for frame constraints
+  /// Extract CGFloat from SizeValue for frame constraints
   private var widthValue: CGFloat? {
     guard case let .fixed(v) = style.width else { return nil }
     return v
@@ -110,21 +110,21 @@ struct LayoutModifier: ViewModifier {
     return v
   }
 
-  // Derive effective ideal width: explicit width, then flexBasis, then nil
+  /// Derive effective ideal width: explicit width, then flexBasis, then nil
   private var effectiveIdealWidth: CGFloat? {
     if let w = widthValue { return w }
     if case let .fixed(v) = style.flexBasis { return v }
     return nil
   }
 
-  // Derive effective ideal height: explicit height, then flexBasis, then nil
+  /// Derive effective ideal height: explicit height, then flexBasis, then nil
   private var effectiveIdealHeight: CGFloat? {
     if let h = heightValue { return h }
     if case let .fixed(v) = style.flexBasis { return v }
     return nil
   }
 
-  // flexShrink > 0: allow shrinking by setting min to 0 (unless explicitly constrained)
+  /// flexShrink > 0: allow shrinking by setting min to 0 (unless explicitly constrained)
   private var effectiveMinWidth: CGFloat? {
     style.flexShrink > 0 ? (style.minWidth ?? 0) : style.minWidth
   }
@@ -173,7 +173,7 @@ struct LayoutModifier: ViewModifier {
       }
   }
 
-  // Expand if flex > 0 OR flexGrow > 0 OR width/height is .fill
+  /// Expand if flex > 0 OR flexGrow > 0 OR width/height is .fill
   private var shouldExpandWidth: Bool {
     (style.flex ?? 0) > 0 || style.flexGrow > 0 || style.width == .fill
   }
