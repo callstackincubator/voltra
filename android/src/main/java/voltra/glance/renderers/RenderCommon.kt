@@ -3,6 +3,7 @@ package voltra.glance.renderers
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.Composable
@@ -103,7 +104,7 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
                 val uri = Uri.parse(uriString)
                 context.contentResolver.openInputStream(uri)?.use { stream ->
                     val bitmap = BitmapFactory.decodeStream(stream)
-                    return ImageProvider(bitmap)
+                    return ImageProvider(Icon.createWithBitmap(bitmap))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to decode preloaded image: $assetName", e)
@@ -116,7 +117,7 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
             val decodedString = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
             val bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
             if (bitmap != null) {
-                return ImageProvider(bitmap)
+                return ImageProvider(Icon.createWithBitmap(bitmap))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to decode base64 image", e)
@@ -183,6 +184,7 @@ private fun RenderElement(element: VoltraElement) {
         ComponentTypeID.SCAFFOLD -> RenderScaffold(element)
         ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element)
         ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element)
+        ComponentTypeID.CHART -> RenderChart(element)
     }
 }
 
@@ -217,5 +219,6 @@ fun RenderElementWithModifier(
         ComponentTypeID.SCAFFOLD -> RenderScaffold(element, modifier)
         ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element, modifier)
         ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element, modifier)
+        ComponentTypeID.CHART -> RenderChart(element, modifier)
     }
 }

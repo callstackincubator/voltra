@@ -90,6 +90,16 @@
                 "resizeMode": "horizontal|vertical",
                 "widgetCategory": "home_screen",
                 "initialStatePath": "./widgets/android-image-fallback-initial.tsx"
+              },
+              {
+                "id": "chart_widget",
+                "displayName": "Chart Widget",
+                "description": "Test Chart component",
+                "targetCellWidth": 3,
+                "targetCellHeight": 3,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen",
+                "initialStatePath": "./widgets/android-chart-widget-initial.tsx"
               }
             ]
           },
