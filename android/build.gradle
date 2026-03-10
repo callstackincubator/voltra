@@ -96,8 +96,11 @@ dependencies {
   // WorkManager (for periodic server-driven widget updates)
   api "androidx.work:work-runtime-ktx:2.9.1"
 
-  // DataStore (secure credential storage for widget server updates)
+  // DataStore (credential storage for widget server updates)
   api "androidx.datastore:datastore-preferences:1.1.4"
+
+  // Google Tink (encryption for credential storage)
+  implementation "com.google.crypto.tink:tink-android:1.15.0"
 
   // JSON parsing
   implementation "com.google.code.gson:gson:2.10.1"

@@ -127,7 +127,7 @@ The handler responds to GET requests with these query parameters:
 
 ## Authentication
 
-Widgets on Android are part of the main app binary, so the WorkManager background worker can access credential storage directly. Voltra stores credentials in **EncryptedSharedPreferences** for security.
+Widgets on Android are part of the main app binary, so the WorkManager background worker can access credential storage directly. Voltra encrypts credentials at rest using **Google Tink** (AES-256-GCM with Android Keystore-backed key management) and persists them in Jetpack DataStore.
 
 ### Setting credentials
 

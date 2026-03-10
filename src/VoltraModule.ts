@@ -216,7 +216,7 @@ export interface VoltraModuleSpec {
 
   /**
    * Set server credentials for widget server-driven updates.
-   * Stored securely in Keychain (iOS) or EncryptedSharedPreferences (Android).
+   * Stored securely in Keychain (iOS) or encrypted DataStore via Tink (Android).
    */
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
 

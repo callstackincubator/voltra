@@ -83,7 +83,7 @@ export type UpdateWidgetOptions = {
 
 /**
  * Configuration for widget server credentials.
- * These are stored securely (Keychain on iOS, EncryptedSharedPreferences on Android)
+ * These are stored securely (Keychain on iOS, Tink-encrypted DataStore on Android)
  * and used by the widget extension to authenticate with the Voltra SSR server.
  */
 export type WidgetServerCredentials = {

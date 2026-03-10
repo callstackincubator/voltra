@@ -11,9 +11,10 @@ export type { WidgetServerCredentials } from '../types.js'
  * main app and widget extension) with `kSecAttrAccessibleAfterFirstUnlock` to allow
  * background access.
  *
- * On Android, credentials are stored in EncryptedSharedPreferences, which is
- * automatically accessible by the widget's WorkManager background worker since
- * widgets are part of the main app binary.
+ * On Android, credentials are encrypted via Google Tink (AES-256-GCM) and
+ * persisted in Jetpack DataStore. The encryption key is managed by the Android
+ * Keystore. The WorkManager background worker can access this storage directly
+ * since widgets are part of the main app binary.
  *
  * Call this after the user logs in to enable authenticated widget updates.
  *

@@ -14,7 +14,8 @@ import kotlinx.coroutines.runBlocking
 
 /**
  * Secure credential storage for widget server-driven updates.
- * Uses Jetpack DataStore with Preferences for storing auth tokens and custom headers.
+ * Uses Jetpack DataStore with Preferences for persistence, and Google Tink AEAD
+ * for encrypting sensitive values (tokens and headers) at rest.
  *
  * Since Android widgets are part of the main app binary, they inherently share
  * this storage; no special grouping or sharing configuration is required.
@@ -32,18 +33,17 @@ object VoltraWidgetCredentialStore {
     private const val KEY_HEADERS_PREFIX = "header_"
 
     /**
-     * Save an auth token.
+     * Save an auth token (encrypted via Tink AEAD).
      * Called from the main app after user login.
      */
-    suspend fun saveToken(
-        context: Context,
-        token: String,
-    ): Boolean =
-        try {
+    suspend fun saveToken(context: Context, token: String): Boolean {
+        return try {
+            val encrypted = VoltraCryptoManager.encrypt(context, token)
+                ?: throw IllegalStateException("Failed to encrypt token")
             context.voltraCredentialsDataStore.edit { prefs ->
-                prefs[KEY_TOKEN] = token
+                prefs[KEY_TOKEN] = encrypted
             }
-            Log.d(TAG, "Token saved")
+            Log.d(TAG, "Token saved (encrypted)")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save token: ${e.message}", e)
@@ -51,14 +51,15 @@ object VoltraWidgetCredentialStore {
         }
 
     /**
-     * Read the auth token.
+     * Read the auth token (decrypted via Tink AEAD).
      * Called from the WorkManager Worker during background fetch.
      */
-    suspend fun readToken(context: Context): String? =
-        try {
-            context.voltraCredentialsDataStore.data
+    suspend fun readToken(context: Context): String? {
+        return try {
+            val encrypted = context.voltraCredentialsDataStore.data
                 .map { prefs -> prefs[KEY_TOKEN] }
                 .firstOrNull()
+            encrypted?.let { VoltraCryptoManager.decrypt(context, it) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to read token: ${e.message}", e)
             null
@@ -71,7 +72,7 @@ object VoltraWidgetCredentialStore {
     fun readTokenBlocking(context: Context): String? = runBlocking { readToken(context) }
 
     /**
-     * Save custom headers.
+     * Save custom headers (values encrypted via Tink AEAD).
      */
     suspend fun saveHeaders(
         context: Context,
@@ -85,15 +86,17 @@ object VoltraWidgetCredentialStore {
                     prefs.remove(stringPreferencesKey("$KEY_HEADERS_PREFIX$key"))
                 }
 
-                // Save new headers
+                // Save new headers with encrypted values
                 val headerKeys = mutableSetOf<String>()
                 headers.forEach { (key, value) ->
-                    prefs[stringPreferencesKey("$KEY_HEADERS_PREFIX$key")] = value
+                    val encrypted = VoltraCryptoManager.encrypt(context, value)
+                        ?: throw IllegalStateException("Failed to encrypt header value for key: $key")
+                    prefs[stringPreferencesKey("$KEY_HEADERS_PREFIX$key")] = encrypted
                     headerKeys.add(key)
                 }
                 prefs[KEY_HEADER_KEYS] = headerKeys
             }
-            Log.d(TAG, "Headers saved (${headers.size} headers)")
+            Log.d(TAG, "Headers saved (${headers.size} headers, encrypted)")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save headers: ${e.message}", e)
@@ -101,7 +104,7 @@ object VoltraWidgetCredentialStore {
         }
 
     /**
-     * Read custom headers.
+     * Read custom headers (values decrypted via Tink AEAD).
      * Called from the WorkManager Worker during background fetch.
      */
     suspend fun readHeaders(context: Context): Map<String, String> =
@@ -111,9 +114,14 @@ object VoltraWidgetCredentialStore {
                     val headerKeys = prefs[KEY_HEADER_KEYS] ?: emptySet()
                     val headers = mutableMapOf<String, String>()
                     headerKeys.forEach { key ->
-                        val value = prefs[stringPreferencesKey("$KEY_HEADERS_PREFIX$key")]
-                        if (value != null) {
-                            headers[key] = value
+                        val encrypted = prefs[stringPreferencesKey("$KEY_HEADERS_PREFIX$key")]
+                        if (encrypted != null) {
+                            val decrypted = VoltraCryptoManager.decrypt(context, encrypted)
+                            if (decrypted != null) {
+                                headers[key] = decrypted
+                            } else {
+                                Log.w(TAG, "Failed to decrypt header value for key: $key")
+                            }
                         }
                     }
                     headers as Map<String, String>

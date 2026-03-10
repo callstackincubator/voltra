@@ -31,7 +31,7 @@ export default function ServerDrivenWidgetsScreen() {
       setCredentialsSet(true)
       Alert.alert(
         'Success',
-        'Widget server credentials saved securely.\n\nOn iOS: stored in Shared Keychain\nOn Android: stored in EncryptedSharedPreferences'
+        'Widget server credentials saved securely.\n\nOn iOS: stored in Shared Keychain\nOn Android: encrypted via Tink in DataStore'
       )
     } catch (error) {
       Alert.alert('Error', `Failed to set credentials: ${error}`)
