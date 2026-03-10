@@ -16,6 +16,8 @@ import type { SectorMarkProps } from './SectorMark.js'
 export type AndroidChartProps = VoltraAndroidBaseProps & {
   xAxisVisibility?: 'automatic' | 'visible' | 'hidden'
   yAxisVisibility?: 'automatic' | 'visible' | 'hidden'
+  xAxisGridStyle?: { visible?: boolean }
+  yAxisGridStyle?: { visible?: boolean }
   legendVisibility?: 'automatic' | 'visible' | 'hidden'
   foregroundStyleScale?: Record<string, string>
   chartScrollableAxes?: 'horizontal' | 'vertical'
@@ -96,7 +98,7 @@ const ENCODERS: Record<string, (props: any) => MarkWire> = {
 // ---- component ----
 
 export const Chart = createVoltraComponent<AndroidChartProps>('AndroidChart', {
-  toJSON: ({ children, foregroundStyleScale, ...rest }) => {
+  toJSON: ({ children, foregroundStyleScale, xAxisGridStyle, yAxisGridStyle, ...rest }) => {
     const marks: MarkWire[] = []
 
     React.Children.forEach(children, (child) => {
@@ -113,6 +115,8 @@ export const Chart = createVoltraComponent<AndroidChartProps>('AndroidChart', {
     if (foregroundStyleScale != null) {
       result.foregroundStyleScale = JSON.stringify(Object.entries(foregroundStyleScale))
     }
+    if (xAxisGridStyle?.visible === false) result.xAxisGridVisible = false
+    if (yAxisGridStyle?.visible === false) result.yAxisGridVisible = false
 
     return result
   },

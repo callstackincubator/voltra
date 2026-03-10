@@ -121,6 +121,8 @@ fun renderChartBitmap(
     foregroundStyleScale: Map<String, Int>? = null,
     xAxisVisible: Boolean = true,
     yAxisVisible: Boolean = true,
+    xAxisGridVisible: Boolean = true,
+    yAxisGridVisible: Boolean = true,
     dpScale: Float = 1f,
 ): Bitmap {
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -197,9 +199,11 @@ fun renderChartBitmap(
             pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
         }
     val gridSteps = 4
-    for (i in 0..gridSteps) {
-        val y = chartTop + (chartHeight * i / gridSteps)
-        canvas.drawLine(chartLeft, y, chartRight, y, gridPaint)
+    if (yAxisGridVisible) {
+        for (i in 0..gridSteps) {
+            val y = chartTop + (chartHeight * i / gridSteps)
+            canvas.drawLine(chartLeft, y, chartRight, y, gridPaint)
+        }
     }
 
     val axisPaint =
