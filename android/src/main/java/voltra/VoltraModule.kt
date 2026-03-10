@@ -349,6 +349,11 @@ class VoltraModule : Module() {
                 }
 
                 Log.d(TAG, "Widget server credentials saved")
+                
+                val widgetManager = voltra.widget.VoltraWidgetManager(context)
+                runBlocking {
+                    widgetManager.reloadAllWidgets()
+                }
             }
 
             AsyncFunction("clearWidgetServerCredentials") {
