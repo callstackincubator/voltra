@@ -49,6 +49,7 @@ object VoltraWidgetCredentialStore {
             Log.e(TAG, "Failed to save token: ${e.message}", e)
             false
         }
+    }
 
     /**
      * Read the auth token (decrypted via Tink AEAD).
@@ -64,6 +65,7 @@ object VoltraWidgetCredentialStore {
             Log.e(TAG, "Failed to read token: ${e.message}", e)
             null
         }
+    }
 
     /**
      * Read the auth token synchronously (blocking).

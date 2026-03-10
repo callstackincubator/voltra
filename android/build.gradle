@@ -100,7 +100,7 @@ dependencies {
   api "androidx.datastore:datastore-preferences:1.1.4"
 
   // Google Tink (encryption for credential storage)
-  implementation "com.google.crypto.tink:tink-android:1.15.0"
+  implementation "com.google.crypto.tink:tink-android:1.19.0"
 
   // JSON parsing
   implementation "com.google.code.gson:gson:2.10.1"

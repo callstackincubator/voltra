@@ -5,8 +5,8 @@ import android.util.Base64
 import android.util.Log
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeysetHandle
+import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.aead.AeadConfig
-import com.google.crypto.tink.aead.PredefinedAeadParameters
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 
 /**
@@ -43,7 +43,7 @@ object VoltraCryptoManager {
 
         val keysetHandle: KeysetHandle = AndroidKeysetManager.Builder()
             .withSharedPref(context, KEYSET_NAME, PREF_FILE_NAME)
-            .withKeyTemplate(PredefinedAeadParameters.AES256_GCM)
+            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
             .withMasterKeyUri(MASTER_KEY_URI)
             .build()
             .keysetHandle
