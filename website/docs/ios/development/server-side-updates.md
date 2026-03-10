@@ -143,14 +143,33 @@ Replace `<your.app.bundle.id>` with your app's bundle identifier (e.g., `com.exa
 }
 ```
 
+**For ending an existing Live Activity:**
+
+```json
+{
+  "aps": {
+    "timestamp": 1683012400,
+    "event": "end",
+    "content-state": {
+      "uiJsonData": "{\"lockScreen\":{\"type\":\"VStack\",\"children\":{\"type\":\"Text\",\"children\":\"Hello\",\"props\":{}},\"props\":{}}}"
+    },
+    "dismissal-date": 1683016000
+  }
+}
+```
+
 **Key fields:**
 
-- `aps.event`: Set to `"update"` for updating an existing Live Activity, or `"start"` for push-to-start (iOS 17.2+)
-- `aps.content-state.uiJsonData`: The JSON string returned by `renderLiveActivityToString`, embedded as a string value eg. `ixOAeyJ2IjoxLCJscyI6eyJ0IjowLCJjIjoiSGVsbG8sIHdvcmxkISJ9fQM=`
+- `aps.event`: Set to `"update"` to update, `"end"` to end, or `"start"` for push-to-start (iOS 17.2+)
+- `aps.content-state.uiJsonData`: The JSON string returned by `renderLiveActivityToString`, embedded as a string value eg. `ixOAeyJ2IjoxLCJscyI6eyJ0IjowLCJjIjoiSGVsbG8sIHdvcmxkISJ9fQM=`. This must be sent for `update` and `end` events.
 - `aps.timestamp`: Unix timestamp in seconds (required for Live Activities)
 - `aps.attributes-type`: For push-to-start, must be `"VoltraAttributes"`
 - `aps.attributes.name`: For push-to-start, a user-defined name for the activity (can be any string you choose)
 - `aps.alert`: Required field for push-to-start
+
+For `event: "end"`, include `aps.dismissal-date`.
+To remove the Live Activity from the Lock Screen right after it ends, set `dismissal-date` to a timestamp in the past (for example, 1663177260).
+You can also set a timestamp up to four hours in the future to control when it’s dismissed.
 
 :::danger
 ActivityKit enforces a strict payload size limit of approximately 4 KB. Keep your UI JSON minimal to stay within this limit. Avoid deeply nested component trees and excessive styling to ensure your payloads fit within the constraint.
