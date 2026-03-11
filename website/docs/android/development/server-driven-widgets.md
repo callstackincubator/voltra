@@ -48,7 +48,7 @@ Add the `serverUpdate` option to your Android widget in `app.json` or `app.confi
 
 **`serverUpdate` options:**
 
-- `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId` and `platform=android` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android`).
+- `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform`, and `theme` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android&theme=dark`).
 - `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. The minimum effective interval is 15 minutes (WorkManager requirement).
 
 After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native widget code picks up the new server update settings.
@@ -71,6 +71,7 @@ const handler = createWidgetUpdateNodeHandler({
   renderAndroid: async (req) => {
     // req.widgetId — the widget requesting an update
     // req.platform — always "android" for Android widget requests
+    // req.theme    — the system color scheme ("light" or "dark")
     // req.token    — the auth token (if credentials were set)
 
     const weather = await fetchWeatherData()
@@ -124,6 +125,9 @@ The handler responds to GET requests with these query parameters:
 | `widgetId` | The widget identifier (required) |
 | `platform` | The requesting platform. Must be `android` or `ios` (required). |
 | `family` | The widget family/size (iOS only — absent for Android) |
+| `theme` | The system color scheme (`light` or `dark`) |
+
+The `User-Agent` header is set to `VoltraWidget/<version> (Android/<version>)`.
 
 ## Authentication
 
@@ -233,7 +237,7 @@ If you're serving the endpoint from Node or Express, use `createWidgetUpdateNode
 └─────────────────┘                                            │
                                                                │ reads token
                                                                ▼
-┌─────────────────┐ GET ?widgetId=X&platform=android ┌──────────────────┐
+┌─────────────────┐ GET ?widgetId=X&platform=android&theme=Y ┌──────────────────┐
 │  WorkManager     │ ─────────────────────────────►   │  Your Server     │
 │  (background)    │ ◄─────────────────────────────   │  (Voltra SSR)    │
 └─────────────────┘       JSON payload               └──────────────────┘

@@ -45,7 +45,7 @@ Add the `serverUpdate` option to your widget in `app.json` or `app.config.js`:
 
 **`serverUpdate` options:**
 
-- `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform=ios`, and `family` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=ios&family=systemSmall`).
+- `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform`, `family`, and `theme` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=ios&family=systemSmall&theme=dark`).
 - `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. iOS WidgetKit may throttle requests; the minimum effective interval is ~15 minutes.
 
 After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native files and widget extension pick up the new server update settings.
@@ -64,6 +64,7 @@ const handler = createWidgetUpdateNodeHandler({
     // req.widgetId — the widget requesting an update
     // req.platform — always "ios" for iOS widget requests
     // req.family   — the widget size ("systemSmall", "systemMedium", etc.)
+    // req.theme    — the system color scheme ("light" or "dark")
     // req.token    — the auth token (if credentials were set)
 
     const weather = await fetchWeatherData()
@@ -107,8 +108,9 @@ The handler responds to GET requests with these query parameters:
 | `widgetId` | The widget identifier (required) |
 | `platform` | The requesting platform. Must be `ios` for iOS widgets (required). |
 | `family` | The widget family/size (iOS only) |
+| `theme` | The system color scheme (`light` or `dark`) |
 
-The `Authorization: Bearer <token>` header is automatically extracted and passed to `validateToken` and `renderIos`.
+The `Authorization: Bearer <token>` header is automatically extracted and passed to `validateToken` and `renderIos`. The `User-Agent` header is set to `VoltraWidget/1.0 (iOS/<version>)`.
 
 For Fetch-native runtimes, use `createWidgetUpdateHandler()` instead of the Node adapter:
 
@@ -226,7 +228,7 @@ Provide a meaningful initial state (e.g. "Loading..." or placeholder content) ra
 └─────────────────┘                                              │
                                                                  │ reads token
                                                                  ▼
-┌─────────────────┐ GET ?widgetId=X&platform=ios&family=Y ┌──────────────────┐
+┌─────────────────┐ GET ?widgetId=X&platform=ios&family=Y&theme=Z ┌──────────────────┐
 │  WidgetKit       │ ──────────────────────────────────►  │  Your Server     │
 │  (extension)     │ ◄──────────────────────────────────  │  (Voltra SSR)    │
 └─────────────────┘          JSON payload                 └──────────────────┘

@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Handles fetching widget content from a remote Voltra SSR server.
 /// Used by the TimelineProvider to pull server-driven widget updates.
@@ -59,12 +60,27 @@ public enum VoltraWidgetServerFetcher {
     return 60 // default: 1 hour
   }
 
+  private static func currentColorScheme() -> String {
+    if #available(iOSApplicationExtension 13.0, *) {
+      switch UITraitCollection.current.userInterfaceStyle {
+      case .dark:
+        return "dark"
+      case .light:
+        return "light"
+      default:
+        return "light"
+      }
+    }
+    return "light"
+  }
+
   /// Fetch widget content from the remote Voltra SSR server.
   ///
   /// The request includes:
   /// - `widgetId` query parameter
   /// - `family` query parameter (e.g., "systemSmall")
   /// - `platform` query parameter (`ios`)
+  /// - `theme` query parameter (`light` or `dark`)
   /// - `Authorization: Bearer <token>` header (if credentials stored in Keychain)
   /// - Any custom headers stored in Keychain
   ///
@@ -82,10 +98,13 @@ public enum VoltraWidgetServerFetcher {
       throw FetchError.invalidUrl(baseUrl)
     }
 
+    let theme = currentColorScheme()
+
     var queryItems = components.queryItems ?? []
     queryItems.append(URLQueryItem(name: "widgetId", value: widgetId))
     queryItems.append(URLQueryItem(name: "family", value: family))
     queryItems.append(URLQueryItem(name: "platform", value: "ios"))
+    queryItems.append(URLQueryItem(name: "theme", value: theme))
     components.queryItems = queryItems
 
     guard let url = components.url else {
@@ -109,8 +128,9 @@ public enum VoltraWidgetServerFetcher {
     }
 
     // Add Voltra-specific headers
+    let systemVersion = UIDevice.current.systemVersion
     request.setValue("application/json", forHTTPHeaderField: "Accept")
-    request.setValue("VoltraWidget/1.0", forHTTPHeaderField: "User-Agent")
+    request.setValue("VoltraWidget/1.0 (iOS/\(systemVersion))", forHTTPHeaderField: "User-Agent")
 
     do {
       let (data, response) = try await URLSession.shared.data(for: request)

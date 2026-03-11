@@ -17,8 +17,18 @@ export type { WidgetVariants } from './widgets/types.js'
  */
 export type WidgetPlatform = 'ios' | 'android'
 
+/**
+ * The system color scheme reported by the native widget.
+ * Read from the `theme` query parameter.
+ */
+export type WidgetTheme = 'light' | 'dark'
+
 function isWidgetPlatform(value: string | null): value is WidgetPlatform {
   return value === 'ios' || value === 'android'
+}
+
+function isWidgetTheme(value: string | null): value is WidgetTheme {
+  return value === 'light' || value === 'dark'
 }
 
 type NodeLikeRequest = IncomingMessage & {
@@ -45,6 +55,8 @@ export interface WidgetRenderRequest {
   widgetId: string
   /** The platform the request is coming from */
   platform: WidgetPlatform
+  /** The system color scheme (`light` or `dark`). Defaults to `light` when not provided. */
+  theme: WidgetTheme
   /** The widget family/size (iOS only: "systemSmall", "systemMedium", etc.) */
   family?: string
   /** The authorization token from the request (if present) */
@@ -173,6 +185,8 @@ export function createWidgetUpdateHandler(options: WidgetUpdateHandlerOptions): 
       }
 
       const platform: WidgetPlatform = platformParam
+      const themeParam = url.searchParams.get('theme')
+      const theme: WidgetTheme = isWidgetTheme(themeParam) ? themeParam : 'light'
 
       // Extract auth token
       const authHeader = request.headers.get('authorization')
@@ -194,6 +208,7 @@ export function createWidgetUpdateHandler(options: WidgetUpdateHandlerOptions): 
       const renderRequest: WidgetRenderRequest = {
         widgetId,
         platform,
+        theme,
         family,
         token,
         headers: normalizeHeaders(request.headers),
