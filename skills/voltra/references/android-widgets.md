@@ -9,6 +9,7 @@ Use this reference for Android Voltra widget UI or Android widget runtime APIs.
 - Do not use `Voltra.VStack`, `Voltra.HStack`, or plain React Native primitives inside Android Voltra widget trees.
 - Do not claim APNS or undocumented FCM server-update support for Android.
 - If the task includes widget registration, picker previews, or initial state files, also read `app-config.md`.
+- If the task includes `serverUpdate`, WorkManager-driven refreshes, widget auth credentials, or `createWidgetUpdateHandler`, also read `server-driven-widgets.md`.
 - For images, use `VoltraAndroid.Image` with build-time `assetName`s or preloaded keys. Use `preloadImages`, `reloadWidgets`, and `clearPreloadedImages` from `voltra/android/client` for runtime images.
 
 ## Preferred APIs
@@ -24,8 +25,11 @@ Use this reference for Android Voltra widget UI or Android widget runtime APIs.
 - `preloadImages`
 - `reloadWidgets`
 - `clearPreloadedImages`
+- `setWidgetServerCredentials`
+- `clearWidgetServerCredentials`
 
 ## Sources
 
 - `component-mapping.md`
 - `runtime-api-checklist.md`
+- `server-driven-widgets.md`

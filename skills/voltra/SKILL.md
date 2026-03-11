@@ -38,6 +38,7 @@ Read only the references needed for the current task:
 - iOS Home Screen widgets, accessory widgets, scheduled widgets, widget timelines, widget families, `VoltraWidgetPreview`, `updateWidget`, `scheduleWidget`, `reloadWidgets`, `getActiveWidgets`: `references/ios-widgets.md`
 - Exact iOS widget families and fallback behavior: `references/widget-families.md`
 - Android widgets, Android widget previews, pre-rendering, widget updates: `references/android-widgets.md`
+- Server-driven widgets, `serverUpdate`, widget polling flows, `createWidgetUpdateHandler`, `setWidgetServerCredentials`, `clearWidgetServerCredentials`: `references/server-driven-widgets.md`
 - Android component choices and widget API checklist: `references/component-mapping.md`, `references/runtime-api-checklist.md`
 - APNS, push tokens, push-to-start, channel IDs, server-rendered Live Activity payloads: `references/ios-server-updates.md` and usually `references/ios-live-activities.md`
 - Exact APNS flow details: `references/push-flow.md`
@@ -64,6 +65,7 @@ Read only the references needed for the current task:
 - `references/ios-widgets.md`
 - `references/widget-families.md`
 - `references/android-widgets.md`
+- `references/server-driven-widgets.md`
 - `references/component-mapping.md`
 - `references/runtime-api-checklist.md`
 - `references/ios-server-updates.md`
