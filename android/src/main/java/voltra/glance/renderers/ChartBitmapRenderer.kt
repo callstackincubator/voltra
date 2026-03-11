@@ -129,10 +129,16 @@ fun renderChartBitmap(
     val canvas = Canvas(bitmap)
     canvas.drawColor(0x00000000)
 
-    val paddingLeft = if (yAxisVisible) 48f else 0f
-    val paddingBottom = if (xAxisVisible) 40f else 0f
-    val paddingTop = if (yAxisVisible) 16f else 0f
-    val paddingRight = 0f
+    // Stroke extends half its width beyond the path center — use that as edge safety margin
+    val maxStrokeWidth = marks
+        .filter { it.type == "line" || it.type == "area" }
+        .maxOfOrNull { (it.props["lw"] as? Number)?.toFloat() ?: 2f }
+        ?: 2f
+    val strokeSafety = maxStrokeWidth / 2f
+    val paddingLeft = if (yAxisVisible) 48f else strokeSafety
+    val paddingBottom = if (xAxisVisible) 40f else strokeSafety
+    val paddingTop = if (yAxisVisible) 16f else strokeSafety
+    val paddingRight = if (yAxisVisible) 0f else strokeSafety
 
     val chartLeft = paddingLeft
     val chartTop = paddingTop
