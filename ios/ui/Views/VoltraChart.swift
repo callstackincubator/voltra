@@ -685,7 +685,7 @@ private extension View {
   func applyChartInsets(xAxisVisibility: Visibility, yAxisVisibility: Visibility) -> some View {
     let leading: CGFloat = yAxisVisibility == .hidden ? -8 : 10
     let trailing: CGFloat = yAxisVisibility == .hidden ? -8 : 0
-    let top: CGFloat = xAxisVisibility == .hidden ? -8 : 0
+    let top: CGFloat = xAxisVisibility == .hidden ? -8 : (yAxisVisibility == .hidden ? 0 : 8)
     let bottom: CGFloat = xAxisVisibility == .hidden ? -8 : 0
     padding(.init(top: top, leading: leading, bottom: bottom, trailing: trailing))
   }
