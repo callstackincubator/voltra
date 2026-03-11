@@ -130,10 +130,11 @@ fun renderChartBitmap(
     canvas.drawColor(0x00000000)
 
     // Stroke extends half its width beyond the path center — use that as edge safety margin
-    val maxStrokeWidth = marks
-        .filter { it.type == "line" || it.type == "area" }
-        .maxOfOrNull { (it.props["lw"] as? Number)?.toFloat() ?: 2f }
-        ?: 2f
+    val maxStrokeWidth =
+        marks
+            .filter { it.type == "line" || it.type == "area" }
+            .maxOfOrNull { (it.props["lw"] as? Number)?.toFloat() ?: 2f }
+            ?: 2f
     val strokeSafety = maxStrokeWidth / 2f
     val paddingLeft = if (yAxisVisible) 36f * dpScale else strokeSafety
     val paddingBottom = if (xAxisVisible) 24f * dpScale else strokeSafety
@@ -433,8 +434,8 @@ private enum class Interpolation {
     CATMULL_ROM,
 }
 
-private fun parseInterpolation(props: Map<String, Any>): Interpolation {
-    return when (props["itp"] as? String) {
+private fun parseInterpolation(props: Map<String, Any>): Interpolation =
+    when (props["itp"] as? String) {
         "monotone" -> Interpolation.MONOTONE
         "stepStart" -> Interpolation.STEP_START
         "stepEnd" -> Interpolation.STEP_END
@@ -443,7 +444,6 @@ private fun parseInterpolation(props: Map<String, Any>): Interpolation {
         "catmullRom" -> Interpolation.CATMULL_ROM
         else -> Interpolation.LINEAR
     }
-}
 
 /**
  * Build an interpolated [Path] through the given screen-space points.
@@ -497,9 +497,12 @@ private fun buildInterpolatedPath(
             for (i in 0 until n - 1) {
                 val d = dx[i] / 3f
                 path.cubicTo(
-                    xs[i] + d, ys[i] + tangent[i] * d,
-                    xs[i + 1] - d, ys[i + 1] - tangent[i + 1] * d,
-                    xs[i + 1], ys[i + 1],
+                    xs[i] + d,
+                    ys[i] + tangent[i] * d,
+                    xs[i + 1] - d,
+                    ys[i + 1] - tangent[i + 1] * d,
+                    xs[i + 1],
+                    ys[i + 1],
                 )
             }
         }
@@ -533,8 +536,10 @@ private fun buildInterpolatedPath(
             for (i in 0 until n - 1) {
                 val p0x = if (i > 0) xs[i - 1] else xs[0]
                 val p0y = if (i > 0) ys[i - 1] else ys[0]
-                val p1x = xs[i]; val p1y = ys[i]
-                val p2x = xs[i + 1]; val p2y = ys[i + 1]
+                val p1x = xs[i]
+                val p1y = ys[i]
+                val p2x = xs[i + 1]
+                val p2y = ys[i + 1]
                 val p3x = if (i + 2 < n) xs[i + 2] else xs[n - 1]
                 val p3y = if (i + 2 < n) ys[i + 2] else ys[n - 1]
 
@@ -551,13 +556,21 @@ private fun buildInterpolatedPath(
             for (i in 0 until n - 1) {
                 val p0x = if (i > 0) xs[i - 1] else xs[0]
                 val p0y = if (i > 0) ys[i - 1] else ys[0]
-                val p1x = xs[i]; val p1y = ys[i]
-                val p2x = xs[i + 1]; val p2y = ys[i + 1]
+                val p1x = xs[i]
+                val p1y = ys[i]
+                val p2x = xs[i + 1]
+                val p2y = ys[i + 1]
                 val p3x = if (i + 2 < n) xs[i + 2] else xs[n - 1]
                 val p3y = if (i + 2 < n) ys[i + 2] else ys[n - 1]
 
-                fun dist(ax: Float, ay: Float, bx: Float, by: Float): Float {
-                    val ddx = bx - ax; val ddy = by - ay
+                fun dist(
+                    ax: Float,
+                    ay: Float,
+                    bx: Float,
+                    by: Float,
+                ): Float {
+                    val ddx = bx - ax
+                    val ddy = by - ay
                     return kotlin.math.sqrt(ddx * ddx + ddy * ddy).coerceAtLeast(1e-6f)
                 }
 
