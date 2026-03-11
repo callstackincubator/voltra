@@ -1,9 +1,13 @@
 # Charts (Android)
 
-Render charts in your Android Glance widgets. Compose charts declaratively with typed mark components — mix and match bars, lines, areas, points, rules, and sectors in a single chart.
+Use charts in Android widgets to show trends, comparisons, progress, or composition at a glance. You can mix bars, lines, areas, points, rules, and sectors in a single chart.
 
 :::info
 Charts are rendered to a bitmap using the Android Canvas API and displayed as a Glance `Image`. This approach is required because Jetpack Glance has no native charting components.
+:::
+
+:::warning
+Mark components (`BarMark`, `LineMark`, and the other mark types) must be direct children of `<VoltraAndroid.Chart>`. Do not wrap them in a custom component.
 :::
 
 ## Basic Usage
@@ -47,15 +51,15 @@ type SectorDataPoint = {
 
 ### BarMark
 
-Vertical bars.
+Use bars when people need to compare values across categories.
 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
 - `color` (string, optional): Fill color.
-- `cornerRadius` (number, optional): Rounded bar corners in pixels.
-- `width` (number, optional): Fixed bar width in pixels.
-- `stacking` (string, optional): `"standard"` (default, stacked) or `"grouped"` (side by side).
+- `cornerRadius` (number, optional): Rounded bar corners.
+- `width` (number, optional): Fixed bar width.
+- `stacking` (string, optional): `"grouped"` for side-by-side bars in a multi-series chart.
 
 ```tsx
 <VoltraAndroid.Chart style={{ width: '100%', height: '100%' }}>
@@ -75,13 +79,14 @@ Vertical bars.
 
 ### LineMark
 
-Line chart connecting data points.
+Use a line when the shape of change matters more than individual columns.
 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
 - `color` (string, optional): Line color.
-- `lineWidth` (number, optional): Stroke width in pixels.
+- `lineWidth` (number, optional): Stroke width.
+- `interpolation` (string, optional): `"linear"`, `"monotone"`, `"catmullRom"`, `"cardinal"`, `"stepStart"`, `"stepCenter"`, or `"stepEnd"`.
 
 ```tsx
 <VoltraAndroid.Chart style={{ width: '100%', height: '100%' }}>
@@ -94,6 +99,7 @@ Line chart connecting data points.
       { x: "Fri", y: 7 },
     ]}
     color="#34a853"
+    interpolation="monotone"
     lineWidth={2}
   />
 </VoltraAndroid.Chart>
@@ -103,12 +109,13 @@ Line chart connecting data points.
 
 ### AreaMark
 
-Filled area chart — useful for visualizing volume or ranges.
+Use an area chart when you want the overall volume or rise/fall pattern to read quickly.
 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
 - `color` (string, optional): Fill color.
+- `interpolation` (string, optional): Same options as `LineMark`.
 
 ```tsx
 <VoltraAndroid.Chart style={{ width: '100%', height: '100%' }}>
@@ -127,13 +134,13 @@ Filled area chart — useful for visualizing volume or ranges.
 
 ### PointMark
 
-Scatter plot / data point markers. Works with both categorical (string) and numeric x values.
+Use points for sparse measurements, scatter plots, or to emphasize exact observations.
 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
 - `color` (string, optional): Point color.
-- `symbolSize` (number, optional): Symbol size in pixels.
+- `symbolSize` (number, optional): Point size.
 
 ```tsx
 <VoltraAndroid.Chart style={{ width: '100%', height: '100%' }}>
@@ -161,7 +168,7 @@ A horizontal or vertical reference line. Unlike other marks, RuleMark has no `da
 - `yValue` (number, optional): Draw a horizontal line at this y value.
 - `xValue` (string | number, optional): Draw a vertical line at this x value.
 - `color` (string, optional): Line color.
-- `lineWidth` (number, optional): Stroke width in pixels.
+- `lineWidth` (number, optional): Stroke width.
 
 ```tsx
 <VoltraAndroid.Chart style={{ width: '100%', height: '100%' }}>
@@ -220,13 +227,28 @@ The `<VoltraAndroid.Chart>` container accepts these props in addition to the sta
 | Prop | Type | Description |
 |---|---|---|
 | `xAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the x-axis |
+| `xAxisGridStyle` | `{ visible?: boolean }` | Show or hide x-axis grid lines |
 | `yAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the y-axis |
-| `legendVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the legend |
+| `yAxisGridStyle` | `{ visible?: boolean }` | Show or hide y-axis grid lines |
 | `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
+
+## Grid Lines
+
+Hide grid lines when you want the chart to feel more compact:
+
+```tsx
+<VoltraAndroid.Chart
+  style={{ width: '100%', height: '100%' }}
+  xAxisGridStyle={{ visible: false }}
+  yAxisGridStyle={{ visible: false }}
+>
+  <VoltraAndroid.LineMark data={data} color="#4285f4" interpolation="monotone" />
+</VoltraAndroid.Chart>
+```
 
 ## Multi-Series Charts
 
-Add a `series` field to your data points to create grouped or stacked charts. Use `foregroundStyleScale` on the Chart to assign specific colors to each series:
+Add a `series` field to your data points when you want multiple datasets in the same chart. Use `foregroundStyleScale` to keep those series colors consistent:
 
 ```tsx
 <VoltraAndroid.Chart
@@ -245,9 +267,9 @@ Add a `series` field to your data points to create grouped or stacked charts. Us
 </VoltraAndroid.Chart>
 ```
 
-Without `foregroundStyleScale`, colors are assigned automatically from a built-in palette.
+Without `foregroundStyleScale`, colors are chosen automatically.
 
-To show grouped bars (side by side) instead of stacked, set `stacking="grouped"`:
+For side-by-side bars, set `stacking="grouped"`:
 
 ```tsx
 <VoltraAndroid.Chart
@@ -260,7 +282,7 @@ To show grouped bars (side by side) instead of stacked, set `stacking="grouped"`
 
 ## Combining Marks
 
-Mix different mark types in one chart. This is useful for overlaying a trend line on a bar chart, or adding a reference threshold:
+Mix mark types when one chart needs both context and emphasis, such as bars for totals plus a rule for a target:
 
 ```tsx
 <VoltraAndroid.Chart style={{ width: '100%', height: '100%' }}>
@@ -291,18 +313,13 @@ Hide axes for a clean, compact visualization:
 
 Chart dimensions are read from the `style` prop:
 
-- **Fixed size**: `style={{ width: 300, height: 200 }}` — renders at exactly 300×200 dp.
-- **Fill parent**: `style={{ width: '100%', height: '100%' }}` — expands to fill the available space. The bitmap is rendered at a default size and scaled by Glance to fit.
+- **Fixed size**: `style={{ width: 300, height: 200 }}`
+- **Fill parent**: `style={{ width: '100%', height: '100%' }}`
 
 If no width or height is specified, the chart defaults to 300×200 dp.
 
-## Differences from iOS
+## Platform Notes
 
-| Feature | iOS | Android |
-|---|---|---|
-| Rendering | Native SwiftUI Charts | Canvas bitmap → Glance Image |
-| Interpolation curves | `monotone`, `catmullRom`, `cardinal`, `stepStart`, `stepCenter`, `stepEnd` | Linear only |
-| Symbol shapes | `circle`, `square`, `triangle`, `diamond`, `cross` | Circle only |
-| `chartScrollableAxes` | Supported (iOS 17+) | Not supported |
-| `SectorMark` radius | Ratio (0–1) only | Ratio (0–1) or absolute dp (> 1) |
-| Legend | Native SwiftUI legend | Not yet supported |
+- `legendVisibility` is not currently available on Android charts.
+- Point markers are circular on Android.
+- `innerRadius` and `outerRadius` on `SectorMark` accept either a ratio (`0` to `1`) or a larger fixed value.

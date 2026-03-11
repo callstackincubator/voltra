@@ -1,6 +1,6 @@
 # Charts (iOS)
 
-Render native SwiftUI Charts in your Live Activities and Widgets. Compose charts declaratively with typed mark components — mix and match bars, lines, areas, points, rules, and sectors in a single chart.
+Use charts in Live Activities and widgets to show trends, comparisons, progress, or composition at a glance. You can mix bars, lines, areas, points, rules, and sectors in a single chart.
 
 :::info
 Charts require iOS 16.0+. SectorMark (pie/donut) requires iOS 17.0+.
@@ -70,14 +70,14 @@ type SectorDataPoint = {
 
 ### BarMark
 
-Vertical bars.
+Use bars when people need to compare values across categories.
 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
 - `color` (string, optional): Fill color.
-- `cornerRadius` (number, optional): Rounded bar corners in points.
-- `width` (number, optional): Fixed bar width in points.
+- `cornerRadius` (number, optional): Rounded bar corners.
+- `width` (number, optional): Fixed bar width.
 - `stacking` (string, optional): `"grouped"` (side by side).
 
 ```tsx
@@ -98,7 +98,7 @@ Vertical bars.
 
 ### LineMark
 
-Line chart with optional curve smoothing and data point symbols.
+Use a line when the shape of change matters more than individual columns.
 
 **Parameters:**
 
@@ -106,7 +106,7 @@ Line chart with optional curve smoothing and data point symbols.
 - `color` (string, optional): Line color.
 - `lineWidth` (number, optional): Stroke width in points.
 - `interpolation` (string, optional): Curve type — `"linear"`, `"monotone"`, `"catmullRom"`, `"cardinal"`, `"stepStart"`, `"stepCenter"`, or `"stepEnd"`.
-- `symbol` (string, optional): Symbol at each point — `"circle"`, `"square"`, `"triangle"`, `"diamond"`, or `"cross"`.
+- `symbol` (string, optional): Symbol at each point — `"circle"`, `"square"`, `"triangle"`, `"diamond"`, `"pentagon"`, `"cross"`, `"plus"`, or `"asterisk"`.
 
 ```tsx
 <Voltra.Chart>
@@ -130,7 +130,7 @@ Line chart with optional curve smoothing and data point symbols.
 
 ### AreaMark
 
-Filled area chart — useful for visualizing volume or ranges.
+Use an area chart when you want the overall volume or rise/fall pattern to read quickly.
 
 **Parameters:**
 
@@ -156,7 +156,7 @@ Filled area chart — useful for visualizing volume or ranges.
 
 ### PointMark
 
-Scatter plot / data point markers. Works with both categorical (string) and numeric x values.
+Use points for sparse measurements, scatter plots, or to emphasize exact observations.
 
 **Parameters:**
 
@@ -251,13 +251,28 @@ The `<Voltra.Chart>` container accepts these props in addition to the standard V
 | Prop | Type | Description |
 |---|---|---|
 | `xAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the x-axis |
+| `xAxisGridStyle` | `{ visible?: boolean; color?: string; lineWidth?: number; dash?: number[] }` | Control x-axis grid lines |
 | `yAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the y-axis |
+| `yAxisGridStyle` | `{ visible?: boolean; color?: string; lineWidth?: number; dash?: number[] }` | Control y-axis grid lines |
 | `legendVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the legend |
 | `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
 
+## Grid Lines
+
+Use `xAxisGridStyle` and `yAxisGridStyle` when the default grid is too busy or not visible enough for your design:
+
+```tsx
+<Voltra.Chart
+  xAxisGridStyle={{ visible: false }}
+  yAxisGridStyle={{ color: "#d0d7de", lineWidth: 1, dash: [4, 2] }}
+>
+  <Voltra.LineMark data={data} color="#4285f4" interpolation="monotone" />
+</Voltra.Chart>
+```
+
 ## Multi-Series Charts
 
-Add a `series` field to your data points to create grouped or stacked charts. Use `foregroundStyleScale` on the Chart to assign specific colors to each series:
+Add a `series` field to your data points when you want multiple datasets in the same chart. Use `foregroundStyleScale` to keep those series colors consistent:
 
 ```tsx
 <Voltra.Chart foregroundStyleScale={{ Revenue: "#4285f4", Expenses: "#ea4335" }}>
@@ -273,9 +288,9 @@ Add a `series` field to your data points to create grouped or stacked charts. Us
 </Voltra.Chart>
 ```
 
-Without `foregroundStyleScale`, SwiftUI assigns colors automatically.
+Without `foregroundStyleScale`, colors are chosen automatically.
 
-To show grouped bars (side by side), set `stacking="grouped"`:
+For side-by-side bars, set `stacking="grouped"`:
 
 ```tsx
 <Voltra.Chart foregroundStyleScale={{ A: "#4285f4", B: "#ea4335" }}>
@@ -285,7 +300,7 @@ To show grouped bars (side by side), set `stacking="grouped"`:
 
 ## Combining Marks
 
-Mix different mark types in one chart. This is useful for overlaying a trend line on a bar chart, or adding a reference threshold:
+Mix mark types when one chart needs both context and emphasis, such as bars for totals plus a rule for a target:
 
 ```tsx
 <Voltra.Chart>
@@ -313,11 +328,9 @@ Hide axes and legend for a clean, compact visualization:
 </Voltra.Chart>
 ```
 
-## Styling the Chart Container
-
 ## Widget / Live Activity Notes
 
-In WidgetKit and Live Activity surfaces, gesture-driven chart scrolling is not applicable. Voltra charts are optimized for static rendering in those contexts.
+Charts in widgets and Live Activities are static. Focus on a clear snapshot of the data rather than interactions like panning or scrolling.
 
 The `<Voltra.Chart>` component supports the full Voltra style system on its container — padding, background, borders, corner radius, shadows, and sizing all work:
 
