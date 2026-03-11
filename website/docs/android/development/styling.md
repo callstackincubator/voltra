@@ -28,6 +28,7 @@ The following React Native style properties are supported on Android:
 
 - `fontSize` - Font size in sp.
 - `fontWeight` - Supports `"normal"` and `"bold"`.
+- `fontFamily` - Font family name. Built-in values: `"monospace"`, `"serif"`, `"sans-serif"`, `"cursive"`. For custom fonts, see [Custom Fonts](./custom-fonts).
 - `color` - Text color.
 - `textDecorationLine` - Supports `"underline"` and `"line-through"`.
 - `textAlign` - Alignment of text within the component (`"left"`, `"center"`, `"right"`).

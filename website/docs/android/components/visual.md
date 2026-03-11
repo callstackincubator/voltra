@@ -9,6 +9,7 @@ Displays text content.
 **Parameters:**
 
 - `maxLines` (number, optional): Maximum number of lines to display.
+- `renderAsBitmap` (boolean, optional): Renders text as a bitmap image to enable [custom fonts](../development/custom-fonts). Requires `fontFamily` in the style prop.
 
 ---
 

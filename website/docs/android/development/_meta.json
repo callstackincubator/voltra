@@ -33,5 +33,10 @@
     "type": "file",
     "name": "server-driven-widgets",
     "label": "Server-driven widgets"
+  },
+  {
+    "type": "file",
+    "name": "custom-fonts",
+    "label": "Custom Fonts"
   }
 ]
