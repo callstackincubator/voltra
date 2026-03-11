@@ -121,16 +121,24 @@ fun renderChartBitmap(
     foregroundStyleScale: Map<String, Int>? = null,
     xAxisVisible: Boolean = true,
     yAxisVisible: Boolean = true,
+    xAxisGridVisible: Boolean = true,
+    yAxisGridVisible: Boolean = true,
     dpScale: Float = 1f,
 ): Bitmap {
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     canvas.drawColor(0x00000000)
 
-    val paddingLeft = if (yAxisVisible) 48f else 16f
-    val paddingBottom = if (xAxisVisible) 40f else 16f
-    val paddingTop = 16f
-    val paddingRight = 16f
+    // Stroke extends half its width beyond the path center — use that as edge safety margin
+    val maxStrokeWidth = marks
+        .filter { it.type == "line" || it.type == "area" }
+        .maxOfOrNull { (it.props["lw"] as? Number)?.toFloat() ?: 2f }
+        ?: 2f
+    val strokeSafety = maxStrokeWidth / 2f
+    val paddingLeft = if (yAxisVisible) 36f * dpScale else strokeSafety
+    val paddingBottom = if (xAxisVisible) 24f * dpScale else strokeSafety
+    val paddingTop = if (yAxisVisible) 12f * dpScale else strokeSafety
+    val paddingRight = if (xAxisVisible) 12f * dpScale else strokeSafety
 
     val chartLeft = paddingLeft
     val chartTop = paddingTop
@@ -193,20 +201,22 @@ fun renderChartBitmap(
         Paint().apply {
             color = 0x20808080
             style = Paint.Style.STROKE
-            strokeWidth = 1f
-            pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
+            strokeWidth = 1f * dpScale
+            pathEffect = DashPathEffect(floatArrayOf(4f * dpScale, 4f * dpScale), 0f)
         }
     val gridSteps = 4
-    for (i in 0..gridSteps) {
-        val y = chartTop + (chartHeight * i / gridSteps)
-        canvas.drawLine(chartLeft, y, chartRight, y, gridPaint)
+    if (yAxisGridVisible) {
+        for (i in 0..gridSteps) {
+            val y = chartTop + (chartHeight * i / gridSteps)
+            canvas.drawLine(chartLeft, y, chartRight, y, gridPaint)
+        }
     }
 
     val axisPaint =
         Paint().apply {
             color = 0xFF888888.toInt()
             style = Paint.Style.STROKE
-            strokeWidth = 1.5f
+            strokeWidth = 1.5f * dpScale
         }
     if (yAxisVisible) {
         canvas.drawLine(chartLeft, chartTop, chartLeft, chartBottom, axisPaint)
@@ -218,7 +228,7 @@ fun renderChartBitmap(
     val labelPaint =
         Paint().apply {
             color = 0xFF888888.toInt()
-            textSize = 10f * (width / 400f).coerceIn(0.8f, 1.5f)
+            textSize = 12f * dpScale
             isAntiAlias = true
         }
 
@@ -232,7 +242,7 @@ fun renderChartBitmap(
                 } else {
                     String.format("%.1f", yVal)
                 }
-            canvas.drawText(label, 4f, y + labelPaint.textSize / 3, labelPaint)
+            canvas.drawText(label, 4f * dpScale, y + labelPaint.textSize / 3, labelPaint)
         }
     }
 
@@ -240,7 +250,7 @@ fun renderChartBitmap(
         labelPaint.textAlign = Paint.Align.CENTER
         for ((idx, cat) in categories.withIndex()) {
             val x = chartLeft + (idx.toFloat() / (categories.size - 1).coerceAtLeast(1).toFloat()) * chartWidth
-            canvas.drawText(cat, x, chartBottom + labelPaint.textSize + 4f, labelPaint)
+            canvas.drawText(cat, x, chartBottom + labelPaint.textSize + 4f * dpScale, labelPaint)
         }
     }
 
@@ -411,6 +421,162 @@ private fun drawBars(
     }
 }
 
+// MARK: - Interpolation helpers
+
+private enum class Interpolation {
+    LINEAR,
+    MONOTONE,
+    STEP_START,
+    STEP_END,
+    STEP_CENTER,
+    CARDINAL,
+    CATMULL_ROM,
+}
+
+private fun parseInterpolation(props: Map<String, Any>): Interpolation {
+    return when (props["itp"] as? String) {
+        "monotone" -> Interpolation.MONOTONE
+        "stepStart" -> Interpolation.STEP_START
+        "stepEnd" -> Interpolation.STEP_END
+        "stepCenter" -> Interpolation.STEP_CENTER
+        "cardinal" -> Interpolation.CARDINAL
+        "catmullRom" -> Interpolation.CATMULL_ROM
+        else -> Interpolation.LINEAR
+    }
+}
+
+/**
+ * Build an interpolated [Path] through the given screen-space points.
+ * Supports the same methods as iOS SwiftUI Charts: linear, monotone, step*, cardinal, catmullRom.
+ */
+private fun buildInterpolatedPath(
+    xs: FloatArray,
+    ys: FloatArray,
+    interpolation: Interpolation,
+): Path {
+    val n = xs.size
+    val path = Path()
+    if (n == 0) return path
+    path.moveTo(xs[0], ys[0])
+    if (n == 1) return path
+
+    when (interpolation) {
+        Interpolation.LINEAR -> {
+            for (i in 1 until n) path.lineTo(xs[i], ys[i])
+        }
+
+        Interpolation.MONOTONE -> {
+            val dx = FloatArray(n - 1) { xs[it + 1] - xs[it] }
+            val dy = FloatArray(n - 1) { ys[it + 1] - ys[it] }
+            val m = FloatArray(n - 1) { if (dx[it] != 0f) dy[it] / dx[it] else 0f }
+            val tangent = FloatArray(n)
+            tangent[0] = m[0]
+            tangent[n - 1] = m[n - 2]
+            for (i in 1 until n - 1) {
+                if (m[i - 1] * m[i] <= 0f) {
+                    tangent[i] = 0f
+                } else {
+                    tangent[i] = (m[i - 1] + m[i]) / 2f
+                }
+            }
+            for (i in 0 until n - 1) {
+                if (m[i] == 0f) {
+                    tangent[i] = 0f
+                    tangent[i + 1] = 0f
+                } else {
+                    val alpha = tangent[i] / m[i]
+                    val beta = tangent[i + 1] / m[i]
+                    val s = alpha * alpha + beta * beta
+                    if (s > 9f) {
+                        val tau = 3f / kotlin.math.sqrt(s)
+                        tangent[i] = tau * alpha * m[i]
+                        tangent[i + 1] = tau * beta * m[i]
+                    }
+                }
+            }
+            for (i in 0 until n - 1) {
+                val d = dx[i] / 3f
+                path.cubicTo(
+                    xs[i] + d, ys[i] + tangent[i] * d,
+                    xs[i + 1] - d, ys[i + 1] - tangent[i + 1] * d,
+                    xs[i + 1], ys[i + 1],
+                )
+            }
+        }
+
+        Interpolation.STEP_START -> {
+            for (i in 1 until n) {
+                path.lineTo(xs[i], ys[i - 1])
+                path.lineTo(xs[i], ys[i])
+            }
+        }
+
+        Interpolation.STEP_END -> {
+            for (i in 1 until n) {
+                path.lineTo(xs[i - 1], ys[i])
+                path.lineTo(xs[i], ys[i])
+            }
+        }
+
+        Interpolation.STEP_CENTER -> {
+            for (i in 1 until n) {
+                val midX = (xs[i - 1] + xs[i]) / 2f
+                path.lineTo(midX, ys[i - 1])
+                path.lineTo(midX, ys[i])
+                path.lineTo(xs[i], ys[i])
+            }
+        }
+
+        Interpolation.CARDINAL -> {
+            val tension = 0f
+            val s = (1f - tension) / 2f
+            for (i in 0 until n - 1) {
+                val p0x = if (i > 0) xs[i - 1] else xs[0]
+                val p0y = if (i > 0) ys[i - 1] else ys[0]
+                val p1x = xs[i]; val p1y = ys[i]
+                val p2x = xs[i + 1]; val p2y = ys[i + 1]
+                val p3x = if (i + 2 < n) xs[i + 2] else xs[n - 1]
+                val p3y = if (i + 2 < n) ys[i + 2] else ys[n - 1]
+
+                val cp1x = p1x + s * (p2x - p0x) / 3f
+                val cp1y = p1y + s * (p2y - p0y) / 3f
+                val cp2x = p2x - s * (p3x - p1x) / 3f
+                val cp2y = p2y - s * (p3y - p1y) / 3f
+                path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2x, p2y)
+            }
+        }
+
+        Interpolation.CATMULL_ROM -> {
+            val alpha = 0.5f
+            for (i in 0 until n - 1) {
+                val p0x = if (i > 0) xs[i - 1] else xs[0]
+                val p0y = if (i > 0) ys[i - 1] else ys[0]
+                val p1x = xs[i]; val p1y = ys[i]
+                val p2x = xs[i + 1]; val p2y = ys[i + 1]
+                val p3x = if (i + 2 < n) xs[i + 2] else xs[n - 1]
+                val p3y = if (i + 2 < n) ys[i + 2] else ys[n - 1]
+
+                fun dist(ax: Float, ay: Float, bx: Float, by: Float): Float {
+                    val ddx = bx - ax; val ddy = by - ay
+                    return kotlin.math.sqrt(ddx * ddx + ddy * ddy).coerceAtLeast(1e-6f)
+                }
+
+                val d01 = Math.pow(dist(p0x, p0y, p1x, p1y).toDouble(), alpha.toDouble()).toFloat()
+                val d12 = Math.pow(dist(p1x, p1y, p2x, p2y).toDouble(), alpha.toDouble()).toFloat()
+                val d23 = Math.pow(dist(p2x, p2y, p3x, p3y).toDouble(), alpha.toDouble()).toFloat()
+
+                val cp1x = p1x + (p2x - p0x) / (3f * d01 + 3f * d12) * d12
+                val cp1y = p1y + (p2y - p0y) / (3f * d01 + 3f * d12) * d12
+                val cp2x = p2x - (p3x - p1x) / (3f * d12 + 3f * d23) * d12
+                val cp2y = p2y - (p3y - p1y) / (3f * d12 + 3f * d23) * d12
+
+                path.cubicTo(cp1x, cp1y, cp2x, cp2y, p2x, p2y)
+            }
+        }
+    }
+    return path
+}
+
 private fun drawLine(
     canvas: Canvas,
     points: List<ChartPoint>,
@@ -423,6 +589,7 @@ private fun drawLine(
     if (points.isEmpty()) return
 
     val lineWidth = (props["lw"] as? Number)?.toFloat() ?: 2f
+    val itp = parseInterpolation(props)
     val seriesColors = seriesColorMap(points, foregroundStyleScale)
 
     val groups =
@@ -446,11 +613,9 @@ private fun drawLine(
                 color = seriesColors[series] ?: staticColor ?: DEFAULT_PALETTE[0]
             }
 
-        val path = Path()
-        path.moveTo(mapX(sorted[0]), mapY(sorted[0].y))
-        for (i in 1 until sorted.size) {
-            path.lineTo(mapX(sorted[i]), mapY(sorted[i].y))
-        }
+        val xs = FloatArray(sorted.size) { mapX(sorted[it]) }
+        val ys = FloatArray(sorted.size) { mapY(sorted[it].y) }
+        val path = buildInterpolatedPath(xs, ys, itp)
         canvas.drawPath(path, paint)
     }
 }
@@ -467,6 +632,7 @@ private fun drawArea(
 ) {
     if (points.isEmpty()) return
 
+    val itp = parseInterpolation(props)
     val seriesColors = seriesColorMap(points, foregroundStyleScale)
 
     val groups =
@@ -482,20 +648,24 @@ private fun drawArea(
 
         val baseColor = seriesColors[series] ?: staticColor ?: DEFAULT_PALETTE[0]
 
+        val xs = FloatArray(sorted.size) { mapX(sorted[it]) }
+        val ys = FloatArray(sorted.size) { mapY(sorted[it].y) }
+
+        val topPath = buildInterpolatedPath(xs, ys, itp)
+
+        // Build fill: start at baseline under first point, trace the top edge,
+        // then line back down to baseline under last point and close.
+        val fillPath = Path(topPath)
+        fillPath.lineTo(xs.last(), baseline)
+        fillPath.lineTo(xs.first(), baseline)
+        fillPath.close()
+
         val fillPaint =
             Paint().apply {
                 style = Paint.Style.FILL
                 isAntiAlias = true
                 color = (baseColor and 0x00FFFFFF) or 0x40000000
             }
-
-        val fillPath = Path()
-        fillPath.moveTo(mapX(sorted[0]), baseline)
-        for (pt in sorted) {
-            fillPath.lineTo(mapX(pt), mapY(pt.y))
-        }
-        fillPath.lineTo(mapX(sorted.last()), baseline)
-        fillPath.close()
         canvas.drawPath(fillPath, fillPaint)
 
         val strokePaint =
@@ -505,12 +675,7 @@ private fun drawArea(
                 isAntiAlias = true
                 color = baseColor
             }
-        val strokePath = Path()
-        strokePath.moveTo(mapX(sorted[0]), mapY(sorted[0].y))
-        for (i in 1 until sorted.size) {
-            strokePath.lineTo(mapX(sorted[i]), mapY(sorted[i].y))
-        }
-        canvas.drawPath(strokePath, strokePaint)
+        canvas.drawPath(topPath, strokePaint)
     }
 }
 

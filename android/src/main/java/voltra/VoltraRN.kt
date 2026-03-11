@@ -124,9 +124,13 @@ class VoltraRN(
 
                     withContext(Dispatchers.Main) {
                         try {
-                            // Try to reapply to the existing view first to avoid flickering/replacing
+                            // Try to reapply to the existing view first to avoid flickering/replacing.
+                            // IMPORTANT: Only use reapply for dimension-only changes (same payload).
+                            // When the payload changes, always do a fresh apply to prevent stale
+                            // style bleed (e.g. padding from a previous widget persisting because
+                            // the new widget's RemoteViews doesn't explicitly reset it to zero).
                             var applied = false
-                            if (frameLayout.childCount > 0) {
+                            if (frameLayout.childCount > 0 && payloadStr == lastRenderedPayload) {
                                 try {
                                     val existingView = frameLayout.getChildAt(0)
                                     remoteViews.reapply(context, existingView)

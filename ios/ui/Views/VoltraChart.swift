@@ -662,7 +662,7 @@ private extension View {
           .applyChartXAxis(visibility: xAxisVisibility, labelColor: color, gridStyle: xAxisGridStyle)
           .applyChartYAxis(visibility: yAxisVisibility, labelColor: color, gridStyle: yAxisGridStyle)
           .applyChartLegend(visibility: legendVisibility, labelColor: color, items: legendItems)
-          .applyYAxisLeadingInset(visibility: yAxisVisibility)
+          .applyChartInsets(xAxisVisibility: xAxisVisibility, yAxisVisibility: yAxisVisibility)
           .foregroundStyle(color)
           .foregroundColor(color)
           .tint(color)
@@ -671,23 +671,23 @@ private extension View {
           .applyChartXAxis(visibility: xAxisVisibility, labelColor: nil, gridStyle: xAxisGridStyle)
           .applyChartYAxis(visibility: yAxisVisibility, labelColor: nil, gridStyle: yAxisGridStyle)
           .applyChartLegend(visibility: legendVisibility, labelColor: nil, items: legendItems)
-          .applyYAxisLeadingInset(visibility: yAxisVisibility)
+          .applyChartInsets(xAxisVisibility: xAxisVisibility, yAxisVisibility: yAxisVisibility)
       }
     } else {
       applyChartXAxis(visibility: xAxisVisibility, labelColor: nil, gridStyle: xAxisGridStyle)
         .applyChartYAxis(visibility: yAxisVisibility, labelColor: nil, gridStyle: yAxisGridStyle)
         .applyChartLegend(visibility: legendVisibility, labelColor: nil, items: legendItems)
-        .applyYAxisLeadingInset(visibility: yAxisVisibility)
+        .applyChartInsets(xAxisVisibility: xAxisVisibility, yAxisVisibility: yAxisVisibility)
     }
   }
 
   @ViewBuilder
-  func applyYAxisLeadingInset(visibility: Visibility) -> some View {
-    if visibility == .hidden {
-      self
-    } else {
-      padding(.leading, 10)
-    }
+  func applyChartInsets(xAxisVisibility: Visibility, yAxisVisibility: Visibility) -> some View {
+    let leading: CGFloat = yAxisVisibility == .hidden ? -8 : 10
+    let trailing: CGFloat = yAxisVisibility == .hidden ? -8 : 0
+    let top: CGFloat = xAxisVisibility == .hidden ? -8 : (yAxisVisibility == .hidden ? 0 : 8)
+    let bottom: CGFloat = xAxisVisibility == .hidden ? -8 : 0
+    padding(.init(top: top, leading: leading, bottom: bottom, trailing: trailing))
   }
 
   @ViewBuilder
