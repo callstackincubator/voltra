@@ -135,10 +135,10 @@ fun renderChartBitmap(
         .maxOfOrNull { (it.props["lw"] as? Number)?.toFloat() ?: 2f }
         ?: 2f
     val strokeSafety = maxStrokeWidth / 2f
-    val paddingLeft = if (yAxisVisible) 48f else strokeSafety
-    val paddingBottom = if (xAxisVisible) 40f else strokeSafety
-    val paddingTop = if (yAxisVisible) 20f else strokeSafety
-    val paddingRight = if (xAxisVisible) 16f else strokeSafety
+    val paddingLeft = if (yAxisVisible) 36f * dpScale else strokeSafety
+    val paddingBottom = if (xAxisVisible) 24f * dpScale else strokeSafety
+    val paddingTop = if (yAxisVisible) 12f * dpScale else strokeSafety
+    val paddingRight = if (xAxisVisible) 12f * dpScale else strokeSafety
 
     val chartLeft = paddingLeft
     val chartTop = paddingTop
@@ -201,8 +201,8 @@ fun renderChartBitmap(
         Paint().apply {
             color = 0x20808080
             style = Paint.Style.STROKE
-            strokeWidth = 1f
-            pathEffect = DashPathEffect(floatArrayOf(4f, 4f), 0f)
+            strokeWidth = 1f * dpScale
+            pathEffect = DashPathEffect(floatArrayOf(4f * dpScale, 4f * dpScale), 0f)
         }
     val gridSteps = 4
     if (yAxisGridVisible) {
@@ -216,7 +216,7 @@ fun renderChartBitmap(
         Paint().apply {
             color = 0xFF888888.toInt()
             style = Paint.Style.STROKE
-            strokeWidth = 1.5f
+            strokeWidth = 1.5f * dpScale
         }
     if (yAxisVisible) {
         canvas.drawLine(chartLeft, chartTop, chartLeft, chartBottom, axisPaint)
@@ -228,7 +228,7 @@ fun renderChartBitmap(
     val labelPaint =
         Paint().apply {
             color = 0xFF888888.toInt()
-            textSize = 10f * (width / 400f).coerceIn(0.8f, 1.5f)
+            textSize = 12f * dpScale
             isAntiAlias = true
         }
 
@@ -242,7 +242,7 @@ fun renderChartBitmap(
                 } else {
                     String.format("%.1f", yVal)
                 }
-            canvas.drawText(label, 4f, y + labelPaint.textSize / 3, labelPaint)
+            canvas.drawText(label, 4f * dpScale, y + labelPaint.textSize / 3, labelPaint)
         }
     }
 
@@ -250,7 +250,7 @@ fun renderChartBitmap(
         labelPaint.textAlign = Paint.Align.CENTER
         for ((idx, cat) in categories.withIndex()) {
             val x = chartLeft + (idx.toFloat() / (categories.size - 1).coerceAtLeast(1).toFloat()) * chartWidth
-            canvas.drawText(cat, x, chartBottom + labelPaint.textSize + 4f, labelPaint)
+            canvas.drawText(cat, x, chartBottom + labelPaint.textSize + 4f * dpScale, labelPaint)
         }
     }
 

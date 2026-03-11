@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxWidth
@@ -24,7 +25,6 @@ private const val TAG = "ChartRenderers"
 
 private const val DEFAULT_CHART_WIDTH_DP = 300
 private const val DEFAULT_CHART_HEIGHT_DP = 200
-private const val MAX_BITMAP_PIXELS = 600
 
 @Composable
 fun RenderChart(
@@ -88,9 +88,8 @@ fun RenderChart(
             else -> DEFAULT_CHART_HEIGHT_DP
         }
 
-    val scale =
-        (MAX_BITMAP_PIXELS.toFloat() / maxOf(chartWidthDp, chartHeightDp).coerceAtLeast(1))
-            .coerceAtMost(1.5f)
+    val density = LocalContext.current.resources.displayMetrics.density
+    val scale = density.coerceIn(1f, 3.5f)
     val bitmapWidth = (chartWidthDp * scale).toInt().coerceAtLeast(1)
     val bitmapHeight = (chartHeightDp * scale).toInt().coerceAtLeast(1)
 
@@ -128,7 +127,7 @@ fun RenderChart(
     Image(
         provider = ImageProvider(icon),
         contentDescription = "Chart",
-        contentScale = if (hasSectors) ContentScale.Fit else ContentScale.FillBounds,
+        contentScale = ContentScale.Fit,
         modifier = sizeModifier,
     )
 }
