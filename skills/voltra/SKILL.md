@@ -3,7 +3,7 @@ name: voltra
 description: Build, review, refactor, configure, or debug Voltra code using Voltra JSX, Voltra JS APIs, and the Expo config plugin. Use when the user asks about Live Activities, Dynamic Island UI, iOS widgets, scheduled widgets, Android widgets, image handling, app.json plugin config, or Voltra push update flows.
 metadata:
   author: 'Saúl Sharma (https://x.com/saul_sharma), Szymon Chmal (https://x.com/chmalszymon)'
-  version: 1.3.0
+  version: 1.2.0
 ---
 
 # Voltra
