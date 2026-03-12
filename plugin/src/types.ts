@@ -275,4 +275,5 @@ export interface IOSPluginProps {
 export interface AndroidPluginProps {
   widgets: AndroidWidgetConfig[]
   userImagesPath?: string
+  fonts?: string[]
 }

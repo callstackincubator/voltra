@@ -48,6 +48,13 @@ const ANDROID_SECTIONS = [
       'Serve dynamic widget content from a remote server using Voltra SSR. This example includes a sample widget server implementation.',
     route: '/android-widgets/server-driven',
   },
+  {
+    id: 'custom-fonts',
+    title: 'Custom Fonts',
+    description:
+      'Render text with custom fonts in Android Glance widgets using bitmap rendering. Includes Pacifico (script) and Press Start 2P (pixel) demo.',
+    route: '/android-widgets/custom-fonts',
+  },
   // Add more Android-specific sections here as they are implemented
 ]
 

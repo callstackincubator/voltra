@@ -2,6 +2,7 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 
 import type { AndroidWidgetConfig } from '../../types'
 import { generateAndroidAssets } from './assets'
+import { copyAndroidFonts } from './fonts'
 import { generateAndroidInitialStates } from './initialStates'
 import { generateWidgetReceivers } from './kotlin'
 import { generateWidgetInfoFiles, generateWidgetPlaceholderLayouts, generateWidgetPreviewLayouts } from './xml'
@@ -9,6 +10,7 @@ import { generateWidgetInfoFiles, generateWidgetPlaceholderLayouts, generateWidg
 export interface GenerateAndroidWidgetFilesProps {
   widgets: AndroidWidgetConfig[]
   userImagesPath?: string
+  fonts?: string[]
 }
 
 /**
@@ -24,7 +26,7 @@ export interface GenerateAndroidWidgetFilesProps {
  * This should run before configureAndroidManifest so the files exist when the manifest is configured.
  */
 export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFilesProps> = (config, props) => {
-  const { widgets, userImagesPath } = props
+  const { widgets, userImagesPath, fonts } = props
 
   return withDangerousMod(config, [
     'android',
@@ -73,6 +75,15 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
         widgets,
         previewImageMap,
       })
+
+      // Copy custom fonts to assets/fonts/
+      if (fonts && fonts.length > 0) {
+        await copyAndroidFonts({
+          platformProjectRoot,
+          projectRoot: config.modRequest.projectRoot,
+          fonts,
+        })
+      }
 
       // Generate initial states (pre-rendered widgets)
       await generateAndroidInitialStates({

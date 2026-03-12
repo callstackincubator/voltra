@@ -131,7 +131,9 @@
           },
           "fonts": [
             "node_modules/@expo-google-fonts/merriweather/400Regular/Merriweather_400Regular.ttf",
-            "node_modules/@expo-google-fonts/merriweather/700Bold/Merriweather_700Bold.ttf"
+            "node_modules/@expo-google-fonts/merriweather/700Bold/Merriweather_700Bold.ttf",
+            "node_modules/@expo-google-fonts/pacifico/400Regular/Pacifico_400Regular.ttf",
+            "node_modules/@expo-google-fonts/press-start-2p/400Regular/PressStart2P_400Regular.ttf"
           ]
         }
       ],

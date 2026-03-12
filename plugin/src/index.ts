@@ -67,6 +67,7 @@ const withVoltra: VoltraConfigPlugin = (config, props = {}) => {
   if (props.android) {
     config = withAndroid(config, {
       widgets: props.android.widgets ?? [],
+      ...(props?.fonts ? { fonts: props.fonts } : {}),
     })
   }
 

@@ -220,6 +220,12 @@ object StyleConverter {
             style = style.copy(fontWeight = fontWeight)
         }
 
+        // Font family
+        val fontFamily = js["fontFamily"] as? String
+        if (fontFamily != null) {
+            style = style.copy(fontFamily = fontFamily)
+        }
+
         // Text alignment
         val textAlign = js["textAlign"]
         if (textAlign != null) {

@@ -1,9 +1,16 @@
 package voltra.glance.renderers
 
+import android.graphics.drawable.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
+import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.background
+import androidx.glance.layout.ContentScale
+import androidx.glance.layout.height
+import androidx.glance.layout.width
 import androidx.glance.text.Text
 import androidx.glance.unit.ColorProvider
 import voltra.glance.LocalVoltraRenderContext
@@ -21,14 +28,14 @@ fun RenderText(
     modifier: GlanceModifier? = null,
     compositeStyle: voltra.styling.CompositeStyle? = null,
 ) {
-    val context = LocalVoltraRenderContext.current
-    val baseModifier = modifier ?: resolveAndApplyStyle(element.p, context.sharedStyles).modifier
+    val renderContext = LocalVoltraRenderContext.current
+    val baseModifier = modifier ?: resolveAndApplyStyle(element.p, renderContext.sharedStyles).modifier
     val finalModifier =
         applyClickableIfNeeded(
             baseModifier,
             element.p,
             element.i,
-            context.widgetId,
+            renderContext.widgetId,
             element.t,
             element.hashCode(),
         )
@@ -37,13 +44,51 @@ fun RenderText(
         if (compositeStyle != null) {
             compositeStyle
         } else {
-            resolveAndApplyStyle(element.p, context.sharedStyles).compositeStyle
+            resolveAndApplyStyle(element.p, renderContext.sharedStyles).compositeStyle
         }
 
     val text = extractTextFromNode(element.c)
-    val textStyle = resolvedStyle?.text?.toGlanceTextStyle() ?: androidx.glance.text.TextStyle()
+    val renderAsBitmap = element.p?.get("renderAsBitmap") as? Boolean ?: false
+    val textStyle = resolvedStyle?.text ?: voltra.styling.TextStyle.Default
 
-    Text(text = text, modifier = finalModifier, style = textStyle)
+    if (renderAsBitmap && textStyle.fontFamily != null) {
+        val context = LocalContext.current
+        val density = context.resources.displayMetrics.density
+        val isBold =
+            textStyle.fontWeight?.let {
+                it == androidx.glance.text.FontWeight.Bold
+            } ?: false
+        val typeface = loadTypeface(context, textStyle.fontFamily, isBold)
+
+        if (typeface != null) {
+            // Use screen width as max constraint
+            val maxWidthPx = (context.resources.displayMetrics.widthPixels * 0.9f).toInt()
+            val bitmap =
+                renderTextBitmap(
+                    context = context,
+                    text = text,
+                    textStyle = textStyle,
+                    typeface = typeface,
+                    maxWidthPx = maxWidthPx,
+                )
+            val icon = Icon.createWithBitmap(bitmap)
+            val widthDp = (bitmap.width / density).toInt()
+            val heightDp = (bitmap.height / density).toInt()
+            Image(
+                provider = ImageProvider(icon),
+                contentDescription = text,
+                contentScale = ContentScale.Fit,
+                modifier =
+                    finalModifier
+                        .width(widthDp.dp)
+                        .height(heightDp.dp),
+            )
+            return
+        }
+    }
+
+    val glanceTextStyle = textStyle.toGlanceTextStyle()
+    Text(text = text, modifier = finalModifier, style = glanceTextStyle)
 }
 
 @Composable

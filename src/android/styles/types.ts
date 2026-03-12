@@ -99,6 +99,8 @@ export type VoltraAndroidTextStyle = VoltraAndroidViewStyle & {
   fontSize?: number
   /** Font weight */
   fontWeight?: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900' | number
+  /** Font family name. When used with `renderAsBitmap`, loads custom .ttf/.otf from `assets/fonts/` */
+  fontFamily?: string
   /** Text alignment */
   textAlign?: 'auto' | 'left' | 'right' | 'center' | 'justify' | 'start' | 'end'
   /** Text decoration line */

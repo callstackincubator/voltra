@@ -117,6 +117,7 @@ data class TextStyle(
     val color: Color? = null,
     val fontSize: TextUnit = 17.sp,
     val fontWeight: FontWeight? = null,
+    val fontFamily: String? = null,
     val alignment: TextAlignment = TextAlignment.START,
     val lineLimit: Int? = null,
     val lineSpacing: Dp = 0.dp, // Not fully supported in Glance

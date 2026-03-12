@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@expo-google-fonts/merriweather": "^0.4.2",
+    "@expo-google-fonts/pacifico": "^0.4.1",
+    "@expo-google-fonts/press-start-2p": "^0.4.1",
     "@react-native-community/datetimepicker": "^8.4.1",
     "@react-native-harness/ui": "1.0.0-alpha.23",
     "@react-navigation/elements": "^2.5.2",

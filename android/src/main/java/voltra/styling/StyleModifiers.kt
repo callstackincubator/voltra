@@ -6,6 +6,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.glance.layout.*
+import androidx.glance.text.FontFamily
 import androidx.glance.unit.ColorProvider
 import androidx.glance.visibility
 import androidx.glance.text.TextDecoration as GlanceTextDecoration
@@ -290,6 +291,28 @@ fun TextStyle.toGlanceTextStyle(): GlanceTextStyle {
     // Line limit - handled at Text component level
     // Letter spacing - not supported in Glance
     // Font variant - not supported in Glance
+
+    // Font family (built-in generic families only; custom fonts require renderAsBitmap)
+    val glanceFontFamily =
+        when (fontFamily) {
+            "monospace" -> FontFamily.Monospace
+            "serif" -> FontFamily.Serif
+            "sans-serif" -> FontFamily.SansSerif
+            "cursive" -> FontFamily.Cursive
+            else -> null
+        }
+    if (glanceFontFamily != null) {
+        glanceStyle =
+            GlanceTextStyle(
+                fontSize = fontSize,
+                color =
+                    color?.let { ColorProvider(it) }
+                        ?: ColorProvider(androidx.compose.ui.graphics.Color.Unspecified),
+                fontWeight = fontWeight,
+                textDecoration = glanceStyle.textDecoration,
+                fontFamily = glanceFontFamily,
+            )
+    }
 
     if (letterSpacing.value > 0) {
         Log.w("StyleModifier", "letterSpacing not supported in Glance TextStyle")
