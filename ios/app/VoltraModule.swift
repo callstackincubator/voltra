@@ -75,8 +75,8 @@ public class VoltraModule: Module {
     }
 
     // Preload images to App Group storage for use in Live Activities
-    AsyncFunction("preloadImages") { (images: [PreloadImageOptions]) async throws -> PreloadImagesResult in
-      return try await self.impl.preloadImages(images: images)
+    AsyncFunction("preloadImages") { (images: [PreloadImageOptions]) async -> PreloadImagesResult in
+      return await self.impl.preloadImages(images: images)
     }
 
     // Reload Live Activities to pick up preloaded images
