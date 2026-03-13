@@ -2,6 +2,7 @@ import ActivityKit
 import Compression
 import ExpoModulesCore
 import Foundation
+import os
 
 /// Implementation details for VoltraModule to keep the main module file clean
 public class VoltraModuleImpl {
@@ -79,7 +80,7 @@ public class VoltraModuleImpl {
       // Create activity using service
       return try await liveActivityService.createActivity(createRequest)
     } catch {
-      print("Error starting Voltra instance: \(error)")
+      VoltraLogger.module.error("startLiveActivity failed: \(error)")
       throw mapError(error)
     }
   }
@@ -170,9 +171,9 @@ public class VoltraModuleImpl {
             relevanceScore: 0.0
           )
         )
-        print("[Voltra] Reloaded Live Activity '\(activity.attributes.name)'")
+        VoltraLogger.activity.info("Reloaded Live Activity '\(activity.attributes.name)'")
       } catch {
-        print("[Voltra] Failed to reload Live Activity '\(activity.attributes.name)': \(error)")
+        VoltraLogger.activity.error("Failed to reload Live Activity '\(activity.attributes.name)': \(error)")
       }
     }
   }
@@ -197,7 +198,6 @@ public class VoltraModuleImpl {
 
     // Reload the widget timeline
     VoltraWidgetService.reloadTimeline(for: widgetId)
-    print("[Voltra] Updated widget '\(widgetId)'")
   }
 
   func scheduleWidget(widgetId: String, timelineJson: String) async throws {
@@ -212,23 +212,19 @@ public class VoltraModuleImpl {
       for widgetId in ids {
         VoltraWidgetService.reloadTimeline(for: widgetId)
       }
-      print("[Voltra] Reloaded widgets: \(ids.joined(separator: ", "))")
     } else {
       VoltraWidgetService.reloadAllTimelines()
-      print("[Voltra] Reloaded all widgets")
     }
   }
 
   func clearWidget(widgetId: String) async {
     VoltraWidgetService.removeAllData(for: widgetId)
     VoltraWidgetService.reloadTimeline(for: widgetId)
-    print("[Voltra] Cleared widget '\(widgetId)'")
   }
 
   func clearAllWidgets() async {
     VoltraWidgetService.removeAllWidgets()
     VoltraWidgetService.reloadAllTimelines()
-    print("[Voltra] Cleared all widgets")
   }
 
   func getActiveWidgets() async throws -> [[String: String]] {
@@ -301,7 +297,7 @@ public class VoltraModuleImpl {
     let dataSize = compressedPayload.utf8.count
     let safeBudget = VoltraConstants.compressedPayloadSafeBudget
     let hardCap = VoltraConstants.maxPayloadSizeBytes
-    print("Compressed payload size: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(hardCap)B)")
+    VoltraLogger.module.debug("Compressed payload: \(dataSize)B (budget \(safeBudget)B, hard cap \(hardCap)B)")
 
     if dataSize > safeBudget {
       throw VoltraModule.VoltraErrors.unexpectedError(

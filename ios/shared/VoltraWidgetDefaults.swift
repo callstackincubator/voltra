@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Errors that can occur during widget persistence operations.
 public enum WidgetError: Error, LocalizedError {
@@ -44,7 +45,7 @@ public enum VoltraWidgetDefaults {
 
     let dataSize = json.utf8.count
     if dataSize > VoltraConstants.widgetJsonWarningSizeBytes {
-      print("[Voltra] ⚠️ Large widget payload for '\(widgetId)': \(dataSize) bytes (warning threshold: \(VoltraConstants.widgetJsonWarningSizeBytes) bytes)")
+      VoltraLogger.storage.warning("Large widget payload for '\(widgetId)': \(dataSize) bytes (threshold: \(VoltraConstants.widgetJsonWarningSizeBytes) bytes)")
     }
 
     defaults.set(json, forKey: VoltraStorageKeys.widgetJson(widgetId))
@@ -63,7 +64,7 @@ public enum VoltraWidgetDefaults {
 
     let dataSize = timeline.utf8.count
     if dataSize > VoltraConstants.timelineWarningSizeBytes {
-      print("[Voltra] ⚠️ Large timeline for '\(widgetId)': \(dataSize) bytes (warning threshold: \(VoltraConstants.timelineWarningSizeBytes) bytes)")
+      VoltraLogger.storage.warning("Large timeline for '\(widgetId)': \(dataSize) bytes (threshold: \(VoltraConstants.timelineWarningSizeBytes) bytes)")
     }
 
     defaults.set(timeline, forKey: VoltraStorageKeys.widgetTimeline(widgetId))

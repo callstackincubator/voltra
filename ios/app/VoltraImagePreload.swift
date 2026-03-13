@@ -1,5 +1,6 @@
 import ExpoModulesCore
 import Foundation
+import os
 import UIKit
 
 // MARK: - Types
@@ -121,10 +122,10 @@ enum VoltraImagePreload {
   static func clearPreloadedImages(keys: [String]?) async {
     if let keys = keys, !keys.isEmpty {
       VoltraImageStore.removeImages(keys: keys)
-      print("[Voltra] Cleared preloaded images: \(keys.joined(separator: ", "))")
+      VoltraLogger.image.info("Cleared preloaded images: \(keys.joined(separator: ", "))")
     } else {
       VoltraImageStore.clearAll()
-      print("[Voltra] Cleared all preloaded images")
+      VoltraLogger.image.info("Cleared all preloaded images")
     }
   }
 
@@ -171,6 +172,6 @@ enum VoltraImagePreload {
     }
 
     try VoltraImageStore.saveImage(data, key: options.key)
-    print("[Voltra] Preloaded image '\(options.key)' (\(data.count) bytes)")
+    VoltraLogger.image.info("Preloaded '\(options.key)' (\(data.count) bytes)")
   }
 }

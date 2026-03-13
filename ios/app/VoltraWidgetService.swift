@@ -1,4 +1,5 @@
 import Foundation
+import os
 import WidgetKit
 
 /// App-side facade for all widget operations.
@@ -15,11 +16,12 @@ enum VoltraWidgetService {
 
   static func setWidgetData(widgetId: String, jsonString: String, deepLinkUrl: String?) throws {
     try VoltraWidgetDefaults.setWidgetJson(jsonString, for: widgetId, deepLinkUrl: deepLinkUrl)
+    VoltraLogger.widget.info("Widget data stored for '\(widgetId)'")
   }
 
   static func setTimeline(widgetId: String, timelineJson: String) throws {
     try VoltraWidgetDefaults.setTimeline(timelineJson, for: widgetId)
-    print("[Voltra] Timeline stored successfully for '\(widgetId)'")
+    VoltraLogger.widget.info("Timeline stored for '\(widgetId)'")
   }
 
   // MARK: - Storage (remove)
@@ -40,10 +42,12 @@ enum VoltraWidgetService {
 
   static func reloadTimeline(for widgetId: String) {
     WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
+    VoltraLogger.widget.info("Reloaded timeline for '\(widgetId)'")
   }
 
   static func reloadAllTimelines() {
     WidgetCenter.shared.reloadAllTimelines()
+    VoltraLogger.widget.info("Reloaded all timelines")
   }
 
   // MARK: - Server credentials
@@ -57,14 +61,14 @@ enum VoltraWidgetService {
     } else {
       VoltraKeychainHelper.deleteHeaders()
     }
-    print("[Voltra] Widget server credentials saved to Keychain")
+    VoltraLogger.widget.info("Server credentials saved")
     reloadAllTimelines()
   }
 
   /// Clears widget server credentials from the Keychain and reloads all widget timelines.
   static func clearWidgetServerCredentials() {
     VoltraKeychainHelper.clearAll()
-    print("[Voltra] Widget server credentials cleared from Keychain")
+    VoltraLogger.widget.info("Server credentials cleared")
     reloadAllTimelines()
   }
 
@@ -129,7 +133,7 @@ enum VoltraWidgetService {
 
       for widgetId in knownWidgetIds where !installedIds.contains(widgetId) {
         VoltraWidgetDefaults.removeAllData(for: widgetId)
-        print("[Voltra] Cleaned up orphaned widget data for '\(widgetId)'")
+        VoltraLogger.widget.info("Cleaned up orphaned data for '\(widgetId)'")
       }
     }
   }

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 import SwiftUI
 import WidgetKit
 
@@ -82,7 +83,7 @@ public enum VoltraHomeWidgetStore {
        let updatedString = String(data: updatedData, encoding: .utf8)
     {
       try? VoltraWidgetDefaults.setTimeline(updatedString, for: widgetId)
-      print("[Voltra] Pruned \(prunedCount) expired timeline entries for '\(widgetId)'")
+      VoltraLogger.widget.debug("Pruned \(prunedCount) expired timeline entries for '\(widgetId)'")
     }
 
     return prunedCount
@@ -193,9 +194,9 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? Date().addingTimeInterval(900)
         completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
 
-        print("[Voltra] Server-driven update succeeded for widget '\(widgetId)', next update in \(intervalMinutes) minutes")
+        VoltraLogger.widget.info("Server-driven update succeeded for '\(widgetId)', next update in \(intervalMinutes)m")
       } catch {
-        print("[Voltra] Server-driven update failed for widget '\(widgetId)': \(error.localizedDescription)")
+        VoltraLogger.widget.error("Server-driven update failed for '\(widgetId)': \(error.localizedDescription)")
 
         // Fall back to local data on network failure
         getLocalTimeline(in: context, completion: completion)
