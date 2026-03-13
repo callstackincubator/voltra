@@ -43,6 +43,13 @@ public actor VoltraLiveActivityManager {
   /// One lifecycle-state observer task per live activity, keyed by `activity.id`.
   private var stateTasks: [String: Task<Void, Never>] = [:]
 
+  /// The last push-to-start token we forwarded to the callback.
+  /// ActivityKit re-delivers the current token whenever a live activity starts or
+  /// ends (the push-to-start eligibility state has changed), even if the token
+  /// itself hasn't rotated. We track the last value so we only forward genuine
+  /// token changes and suppress duplicate deliveries.
+  private var lastPushToStartToken: String?
+
   // MARK: - Init
 
   public init(
@@ -78,6 +85,8 @@ public actor VoltraLiveActivityManager {
 
     pushToStartTask?.cancel()
     pushToStartTask = nil
+
+    lastPushToStartToken = nil
 
     cancelAllPerActivityTasks()
   }
@@ -120,7 +129,7 @@ public actor VoltraLiveActivityManager {
 
     // Read the token that may already be available before the async stream fires.
     if let existingTokenData = Activity<VoltraAttributes>.pushToStartToken {
-      onPushToStartUpdated(existingTokenData.hexString)
+      deliverPushToStartToken(existingTokenData.hexString, via: onPushToStartUpdated)
     }
 
     // Capture the callback locally so the task does not need to hop back to the
@@ -128,11 +137,23 @@ public actor VoltraLiveActivityManager {
     // from any context.
     let callback = onPushToStartUpdated
 
-    pushToStartTask = Task {
+    pushToStartTask = Task { [weak self] in
       for await tokenData in Activity<VoltraAttributes>.pushToStartTokenUpdates {
-        callback(tokenData.hexString)
+        await self?.deliverPushToStartToken(tokenData.hexString, via: callback)
       }
     }
+  }
+
+  /// Forward `token` to `callback` only if it differs from the last token we sent.
+  /// ActivityKit re-delivers the same token when a live activity starts or ends,
+  /// so this guard prevents spurious duplicate events on the JS side.
+  private func deliverPushToStartToken(
+    _ token: String,
+    via callback: @Sendable (String) -> Void
+  ) {
+    guard token != lastPushToStartToken else { return }
+    lastPushToStartToken = token
+    callback(token)
   }
 
   // MARK: - Per-Activity Observation
