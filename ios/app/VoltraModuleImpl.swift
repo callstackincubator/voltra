@@ -180,8 +180,8 @@ public class VoltraModuleImpl {
 
   // MARK: - Image Preloading
 
-  func preloadImages(images: [PreloadImageOptions]) async -> PreloadImagesResult {
-    await VoltraImagePreload.preloadImages(images: images)
+  func preloadImages(images: [PreloadImageOptions]) async throws -> PreloadImagesResult {
+    try await VoltraImagePreload.preloadImages(images: images)
   }
 
   func clearPreloadedImages(keys: [String]?) async {

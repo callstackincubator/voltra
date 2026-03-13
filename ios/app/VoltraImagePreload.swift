@@ -92,31 +92,20 @@ enum PreloadError: Error, LocalizedError {
 enum VoltraImagePreload {
   static let maxImageSizeInBytes = 4096
 
-  static func preloadImages(images: [PreloadImageOptions]) async -> PreloadImagesResult {
-    await withTaskGroup(of: Result<String, PreloadImageFailure>.self) { group in
-      for imageOptions in images {
-        group.addTask {
-          do {
-            try await downloadAndSaveImage(imageOptions)
-            return .success(imageOptions.key)
-          } catch {
-            return .failure(PreloadImageFailure(key: imageOptions.key, error: error.localizedDescription))
-          }
-        }
+  static func preloadImages(images: [PreloadImageOptions]) async throws -> PreloadImagesResult {
+    var succeeded: [String] = []
+    var failed: [PreloadImageFailure] = []
+
+    for imageOptions in images {
+      do {
+        try await downloadAndSaveImage(imageOptions)
+        succeeded.append(imageOptions.key)
+      } catch {
+        failed.append(PreloadImageFailure(key: imageOptions.key, error: error.localizedDescription))
       }
-
-      var succeeded: [String] = []
-      var failed: [PreloadImageFailure] = []
-
-      for await result in group {
-        switch result {
-        case let .success(key): succeeded.append(key)
-        case let .failure(failure): failed.append(failure)
-        }
-      }
-
-      return PreloadImagesResult(succeeded: succeeded, failed: failed)
     }
+
+    return PreloadImagesResult(succeeded: succeeded, failed: failed)
   }
 
   static func clearPreloadedImages(keys: [String]?) async {
