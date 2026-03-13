@@ -16,7 +16,7 @@ public enum VoltraHomeWidgetStore {
     // Try runtime UserDefaults (from updateWidget calls)
     if let group = VoltraConfig.groupIdentifier(),
        let defaults = UserDefaults(suiteName: group),
-       let jsonString = defaults.string(forKey: "Voltra_Widget_JSON_\(widgetId)")
+       let jsonString = defaults.string(forKey: VoltraStorageKeys.widgetJson(widgetId))
     {
       return jsonString.data(using: .utf8)
     }
@@ -27,13 +27,13 @@ public enum VoltraHomeWidgetStore {
   public static func readDeepLinkUrl(widgetId: String) -> String? {
     guard let group = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: group) else { return nil }
-    return defaults.string(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+    return defaults.string(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
   }
 
   public static func readTimeline(widgetId: String) -> WidgetTimeline? {
     guard let group = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: group),
-          let timelineString = defaults.string(forKey: "Voltra_Widget_Timeline_\(widgetId)"),
+          let timelineString = defaults.string(forKey: VoltraStorageKeys.widgetTimeline(widgetId)),
           let timelineData = timelineString.data(using: .utf8),
           let json = try? JSONSerialization.jsonObject(with: timelineData) as? [String: Any],
           let entriesJson = json["entries"] as? [[String: Any]]
@@ -63,7 +63,7 @@ public enum VoltraHomeWidgetStore {
   public static func pruneExpiredEntries(widgetId: String) -> Int {
     guard let group = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: group),
-          let timelineString = defaults.string(forKey: "Voltra_Widget_Timeline_\(widgetId)"),
+          let timelineString = defaults.string(forKey: VoltraStorageKeys.widgetTimeline(widgetId)),
           let timelineData = timelineString.data(using: .utf8),
           var json = try? JSONSerialization.jsonObject(with: timelineData) as? [String: Any],
           let entriesJson = json["entries"] as? [[String: Any]]
@@ -95,7 +95,7 @@ public enum VoltraHomeWidgetStore {
     if let updatedData = try? JSONSerialization.data(withJSONObject: json),
        let updatedString = String(data: updatedData, encoding: .utf8)
     {
-      defaults.set(updatedString, forKey: "Voltra_Widget_Timeline_\(widgetId)")
+      defaults.set(updatedString, forKey: VoltraStorageKeys.widgetTimeline(widgetId))
       defaults.synchronize()
       print("[Voltra] Pruned \(prunedCount) expired timeline entries for '\(widgetId)'")
     }
@@ -203,7 +203,7 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
            let defaults = UserDefaults(suiteName: group),
            let jsonString = String(data: data, encoding: .utf8)
         {
-          defaults.set(jsonString, forKey: "Voltra_Widget_JSON_\(widgetId)")
+          defaults.set(jsonString, forKey: VoltraStorageKeys.widgetJson(widgetId))
           defaults.synchronize()
         }
 

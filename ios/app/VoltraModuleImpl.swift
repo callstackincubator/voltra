@@ -6,9 +6,6 @@ import WidgetKit
 
 /// Implementation details for VoltraModule to keep the main module file clean
 public class VoltraModuleImpl {
-  private let MAX_PAYLOAD_SIZE_IN_BYTES = 4096
-  private let WIDGET_JSON_WARNING_SIZE = 50000 // 50KB per widget
-  private let TIMELINE_WARNING_SIZE = 100_000 // 100KB per timeline
   private let liveActivityService = VoltraLiveActivityService()
 
   public init() {
@@ -28,7 +25,7 @@ public class VoltraModuleImpl {
   var pushNotificationsEnabled: Bool {
     // Support both keys for compatibility with older plugin and new Voltra naming
     let main = Bundle.main
-    return main.object(forInfoDictionaryKey: "Voltra_EnablePushNotifications") as? Bool ?? false
+    return main.object(forInfoDictionaryKey: VoltraStorageKeys.enablePushNotifications) as? Bool ?? false
   }
 
   // MARK: - Lifecycle & Monitoring
@@ -200,7 +197,7 @@ public class VoltraModuleImpl {
     clearWidgetTimeline(widgetId: widgetId)
 
     // Reload the widget timeline
-    WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+    WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
     print("[Voltra] Updated widget '\(widgetId)'")
   }
 
@@ -208,13 +205,13 @@ public class VoltraModuleImpl {
     try writeWidgetTimeline(widgetId: widgetId, timelineJson: timelineJson)
 
     // Reload the widget timeline to pick up scheduled entries
-    WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+    WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
   }
 
   func reloadWidgets(widgetIds: [String]?) async {
     if let ids = widgetIds, !ids.isEmpty {
       for widgetId in ids {
-        WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+        WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
       }
       print("[Voltra] Reloaded widgets: \(ids.joined(separator: ", "))")
     } else {
@@ -225,7 +222,7 @@ public class VoltraModuleImpl {
 
   func clearWidget(widgetId: String) async {
     clearWidgetData(widgetId: widgetId)
-    WidgetCenter.shared.reloadTimelines(ofKind: "Voltra_Widget_\(widgetId)")
+    WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
     print("[Voltra] Cleared widget '\(widgetId)'")
   }
 
@@ -241,7 +238,7 @@ public class VoltraModuleImpl {
         switch result {
         case let .success(widgetInfos):
           let mapped = widgetInfos.map { widget -> [String: String] in
-            let prefix = "Voltra_Widget_"
+            let prefix = VoltraStorageKeys.widgetKindPrefix
             let name = widget.kind.hasPrefix(prefix)
               ? String(widget.kind.dropFirst(prefix.count))
               : widget.kind
@@ -349,15 +346,16 @@ public class VoltraModuleImpl {
 
   private func validatePayloadSize(_ compressedPayload: String, operation: String) throws {
     let dataSize = compressedPayload.utf8.count
-    let safeBudget = 3345 // Keep existing safe budget
-    print("Compressed payload size: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B)")
+    let safeBudget = VoltraConstants.compressedPayloadSafeBudget
+    let hardCap = VoltraConstants.maxPayloadSizeBytes
+    print("Compressed payload size: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(hardCap)B)")
 
     if dataSize > safeBudget {
       throw VoltraModule.VoltraErrors.unexpectedError(
         NSError(
           domain: "VoltraModule",
           code: operation == "start" ? -10 : -11,
-          userInfo: [NSLocalizedDescriptionKey: "Compressed payload too large: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(MAX_PAYLOAD_SIZE_IN_BYTES)B). Reduce the UI before \(operation == "start" ? "starting" : "updating") the Live Activity."]
+          userInfo: [NSLocalizedDescriptionKey: "Compressed payload too large: \(dataSize)B (safe budget \(safeBudget)B, hard cap \(hardCap)B). Reduce the UI before \(operation == "start" ? "starting" : "updating") the Live Activity."]
         )
       )
     }
@@ -391,16 +389,16 @@ public class VoltraModuleImpl {
     }
 
     let dataSize = jsonString.utf8.count
-    if dataSize > WIDGET_JSON_WARNING_SIZE {
-      print("[Voltra] ⚠️ Large widget payload for '\(widgetId)': \(dataSize) bytes (warning threshold: \(WIDGET_JSON_WARNING_SIZE) bytes)")
+    if dataSize > VoltraConstants.widgetJsonWarningSizeBytes {
+      print("[Voltra] ⚠️ Large widget payload for '\(widgetId)': \(dataSize) bytes (warning threshold: \(VoltraConstants.widgetJsonWarningSizeBytes) bytes)")
     }
 
-    defaults.set(jsonString, forKey: "Voltra_Widget_JSON_\(widgetId)")
+    defaults.set(jsonString, forKey: VoltraStorageKeys.widgetJson(widgetId))
 
     if let url = deepLinkUrl, !url.isEmpty {
-      defaults.set(url, forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+      defaults.set(url, forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
     } else {
-      defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
+      defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
     }
 
     defaults.synchronize()
@@ -415,11 +413,11 @@ public class VoltraModuleImpl {
     }
 
     let dataSize = timelineJson.utf8.count
-    if dataSize > TIMELINE_WARNING_SIZE {
-      print("[Voltra] ⚠️ Large timeline for '\(widgetId)': \(dataSize) bytes (warning threshold: \(TIMELINE_WARNING_SIZE) bytes)")
+    if dataSize > VoltraConstants.timelineWarningSizeBytes {
+      print("[Voltra] ⚠️ Large timeline for '\(widgetId)': \(dataSize) bytes (warning threshold: \(VoltraConstants.timelineWarningSizeBytes) bytes)")
     }
 
-    defaults.set(timelineJson, forKey: "Voltra_Widget_Timeline_\(widgetId)")
+    defaults.set(timelineJson, forKey: VoltraStorageKeys.widgetTimeline(widgetId))
     defaults.synchronize()
     print("[Voltra] writeWidgetTimeline: Timeline stored successfully")
   }
@@ -428,9 +426,9 @@ public class VoltraModuleImpl {
     guard let groupId = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: groupId) else { return }
 
-    defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
-    defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
-    defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
+    defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
+    defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
+    defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
     defaults.synchronize()
   }
 
@@ -438,12 +436,12 @@ public class VoltraModuleImpl {
     guard let groupId = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: groupId) else { return }
 
-    let widgetIds = Bundle.main.object(forInfoDictionaryKey: "Voltra_WidgetIds") as? [String] ?? []
+    let widgetIds = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
 
     for widgetId in widgetIds {
-      defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
-      defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
-      defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
+      defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
+      defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
+      defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
     }
     defaults.synchronize()
   }
@@ -452,7 +450,7 @@ public class VoltraModuleImpl {
     guard let groupId = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: groupId) else { return }
 
-    defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
+    defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
     defaults.synchronize()
   }
 
@@ -460,22 +458,22 @@ public class VoltraModuleImpl {
     guard let groupId = VoltraConfig.groupIdentifier(),
           let defaults = UserDefaults(suiteName: groupId) else { return }
 
-    let knownWidgetIds = Bundle.main.object(forInfoDictionaryKey: "Voltra_WidgetIds") as? [String] ?? []
+    let knownWidgetIds = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
     guard !knownWidgetIds.isEmpty else { return }
 
     WidgetCenter.shared.getCurrentConfigurations { result in
       guard case let .success(configs) = result else { return }
 
       let installedIds = Set(configs.compactMap { config -> String? in
-        let prefix = "Voltra_Widget_"
+        let prefix = VoltraStorageKeys.widgetKindPrefix
         guard config.kind.hasPrefix(prefix) else { return nil }
         return String(config.kind.dropFirst(prefix.count))
       })
 
       for widgetId in knownWidgetIds where !installedIds.contains(widgetId) {
-        defaults.removeObject(forKey: "Voltra_Widget_JSON_\(widgetId)")
-        defaults.removeObject(forKey: "Voltra_Widget_DeepLinkURL_\(widgetId)")
-        defaults.removeObject(forKey: "Voltra_Widget_Timeline_\(widgetId)")
+        defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
+        defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
+        defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
         print("[Voltra] Cleaned up orphaned widget data for '\(widgetId)'")
       }
     }
