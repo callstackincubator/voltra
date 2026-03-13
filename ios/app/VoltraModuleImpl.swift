@@ -2,7 +2,6 @@ import ActivityKit
 import Compression
 import ExpoModulesCore
 import Foundation
-import WidgetKit
 
 /// Implementation details for VoltraModule to keep the main module file clean
 public class VoltraModuleImpl {
@@ -10,7 +9,7 @@ public class VoltraModuleImpl {
 
   public init() {
     // Clean up data for widgets that are no longer installed
-    cleanupOrphanedWidgetData()
+    VoltraWidgetService.cleanupOrphanedData()
   }
 
   func isHeadless() -> Bool {
@@ -191,70 +190,49 @@ public class VoltraModuleImpl {
   // MARK: - Widgets
 
   func updateWidget(widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws {
-    try writeWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
+    try VoltraWidgetService.setWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
 
     // Clear any scheduled timeline so single-entry data takes effect
-    clearWidgetTimeline(widgetId: widgetId)
+    VoltraWidgetService.removeTimeline(for: widgetId)
 
     // Reload the widget timeline
-    WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
+    VoltraWidgetService.reloadTimeline(for: widgetId)
     print("[Voltra] Updated widget '\(widgetId)'")
   }
 
   func scheduleWidget(widgetId: String, timelineJson: String) async throws {
-    try writeWidgetTimeline(widgetId: widgetId, timelineJson: timelineJson)
+    try VoltraWidgetService.setTimeline(widgetId: widgetId, timelineJson: timelineJson)
 
     // Reload the widget timeline to pick up scheduled entries
-    WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
+    VoltraWidgetService.reloadTimeline(for: widgetId)
   }
 
   func reloadWidgets(widgetIds: [String]?) async {
     if let ids = widgetIds, !ids.isEmpty {
       for widgetId in ids {
-        WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
+        VoltraWidgetService.reloadTimeline(for: widgetId)
       }
       print("[Voltra] Reloaded widgets: \(ids.joined(separator: ", "))")
     } else {
-      WidgetCenter.shared.reloadAllTimelines()
+      VoltraWidgetService.reloadAllTimelines()
       print("[Voltra] Reloaded all widgets")
     }
   }
 
   func clearWidget(widgetId: String) async {
-    clearWidgetData(widgetId: widgetId)
-    WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
+    VoltraWidgetService.removeAllData(for: widgetId)
+    VoltraWidgetService.reloadTimeline(for: widgetId)
     print("[Voltra] Cleared widget '\(widgetId)'")
   }
 
   func clearAllWidgets() async {
-    clearAllWidgetData()
-    WidgetCenter.shared.reloadAllTimelines()
+    VoltraWidgetService.removeAllWidgets()
+    VoltraWidgetService.reloadAllTimelines()
     print("[Voltra] Cleared all widgets")
   }
 
   func getActiveWidgets() async throws -> [[String: String]] {
-    try await withCheckedThrowingContinuation { continuation in
-      WidgetCenter.shared.getCurrentConfigurations { result in
-        switch result {
-        case let .success(widgetInfos):
-          let mapped = widgetInfos.map { widget -> [String: String] in
-            let prefix = VoltraStorageKeys.widgetKindPrefix
-            let name = widget.kind.hasPrefix(prefix)
-              ? String(widget.kind.dropFirst(prefix.count))
-              : widget.kind
-
-            return [
-              "name": name,
-              "kind": widget.kind,
-              "family": self.mapWidgetFamily(widget.family),
-            ]
-          }
-          continuation.resume(returning: mapped)
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
+    try await VoltraWidgetService.getActiveWidgets()
   }
 
   func setWidgetServerCredentials(token: String, headers: [String: String]?) {
@@ -267,30 +245,17 @@ public class VoltraModuleImpl {
     print("[Voltra] Widget server credentials saved to Keychain")
 
     // Reload all widgets so they can pick up the new credentials immediately
-    WidgetCenter.shared.reloadAllTimelines()
+    VoltraWidgetService.reloadAllTimelines()
   }
 
   func clearWidgetServerCredentials() {
     VoltraKeychainHelper.clearAll()
     print("[Voltra] Widget server credentials cleared from Keychain")
 
-    WidgetCenter.shared.reloadAllTimelines()
+    VoltraWidgetService.reloadAllTimelines()
   }
 
   // MARK: - Private Helpers
-
-  private func mapWidgetFamily(_ family: WidgetFamily) -> String {
-    switch family {
-    case .systemSmall: return "systemSmall"
-    case .systemMedium: return "systemMedium"
-    case .systemLarge: return "systemLarge"
-    case .systemExtraLarge: return "systemExtraLarge"
-    case .accessoryCircular: return "accessoryCircular"
-    case .accessoryRectangular: return "accessoryRectangular"
-    case .accessoryInline: return "accessoryInline"
-    @unknown default: return "unknown"
-    }
-  }
 
   private func mapError(_ error: Error) -> Error {
     if let moduleError = error as? VoltraModule.VoltraErrors {
@@ -380,45 +345,5 @@ public class VoltraModuleImpl {
     }
   }
 
-  private func writeWidgetData(widgetId: String, jsonString: String, deepLinkUrl: String?) throws {
-    try VoltraWidgetDefaults.setWidgetJson(jsonString, for: widgetId, deepLinkUrl: deepLinkUrl)
-  }
-
-  private func writeWidgetTimeline(widgetId: String, timelineJson: String) throws {
-    try VoltraWidgetDefaults.setTimeline(timelineJson, for: widgetId)
-    print("[Voltra] writeWidgetTimeline: Timeline stored successfully")
-  }
-
-  private func clearWidgetData(widgetId: String) {
-    VoltraWidgetDefaults.removeAllData(for: widgetId)
-  }
-
-  private func clearAllWidgetData() {
-    VoltraWidgetDefaults.removeAllWidgets()
-  }
-
-  private func clearWidgetTimeline(widgetId: String) {
-    VoltraWidgetDefaults.removeTimeline(for: widgetId)
-  }
-
-  private func cleanupOrphanedWidgetData() {
-    let knownWidgetIds = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
-    guard !knownWidgetIds.isEmpty else { return }
-
-    WidgetCenter.shared.getCurrentConfigurations { result in
-      guard case let .success(configs) = result else { return }
-
-      let installedIds = Set(configs.compactMap { config -> String? in
-        let prefix = VoltraStorageKeys.widgetKindPrefix
-        guard config.kind.hasPrefix(prefix) else { return nil }
-        return String(config.kind.dropFirst(prefix.count))
-      })
-
-      for widgetId in knownWidgetIds where !installedIds.contains(widgetId) {
-        VoltraWidgetDefaults.removeAllData(for: widgetId)
-        print("[Voltra] Cleaned up orphaned widget data for '\(widgetId)'")
-      }
-    }
-  }
 }
 
