@@ -46,6 +46,28 @@ enum VoltraWidgetService {
     WidgetCenter.shared.reloadAllTimelines()
   }
 
+  // MARK: - Server credentials
+
+  /// Saves widget server credentials to the Keychain and reloads all widget timelines
+  /// so extensions can use them on the next fetch.
+  static func setWidgetServerCredentials(token: String, headers: [String: String]?) {
+    VoltraKeychainHelper.saveToken(token)
+    if let headers = headers {
+      VoltraKeychainHelper.saveHeaders(headers)
+    } else {
+      VoltraKeychainHelper.deleteHeaders()
+    }
+    print("[Voltra] Widget server credentials saved to Keychain")
+    reloadAllTimelines()
+  }
+
+  /// Clears widget server credentials from the Keychain and reloads all widget timelines.
+  static func clearWidgetServerCredentials() {
+    VoltraKeychainHelper.clearAll()
+    print("[Voltra] Widget server credentials cleared from Keychain")
+    reloadAllTimelines()
+  }
+
   // MARK: - Query
 
   /// Returns active widgets as dictionaries with `name`, `kind`, and `family` keys.
