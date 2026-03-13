@@ -11,14 +11,18 @@ public class VoltraModuleImpl {
   private let TIMELINE_WARNING_SIZE = 100_000 // 100KB per timeline
   private let liveActivityService = VoltraLiveActivityService()
 
-  public var wasLaunchedInBackground: Bool = false
-
   public init() {
-    // Track if app was launched in background (headless)
-    wasLaunchedInBackground = UIApplication.shared.applicationState == .background
-
     // Clean up data for widgets that are no longer installed
     cleanupOrphanedWidgetData()
+  }
+
+  func isHeadless() -> Bool {
+    if Thread.isMainThread {
+      return UIApplication.shared.applicationState == .background
+    }
+    return DispatchQueue.main.sync {
+      UIApplication.shared.applicationState == .background
+    }
   }
 
   var pushNotificationsEnabled: Bool {

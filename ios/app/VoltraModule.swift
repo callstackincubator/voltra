@@ -71,7 +71,7 @@ public class VoltraModule: Module {
     }
 
     Function("isHeadless") { () -> Bool in
-      return self.impl.wasLaunchedInBackground
+      return self.impl.isHeadless()
     }
 
     // Preload images to App Group storage for use in Live Activities
