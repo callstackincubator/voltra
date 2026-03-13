@@ -8,7 +8,6 @@ import Foundation
 //  concurrency runtime -- no locks required.
 
 public actor VoltraLiveActivityManager {
-
   // MARK: - Callbacks
 
   // Callbacks are `let` + `@Sendable` so they are immutable after init and safe
@@ -93,15 +92,19 @@ public actor VoltraLiveActivityManager {
 
   // MARK: - deinit
 
-  // Safety net: if the manager is deallocated without stopObserving() being called
-  // (e.g. during app shutdown), cancel every task so no coroutine keeps running as
-  // an orphan. SE-0371 (Swift 5.9) allows actors to access their stored properties
-  // in deinit because no other reference can exist at that point.
+  /// Safety net: if the manager is deallocated without stopObserving() being called
+  /// (e.g. during app shutdown), cancel every task so no coroutine keeps running as
+  /// an orphan. SE-0371 (Swift 5.9) allows actors to access their stored properties
+  /// in deinit because no other reference can exist at that point.
   deinit {
     activityUpdatesTask?.cancel()
     pushToStartTask?.cancel()
-    for task in tokenTasks.values { task.cancel() }
-    for task in stateTasks.values { task.cancel() }
+    for task in tokenTasks.values {
+      task.cancel()
+    }
+    for task in stateTasks.values {
+      task.cancel()
+    }
   }
 
   // MARK: - Activity Updates Loop
@@ -212,10 +215,14 @@ public actor VoltraLiveActivityManager {
   }
 
   private func cancelAllPerActivityTasks() {
-    for task in tokenTasks.values { task.cancel() }
+    for task in tokenTasks.values {
+      task.cancel()
+    }
     tokenTasks.removeAll()
 
-    for task in stateTasks.values { task.cancel() }
+    for task in stateTasks.values {
+      task.cancel()
+    }
     stateTasks.removeAll()
   }
 }

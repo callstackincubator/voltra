@@ -23,7 +23,6 @@ public enum WidgetError: Error, LocalizedError {
 /// Read and remove methods are non-throwing: they return nil / no-op when the app group
 /// is not configured, since the widget extension has no way to propagate errors.
 public enum VoltraWidgetDefaults {
-
   // MARK: - Read
 
   public static func widgetJson(for widgetId: String) -> String? {

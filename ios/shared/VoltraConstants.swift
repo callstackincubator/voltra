@@ -4,7 +4,7 @@ import Foundation
 public enum VoltraConstants {
   public static let maxPayloadSizeBytes = 4096
   public static let compressedPayloadSafeBudget = 3345
-  public static let widgetJsonWarningSizeBytes = 50_000
+  public static let widgetJsonWarningSizeBytes = 50000
   public static let timelineWarningSizeBytes = 100_000
 }
 

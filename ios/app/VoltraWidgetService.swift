@@ -11,7 +11,6 @@ import WidgetKit
 /// Note: `VoltraWidgetDefaults` intentionally remains in `ios/shared/` because the
 /// widget extension target reads from it directly — this service is app-target only.
 enum VoltraWidgetService {
-
   // MARK: - Storage (write)
 
   static func setWidgetData(widgetId: String, jsonString: String, deepLinkUrl: String?) throws {
