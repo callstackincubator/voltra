@@ -381,83 +381,27 @@ public class VoltraModuleImpl {
   }
 
   private func writeWidgetData(widgetId: String, jsonString: String, deepLinkUrl: String?) throws {
-    guard let groupId = VoltraConfig.groupIdentifier() else {
-      throw WidgetError.appGroupNotConfigured
-    }
-    guard let defaults = UserDefaults(suiteName: groupId) else {
-      throw WidgetError.userDefaultsUnavailable
-    }
-
-    let dataSize = jsonString.utf8.count
-    if dataSize > VoltraConstants.widgetJsonWarningSizeBytes {
-      print("[Voltra] ⚠️ Large widget payload for '\(widgetId)': \(dataSize) bytes (warning threshold: \(VoltraConstants.widgetJsonWarningSizeBytes) bytes)")
-    }
-
-    defaults.set(jsonString, forKey: VoltraStorageKeys.widgetJson(widgetId))
-
-    if let url = deepLinkUrl, !url.isEmpty {
-      defaults.set(url, forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
-    } else {
-      defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
-    }
-
-    defaults.synchronize()
+    try VoltraWidgetDefaults.setWidgetJson(jsonString, for: widgetId, deepLinkUrl: deepLinkUrl)
   }
 
   private func writeWidgetTimeline(widgetId: String, timelineJson: String) throws {
-    guard let groupId = VoltraConfig.groupIdentifier() else {
-      throw WidgetError.appGroupNotConfigured
-    }
-    guard let defaults = UserDefaults(suiteName: groupId) else {
-      throw WidgetError.userDefaultsUnavailable
-    }
-
-    let dataSize = timelineJson.utf8.count
-    if dataSize > VoltraConstants.timelineWarningSizeBytes {
-      print("[Voltra] ⚠️ Large timeline for '\(widgetId)': \(dataSize) bytes (warning threshold: \(VoltraConstants.timelineWarningSizeBytes) bytes)")
-    }
-
-    defaults.set(timelineJson, forKey: VoltraStorageKeys.widgetTimeline(widgetId))
-    defaults.synchronize()
+    try VoltraWidgetDefaults.setTimeline(timelineJson, for: widgetId)
     print("[Voltra] writeWidgetTimeline: Timeline stored successfully")
   }
 
   private func clearWidgetData(widgetId: String) {
-    guard let groupId = VoltraConfig.groupIdentifier(),
-          let defaults = UserDefaults(suiteName: groupId) else { return }
-
-    defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
-    defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
-    defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
-    defaults.synchronize()
+    VoltraWidgetDefaults.removeAllData(for: widgetId)
   }
 
   private func clearAllWidgetData() {
-    guard let groupId = VoltraConfig.groupIdentifier(),
-          let defaults = UserDefaults(suiteName: groupId) else { return }
-
-    let widgetIds = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
-
-    for widgetId in widgetIds {
-      defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
-      defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
-      defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
-    }
-    defaults.synchronize()
+    VoltraWidgetDefaults.removeAllWidgets()
   }
 
   private func clearWidgetTimeline(widgetId: String) {
-    guard let groupId = VoltraConfig.groupIdentifier(),
-          let defaults = UserDefaults(suiteName: groupId) else { return }
-
-    defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
-    defaults.synchronize()
+    VoltraWidgetDefaults.removeTimeline(for: widgetId)
   }
 
   private func cleanupOrphanedWidgetData() {
-    guard let groupId = VoltraConfig.groupIdentifier(),
-          let defaults = UserDefaults(suiteName: groupId) else { return }
-
     let knownWidgetIds = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
     guard !knownWidgetIds.isEmpty else { return }
 
@@ -471,26 +415,10 @@ public class VoltraModuleImpl {
       })
 
       for widgetId in knownWidgetIds where !installedIds.contains(widgetId) {
-        defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
-        defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
-        defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
+        VoltraWidgetDefaults.removeAllData(for: widgetId)
         print("[Voltra] Cleaned up orphaned widget data for '\(widgetId)'")
       }
     }
   }
 }
 
-/// Errors that can occur during widget operations
-enum WidgetError: Error, LocalizedError {
-  case appGroupNotConfigured
-  case userDefaultsUnavailable
-
-  var errorDescription: String? {
-    switch self {
-    case .appGroupNotConfigured:
-      return "App Group not configured. Set 'groupIdentifier' in the Voltra config plugin to use widgets."
-    case .userDefaultsUnavailable:
-      return "Unable to access UserDefaults for the app group."
-    }
-  }
-}
