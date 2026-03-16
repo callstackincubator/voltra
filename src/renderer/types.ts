@@ -1,5 +1,1 @@
-import { ReactNode } from 'react'
-
-import { VoltraNodeJson } from '../types.js'
-
-export type VoltraVariantRenderer = (node: ReactNode) => VoltraNodeJson
+export type { VoltraVariantRenderer } from '@voltra/core'

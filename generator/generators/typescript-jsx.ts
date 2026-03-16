@@ -76,7 +76,7 @@ To regenerate these files, run:
 
 Users should create component files manually using createVoltraComponent with these types.
 Example:
-  import { createVoltraComponent } from './internal/voltraComponent'
+  import { createVoltraComponent } from '../createVoltraComponent'
   import type { ButtonProps } from './props/Button'
 
   export const Button = createVoltraComponent<ButtonProps>('Button')

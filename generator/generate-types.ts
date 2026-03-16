@@ -15,6 +15,7 @@ const ROOT_DIR = path.join(__dirname, '..')
 const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
+const TS_CORE_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/core/src/payload')
 const TS_ANDROID_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/android/payload')
 const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/ui/Generated')
 const SWIFT_PARAMETERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Parameters')
@@ -137,7 +138,7 @@ const main = () => {
       kotlinShortNameFiles[filename] = content
     }
   }
-  writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsShortNameFiles)
+  writeFiles(TS_CORE_PAYLOAD_OUTPUT_DIR, tsShortNameFiles)
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftShortNameFiles)
   writeFiles(KOTLIN_GENERATED_DIR, kotlinShortNameFiles)
   console.log()
@@ -168,7 +169,7 @@ const main = () => {
     } Kotlin files`
   )
   console.log(
-    `   Short names: ${Object.keys(tsShortNameFiles).length} TypeScript files, ${
+    `   Short names: ${Object.keys(tsShortNameFiles).length} TypeScript files in packages/core/src/payload/, ${
       Object.keys(swiftShortNameFiles).length
     } Swift files, ${Object.keys(kotlinShortNameFiles).length} Kotlin files`
   )

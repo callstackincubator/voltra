@@ -8,7 +8,7 @@
 import Foundation
 
 /// Parameters for Chart component
-/// SwiftUI Charts component for data visualization
+/// Charts component for data visualization
 public struct ChartParameters: ComponentParameters {
   /// Compact mark data encoded from children by toJSON
   public let marks: String?
