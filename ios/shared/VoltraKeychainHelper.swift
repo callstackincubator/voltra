@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Security
 
 /// Shared Keychain helper for securely storing and reading widget server credentials.
@@ -44,7 +45,7 @@ public enum VoltraKeychainHelper {
 
     let status = SecItemAdd(query as CFDictionary, nil)
     if status != errSecSuccess {
-      print("[Voltra] Failed to save token to Keychain: \(status)")
+      VoltraLogger.keychain.error("Failed to save token: \(status)")
     }
     return status == errSecSuccess
   }
@@ -69,7 +70,7 @@ public enum VoltraKeychainHelper {
 
     guard status == errSecSuccess, let data = item as? Data else {
       if status != errSecItemNotFound {
-        print("[Voltra] Failed to read token from Keychain: \(status)")
+        VoltraLogger.keychain.error("Failed to read token: \(status)")
       }
       return nil
     }
@@ -118,7 +119,7 @@ public enum VoltraKeychainHelper {
 
     let status = SecItemAdd(query as CFDictionary, nil)
     if status != errSecSuccess {
-      print("[Voltra] Failed to save headers to Keychain: \(status)")
+      VoltraLogger.keychain.error("Failed to save headers: \(status)")
     }
     return status == errSecSuccess
   }

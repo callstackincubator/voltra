@@ -258,97 +258,42 @@ public class VoltraLiveActivityService {
 
   // MARK: - Monitoring
 
-  private var monitoredActivityIds: Set<String> = []
-  private var monitoringTasks: [Task<Void, Never>] = []
+  private var activityManager: VoltraLiveActivityManager?
 
-  /// Start monitoring all Live Activities and Push Tokens
+  /// Start monitoring all Live Activities, push tokens, and lifecycle state changes.
   public func startMonitoring(enablePush: Bool) {
-    guard Self.isSupported() else { return }
+    let onTokenUpdated: (@Sendable (String, String) -> Void)?
+    let onPushToStartUpdated: (@Sendable (String) -> Void)?
 
-    // 1. Monitor Push-to-Start Tokens
     if enablePush {
-      if #available(iOS 17.2, *) {
-        startPushToStartTokenObservation()
+      onTokenUpdated = { activityName, token in
+        VoltraEventBus.shared.send(.tokenReceived(activityName: activityName, pushToken: token))
       }
-    }
-
-    // 2. Monitor Live Activity Updates (Creation & Lifecycle)
-    startActivityUpdatesObservation(enablePush: enablePush)
-  }
-
-  /// Stop all monitoring tasks
-  public func stopMonitoring() {
-    monitoredActivityIds.removeAll()
-    monitoringTasks.forEach { $0.cancel() }
-    monitoringTasks.removeAll()
-  }
-
-  @available(iOS 17.2, *)
-  private func startPushToStartTokenObservation() {
-    if let initialTokenData = Activity<VoltraAttributes>.pushToStartToken {
-      let token = initialTokenData.hexString
-      VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
-    }
-    let task = Task {
-      for await tokenData in Activity<VoltraAttributes>.pushToStartTokenUpdates {
-        let token = tokenData.hexString
+      onPushToStartUpdated = { token in
         VoltraEventBus.shared.send(.pushToStartTokenReceived(token: token))
       }
+    } else {
+      onTokenUpdated = nil
+      onPushToStartUpdated = nil
     }
-    monitoringTasks.append(task)
+
+    let manager = VoltraLiveActivityManager(
+      onTokenUpdated: onTokenUpdated,
+      onPushToStartUpdated: onPushToStartUpdated,
+      onStateChanged: { activityName, state in
+        VoltraEventBus.shared.send(.stateChange(activityName: activityName, state: state))
+      }
+    )
+
+    activityManager = manager
+    Task { await manager.startObserving() }
   }
 
-  private func startActivityUpdatesObservation(enablePush: Bool) {
-    // 1. Handle currently existing activities
-    for activity in Activity<VoltraAttributes>.activities {
-      monitorActivity(activity, enablePush: enablePush)
-    }
-
-    // 2. Listen for NEW activities
-    let updatesTask = Task {
-      for await newActivity in Activity<VoltraAttributes>.activityUpdates {
-        monitorActivity(newActivity, enablePush: enablePush)
-      }
-    }
-    monitoringTasks.append(updatesTask)
-  }
-
-  /// Set up observers for an activity's lifecycle
-  private func monitorActivity(_ activity: Activity<VoltraAttributes>, enablePush: Bool) {
-    let activityId = activity.id
-
-    // Avoid duplicate monitoring
-    guard !monitoredActivityIds.contains(activityId) else { return }
-    monitoredActivityIds.insert(activityId)
-
-    // Lifecycle state changes
-    let stateTask = Task {
-      for await state in activity.activityStateUpdates {
-        VoltraEventBus.shared.send(
-          .stateChange(
-            activityName: activity.attributes.name,
-            state: String(describing: state)
-          )
-        )
-      }
-    }
-    monitoringTasks.append(stateTask)
-
-    // Push token updates
-    if enablePush {
-      let tokenTask = Task {
-        for await pushTokenData in activity.pushTokenUpdates {
-          let pushTokenString = pushTokenData.hexString
-          VoltraEventBus.shared.send(
-            .tokenReceived(
-              activityName: activity.attributes.name,
-              pushToken: pushTokenString
-            )
-          )
-        }
-      }
-      monitoringTasks.append(tokenTask)
-    }
+  /// Stop all monitoring and cancel every outstanding observation task.
+  public func stopMonitoring() {
+    let manager = activityManager
+    activityManager = nil
+    Task { await manager?.stopObserving() }
   }
 }
 

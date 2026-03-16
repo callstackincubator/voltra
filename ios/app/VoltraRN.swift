@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import os
 import SwiftUI
 import UIKit
 
@@ -43,7 +44,7 @@ class VoltraRN: ExpoView {
       let json = try JSONValue.parse(from: jsonString)
       root = VoltraNode.parse(from: json)
     } catch {
-      print("Error setting payload in VoltraView: \(error)")
+      VoltraLogger.module.error("Failed to parse payload in VoltraView: \(error)")
       root = .empty
     }
 

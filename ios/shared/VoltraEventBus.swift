@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// A centralized event bus that manages Voltra events
 /// - Persistent events (interactions): routed through UserDefaults for cross-process delivery
@@ -45,7 +46,7 @@ public class VoltraEventBus {
     for event in persistedEvents {
       handler(event.name, event.data)
     }
-    print("[VoltraEventBus] Replayed \(persistedEvents.count) persisted events")
+    VoltraLogger.event.info("Replayed \(persistedEvents.count) persisted events")
 
     // 2. Listen for all events via NotificationCenter (hot delivery)
     observer = NotificationCenter.default.addObserver(

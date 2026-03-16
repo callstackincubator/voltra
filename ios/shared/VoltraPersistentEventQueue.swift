@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Persistent event queue for events that must survive app death (e.g., interactions from widget)
 /// Uses UserDefaults with App Group for cross-process communication
@@ -12,7 +13,7 @@ public enum VoltraPersistentEventQueue {
           JSONSerialization.isValidJSONObject(payload),
           let data = try? JSONSerialization.data(withJSONObject: payload, options: [])
     else {
-      print("[VoltraPersistentEventQueue] Failed to write event - no group identifier or invalid payload")
+      VoltraLogger.event.error("Failed to write event — no group identifier or invalid payload")
       return
     }
 
@@ -24,24 +25,24 @@ public enum VoltraPersistentEventQueue {
     defaults.synchronize()
 
     let eventName = payload["type"] as? String ?? "unknown"
-    print("[VoltraPersistentEventQueue] Wrote event: \(eventName)")
+    VoltraLogger.event.debug("Wrote event: \(eventName)")
   }
 
   /// Read all events from the persistent queue and clear it
   /// Returns an array of (eventName, eventData) tuples
   static func popAll() -> [(name: String, data: [String: Any])] {
     guard let group = VoltraConfig.groupIdentifier() else {
-      print("[VoltraPersistentEventQueue] popAll: No group identifier found")
+      VoltraLogger.event.error("popAll: No group identifier found")
       return []
     }
     guard let defaults = UserDefaults(suiteName: group) else {
-      print("[VoltraPersistentEventQueue] popAll: Could not access UserDefaults for group: \(group)")
+      VoltraLogger.event.error("popAll: Could not access UserDefaults for group '\(group)'")
       return []
     }
 
     let queue = defaults.array(forKey: queueKey) as? [String] ?? []
     let eventCount = queue.count
-    print("[VoltraPersistentEventQueue] popAll: Found \(eventCount) events in queue")
+    VoltraLogger.event.debug("popAll: Found \(eventCount) events in queue")
 
     // Clear the queue first
     defaults.set([String](), forKey: queueKey)
@@ -49,7 +50,7 @@ public enum VoltraPersistentEventQueue {
 
     // Skip processing if queue is excessively large (stale data)
     if eventCount > 1000 {
-      print("[VoltraPersistentEventQueue] popAll: Skipping processing of \(eventCount) stale events")
+      VoltraLogger.event.warning("popAll: Skipping \(eventCount) stale events")
       return []
     }
 

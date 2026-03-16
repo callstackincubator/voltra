@@ -34,7 +34,7 @@ public enum VoltraWidgetServerFetcher {
   /// Read the server update URL for a widget from Info.plist / UserDefaults config.
   public static func serverUrl(for widgetId: String) -> String? {
     // Check Info.plist first (set at build time by config plugin)
-    if let urls = Bundle.main.object(forInfoDictionaryKey: "Voltra_WidgetServerUrls") as? [String: String],
+    if let urls = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetServerUrls) as? [String: String],
        let url = urls[widgetId]
     {
       return url
@@ -44,7 +44,7 @@ public enum VoltraWidgetServerFetcher {
     if let group = VoltraConfig.groupIdentifier(),
        let defaults = UserDefaults(suiteName: group)
     {
-      return defaults.string(forKey: "Voltra_Widget_ServerUrl_\(widgetId)")
+      return defaults.string(forKey: VoltraStorageKeys.widgetServerUrl(widgetId))
     }
 
     return nil
@@ -52,7 +52,7 @@ public enum VoltraWidgetServerFetcher {
 
   /// Read the update interval (in minutes) for a widget.
   public static func updateInterval(for widgetId: String) -> Int {
-    if let intervals = Bundle.main.object(forInfoDictionaryKey: "Voltra_WidgetServerIntervals") as? [String: Int],
+    if let intervals = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetServerIntervals) as? [String: Int],
        let interval = intervals[widgetId]
     {
       return interval
