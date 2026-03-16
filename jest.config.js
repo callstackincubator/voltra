@@ -9,6 +9,9 @@ module.exports = {
       ],
       moduleNameMapper: {
         '^@voltra/core$': '<rootDir>/packages/core/src/index.ts',
+        '^@voltra/ios$': '<rootDir>/packages/ios/src/index.ts',
+        '^@voltra/ios/client$': '<rootDir>/packages/ios/src/client.ts',
+        '^@voltra/ios/server$': '<rootDir>/packages/ios/src/server.ts',
       },
       testMatch: ['<rootDir>/src/**/*.expo.test.ts?(x)'],
     },
@@ -22,6 +25,9 @@ module.exports = {
       testMatch: ['<rootDir>/src/**/*.node.test.ts?(x)'],
       moduleNameMapper: {
         '^@voltra/core$': '<rootDir>/packages/core/src/index.ts',
+        '^@voltra/ios$': '<rootDir>/packages/ios/src/index.ts',
+        '^@voltra/ios/client$': '<rootDir>/packages/ios/src/client.ts',
+        '^@voltra/ios/server$': '<rootDir>/packages/ios/src/server.ts',
         voltra: '<rootDir>/src/server.ts',
         '^(\\.{1,2}/.*)\\.js$': '$1',
       },

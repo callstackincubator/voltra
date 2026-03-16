@@ -14,7 +14,9 @@ import { validateComponentsSchema } from './validate-components'
 const ROOT_DIR = path.join(__dirname, '..')
 const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
+const TS_IOS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/ios/src/jsx/props')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
+const TS_IOS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/ios/src/payload')
 const TS_CORE_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/core/src/payload')
 const TS_ANDROID_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/android/payload')
 const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/ui/Generated')
@@ -82,6 +84,7 @@ const main = () => {
   console.log('Step 3: Generating TypeScript component props types and component exports...')
   const tsJsxResult = generateTypeScriptJSX(componentsData)
   writeFiles(TS_PROPS_OUTPUT_DIR, tsJsxResult.props)
+  writeFiles(TS_IOS_PROPS_OUTPUT_DIR, tsJsxResult.props)
   console.log()
 
   // Step 5: Generate Swift parameter types
@@ -117,6 +120,7 @@ const main = () => {
     }
   }
   writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsComponentIdFiles)
+  writeFiles(TS_IOS_PAYLOAD_OUTPUT_DIR, tsComponentIdFiles)
   writeFiles(TS_ANDROID_PAYLOAD_OUTPUT_DIR, tsAndroidComponentIdFiles)
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
   writeFiles(KOTLIN_PAYLOAD_OUTPUT_DIR, kotlinComponentIdFiles)
@@ -176,7 +180,7 @@ const main = () => {
   console.log()
   console.log('Next steps:')
   console.log('   1. Review generated files')
-  console.log('   2. Create component files manually in src/jsx/ using createVoltraComponent')
+  console.log('   2. Create component files manually in src/jsx/ and packages/ios/src/jsx/ using createVoltraComponent')
   console.log('   3. Run tests to ensure everything works')
 }
 
