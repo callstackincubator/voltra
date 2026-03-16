@@ -37,8 +37,8 @@
     "./expo-module.config.json": "./expo-module.config.json"
   },
   "scripts": {
-    "build": "npm run build --workspace @voltra/core && npm run build --workspace @voltra/ios && npm run build --workspace @voltra/android && expo-module build",
-    "build:all": "turbo run build",
+    "build": "expo-module build",
+    "build:all": "turbo run build --concurrency=1",
     "clean": "npm run clean --workspaces && expo-module clean",
     "clean:plugin": "rm -rf plugin/build plugin/tsconfig.tsbuildinfo",
     "format:check": "npm run format:js:check && npm run format:kotlin:check && npm run format:swift:check",
@@ -88,8 +88,11 @@
   "homepage": "https://use-voltra.dev",
   "dependencies": {
     "@voltra/android": "1.3.0-rc.1",
+    "@voltra/android-server": "1.3.0-rc.1",
     "@voltra/core": "1.3.0-rc.1",
     "@voltra/ios": "1.3.0-rc.1",
+    "@voltra/ios-server": "1.3.0-rc.1",
+    "@voltra/server": "1.3.0-rc.1",
     "dedent": "^1.7.1",
     "react-is": "^19.2.0",
     "vd-tool": "^4.0.2"
