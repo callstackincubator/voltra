@@ -8,6 +8,9 @@ module.exports = {
         'node_modules/(?!(expo-module-scripts|jest-expo|@react-native|react-native|react-clone-referenced-element|@expo|@voltra)/)',
       ],
       moduleNameMapper: {
+        '^@voltra/android$': '<rootDir>/packages/android/src/index.ts',
+        '^@voltra/android/client$': '<rootDir>/packages/android/src/client.ts',
+        '^@voltra/android/server$': '<rootDir>/packages/android/src/server.ts',
         '^@voltra/core$': '<rootDir>/packages/core/src/index.ts',
         '^@voltra/ios$': '<rootDir>/packages/ios/src/index.ts',
         '^@voltra/ios/client$': '<rootDir>/packages/ios/src/client.ts',
@@ -24,6 +27,9 @@ module.exports = {
       ],
       testMatch: ['<rootDir>/src/**/*.node.test.ts?(x)'],
       moduleNameMapper: {
+        '^@voltra/android$': '<rootDir>/packages/android/src/index.ts',
+        '^@voltra/android/client$': '<rootDir>/packages/android/src/client.ts',
+        '^@voltra/android/server$': '<rootDir>/packages/android/src/server.ts',
         '^@voltra/core$': '<rootDir>/packages/core/src/index.ts',
         '^@voltra/ios$': '<rootDir>/packages/ios/src/index.ts',
         '^@voltra/ios/client$': '<rootDir>/packages/ios/src/client.ts',

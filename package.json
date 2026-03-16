@@ -37,7 +37,7 @@
     "./expo-module.config.json": "./expo-module.config.json"
   },
   "scripts": {
-    "build": "npm run build --workspace @voltra/core && npm run build --workspace @voltra/ios && expo-module build",
+    "build": "npm run build --workspace @voltra/core && npm run build --workspace @voltra/ios && npm run build --workspace @voltra/android && expo-module build",
     "build:all": "turbo run build",
     "clean": "npm run clean --workspaces && expo-module clean",
     "clean:plugin": "rm -rf plugin/build plugin/tsconfig.tsbuildinfo",
@@ -87,6 +87,7 @@
   "license": "MIT",
   "homepage": "https://use-voltra.dev",
   "dependencies": {
+    "@voltra/android": "1.3.0-rc.1",
     "@voltra/core": "1.3.0-rc.1",
     "@voltra/ios": "1.3.0-rc.1",
     "dedent": "^1.7.1",

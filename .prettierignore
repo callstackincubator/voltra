@@ -1,5 +1,6 @@
 /build
 /android/build
+/example/android
 /packages/*/build
 /example/.expo
 /example/ios
@@ -9,3 +10,4 @@
 /.expo
 /website/doc_build
 /website/docs
+/.turbo

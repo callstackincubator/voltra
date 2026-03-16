@@ -5,6 +5,9 @@
     "outDir": "./build",
     "baseUrl": ".",
     "paths": {
+      "@voltra/android": ["./packages/android/src/index.ts"],
+      "@voltra/android/client": ["./packages/android/src/client.ts"],
+      "@voltra/android/server": ["./packages/android/src/server.ts"],
       "@voltra/ios": ["./packages/ios/src/index.ts"],
       "@voltra/ios/client": ["./packages/ios/src/client.ts"],
       "@voltra/ios/server": ["./packages/ios/src/server.ts"]

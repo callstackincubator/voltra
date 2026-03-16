@@ -15,10 +15,13 @@ const ROOT_DIR = path.join(__dirname, '..')
 const COMPONENTS_DATA_PATH = path.join(ROOT_DIR, 'data/components.json')
 const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
 const TS_IOS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/ios/src/jsx/props')
+const TS_ANDROID_PROPS_SOURCE_DIR = path.join(ROOT_DIR, 'src/android/jsx/props')
+const TS_ANDROID_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/android/src/jsx/props')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
 const TS_IOS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/ios/src/payload')
 const TS_CORE_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/core/src/payload')
 const TS_ANDROID_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/android/payload')
+const TS_ANDROID_PACKAGE_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'packages/android/src/payload')
 const SWIFT_GENERATED_DIR = path.join(ROOT_DIR, 'ios/ui/Generated')
 const SWIFT_PARAMETERS_OUTPUT_DIR = path.join(SWIFT_GENERATED_DIR, 'Parameters')
 const SWIFT_SHARED_OUTPUT_DIR = path.join(ROOT_DIR, 'ios/shared')
@@ -42,6 +45,13 @@ const writeFiles = (outputDir: string, files: Record<string, string>) => {
     fs.writeFileSync(filePath, content, 'utf-8')
     console.log(`   ✓ Generated ${path.relative(ROOT_DIR, filePath)}`)
   }
+}
+
+const syncDirectory = (sourceDir: string, outputDir: string) => {
+  fs.rmSync(outputDir, { recursive: true, force: true })
+  ensureDirectoryExists(outputDir)
+  fs.cpSync(sourceDir, outputDir, { recursive: true })
+  console.log(`   ✓ Synced ${path.relative(ROOT_DIR, sourceDir)} -> ${path.relative(ROOT_DIR, outputDir)}`)
 }
 
 const runFormatScript = (scriptName: string, stepLabel: string) => {
@@ -85,6 +95,7 @@ const main = () => {
   const tsJsxResult = generateTypeScriptJSX(componentsData)
   writeFiles(TS_PROPS_OUTPUT_DIR, tsJsxResult.props)
   writeFiles(TS_IOS_PROPS_OUTPUT_DIR, tsJsxResult.props)
+  syncDirectory(TS_ANDROID_PROPS_SOURCE_DIR, TS_ANDROID_PROPS_OUTPUT_DIR)
   console.log()
 
   // Step 5: Generate Swift parameter types
@@ -122,6 +133,7 @@ const main = () => {
   writeFiles(TS_PAYLOAD_OUTPUT_DIR, tsComponentIdFiles)
   writeFiles(TS_IOS_PAYLOAD_OUTPUT_DIR, tsComponentIdFiles)
   writeFiles(TS_ANDROID_PAYLOAD_OUTPUT_DIR, tsAndroidComponentIdFiles)
+  writeFiles(TS_ANDROID_PACKAGE_PAYLOAD_OUTPUT_DIR, tsAndroidComponentIdFiles)
   writeFiles(SWIFT_SHARED_OUTPUT_DIR, swiftComponentIdFiles)
   writeFiles(KOTLIN_PAYLOAD_OUTPUT_DIR, kotlinComponentIdFiles)
   console.log()
@@ -180,7 +192,9 @@ const main = () => {
   console.log()
   console.log('Next steps:')
   console.log('   1. Review generated files')
-  console.log('   2. Create component files manually in src/jsx/ and packages/ios/src/jsx/ using createVoltraComponent')
+  console.log(
+    '   2. Create component files manually in src/jsx/, packages/ios/src/jsx/, and packages/android/src/jsx/ using createVoltraComponent'
+  )
   console.log('   3. Run tests to ensure everything works')
 }
 

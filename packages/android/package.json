@@ -1,7 +1,7 @@
 {
-  "name": "@voltra/ios",
+  "name": "@voltra/android",
   "version": "1.3.0-rc.1",
-  "description": "Voltra for iOS",
+  "description": "Voltra for Android",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
   "types": "build/types/index.d.ts",
@@ -44,14 +44,14 @@
     "react-native",
     "expo",
     "voltra",
-    "ios",
-    "live-activity"
+    "android",
+    "widget"
   ],
   "author": "Saúl Sharma (https://x.com/saul_sharma), Szymon Chmal (https://x.com/chmalszymon)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/callstackincubator/voltra.git",
-    "directory": "packages/ios"
+    "directory": "packages/android"
   },
   "bugs": {
     "url": "https://github.com/callstackincubator/voltra/issues"
