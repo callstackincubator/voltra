@@ -1,6 +1,6 @@
+import { getAndroidComponentId } from '../payload/component-ids.js'
 import type { ComponentRegistry } from '../renderer/index.js'
 import { createVoltraRenderer } from '../renderer/index.js'
-import { getAndroidComponentId } from '../payload/component-ids.js'
 import type { AndroidLiveUpdateJson, AndroidLiveUpdateVariants } from './types.js'
 
 /**

@@ -1,11 +1,10 @@
-import type { ReactNode } from 'react'
-
 import {
+  type ComponentRegistry,
   createVoltraRenderer as createCoreVoltraRenderer,
   renderVariantToJson,
-  type ComponentRegistry,
   VOLTRA_PAYLOAD_VERSION,
 } from '@voltra/core'
+import type { ReactNode } from 'react'
 
 import { getAndroidComponentId } from '../payload/component-ids.js'
 import type { VoltraNodeJson } from '../types.js'

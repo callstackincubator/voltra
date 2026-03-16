@@ -1,11 +1,11 @@
 import React from 'react'
 
-import { createVoltraComponent } from './createVoltraComponent.js'
 import type { VoltraAndroidBaseProps } from '../jsx/baseProps.js'
 import type { AreaMarkProps } from './AreaMark.js'
 import type { BarMarkProps } from './BarMark.js'
 import { VOLTRA_MARK_TAG } from './BarMark.js'
 import type { ChartDataPoint, SectorDataPoint } from './chart-types.js'
+import { createVoltraComponent } from './createVoltraComponent.js'
 import type { LineMarkProps } from './LineMark.js'
 import type { PointMarkProps } from './PointMark.js'
 import type { RuleMarkProps } from './RuleMark.js'

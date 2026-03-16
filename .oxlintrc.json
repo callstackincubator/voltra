@@ -1,0 +1,13 @@
+{
+  "plugins": ["typescript", "react", "oxc"],
+  "ignorePatterns": [
+    "build/**",
+    "plugin/build/**",
+    "website/doc_build/**",
+    "example/.expo/**",
+    "example/android/.gradle/**",
+    "example/android/app/build/**",
+    "example/ios/build/**",
+    "node_modules/**"
+  ]
+}

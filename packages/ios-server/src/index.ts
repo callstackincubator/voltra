@@ -3,17 +3,16 @@
 import { promisify } from 'node:util'
 import { brotliCompress, constants } from 'node:zlib'
 
-import type { ReactNode } from 'react'
-
-import { createVoltraRenderer, ensurePayloadWithinBudget, type ComponentRegistry } from '@voltra/core'
+import { type ComponentRegistry,createVoltraRenderer, ensurePayloadWithinBudget } from '@voltra/core'
 import type { LiveActivityVariants, WidgetVariants } from '@voltra/ios'
-import { createWidgetUpdateExpressHandler, createWidgetUpdateHandler, createWidgetUpdateNodeHandler } from '@voltra/server'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
 } from '@voltra/server'
+import { createWidgetUpdateExpressHandler, createWidgetUpdateHandler, createWidgetUpdateNodeHandler } from '@voltra/server'
+import type { ReactNode } from 'react'
 
 export { Voltra } from '@voltra/ios'
 export type { LiveActivityVariants, WidgetVariants }
@@ -107,7 +106,7 @@ const compressPayload = async (jsonString: string): Promise<string> => {
 export const renderWidgetToJson = (variants: WidgetVariants): Record<string, any> => {
   const renderer = createVoltraRenderer(defaultComponentRegistry)
 
-  for (const [family, content] of Object.entries(variants) as Array<[string, WidgetVariants[keyof WidgetVariants]]>) {
+  for (const [family, content] of Object.entries(variants) as [string, WidgetVariants[keyof WidgetVariants]][]) {
     if (content !== undefined) {
       renderer.addRootNode(family, content as NonNullable<WidgetVariants[keyof WidgetVariants]>)
     }

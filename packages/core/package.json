@@ -23,7 +23,8 @@
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:types": "tsc -p tsconfig.types.json",
-    "clean": "rm -rf build"
+    "clean": "rm -rf build",
+    "lint": "oxlint src"
   },
   "dependencies": {
     "react-is": "^19.2.0"

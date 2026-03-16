@@ -1,5 +1,5 @@
-import { createVoltraComponent } from './createVoltraComponent.js'
 import { VoltraAndroidTextStyleProp } from '../styles/types.js'
+import { createVoltraComponent } from './createVoltraComponent.js'
 import type { TextProps as GeneratedTextProps } from './props/Text.js'
 
 // Update 'style' to use Android text style prop

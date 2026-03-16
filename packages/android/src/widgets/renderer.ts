@@ -1,5 +1,5 @@
-import { ComponentRegistry, createVoltraRenderer } from '../renderer/renderer.js'
 import { getAndroidComponentId } from '../payload/component-ids.js'
+import { ComponentRegistry, createVoltraRenderer } from '../renderer/renderer.js'
 import type { AndroidWidgetVariants } from './types.js'
 
 /**
