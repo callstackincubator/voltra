@@ -4,9 +4,7 @@
     "strict": true,
     "types": ["expo-router"],
     "paths": {
-      "~/*": ["./*"],
-      "voltra": ["../src/index"],
-      "voltra/*": ["../src/*"]
+      "~/*": ["./*"]
     }
   }
 }

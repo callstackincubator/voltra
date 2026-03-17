@@ -1,6 +1,6 @@
-export { type ContextRegistry,getContextRegistry } from './context-registry.js'
+export { type ContextRegistry, getContextRegistry } from './context-registry.js'
 export { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher.js'
-export { createElementRegistry, type ElementRegistry,preScanForDuplicates } from './element-registry.js'
+export { createElementRegistry, type ElementRegistry, preScanForDuplicates } from './element-registry.js'
 export { flattenStyle } from './flatten-styles.js'
 export { getRenderCache, type RenderCache } from './render-cache.js'
 export {

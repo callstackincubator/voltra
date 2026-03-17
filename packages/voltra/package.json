@@ -1,0 +1,104 @@
+{
+  "name": "voltra",
+  "version": "1.3.0-rc.1",
+  "description": "Build Live Activities with JSX in React Native",
+  "main": "build/cjs/index.js",
+  "module": "build/esm/index.js",
+  "types": "build/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/types/index.d.ts",
+      "require": "./build/cjs/index.js",
+      "import": "./build/esm/index.js",
+      "default": "./build/esm/index.js"
+    },
+    "./client": {
+      "types": "./build/types/client.d.ts",
+      "require": "./build/cjs/client.js",
+      "import": "./build/esm/client.js",
+      "default": "./build/esm/client.js"
+    },
+    "./server": {
+      "types": "./build/types/server.d.ts",
+      "require": "./build/cjs/server.js",
+      "import": "./build/esm/server.js",
+      "default": "./build/esm/server.js"
+    },
+    "./android": {
+      "types": "./build/types/android/index.d.ts",
+      "require": "./build/cjs/android/index.js",
+      "import": "./build/esm/android/index.js",
+      "default": "./build/esm/android/index.js"
+    },
+    "./android/server": {
+      "types": "./build/types/android/server.d.ts",
+      "require": "./build/cjs/android/server.js",
+      "import": "./build/esm/android/server.js",
+      "default": "./build/esm/android/server.js"
+    },
+    "./android/client": {
+      "types": "./build/types/android/client.d.ts",
+      "require": "./build/cjs/android/client.js",
+      "import": "./build/esm/android/client.js",
+      "default": "./build/esm/android/client.js"
+    },
+    "./app.plugin.js": "./app.plugin.js",
+    "./expo-module.config.json": "./expo-module.config.json"
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs packages/voltra",
+    "clean": "rm -rf build",
+    "format:check": "npm run format:js:check && npm run format:kotlin:check && npm run format:swift:check",
+    "format:fix": "npm run format:js:fix && npm run format:kotlin:fix && npm run format:swift:fix",
+    "format:js:check": "prettier --check .",
+    "format:js:fix": "prettier --write .",
+    "format:kotlin:check": "ktlint \"android/**/*.kt\"",
+    "format:kotlin:fix": "ktlint -F \"android/**/*.kt\"",
+    "format:swift:check": "swiftformat --lint ios",
+    "format:swift:fix": "swiftformat ios",
+    "lint": "oxlint src generator",
+    "lint:fix": "oxlint --fix src generator",
+    "test": "expo-module test",
+    "test:js": "npm run test",
+    "test:kotlin": "cd ../../example/android && ./gradlew :voltra:testDebugUnitTest",
+    "test:swift": "cd ios && swift test",
+    "test:native": "npm run test:kotlin && npm run test:swift",
+    "test:all": "npm run test:js && npm run test:native",
+    "typecheck": "tsc -p tsconfig.types.json --noEmit",
+    "prepublishOnly": "expo-module prepublishOnly",
+    "expo-module": "expo-module"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "live-activity",
+    "ios",
+    "apple"
+  ],
+  "author": "Saúl Sharma (https://x.com/saul_sharma), Szymon Chmal (https://x.com/chmalszymon)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/callstackincubator/voltra.git",
+    "directory": "packages/voltra"
+  },
+  "bugs": {
+    "url": "https://github.com/callstackincubator/voltra/issues"
+  },
+  "license": "MIT",
+  "homepage": "https://use-voltra.dev",
+  "dependencies": {
+    "@voltra/android": "1.3.0-rc.1",
+    "@voltra/android-server": "1.3.0-rc.1",
+    "@voltra/core": "1.3.0-rc.1",
+    "@voltra/expo-plugin": "1.3.0-rc.1",
+    "@voltra/ios": "1.3.0-rc.1",
+    "@voltra/ios-server": "1.3.0-rc.1",
+    "@voltra/server": "1.3.0-rc.1",
+    "react-is": "^19.2.0"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

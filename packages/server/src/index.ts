@@ -197,9 +197,7 @@ export function createWidgetUpdateHandler(options: WidgetUpdateHandlerOptions): 
       const jsonPayload = await renderer(renderRequest)
       if (!jsonPayload) {
         const errorMessage =
-          platform === 'android'
-            ? `No content for Android widget: ${widgetId}`
-            : `No content for widget: ${widgetId}`
+          platform === 'android' ? `No content for Android widget: ${widgetId}` : `No content for widget: ${widgetId}`
 
         return jsonResponse(404, { error: errorMessage })
       }

@@ -49,4 +49,4 @@ npm-debug.log
 
 ## Build
 /build
-/ios/.build/
+/packages/voltra/ios/.build/

@@ -1,0 +1,50 @@
+module.exports = {
+  projects: [
+    {
+      displayName: 'Expo Module',
+      preset: 'expo-module-scripts',
+      testEnvironment: 'node',
+      transformIgnorePatterns: [
+        'node_modules/(?!(expo-module-scripts|jest-expo|@react-native|react-native|react-clone-referenced-element|@expo|@voltra)/)',
+      ],
+      moduleNameMapper: {
+        '^@voltra/android$': '<rootDir>/../android/src/index.ts',
+        '^@voltra/android/client$': '<rootDir>/../android/src/client.ts',
+        '^@voltra/android/server$': '<rootDir>/../android/src/server.ts',
+        '^@voltra/android-server$': '<rootDir>/../android-server/src/index.ts',
+        '^@voltra/core$': '<rootDir>/../core/src/index.ts',
+        '^@voltra-example/(.*)$': '<rootDir>/../../example/$1',
+        '^@voltra/ios$': '<rootDir>/../ios/src/index.ts',
+        '^@voltra/ios/client$': '<rootDir>/../ios/src/client.ts',
+        '^@voltra/ios/server$': '<rootDir>/../ios/src/server.ts',
+        '^@voltra/ios-server$': '<rootDir>/../ios-server/src/index.ts',
+        '^@voltra/server$': '<rootDir>/../server/src/index.ts',
+      },
+      testMatch: ['<rootDir>/src/**/*.expo.test.ts?(x)'],
+    },
+    {
+      displayName: 'Node.js',
+      preset: 'react-native',
+      testEnvironment: 'node',
+      transformIgnorePatterns: [
+        'node_modules/(?!(jest-expo|@react-native|react-native|react-clone-referenced-element|@expo|@voltra)/)',
+      ],
+      testMatch: ['<rootDir>/src/**/*.node.test.ts?(x)'],
+      moduleNameMapper: {
+        '^@voltra/android$': '<rootDir>/../android/src/index.ts',
+        '^@voltra/android/client$': '<rootDir>/../android/src/client.ts',
+        '^@voltra/android/server$': '<rootDir>/../android/src/server.ts',
+        '^@voltra/android-server$': '<rootDir>/../android-server/src/index.ts',
+        '^@voltra/core$': '<rootDir>/../core/src/index.ts',
+        '^@voltra-example/(.*)$': '<rootDir>/../../example/$1',
+        '^@voltra/ios$': '<rootDir>/../ios/src/index.ts',
+        '^@voltra/ios/client$': '<rootDir>/../ios/src/client.ts',
+        '^@voltra/ios/server$': '<rootDir>/../ios/src/server.ts',
+        '^@voltra/ios-server$': '<rootDir>/../ios-server/src/index.ts',
+        '^@voltra/server$': '<rootDir>/../server/src/index.ts',
+        voltra: '<rootDir>/src/server.ts',
+        '^(\\.{1,2}/.*)\\.js$': '$1',
+      },
+    },
+  ],
+}

@@ -12,19 +12,17 @@
       "import": "./build/esm/index.js",
       "default": "./build/esm/index.js"
     },
-    "package.json": "./package.json"
+    "./package.json": "./package.json"
   },
   "files": [
     "build",
     "README.md"
   ],
   "scripts": {
-    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
-    "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build:esm": "tsc -p tsconfig.esm.json",
-    "build:types": "tsc -p tsconfig.types.json",
+    "build": "node ../../scripts/build-package.mjs packages/core",
     "clean": "rm -rf build",
-    "lint": "oxlint src"
+    "lint": "oxlint src",
+    "typecheck": "tsc -p tsconfig.types.json --noEmit"
   },
   "dependencies": {
     "react-is": "^19.2.0"

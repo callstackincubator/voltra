@@ -11,6 +11,9 @@
     },
     "lint": {},
     "lint:libOnly": {},
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
     "format:check": {},
     "generate": {
       "outputs": ["src/**/*.generated.ts"]

@@ -7,7 +7,11 @@ import type {
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
 } from '@voltra/server'
-import { createWidgetUpdateExpressHandler, createWidgetUpdateHandler, createWidgetUpdateNodeHandler } from '@voltra/server'
+import {
+  createWidgetUpdateExpressHandler,
+  createWidgetUpdateHandler,
+  createWidgetUpdateNodeHandler,
+} from '@voltra/server'
 import type { ReactNode } from 'react'
 
 export type {

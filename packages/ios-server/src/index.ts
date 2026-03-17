@@ -3,7 +3,7 @@
 import { promisify } from 'node:util'
 import { brotliCompress, constants } from 'node:zlib'
 
-import { type ComponentRegistry,createVoltraRenderer, ensurePayloadWithinBudget } from '@voltra/core'
+import { type ComponentRegistry, createVoltraRenderer, ensurePayloadWithinBudget } from '@voltra/core'
 import type { LiveActivityVariants, WidgetVariants } from '@voltra/ios'
 import type {
   WidgetRenderRequest,
@@ -11,7 +11,11 @@ import type {
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
 } from '@voltra/server'
-import { createWidgetUpdateExpressHandler, createWidgetUpdateHandler, createWidgetUpdateNodeHandler } from '@voltra/server'
+import {
+  createWidgetUpdateExpressHandler,
+  createWidgetUpdateHandler,
+  createWidgetUpdateNodeHandler,
+} from '@voltra/server'
 import type { ReactNode } from 'react'
 
 export { Voltra } from '@voltra/ios'

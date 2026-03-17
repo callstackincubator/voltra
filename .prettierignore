@@ -2,6 +2,9 @@
 /android/build
 /example/android
 /packages/*/build
+/packages/*/.expo
+/packages/*/android/build
+/packages/*/ios/.build
 /example/.expo
 /example/ios
 /ios/.build
@@ -11,3 +14,14 @@
 /website/doc_build
 /website/docs
 /.turbo
+**/*.d.ts
+**/*.d.ts.map
+**/*.js.map
+/packages/*/src/**/*.js
+/example/**/*.js
+!/example/index.js
+!/example/jest.config.js
+!/packages/voltra/app.plugin.js
+!/packages/voltra/babel.config.js
+!/packages/voltra/jest.config.js
+!/scripts/**/*.js

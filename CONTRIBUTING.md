@@ -12,7 +12,7 @@ All work on Voltra happens directly on GitHub. Contributors send pull requests w
 
 1. Fork the repo and create your branch from `main` (a guide on [how to fork a repository](https://help.github.com/articles/fork-a-repo/)).
 2. Run `npm install` to install all required dependencies.
-3. Build the plugin: `npx tsc -p plugin/tsconfig.json`.
+3. Build the plugin: `npm run build --workspace @voltra/expo-plugin`.
 4. Now you are ready to make changes.
 
 ## Architecture overview
@@ -21,14 +21,14 @@ All work on Voltra happens directly on GitHub. Contributors send pull requests w
 
 The JavaScript/TypeScript code has **two separate entry points** that must be maintained as independent boundaries:
 
-- **Client entry (`src/index.ts`)**: React Native code that runs in the app. Exports JSX components, hooks, and the imperative API for managing Live Activities.
-- **Server entry (`src/server.ts`)**: Node.js code for rendering Voltra components to string payloads. Used for server-side rendering and push notification payloads.
+- **Client entry (`packages/voltra/src/index.ts`)**: React Native code that runs in the app. Exports JSX components, hooks, and the imperative API for managing Live Activities.
+- **Server entry (`packages/voltra/src/server.ts`)**: Node.js code for rendering Voltra components to string payloads. Used for server-side rendering and push notification payloads.
 
 ⚠️ **Important**: These two entry points must remain separate. Client code should not import server-only dependencies, and server code should not import React Native-specific modules.
 
-### Expo config plugin (`plugin/`)
+### Expo config plugin (`packages/expo-plugin/`)
 
-The Expo plugin in `plugin/src/` handles all Xcode project setup during `expo prebuild`:
+The Expo plugin in `packages/expo-plugin/src/` handles all Xcode project setup during `expo prebuild`:
 
 1. **Creates the widget extension target** with proper build settings
 2. **Copies template files** from `ios-files/` (widget bundle, assets, Info.plist) into the extension target
@@ -125,8 +125,8 @@ The payload schema has a version number to support forward compatibility. When t
 
 The version is defined in two places that must stay in sync:
 
-- **TypeScript**: `src/renderer/renderer.ts` → `VOLTRA_PAYLOAD_VERSION`
-- **Swift**: `ios/shared/VoltraPayloadMigrator.swift` → `currentVersion`
+- **TypeScript**: `packages/voltra/src/renderer/renderer.ts` → `VOLTRA_PAYLOAD_VERSION`
+- **Swift**: `packages/voltra/ios/shared/VoltraPayloadMigrator.swift` → `currentVersion`
 
 ### When to increment the version
 
@@ -181,7 +181,7 @@ The `example/` directory contains an Expo app for testing changes.
 
 ```sh
 # 1) Build the plugin
-npx tsc -p plugin/tsconfig.json
+npm run build --workspace @voltra/expo-plugin
 
 # 2) Install example dependencies
 (cd example && npm install)
@@ -193,7 +193,7 @@ npx tsc -p plugin/tsconfig.json
 (cd example && npx expo run:ios)
 ```
 
-If iterating on the plugin, rebuild after each change in `plugin/src/`.
+If iterating on the plugin, rebuild after each change in `packages/expo-plugin/src/`.
 
 ### Running tests
 

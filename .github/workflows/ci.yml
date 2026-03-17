@@ -52,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Run type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
   test:
     name: '[JS] Test'
@@ -102,7 +102,7 @@ jobs:
         run: cd example && npm ci
 
       - name: Generate Android native project
-        run: cd example && npx expo prebuild --platform android --non-interactive
+        run: cd example && CI=1 npx expo prebuild --platform android
 
       - name: Run Kotlin native tests
         run: npm run test:kotlin
