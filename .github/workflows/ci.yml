@@ -98,6 +98,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Android native project
+        working-directory: example
+        run: CI=1 npx expo prebuild --platform android
+
       - name: Run Kotlin native tests
         working-directory: example/android
         run: ./gradlew :voltra:testDebugUnitTest
