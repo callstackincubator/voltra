@@ -23,7 +23,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -45,7 +45,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -64,7 +64,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -83,7 +83,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -111,7 +111,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -138,7 +138,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -157,7 +157,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       - name: Check Swift formatting
@@ -176,7 +176,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
           cache: 'npm'
 
       # Downloading the pinned release binary is much faster in CI than installing ktlint via Homebrew.
