@@ -98,14 +98,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install example dependencies
-        run: cd example && npm ci
-
-      - name: Generate Android native project
-        run: cd example && CI=1 npx expo prebuild --platform android
-
       - name: Run Kotlin native tests
-        run: npm run test:kotlin
+        working-directory: example/android
+        run: ./gradlew :voltra:testDebugUnitTest
 
   native-swift-test:
     name: '[Swift] Test'
