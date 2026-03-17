@@ -22,7 +22,7 @@
     "build": "node ../../scripts/build-package.mjs packages/ios-server",
     "clean": "rm -rf build",
     "lint": "oxlint src",
-    "typecheck": "tsc -p tsconfig.types.json --noEmit"
+    "typecheck": "tsc -p tsconfig.types.json --noEmit --rootDir ../.."
   },
   "dependencies": {
     "@voltra/core": "1.3.0-rc.1",
