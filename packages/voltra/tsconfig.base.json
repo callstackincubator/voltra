@@ -2,21 +2,19 @@
   "extends": "expo-module-scripts/tsconfig.base",
   "compilerOptions": {
     "rootDir": "./src",
-    "baseUrl": "../..",
+    "baseUrl": ".",
     "moduleResolution": "node",
     "paths": {
-      "voltra": ["packages/voltra/src/index.ts"],
-      "voltra/*": ["packages/voltra/src/*"],
-      "@voltra/android": ["packages/android/src/index.ts"],
-      "@voltra/android/client": ["packages/android/src/client.ts"],
-      "@voltra/android/server": ["packages/android/src/server.ts"],
-      "@voltra/android-server": ["packages/android-server/src/index.ts"],
-      "@voltra/core": ["packages/core/src/index.ts"],
-      "@voltra/ios": ["packages/ios/src/index.ts"],
-      "@voltra/ios/client": ["packages/ios/src/client.ts"],
-      "@voltra/ios/server": ["packages/ios/src/server.ts"],
-      "@voltra/ios-server": ["packages/ios-server/src/index.ts"],
-      "@voltra/server": ["packages/server/src/index.ts"]
+      "@voltra/android": ["../android/build/types/index.d.ts"],
+      "@voltra/android/client": ["../android/build/types/client.d.ts"],
+      "@voltra/android/server": ["../android/build/types/server.d.ts"],
+      "@voltra/android-server": ["../android-server/build/types/index.d.ts"],
+      "@voltra/core": ["../core/build/types/index.d.ts"],
+      "@voltra/ios": ["../ios/build/types/index.d.ts"],
+      "@voltra/ios/client": ["../ios/build/types/client.d.ts"],
+      "@voltra/ios/server": ["../ios/build/types/server.d.ts"],
+      "@voltra/ios-server": ["../ios-server/build/types/index.d.ts"],
+      "@voltra/server": ["../server/build/types/index.d.ts"]
     }
   },
   "include": ["./src"],

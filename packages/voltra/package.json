@@ -64,7 +64,7 @@
     "test:swift": "cd ios && swift test",
     "test:native": "npm run test:kotlin && npm run test:swift",
     "test:all": "npm run test:js && npm run test:native",
-    "typecheck": "tsc -p tsconfig.types.json --noEmit --rootDir ../..",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module"
   },
