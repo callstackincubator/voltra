@@ -167,6 +167,7 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
   }
 
   // MARK: - Server-Driven Timeline
+
   private static var lastFetchTimes: [String: Date] = [:]
   private static let coalesceInterval: TimeInterval = 3 // seconds
 
@@ -177,7 +178,7 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
 
     // Coalesce: if we fetched for this widget very recently, use cached data.
     // The server returns all families in every response, so subsequent getTimeline
-    // calls for different families can safely use the just-cached response — 
+    // calls for different families can safely use the just-cached response —
     // selectContentForFamily will pick the correct family-specific content.
     if let lastFetch = Self.lastFetchTimes[widgetId],
        Date().timeIntervalSince(lastFetch) < Self.coalesceInterval

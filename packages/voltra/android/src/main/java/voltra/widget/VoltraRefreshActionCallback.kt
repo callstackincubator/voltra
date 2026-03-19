@@ -53,76 +53,78 @@ class VoltraRefreshActionCallback : ActionCallback {
             return
         }
 
-        val jsonString = withContext(Dispatchers.IO) {
-            try {
-                val nightModeFlags =
-                    context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                val theme = if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
-
-                val urlBuilder = StringBuilder(serverUrl)
-                urlBuilder.append(if (serverUrl.contains("?")) "&" else "?")
-                urlBuilder.append("widgetId=").append(widgetId)
-                urlBuilder.append("&platform=android")
-                urlBuilder.append("&theme=").append(theme)
-
-                val url = URL(urlBuilder.toString())
-                val connection = url.openConnection() as HttpURLConnection
-
+        val jsonString =
+            withContext(Dispatchers.IO) {
                 try {
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = 10000
-                    connection.readTimeout = 10000
-                    connection.setRequestProperty("Accept", "application/json")
-                    val androidVersion = android.os.Build.VERSION.RELEASE
-                    connection.setRequestProperty(
-                        "User-Agent",
-                        "VoltraWidget/${BuildConfig.VOLTRA_VERSION} (Android/$androidVersion)",
-                    )
+                    val nightModeFlags =
+                        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                    val theme = if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
 
-                    val token = VoltraWidgetCredentialStore.readToken(context)
-                    if (token != null) {
-                        connection.setRequestProperty("Authorization", "Bearer $token")
+                    val urlBuilder = StringBuilder(serverUrl)
+                    urlBuilder.append(if (serverUrl.contains("?")) "&" else "?")
+                    urlBuilder.append("widgetId=").append(widgetId)
+                    urlBuilder.append("&platform=android")
+                    urlBuilder.append("&theme=").append(theme)
+
+                    val url = URL(urlBuilder.toString())
+                    val connection = url.openConnection() as HttpURLConnection
+
+                    try {
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 10000
+                        connection.readTimeout = 10000
+                        connection.setRequestProperty("Accept", "application/json")
+                        val androidVersion = android.os.Build.VERSION.RELEASE
+                        connection.setRequestProperty(
+                            "User-Agent",
+                            "VoltraWidget/${BuildConfig.VOLTRA_VERSION} (Android/$androidVersion)",
+                        )
+
+                        val token = VoltraWidgetCredentialStore.readToken(context)
+                        if (token != null) {
+                            connection.setRequestProperty("Authorization", "Bearer $token")
+                        }
+                        VoltraWidgetCredentialStore.readHeaders(context).forEach { (key, value) ->
+                            connection.setRequestProperty(key, value)
+                        }
+
+                        val responseCode = connection.responseCode
+                        if (responseCode !in 200..299) {
+                            Log.e(TAG, "Server returned HTTP $responseCode for widget '$widgetId'")
+                            return@withContext null
+                        }
+
+                        val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                        val json = reader.readText()
+                        reader.close()
+
+                        if (json.isEmpty()) {
+                            Log.e(TAG, "Empty response from server for widget '$widgetId'")
+                            return@withContext null
+                        }
+
+                        Log.d(TAG, "Received ${json.length} bytes for widget '$widgetId'")
+                        json
+                    } finally {
+                        connection.disconnect()
                     }
-                    VoltraWidgetCredentialStore.readHeaders(context).forEach { (key, value) ->
-                        connection.setRequestProperty(key, value)
-                    }
-
-                    val responseCode = connection.responseCode
-                    if (responseCode !in 200..299) {
-                        Log.e(TAG, "Server returned HTTP $responseCode for widget '$widgetId'")
-                        return@withContext null
-                    }
-
-                    val reader = BufferedReader(InputStreamReader(connection.inputStream))
-                    val json = reader.readText()
-                    reader.close()
-
-                    if (json.isEmpty()) {
-                        Log.e(TAG, "Empty response from server for widget '$widgetId'")
-                        return@withContext null
-                    }
-
-                    Log.d(TAG, "Received ${json.length} bytes for widget '$widgetId'")
-                    json
-                } finally {
-                    connection.disconnect()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Refresh failed for widget '$widgetId': ${e.message}", e)
+                    null
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Refresh failed for widget '$widgetId': ${e.message}", e)
-                null
-            }
-        } ?: return
+            } ?: return
 
         val widgetManager = VoltraWidgetManager(context)
         widgetManager.writeWidgetData(widgetId, jsonString, null)
         Log.d(TAG, "Data stored for widget '$widgetId'")
 
-        val payload = try {
-            VoltraPayloadParser.parse(jsonString)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse widget payload: ${e.message}", e)
-            return
-        }
+        val payload =
+            try {
+                VoltraPayloadParser.parse(jsonString)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse widget payload: ${e.message}", e)
+                return
+            }
 
         if (payload.variants.isNullOrEmpty()) {
             Log.w(TAG, "No variants in payload for widget '$widgetId'")
@@ -130,9 +132,12 @@ class VoltraRefreshActionCallback : ActionCallback {
         }
 
         try {
-            val sizeMapping = RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(
-                context, payload, widgetId
-            )
+            val sizeMapping =
+                RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(
+                    context,
+                    payload,
+                    widgetId,
+                )
 
             if (sizeMapping.isEmpty()) {
                 Log.w(TAG, "No RemoteViews generated for widget '$widgetId'")

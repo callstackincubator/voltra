@@ -183,11 +183,12 @@ class VoltraWidgetManager(
 
             // 3. Generate RemoteViews for all variants (with refresh button if enabled)
             val refreshEnabled = VoltraWidgetUpdateScheduler.isRefreshEnabled(context, widgetId)
-            val sizeMapping = if (refreshEnabled) {
-                RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(context, payload, widgetId)
-            } else {
-                RemoteViewsGenerator.generateWidgetRemoteViews(context, payload)
-            }
+            val sizeMapping =
+                if (refreshEnabled) {
+                    RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(context, payload, widgetId)
+                } else {
+                    RemoteViewsGenerator.generateWidgetRemoteViews(context, payload)
+                }
 
             if (sizeMapping.isEmpty()) {
                 Log.e(TAG, "Failed to generate any RemoteViews for widgetId=$widgetId")

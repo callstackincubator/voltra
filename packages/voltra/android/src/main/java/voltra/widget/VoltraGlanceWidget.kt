@@ -10,7 +10,6 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalSize
-import androidx.glance.color.ColorProvider
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -19,6 +18,7 @@ import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
@@ -45,12 +45,15 @@ class VoltraGlanceWidget(
         private val MEDIUM_TALL = DpSize(150.dp, 250.dp)
         private val LARGE = DpSize(300.dp, 200.dp)
         private val EXTRA_LARGE = DpSize(350.dp, 300.dp)
-    
+
         /**
          * Trigger a Glance update using the receiver's registered widget instance.
          * Falls back to a no-op if the widget hasn't been registered yet.
          */
-        suspend fun triggerUpdate(context: Context, widgetId: String) {
+        suspend fun triggerUpdate(
+            context: Context,
+            widgetId: String,
+        ) {
             VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId)
         }
     }
@@ -90,7 +93,10 @@ class VoltraGlanceWidget(
     }
 
     @Composable
-    private fun Content(payload: VoltraPayload?, refreshEnabled: Boolean) {
+    private fun Content(
+        payload: VoltraPayload?,
+        refreshEnabled: Boolean,
+    ) {
         val currentSize = LocalSize.current
 
         Log.d(TAG, "Content: widgetId=$widgetId, currentSize=${currentSize.width}x${currentSize.height}")
@@ -157,8 +163,7 @@ class VoltraGlanceWidget(
                                 day = Color(0x32787880),
                                 night = Color(0x32787880),
                             ),
-                        )
-                        .clickable(
+                        ).clickable(
                             actionRunCallback<VoltraRefreshActionCallback>(
                                 actionParametersOf(
                                     VoltraRefreshActionCallback.KEY_WIDGET_ID to widgetId,
@@ -169,15 +174,17 @@ class VoltraGlanceWidget(
             ) {
                 Text(
                     text = "↻",
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        color = ColorProvider(
-                            day = Color(0x993C3C43),
-                            night = Color(0x99EBEBF5),
+                    style =
+                        TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color =
+                                ColorProvider(
+                                    day = Color(0x993C3C43),
+                                    night = Color(0x99EBEBF5),
+                                ),
                         ),
-                    ),
                 )
             }
         }

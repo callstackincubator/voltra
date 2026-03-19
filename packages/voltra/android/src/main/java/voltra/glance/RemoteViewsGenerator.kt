@@ -185,50 +185,52 @@ object RemoteViewsGenerator {
                 val glanceRemoteViews = GlanceRemoteViews()
                 val factory = GlanceFactory(widgetId, sharedElements, sharedStyles, size)
 
-                val composed = glanceRemoteViews.compose(context, size) {
-                    Box(modifier = GlanceModifier.fillMaxSize()) {
-                        factory.Render(node)
-                        // Refresh button overlay (same as VoltraGlanceWidget.RefreshButton)
-                        Box(
-                            modifier = GlanceModifier.fillMaxSize().padding(12.dp),
-                            contentAlignment = Alignment.TopEnd,
-                        ) {
+                val composed =
+                    glanceRemoteViews.compose(context, size) {
+                        Box(modifier = GlanceModifier.fillMaxSize()) {
+                            factory.Render(node)
+                            // Refresh button overlay (same as VoltraGlanceWidget.RefreshButton)
                             Box(
-                                modifier =
-                                    GlanceModifier
-                                        .size(28.dp)
-                                        .cornerRadius(14.dp)
-                                        .background(
-                                            ColorProvider(
-                                                day = Color(0x32787880),
-                                                night = Color(0x32787880),
-                                            ),
-                                        )
-                                        .clickable(
-                                            actionRunCallback<VoltraRefreshActionCallback>(
-                                                actionParametersOf(
-                                                    VoltraRefreshActionCallback.KEY_WIDGET_ID to widgetId,
+                                modifier = GlanceModifier.fillMaxSize().padding(12.dp),
+                                contentAlignment = Alignment.TopEnd,
+                            ) {
+                                Box(
+                                    modifier =
+                                        GlanceModifier
+                                            .size(28.dp)
+                                            .cornerRadius(14.dp)
+                                            .background(
+                                                ColorProvider(
+                                                    day = Color(0x32787880),
+                                                    night = Color(0x32787880),
+                                                ),
+                                            ).clickable(
+                                                actionRunCallback<VoltraRefreshActionCallback>(
+                                                    actionParametersOf(
+                                                        VoltraRefreshActionCallback.KEY_WIDGET_ID to widgetId,
+                                                    ),
                                                 ),
                                             ),
-                                        ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = "↻",
-                                    style = TextStyle(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center,
-                                        color = ColorProvider(
-                                            day = Color(0x993C3C43),
-                                            night = Color(0x99EBEBF5),
-                                        ),
-                                    ),
-                                )
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "↻",
+                                        style =
+                                            TextStyle(
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                textAlign = TextAlign.Center,
+                                                color =
+                                                    ColorProvider(
+                                                        day = Color(0x993C3C43),
+                                                        night = Color(0x99EBEBF5),
+                                                    ),
+                                            ),
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
                 result[SizeF(width, height)] = composed.remoteViews
                 Log.d(TAG, "Generated RemoteViews with refresh for variant $variantKey (${width}x$height)")

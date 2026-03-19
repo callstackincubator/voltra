@@ -27,7 +27,10 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
          * Get the registered GlanceAppWidget for a widgetId.
          * If not yet registered, tries to instantiate the receiver to populate the registry.
          */
-        fun getWidget(context: Context, widgetId: String): GlanceAppWidget? {
+        fun getWidget(
+            context: Context,
+            widgetId: String,
+        ): GlanceAppWidget? {
             widgetRegistry[widgetId]?.let { return it }
 
             try {
@@ -48,7 +51,10 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
          * Trigger a Glance update for a specific widget using its registered instance.
          * This is the only reliable way to trigger provideGlance() from outside the receiver.
          */
-        suspend fun triggerGlanceUpdate(context: Context, widgetId: String) {
+        suspend fun triggerGlanceUpdate(
+            context: Context,
+            widgetId: String,
+        ) {
             val widget = getWidget(context, widgetId)
             if (widget == null) {
                 Log.w(TAG, "No registered widget for '$widgetId', cannot trigger update")
@@ -70,7 +76,11 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
         /**
          * Trigger a Glance update for a specific glanceId using the registered widget.
          */
-        suspend fun triggerGlanceUpdate(context: Context, widgetId: String, glanceId: GlanceId) {
+        suspend fun triggerGlanceUpdate(
+            context: Context,
+            widgetId: String,
+            glanceId: GlanceId,
+        ) {
             val widget = getWidget(context, widgetId)
             if (widget == null) {
                 Log.w(TAG, "No registered widget for '$widgetId', cannot trigger update")
@@ -115,7 +125,7 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
 
         val w = newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
         val h = newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-        Log.d(TAG, "Widget '$widgetId' resized to ${w}x${h}, re-rendering from cache")
+        Log.d(TAG, "Widget '$widgetId' resized to ${w}x$h, re-rendering from cache")
 
         CoroutineScope(Dispatchers.IO).launch {
             val widgetManager = VoltraWidgetManager(context.applicationContext)

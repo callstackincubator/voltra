@@ -148,15 +148,18 @@ class VoltraWidgetUpdateWorker(
                     // 8. Check if this widget uses the Glance refresh overlay
                     val refreshEnabled = VoltraWidgetUpdateScheduler.isRefreshEnabled(applicationContext, widgetId)
 
-                    val sizeMapping = if (refreshEnabled) {
-                        // Generate RemoteViews with refresh button overlay
-                        RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(
-                            applicationContext, payload, widgetId
-                        )
-                    } else {
-                        // Generate plain RemoteViews without refresh overlay
-                        RemoteViewsGenerator.generateWidgetRemoteViews(applicationContext, payload)
-                    }
+                    val sizeMapping =
+                        if (refreshEnabled) {
+                            // Generate RemoteViews with refresh button overlay
+                            RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(
+                                applicationContext,
+                                payload,
+                                widgetId,
+                            )
+                        } else {
+                            // Generate plain RemoteViews without refresh overlay
+                            RemoteViewsGenerator.generateWidgetRemoteViews(applicationContext, payload)
+                        }
 
                     val receiverClassName =
                         "${applicationContext.packageName}.widget.VoltraWidget_${widgetId}Receiver"
