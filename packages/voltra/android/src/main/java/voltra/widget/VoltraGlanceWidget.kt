@@ -38,6 +38,14 @@ class VoltraGlanceWidget(
     companion object {
         private const val TAG = "VoltraGlanceWidget"
 
+        // Define size breakpoints for responsive widget rendering
+        private val SMALL = DpSize(150.dp, 100.dp)
+        private val MEDIUM_SQUARE = DpSize(200.dp, 200.dp)
+        private val MEDIUM_WIDE = DpSize(250.dp, 150.dp)
+        private val MEDIUM_TALL = DpSize(150.dp, 250.dp)
+        private val LARGE = DpSize(300.dp, 200.dp)
+        private val EXTRA_LARGE = DpSize(350.dp, 300.dp)
+    
         /**
          * Trigger a Glance update using the receiver's registered widget instance.
          * Falls back to a no-op if the widget hasn't been registered yet.
@@ -47,8 +55,11 @@ class VoltraGlanceWidget(
         }
     }
 
-    // Use exact sizing so the widget content fills the full area allocated by the launcher
-    override val sizeMode = SizeMode.Exact
+    // Use responsive sizing to support multiple widget dimensions
+    override val sizeMode =
+        SizeMode.Responsive(
+            setOf(SMALL, MEDIUM_SQUARE, MEDIUM_WIDE, MEDIUM_TALL, LARGE, EXTRA_LARGE),
+        )
 
     override suspend fun provideGlance(
         context: Context,
