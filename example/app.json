@@ -7,11 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/voltra-icon.jpg",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "androidNavigationBar": {
-      "visible": "edgeToEdge",
-      "barStyle": "light-content"
-    },
     "splash": {
       "image": "./assets/voltra-splash.jpg",
       "resizeMode": "cover",
