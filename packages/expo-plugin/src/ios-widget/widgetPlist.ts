@@ -80,17 +80,25 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
         if (widgets && widgets.length > 0) {
           const serverUrls: Record<string, string> = {}
           const serverIntervals: Record<string, number> = {}
+          const serverRefresh: Record<string, boolean> = {}
 
           for (const widget of widgets) {
             if (widget.serverUpdate) {
               serverUrls[widget.id] = widget.serverUpdate.url
               serverIntervals[widget.id] = widget.serverUpdate.intervalMinutes ?? 15
+              if (widget.serverUpdate.refresh) {
+                serverRefresh[widget.id] = true
+              }
             }
           }
 
           if (Object.keys(serverUrls).length > 0) {
             ;(content as any)['Voltra_WidgetServerUrls'] = serverUrls
             ;(content as any)['Voltra_WidgetServerIntervals'] = serverIntervals
+          }
+
+          if (Object.keys(serverRefresh).length > 0) {
+            ;(content as any)['Voltra_WidgetServerRefresh'] = serverRefresh
           }
         }
 

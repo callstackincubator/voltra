@@ -71,6 +71,12 @@ export interface WidgetServerUpdateConfig {
    * @default 15
    */
   intervalMinutes?: number
+  /**
+   * Whether to show a native refresh button in the top-right corner of the widget.
+   * When tapped, triggers an immediate server update.
+   * @default false
+   */
+  refresh?: boolean
 }
 
 /**
@@ -180,6 +186,12 @@ export interface AndroidWidgetServerUpdateConfig {
    * @default 60
    */
   intervalMinutes?: number
+  /**
+   * Whether to show a native refresh button in the top-right corner of the widget.
+   * When tapped, triggers an immediate server update.
+   * @default false
+   */
+  refresh?: boolean
 }
 
 /**

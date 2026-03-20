@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -42,6 +43,9 @@ object VoltraWidgetUpdateScheduler {
     /** Prefix used to build per-widget server URL keys. */
     private const val KEY_SERVER_URL_PREFIX = "server_url_"
 
+    /** Prefix used to build per-widget refresh-enabled keys. */
+    private const val KEY_REFRESH_ENABLED_PREFIX = "refresh_enabled_"
+
     /**
      * Schedule periodic server updates for a widget.
      *
@@ -49,15 +53,20 @@ object VoltraWidgetUpdateScheduler {
      * @param widgetId The widget identifier
      * @param serverUrl The Voltra SSR server URL
      * @param intervalMinutes How often to fetch updates (minimum 15 minutes per WorkManager)
+     * @param refreshEnabled Whether the native refresh button should be shown
      */
     fun schedulePeriodicUpdate(
         context: Context,
         widgetId: String,
         serverUrl: String,
         intervalMinutes: Long = 15,
+        refreshEnabled: Boolean = false,
     ) {
-        // Persist the server URL so requestImmediateUpdate can look it up later
-        runBlocking { saveServerUrl(context, widgetId, serverUrl) }
+        // Persist the server URL and refresh flag
+        runBlocking {
+            saveServerUrl(context, widgetId, serverUrl)
+            saveRefreshEnabled(context, widgetId, refreshEnabled)
+        }
 
         val workName = "${VoltraWidgetUpdateWorker.WORK_NAME_PREFIX}$widgetId"
 
@@ -200,6 +209,35 @@ object VoltraWidgetUpdateScheduler {
         }
     }
 
+    private suspend fun saveRefreshEnabled(
+        context: Context,
+        widgetId: String,
+        enabled: Boolean,
+    ) {
+        val key = booleanPreferencesKey("$KEY_REFRESH_ENABLED_PREFIX$widgetId")
+        context.voltraServerUrlsDataStore.edit { prefs ->
+            prefs[key] = enabled
+        }
+    }
+
+    /**
+     * Check whether the native refresh button is enabled for this widget.
+     */
+    suspend fun isRefreshEnabled(
+        context: Context,
+        widgetId: String,
+    ): Boolean {
+        val key = booleanPreferencesKey("$KEY_REFRESH_ENABLED_PREFIX$widgetId")
+        return try {
+            context.voltraServerUrlsDataStore.data
+                .map { prefs -> prefs[key] ?: false }
+                .firstOrNull() ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read refresh flag for widget '$widgetId': ${e.message}", e)
+            false
+        }
+    }
+
     /**
      * Return all widget IDs that have a server URL registered.
      */
@@ -218,8 +256,10 @@ object VoltraWidgetUpdateScheduler {
         widgetId: String,
     ) {
         val urlKey = stringPreferencesKey("$KEY_SERVER_URL_PREFIX$widgetId")
+        val refreshKey = booleanPreferencesKey("$KEY_REFRESH_ENABLED_PREFIX$widgetId")
         context.voltraServerUrlsDataStore.edit { prefs ->
             prefs.remove(urlKey)
+            prefs.remove(refreshKey)
             val currentIds = prefs[KEY_WIDGET_IDS] ?: emptySet()
             prefs[KEY_WIDGET_IDS] = currentIds - widgetId
         }

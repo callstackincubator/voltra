@@ -52,6 +52,10 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `initialStatePath`: (optional) Path to a file that exports initial widget state (see [Widget Pre-rendering](../development/widget-pre-rendering))
 - `previewImage`: (optional) Path to preview image for widget picker (PNG/JPG/WebP)
 - `previewLayout`: (optional) Path to custom XML layout for widget picker preview (Android 12+)
+- `serverUpdate`: (optional) Enable server-driven updates. See [Server-driven widgets](../development/server-driven-widgets) for full details.
+  - `url`: The Voltra SSR endpoint URL
+  - `intervalMinutes`: Update interval in minutes (default: `15`, minimum 15 per WorkManager)
+  - `refresh`: Show a native refresh button (default: `false`)
 
 ## Widget Sizing
 

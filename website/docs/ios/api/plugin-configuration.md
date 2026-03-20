@@ -98,6 +98,10 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `description`: Description shown in the widget gallery
 - `supportedFamilies`: Array of supported widget sizes (`systemSmall`, `systemMedium`, `systemLarge`)
 - `initialStatePath`: (optional) Path to a file that exports initial widget state (see [Widget Pre-rendering](../development/widget-pre-rendering))
+- `serverUpdate`: (optional) Enable server-driven updates. See [Server-driven widgets](../development/server-driven-widgets) for full details.
+  - `url`: The Voltra SSR endpoint URL
+  - `intervalMinutes`: Update interval in minutes (default: `15`)
+  - `refresh`: Show a native refresh button (default: `false`, requires iOS 17+)
 
 **Example:**
 
@@ -109,7 +113,12 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
       "displayName": "Weather Widget",
       "description": "Current weather conditions",
       "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-      "initialStatePath": "./widgets/weather-initial.tsx"
+      "initialStatePath": "./widgets/weather-initial.tsx",
+      "serverUpdate": {
+        "url": "https://api.example.com/widgets/render",
+        "intervalMinutes": 30,
+        "refresh": true
+      }
     }
   ]
 }

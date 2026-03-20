@@ -38,6 +38,7 @@ public enum VoltraStorageKeys {
   public static let enablePushNotifications = "Voltra_EnablePushNotifications"
   public static let widgetServerUrls = "Voltra_WidgetServerUrls"
   public static let widgetServerIntervals = "Voltra_WidgetServerIntervals"
+  public static let widgetServerRefresh = "Voltra_WidgetServerRefresh"
   public static let appGroupIdentifier = "Voltra_AppGroupIdentifier"
   public static let legacyAppGroupIdentifier = "AppGroupIdentifier"
   public static let keychainGroup = "Voltra_KeychainGroup"

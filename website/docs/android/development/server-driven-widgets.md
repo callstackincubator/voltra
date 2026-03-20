@@ -50,6 +50,7 @@ Add the `serverUpdate` option to your Android widget in `app.json` or `app.confi
 
 - `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform`, and `theme` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android&theme=dark`).
 - `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. The minimum effective interval is 15 minutes (WorkManager requirement).
+- `refresh`: Whether to show a native refresh button in the top-right corner of the widget. When tapped, triggers an immediate server fetch. Defaults to `false`.
 
 After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native widget code picks up the new server update settings.
 
@@ -161,6 +162,30 @@ await clearWidgetServerCredentials()
 ```
 
 All widgets are automatically reloaded after credentials are cleared, so they revert to their default/unauthenticated state immediately.
+
+## Refresh button
+
+Server-driven widgets can display a native refresh button that lets users trigger an immediate update on demand. Enable it in your widget config:
+
+```json
+{
+  "serverUpdate": {
+    "url": "https://api.example.com/widgets/render",
+    "intervalMinutes": 60,
+    "refresh": true
+  }
+}
+```
+
+When enabled, a small circular button (↻) appears in the top-right corner of the widget. Tapping it performs an inline HTTP fetch, generates new `RemoteViews`, and pushes the update directly to the widget—all without waiting for the next WorkManager cycle.
+
+:::note
+The refresh callback bypasses Glance's `update()` method (which doesn't reliably trigger `provideGlance()`) and instead uses `GlanceRemoteViews.compose()` to generate `RemoteViews` that are pushed directly via `AppWidgetManager.updateAppWidget()`.
+:::
+
+## Resize handling
+
+Your server should return all size variants in every response. When the user resizes a widget on the home screen, Voltra re-renders from cached data—no network request is made. The `RemoteViews(sizeMapping)` mechanism automatically picks the closest matching variant.
 
 ## Triggering manual refreshes
 
