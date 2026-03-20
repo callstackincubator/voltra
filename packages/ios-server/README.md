@@ -4,7 +4,7 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@voltra/ios-server` contains the iOS server rendering package for Voltra, including Live Activity rendering, widget rendering, and iOS widget update handlers.
+`@voltrajs/ios-server` contains the iOS server rendering package for Voltra, including Live Activity rendering, widget rendering, and iOS widget update handlers.
 
 > [!WARNING]
 > This package is not intended to be installed directly in your app. Most apps should install `voltra` instead.

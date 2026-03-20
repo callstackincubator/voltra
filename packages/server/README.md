@@ -4,7 +4,7 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@voltra/server` contains the shared server rendering foundation for Voltra, including request adapters and platform-agnostic widget update handlers.
+`@voltrajs/server` contains the shared server rendering foundation for Voltra, including request adapters and platform-agnostic widget update handlers.
 
 > [!WARNING]
 > This package is not intended to be installed directly in your app. Most apps should install `voltra` instead.

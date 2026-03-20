@@ -4,7 +4,7 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@voltra/core` contains the shared renderer, types, and payload utilities used by Voltra packages across platforms.
+`@voltrajs/core` contains the shared renderer, types, and payload utilities used by Voltra packages across platforms.
 
 > [!WARNING]
 > This package is not intended to be installed directly in your app.

@@ -3,7 +3,7 @@ import {
   createVoltraRenderer as createCoreVoltraRenderer,
   renderVariantToJson,
   VOLTRA_PAYLOAD_VERSION,
-} from '@voltra/core'
+} from '@voltrajs/core'
 import type { ReactNode } from 'react'
 
 import { getComponentId } from '../payload/component-ids.js'

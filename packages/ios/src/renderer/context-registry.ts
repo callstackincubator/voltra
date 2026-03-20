@@ -1,1 +1,1 @@
-export { type ContextRegistry, getContextRegistry } from '@voltra/core'
+export { type ContextRegistry, getContextRegistry } from '@voltrajs/core'

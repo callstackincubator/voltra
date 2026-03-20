@@ -1,6 +1,6 @@
-import { createAndroidWidgetUpdateHandler, renderAndroidWidgetToString } from '@voltra/android-server'
-import { createIOSWidgetUpdateHandler, renderWidgetToString, Voltra } from '@voltra/ios-server'
-import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@voltra/server'
+import { createAndroidWidgetUpdateHandler, renderAndroidWidgetToString } from '@voltrajs/android-server'
+import { createIOSWidgetUpdateHandler, renderWidgetToString, Voltra } from '@voltrajs/ios-server'
+import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@voltrajs/server'
 import { VoltraAndroid } from '../android/index.js'
 import { createWidgetUpdateHandler as createCompatibilityWidgetUpdateHandler } from '../widget-server.js'
 

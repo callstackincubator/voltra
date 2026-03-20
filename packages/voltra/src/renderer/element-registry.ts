@@ -1,1 +1,1 @@
-export { createElementRegistry, preScanForDuplicates, type ElementRegistry } from '@voltra/core'
+export { createElementRegistry, preScanForDuplicates, type ElementRegistry } from '@voltrajs/core'

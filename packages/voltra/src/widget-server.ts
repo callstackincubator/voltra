@@ -1,30 +1,30 @@
 /// <reference types="node" />
 
-import type { AndroidWidgetVariants } from '@voltra/android-server'
-import { createWidgetUpdateExpressHandler as createSharedWidgetUpdateExpressHandler } from '@voltra/server'
-import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@voltra/server'
-import { createWidgetUpdateNodeHandler as createSharedWidgetUpdateNodeHandler } from '@voltra/server'
+import type { AndroidWidgetVariants } from '@voltrajs/android-server'
+import { createWidgetUpdateExpressHandler as createSharedWidgetUpdateExpressHandler } from '@voltrajs/server'
+import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@voltrajs/server'
+import { createWidgetUpdateNodeHandler as createSharedWidgetUpdateNodeHandler } from '@voltrajs/server'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
-import { renderAndroidWidgetToString } from '@voltra/android-server'
-import { renderWidgetToString } from '@voltra/ios-server'
-import type { WidgetVariants } from '@voltra/ios-server'
+} from '@voltrajs/server'
+import { renderAndroidWidgetToString } from '@voltrajs/android-server'
+import { renderWidgetToString } from '@voltrajs/ios-server'
+import type { WidgetVariants } from '@voltrajs/ios-server'
 
-export { renderAndroidWidgetToString } from '@voltra/android-server'
-export type { AndroidWidgetVariants } from '@voltra/android-server'
-export { renderWidgetToString } from '@voltra/ios-server'
-export type { WidgetVariants } from '@voltra/ios-server'
+export { renderAndroidWidgetToString } from '@voltrajs/android-server'
+export type { AndroidWidgetVariants } from '@voltrajs/android-server'
+export { renderWidgetToString } from '@voltrajs/ios-server'
+export type { WidgetVariants } from '@voltrajs/ios-server'
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
-export type { WidgetPlatform, WidgetTheme } from '@voltra/server'
+} from '@voltrajs/server'
+export type { WidgetPlatform, WidgetTheme } from '@voltrajs/server'
 
 /**
  * Options for creating the widget update handler.

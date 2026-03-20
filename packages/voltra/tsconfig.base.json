@@ -5,16 +5,16 @@
     "baseUrl": ".",
     "moduleResolution": "node",
     "paths": {
-      "@voltra/android": ["../android/build/types/index.d.ts"],
-      "@voltra/android/client": ["../android/build/types/client.d.ts"],
-      "@voltra/android/server": ["../android/build/types/server.d.ts"],
-      "@voltra/android-server": ["../android-server/build/types/index.d.ts"],
-      "@voltra/core": ["../core/build/types/index.d.ts"],
-      "@voltra/ios": ["../ios/build/types/index.d.ts"],
-      "@voltra/ios/client": ["../ios/build/types/client.d.ts"],
-      "@voltra/ios/server": ["../ios/build/types/server.d.ts"],
-      "@voltra/ios-server": ["../ios-server/build/types/index.d.ts"],
-      "@voltra/server": ["../server/build/types/index.d.ts"]
+      "@voltrajs/android": ["../android/build/types/index.d.ts"],
+      "@voltrajs/android/client": ["../android/build/types/client.d.ts"],
+      "@voltrajs/android/server": ["../android/build/types/server.d.ts"],
+      "@voltrajs/android-server": ["../android-server/build/types/index.d.ts"],
+      "@voltrajs/core": ["../core/build/types/index.d.ts"],
+      "@voltrajs/ios": ["../ios/build/types/index.d.ts"],
+      "@voltrajs/ios/client": ["../ios/build/types/client.d.ts"],
+      "@voltrajs/ios/server": ["../ios/build/types/server.d.ts"],
+      "@voltrajs/ios-server": ["../ios-server/build/types/index.d.ts"],
+      "@voltrajs/server": ["../server/build/types/index.d.ts"]
     }
   },
   "include": ["./src"],

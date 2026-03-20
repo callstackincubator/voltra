@@ -3,30 +3,30 @@
 import { promisify } from 'node:util'
 import { brotliCompress, constants } from 'node:zlib'
 
-import { type ComponentRegistry, createVoltraRenderer, ensurePayloadWithinBudget } from '@voltra/core'
-import type { LiveActivityVariants, WidgetVariants } from '@voltra/ios'
+import { type ComponentRegistry, createVoltraRenderer, ensurePayloadWithinBudget } from '@voltrajs/core'
+import type { LiveActivityVariants, WidgetVariants } from '@voltrajs/ios'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
+} from '@voltrajs/server'
 import {
   createWidgetUpdateExpressHandler,
   createWidgetUpdateHandler,
   createWidgetUpdateNodeHandler,
-} from '@voltra/server'
+} from '@voltrajs/server'
 import type { ReactNode } from 'react'
 
-export { Voltra } from '@voltra/ios'
+export { Voltra } from '@voltrajs/ios'
 export type { LiveActivityVariants, WidgetVariants }
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
-export type { WidgetPlatform, WidgetTheme } from '@voltra/server'
+} from '@voltrajs/server'
+export type { WidgetPlatform, WidgetTheme } from '@voltrajs/server'
 
 type LiveActivityJson = {
   v: number

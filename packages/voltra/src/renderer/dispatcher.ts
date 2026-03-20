@@ -1,1 +1,1 @@
-export { getHooksDispatcher, getReactCurrentDispatcher } from '@voltra/core'
+export { getHooksDispatcher, getReactCurrentDispatcher } from '@voltrajs/core'
