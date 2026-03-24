@@ -111,7 +111,7 @@ describe('Live Activity Options', () => {
 
     expect(VoltraModule.startLiveActivity).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ activityId: 'my-activity' })
+      expect.objectContaining({ activityName: 'my-activity' })
     )
   })
 })

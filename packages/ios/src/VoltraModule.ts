@@ -24,7 +24,7 @@ export type StartVoltraOptions = {
    * The ID/name of the Live Activity.
    * Allows you to rebind to the same activity on app restart.
    */
-  activityId?: string
+  activityName?: string
   /**
    * Unix timestamp in milliseconds
    */
