@@ -1,1 +1,1 @@
-export { getRenderCache, type RenderCache } from '@voltrajs/core'
+export { getRenderCache, type RenderCache } from '@use-voltra/core'

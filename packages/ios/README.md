@@ -4,7 +4,7 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@voltrajs/ios` contains the iOS implementation package for Voltra, including the JSX namespace, Live Activities, and iOS widgets APIs.
+`@use-voltra/ios` contains the iOS implementation package for Voltra, including the JSX namespace, Live Activities, and iOS widgets APIs.
 
 > [!WARNING]
 > This package is not intended to be installed directly in your app. Most apps should install `voltra` instead.

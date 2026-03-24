@@ -1,1 +1,1 @@
-export type { VoltraVariantRenderer } from '@voltrajs/core'
+export type { VoltraVariantRenderer } from '@use-voltra/core'

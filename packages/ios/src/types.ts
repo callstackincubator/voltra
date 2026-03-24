@@ -9,4 +9,4 @@ export type {
   VoltraNodeJson,
   VoltraPropValue,
   WidgetServerCredentials,
-} from '@voltrajs/core'
+} from '@use-voltra/core'

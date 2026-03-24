@@ -1,5 +1,5 @@
 {
-  "name": "@voltrajs/expo-plugin",
+  "name": "@use-voltra/expo-plugin",
   "version": "1.3.0-rc.1",
   "description": "Expo config plugin for Voltra",
   "main": "build/cjs/index.js",

@@ -1,1 +1,1 @@
-export { ensurePayloadWithinBudget } from '@voltrajs/core'
+export { ensurePayloadWithinBudget } from '@use-voltra/core'

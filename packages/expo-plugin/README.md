@@ -4,7 +4,7 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@voltrajs/expo-plugin` contains the Expo config plugin used by Voltra to configure iOS Live Activities, widget extensions, and Android widgets during `expo prebuild`.
+`@use-voltra/expo-plugin` contains the Expo config plugin used by Voltra to configure iOS Live Activities, widget extensions, and Android widgets during `expo prebuild`.
 
 > [!WARNING]
 > Most apps should install `voltra` instead of using this package directly.

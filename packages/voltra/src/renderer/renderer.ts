@@ -5,7 +5,7 @@ import {
   renderVariantToJson,
   type ComponentRegistry,
   VOLTRA_PAYLOAD_VERSION,
-} from '@voltrajs/core'
+} from '@use-voltra/core'
 
 import { getAndroidComponentId } from '../android/payload/component-ids.js'
 import { getComponentId } from '../payload/component-ids.js'

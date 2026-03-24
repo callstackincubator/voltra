@@ -12,7 +12,7 @@ All work on Voltra happens directly on GitHub. Contributors send pull requests w
 
 1. Fork the repo and create your branch from `main` (a guide on [how to fork a repository](https://help.github.com/articles/fork-a-repo/)).
 2. Run `npm install` to install all required dependencies.
-3. Build the plugin: `npm run build --workspace @voltrajs/expo-plugin`.
+3. Build the plugin: `npm run build --workspace @use-voltra/expo-plugin`.
 4. Now you are ready to make changes.
 
 ## Architecture overview
@@ -181,7 +181,7 @@ The `example/` directory contains an Expo app for testing changes.
 
 ```sh
 # 1) Build the plugin
-npm run build --workspace @voltrajs/expo-plugin
+npm run build --workspace @use-voltra/expo-plugin
 
 # 2) Install example dependencies
 (cd example && npm install)

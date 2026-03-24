@@ -1,17 +1,17 @@
 /// <reference types="node" />
 
-import { createVoltraRenderer } from '@voltrajs/core'
+import { createVoltraRenderer } from '@use-voltra/core'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltrajs/server'
+} from '@use-voltra/server'
 import {
   createWidgetUpdateExpressHandler,
   createWidgetUpdateHandler,
   createWidgetUpdateNodeHandler,
-} from '@voltrajs/server'
+} from '@use-voltra/server'
 import type { ReactNode } from 'react'
 
 export type {
@@ -19,8 +19,8 @@ export type {
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltrajs/server'
-export type { WidgetPlatform, WidgetTheme } from '@voltrajs/server'
+} from '@use-voltra/server'
+export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 export type AndroidWidgetSize = {
   width: number
