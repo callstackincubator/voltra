@@ -17,9 +17,6 @@ jobs:
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    defaults:
-      run:
-        working-directory: website
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,6 +29,7 @@ jobs:
           cache-dependency-path: website/package-lock.json
 
       - name: Install dependencies
+        working-directory: website
         run: npm ci
 
       - name: Install Vercel CLI
