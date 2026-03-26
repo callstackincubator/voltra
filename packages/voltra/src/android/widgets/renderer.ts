@@ -1,4 +1,5 @@
 export {
+  renderAndroidViewToJson,
   renderAndroidWidgetToJson,
   renderAndroidWidgetToString,
   type AndroidWidgetRenderOptions,

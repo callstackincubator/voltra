@@ -1,4 +1,5 @@
 import { requireNativeModule } from 'expo'
+import type { AndroidDynamicColorPalette } from '@use-voltra/android'
 
 import type {
   EventSubscription,
@@ -218,7 +219,7 @@ export interface VoltraModuleSpec {
    * Android dynamic color palette snapshot.
    * Returns null on iOS.
    */
-  getAndroidDynamicColorPalette(): string[] | null
+  getAndroidDynamicColorPalette(): AndroidDynamicColorPalette | null
 
   /**
    * Set server credentials for widget server-driven updates.

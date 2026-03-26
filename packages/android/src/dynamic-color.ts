@@ -1,7 +1,5 @@
 import { createContext, useContext } from 'react'
 
-export type AndroidWidgetRenderTheme = 'light' | 'dark'
-
 export type AndroidDynamicColorPalette = {
   primary: string
   onPrimary: string
@@ -33,7 +31,6 @@ export type AndroidDynamicColorPalette = {
 }
 
 export type AndroidWidgetRenderContextValue = {
-  theme: AndroidWidgetRenderTheme | null
   dynamicColorPalette: AndroidDynamicColorPalette | null
 }
 
@@ -69,7 +66,6 @@ export const ANDROID_DYNAMIC_COLOR_PALETTE_ORDER = [
 
 export const AndroidWidgetRenderContext = createContext<AndroidWidgetRenderContextValue | null>(null)
 export const AndroidWidgetRenderContextProvider = AndroidWidgetRenderContext.Provider
-export type GetAndroidDynamicColorPalette = () => string[] | null
 
 const COLOR_PATTERN = /^#[0-9a-f]{8}$/i
 
@@ -90,6 +86,30 @@ export const androidDynamicColorPaletteFromArray = (value: unknown): AndroidDyna
 
   for (const [index, key] of ANDROID_DYNAMIC_COLOR_PALETTE_ORDER.entries()) {
     const normalizedValue = normalizePaletteColor(value[index])
+    if (!normalizedValue) {
+      return null
+    }
+
+    palette[key] = normalizedValue
+  }
+
+  return palette
+}
+
+export const normalizeAndroidDynamicColorPalette = (value: unknown): AndroidDynamicColorPalette | null => {
+  if (Array.isArray(value)) {
+    return androidDynamicColorPaletteFromArray(value)
+  }
+
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const paletteValue = value as Record<string, unknown>
+  const palette = {} as AndroidDynamicColorPalette
+
+  for (const key of ANDROID_DYNAMIC_COLOR_PALETTE_ORDER) {
+    const normalizedValue = normalizePaletteColor(paletteValue[key])
     if (!normalizedValue) {
       return null
     }
@@ -123,7 +143,7 @@ export const parseAndroidDynamicColorPalette = (
   }
 
   try {
-    return androidDynamicColorPaletteFromArray(JSON.parse(serializedPalette))
+    return normalizeAndroidDynamicColorPalette(JSON.parse(serializedPalette))
   } catch {
     return null
   }
@@ -132,27 +152,27 @@ export const parseAndroidDynamicColorPalette = (
 export const serializeAndroidDynamicColorPalette = (
   palette: AndroidDynamicColorPalette | null | undefined
 ): string | null => {
-  if (!palette) {
+  const normalizedPalette = normalizeAndroidDynamicColorPalette(palette)
+  if (!normalizedPalette) {
     return null
   }
 
-  const colors = androidDynamicColorPaletteToArray(palette)
+  const colors = androidDynamicColorPaletteToArray(normalizedPalette)
   return colors ? JSON.stringify(colors) : null
 }
 
 export const createAndroidWidgetRenderContextValue = (
-  theme: AndroidWidgetRenderTheme | null,
-  serializedPalette: string | null | undefined
+  dynamicColorPalette: unknown
 ): AndroidWidgetRenderContextValue => {
   return {
-    theme,
-    dynamicColorPalette: parseAndroidDynamicColorPalette(serializedPalette),
+    dynamicColorPalette: normalizeAndroidDynamicColorPalette(dynamicColorPalette),
   }
 }
 
-export const useAndroidDynamicColorPalette = (): AndroidDynamicColorPalette | null => {
+export const useAndroidDynamicColorPalette = (): AndroidDynamicColorPalette => {
   const renderContext = useContext(AndroidWidgetRenderContext)
-  if (!renderContext) {
+
+  if (!renderContext || !renderContext.dynamicColorPalette) {
     throw new Error('This is an internal problem in Voltra. Please report the issue.')
   }
 

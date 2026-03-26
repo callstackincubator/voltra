@@ -140,7 +140,11 @@ describe('server package split', () => {
     const response = await handler(new Request('https://example.com/widgets?widgetId=clock&platform=android'))
 
     expect(response.status).toBe(200)
-    expect(await response.text()).toBe(renderAndroidWidgetToString(variants))
+    expect(await response.text()).toBe(
+      renderAndroidWidgetToString(variants, {
+        context: { dynamicColorPalette: null },
+      })
+    )
   })
 
   it('injects Android palette context into Android server handlers', async () => {
@@ -199,12 +203,17 @@ describe('server package split', () => {
 
     expect(response.status).toBe(200)
     expect(await response.text()).toBe(
-      renderAndroidWidgetToString([
+      renderAndroidWidgetToString(
+        [
+          {
+            size: { width: 150, height: 100 },
+            content: <VoltraAndroid.Text>#11223344</VoltraAndroid.Text>,
+          },
+        ],
         {
-          size: { width: 150, height: 100 },
-          content: <VoltraAndroid.Text>#11223344</VoltraAndroid.Text>,
-        },
-      ])
+          context: { dynamicColorPalette: palette },
+        }
+      )
     )
   })
 
@@ -265,12 +274,17 @@ describe('server package split', () => {
 
     expect(response.status).toBe(200)
     expect(await response.text()).toBe(
-      renderAndroidWidgetToString([
+      renderAndroidWidgetToString(
+        [
+          {
+            size: { width: 150, height: 100 },
+            content: <VoltraAndroid.Text>#55667788</VoltraAndroid.Text>,
+          },
+        ],
         {
-          size: { width: 150, height: 100 },
-          content: <VoltraAndroid.Text>#55667788</VoltraAndroid.Text>,
-        },
-      ])
+          context: { dynamicColorPalette: palette },
+        }
+      )
     )
   })
 

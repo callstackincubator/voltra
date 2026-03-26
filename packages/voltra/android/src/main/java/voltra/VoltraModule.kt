@@ -226,7 +226,7 @@ class VoltraModule : Module() {
 
             Function("getAndroidDynamicColorPalette") {
                 val context = appContext.reactContext ?: return@Function null
-                VoltraDynamicColorPalette.snapshotColorArray(context)
+                VoltraDynamicColorPalette.snapshotColorMap(context)
             }
 
             AsyncFunction("requestPinGlanceAppWidget") {

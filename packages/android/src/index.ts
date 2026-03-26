@@ -10,11 +10,7 @@ export type {
   VoltraAndroidTextStyleProp,
   VoltraAndroidViewStyle,
 } from './styles/types.js'
-export type {
-  AndroidDynamicColorPalette,
-  GetAndroidDynamicColorPalette,
-  AndroidWidgetRenderContextValue,
-} from './dynamic-color.js'
+export type { AndroidDynamicColorPalette, AndroidWidgetRenderContextValue } from './dynamic-color.js'
 
 // Component prop types
 export type { BoxProps } from './jsx/Box.js'

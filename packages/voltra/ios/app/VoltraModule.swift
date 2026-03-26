@@ -121,7 +121,7 @@ public class VoltraModule: Module {
       return try await self.impl.getActiveWidgets()
     }
 
-    Function("getAndroidDynamicColorPalette") { () -> [String]? in
+    Function("getAndroidDynamicColorPalette") { () -> [String: String]? in
       return nil
     }
 

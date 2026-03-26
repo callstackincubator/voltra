@@ -50,7 +50,7 @@ const toSharedOptions = (options: WidgetUpdateHandlerOptions) => {
       ? async (request: WidgetRenderRequest) => {
           const variants = await renderAndroid(request)
           return variants
-            ? renderAndroidWidgetToString(variants, { renderContext: createAndroidWidgetRenderContext(request) })
+            ? renderAndroidWidgetToString(variants, { context: createAndroidWidgetRenderContext(request) })
             : null
         }
       : undefined,

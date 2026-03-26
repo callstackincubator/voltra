@@ -1,5 +1,6 @@
 import { requireNativeModule } from 'expo'
 
+import type { AndroidDynamicColorPalette } from './dynamic-color.js'
 import type { EventSubscription, PreloadImageOptions, PreloadImagesResult, WidgetServerCredentials } from './types.js'
 
 export interface VoltraAndroidModuleSpec {
@@ -21,7 +22,7 @@ export interface VoltraAndroidModuleSpec {
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
   getActiveWidgets<T = any>(): Promise<T[]>
-  getAndroidDynamicColorPalette(): string[] | null
+  getAndroidDynamicColorPalette(): AndroidDynamicColorPalette | null
   addListener(event: string, listener: (event: any) => void): EventSubscription
 }
 

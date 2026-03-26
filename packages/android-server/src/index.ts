@@ -3,6 +3,7 @@
 import {
   AndroidWidgetRenderContextProvider,
   createAndroidWidgetRenderContextValue,
+  parseAndroidDynamicColorPalette,
   type AndroidWidgetRenderContextValue,
 } from '@use-voltra/android/internal'
 import { createVoltraRenderer } from '@use-voltra/core'
@@ -60,7 +61,7 @@ export type AndroidLiveUpdateVariantsJson = {
 export type AndroidLiveUpdateJson = AndroidLiveUpdateVariantsJson
 
 type AndroidWidgetRenderOptions = {
-  renderContext?: AndroidWidgetRenderContextValue
+  context: AndroidWidgetRenderContextValue
 }
 
 const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
@@ -134,10 +135,10 @@ export const renderAndroidLiveUpdateToString = (variants: AndroidLiveUpdateVaria
 
 export const renderAndroidWidgetToJson = (
   variants: AndroidWidgetVariants,
-  options?: AndroidWidgetRenderOptions
+  options: AndroidWidgetRenderOptions
 ): Record<string, any> => {
   const renderer = createVoltraRenderer(androidComponentRegistry)
-  const renderContext = options?.renderContext ?? { theme: null, dynamicColorPalette: null }
+  const { context } = options
 
   for (const { size, content } of variants) {
     if (content === null || content === undefined) {
@@ -150,7 +151,7 @@ export const renderAndroidWidgetToJson = (
       createElement(
         AndroidWidgetRenderContextProvider,
         {
-          value: renderContext,
+          value: context,
         },
         content
       )
@@ -175,7 +176,7 @@ export const renderAndroidWidgetToJson = (
 
 export const renderAndroidWidgetToString = (
   variants: AndroidWidgetVariants,
-  options?: AndroidWidgetRenderOptions
+  options: AndroidWidgetRenderOptions
 ): string => {
   return JSON.stringify(renderAndroidWidgetToJson(variants, options))
 }
@@ -186,9 +187,11 @@ export interface AndroidWidgetUpdateHandlerOptions {
 }
 
 export const createAndroidWidgetRenderContext = (
-  request: Pick<WidgetRenderRequest, 'theme' | 'url'>
+  request: Pick<WidgetRenderRequest, 'url'>
 ): AndroidWidgetRenderContextValue => {
-  return createAndroidWidgetRenderContextValue(request.theme, request.url.searchParams.get('androidPalette'))
+  return createAndroidWidgetRenderContextValue(
+    parseAndroidDynamicColorPalette(request.url.searchParams.get('androidPalette'))
+  )
 }
 
 const toSharedOptions = (options: AndroidWidgetUpdateHandlerOptions) => {
@@ -197,7 +200,7 @@ const toSharedOptions = (options: AndroidWidgetUpdateHandlerOptions) => {
     renderAndroid: async (request: WidgetRenderRequest) => {
       const variants = await options.render(request)
       return variants
-        ? renderAndroidWidgetToString(variants, { renderContext: createAndroidWidgetRenderContext(request) })
+        ? renderAndroidWidgetToString(variants, { context: createAndroidWidgetRenderContext(request) })
         : null
     },
   }

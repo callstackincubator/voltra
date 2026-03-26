@@ -1,5 +1,5 @@
 import { AndroidWidgetRenderContextProvider, type AndroidWidgetRenderContextValue } from '../dynamic-color.js'
-import { createElement } from 'react'
+import { createElement, type ReactNode } from 'react'
 
 import { getAndroidComponentId } from '../payload/component-ids.js'
 import { ComponentRegistry, createVoltraRenderer } from '../renderer/renderer.js'
@@ -13,7 +13,7 @@ const androidComponentRegistry: ComponentRegistry = {
 }
 
 export type AndroidWidgetRenderOptions = {
-  context?: AndroidWidgetRenderContextValue
+  context: AndroidWidgetRenderContextValue
 }
 
 /**
@@ -33,10 +33,10 @@ export type AndroidWidgetRenderOptions = {
  */
 export const renderAndroidWidgetToJson = (
   variants: AndroidWidgetVariants,
-  options?: AndroidWidgetRenderOptions
+  options: AndroidWidgetRenderOptions
 ): Record<string, any> => {
   const renderer = createVoltraRenderer(androidComponentRegistry)
-  const context = options?.context ?? { theme: null, dynamicColorPalette: null }
+  const { context } = options
 
   // Add each size variant with key format "WIDTHxHEIGHT"
   for (const { size, content } of variants) {
@@ -77,7 +77,28 @@ export const renderAndroidWidgetToJson = (
  */
 export const renderAndroidWidgetToString = (
   variants: AndroidWidgetVariants,
-  options?: AndroidWidgetRenderOptions
+  options: AndroidWidgetRenderOptions
 ): string => {
   return JSON.stringify(renderAndroidWidgetToJson(variants, options))
+}
+
+/**
+ * Renders Android JSX to JSON for VoltraView component.
+ */
+export const renderAndroidViewToJson = (
+  children: ReactNode,
+  options: AndroidWidgetRenderOptions
+): Record<string, any> => {
+  const renderer = createVoltraRenderer(androidComponentRegistry)
+  const { context } = options
+
+  renderer.addRootNode('content', createElement(AndroidWidgetRenderContextProvider, { value: context }, children))
+
+  const rendered = renderer.render()
+  const node = rendered.content
+
+  delete rendered.content
+  rendered.variants = { content: node }
+
+  return rendered
 }

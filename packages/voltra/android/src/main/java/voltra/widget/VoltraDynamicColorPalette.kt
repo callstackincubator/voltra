@@ -8,6 +8,37 @@ import androidx.glance.unit.ColorProvider
 import java.util.Locale
 
 object VoltraDynamicColorPalette {
+    private val colorKeys =
+        listOf(
+            "primary",
+            "onPrimary",
+            "primaryContainer",
+            "onPrimaryContainer",
+            "secondary",
+            "onSecondary",
+            "secondaryContainer",
+            "onSecondaryContainer",
+            "tertiary",
+            "onTertiary",
+            "tertiaryContainer",
+            "onTertiaryContainer",
+            "error",
+            "errorContainer",
+            "onError",
+            "onErrorContainer",
+            "background",
+            "onBackground",
+            "surface",
+            "onSurface",
+            "surfaceVariant",
+            "onSurfaceVariant",
+            "outline",
+            "inverseOnSurface",
+            "inverseSurface",
+            "inversePrimary",
+            "widgetBackground",
+        )
+
     private fun collectColorProviders(colors: ColorProviders): List<ColorProvider> =
         listOf(
             colors.primary,
@@ -58,6 +89,9 @@ object VoltraDynamicColorPalette {
             colorProviderToHex(provider, context)
         }
     }
+
+    fun snapshotColorMap(context: Context): Map<String, String> =
+        colorKeys.zip(snapshotColorArray(context)).toMap()
 
     fun toQueryValue(context: Context): String =
         snapshotColorArray(context).joinToString(

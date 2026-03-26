@@ -3,38 +3,7 @@ import { VoltraAndroid, useAndroidDynamicColorPalette, type AndroidDynamicColorP
 
 export type AndroidMaterialColorsRenderSource = 'client' | 'server' | 'initial'
 
-const FALLBACK_PALETTE: AndroidDynamicColorPalette = {
-  primary: '#6750a4ff',
-  onPrimary: '#ffffffff',
-  primaryContainer: '#e9ddffff',
-  onPrimaryContainer: '#22005dff',
-  secondary: '#625b71ff',
-  onSecondary: '#ffffffff',
-  secondaryContainer: '#e8def8ff',
-  onSecondaryContainer: '#1e192bff',
-  tertiary: '#7d5260ff',
-  onTertiary: '#ffffffff',
-  tertiaryContainer: '#ffd9e3ff',
-  onTertiaryContainer: '#31101dff',
-  error: '#ba1a1aff',
-  errorContainer: '#ffdad6ff',
-  onError: '#ffffffff',
-  onErrorContainer: '#410002ff',
-  background: '#fef7ffff',
-  onBackground: '#1d1b20ff',
-  surface: '#fef7ffff',
-  onSurface: '#1d1b20ff',
-  surfaceVariant: '#e7e0ecff',
-  onSurfaceVariant: '#49454eff',
-  outline: '#7a757fff',
-  inverseOnSurface: '#f4eff4ff',
-  inverseSurface: '#322f35ff',
-  inversePrimary: '#cfbcffff',
-  widgetBackground: '#f7f2faff',
-}
-
 type AndroidMaterialColorsWidgetProps = {
-  palette?: AndroidDynamicColorPalette | null
   source: AndroidMaterialColorsRenderSource
   renderedAt: string
 }
@@ -76,8 +45,8 @@ const Swatch = ({
   )
 }
 
-export const AndroidMaterialColorsWidget = ({ palette, source, renderedAt }: AndroidMaterialColorsWidgetProps) => {
-  const colors = palette ?? FALLBACK_PALETTE
+export const AndroidMaterialColorsWidget = ({ source, renderedAt }: AndroidMaterialColorsWidgetProps) => {
+  const colors = useAndroidDynamicColorPalette()
 
   return (
     <VoltraAndroid.Box
@@ -150,7 +119,5 @@ export const AndroidMaterialColorsWidget = ({ palette, source, renderedAt }: And
 }
 
 export const AndroidMaterialColorsServerWidget = ({ renderedAt }: { renderedAt: string }) => {
-  const palette = useAndroidDynamicColorPalette()
-
-  return <AndroidMaterialColorsWidget palette={palette} source="server" renderedAt={renderedAt} />
+  return <AndroidMaterialColorsWidget source="server" renderedAt={renderedAt} />
 }

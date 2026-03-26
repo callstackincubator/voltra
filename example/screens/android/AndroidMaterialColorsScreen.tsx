@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, NativeModules, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
 import {
   reloadAndroidWidgets,
   requestPinAndroidWidget,
@@ -8,65 +8,16 @@ import {
   updateAndroidWidget,
   VoltraWidgetPreview,
 } from 'voltra/android/client'
-import type { AndroidDynamicColorPalette } from 'voltra/android'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
-import { AndroidMaterialColorsWidget, type AndroidMaterialColorsRenderSource } from '~/widgets/android/AndroidMaterialColorsWidget'
+import {
+  AndroidMaterialColorsWidget,
+  type AndroidMaterialColorsRenderSource,
+} from '~/widgets/android/AndroidMaterialColorsWidget'
 
 const WIDGET_ID = 'material_colors'
 const DEMO_TOKEN = 'demo-token'
-
-const PALETTE_KEYS = [
-  'primary',
-  'onPrimary',
-  'primaryContainer',
-  'onPrimaryContainer',
-  'secondary',
-  'onSecondary',
-  'secondaryContainer',
-  'onSecondaryContainer',
-  'tertiary',
-  'onTertiary',
-  'tertiaryContainer',
-  'onTertiaryContainer',
-  'error',
-  'errorContainer',
-  'onError',
-  'onErrorContainer',
-  'background',
-  'onBackground',
-  'surface',
-  'onSurface',
-  'surfaceVariant',
-  'onSurfaceVariant',
-  'outline',
-  'inverseOnSurface',
-  'inverseSurface',
-  'inversePrimary',
-  'widgetBackground',
-] as const satisfies readonly (keyof AndroidDynamicColorPalette)[]
-
-const getPaletteSnapshot = (): AndroidDynamicColorPalette | null => {
-  const values = (NativeModules.VoltraModule as { getAndroidDynamicColorPalette?: () => string[] | null } | undefined)
-    ?.getAndroidDynamicColorPalette?.()
-
-  if (!Array.isArray(values) || values.length !== PALETTE_KEYS.length) {
-    return null
-  }
-
-  const palette = {} as AndroidDynamicColorPalette
-
-  for (const [index, key] of PALETTE_KEYS.entries()) {
-    const value = values[index]
-    if (typeof value !== 'string') {
-      return null
-    }
-    palette[key] = value
-  }
-
-  return palette
-}
 
 const formatRenderTime = () =>
   new Date().toLocaleTimeString([], {
@@ -82,7 +33,6 @@ export default function AndroidMaterialColorsScreen() {
   const [isRenderingServer, setIsRenderingServer] = useState(false)
   const [previewSource, setPreviewSource] = useState<AndroidMaterialColorsRenderSource>('initial')
   const [previewTimestamp, setPreviewTimestamp] = useState('waiting for render')
-  const [previewPalette, setPreviewPalette] = useState<AndroidDynamicColorPalette | null>(() => getPaletteSnapshot())
 
   const handlePinWidget = async () => {
     if (Platform.OS !== 'android') {
@@ -118,24 +68,25 @@ export default function AndroidMaterialColorsScreen() {
 
     setIsRenderingClient(true)
     try {
-      const palette = getPaletteSnapshot()
       const renderedAt = formatRenderTime()
 
       await updateAndroidWidget(WIDGET_ID, [
         {
           size: { width: 200, height: 200 },
-          content: <AndroidMaterialColorsWidget palette={palette} source="client" renderedAt={renderedAt} />,
+          content: <AndroidMaterialColorsWidget source="client" renderedAt={renderedAt} />,
         },
         {
           size: { width: 300, height: 200 },
-          content: <AndroidMaterialColorsWidget palette={palette} source="client" renderedAt={renderedAt} />,
+          content: <AndroidMaterialColorsWidget source="client" renderedAt={renderedAt} />,
         },
       ])
 
-      setPreviewPalette(palette)
       setPreviewSource('client')
       setPreviewTimestamp(renderedAt)
-      Alert.alert('Client render complete', 'The widget JSON was rendered inside the app and pushed straight to Android.')
+      Alert.alert(
+        'Client render complete',
+        'The widget JSON was rendered inside the app and pushed straight to Android.'
+      )
     } catch (error: any) {
       const message = error?.message || String(error)
       Alert.alert('Error', `Failed to render on client: ${message}`)
@@ -161,7 +112,6 @@ export default function AndroidMaterialColorsScreen() {
 
       await reloadAndroidWidgets([WIDGET_ID])
 
-      setPreviewPalette(getPaletteSnapshot())
       setPreviewSource('server')
       setPreviewTimestamp('server timestamp')
       Alert.alert(
@@ -188,7 +138,9 @@ export default function AndroidMaterialColorsScreen() {
 
         <Card>
           <Card.Title>1. Pin the Widget</Card.Title>
-          <Card.Text>Add the widget to your home screen once, then switch between client-side and server-side renders.</Card.Text>
+          <Card.Text>
+            Add the widget to your home screen once, then switch between client-side and server-side renders.
+          </Card.Text>
           <View style={styles.buttonContainer}>
             <Button
               title={isPinning ? 'Requesting pin...' : 'Pin widget to home screen'}
@@ -231,11 +183,7 @@ export default function AndroidMaterialColorsScreen() {
           </Card.Text>
           <View style={styles.previewContainer}>
             <VoltraWidgetPreview family="mediumSquare" style={styles.previewFrame}>
-              <AndroidMaterialColorsWidget
-                palette={previewPalette}
-                source={previewSource}
-                renderedAt={previewTimestamp}
-              />
+              <AndroidMaterialColorsWidget source={previewSource} renderedAt={previewTimestamp} />
             </VoltraWidgetPreview>
           </View>
         </Card>

@@ -1,4 +1,5 @@
 import VoltraModule from '../VoltraModule.js'
+import { getClientAndroidWidgetRenderContextValue } from '../client-context.js'
 import { renderAndroidWidgetToString } from './renderer.js'
 import type { AndroidWidgetVariants, UpdateAndroidWidgetOptions, WidgetInfo } from './types.js'
 
@@ -52,7 +53,9 @@ export const updateAndroidWidget = async (
   variants: AndroidWidgetVariants,
   options?: UpdateAndroidWidgetOptions
 ): Promise<void> => {
-  const payload = renderAndroidWidgetToString(variants)
+  const payload = renderAndroidWidgetToString(variants, {
+    context: getClientAndroidWidgetRenderContextValue(),
+  })
 
   return VoltraModule.updateAndroidWidget(widgetId, payload, {
     deepLinkUrl: options?.deepLinkUrl,

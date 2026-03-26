@@ -157,7 +157,7 @@ export interface VoltraIOSModuleSpec {
    * Android dynamic color palette snapshot.
    * Returns null on iOS.
    */
-  getAndroidDynamicColorPalette(): string[] | null
+  getAndroidDynamicColorPalette(): Record<string, string> | null
 
   /**
    * Set server credentials for widget server-driven updates.
