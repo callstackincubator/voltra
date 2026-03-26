@@ -11,6 +11,7 @@ import { createServer } from 'node:http'
 import React from 'react'
 import { createWidgetUpdateNodeHandler } from 'voltra/server'
 import { IosPortfolioWidget } from '../widgets/ios/IosPortfolioWidget'
+import { AndroidMaterialColorsServerWidget } from '../widgets/android/AndroidMaterialColorsWidget'
 import { AndroidPortfolioWidget } from '../widgets/android/AndroidPortfolioWidget'
 
 const PORTFOLIO_TIMES = [
@@ -47,6 +48,10 @@ function generatePortfolioData() {
 
 const handler = createWidgetUpdateNodeHandler({
   renderIos: async (req: any) => {
+    if (req.widgetId !== 'portfolio') {
+      return null
+    }
+
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
     const { chartData, change, balance } = generatePortfolioData()
     const isPositive = change >= 0
@@ -65,6 +70,22 @@ const handler = createWidgetUpdateNodeHandler({
 
   renderAndroid: async (req: any) => {
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+    if (req.widgetId === 'material_colors') {
+      console.log(`[${now}] [Android] Rendering material colors widget`)
+
+      const content = <AndroidMaterialColorsServerWidget renderedAt={now} />
+
+      return [
+        { size: { width: 200, height: 200 }, content },
+        { size: { width: 300, height: 200 }, content },
+      ]
+    }
+
+    if (req.widgetId !== 'portfolio') {
+      return null
+    }
+
     const { chartData, change, balance } = generatePortfolioData()
     const isPositive = change >= 0
     const changeText = `${isPositive ? '+' : ''}${change.toFixed(1)}%`
@@ -91,6 +112,8 @@ createServer(handler).listen(PORT, () => {
   console.log(`\n  Portfolio chart:`)
   console.log(`  iOS:     GET http://localhost:${PORT}?widgetId=portfolio&platform=ios&family=systemSmall`)
   console.log(`  Android: GET http://10.0.2.2:${PORT}?widgetId=portfolio&platform=android`)
+  console.log(`\n  Material colors:`)
+  console.log(`  Android: GET http://10.0.2.2:${PORT}?widgetId=material_colors&platform=android`)
   console.log(`\n  (Android emulator uses 10.0.2.2 to reach the host machine)`)
   console.log(`\nEach request generates randomized portfolio data.`)
   console.log(`Press Ctrl+C to stop.\n`)

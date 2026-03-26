@@ -128,6 +128,21 @@
                   "intervalMinutes": 15,
                   "refresh": true
                 }
+              },
+              {
+                "id": "material_colors",
+                "displayName": "Material Colors Widget",
+                "description": "Compare client-side and server-side rendering with Android dynamic colors",
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen",
+                "initialStatePath": "./widgets/android/android-material-colors-initial.tsx",
+                "serverUpdate": {
+                  "url": "http://10.0.2.2:3333",
+                  "intervalMinutes": 15,
+                  "refresh": true
+                }
               }
             ]
           },
