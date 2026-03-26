@@ -11,6 +11,6 @@ type AndroidWidgetRenderRequestLike = {
 
 export const createAndroidWidgetRenderContext = (
   request: AndroidWidgetRenderRequestLike
-) : AndroidWidgetRenderContextValue => {
+): AndroidWidgetRenderContextValue => {
   return createAndroidWidgetRenderContextValue(request.theme, request.url.searchParams.get('androidPalette'))
 }

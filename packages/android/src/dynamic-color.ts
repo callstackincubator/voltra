@@ -81,9 +81,7 @@ const normalizePaletteColor = (value: unknown): string | null => {
   return value.toLowerCase()
 }
 
-export const androidDynamicColorPaletteFromArray = (
-  value: unknown
-): AndroidDynamicColorPalette | null => {
+export const androidDynamicColorPaletteFromArray = (value: unknown): AndroidDynamicColorPalette | null => {
   if (!Array.isArray(value) || value.length !== ANDROID_DYNAMIC_COLOR_PALETTE_ORDER.length) {
     return null
   }
@@ -102,9 +100,7 @@ export const androidDynamicColorPaletteFromArray = (
   return palette
 }
 
-export const androidDynamicColorPaletteToArray = (
-  palette: AndroidDynamicColorPalette
-): string[] | null => {
+export const androidDynamicColorPaletteToArray = (palette: AndroidDynamicColorPalette): string[] | null => {
   const colors: string[] = []
 
   for (const key of ANDROID_DYNAMIC_COLOR_PALETTE_ORDER) {

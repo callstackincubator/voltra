@@ -78,9 +78,7 @@ describe('Android dynamic color hook', () => {
   })
 
   it('throws when no provider is present', () => {
-    const getAndroidDynamicColorPalette = jest.fn(() =>
-      Array.from({ length: 27 }, () => '#aabbccdd')
-    )
+    const getAndroidDynamicColorPalette = jest.fn(() => Array.from({ length: 27 }, () => '#aabbccdd'))
 
     NativeModules.VoltraModule = {
       getAndroidDynamicColorPalette,
@@ -100,7 +98,9 @@ describe('Android dynamic color hook', () => {
   it('parses server query parameters into render context', () => {
     const renderContext = createAndroidWidgetRenderContext({
       theme: 'light',
-      url: new URL('https://example.com/widgets?androidPalette=%5B%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%5D'),
+      url: new URL(
+        'https://example.com/widgets?androidPalette=%5B%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%2C%22%2311223344%22%5D'
+      ),
     })
 
     expect(renderContext.theme).toBe('light')

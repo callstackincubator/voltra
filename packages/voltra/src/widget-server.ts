@@ -48,11 +48,11 @@ const toSharedOptions = (options: WidgetUpdateHandlerOptions) => {
     },
     renderAndroid: renderAndroid
       ? async (request: WidgetRenderRequest) => {
-        const variants = await renderAndroid(request)
-        return variants
-          ? renderAndroidWidgetToString(variants, { renderContext: createAndroidWidgetRenderContext(request) })
-          : null
-      }
+          const variants = await renderAndroid(request)
+          return variants
+            ? renderAndroidWidgetToString(variants, { renderContext: createAndroidWidgetRenderContext(request) })
+            : null
+        }
       : undefined,
   }
 }
@@ -61,14 +61,10 @@ export const createWidgetUpdateHandler = (options: WidgetUpdateHandlerOptions): 
   return createSharedWidgetUpdateHandler(toSharedOptions(options))
 }
 
-export const createWidgetUpdateNodeHandler = (
-  options: WidgetUpdateHandlerOptions
-): WidgetUpdateNodeHandler => {
+export const createWidgetUpdateNodeHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateNodeHandler => {
   return createSharedWidgetUpdateNodeHandler(toSharedOptions(options))
 }
 
-export const createWidgetUpdateExpressHandler = (
-  options: WidgetUpdateHandlerOptions
-): WidgetUpdateExpressHandler => {
+export const createWidgetUpdateExpressHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateExpressHandler => {
   return createSharedWidgetUpdateExpressHandler(toSharedOptions(options))
 }

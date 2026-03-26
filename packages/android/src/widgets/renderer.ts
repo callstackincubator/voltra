@@ -1,7 +1,4 @@
-import {
-  AndroidWidgetRenderContextProvider,
-  type AndroidWidgetRenderContextValue,
-} from '../dynamic-color.js'
+import { AndroidWidgetRenderContextProvider, type AndroidWidgetRenderContextValue } from '../dynamic-color.js'
 import { createElement } from 'react'
 
 import { getAndroidComponentId } from '../payload/component-ids.js'
@@ -46,9 +43,13 @@ export const renderAndroidWidgetToJson = (
     const key = `${size.width}x${size.height}`
     renderer.addRootNode(
       key,
-      createElement(AndroidWidgetRenderContextProvider, {
-        value: context,
-      }, content)
+      createElement(
+        AndroidWidgetRenderContextProvider,
+        {
+          value: context,
+        },
+        content
+      )
     )
   }
 

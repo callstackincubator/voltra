@@ -3,11 +3,7 @@
 import { promisify } from 'node:util'
 import { brotliCompress, constants } from 'node:zlib'
 
-import {
-  type ComponentRegistry,
-  createVoltraRenderer,
-  ensurePayloadWithinBudget,
-} from '@use-voltra/core'
+import { type ComponentRegistry, createVoltraRenderer, ensurePayloadWithinBudget } from '@use-voltra/core'
 import type { LiveActivityVariants, WidgetVariants } from '@use-voltra/ios'
 import type {
   WidgetRenderRequest,
