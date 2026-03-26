@@ -1,3 +1,9 @@
+import {
+  AndroidWidgetRenderContextProvider,
+  type AndroidWidgetRenderContextValue,
+} from '../dynamic-color.js'
+import { createElement } from 'react'
+
 import { getAndroidComponentId } from '../payload/component-ids.js'
 import { ComponentRegistry, createVoltraRenderer } from '../renderer/renderer.js'
 import type { AndroidWidgetVariants } from './types.js'
@@ -7,6 +13,10 @@ import type { AndroidWidgetVariants } from './types.js'
  */
 const androidComponentRegistry: ComponentRegistry = {
   getComponentId: (name: string) => getAndroidComponentId(name),
+}
+
+export type AndroidWidgetRenderOptions = {
+  context?: AndroidWidgetRenderContextValue
 }
 
 /**
@@ -24,13 +34,22 @@ const androidComponentRegistry: ComponentRegistry = {
  *   "e": [...shared elements...]
  * }
  */
-export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Record<string, any> => {
+export const renderAndroidWidgetToJson = (
+  variants: AndroidWidgetVariants,
+  options?: AndroidWidgetRenderOptions
+): Record<string, any> => {
   const renderer = createVoltraRenderer(androidComponentRegistry)
+  const context = options?.context ?? { theme: null, dynamicColorPalette: null }
 
   // Add each size variant with key format "WIDTHxHEIGHT"
   for (const { size, content } of variants) {
     const key = `${size.width}x${size.height}`
-    renderer.addRootNode(key, content)
+    renderer.addRootNode(
+      key,
+      createElement(AndroidWidgetRenderContextProvider, {
+        value: context,
+      }, content)
+    )
   }
 
   const rendered = renderer.render()
@@ -55,6 +74,9 @@ export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Reco
 /**
  * Renders Android widget variants to a JSON string.
  */
-export const renderAndroidWidgetToString = (variants: AndroidWidgetVariants): string => {
-  return JSON.stringify(renderAndroidWidgetToJson(variants))
+export const renderAndroidWidgetToString = (
+  variants: AndroidWidgetVariants,
+  options?: AndroidWidgetRenderOptions
+): string => {
+  return JSON.stringify(renderAndroidWidgetToJson(variants, options))
 }

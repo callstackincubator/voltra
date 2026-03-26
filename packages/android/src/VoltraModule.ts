@@ -21,6 +21,7 @@ export interface VoltraAndroidModuleSpec {
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
   getActiveWidgets<T = any>(): Promise<T[]>
+  getAndroidDynamicColorPalette(): string[] | null
   addListener(event: string, listener: (event: any) => void): EventSubscription
 }
 

@@ -1,5 +1,10 @@
 /// <reference types="node" />
 
+import {
+  AndroidWidgetRenderContextProvider,
+  createAndroidWidgetRenderContextValue,
+  type AndroidWidgetRenderContextValue,
+} from '@use-voltra/android/internal'
 import { createVoltraRenderer } from '@use-voltra/core'
 import type {
   WidgetRenderRequest,
@@ -12,7 +17,7 @@ import {
   createWidgetUpdateHandler,
   createWidgetUpdateNodeHandler,
 } from '@use-voltra/server'
-import type { ReactNode } from 'react'
+import { createElement, type ReactNode } from 'react'
 
 export type {
   WidgetRenderRequest,
@@ -20,6 +25,7 @@ export type {
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
 } from '@use-voltra/server'
+export type { AndroidDynamicColorPalette, AndroidWidgetRenderContextValue } from '@use-voltra/android'
 export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 export type AndroidWidgetSize = {
@@ -52,6 +58,10 @@ export type AndroidLiveUpdateVariantsJson = {
 }
 
 export type AndroidLiveUpdateJson = AndroidLiveUpdateVariantsJson
+
+type AndroidWidgetRenderOptions = {
+  renderContext?: AndroidWidgetRenderContextValue
+}
 
 const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
   AndroidFilledButton: 0,
@@ -94,7 +104,9 @@ const androidComponentRegistry = {
   getComponentId: (name: string) => getAndroidComponentId(name),
 }
 
-export const renderAndroidLiveUpdateToJson = (variants: AndroidLiveUpdateVariants): AndroidLiveUpdateJson => {
+export const renderAndroidLiveUpdateToJson = (
+  variants: AndroidLiveUpdateVariants
+): AndroidLiveUpdateJson => {
   const renderer = createVoltraRenderer(androidComponentRegistry)
 
   if (variants.collapsed) {
@@ -118,16 +130,31 @@ export const renderAndroidLiveUpdateToJson = (variants: AndroidLiveUpdateVariant
   return result
 }
 
-export const renderAndroidLiveUpdateToString = (variants: AndroidLiveUpdateVariants): string => {
+export const renderAndroidLiveUpdateToString = (
+  variants: AndroidLiveUpdateVariants
+): string => {
   return JSON.stringify(renderAndroidLiveUpdateToJson(variants))
 }
 
-export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Record<string, any> => {
+export const renderAndroidWidgetToJson = (
+  variants: AndroidWidgetVariants,
+  options?: AndroidWidgetRenderOptions
+): Record<string, any> => {
   const renderer = createVoltraRenderer(androidComponentRegistry)
+  const renderContext = options?.renderContext ?? { theme: null, dynamicColorPalette: null }
 
   for (const { size, content } of variants) {
+    if (content === null || content === undefined) {
+      continue
+    }
+
     const key = `${size.width}x${size.height}`
-    renderer.addRootNode(key, content)
+    renderer.addRootNode(
+      key,
+      createElement(AndroidWidgetRenderContextProvider, {
+        value: renderContext,
+      }, content)
+    )
   }
 
   const rendered = renderer.render()
@@ -146,8 +173,11 @@ export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Reco
   return rendered
 }
 
-export const renderAndroidWidgetToString = (variants: AndroidWidgetVariants): string => {
-  return JSON.stringify(renderAndroidWidgetToJson(variants))
+export const renderAndroidWidgetToString = (
+  variants: AndroidWidgetVariants,
+  options?: AndroidWidgetRenderOptions
+): string => {
+  return JSON.stringify(renderAndroidWidgetToJson(variants, options))
 }
 
 export interface AndroidWidgetUpdateHandlerOptions {
@@ -155,28 +185,36 @@ export interface AndroidWidgetUpdateHandlerOptions {
   validateToken?: (token: string) => Promise<boolean> | boolean
 }
 
-function toSharedOptions(options: AndroidWidgetUpdateHandlerOptions) {
+export const createAndroidWidgetRenderContext = (
+  request: Pick<WidgetRenderRequest, 'theme' | 'url'>
+) : AndroidWidgetRenderContextValue => {
+  return createAndroidWidgetRenderContextValue(request.theme, request.url.searchParams.get('androidPalette'))
+}
+
+const toSharedOptions = (options: AndroidWidgetUpdateHandlerOptions) => {
   return {
     validateToken: options.validateToken,
     renderAndroid: async (request: WidgetRenderRequest) => {
       const variants = await options.render(request)
-      return variants ? renderAndroidWidgetToString(variants) : null
+      return variants ? renderAndroidWidgetToString(variants, { renderContext: createAndroidWidgetRenderContext(request) }) : null
     },
   }
 }
 
-export function createAndroidWidgetUpdateHandler(options: AndroidWidgetUpdateHandlerOptions): WidgetUpdateHandler {
+export const createAndroidWidgetUpdateHandler = (
+  options: AndroidWidgetUpdateHandlerOptions
+): WidgetUpdateHandler => {
   return createWidgetUpdateHandler(toSharedOptions(options))
 }
 
-export function createAndroidWidgetUpdateNodeHandler(
+export const createAndroidWidgetUpdateNodeHandler = (
   options: AndroidWidgetUpdateHandlerOptions
-): WidgetUpdateNodeHandler {
+): WidgetUpdateNodeHandler => {
   return createWidgetUpdateNodeHandler(toSharedOptions(options))
 }
 
-export function createAndroidWidgetUpdateExpressHandler(
+export const createAndroidWidgetUpdateExpressHandler = (
   options: AndroidWidgetUpdateHandlerOptions
-): WidgetUpdateExpressHandler {
+): WidgetUpdateExpressHandler => {
   return createWidgetUpdateExpressHandler(toSharedOptions(options))
 }

@@ -1,5 +1,6 @@
 // Android component namespace
 export * as VoltraAndroid from './jsx/primitives.js'
+export { useAndroidDynamicColorPalette } from './dynamic-color.js'
 
 // Android types
 export type { VoltraAndroidBaseProps } from './jsx/baseProps.js'
@@ -9,6 +10,11 @@ export type {
   VoltraAndroidTextStyleProp,
   VoltraAndroidViewStyle,
 } from './styles/types.js'
+export type {
+  AndroidDynamicColorPalette,
+  GetAndroidDynamicColorPalette,
+  AndroidWidgetRenderContextValue,
+} from './dynamic-color.js'
 
 // Component prop types
 export type { BoxProps } from './jsx/Box.js'

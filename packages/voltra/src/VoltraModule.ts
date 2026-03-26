@@ -215,6 +215,12 @@ export interface VoltraModuleSpec {
   getActiveWidgets<T = any>(): Promise<T[]>
 
   /**
+   * Android dynamic color palette snapshot.
+   * Returns null on iOS.
+   */
+  getAndroidDynamicColorPalette(): string[] | null
+
+  /**
    * Set server credentials for widget server-driven updates.
    * Stored securely in Keychain (iOS) or encrypted DataStore via Tink (Android).
    */
