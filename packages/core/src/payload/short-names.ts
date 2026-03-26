@@ -1,7 +1,12 @@
+/* eslint-disable */
 // 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+/**
+ * Unified mapping from full names to short names
+ * Used for props and style properties
+ */
 export const NAME_TO_SHORT: Record<string, string> = {
   absolutePosition: 'ap',
   alignItems: 'ai',
@@ -19,6 +24,7 @@ export const NAME_TO_SHORT: Record<string, string> = {
   borderWidth: 'bw',
   bottom: 'b',
   buttonStyle: 'bs',
+  chartScrollableAxes: 'csa',
   checked: 'chk',
   clipped: 'clip',
   color: 'c',
@@ -161,6 +167,9 @@ export const NAME_TO_SHORT: Record<string, string> = {
   zIndex: 'zi',
 }
 
+/**
+ * Reverse mapping from short names to full names
+ */
 export const SHORT_TO_NAME: Record<string, string> = {
   ap: 'absolutePosition',
   ai: 'alignItems',
@@ -178,6 +187,7 @@ export const SHORT_TO_NAME: Record<string, string> = {
   bw: 'borderWidth',
   b: 'bottom',
   bs: 'buttonStyle',
+  csa: 'chartScrollableAxes',
   chk: 'checked',
   clip: 'clipped',
   c: 'color',
@@ -320,10 +330,18 @@ export const SHORT_TO_NAME: Record<string, string> = {
   zi: 'zIndex',
 }
 
+/**
+ * Shorten a name using the unified mapping
+ * Returns the original name if no short form exists
+ */
 export function shorten(name: string): string {
   return NAME_TO_SHORT[name] ?? name
 }
 
+/**
+ * Expand a short name back to the full name
+ * Returns the original value if no expansion exists
+ */
 export function expand(short: string): string {
   return SHORT_TO_NAME[short] ?? short
 }

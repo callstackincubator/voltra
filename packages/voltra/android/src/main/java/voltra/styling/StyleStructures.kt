@@ -1,6 +1,4 @@
 package voltra.styling
-
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -55,7 +53,7 @@ data class LayoutStyle(
  * Mirrors iOS DecorationStyle.swift
  */
 data class DecorationStyle(
-    val backgroundColor: Color? = null,
+    val backgroundColor: VoltraColorValue? = null,
     val cornerRadius: Dp? = null,
     val clipToOutline: Boolean = false,
     val border: BorderStyle? = null,
@@ -73,7 +71,7 @@ data class DecorationStyle(
  */
 data class BorderStyle(
     val width: Dp,
-    val color: Color,
+    val color: VoltraColorValue,
 )
 
 /**
@@ -81,7 +79,7 @@ data class BorderStyle(
  */
 data class ShadowStyle(
     val radius: Dp,
-    val color: Color,
+    val color: VoltraColorValue,
     val opacity: Float,
     val offset: Offset,
 )
@@ -114,7 +112,7 @@ data class TransformStyle(
  * Mirrors iOS TextStyle.swift
  */
 data class TextStyle(
-    val color: Color? = null,
+    val color: VoltraColorValue? = null,
     val fontSize: TextUnit = 17.sp,
     val fontWeight: FontWeight? = null,
     val fontFamily: String? = null,

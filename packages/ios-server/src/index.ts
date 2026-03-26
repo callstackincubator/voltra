@@ -111,7 +111,7 @@ export const renderWidgetToJson = (variants: WidgetVariants): Record<string, any
   const renderer = createVoltraRenderer(defaultComponentRegistry)
 
   for (const [family, content] of Object.entries(variants) as [string, WidgetVariants[keyof WidgetVariants]][]) {
-    if (content !== undefined) {
+    if (content !== undefined && content !== null) {
       renderer.addRootNode(family, content as NonNullable<WidgetVariants[keyof WidgetVariants]>)
     }
   }

@@ -49,6 +49,13 @@ const ANDROID_SECTIONS = [
     route: '/android-widgets/server-driven',
   },
   {
+    id: 'material-colors',
+    title: 'Material Colors',
+    description:
+      'Test one Android widget through both client-side and server-side rendering, using Material dynamic colors from the current device theme.',
+    route: '/android-widgets/material-colors',
+  },
+  {
     id: 'custom-fonts',
     title: 'Custom Fonts',
     description:

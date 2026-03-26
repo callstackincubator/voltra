@@ -24,6 +24,12 @@
       "import": "./build/esm/server.js",
       "default": "./build/esm/server.js"
     },
+    "./internal": {
+      "types": "./build/types/internal.d.ts",
+      "require": "./build/cjs/internal.js",
+      "import": "./build/esm/internal.js",
+      "default": "./build/esm/internal.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

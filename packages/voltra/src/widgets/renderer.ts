@@ -9,7 +9,7 @@ export const renderWidgetToJson = (variants: WidgetVariants): Record<string, any
 
   // Add all widget family variants
   for (const [family, content] of Object.entries(variants)) {
-    if (content !== undefined) {
+    if (content !== undefined && content !== null) {
       renderer.addRootNode(family, content)
     }
   }

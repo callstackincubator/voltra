@@ -3,6 +3,8 @@
  * These types mirror the supported properties in the Android implementation (Glance).
  */
 
+import type { AndroidColorValue } from '../dynamic-colors.js'
+
 export type StyleProp<T> = T | T[] | null | undefined | false
 
 export type VoltraAndroidViewStyle = {
@@ -61,13 +63,13 @@ export type VoltraAndroidViewStyle = {
   zIndex?: number
 
   /** Background color of the component */
-  backgroundColor?: string
+  backgroundColor?: AndroidColorValue
   /** Corner radius for the component (requires Android 12+) */
   borderRadius?: number
   /** Border width (Note: Not yet implemented in Glance) */
   borderWidth?: number
   /** Border color (Note: Not yet implemented in Glance) */
-  borderColor?: string
+  borderColor?: AndroidColorValue
 
   /** Opacity of the component (Note: Not supported in Glance - apply alpha to colors instead) */
   opacity?: number
@@ -83,7 +85,7 @@ export type VoltraAndroidViewStyle = {
   transform?: ({ rotate: string } | { rotateZ: string } | { scale: number } | { scaleX: number } | { scaleY: number })[]
 
   /** Shadow properties (Note: Not supported in Glance) */
-  shadowColor?: string
+  shadowColor?: AndroidColorValue
   shadowOffset?: { width: number; height: number }
   shadowOpacity?: number
   shadowRadius?: number
@@ -94,7 +96,7 @@ export type VoltraAndroidViewStyle = {
 
 export type VoltraAndroidTextStyle = VoltraAndroidViewStyle & {
   /** Text color */
-  color?: string
+  color?: AndroidColorValue
   /** Font size in sp */
   fontSize?: number
   /** Font weight */

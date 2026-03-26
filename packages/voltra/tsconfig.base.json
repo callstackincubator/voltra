@@ -7,6 +7,7 @@
     "paths": {
       "@use-voltra/android": ["../android/build/types/index.d.ts"],
       "@use-voltra/android/client": ["../android/build/types/client.d.ts"],
+      "@use-voltra/android/internal": ["../android/build/types/internal.d.ts"],
       "@use-voltra/android/server": ["../android/build/types/server.d.ts"],
       "@use-voltra/android-server": ["../android-server/build/types/index.d.ts"],
       "@use-voltra/core": ["../core/build/types/index.d.ts"],

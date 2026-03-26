@@ -3,7 +3,6 @@ package voltra.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
-import android.content.res.Configuration
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.glance.GlanceId
@@ -56,17 +55,7 @@ class VoltraRefreshActionCallback : ActionCallback {
         val jsonString =
             withContext(Dispatchers.IO) {
                 try {
-                    val nightModeFlags =
-                        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                    val theme = if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
-
-                    val urlBuilder = StringBuilder(serverUrl)
-                    urlBuilder.append(if (serverUrl.contains("?")) "&" else "?")
-                    urlBuilder.append("widgetId=").append(widgetId)
-                    urlBuilder.append("&platform=android")
-                    urlBuilder.append("&theme=").append(theme)
-
-                    val url = URL(urlBuilder.toString())
+                    val url = VoltraWidgetUpdateRequest.buildUrl(serverUrl, widgetId, context)
                     val connection = url.openConnection() as HttpURLConnection
 
                     try {
