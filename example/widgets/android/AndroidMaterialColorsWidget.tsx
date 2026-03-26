@@ -1,5 +1,5 @@
 import React from 'react'
-import { VoltraAndroid, useAndroidDynamicColorPalette, type AndroidDynamicColorPalette } from 'voltra/android'
+import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
 
 export type AndroidMaterialColorsRenderSource = 'client' | 'server' | 'initial'
 
@@ -46,7 +46,7 @@ const Swatch = ({
 }
 
 export const AndroidMaterialColorsWidget = ({ source, renderedAt }: AndroidMaterialColorsWidgetProps) => {
-  const colors = useAndroidDynamicColorPalette()
+  const colors = AndroidDynamicColors
 
   return (
     <VoltraAndroid.Box

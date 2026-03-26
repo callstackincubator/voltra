@@ -2,7 +2,6 @@ import { requireNativeView } from 'expo'
 import React, { ReactNode, useEffect, useMemo } from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
 
-import { getClientAndroidWidgetRenderContextValue } from '../client-context.js'
 import { addVoltraListener, VoltraInteractionEvent } from '../events.js'
 import { renderAndroidViewToJson } from '../widgets/renderer.js'
 
@@ -40,15 +39,7 @@ export function VoltraView({ id, children, style, onInteraction }: VoltraViewPro
   // Generate a stable ID if not provided
   const viewId = useMemo(() => id || generateViewId(), [id])
 
-  const payload = useMemo(
-    () =>
-      JSON.stringify(
-        renderAndroidViewToJson(children, {
-          context: getClientAndroidWidgetRenderContextValue(),
-        })
-      ),
-    [children]
-  )
+  const payload = useMemo(() => JSON.stringify(renderAndroidViewToJson(children)), [children])
 
   // Subscribe to interaction events and filter by this view's ID
   useEffect(() => {

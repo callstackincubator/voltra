@@ -121,10 +121,6 @@ public class VoltraModule: Module {
       return try await self.impl.getActiveWidgets()
     }
 
-    Function("getAndroidDynamicColorPalette") { () -> [String: String]? in
-      return nil
-    }
-
     // Widget Server Credentials
     AsyncFunction("setWidgetServerCredentials") { (credentials: [String: Any]) in
       guard let token = credentials["token"] as? String else {

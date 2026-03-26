@@ -12,7 +12,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import voltra.events.VoltraEventBus
 import voltra.images.VoltraImageManager
-import voltra.widget.VoltraDynamicColorPalette
 import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetManager
 
@@ -222,11 +221,6 @@ class VoltraModule : Module() {
                 }
 
                 activeWidgets
-            }
-
-            Function("getAndroidDynamicColorPalette") {
-                val context = appContext.reactContext ?: return@Function null
-                VoltraDynamicColorPalette.snapshotColorMap(context)
             }
 
             AsyncFunction("requestPinGlanceAppWidget") {

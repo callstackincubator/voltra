@@ -1,3 +1,4 @@
+import type { AndroidColorValue } from '../../dynamic-colors.js'
 import type { VoltraAndroidTextStyleProp } from '../../styles/types.js'
 import type { VoltraAndroidBaseProps } from '../baseProps.js'
 
@@ -9,13 +10,13 @@ export type SwitchProps = VoltraAndroidBaseProps & {
   /** Style for the text */
   style?: VoltraAndroidTextStyleProp
   /** Thumb color when checked */
-  thumbCheckedColor?: string
+  thumbCheckedColor?: AndroidColorValue
   /** Thumb color when unchecked */
-  thumbUncheckedColor?: string
+  thumbUncheckedColor?: AndroidColorValue
   /** Track color when checked */
-  trackCheckedColor?: string
+  trackCheckedColor?: AndroidColorValue
   /** Track color when unchecked */
-  trackUncheckedColor?: string
+  trackUncheckedColor?: AndroidColorValue
   /** Maximum lines for text */
   maxLines?: number
 }

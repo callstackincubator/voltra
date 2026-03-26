@@ -1,6 +1,5 @@
 /// <reference types="node" />
 
-import { createAndroidWidgetRenderContext } from '@use-voltra/android-server'
 import type { AndroidWidgetVariants } from '@use-voltra/android-server'
 import { renderAndroidWidgetToString } from '@use-voltra/android-server'
 import { renderWidgetToString } from '@use-voltra/ios-server'
@@ -25,7 +24,6 @@ export type {
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
 } from '@use-voltra/server'
-export type { AndroidWidgetRenderContextValue } from '@use-voltra/android-server'
 export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 /**
@@ -49,9 +47,7 @@ const toSharedOptions = (options: WidgetUpdateHandlerOptions) => {
     renderAndroid: renderAndroid
       ? async (request: WidgetRenderRequest) => {
           const variants = await renderAndroid(request)
-          return variants
-            ? renderAndroidWidgetToString(variants, { context: createAndroidWidgetRenderContext(request) })
-            : null
+          return variants ? renderAndroidWidgetToString(variants) : null
         }
       : undefined,
   }

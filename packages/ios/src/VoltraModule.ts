@@ -154,12 +154,6 @@ export interface VoltraIOSModuleSpec {
   getActiveWidgets<T = any>(): Promise<T[]>
 
   /**
-   * Android dynamic color palette snapshot.
-   * Returns null on iOS.
-   */
-  getAndroidDynamicColorPalette(): Record<string, string> | null
-
-  /**
    * Set server credentials for widget server-driven updates.
    * Stored securely in Keychain.
    */

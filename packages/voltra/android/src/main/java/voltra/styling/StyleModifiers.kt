@@ -2,6 +2,7 @@ package voltra.styling
 
 import android.os.Build
 import android.util.Log
+import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
@@ -27,6 +28,7 @@ import androidx.glance.text.TextStyle as GlanceTextStyle
  * Usage:
  *   GlanceModifier.applyStyle(style)
  */
+@Composable
 fun GlanceModifier.applyStyle(style: CompositeStyle): GlanceModifier {
     var modifier = this
 
@@ -155,12 +157,13 @@ private fun GlanceModifier.applyLayout(layout: LayoutStyle): GlanceModifier {
  * Apply decoration styles to modifier.
  * Handles background color, corner radius, and borders.
  */
+@Composable
 private fun GlanceModifier.applyDecoration(decoration: DecorationStyle): GlanceModifier {
     var modifier = this
 
     // A. Background color
     if (decoration.backgroundColor != null) {
-        modifier = modifier.background(decoration.backgroundColor)
+        modifier = modifier.background(decoration.backgroundColor.toColorProvider())
     }
 
     // B. Corner radius (requires Android 12+/API 31+)
@@ -227,8 +230,10 @@ private fun GlanceModifier.applyRendering(rendering: RenderingStyle): GlanceModi
  * Convert TextStyle to GlanceTextStyle.
  * Glance has limited text styling compared to SwiftUI.
  */
+@Composable
 fun TextStyle.toGlanceTextStyle(): GlanceTextStyle {
     var glanceStyle = GlanceTextStyle()
+    val colorProvider = color?.toColorProvider()
 
     // Font size
     if (fontSize.value > 0) {
@@ -240,7 +245,7 @@ fun TextStyle.toGlanceTextStyle(): GlanceTextStyle {
         glanceStyle =
             GlanceTextStyle(
                 fontSize = fontSize,
-                color = ColorProvider(color),
+                color = colorProvider!!,
             )
     }
 
@@ -249,8 +254,7 @@ fun TextStyle.toGlanceTextStyle(): GlanceTextStyle {
         glanceStyle =
             GlanceTextStyle(
                 fontSize = fontSize,
-                color =
-                    color?.let { ColorProvider(it) } ?: ColorProvider(androidx.compose.ui.graphics.Color.Unspecified),
+                color = colorProvider ?: ColorProvider(androidx.compose.ui.graphics.Color.Unspecified),
                 fontWeight = fontWeight,
             )
     }
@@ -280,8 +284,7 @@ fun TextStyle.toGlanceTextStyle(): GlanceTextStyle {
         glanceStyle =
             GlanceTextStyle(
                 fontSize = fontSize,
-                color =
-                    color?.let { ColorProvider(it) } ?: ColorProvider(androidx.compose.ui.graphics.Color.Unspecified),
+                color = colorProvider ?: ColorProvider(androidx.compose.ui.graphics.Color.Unspecified),
                 fontWeight = fontWeight,
                 textDecoration = glanceDecoration,
             )
@@ -305,9 +308,7 @@ fun TextStyle.toGlanceTextStyle(): GlanceTextStyle {
         glanceStyle =
             GlanceTextStyle(
                 fontSize = fontSize,
-                color =
-                    color?.let { ColorProvider(it) }
-                        ?: ColorProvider(androidx.compose.ui.graphics.Color.Unspecified),
+                color = colorProvider ?: ColorProvider(androidx.compose.ui.graphics.Color.Unspecified),
                 fontWeight = fontWeight,
                 textDecoration = glanceStyle.textDecoration,
                 fontFamily = glanceFontFamily,

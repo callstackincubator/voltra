@@ -131,9 +131,8 @@ export default function AndroidMaterialColorsScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Material Colors Widget</Text>
         <Text style={styles.subheading}>
-          Test the same Android widget through both render paths. Client render snapshots the device palette inside the
-          app, while server render sends the Android Material palette to the widget server and lets SSR produce the
-          widget JSON.
+          Test the same Android widget through both render paths. It uses Android semantic color tokens, so both
+          client-side and server-side rendering resolve native Material You colors directly inside Glance.
         </Text>
 
         <Card>

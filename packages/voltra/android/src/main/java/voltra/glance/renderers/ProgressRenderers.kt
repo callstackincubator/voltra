@@ -5,12 +5,12 @@ import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.LinearProgressIndicator
 import androidx.glance.appwidget.ProgressIndicatorDefaults
-import androidx.glance.unit.ColorProvider
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser
+import voltra.styling.toColorProvider
 
 @Composable
 fun RenderLinearProgress(
@@ -39,7 +39,7 @@ fun RenderLinearProgress(
         if (parsedColor !=
             null
         ) {
-            ColorProvider(parsedColor)
+            parsedColor.toColorProvider()
         } else {
             ProgressIndicatorDefaults.IndicatorColorProvider
         }
@@ -49,7 +49,7 @@ fun RenderLinearProgress(
         if (parsedBgColor !=
             null
         ) {
-            ColorProvider(parsedBgColor)
+            parsedBgColor.toColorProvider()
         } else {
             ProgressIndicatorDefaults.BackgroundColorProvider
         }
@@ -95,7 +95,7 @@ fun RenderCircularProgress(
         if (parsedCircularColor !=
             null
         ) {
-            ColorProvider(parsedCircularColor)
+            parsedCircularColor.toColorProvider()
         } else {
             ProgressIndicatorDefaults.IndicatorColorProvider
         }

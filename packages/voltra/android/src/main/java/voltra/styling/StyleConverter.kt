@@ -135,7 +135,7 @@ object StyleConverter {
         if (borderWidth != null && borderWidth.value > 0) {
             val borderColor =
                 JSStyleParser.color(js["borderColor"])
-                    ?: androidx.compose.ui.graphics.Color.Transparent
+                    ?: VoltraColorValue.Static(androidx.compose.ui.graphics.Color.Transparent)
             border = BorderStyle(borderWidth, borderColor)
         }
 
@@ -151,7 +151,7 @@ object StyleConverter {
             val finalRadius = shadowRadius ?: 0.dp
             val finalOpacity = shadowOpacity ?: 1.0f
             val finalOffset = shadowOffset ?: Offset(0.dp, 0.dp)
-            val finalColor = shadowColor ?: androidx.compose.ui.graphics.Color.Black
+            val finalColor = shadowColor ?: VoltraColorValue.Static(androidx.compose.ui.graphics.Color.Black)
 
             if (finalOpacity > 0) {
                 shadow = ShadowStyle(finalRadius, finalColor, finalOpacity, finalOffset)

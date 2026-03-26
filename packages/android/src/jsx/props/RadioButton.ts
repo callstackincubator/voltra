@@ -1,3 +1,4 @@
+import type { AndroidColorValue } from '../../dynamic-colors.js'
 import type { VoltraAndroidTextStyleProp } from '../../styles/types.js'
 import type { VoltraAndroidBaseProps } from '../baseProps.js'
 
@@ -9,9 +10,9 @@ export type RadioButtonProps = VoltraAndroidBaseProps & {
   /** Style for the text */
   style?: VoltraAndroidTextStyleProp
   /** Color when checked */
-  checkedColor?: string
+  checkedColor?: AndroidColorValue
   /** Color when unchecked */
-  uncheckedColor?: string
+  uncheckedColor?: AndroidColorValue
   /** Maximum lines for text */
   maxLines?: number
   /** Whether the radio button is enabled */
