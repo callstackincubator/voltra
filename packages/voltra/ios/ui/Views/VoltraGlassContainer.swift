@@ -4,6 +4,7 @@ public struct VoltraGlassContainer: VoltraView {
   public typealias Parameters = GlassContainerParameters
 
   public let element: VoltraElement
+  @Environment(\.voltraEnvironment) private var voltraEnvironment
 
   public init(_ element: VoltraElement) {
     self.element = element
@@ -11,7 +12,10 @@ public struct VoltraGlassContainer: VoltraView {
 
   public var body: some View {
     if let children = element.children {
-      if #available(iOS 26.0, *) {
+      if voltraEnvironment.widget?.suppressesDecorativeContainerEffects == true {
+        children.applyStyle(element.style)
+      }
+      else if #available(iOS 26.0, *) {
         let spacing = params.spacing ?? 0.0
         GlassEffectContainer(spacing: CGFloat(spacing)) {
           children
