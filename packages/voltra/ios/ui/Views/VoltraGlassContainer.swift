@@ -14,8 +14,7 @@ public struct VoltraGlassContainer: VoltraView {
     if let children = element.children {
       if voltraEnvironment.widget?.suppressesDecorativeContainerEffects == true {
         children.applyStyle(element.style)
-      }
-      else if #available(iOS 26.0, *) {
+      } else if #available(iOS 26.0, *) {
         let spacing = params.spacing ?? 0.0
         GlassEffectContainer(spacing: CGFloat(spacing)) {
           children

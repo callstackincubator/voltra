@@ -1,6 +1,6 @@
 import SwiftUI
 
-  public enum VoltraWidgetRenderingMode {
+public enum VoltraWidgetRenderingMode {
   case fullColor
   case accented
   case vibrant

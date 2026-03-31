@@ -302,8 +302,8 @@ public struct VoltraHomeWidgetView: View {
             showsContainerBackground: showsWidgetContainerBackground
           )
         )
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-          .widgetURL(resolveDeepLinkURL(entry))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .widgetURL(resolveDeepLinkURL(entry))
 
         if showRefreshButton {
           content.overlay(alignment: .topTrailing) {
