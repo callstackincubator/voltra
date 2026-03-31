@@ -4,6 +4,7 @@ public struct VoltraLinearGradient: VoltraView {
   public typealias Parameters = LinearGradientParameters
 
   public let element: VoltraElement
+  @Environment(\.voltraEnvironment) private var voltraEnvironment
 
   public init(_ element: VoltraElement) {
     self.element = element
@@ -67,20 +68,48 @@ public struct VoltraLinearGradient: VoltraView {
     return Gradient(colors: [Color.black.opacity(0.25), Color.black.opacity(0.05)])
   }
 
+  private func isFullBleedWidgetBackgroundCandidate() -> Bool {
+    guard let style = element.style, element.children != nil else {
+      return false
+    }
+    if let flex = style["flex"]?.doubleValue, flex > 0 {
+      return true
+    }
+    if let flexGrow = style["flexGrow"]?.doubleValue, flexGrow > 0 {
+      return true
+    }
+    let width = style["width"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let height = style["height"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+    return width == "100%" && height == "100%"
+  }
+
   public var body: some View {
     let gradient = buildGradient(params: params)
     let start = parsePoint(params.startPoint)
     let end = parsePoint(params.endPoint)
+    let anyStyle = element.style?.mapValues { $0.toAny() } ?? [:]
+    let (layout, baseDecoration, rendering, text) = StyleConverter.convert(anyStyle)
 
-    // Note: dither parameter is available in node.parameters["dither"] but SwiftUI's LinearGradient
-    // doesn't expose dithering control directly. This is handled automatically by the system.
-    let lg = LinearGradient(gradient: gradient, startPoint: start, endPoint: end)
+    var decoration = baseDecoration
+    decoration.backgroundColor = .linearGradient(gradient: gradient, startPoint: start, endPoint: end)
 
-    // Use ZStack with a Rectangle that fills and is tinted by the gradient, then overlay children.
-    return ZStack {
-      Rectangle().fill(lg)
-      element.children ?? .empty
+    if let widget = voltraEnvironment.widget,
+       widget.isHomeScreenWidget,
+       widget.usesReducedBackgroundPresentation,
+       isFullBleedWidgetBackgroundCandidate(),
+       let children = element.children
+    {
+      return AnyView(children.applyStyle(element.style))
     }
-    .applyStyle(element.style)
+
+    if let children = element.children {
+      return AnyView(
+        children.applyStyle((layout, decoration, rendering, text))
+      )
+    }
+
+    return AnyView(
+      Color.clear.applyStyle((layout, decoration, rendering, text))
+    )
   }
 }
