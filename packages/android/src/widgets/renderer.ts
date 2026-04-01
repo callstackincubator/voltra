@@ -1,3 +1,5 @@
+import { createElement, Fragment as ReactFragment, type ReactNode } from 'react'
+
 import { getAndroidComponentId } from '../payload/component-ids.js'
 import { ComponentRegistry, createVoltraRenderer } from '../renderer/renderer.js'
 import type { AndroidWidgetVariants } from './types.js'
@@ -8,6 +10,8 @@ import type { AndroidWidgetVariants } from './types.js'
 const androidComponentRegistry: ComponentRegistry = {
   getComponentId: (name: string) => getAndroidComponentId(name),
 }
+
+export type AndroidWidgetRenderOptions = Record<string, never>
 
 /**
  * Renders Android widget variants to JSON with size breakpoints.
@@ -24,13 +28,16 @@ const androidComponentRegistry: ComponentRegistry = {
  *   "e": [...shared elements...]
  * }
  */
-export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Record<string, any> => {
+export const renderAndroidWidgetToJson = (
+  variants: AndroidWidgetVariants,
+  _options?: AndroidWidgetRenderOptions
+): Record<string, any> => {
   const renderer = createVoltraRenderer(androidComponentRegistry)
 
   // Add each size variant with key format "WIDTHxHEIGHT"
   for (const { size, content } of variants) {
     const key = `${size.width}x${size.height}`
-    renderer.addRootNode(key, content)
+    renderer.addRootNode(key, createElement(ReactFragment, null, content))
   }
 
   const rendered = renderer.render()
@@ -55,6 +62,29 @@ export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Reco
 /**
  * Renders Android widget variants to a JSON string.
  */
-export const renderAndroidWidgetToString = (variants: AndroidWidgetVariants): string => {
-  return JSON.stringify(renderAndroidWidgetToJson(variants))
+export const renderAndroidWidgetToString = (
+  variants: AndroidWidgetVariants,
+  options?: AndroidWidgetRenderOptions
+): string => {
+  return JSON.stringify(renderAndroidWidgetToJson(variants, options))
+}
+
+/**
+ * Renders Android JSX to JSON for VoltraView component.
+ */
+export const renderAndroidViewToJson = (
+  children: ReactNode,
+  _options?: AndroidWidgetRenderOptions
+): Record<string, any> => {
+  const renderer = createVoltraRenderer(androidComponentRegistry)
+
+  renderer.addRootNode('content', createElement(ReactFragment, null, children))
+
+  const rendered = renderer.render()
+  const node = rendered.content
+
+  delete rendered.content
+  rendered.variants = { content: node }
+
+  return rendered
 }

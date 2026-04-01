@@ -4,6 +4,8 @@ Server-driven widgets allow your Android Home Screen widgets to periodically fet
 
 Before you start, make sure the widget is registered in the Voltra plugin config and plan to rebuild the native app after adding or changing server-driven widget settings.
 
+Android semantic color tokens from [`AndroidDynamicColors`](./dynamic-colors) work in server-rendered widgets too, so your backend can return dynamic Material roles instead of fixed hex values.
+
 ## How it works
 
 1. You configure a `serverUpdate` URL in your Android widget's plugin config
@@ -66,7 +68,7 @@ Voltra provides widget server handlers for the common runtime styles. Use `creat
 import { createServer } from 'node:http'
 import React from 'react'
 import { createWidgetUpdateNodeHandler } from 'voltra/server'
-import { VoltraAndroid } from 'voltra/android'
+import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
 
 const handler = createWidgetUpdateNodeHandler({
   renderAndroid: async (req) => {
@@ -82,15 +84,15 @@ const handler = createWidgetUpdateNodeHandler({
         style={{
           width: '100%',
           height: '100%',
-          backgroundColor: '#101828',
+          backgroundColor: AndroidDynamicColors.surface,
           padding: 16,
         }}
       >
         <VoltraAndroid.Column style={{ width: '100%', height: '100%' }}>
-          <VoltraAndroid.Text style={{ fontSize: 32, color: '#FFF' }}>
+          <VoltraAndroid.Text style={{ fontSize: 32, color: AndroidDynamicColors.onSurface }}>
             {weather.temp}°
           </VoltraAndroid.Text>
-          <VoltraAndroid.Text style={{ fontSize: 14, color: '#94A3B8' }}>
+          <VoltraAndroid.Text style={{ fontSize: 14, color: AndroidDynamicColors.onSurfaceVariant }}>
             {weather.condition}
           </VoltraAndroid.Text>
         </VoltraAndroid.Column>

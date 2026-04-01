@@ -1,3 +1,4 @@
+import type { AndroidColorValue } from '../../dynamic-colors.js'
 import type { VoltraAndroidBaseProps } from '../baseProps.js'
 import type { ImageSource } from '../Image.js'
 
@@ -9,9 +10,9 @@ export type FilledButtonProps = VoltraAndroidBaseProps & {
   /** Icon to display */
   icon?: ImageSource
   /** Background color */
-  backgroundColor?: string
+  backgroundColor?: AndroidColorValue
   /** Content (text/icon) color */
-  contentColor?: string
+  contentColor?: AndroidColorValue
   /** Maximum lines for text */
   maxLines?: number
 }

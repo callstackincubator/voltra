@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "dynamic-colors",
+    "label": "Dynamic Colors"
+  },
+  {
+    "type": "file",
     "name": "images",
     "label": "Images"
   },

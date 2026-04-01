@@ -9,6 +9,7 @@
       "voltra/*": ["packages/voltra/src/*"],
       "@use-voltra/android": ["packages/android/src/index.ts"],
       "@use-voltra/android/client": ["packages/android/src/client.ts"],
+      "@use-voltra/android/internal": ["packages/android/src/internal.ts"],
       "@use-voltra/android/server": ["packages/android/src/server.ts"],
       "@use-voltra/android-server": ["packages/android-server/src/index.ts"],
       "@use-voltra/core": ["packages/core/src/index.ts"],

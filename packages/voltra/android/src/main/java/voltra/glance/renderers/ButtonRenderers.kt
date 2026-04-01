@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.glance.ButtonDefaults
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.appwidget.components.CircleIconButton
@@ -18,6 +19,7 @@ import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser
+import voltra.styling.toColorProvider
 
 private const val TAG = "ButtonRenderers"
 private val gson = Gson()
@@ -67,8 +69,8 @@ fun RenderFilledButton(
             val fg = JSColorParser.parse(contentColor)
             if (bg != null && fg != null) {
                 ButtonDefaults.buttonColors(
-                    backgroundColor = ColorProvider(bg),
-                    contentColor = ColorProvider(fg),
+                    backgroundColor = bg.toColorProvider(),
+                    contentColor = fg.toColorProvider(),
                 )
             } else {
                 ButtonDefaults.buttonColors()
@@ -105,7 +107,7 @@ fun RenderOutlineButton(
     val contentColorProp = element.p?.get("contentColor") as? String
     val contentColor =
         if (contentColorProp != null) {
-            JSColorParser.parse(contentColorProp)?.let { ColorProvider(it) } ?: ColorProvider(Color.Black)
+            JSColorParser.parse(contentColorProp)?.toColorProvider() ?: ColorProvider(Color.Black)
         } else {
             ColorProvider(Color.Black)
         }
@@ -139,16 +141,16 @@ fun RenderCircleIconButton(
 
     val backgroundColor =
         if (backgroundColorProp != null) {
-            JSColorParser.parse(backgroundColorProp)?.let { ColorProvider(it) }
+            JSColorParser.parse(backgroundColorProp)?.toColorProvider()
         } else {
-            androidx.glance.GlanceTheme.colors.background
+            GlanceTheme.colors.background
         }
 
     val contentColor =
         if (contentColorProp != null) {
-            JSColorParser.parse(contentColorProp)?.let { ColorProvider(it) }
+            JSColorParser.parse(contentColorProp)?.toColorProvider()
         } else {
-            androidx.glance.GlanceTheme.colors.onSurface
+            GlanceTheme.colors.onSurface
         }
 
     CircleIconButton(
@@ -158,7 +160,7 @@ fun RenderCircleIconButton(
         modifier = computedModifier,
         enabled = enabled,
         backgroundColor = backgroundColor,
-        contentColor = contentColor ?: androidx.glance.GlanceTheme.colors.onSurface,
+        contentColor = contentColor ?: GlanceTheme.colors.onSurface,
     )
 }
 
@@ -180,16 +182,16 @@ fun RenderSquareIconButton(
 
     val backgroundColor =
         if (backgroundColorProp != null) {
-            JSColorParser.parse(backgroundColorProp)?.let { ColorProvider(it) }
+            JSColorParser.parse(backgroundColorProp)?.toColorProvider()
         } else {
-            androidx.glance.GlanceTheme.colors.primary
+            GlanceTheme.colors.primary
         }
 
     val contentColor =
         if (contentColorProp != null) {
-            JSColorParser.parse(contentColorProp)?.let { ColorProvider(it) }
+            JSColorParser.parse(contentColorProp)?.toColorProvider()
         } else {
-            androidx.glance.GlanceTheme.colors.onPrimary
+            GlanceTheme.colors.onPrimary
         }
 
     SquareIconButton(
@@ -198,8 +200,8 @@ fun RenderSquareIconButton(
         onClick = getOnClickAction(LocalContext.current, element.p, context.widgetId, componentId),
         modifier = computedModifier,
         enabled = enabled,
-        backgroundColor = backgroundColor ?: androidx.glance.GlanceTheme.colors.primary,
-        contentColor = contentColor ?: androidx.glance.GlanceTheme.colors.onPrimary,
+        backgroundColor = backgroundColor ?: GlanceTheme.colors.primary,
+        contentColor = contentColor ?: GlanceTheme.colors.onPrimary,
     )
 }
 

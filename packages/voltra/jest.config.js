@@ -10,6 +10,7 @@ module.exports = {
       moduleNameMapper: {
         '^@use-voltra/android$': '<rootDir>/../android/src/index.ts',
         '^@use-voltra/android/client$': '<rootDir>/../android/src/client.ts',
+        '^@use-voltra/android/internal$': '<rootDir>/../android/src/internal.ts',
         '^@use-voltra/android/server$': '<rootDir>/../android/src/server.ts',
         '^@use-voltra/android-server$': '<rootDir>/../android-server/src/index.ts',
         '^@use-voltra/core$': '<rootDir>/../core/src/index.ts',
@@ -33,6 +34,7 @@ module.exports = {
       moduleNameMapper: {
         '^@use-voltra/android$': '<rootDir>/../android/src/index.ts',
         '^@use-voltra/android/client$': '<rootDir>/../android/src/client.ts',
+        '^@use-voltra/android/internal$': '<rootDir>/../android/src/internal.ts',
         '^@use-voltra/android/server$': '<rootDir>/../android/src/server.ts',
         '^@use-voltra/android-server$': '<rootDir>/../android-server/src/index.ts',
         '^@use-voltra/core$': '<rootDir>/../core/src/index.ts',

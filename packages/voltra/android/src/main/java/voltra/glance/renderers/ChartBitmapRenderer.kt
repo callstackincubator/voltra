@@ -9,6 +9,7 @@ import android.graphics.RectF
 import android.util.Log
 import androidx.compose.ui.graphics.toArgb
 import voltra.styling.JSColorParser
+import voltra.styling.VoltraColorValue
 
 private const val TAG = "ChartBitmapRenderer"
 
@@ -92,7 +93,10 @@ private fun extractSectorPoints(data: List<List<Any>>?): List<SectorPoint> {
 private fun wireColor(props: Map<String, Any>): Int? {
     val colorStr = props["c"] as? String ?: return null
     return try {
-        JSColorParser.parse(colorStr)?.toArgb()
+        when (val color = JSColorParser.parse(colorStr)) {
+            is VoltraColorValue.Static -> color.color.toArgb()
+            else -> null
+        }
     } catch (_: Exception) {
         null
     }

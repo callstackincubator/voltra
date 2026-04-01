@@ -28,6 +28,7 @@ public enum ShortNames {
     "bw": "borderWidth",
     "b": "bottom",
     "bs": "buttonStyle",
+    "csa": "chartScrollableAxes",
     "chk": "checked",
     "clip": "clipped",
     "c": "color",

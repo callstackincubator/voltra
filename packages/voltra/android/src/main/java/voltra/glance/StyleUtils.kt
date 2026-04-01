@@ -15,6 +15,7 @@ data class ResolvedStyle(
     val compositeStyle: CompositeStyle?,
 )
 
+@Composable
 fun resolveAndApplyStyle(
     props: Map<String, Any>?,
     sharedStyles: List<Map<String, Any>>?,

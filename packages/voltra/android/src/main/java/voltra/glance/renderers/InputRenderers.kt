@@ -15,6 +15,7 @@ import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser
 import voltra.styling.StyleConverter
+import voltra.styling.toColorProvider
 import voltra.styling.toGlanceTextStyle
 
 @Composable
@@ -54,10 +55,10 @@ fun RenderSwitch(
 
             if (tc != null && tuc != null && trc != null && truc != null) {
                 SwitchDefaults.colors(
-                    checkedThumbColor = ColorProvider(tc),
-                    uncheckedThumbColor = ColorProvider(tuc),
-                    checkedTrackColor = ColorProvider(trc),
-                    uncheckedTrackColor = ColorProvider(truc),
+                    checkedThumbColor = tc.toColorProvider(),
+                    uncheckedThumbColor = tuc.toColorProvider(),
+                    checkedTrackColor = trc.toColorProvider(),
+                    uncheckedTrackColor = truc.toColorProvider(),
                 )
             } else {
                 SwitchDefaults.colors()
@@ -109,7 +110,7 @@ fun RenderRadioButton(
             val c = JSColorParser.parse(checkedColor)
             val uc = JSColorParser.parse(uncheckedColor)
             if (c != null && uc != null) {
-                RadioButtonDefaults.colors(ColorProvider(c), ColorProvider(uc))
+                RadioButtonDefaults.colors(c.toColorProvider(), uc.toColorProvider())
             } else {
                 RadioButtonDefaults.colors()
             }
@@ -160,7 +161,7 @@ fun RenderCheckBox(
             val c = JSColorParser.parse(checkedColor)
             val uc = JSColorParser.parse(uncheckedColor)
             if (c != null && uc != null) {
-                CheckboxDefaults.colors(ColorProvider(c), ColorProvider(uc))
+                CheckboxDefaults.colors(c.toColorProvider(), uc.toColorProvider())
             } else {
                 CheckboxDefaults.colors()
             }
