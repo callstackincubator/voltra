@@ -60,6 +60,15 @@ public enum VoltraWidgetServerFetcher {
     return 60 // default: 1 hour
   }
 
+  public static func isRefreshEnabled(for widgetId: String) -> Bool {
+    if let refreshDict = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetServerRefresh) as? [String: Bool],
+       let enabled = refreshDict[widgetId]
+    {
+      return enabled
+    }
+    return false
+  }
+
   private static func currentColorScheme() -> String {
     if #available(iOSApplicationExtension 13.0, *) {
       switch UITraitCollection.current.userInterfaceStyle {

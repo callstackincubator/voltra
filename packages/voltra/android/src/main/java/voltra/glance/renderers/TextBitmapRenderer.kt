@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.toArgb
 import voltra.styling.TextAlignment
 import voltra.styling.TextDecoration
 import voltra.styling.TextStyle
+import voltra.styling.VoltraColorValue
 
 private const val TAG = "TextBitmapRenderer"
 
@@ -87,7 +88,9 @@ fun renderTextBitmap(
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
             this.textSize = fontSizePx
-            textStyle.color?.let { this.color = it.toArgb() }
+            if (textStyle.color is VoltraColorValue.Static) {
+                this.color = textStyle.color.color.toArgb()
+            }
             if (textStyle.letterSpacing.value > 0) {
                 this.letterSpacing = textStyle.letterSpacing.value / textStyle.fontSize.value
             }

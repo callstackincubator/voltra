@@ -2,6 +2,8 @@
 
 You can style Voltra components on Android using React Native-style `style` props. These properties are automatically converted to Jetpack Compose Glance modifiers. 
 
+For Android system-aware colors, use [`AndroidDynamicColors`](./dynamic-colors) from `voltra/android` instead of snapshotting palette values in JavaScript.
+
 :::warning Glance Limitations
 Android widgets are built using **Jetpack Compose Glance**, which has a significantly more limited styling API compared to standard Compose or SwiftUI. Many common React Native style properties are either not supported or have limited support.
 :::
@@ -21,7 +23,7 @@ The following React Native style properties are supported on Android:
 
 ### Visual Style
 
-- `backgroundColor` - Background color (hex strings or color names).
+- `backgroundColor` - Background color (hex strings, color names, or `AndroidDynamicColors.*` tokens).
 - `borderRadius` - Corner radius value. **Note:** Requires Android 12+ (API 31). On older versions, this property is ignored.
 
 ### Text
@@ -29,7 +31,7 @@ The following React Native style properties are supported on Android:
 - `fontSize` - Font size in sp.
 - `fontWeight` - Supports `"normal"` and `"bold"`.
 - `fontFamily` - Font family name. Built-in values: `"monospace"`, `"serif"`, `"sans-serif"`, `"cursive"`. For custom fonts, see [Custom Fonts](./custom-fonts).
-- `color` - Text color.
+- `color` - Text color (literal colors or `AndroidDynamicColors.*`).
 - `textDecorationLine` - Supports `"underline"` and `"line-through"`.
 - `textAlign` - Alignment of text within the component (`"left"`, `"center"`, `"right"`).
 - `numberOfLines` - Limits the number of lines displayed.
@@ -41,6 +43,35 @@ In addition to general styles, `Image` components support:
 - `resizeMode` (or `contentScale`) - `"cover"`, `"contain"`, `"stretch"`, or `"center"`.
 - `alpha` - Opacity of the image (0.0 to 1.0).
 - `tintColor` - Applies a color filter to the image.
+
+## Dynamic colors
+
+Android widgets can use semantic Material color roles that resolve through native `GlanceTheme.colors.*` values during rendering.
+
+```tsx
+import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+
+const element = (
+  <VoltraAndroid.Box
+    style={{
+      padding: 16,
+      backgroundColor: AndroidDynamicColors.widgetBackground,
+    }}
+  >
+    <VoltraAndroid.Text
+      style={{
+        color: AndroidDynamicColors.onSurface,
+        fontSize: 18,
+        fontWeight: 'bold',
+      }}
+    >
+      Android Widget Text
+    </VoltraAndroid.Text>
+  </VoltraAndroid.Box>
+)
+```
+
+This is the preferred approach when you want widgets to follow Android's dynamic palette even when the app is not running. See [Dynamic Colors](./dynamic-colors) for the full role list and server-rendering behavior.
 
 ## Limitations
 

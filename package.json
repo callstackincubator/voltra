@@ -9,9 +9,9 @@
   "scripts": {
     "build": "npm run build --workspace voltra",
     "build:all": "turbo run build",
-    "build:plugin": "npm run build --workspace @voltra/expo-plugin",
+    "build:plugin": "npm run build --workspace @use-voltra/expo-plugin",
     "clean": "turbo run clean",
-    "clean:plugin": "npm run clean --workspace @voltra/expo-plugin",
+    "clean:plugin": "npm run clean --workspace @use-voltra/expo-plugin",
     "format:check": "npm run format:check --workspace voltra",
     "format:fix": "npm run format:fix --workspace voltra",
     "format:js:check": "prettier --check .",

@@ -14,33 +14,37 @@ object JSColorParser {
      * Parse color value from any format.
      * Supports: hex (#RGB, #RRGGBB, #RRGGBBAA), rgb/rgba, hsl/hsla, named colors.
      */
-    fun parse(value: Any?): Color? {
+    fun parse(value: Any?): VoltraColorValue? {
         val string = value?.toString()?.trim()?.lowercase() ?: return null
 
         if (string.isEmpty()) return null
 
+        VoltraThemeColorRole.fromToken(string)?.let { role ->
+            return VoltraColorValue.Dynamic(role)
+        }
+
         // 1. Hex colors (with or without #)
         if (string.startsWith("#")) {
-            return parseHex(string)
+            return parseHex(string)?.let { VoltraColorValue.Static(it) }
         }
 
         // Check for hex without # prefix (6 or 8 hex digits)
         if (isHexColor(string)) {
-            return parseHex("#$string")
+            return parseHex("#$string")?.let { VoltraColorValue.Static(it) }
         }
 
         // 2. RGB/RGBA
         if (string.startsWith("rgb")) {
-            return parseRGB(string)
+            return parseRGB(string)?.let { VoltraColorValue.Static(it) }
         }
 
         // 3. HSL/HSLA
         if (string.startsWith("hsl")) {
-            return parseHSL(string)
+            return parseHSL(string)?.let { VoltraColorValue.Static(it) }
         }
 
         // 4. Named colors
-        return parseNamedColor(string)
+        return parseNamedColor(string)?.let { VoltraColorValue.Static(it) }
     }
 
     /**

@@ -43,14 +43,15 @@
               "initialStatePath": "./widgets/ios/ios-weather-initial.tsx"
             },
             {
-              "id": "dynamic_weather",
-              "displayName": "Dynamic Weather Widget",
-              "description": "Shows current weather conditions with server-driven updates",
+              "id": "portfolio",
+              "displayName": "Portfolio Widget",
+              "description": "Shows portfolio performance with a chart and live updates",
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-              "initialStatePath": "./widgets/ios/ios-weather-dynamic-initial.tsx",
+              "initialStatePath": "./widgets/ios/ios-portfolio-initial.tsx",
               "serverUpdate": {
                 "url": "http://localhost:3333",
-                "intervalMinutes": 15
+                "intervalMinutes": 15,
+                "refresh": true
               }
             }
           ],
@@ -109,17 +110,33 @@
                 "initialStatePath": "./widgets/android-chart-widget-initial.tsx"
               },
               {
-                "id": "dynamic_weather",
-                "displayName": "Dynamic Weather Widget",
-                "description": "Shows current weather conditions with server-driven updates",
+                "id": "portfolio",
+                "displayName": "Portfolio Widget",
+                "description": "Shows portfolio performance with a chart and live updates",
                 "targetCellWidth": 2,
-                "targetCellHeight": 1,
+                "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
                 "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android/android-dynamic-weather-initial.tsx",
+                "initialStatePath": "./widgets/android/android-portfolio-initial.tsx",
                 "serverUpdate": {
                   "url": "http://10.0.2.2:3333",
-                  "intervalMinutes": 15
+                  "intervalMinutes": 15,
+                  "refresh": true
+                }
+              },
+              {
+                "id": "material_colors",
+                "displayName": "Material Colors Widget",
+                "description": "Compare client-side and server-side rendering with Android dynamic colors",
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen",
+                "initialStatePath": "./widgets/android/android-material-colors-initial.tsx",
+                "serverUpdate": {
+                  "url": "http://10.0.2.2:3333",
+                  "intervalMinutes": 15,
+                  "refresh": true
                 }
               }
             ]

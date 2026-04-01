@@ -1,1 +1,1 @@
-export * from '@voltra/android/server'
+export * from '@use-voltra/android/server'

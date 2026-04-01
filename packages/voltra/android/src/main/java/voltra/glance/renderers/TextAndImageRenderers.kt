@@ -20,6 +20,9 @@ import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.models.componentProp
 import voltra.styling.JSColorParser
+import voltra.styling.VoltraColorValue
+import voltra.styling.resolveColor
+import voltra.styling.toColorProvider
 import voltra.styling.toGlanceTextStyle
 
 @Composable
@@ -61,13 +64,17 @@ fun RenderText(
         val typeface = loadTypeface(context, textStyle.fontFamily, isBold)
 
         if (typeface != null) {
+            val bitmapTextStyle =
+                textStyle.copy(
+                    color = textStyle.color?.let { VoltraColorValue.Static(it.resolveColor(context)) },
+                )
             // Use screen width as max constraint
             val maxWidthPx = (context.resources.displayMetrics.widthPixels * 0.9f).toInt()
             val bitmap =
                 renderTextBitmap(
                     context = context,
                     text = text,
-                    textStyle = textStyle,
+                    textStyle = bitmapTextStyle,
                     typeface = typeface,
                     maxWidthPx = maxWidthPx,
                 )
@@ -119,7 +126,7 @@ fun RenderImage(
     val colorFilter =
         if (tintColorString != null) {
             voltra.styling.JSColorParser.parse(tintColorString)?.let {
-                androidx.glance.ColorFilter.tint(androidx.glance.unit.ColorProvider(it))
+                androidx.glance.ColorFilter.tint(it.toColorProvider())
             }
         } else {
             null

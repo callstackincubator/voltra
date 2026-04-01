@@ -1,3 +1,4 @@
+import type { AndroidColorValue } from '../../dynamic-colors.js'
 import type { VoltraAndroidBaseProps } from '../baseProps.js'
 import type { ImageSource } from '../Image.js'
 
@@ -9,7 +10,7 @@ export type CircleIconButtonProps = VoltraAndroidBaseProps & {
   /** Content description for accessibility */
   contentDescription?: string
   /** Background color */
-  backgroundColor?: string
+  backgroundColor?: AndroidColorValue
   /** Icon color */
-  contentColor?: string
+  contentColor?: AndroidColorValue
 }

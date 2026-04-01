@@ -1,1 +1,1 @@
-export { createStylesheetRegistry, type StylesheetRegistry } from '@voltra/core'
+export { createStylesheetRegistry, type StylesheetRegistry } from '@use-voltra/core'

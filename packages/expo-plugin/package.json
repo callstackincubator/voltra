@@ -1,6 +1,6 @@
 {
-  "name": "@voltra/expo-plugin",
-  "version": "1.3.0-rc.1",
+  "name": "@use-voltra/expo-plugin",
+  "version": "1.3.1",
   "description": "Expo config plugin for Voltra",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",

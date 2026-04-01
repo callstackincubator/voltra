@@ -10,8 +10,8 @@ import {
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
-import { AndroidDynamicWeatherWidget } from '~/widgets/android/AndroidDynamicWeatherWidget'
-import { IosDynamicWeatherWidget } from '~/widgets/ios/IosDynamicWeatherWidget'
+import { AndroidPortfolioWidget } from '~/widgets/android/AndroidPortfolioWidget'
+import { IosPortfolioWidget } from '~/widgets/ios/IosPortfolioWidget'
 
 export default function ServerDrivenWidgetsScreen() {
   const [serverUrl, setServerUrl] = useState('http://localhost:3333')
@@ -56,10 +56,10 @@ export default function ServerDrivenWidgetsScreen() {
   const handleReloadWidgets = async () => {
     try {
       if (Platform.OS === 'android') {
-        await reloadAndroidWidgets(['dynamic_weather'])
+        await reloadAndroidWidgets(['portfolio'])
         Alert.alert('Success', 'Android widgets reloaded. WorkManager will fetch fresh content from the server.')
       } else {
-        await reloadWidgets(['dynamic_weather'])
+        await reloadWidgets(['portfolio'])
         Alert.alert('Success', 'Widget timelines reloaded. The widget will fetch fresh content from the server.')
       }
     } catch (error) {
@@ -111,7 +111,7 @@ export default function ServerDrivenWidgetsScreen() {
 {
   "android": {
     "widgets": [{
-      "id": "dynamic_weather",
+      "id": "portfolio",
       "serverUpdate": {
         "url": "${serverUrl}",
         "intervalMinutes": 15
@@ -122,7 +122,7 @@ export default function ServerDrivenWidgetsScreen() {
                 : `// widgets in app.json (iOS)
 {
   "widgets": [{
-    "id": "dynamic_weather",
+    "id": "portfolio",
     "serverUpdate": {
       "url": "${serverUrl}",
       "intervalMinutes": 15
@@ -187,7 +187,7 @@ export default function ServerDrivenWidgetsScreen() {
             interval.
           </Card.Text>
           <View style={styles.buttonContainer}>
-            <Button title="Reload Dynamic Weather Widgets" variant="primary" onPress={handleReloadWidgets} />
+            <Button title="Reload Portfolio Widgets" variant="primary" onPress={handleReloadWidgets} />
           </View>
         </Card>
 
@@ -199,8 +199,8 @@ export default function ServerDrivenWidgetsScreen() {
             <Text style={styles.codeText}>npx tsx example/server/widget-server.tsx</Text>
           </View>
           <Card.Text>
-            {'\n'}The server renders weather widgets with rotating conditions. Each request returns a different weather
-            state so you can see the widget update.{'\n\n'}
+            {'\n'}The server renders portfolio widgets with randomized chart data. Each request returns different
+            portfolio performance data so you can see the widget update.{'\n\n'}
             iOS uses <Text style={styles.code}>Voltra.*</Text> components while Android uses{' '}
             <Text style={styles.code}>VoltraAndroid.*</Text> components. The server handles both via separate{' '}
             <Text style={styles.code}>render</Text> and <Text style={styles.code}>renderAndroid</Text> callbacks.
@@ -211,17 +211,17 @@ export default function ServerDrivenWidgetsScreen() {
         <Card>
           <Card.Title>Widget Preview</Card.Title>
           <Card.Text>
-            This is the weather widget`s initial state. When <Text style={styles.code}>serverUpdate</Text> is
+            This is the portfolio widget`s initial state. When <Text style={styles.code}>serverUpdate</Text> is
             configured, the widget extension will periodically replace this with fresh server-rendered content.
           </Card.Text>
           <View style={styles.previewContainer}>
             {Platform.OS === 'android' ? (
               <AndroidVoltraWidgetPreview family="mediumWide" style={styles.widgetPreview}>
-                <AndroidDynamicWeatherWidget />
+                <AndroidPortfolioWidget />
               </AndroidVoltraWidgetPreview>
             ) : (
               <VoltraWidgetPreview family="systemMedium" style={styles.widgetPreview}>
-                <IosDynamicWeatherWidget />
+                <IosPortfolioWidget />
               </VoltraWidgetPreview>
             )}
           </View>

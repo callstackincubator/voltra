@@ -651,9 +651,24 @@ private extension View {
     if let optionalStyle {
       let anyStyle = optionalStyle.mapValues { $0.toAny() }
       let (layout, decoration, rendering, _) = StyleConverter.convert(anyStyle)
+
+      // For charts with borderRadius, defer clipping to AFTER insets.
+      // Otherwise the negative insets push content past the clip boundary.
+      let hasClipping = decoration.cornerRadius != nil || decoration.overflow == .hidden
+      let decorationForLayout: DecorationStyle = hasClipping
+        ? DecorationStyle(
+          backgroundColor: decoration.backgroundColor,
+          cornerRadius: nil,
+          border: decoration.border,
+          shadow: decoration.shadow,
+          glassEffect: decoration.glassEffect,
+          overflow: nil
+        )
+        : decoration
+
       let styled = modifier(CompositeStyleModifier(
         layout: layout,
-        decoration: decoration,
+        decoration: decorationForLayout,
         rendering: rendering,
         contentAlignment: .topLeading
       ))
@@ -666,12 +681,14 @@ private extension View {
           .foregroundStyle(color)
           .foregroundColor(color)
           .tint(color)
+          .applyChartClipping(decoration: decoration, hasClipping: hasClipping)
       } else {
         styled
           .applyChartXAxis(visibility: xAxisVisibility, labelColor: nil, gridStyle: xAxisGridStyle)
           .applyChartYAxis(visibility: yAxisVisibility, labelColor: nil, gridStyle: yAxisGridStyle)
           .applyChartLegend(visibility: legendVisibility, labelColor: nil, items: legendItems)
           .applyChartInsets(xAxisVisibility: xAxisVisibility, yAxisVisibility: yAxisVisibility)
+          .applyChartClipping(decoration: decoration, hasClipping: hasClipping)
       }
     } else {
       applyChartXAxis(visibility: xAxisVisibility, labelColor: nil, gridStyle: xAxisGridStyle)
@@ -682,12 +699,25 @@ private extension View {
   }
 
   @ViewBuilder
+  func applyChartClipping(decoration: DecorationStyle, hasClipping: Bool) -> some View {
+    if hasClipping {
+      voltraIfLet(decoration.cornerRadius) { view, radius in
+        view.cornerRadius(radius)
+      }
+      .voltraIf(decoration.overflow == .hidden) { view in
+        view.clipped()
+      }
+    } else {
+      self
+    }
+  }
+
   func applyChartInsets(xAxisVisibility: Visibility, yAxisVisibility: Visibility) -> some View {
     let leading: CGFloat = yAxisVisibility == .hidden ? -8 : 10
     let trailing: CGFloat = yAxisVisibility == .hidden ? -8 : 0
     let top: CGFloat = xAxisVisibility == .hidden ? -8 : (yAxisVisibility == .hidden ? 0 : 8)
     let bottom: CGFloat = xAxisVisibility == .hidden ? -8 : 0
-    padding(.init(top: top, leading: leading, bottom: bottom, trailing: trailing))
+    return padding(.init(top: top, leading: leading, bottom: bottom, trailing: trailing))
   }
 
   @ViewBuilder

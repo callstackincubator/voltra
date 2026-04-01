@@ -3,30 +3,30 @@
 import { promisify } from 'node:util'
 import { brotliCompress, constants } from 'node:zlib'
 
-import { type ComponentRegistry, createVoltraRenderer, ensurePayloadWithinBudget } from '@voltra/core'
-import type { LiveActivityVariants, WidgetVariants } from '@voltra/ios'
+import { type ComponentRegistry, createVoltraRenderer, ensurePayloadWithinBudget } from '@use-voltra/core'
+import type { LiveActivityVariants, WidgetVariants } from '@use-voltra/ios'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
+} from '@use-voltra/server'
 import {
   createWidgetUpdateExpressHandler,
   createWidgetUpdateHandler,
   createWidgetUpdateNodeHandler,
-} from '@voltra/server'
+} from '@use-voltra/server'
 import type { ReactNode } from 'react'
 
-export { Voltra } from '@voltra/ios'
+export { Voltra } from '@use-voltra/ios'
 export type { LiveActivityVariants, WidgetVariants }
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
-export type { WidgetPlatform, WidgetTheme } from '@voltra/server'
+} from '@use-voltra/server'
+export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 type LiveActivityJson = {
   v: number
@@ -111,7 +111,7 @@ export const renderWidgetToJson = (variants: WidgetVariants): Record<string, any
   const renderer = createVoltraRenderer(defaultComponentRegistry)
 
   for (const [family, content] of Object.entries(variants) as [string, WidgetVariants[keyof WidgetVariants]][]) {
-    if (content !== undefined) {
+    if (content !== undefined && content !== null) {
       renderer.addRootNode(family, content as NonNullable<WidgetVariants[keyof WidgetVariants]>)
     }
   }

@@ -168,10 +168,25 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
 
   // MARK: - Server-Driven Timeline
 
+  private static var lastFetchTimes: [String: Date] = [:]
+  private static let coalesceInterval: TimeInterval = 3 // seconds
+
   /// Fetch widget content from a remote Voltra SSR server and build a timeline.
   private func getServerDrivenTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
     let familyKey = familyToKey(context.family)
     let intervalMinutes = VoltraWidgetServerFetcher.updateInterval(for: widgetId)
+
+    // Coalesce: if we fetched for this widget very recently, use cached data.
+    // The server returns all families in every response, so subsequent getTimeline
+    // calls for different families can safely use the just-cached response —
+    // selectContentForFamily will pick the correct family-specific content.
+    if let lastFetch = Self.lastFetchTimes[widgetId],
+       Date().timeIntervalSince(lastFetch) < Self.coalesceInterval
+    {
+      VoltraLogger.widget.info("Coalescing fetch for '\(widgetId)' family '\(familyKey)' (last fetch \(Date().timeIntervalSince(lastFetch))s ago)")
+      getLocalTimeline(in: context, completion: completion)
+      return
+    }
 
     Task {
       do {
@@ -179,6 +194,9 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
           widgetId: widgetId,
           family: familyKey
         )
+
+        // Record that we just fetched successfully
+        Self.lastFetchTimes[widgetId] = Date()
 
         let node = parseJsonToNode(data: data, family: context.family)
 
@@ -262,18 +280,45 @@ public struct VoltraHomeWidgetView: View {
     self.entry = entry
   }
 
+  private var showRefreshButton: Bool {
+    VoltraWidgetServerFetcher.isRefreshEnabled(for: entry.widgetId)
+  }
+
   public var body: some View {
     Group {
       if let root = entry.rootNode {
         // No parsing here - just render the pre-parsed AST
-        Voltra(root: root, activityId: "widget")
+        let content = Voltra(root: root, activityId: "widget")
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
           .widgetURL(resolveDeepLinkURL(entry))
+
+        if showRefreshButton {
+          content.overlay(alignment: .topTrailing) {
+            refreshButton
+          }
+        } else {
+          content
+        }
       } else {
         placeholderView(widgetId: entry.widgetId)
       }
     }
     .disableWidgetMarginsIfAvailable()
+  }
+
+  @ViewBuilder
+  private var refreshButton: some View {
+    if #available(iOSApplicationExtension 17.0, *) {
+      Button(intent: VoltraRefreshIntent(widgetId: entry.widgetId)) {
+        Image(systemName: "arrow.clockwise")
+          .font(.system(size: 12, weight: .semibold))
+          .foregroundStyle(.secondary)
+          .padding(6)
+          .background(.ultraThinMaterial, in: Circle())
+      }
+      .buttonStyle(.plain)
+      .padding(12)
+    }
   }
 
   private func placeholderView(widgetId _: String) -> some View {

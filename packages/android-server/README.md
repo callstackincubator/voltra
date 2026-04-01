@@ -4,7 +4,7 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@voltra/android-server` contains the Android server rendering package for Voltra, including Android widget rendering, Android live update rendering, and Android widget update handlers.
+`@use-voltra/android-server` contains the Android server rendering package for Voltra, including Android widget rendering, Android live update rendering, and Android widget update handlers.
 
 > [!WARNING]
 > This package is not intended to be installed directly in your app. Most apps should install `voltra` instead.

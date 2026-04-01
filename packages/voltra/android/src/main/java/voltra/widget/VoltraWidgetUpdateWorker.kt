@@ -3,7 +3,6 @@ package voltra.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
-import android.content.res.Configuration
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.work.CoroutineWorker
@@ -58,17 +57,7 @@ class VoltraWidgetUpdateWorker(
 
             try {
                 // 1. Build URL with query parameters
-                val nightModeFlags =
-                    applicationContext.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                val theme = if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
-
-                val urlBuilder = StringBuilder(serverUrl)
-                urlBuilder.append(if (serverUrl.contains("?")) "&" else "?")
-                urlBuilder.append("widgetId=").append(widgetId)
-                urlBuilder.append("&platform=android")
-                urlBuilder.append("&theme=").append(theme)
-
-                val url = URL(urlBuilder.toString())
+                val url = VoltraWidgetUpdateRequest.buildUrl(serverUrl, widgetId, applicationContext)
                 val connection = url.openConnection() as HttpURLConnection
 
                 try {
@@ -130,7 +119,7 @@ class VoltraWidgetUpdateWorker(
                     val widgetManager = VoltraWidgetManager(applicationContext)
                     widgetManager.writeWidgetData(widgetId, jsonString, null)
 
-                    // 7. Parse and generate RemoteViews for direct update
+                    // 7. Parse payload to validate it (also needed for non-Glance RemoteViews path)
                     val payload =
                         try {
                             VoltraPayloadParser.parse(jsonString)
@@ -145,7 +134,22 @@ class VoltraWidgetUpdateWorker(
                         return@withContext Result.success()
                     }
 
-                    // 8. Push update to widget via AppWidgetManager
+                    // 8. Check if this widget uses the Glance refresh overlay
+                    val refreshEnabled = VoltraWidgetUpdateScheduler.isRefreshEnabled(applicationContext, widgetId)
+
+                    val sizeMapping =
+                        if (refreshEnabled) {
+                            // Generate RemoteViews with refresh button overlay
+                            RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(
+                                applicationContext,
+                                payload,
+                                widgetId,
+                            )
+                        } else {
+                            // Generate plain RemoteViews without refresh overlay
+                            RemoteViewsGenerator.generateWidgetRemoteViews(applicationContext, payload)
+                        }
+
                     val receiverClassName =
                         "${applicationContext.packageName}.widget.VoltraWidget_${widgetId}Receiver"
                     val componentName = ComponentName(applicationContext.packageName, receiverClassName)
@@ -154,12 +158,7 @@ class VoltraWidgetUpdateWorker(
 
                     if (appWidgetIds.isEmpty()) {
                         Log.w(TAG, "No widget instances found on home screen for '$widgetId'")
-                        return@withContext Result.success()
-                    }
-
-                    val sizeMapping = RemoteViewsGenerator.generateWidgetRemoteViews(applicationContext, payload)
-
-                    if (sizeMapping.isNotEmpty()) {
+                    } else if (sizeMapping.isNotEmpty()) {
                         for (appWidgetId in appWidgetIds) {
                             try {
                                 val responsiveRemoteViews = RemoteViews(sizeMapping)

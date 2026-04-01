@@ -1,6 +1,6 @@
 {
-  "name": "@voltra/android",
-  "version": "1.3.0-rc.1",
+  "name": "@use-voltra/android",
+  "version": "1.3.1",
   "description": "Voltra for Android",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
@@ -24,6 +24,12 @@
       "import": "./build/esm/server.js",
       "default": "./build/esm/server.js"
     },
+    "./internal": {
+      "types": "./build/types/internal.d.ts",
+      "require": "./build/cjs/internal.js",
+      "import": "./build/esm/internal.js",
+      "default": "./build/esm/internal.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -37,7 +43,7 @@
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
-    "@voltra/core": "1.3.0-rc.1"
+    "@use-voltra/core": "1.3.1"
   },
   "keywords": [
     "react-native",

@@ -1,30 +1,30 @@
 /// <reference types="node" />
 
-import type { AndroidWidgetVariants } from '@voltra/android-server'
-import { createWidgetUpdateExpressHandler as createSharedWidgetUpdateExpressHandler } from '@voltra/server'
-import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@voltra/server'
-import { createWidgetUpdateNodeHandler as createSharedWidgetUpdateNodeHandler } from '@voltra/server'
+import type { AndroidWidgetVariants } from '@use-voltra/android-server'
+import { renderAndroidWidgetToString } from '@use-voltra/android-server'
+import { renderWidgetToString } from '@use-voltra/ios-server'
+import type { WidgetVariants } from '@use-voltra/ios-server'
+import { createWidgetUpdateExpressHandler as createSharedWidgetUpdateExpressHandler } from '@use-voltra/server'
+import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@use-voltra/server'
+import { createWidgetUpdateNodeHandler as createSharedWidgetUpdateNodeHandler } from '@use-voltra/server'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
-import { renderAndroidWidgetToString } from '@voltra/android-server'
-import { renderWidgetToString } from '@voltra/ios-server'
-import type { WidgetVariants } from '@voltra/ios-server'
+} from '@use-voltra/server'
 
-export { renderAndroidWidgetToString } from '@voltra/android-server'
-export type { AndroidWidgetVariants } from '@voltra/android-server'
-export { renderWidgetToString } from '@voltra/ios-server'
-export type { WidgetVariants } from '@voltra/ios-server'
+export { renderAndroidWidgetToString } from '@use-voltra/android-server'
+export type { AndroidWidgetVariants } from '@use-voltra/android-server'
+export { renderWidgetToString } from '@use-voltra/ios-server'
+export type { WidgetVariants } from '@use-voltra/ios-server'
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
-export type { WidgetPlatform, WidgetTheme } from '@voltra/server'
+} from '@use-voltra/server'
+export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 /**
  * Options for creating the widget update handler.
@@ -35,30 +35,32 @@ export interface WidgetUpdateHandlerOptions {
   validateToken?: (token: string) => Promise<boolean> | boolean
 }
 
-function toSharedOptions(options: WidgetUpdateHandlerOptions) {
+const toSharedOptions = (options: WidgetUpdateHandlerOptions) => {
+  const renderAndroid = options.renderAndroid
+
   return {
     validateToken: options.validateToken,
     renderIos: async (request: WidgetRenderRequest) => {
       const variants = await options.renderIos(request)
       return variants ? renderWidgetToString(variants) : null
     },
-    renderAndroid: options.renderAndroid
+    renderAndroid: renderAndroid
       ? async (request: WidgetRenderRequest) => {
-          const variants = await options.renderAndroid?.(request)
+          const variants = await renderAndroid(request)
           return variants ? renderAndroidWidgetToString(variants) : null
         }
       : undefined,
   }
 }
 
-export function createWidgetUpdateHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateHandler {
+export const createWidgetUpdateHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateHandler => {
   return createSharedWidgetUpdateHandler(toSharedOptions(options))
 }
 
-export function createWidgetUpdateNodeHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateNodeHandler {
+export const createWidgetUpdateNodeHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateNodeHandler => {
   return createSharedWidgetUpdateNodeHandler(toSharedOptions(options))
 }
 
-export function createWidgetUpdateExpressHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateExpressHandler {
+export const createWidgetUpdateExpressHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateExpressHandler => {
   return createSharedWidgetUpdateExpressHandler(toSharedOptions(options))
 }

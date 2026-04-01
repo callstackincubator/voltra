@@ -1,11 +1,12 @@
 import { createElement } from 'react'
 
 import { VOLTRA_MARK_TAG } from '../../jsx/BarMark.js'
+import type { AndroidColorValue } from '../dynamic-colors.js'
 import type { SectorDataPoint } from './chart-types.js'
 
 export type SectorMarkProps = {
   data: SectorDataPoint[]
-  color?: string
+  color?: AndroidColorValue
   innerRadius?: number
   outerRadius?: number
   angularInset?: number

@@ -1,3 +1,4 @@
+import type { AndroidColorValue } from '../../dynamic-colors.js'
 import type { VoltraAndroidBaseProps } from '../baseProps.js'
 
 export type CircularProgressIndicatorProps = VoltraAndroidBaseProps & {
@@ -8,5 +9,5 @@ export type CircularProgressIndicatorProps = VoltraAndroidBaseProps & {
    */
   progress?: number
   /** Color for the progress indicator */
-  color?: string
+  color?: AndroidColorValue
 }

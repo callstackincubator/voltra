@@ -1,1 +1,1 @@
-export { flattenStyle } from '@voltra/core'
+export { flattenStyle } from '@use-voltra/core'

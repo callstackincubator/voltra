@@ -17,6 +17,10 @@ const TS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, 'src/jsx/props')
 const TS_IOS_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, '..', 'ios', 'src', 'jsx', 'props')
 const TS_ANDROID_PROPS_SOURCE_DIR = path.join(ROOT_DIR, 'src/android/jsx/props')
 const TS_ANDROID_PROPS_OUTPUT_DIR = path.join(ROOT_DIR, '..', 'android', 'src', 'jsx', 'props')
+const TS_ANDROID_STYLES_SOURCE_DIR = path.join(ROOT_DIR, 'src/android/styles')
+const TS_ANDROID_STYLES_OUTPUT_DIR = path.join(ROOT_DIR, '..', 'android', 'src', 'styles')
+const TS_ANDROID_DYNAMIC_COLORS_SOURCE_PATH = path.join(ROOT_DIR, 'src/android/dynamic-colors.ts')
+const TS_ANDROID_DYNAMIC_COLORS_OUTPUT_PATH = path.join(ROOT_DIR, '..', 'android', 'src', 'dynamic-colors.ts')
 const TS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, 'src/payload')
 const TS_IOS_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, '..', 'ios', 'src', 'payload')
 const TS_CORE_PAYLOAD_OUTPUT_DIR = path.join(ROOT_DIR, '..', 'core', 'src', 'payload')
@@ -52,6 +56,12 @@ const syncDirectory = (sourceDir: string, outputDir: string) => {
   ensureDirectoryExists(outputDir)
   fs.cpSync(sourceDir, outputDir, { recursive: true })
   console.log(`   ✓ Synced ${path.relative(ROOT_DIR, sourceDir)} -> ${path.relative(ROOT_DIR, outputDir)}`)
+}
+
+const syncFile = (sourcePath: string, outputPath: string) => {
+  ensureDirectoryExists(path.dirname(outputPath))
+  fs.copyFileSync(sourcePath, outputPath)
+  console.log(`   ✓ Synced ${path.relative(ROOT_DIR, sourcePath)} -> ${path.relative(ROOT_DIR, outputPath)}`)
 }
 
 const runFormatScript = (scriptName: string, stepLabel: string) => {
@@ -98,6 +108,8 @@ const main = () => {
   writeFiles(TS_PROPS_OUTPUT_DIR, tsJsxResult.props)
   writeFiles(TS_IOS_PROPS_OUTPUT_DIR, tsJsxResult.props)
   syncDirectory(TS_ANDROID_PROPS_SOURCE_DIR, TS_ANDROID_PROPS_OUTPUT_DIR)
+  syncDirectory(TS_ANDROID_STYLES_SOURCE_DIR, TS_ANDROID_STYLES_OUTPUT_DIR)
+  syncFile(TS_ANDROID_DYNAMIC_COLORS_SOURCE_PATH, TS_ANDROID_DYNAMIC_COLORS_OUTPUT_PATH)
   console.log()
 
   // Step 5: Generate Swift parameter types

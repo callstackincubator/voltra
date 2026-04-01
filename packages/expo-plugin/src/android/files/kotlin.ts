@@ -51,6 +51,7 @@ function generateWidgetReceiverClass(widget: AndroidWidgetConfig, packageName: s
   const className = `VoltraWidget_${widget.id}Receiver`
 
   if (widget.serverUpdate) {
+    const refreshEnabled = widget.serverUpdate.refresh === true
     // Widget with server-driven updates: schedule WorkManager periodic task
     return dedent`
       package ${packageName}.widget
@@ -64,6 +65,7 @@ function generateWidgetReceiverClass(widget: AndroidWidgetConfig, packageName: s
        * Auto-generated widget receiver for ${widget.displayName}
        * Widget ID: ${widget.id}
        * Server Update: ${widget.serverUpdate.url} (every ${widget.serverUpdate.intervalMinutes ?? 15} minutes)
+       * Refresh Button: ${refreshEnabled}
        */
       class ${className} : VoltraWidgetReceiver() {
           override val widgetId: String = "${widget.id}"
@@ -76,7 +78,8 @@ function generateWidgetReceiverClass(widget: AndroidWidgetConfig, packageName: s
                   context = context,
                   widgetId = "${widget.id}",
                   serverUrl = "${widget.serverUpdate.url}",
-                  intervalMinutes = ${widget.serverUpdate.intervalMinutes ?? 15}L
+                  intervalMinutes = ${widget.serverUpdate.intervalMinutes ?? 15}L,
+                  refreshEnabled = ${refreshEnabled}
               )
           }
 

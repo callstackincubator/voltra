@@ -1,26 +1,27 @@
 /// <reference types="node" />
 
-import { createVoltraRenderer } from '@voltra/core'
+import { createVoltraRenderer } from '@use-voltra/core'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
+} from '@use-voltra/server'
 import {
   createWidgetUpdateExpressHandler,
   createWidgetUpdateHandler,
   createWidgetUpdateNodeHandler,
-} from '@voltra/server'
-import type { ReactNode } from 'react'
+} from '@use-voltra/server'
+import { createElement, Fragment as ReactFragment, type ReactNode } from 'react'
 
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltra/server'
-export type { WidgetPlatform, WidgetTheme } from '@voltra/server'
+} from '@use-voltra/server'
+export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from '@use-voltra/android'
+export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 export type AndroidWidgetSize = {
   width: number
@@ -52,6 +53,8 @@ export type AndroidLiveUpdateVariantsJson = {
 }
 
 export type AndroidLiveUpdateJson = AndroidLiveUpdateVariantsJson
+
+type AndroidWidgetRenderOptions = Record<string, never>
 
 const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
   AndroidFilledButton: 0,
@@ -122,12 +125,19 @@ export const renderAndroidLiveUpdateToString = (variants: AndroidLiveUpdateVaria
   return JSON.stringify(renderAndroidLiveUpdateToJson(variants))
 }
 
-export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Record<string, any> => {
+export const renderAndroidWidgetToJson = (
+  variants: AndroidWidgetVariants,
+  _options?: AndroidWidgetRenderOptions
+): Record<string, any> => {
   const renderer = createVoltraRenderer(androidComponentRegistry)
 
   for (const { size, content } of variants) {
+    if (content === null || content === undefined) {
+      continue
+    }
+
     const key = `${size.width}x${size.height}`
-    renderer.addRootNode(key, content)
+    renderer.addRootNode(key, createElement(ReactFragment, null, content))
   }
 
   const rendered = renderer.render()
@@ -146,8 +156,11 @@ export const renderAndroidWidgetToJson = (variants: AndroidWidgetVariants): Reco
   return rendered
 }
 
-export const renderAndroidWidgetToString = (variants: AndroidWidgetVariants): string => {
-  return JSON.stringify(renderAndroidWidgetToJson(variants))
+export const renderAndroidWidgetToString = (
+  variants: AndroidWidgetVariants,
+  options?: AndroidWidgetRenderOptions
+): string => {
+  return JSON.stringify(renderAndroidWidgetToJson(variants, options))
 }
 
 export interface AndroidWidgetUpdateHandlerOptions {
@@ -155,7 +168,7 @@ export interface AndroidWidgetUpdateHandlerOptions {
   validateToken?: (token: string) => Promise<boolean> | boolean
 }
 
-function toSharedOptions(options: AndroidWidgetUpdateHandlerOptions) {
+const toSharedOptions = (options: AndroidWidgetUpdateHandlerOptions) => {
   return {
     validateToken: options.validateToken,
     renderAndroid: async (request: WidgetRenderRequest) => {
@@ -165,18 +178,18 @@ function toSharedOptions(options: AndroidWidgetUpdateHandlerOptions) {
   }
 }
 
-export function createAndroidWidgetUpdateHandler(options: AndroidWidgetUpdateHandlerOptions): WidgetUpdateHandler {
+export const createAndroidWidgetUpdateHandler = (options: AndroidWidgetUpdateHandlerOptions): WidgetUpdateHandler => {
   return createWidgetUpdateHandler(toSharedOptions(options))
 }
 
-export function createAndroidWidgetUpdateNodeHandler(
+export const createAndroidWidgetUpdateNodeHandler = (
   options: AndroidWidgetUpdateHandlerOptions
-): WidgetUpdateNodeHandler {
+): WidgetUpdateNodeHandler => {
   return createWidgetUpdateNodeHandler(toSharedOptions(options))
 }
 
-export function createAndroidWidgetUpdateExpressHandler(
+export const createAndroidWidgetUpdateExpressHandler = (
   options: AndroidWidgetUpdateHandlerOptions
-): WidgetUpdateExpressHandler {
+): WidgetUpdateExpressHandler => {
   return createWidgetUpdateExpressHandler(toSharedOptions(options))
 }

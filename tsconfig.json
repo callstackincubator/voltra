@@ -5,16 +5,17 @@
     "paths": {
       "voltra": ["./packages/voltra/src/index.ts"],
       "voltra/*": ["./packages/voltra/src/*"],
-      "@voltra/android": ["./packages/android/src/index.ts"],
-      "@voltra/android/client": ["./packages/android/src/client.ts"],
-      "@voltra/android/server": ["./packages/android/src/server.ts"],
-      "@voltra/android-server": ["./packages/android-server/src/index.ts"],
-      "@voltra/core": ["./packages/core/src/index.ts"],
-      "@voltra/ios": ["./packages/ios/src/index.ts"],
-      "@voltra/ios/client": ["./packages/ios/src/client.ts"],
-      "@voltra/ios/server": ["./packages/ios/src/server.ts"],
-      "@voltra/ios-server": ["./packages/ios-server/src/index.ts"],
-      "@voltra/server": ["./packages/server/src/index.ts"]
+      "@use-voltra/android": ["./packages/android/src/index.ts"],
+      "@use-voltra/android/client": ["./packages/android/src/client.ts"],
+      "@use-voltra/android/internal": ["./packages/android/src/internal.ts"],
+      "@use-voltra/android/server": ["./packages/android/src/server.ts"],
+      "@use-voltra/android-server": ["./packages/android-server/src/index.ts"],
+      "@use-voltra/core": ["./packages/core/src/index.ts"],
+      "@use-voltra/ios": ["./packages/ios/src/index.ts"],
+      "@use-voltra/ios/client": ["./packages/ios/src/client.ts"],
+      "@use-voltra/ios/server": ["./packages/ios/src/server.ts"],
+      "@use-voltra/ios-server": ["./packages/ios-server/src/index.ts"],
+      "@use-voltra/server": ["./packages/server/src/index.ts"]
     }
   },
   "include": ["./packages/*/src", "./example/**/*.ts", "./example/**/*.tsx"]

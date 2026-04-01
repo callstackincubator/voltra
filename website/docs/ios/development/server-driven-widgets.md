@@ -47,6 +47,7 @@ Add the `serverUpdate` option to your widget in `app.json` or `app.config.js`:
 
 - `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform`, `family`, and `theme` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=ios&family=systemSmall&theme=dark`).
 - `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. iOS WidgetKit may throttle requests; the minimum effective interval is ~15 minutes.
+- `refresh`: Whether to show a native refresh button in the top-right corner of the widget. When tapped, triggers an immediate server fetch. Defaults to `false`. Requires iOS 17+.
 
 After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native files and widget extension pick up the new server update settings.
 
@@ -178,6 +179,30 @@ For credentials to be shared between the main app and the widget extension, both
 ```
 
 If you don't specify `keychainGroup` but any widget has `serverUpdate` configured, Voltra automatically derives a default: `$(AppIdentifierPrefix)<bundleIdentifier>`.
+
+## Refresh button
+
+Server-driven widgets can display a native refresh button that lets users trigger an immediate update on demand. Enable it in your widget config:
+
+```json
+{
+  "serverUpdate": {
+    "url": "https://api.example.com/widgets/render",
+    "intervalMinutes": 30,
+    "refresh": true
+  }
+}
+```
+
+When enabled, a small circular button (↻) appears in the top-right corner of the widget. Tapping it triggers `reloadTimelines(ofKind:)` via an `AppIntent`, which causes WidgetKit to immediately fetch fresh content from your server.
+
+:::note
+The refresh button requires iOS 17+ (`AppIntent` API). On older iOS versions, the button is not shown.
+:::
+
+### Fetch coalescing
+
+When WidgetKit reloads timelines, it may call `getTimeline` multiple times for each supported family (e.g. `systemSmall`, `systemMedium`). To avoid redundant network requests, Voltra coalesces fetches within a 3-second window per widget. Only the first call triggers a server fetch; subsequent calls within the window use cached data and `selectContentForFamily` picks the correct family-specific content.
 
 ## Triggering manual refreshes
 

@@ -101,7 +101,7 @@ class VoltraRN(
                     val composeSize = DpSize(widthDp.dp, heightDp.dp)
 
                     val glanceRemoteViews = GlanceRemoteViews()
-                    val factory = GlanceFactory(id, voltraPayload.e, voltraPayload.s)
+                    val factory = GlanceFactory(id, voltraPayload.e, voltraPayload.s, composeSize)
 
                     val result =
                         withContext(Dispatchers.Default) {
