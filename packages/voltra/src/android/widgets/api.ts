@@ -5,4 +5,4 @@ export {
   reloadAndroidWidgets,
   requestPinAndroidWidget,
   updateAndroidWidget,
-} from '@use-voltra/android/client'
+} from '@use-voltra/android-client'

@@ -22,7 +22,7 @@ export {
   updateLiveActivity,
   updateWidget,
   useLiveActivity,
-} from '@use-voltra/ios/client'
+} from '@use-voltra/ios-client'
 export type {
   BasicVoltraEvent,
   DismissalPolicy,
@@ -52,4 +52,4 @@ export type {
   WidgetInfo,
   WidgetServerCredentials,
   WidgetVariants,
-} from '@use-voltra/ios/client'
+} from '@use-voltra/ios-client'

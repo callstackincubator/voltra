@@ -6,13 +6,15 @@
     "moduleResolution": "node",
     "paths": {
       "@use-voltra/android": ["../android/build/types/index.d.ts"],
-      "@use-voltra/android/client": ["../android/build/types/client.d.ts"],
+      "@use-voltra/android-client": ["../android-client/build/types/index.d.ts"],
+      "@use-voltra/android/client": ["../android-client/build/types/index.d.ts"],
       "@use-voltra/android/internal": ["../android/build/types/internal.d.ts"],
       "@use-voltra/android/server": ["../android/build/types/server.d.ts"],
       "@use-voltra/android-server": ["../android-server/build/types/index.d.ts"],
       "@use-voltra/core": ["../core/build/types/index.d.ts"],
       "@use-voltra/ios": ["../ios/build/types/index.d.ts"],
-      "@use-voltra/ios/client": ["../ios/build/types/client.d.ts"],
+      "@use-voltra/ios-client": ["../ios-client/build/types/index.d.ts"],
+      "@use-voltra/ios/client": ["../ios-client/build/types/index.d.ts"],
       "@use-voltra/ios/server": ["../ios/build/types/server.d.ts"],
       "@use-voltra/ios-server": ["../ios-server/build/types/index.d.ts"],
       "@use-voltra/server": ["../server/build/types/index.d.ts"]

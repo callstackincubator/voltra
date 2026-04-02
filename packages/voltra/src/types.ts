@@ -1,12 +1,10 @@
+export type { VoltraElementJson, VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '@use-voltra/core'
+
 export type {
   EventSubscription,
   PreloadImageFailure,
   PreloadImageOptions,
   PreloadImagesResult,
   UpdateWidgetOptions,
-  VoltraElementJson,
-  VoltraElementRef,
-  VoltraNodeJson,
-  VoltraPropValue,
   WidgetServerCredentials,
-} from '@use-voltra/core'
+} from '@use-voltra/ios'
