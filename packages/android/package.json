@@ -58,7 +58,6 @@
   "license": "MIT",
   "homepage": "https://use-voltra.dev",
   "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
+    "react": "*"
   }
 }
