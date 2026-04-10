@@ -102,9 +102,6 @@ dependencies {
   // Google Tink (encryption for credential storage)
   implementation "com.google.crypto.tink:tink-android:1.19.0"
 
-  // JSON parsing
-  implementation "com.google.code.gson:gson:2.10.1"
-
   // Coroutines
   implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
 
@@ -114,4 +111,5 @@ dependencies {
   // Unit tests
   testImplementation "junit:junit:4.13.2"
   testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1"
+  testImplementation "org.robolectric:robolectric:4.14.1"
 }

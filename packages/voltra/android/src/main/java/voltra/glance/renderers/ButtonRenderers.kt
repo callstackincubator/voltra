@@ -13,16 +13,12 @@ import androidx.glance.appwidget.components.OutlineButton
 import androidx.glance.appwidget.components.SquareIconButton
 import androidx.glance.layout.Box
 import androidx.glance.unit.ColorProvider
-import com.google.gson.Gson
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser
 import voltra.styling.toColorProvider
-
-private const val TAG = "ButtonRenderers"
-private val gson = Gson()
 
 @Composable
 fun RenderButton(

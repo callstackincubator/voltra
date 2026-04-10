@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.net.Uri
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
@@ -13,8 +12,6 @@ import androidx.glance.LocalContext
 import androidx.glance.action.Action
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.layout.ContentScale
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import voltra.glance.LocalVoltraRenderContext
 import voltra.images.VoltraImageManager
 import voltra.models.VoltraElement
@@ -22,12 +19,9 @@ import voltra.models.VoltraNode
 import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
 
-private val gson = Gson()
-private const val TAG = "RenderCommon"
-
 fun getOnClickAction(
     context: Context,
-    props: Map<String, Any>?,
+    props: Map<String, Any?>?,
     widgetId: String,
     componentId: String,
 ): Action {
@@ -66,30 +60,10 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
     if (sourceProp == null) return null
 
     val context = LocalContext.current
-    val sourceMap =
-        when (sourceProp) {
-            is String -> {
-                try {
-                    val type = object : TypeToken<Map<String, Any>>() {}.type
-                    gson.fromJson<Map<String, Any>>(sourceProp, type)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse image source JSON: $sourceProp", e)
-                    null
-                }
-            }
+    val source = parseEncodedImageSource(sourceProp) ?: return null
 
-            is Map<*, *> -> {
-                @Suppress("UNCHECKED_CAST")
-                sourceProp as? Map<String, Any>
-            }
-
-            else -> {
-                null
-            }
-        } ?: return null
-
-    val assetName = sourceMap["assetName"] as? String
-    val base64 = sourceMap["base64"] as? String
+    val assetName = source.assetName
+    val base64 = source.base64
 
     if (assetName != null) {
         // Try as drawable resource first
@@ -107,7 +81,7 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
                     return ImageProvider(Icon.createWithBitmap(bitmap))
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to decode preloaded image: $assetName", e)
+                android.util.Log.e("RenderCommon", "Failed to decode preloaded image: $assetName", e)
             }
         }
     }
@@ -120,7 +94,7 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
                 return ImageProvider(Icon.createWithBitmap(bitmap))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to decode base64 image", e)
+            android.util.Log.e("RenderCommon", "Failed to decode base64 image", e)
         }
     }
 

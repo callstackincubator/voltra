@@ -9,7 +9,7 @@ import voltra.models.VoltraNode
 class GlanceFactory(
     private val widgetId: String,
     private val sharedElements: List<VoltraNode>? = null,
-    private val sharedStyles: List<Map<String, Any>>? = null,
+    private val sharedStyles: List<Map<String, Any?>>? = null,
     private val widgetSize: DpSize? = null,
 ) {
     @Composable

@@ -83,7 +83,7 @@ describe('Hooks', () => {
 
   test('5. useReducer basic', () => {
     // Call useReducer(reducer, { count: 0 }). Verify returns [{ count: 0 }, dispatch] where dispatch is a function.
-    const reducer = (state, action) => state
+    const reducer = (state: { count: number }, _action: unknown) => state
     const initial = { count: 0 }
     let stateVal, dispatch
     const Component = () => {
@@ -97,8 +97,8 @@ describe('Hooks', () => {
 
   test('6. useReducer with init', () => {
     // Call useReducer(reducer, 5, (n) => ({ count: n * 2 })). Verify returns [{ count: 10 }, dispatch].
-    const reducer = (state, action) => state
-    const initFn = (n) => ({ count: n * 2 })
+    const reducer = (state: { count: number }, _action: unknown) => state
+    const initFn = (n: number) => ({ count: n * 2 })
     let stateVal
     const Component = () => {
       ;[stateVal] = useReducer(reducer, 5, initFn)
@@ -124,7 +124,9 @@ describe('Hooks', () => {
   test('8. useMemo with deps', () => {
     // Call useMemo(() => value, [dep1, dep2]). Verify deps array is accepted (no error) but doesn't affect static render behavior.
     const Component = () => {
-      useMemo(() => 'val', ['dep1', 'dep2'])
+      const dep1 = 'dep1'
+      const dep2 = 'dep2'
+      useMemo(() => `${dep1}:${dep2}`, [dep1, dep2])
       return <Text>test</Text>
     }
     expect(() => renderVoltraVariantToJson(<Component />)).not.toThrow()

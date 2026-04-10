@@ -152,16 +152,7 @@ fun RenderChart(
 
 @Composable
 private fun parseForegroundStyleScale(json: String?): Map<String, Int>? {
-    if (json.isNullOrEmpty()) return null
-    val pairs: List<List<String>> =
-        try {
-            val gson = com.google.gson.Gson()
-            val type = object : com.google.gson.reflect.TypeToken<List<List<String>>>() {}.type
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse foregroundStyleScale", e)
-            return null
-        }
+    val pairs = parseForegroundStyleScaleEntries(json) ?: return null
 
     val map = mutableMapOf<String, Int>()
     for (pair in pairs) {

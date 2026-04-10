@@ -216,6 +216,10 @@ export function validateProps(props: ConfigPluginProps): void {
       throw new Error('android configuration must be an object')
     }
 
+    if (props.android.enableNotifications !== undefined && typeof props.android.enableNotifications !== 'boolean') {
+      throw new Error('android.enableNotifications must be a boolean')
+    }
+
     if (props.android.widgets !== undefined) {
       if (!Array.isArray(props.android.widgets)) {
         throw new Error('android.widgets must be an array')

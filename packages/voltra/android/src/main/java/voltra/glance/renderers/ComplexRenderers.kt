@@ -9,7 +9,6 @@ import androidx.glance.LocalContext
 import androidx.glance.appwidget.components.Scaffold
 import androidx.glance.appwidget.components.TitleBar
 import androidx.glance.text.FontFamily
-import com.google.gson.Gson
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
@@ -18,9 +17,6 @@ import voltra.models.VoltraNode
 import voltra.payload.ComponentTypeID
 import voltra.styling.JSColorParser
 import voltra.styling.toColorProvider
-
-private const val TAG = "ComplexRenderers"
-private val gson = Gson()
 
 @Composable
 fun RenderTitleBar(

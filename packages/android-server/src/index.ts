@@ -1,6 +1,11 @@
 /// <reference types="node" />
 
 import { createVoltraRenderer } from '@use-voltra/core'
+export {
+  AndroidOngoingNotification,
+  renderAndroidOngoingNotificationPayload,
+  renderAndroidOngoingNotificationPayloadToJson,
+} from '@use-voltra/android/server'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
@@ -14,6 +19,18 @@ import {
 } from '@use-voltra/server'
 import { createElement, Fragment as ReactFragment, type ReactNode } from 'react'
 
+export type {
+  AndroidOngoingNotificationActionPayload,
+  AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationBigTextPayload,
+  AndroidOngoingNotificationBigTextProps,
+  AndroidOngoingNotificationContent,
+  AndroidOngoingNotificationPayload,
+  AndroidOngoingNotificationProgressPayload,
+  AndroidOngoingNotificationProgressPoint,
+  AndroidOngoingNotificationProgressProps,
+  AndroidOngoingNotificationProgressSegment,
+} from '@use-voltra/android/server'
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
@@ -34,25 +51,6 @@ export type AndroidWidgetSizeVariant = {
 }
 
 export type AndroidWidgetVariants = AndroidWidgetSizeVariant[]
-
-export type AndroidLiveUpdateVariants = {
-  collapsed?: ReactNode
-  expanded?: ReactNode
-  smallIcon?: string
-  channelId?: string
-}
-
-export type AndroidLiveUpdateVariantsJson = {
-  v: number
-  s?: Record<string, unknown>[]
-  e?: unknown[]
-  collapsed?: unknown
-  expanded?: unknown
-  smallIcon?: string
-  channelId?: string
-}
-
-export type AndroidLiveUpdateJson = AndroidLiveUpdateVariantsJson
 
 type AndroidWidgetRenderOptions = Record<string, never>
 
@@ -95,34 +93,6 @@ const getAndroidComponentId = (name: string): number => {
 
 const androidComponentRegistry = {
   getComponentId: (name: string) => getAndroidComponentId(name),
-}
-
-export const renderAndroidLiveUpdateToJson = (variants: AndroidLiveUpdateVariants): AndroidLiveUpdateJson => {
-  const renderer = createVoltraRenderer(androidComponentRegistry)
-
-  if (variants.collapsed) {
-    renderer.addRootNode('collapsed', variants.collapsed)
-  }
-
-  if (variants.expanded) {
-    renderer.addRootNode('expanded', variants.expanded)
-  }
-
-  const result = renderer.render() as AndroidLiveUpdateJson
-
-  if (variants.smallIcon) {
-    result.smallIcon = variants.smallIcon
-  }
-
-  if (variants.channelId) {
-    result.channelId = variants.channelId
-  }
-
-  return result
-}
-
-export const renderAndroidLiveUpdateToString = (variants: AndroidLiveUpdateVariants): string => {
-  return JSON.stringify(renderAndroidLiveUpdateToJson(variants))
 }
 
 export const renderAndroidWidgetToJson = (

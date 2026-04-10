@@ -7,7 +7,7 @@ export type LiveActivityExampleComponentProps = {
 }
 
 export type LiveActivityExampleComponentRef = {
-  start: () => Promise<void>
+  start: () => Promise<void | string>
   end: () => Promise<void>
   update: () => Promise<void>
 }
