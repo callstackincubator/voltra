@@ -81,7 +81,7 @@ struct FlexContainerStyleModifier: ViewModifier {
 
     content
       .modifier(LayoutModifier(style: layoutWithoutPadding))
-      .modifier(DecorationModifier(style: values.decoration))
+      .modifier(DecorationModifier(style: values.decoration, layout: layout))
       .modifier(RenderingModifier(style: values.rendering))
       .voltraIfLet(layout.margin) { c, margin in
         c.background(.clear).padding(margin)

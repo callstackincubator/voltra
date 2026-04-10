@@ -6,7 +6,7 @@ import { reloadWidgets, scheduleWidget, updateWidget, VoltraWidgetPreview, Widge
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
-import { WeatherWidget } from '~/widgets/ios/IosWeatherWidget'
+import { IosWeatherWidget } from '~/widgets/ios/IosWeatherWidget'
 import { SAMPLE_WEATHER_DATA, type WeatherCondition, type WeatherData } from '~/widgets/weather-types'
 
 const WIDGET_FAMILIES: { id: WidgetFamily; title: string; description: string }[] = [
@@ -74,9 +74,9 @@ export default function WeatherTestingScreen() {
     setIsUpdating(true)
     try {
       await updateWidget('weather', {
-        systemSmall: <WeatherWidget weather={weatherData} />,
-        systemMedium: <WeatherWidget weather={weatherData} />,
-        systemLarge: <WeatherWidget weather={weatherData} />,
+        systemSmall: <IosWeatherWidget weather={weatherData} />,
+        systemMedium: <IosWeatherWidget weather={weatherData} />,
+        systemLarge: <IosWeatherWidget weather={weatherData} />,
       })
       await reloadWidgets(['weather'])
     } catch (error) {
@@ -107,9 +107,9 @@ export default function WeatherTestingScreen() {
     setIsUpdating(true)
     try {
       await updateWidget('weather', {
-        systemSmall: <WeatherWidget weather={customWeather} />,
-        systemMedium: <WeatherWidget weather={customWeather} />,
-        systemLarge: <WeatherWidget weather={customWeather} />,
+        systemSmall: <IosWeatherWidget weather={customWeather} />,
+        systemMedium: <IosWeatherWidget weather={customWeather} />,
+        systemLarge: <IosWeatherWidget weather={customWeather} />,
       })
       await reloadWidgets(['weather'])
     } catch (error) {
@@ -237,9 +237,9 @@ export default function WeatherTestingScreen() {
 
       try {
         await updateWidget('weather', {
-          systemSmall: <WeatherWidget weather={weatherData} />,
-          systemMedium: <WeatherWidget weather={weatherData} />,
-          systemLarge: <WeatherWidget weather={weatherData} />,
+          systemSmall: <IosWeatherWidget weather={weatherData} />,
+          systemMedium: <IosWeatherWidget weather={weatherData} />,
+          systemLarge: <IosWeatherWidget weather={weatherData} />,
         })
         // Don't call reloadWidgets here to avoid resetting scheduled timelines
       } catch (error) {
@@ -348,7 +348,7 @@ export default function WeatherTestingScreen() {
           </Card.Text>
           <View style={styles.previewContainer}>
             <VoltraWidgetPreview family={selectedFamily} style={widgetPreviewStyle}>
-              <WeatherWidget weather={currentWeather} />
+              <IosWeatherWidget weather={currentWeather} />
             </VoltraWidgetPreview>
           </View>
         </Card>

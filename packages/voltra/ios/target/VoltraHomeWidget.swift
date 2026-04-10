@@ -276,6 +276,9 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
 public struct VoltraHomeWidgetView: View {
   public var entry: VoltraHomeWidgetEntry
 
+  @Environment(\.showsWidgetContainerBackground) private var showsWidgetContainerBackground
+  @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+
   public init(entry: VoltraHomeWidgetEntry) {
     self.entry = entry
   }
@@ -285,12 +288,22 @@ public struct VoltraHomeWidgetView: View {
   }
 
   public var body: some View {
+    let mappedRenderingMode = mapWidgetRenderingMode(widgetRenderingMode)
+
     Group {
       if let root = entry.rootNode {
         // No parsing here - just render the pre-parsed AST
-        let content = Voltra(root: root, activityId: "widget")
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-          .widgetURL(resolveDeepLinkURL(entry))
+        let content = Voltra(
+          root: root,
+          activityId: "widget",
+          widget: VoltraWidgetEnvironment(
+            isHomeScreenWidget: true,
+            renderingMode: mappedRenderingMode,
+            showsContainerBackground: showsWidgetContainerBackground
+          )
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .widgetURL(resolveDeepLinkURL(entry))
 
         if showRefreshButton {
           content.overlay(alignment: .topTrailing) {
@@ -304,6 +317,19 @@ public struct VoltraHomeWidgetView: View {
       }
     }
     .disableWidgetMarginsIfAvailable()
+  }
+
+  private func mapWidgetRenderingMode(_ mode: WidgetRenderingMode) -> VoltraWidgetRenderingMode {
+    switch mode {
+    case .fullColor:
+      return .fullColor
+    case .accented:
+      return .accented
+    case .vibrant:
+      return .vibrant
+    default:
+      return .unknown
+    }
   }
 
   @ViewBuilder

@@ -4,6 +4,7 @@ public struct VoltraText: VoltraView {
   public typealias Parameters = TextParameters
 
   public let element: VoltraElement
+  @Environment(\.voltraEnvironment) private var voltraEnvironment
 
   public init(_ element: VoltraElement) {
     self.element = element
@@ -58,13 +59,21 @@ public struct VoltraText: VoltraView {
       return textStyle.alignment
     }()
 
+    let resolvedColor: Color = {
+      if let widget = voltraEnvironment.widget, widget.usesReducedBackgroundPresentation {
+        return .primary
+      }
+
+      return textStyle.color
+    }()
+
     Text(.init(textContent))
       .kerning(textStyle.letterSpacing)
       .underline(textStyle.decoration == .underline || textStyle.decoration == .underlineLineThrough)
       .strikethrough(textStyle.decoration == .lineThrough || textStyle.decoration == .underlineLineThrough)
       // These technically work on View, but good to keep close
       .font(font)
-      .foregroundColor(textStyle.color)
+      .foregroundColor(resolvedColor)
       .multilineTextAlignment(alignment)
       .lineSpacing(textStyle.lineSpacing)
       .voltraIfLet(params.numberOfLines) { view, numberOfLines in
