@@ -171,10 +171,11 @@ describe('renderVoltraVariantToJson', () => {
 
   describe('Conditional rendering (optional JSX)', () => {
     test('false && Component renders nothing', () => {
+      const shouldRender = false
       const element = (
         <Voltra.VStack>
           <Voltra.Text>Start</Voltra.Text>
-          {false && <Voltra.Text>Hidden</Voltra.Text>}
+          {shouldRender && <Voltra.Text>Hidden</Voltra.Text>}
           <Voltra.Text>End</Voltra.Text>
         </Voltra.VStack>
       )
@@ -189,10 +190,11 @@ describe('renderVoltraVariantToJson', () => {
     })
 
     test('true && Component renders the component', () => {
+      const shouldRender = true
       const element = (
         <Voltra.VStack>
           <Voltra.Text>Start</Voltra.Text>
-          {true && <Voltra.Text>Visible</Voltra.Text>}
+          {shouldRender && <Voltra.Text>Visible</Voltra.Text>}
           <Voltra.Text>End</Voltra.Text>
         </Voltra.VStack>
       )
@@ -270,10 +272,12 @@ describe('renderVoltraVariantToJson', () => {
     })
 
     test('Conditional with null/undefined', () => {
+      const nullable: null = null
+      const maybeUndefined: undefined = undefined
       const element = (
         <Voltra.VStack>
-          {null && <Voltra.Text>Hidden</Voltra.Text>}
-          {undefined && <Voltra.Text>Hidden</Voltra.Text>}
+          {nullable && <Voltra.Text>Hidden</Voltra.Text>}
+          {maybeUndefined && <Voltra.Text>Hidden</Voltra.Text>}
           <Voltra.Text>Visible</Voltra.Text>
         </Voltra.VStack>
       )

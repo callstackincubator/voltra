@@ -1,5 +1,389 @@
 {
   "plugins": ["typescript", "react", "oxc"],
+  "overrides": [
+    {
+      "files": ["packages/core/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "expo", "message": "@use-voltra/core must stay platform-agnostic." },
+              { "name": "react-native", "message": "@use-voltra/core must stay platform-agnostic." },
+              { "name": "voltra", "message": "@use-voltra/core cannot depend on facade packages." },
+              { "name": "@use-voltra/server", "message": "@use-voltra/core cannot depend on server packages." },
+              { "name": "@use-voltra/ios", "message": "@use-voltra/core cannot depend on platform packages." },
+              { "name": "@use-voltra/android", "message": "@use-voltra/core cannot depend on platform packages." },
+              { "name": "@use-voltra/ios-client", "message": "@use-voltra/core cannot depend on client packages." },
+              { "name": "@use-voltra/android-client", "message": "@use-voltra/core cannot depend on client packages." },
+              { "name": "@use-voltra/ios-server", "message": "@use-voltra/core cannot depend on server packages." },
+              { "name": "@use-voltra/android-server", "message": "@use-voltra/core cannot depend on server packages." },
+              { "name": "@use-voltra/expo-plugin", "message": "@use-voltra/core cannot depend on tooling packages." },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              },
+              { "name": "@use-voltra/android/internal", "message": "Private internal APIs are not allowed here." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/server/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "expo", "message": "@use-voltra/server must stay server-safe." },
+              { "name": "react-native", "message": "@use-voltra/server must stay server-safe." },
+              { "name": "voltra", "message": "@use-voltra/server cannot depend on the facade package." },
+              { "name": "@use-voltra/ios-client", "message": "@use-voltra/server cannot depend on client packages." },
+              {
+                "name": "@use-voltra/android-client",
+                "message": "@use-voltra/server cannot depend on client packages."
+              },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              },
+              { "name": "@use-voltra/android/internal", "message": "Private internal APIs are not allowed here." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/ios/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "expo", "message": "@use-voltra/ios must stay server-safe." },
+              { "name": "react-native", "message": "@use-voltra/ios must stay server-safe." },
+              { "name": "voltra", "message": "@use-voltra/ios cannot depend on the facade package." },
+              { "name": "@use-voltra/server", "message": "@use-voltra/ios cannot depend on server utilities." },
+              { "name": "@use-voltra/android", "message": "@use-voltra/ios cannot depend on Android packages." },
+              { "name": "@use-voltra/ios-client", "message": "@use-voltra/ios cannot depend on client packages." },
+              { "name": "@use-voltra/android-client", "message": "@use-voltra/ios cannot depend on client packages." },
+              {
+                "name": "@use-voltra/ios-server",
+                "message": "@use-voltra/ios cannot depend on server renderer packages."
+              },
+              {
+                "name": "@use-voltra/android-server",
+                "message": "@use-voltra/ios cannot depend on Android server packages."
+              },
+              { "name": "@use-voltra/expo-plugin", "message": "@use-voltra/ios cannot depend on tooling packages." },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/internal",
+                "message": "Private Android internals are only allowed through the facade."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/android/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "expo", "message": "@use-voltra/android must stay server-safe." },
+              { "name": "react-native", "message": "@use-voltra/android must stay server-safe." },
+              { "name": "voltra", "message": "@use-voltra/android cannot depend on the facade package." },
+              { "name": "@use-voltra/server", "message": "@use-voltra/android cannot depend on server utilities." },
+              { "name": "@use-voltra/ios", "message": "@use-voltra/android cannot depend on iOS packages." },
+              { "name": "@use-voltra/ios-client", "message": "@use-voltra/android cannot depend on client packages." },
+              {
+                "name": "@use-voltra/android-client",
+                "message": "@use-voltra/android cannot depend on client packages."
+              },
+              {
+                "name": "@use-voltra/ios-server",
+                "message": "@use-voltra/android cannot depend on iOS server packages."
+              },
+              {
+                "name": "@use-voltra/android-server",
+                "message": "@use-voltra/android cannot depend on server renderer packages."
+              },
+              {
+                "name": "@use-voltra/expo-plugin",
+                "message": "@use-voltra/android cannot depend on tooling packages."
+              },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/internal",
+                "message": "Private Android internals are only allowed through the facade."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/ios-client/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "voltra", "message": "@use-voltra/ios-client cannot depend on the facade package." },
+              {
+                "name": "@use-voltra/core",
+                "message": "@use-voltra/ios-client should consume the iOS package surface."
+              },
+              { "name": "@use-voltra/server", "message": "@use-voltra/ios-client cannot depend on server utilities." },
+              { "name": "@use-voltra/android", "message": "@use-voltra/ios-client cannot depend on Android packages." },
+              {
+                "name": "@use-voltra/android-client",
+                "message": "@use-voltra/ios-client cannot depend on Android client packages."
+              },
+              {
+                "name": "@use-voltra/ios-server",
+                "message": "@use-voltra/ios-client cannot depend on server renderer packages."
+              },
+              {
+                "name": "@use-voltra/android-server",
+                "message": "@use-voltra/ios-client cannot depend on Android server packages."
+              },
+              {
+                "name": "@use-voltra/expo-plugin",
+                "message": "@use-voltra/ios-client cannot depend on tooling packages."
+              },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client directly instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client directly instead of legacy client subpaths."
+              },
+              { "name": "@use-voltra/android/internal", "message": "Private Android internals are not allowed here." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/android-client/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "voltra", "message": "@use-voltra/android-client cannot depend on the facade package." },
+              {
+                "name": "@use-voltra/core",
+                "message": "@use-voltra/android-client should consume the Android package surface."
+              },
+              {
+                "name": "@use-voltra/server",
+                "message": "@use-voltra/android-client cannot depend on server utilities."
+              },
+              { "name": "@use-voltra/ios", "message": "@use-voltra/android-client cannot depend on iOS packages." },
+              {
+                "name": "@use-voltra/ios-client",
+                "message": "@use-voltra/android-client cannot depend on iOS client packages."
+              },
+              {
+                "name": "@use-voltra/ios-server",
+                "message": "@use-voltra/android-client cannot depend on iOS server packages."
+              },
+              {
+                "name": "@use-voltra/android-server",
+                "message": "@use-voltra/android-client cannot depend on server renderer packages."
+              },
+              {
+                "name": "@use-voltra/expo-plugin",
+                "message": "@use-voltra/android-client cannot depend on tooling packages."
+              },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client directly instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client directly instead of legacy client subpaths."
+              },
+              { "name": "@use-voltra/android/internal", "message": "Private Android internals are not allowed here." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/ios-server/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "expo", "message": "@use-voltra/ios-server must stay server-safe." },
+              { "name": "react-native", "message": "@use-voltra/ios-server must stay server-safe." },
+              { "name": "voltra", "message": "@use-voltra/ios-server cannot depend on the facade package." },
+              { "name": "@use-voltra/android", "message": "@use-voltra/ios-server cannot depend on Android packages." },
+              {
+                "name": "@use-voltra/ios-client",
+                "message": "@use-voltra/ios-server cannot depend on client packages."
+              },
+              {
+                "name": "@use-voltra/android-client",
+                "message": "@use-voltra/ios-server cannot depend on client packages."
+              },
+              {
+                "name": "@use-voltra/android-server",
+                "message": "@use-voltra/ios-server cannot depend on Android server packages."
+              },
+              {
+                "name": "@use-voltra/expo-plugin",
+                "message": "@use-voltra/ios-server cannot depend on tooling packages."
+              },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              },
+              { "name": "@use-voltra/android/internal", "message": "Private Android internals are not allowed here." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/android-server/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "expo", "message": "@use-voltra/android-server must stay server-safe." },
+              { "name": "react-native", "message": "@use-voltra/android-server must stay server-safe." },
+              { "name": "voltra", "message": "@use-voltra/android-server cannot depend on the facade package." },
+              { "name": "@use-voltra/ios", "message": "@use-voltra/android-server cannot depend on iOS packages." },
+              {
+                "name": "@use-voltra/ios-client",
+                "message": "@use-voltra/android-server cannot depend on client packages."
+              },
+              {
+                "name": "@use-voltra/android-client",
+                "message": "@use-voltra/android-server cannot depend on client packages."
+              },
+              {
+                "name": "@use-voltra/ios-server",
+                "message": "@use-voltra/android-server cannot depend on iOS server packages."
+              },
+              {
+                "name": "@use-voltra/expo-plugin",
+                "message": "@use-voltra/android-server cannot depend on tooling packages."
+              },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              },
+              { "name": "@use-voltra/android/internal", "message": "Private Android internals are not allowed here." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/expo-plugin/src/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "voltra", "message": "@use-voltra/expo-plugin must stay installation-time only." },
+              { "name": "@use-voltra/core", "message": "@use-voltra/expo-plugin must stay installation-time only." },
+              { "name": "@use-voltra/server", "message": "@use-voltra/expo-plugin must stay installation-time only." },
+              { "name": "@use-voltra/ios", "message": "@use-voltra/expo-plugin must stay installation-time only." },
+              { "name": "@use-voltra/android", "message": "@use-voltra/expo-plugin must stay installation-time only." },
+              {
+                "name": "@use-voltra/ios-client",
+                "message": "@use-voltra/expo-plugin must stay installation-time only."
+              },
+              {
+                "name": "@use-voltra/android-client",
+                "message": "@use-voltra/expo-plugin must stay installation-time only."
+              },
+              {
+                "name": "@use-voltra/ios-server",
+                "message": "@use-voltra/expo-plugin must stay installation-time only."
+              },
+              {
+                "name": "@use-voltra/android-server",
+                "message": "@use-voltra/expo-plugin must stay installation-time only."
+              },
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              },
+              { "name": "@use-voltra/android/internal", "message": "Private Android internals are not allowed here." }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/voltra/src/**/*.{ts,tsx,js,jsx}", "packages/voltra/generator/**/*.{ts,tsx,js,jsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@use-voltra/ios/client",
+                "message": "Use @use-voltra/ios-client instead of legacy client subpaths."
+              },
+              {
+                "name": "@use-voltra/android/client",
+                "message": "Use @use-voltra/android-client instead of legacy client subpaths."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
   "ignorePatterns": [
     "build/**",
     "plugin/build/**",

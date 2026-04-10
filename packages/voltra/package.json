@@ -88,10 +88,12 @@
   "homepage": "https://use-voltra.dev",
   "dependencies": {
     "@use-voltra/android": "1.3.1",
+    "@use-voltra/android-client": "1.3.1",
     "@use-voltra/android-server": "1.3.1",
     "@use-voltra/core": "1.3.1",
     "@use-voltra/expo-plugin": "1.3.1",
     "@use-voltra/ios": "1.3.1",
+    "@use-voltra/ios-client": "1.3.1",
     "@use-voltra/ios-server": "1.3.1",
     "@use-voltra/server": "1.3.1",
     "react-is": "^19.2.0"

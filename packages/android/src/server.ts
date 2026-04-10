@@ -1,8 +1,8 @@
-export { AndroidOngoingNotification } from './live-update/components.js'
+export { AndroidOngoingNotification } from './ongoing-notification/components.js'
 export {
   renderAndroidOngoingNotificationPayload,
   renderAndroidOngoingNotificationPayloadToJson,
-} from './live-update/renderer.js'
+} from './ongoing-notification/renderer.js'
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
@@ -14,6 +14,6 @@ export type {
   AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
-} from './live-update/types.js'
+} from './ongoing-notification/types.js'
 export { renderAndroidWidgetToString } from './widgets/renderer.js'
 export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
