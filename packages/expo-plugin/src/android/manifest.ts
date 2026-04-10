@@ -4,6 +4,7 @@ import { AndroidConfig } from 'expo/config-plugins'
 import type { AndroidWidgetConfig } from '../types'
 
 export interface ConfigureAndroidManifestProps {
+  enableNotifications?: boolean
   widgets: AndroidWidgetConfig[]
 }
 
@@ -16,16 +17,54 @@ export interface ConfigureAndroidManifestProps {
  * - Widget provider metadata reference
  */
 export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProps> = (config, props) => {
-  const { widgets } = props
+  const { enableNotifications, widgets } = props
 
   return withAndroidManifest(config, (config) => {
     const mainApplication = AndroidConfig.Manifest.getMainApplicationOrThrow(config.modResults) as any
+
+    const usesPermissions = (config.modResults.manifest['uses-permission'] || []) as any[]
+    const ensurePermission = (permissionName: string) => {
+      const exists = usesPermissions.some((permission) => permission.$?.['android:name'] === permissionName)
+      if (!exists) {
+        usesPermissions.push({
+          $: {
+            'android:name': permissionName,
+          },
+        })
+      }
+    }
+
+    if (enableNotifications) {
+      ensurePermission('android.permission.POST_NOTIFICATIONS')
+      ensurePermission('android.permission.POST_PROMOTED_NOTIFICATIONS')
+    }
+
+    config.modResults.manifest['uses-permission'] = usesPermissions
+
+    const existingReceivers = (mainApplication.receiver || []) as any[]
+    const ongoingNotificationReceiverName = 'voltra.VoltraOngoingNotificationDismissedReceiver'
+
+    if (enableNotifications) {
+      const hasOngoingNotificationReceiver = existingReceivers.some(
+        (receiver: any) => receiver.$?.['android:name'] === ongoingNotificationReceiverName
+      )
+
+      if (!hasOngoingNotificationReceiver) {
+        existingReceivers.push({
+          $: {
+            'android:name': ongoingNotificationReceiverName,
+            'android:exported': 'false',
+          },
+        })
+        mainApplication.receiver = existingReceivers
+      }
+    }
+
     // Add a receiver for each widget
     for (const widget of widgets) {
       const receiverClassName = `.widget.VoltraWidget_${widget.id}Receiver`
 
       // Check if receiver already exists
-      const existingReceivers = (mainApplication.receiver || []) as any[]
       const alreadyExists = existingReceivers.some(
         (receiver: any) => receiver.$?.['android:name'] === receiverClassName
       )

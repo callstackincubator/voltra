@@ -6,6 +6,11 @@
   },
   {
     "type": "file",
+    "name": "managing-ongoing-notifications",
+    "label": "Managing Ongoing Notifications"
+  },
+  {
+    "type": "file",
     "name": "querying-active-widgets",
     "label": "Querying Active Widgets"
   },

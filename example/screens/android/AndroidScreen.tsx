@@ -62,6 +62,13 @@ const ANDROID_SECTIONS = [
       'Render text with custom fonts in Android Glance widgets using bitmap rendering. Includes Pacifico (script) and Press Start 2P (pixel) demo.',
     route: '/android-widgets/custom-fonts',
   },
+  {
+    id: 'ongoing-notifications',
+    title: 'Android Ongoing Notifications',
+    description:
+      'Test semantic Android ongoing notifications with local start, update, upsert, stop, promotion capability checks, and real notification data payloads.',
+    route: '/testing-grounds/android-ongoing-notification',
+  },
   // Add more Android-specific sections here as they are implemented
 ]
 
@@ -73,8 +80,8 @@ export default function AndroidScreen() {
       <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Voltra for Android</Text>
         <Text style={styles.subheading}>
-          Voltra for Android lets you build custom Android Widgets and Live Updates using React Native - no need to
-          write Kotlin or XML anymore.
+          Voltra for Android lets you build custom Android Widgets and ongoing notifications using React Native - no
+          need to write Kotlin or XML anymore.
         </Text>
 
         <ActiveWidgetsAndroidCard />

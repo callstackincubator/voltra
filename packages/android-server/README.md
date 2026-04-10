@@ -4,7 +4,23 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/android-server` contains the Android server rendering package for Voltra, including Android widget rendering, Android live update rendering, and Android widget update handlers.
+`@use-voltra/android-server` contains the Android server rendering package for Voltra, including:
+
+- Android widget rendering
+- Android ongoing-notification payload rendering
+- Android widget update handlers
+
+For Android ongoing notifications, render JSX into a semantic payload with:
+
+```tsx
+import { AndroidOngoingNotification, renderAndroidOngoingNotificationPayloadToJson } from '@use-voltra/android-server'
+
+const payload = renderAndroidOngoingNotificationPayloadToJson(
+  <AndroidOngoingNotification.Progress title="Driver is approaching" text="2 stops away" value={80} max={100} />
+)
+```
+
+Use this package only in backend or server-side environments. Do not import server renderers from React Native app runtime code.
 
 > [!WARNING]
 > This package is not intended to be installed directly in your app. Most apps should install `voltra` instead.

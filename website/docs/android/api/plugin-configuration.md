@@ -11,6 +11,7 @@ The Voltra Expo config plugin accepts Android-specific configuration options in 
         {
           "groupIdentifier": "group.your.bundle.identifier",
           "android": {
+            "enableNotifications": true,
             "widgets": [
               {
                 "id": "weather",
@@ -31,6 +32,20 @@ The Voltra Expo config plugin accepts Android-specific configuration options in 
 ```
 
 ## Android-Specific Configuration
+
+### `android.enableNotifications` (optional)
+
+Enables Android notification-related manifest plumbing used by Voltra features such as ongoing notifications.
+
+When enabled, the config plugin adds:
+
+- `android.permission.POST_NOTIFICATIONS`
+- `android.permission.POST_PROMOTED_NOTIFICATIONS`
+- `voltra.VoltraOngoingNotificationDismissedReceiver`
+
+This does not grant runtime notification permission automatically. Your app still needs to request notification permission on Android 13 and above.
+
+For setup and usage examples, see [Managing Android Ongoing Notifications](../development/managing-ongoing-notifications).
 
 ### `android.widgets` (optional)
 
@@ -210,6 +225,7 @@ See [Widget Pre-rendering](../development/widget-pre-rendering) for details on c
         {
           "groupIdentifier": "group.com.example.app",
           "android": {
+            "enableNotifications": true,
             "widgets": [
               {
                 "id": "voltra",

@@ -1,39 +1,131 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { PermissionsAndroid, Platform } from 'react-native'
 
 import { useUpdateOnHMR } from '../utils/index.js'
 import VoltraModule from '../VoltraModule.js'
-import { renderAndroidLiveUpdateToString } from './renderer.js'
+import { renderAndroidOngoingNotificationContent } from './renderer.js'
 import type {
-  AndroidLiveUpdateVariants,
-  StartAndroidLiveUpdateOptions,
-  UpdateAndroidLiveUpdateOptions,
-  UseAndroidLiveUpdateOptions,
-  UseAndroidLiveUpdateResult,
+  AndroidOngoingNotificationCapabilities,
+  AndroidOngoingNotificationContent,
+  AndroidOngoingNotificationFallbackBehavior,
+  AndroidOngoingNotificationInput,
+  AndroidOngoingNotificationPayload,
+  AndroidOngoingNotificationStartResult,
+  AndroidOngoingNotificationStatus,
+  AndroidOngoingNotificationStopResult,
+  AndroidOngoingNotificationUpdateResult,
+  AndroidOngoingNotificationUpsertResult,
+  StartAndroidOngoingNotificationOptions,
+  UpdateAndroidOngoingNotificationOptions,
+  UseAndroidOngoingNotificationOptions,
+  UseAndroidOngoingNotificationResult,
 } from './types.js'
+
+const NOTIFICATION_PERMISSION = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+
+const isAndroidNotificationPermissionRequired = (): boolean => {
+  return Platform.OS === 'android' && Number(Platform.Version) >= 33
+}
+
+const isAndroidOngoingNotificationPayload = (value: unknown): value is AndroidOngoingNotificationPayload => {
+  return typeof value === 'object' && value !== null && 'v' in value && 'kind' in value
+}
+
+const serializeAndroidOngoingNotificationInput = (input: AndroidOngoingNotificationInput): string => {
+  if (typeof input === 'string') {
+    return input
+  }
+
+  if (isAndroidOngoingNotificationPayload(input)) {
+    return JSON.stringify(input)
+  }
+
+  return renderAndroidOngoingNotificationContent(input)
+}
+
+const getFilteredAndroidOngoingNotificationUpdateOptions = (
+  options?: UpdateAndroidOngoingNotificationOptions | StartAndroidOngoingNotificationOptions
+): UpdateAndroidOngoingNotificationOptions | undefined => {
+  if (!options) {
+    return undefined
+  }
+
+  const filteredOptions: UpdateAndroidOngoingNotificationOptions = {}
+
+  if (options.channelId !== undefined) {
+    filteredOptions.channelId = options.channelId
+  }
+
+  if (options.smallIcon !== undefined) {
+    filteredOptions.smallIcon = options.smallIcon
+  }
+
+  if (options.deepLinkUrl !== undefined) {
+    filteredOptions.deepLinkUrl = options.deepLinkUrl
+  }
+
+  if (options.requestPromotedOngoing !== undefined) {
+    filteredOptions.requestPromotedOngoing = options.requestPromotedOngoing
+  }
+
+  if (options.fallbackBehavior !== undefined) {
+    filteredOptions.fallbackBehavior = options.fallbackBehavior as AndroidOngoingNotificationFallbackBehavior
+  }
+
+  return Object.keys(filteredOptions).length > 0 ? filteredOptions : undefined
+}
+
+const getStartAndroidOngoingNotificationOptions = (
+  _input: AndroidOngoingNotificationInput,
+  options: StartAndroidOngoingNotificationOptions
+): StartAndroidOngoingNotificationOptions => {
+  return {
+    notificationId: options.notificationId,
+    channelId: options.channelId,
+    smallIcon: options.smallIcon,
+    deepLinkUrl: options.deepLinkUrl,
+    requestPromotedOngoing: options.requestPromotedOngoing,
+    fallbackBehavior: options.fallbackBehavior,
+  }
+}
+
+const createNotFoundUpdateResult = (notificationId: string): AndroidOngoingNotificationUpdateResult => ({
+  ok: false,
+  notificationId,
+  reason: 'not_found',
+})
+
+const createNotFoundStopResult = (notificationId: string): AndroidOngoingNotificationStopResult => ({
+  ok: false,
+  notificationId,
+  reason: 'not_found',
+})
+
+export { renderAndroidOngoingNotificationPayload } from './renderer.js'
 
 /**
  * @unstable This API is experimental and may change in future versions.
  *
- * React hook for managing Android Live Updates with automatic lifecycle handling.
+ * React hook for managing Android ongoing notifications with automatic lifecycle handling.
  *
- * @param variants - The Android Live Update content variants to display
+ * @param variants - The Android ongoing notification content variants to display
  * @param options - Configuration options for the hook
  * @returns Object with start, update, end methods and isActive state
  *
  * @example
  * ```tsx
- * import { VoltraAndroid, useAndroidLiveUpdate } from 'voltra'
+ * import { AndroidOngoingNotification, useAndroidOngoingNotification } from 'voltra/android/client'
  *
- * const MyLiveUpdate = () => {
- *   const { start, update, end, isActive } = useAndroidLiveUpdate({
- *     collapsed: <VoltraAndroid.Text>Delivery arriving</VoltraAndroid.Text>,
- *     expanded: <VoltraAndroid.Column>...</VoltraAndroid.Column>,
- *     channelId: 'delivery_updates',
- *   }, {
- *     updateName: 'my-live-update',
- *     autoStart: true,
- *     autoUpdate: true
- *   })
+ * const MyOngoingNotification = () => {
+ *   const { start, update, end, isActive } = useAndroidOngoingNotification(
+ *     <AndroidOngoingNotification.Progress title="Delivery arriving" value={1} max={4} />,
+ *     {
+ *       notificationId: 'my-ongoing-notification',
+ *       channelId: 'delivery_updates',
+ *       autoStart: true,
+ *       autoUpdate: true,
+ *     }
+ *   )
  *
  *   return (
  *     <View>
@@ -43,21 +135,21 @@ import type {
  * }
  * ```
  */
-export const useAndroidLiveUpdate = (
-  variants: AndroidLiveUpdateVariants,
-  options?: UseAndroidLiveUpdateOptions
-): UseAndroidLiveUpdateResult => {
+export const useAndroidOngoingNotification = (
+  content: AndroidOngoingNotificationContent,
+  options: UseAndroidOngoingNotificationOptions
+): UseAndroidOngoingNotificationResult => {
   const [targetId, setTargetId] = useState<string | null>(() => {
-    if (options?.updateName) {
-      return isAndroidLiveUpdateActive(options.updateName) ? options.updateName : null
+    if (options.notificationId) {
+      return isAndroidOngoingNotificationActive(options.notificationId) ? options.notificationId : null
     }
     return null
   })
 
   const isActive = targetId !== null
   const optionsRef = useRef(options)
-  const variantsRef = useRef(variants)
-  const lastUpdateOptionsRef = useRef<UpdateAndroidLiveUpdateOptions | undefined>(undefined)
+  const contentRef = useRef(content)
+  const lastUpdateOptionsRef = useRef<UpdateAndroidOngoingNotificationOptions | undefined>(undefined)
 
   // Update refs when values change
   useEffect(() => {
@@ -65,53 +157,70 @@ export const useAndroidLiveUpdate = (
   }, [options])
 
   useEffect(() => {
-    variantsRef.current = variants
-  }, [variants])
+    contentRef.current = content
+  }, [content])
 
   useUpdateOnHMR()
 
-  const start = useCallback(async (options?: StartAndroidLiveUpdateOptions) => {
-    const id = await startAndroidLiveUpdate(variantsRef.current, {
-      ...optionsRef.current,
-      ...options,
-    })
-    setTargetId(id)
+  const start = useCallback(async (options?: Partial<StartAndroidOngoingNotificationOptions>) => {
+    const startOptions = { ...optionsRef.current, ...options }
+    if (!startOptions.channelId) {
+      throw new Error('[Voltra] [Android] Ongoing notifications require an explicit channelId.')
+    }
+
+    const result = await startAndroidOngoingNotification(
+      contentRef.current,
+      startOptions as StartAndroidOngoingNotificationOptions
+    )
+    if (result.ok) {
+      setTargetId(result.notificationId)
+    } else if (result.reason === 'already_exists' && isAndroidOngoingNotificationActive(result.notificationId)) {
+      setTargetId(result.notificationId)
+    }
+
+    return result
   }, [])
 
   const update = useCallback(
-    async (options?: UpdateAndroidLiveUpdateOptions) => {
+    async (options?: UpdateAndroidOngoingNotificationOptions) => {
       if (!targetId) {
-        return
+        return createNotFoundUpdateResult(optionsRef.current?.notificationId ?? 'unknown')
       }
 
       const updateOptions = { ...optionsRef.current, ...options }
       lastUpdateOptionsRef.current = updateOptions
-      await updateAndroidLiveUpdate(targetId, variantsRef.current, updateOptions)
+      return updateAndroidOngoingNotification(targetId, contentRef.current, updateOptions)
     },
     [targetId]
   )
 
   const end = useCallback(async () => {
     if (!targetId) {
-      return
+      return createNotFoundStopResult(optionsRef.current?.notificationId ?? 'unknown')
     }
 
-    await stopAndroidLiveUpdate(targetId)
-    setTargetId(null)
+    const result = await stopAndroidOngoingNotification(targetId)
+    if (result.ok || result.reason === 'not_found') {
+      setTargetId(null)
+    }
+    return result
   }, [targetId])
 
   useEffect(() => {
-    if (!options?.autoStart) {
+    if (!options.autoStart || targetId) {
       return
     }
 
-    start()
-  }, [options?.autoStart, start])
+    void start()
+  }, [options.autoStart, start, targetId])
 
   useEffect(() => {
-    if (!options?.autoUpdate) return
-    update(lastUpdateOptionsRef.current)
-  }, [options?.autoUpdate, update, variants])
+    if (!options.autoUpdate || !targetId) {
+      return
+    }
+
+    void update(lastUpdateOptionsRef.current)
+  }, [content, options.autoUpdate, targetId, update])
 
   return {
     start,
@@ -124,121 +233,180 @@ export const useAndroidLiveUpdate = (
 /**
  * @unstable This API is experimental and may change in future versions.
  *
- * Start a new Android Live Update with the provided content variants.
+ * Start a new Android ongoing notification with the provided content.
  *
- * @param variants - The Android Live Update content variants to display
- * @param options - Configuration options for the Live Update
- * @returns Promise resolving to the notification ID
+ * @param content - The Android ongoing notification content to display
+ * @param options - Configuration options for the ongoing notification
+ * @returns Promise resolving to the start result
  *
  * @example
  * ```tsx
- * import { VoltraAndroid, startAndroidLiveUpdate } from 'voltra'
+ * import { AndroidOngoingNotification, startAndroidOngoingNotification } from 'voltra/android/client'
  *
- * const notificationId = await startAndroidLiveUpdate({
- *   collapsed: <VoltraAndroid.Text>Delivery arriving</VoltraAndroid.Text>,
- *   expanded: <VoltraAndroid.Column>...</VoltraAndroid.Column>,
- *   channelId: 'delivery_updates',
- * }, {
- *   updateName: 'my-live-update',
- * })
+ * const result = await startAndroidOngoingNotification(
+ *   <AndroidOngoingNotification.Progress title="Delivery arriving" value={1} max={4} />,
+ *   {
+ *     notificationId: 'my-ongoing-notification',
+ *     channelId: 'delivery_updates',
+ *   }
+ * )
+ *
+ * if (result.ok) {
+ *   console.log(result.notificationId)
+ * }
  * ```
  */
-export const startAndroidLiveUpdate = async (
-  variants: AndroidLiveUpdateVariants,
-  options?: StartAndroidLiveUpdateOptions
-): Promise<string> => {
-  const payload = renderAndroidLiveUpdateToString(variants)
+export const startAndroidOngoingNotification = async (
+  input: AndroidOngoingNotificationInput,
+  options: StartAndroidOngoingNotificationOptions
+): Promise<AndroidOngoingNotificationStartResult> => {
+  return (await VoltraModule.startAndroidOngoingNotification(
+    serializeAndroidOngoingNotificationInput(input),
+    getStartAndroidOngoingNotificationOptions(input, options)
+  )) as AndroidOngoingNotificationStartResult
+}
 
-  const notificationId = await VoltraModule.startAndroidLiveUpdate(payload, {
-    updateName: options?.updateName,
-    channelId: options?.channelId || variants.channelId || 'voltra_live_updates',
-  })
-
-  return notificationId
+export const upsertAndroidOngoingNotification = async (
+  input: AndroidOngoingNotificationInput,
+  options: StartAndroidOngoingNotificationOptions
+): Promise<AndroidOngoingNotificationUpsertResult> => {
+  return (await VoltraModule.upsertAndroidOngoingNotification(
+    serializeAndroidOngoingNotificationInput(input),
+    getStartAndroidOngoingNotificationOptions(input, options)
+  )) as AndroidOngoingNotificationUpsertResult
 }
 
 /**
  * @unstable This API is experimental and may change in future versions.
  *
- * Update an existing Android Live Update with new content.
+ * Update an existing Android ongoing notification with new content.
  *
  * @param notificationId - The ID of the notification to update
- * @param variants - The new Android Live Update content variants
+ * @param content - The new Android ongoing notification content
  * @param options - Update options
  *
  * @example
  * ```tsx
- * import { VoltraAndroid, updateAndroidLiveUpdate } from 'voltra'
+ * import { AndroidOngoingNotification, updateAndroidOngoingNotification } from 'voltra/android/client'
  *
- * await updateAndroidLiveUpdate('notification-123', {
- *   collapsed: <VoltraAndroid.Text>Updated: Delivery arriving</VoltraAndroid.Text>,
- *   expanded: <VoltraAndroid.Column>...</VoltraAndroid.Column>,
- * })
+ * await updateAndroidOngoingNotification(
+ *   'notification-123',
+ *   <AndroidOngoingNotification.Progress title="Updated delivery" value={2} max={4} />
+ * )
  * ```
  */
-export const updateAndroidLiveUpdate = async (
+export const updateAndroidOngoingNotification = async (
   notificationId: string,
-  variants: AndroidLiveUpdateVariants,
-  options?: UpdateAndroidLiveUpdateOptions
-): Promise<void> => {
-  const payload = renderAndroidLiveUpdateToString(variants)
+  input: AndroidOngoingNotificationInput,
+  options?: UpdateAndroidOngoingNotificationOptions
+): Promise<AndroidOngoingNotificationUpdateResult> => {
+  return (await VoltraModule.updateAndroidOngoingNotification(
+    notificationId,
+    serializeAndroidOngoingNotificationInput(input),
+    getFilteredAndroidOngoingNotificationUpdateOptions(options)
+  )) as AndroidOngoingNotificationUpdateResult
+}
 
-  return VoltraModule.updateAndroidLiveUpdate(notificationId, payload)
+export const hasAndroidNotificationPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') {
+    return false
+  }
+
+  if (!isAndroidNotificationPermissionRequired()) {
+    return true
+  }
+
+  return PermissionsAndroid.check(NOTIFICATION_PERMISSION)
+}
+
+export const requestAndroidNotificationPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') {
+    return false
+  }
+
+  if (!isAndroidNotificationPermissionRequired()) {
+    return true
+  }
+
+  const result = await PermissionsAndroid.request(NOTIFICATION_PERMISSION)
+  return result === PermissionsAndroid.RESULTS.GRANTED
+}
+
+export const openAndroidNotificationSettings = async (): Promise<void> => {
+  if (Platform.OS !== 'android') {
+    return
+  }
+
+  return VoltraModule.openAndroidNotificationSettings()
 }
 
 /**
  * @unstable This API is experimental and may change in future versions.
  *
- * Stop an Android Live Update and dismiss the notification.
+ * Stop an Android ongoing notification and dismiss it.
  *
  * @param notificationId - The ID of the notification to stop
  *
  * @example
  * ```tsx
- * import { stopAndroidLiveUpdate } from 'voltra'
+ * import { stopAndroidOngoingNotification } from 'voltra'
  *
- * await stopAndroidLiveUpdate('notification-123')
+ * await stopAndroidOngoingNotification('notification-123')
  * ```
  */
-export const stopAndroidLiveUpdate = async (notificationId: string): Promise<void> => {
-  return VoltraModule.stopAndroidLiveUpdate(notificationId)
+export const stopAndroidOngoingNotification = async (
+  notificationId: string
+): Promise<AndroidOngoingNotificationStopResult> => {
+  return (await VoltraModule.stopAndroidOngoingNotification(notificationId)) as AndroidOngoingNotificationStopResult
 }
 
 /**
  * @unstable This API is experimental and may change in future versions.
  *
- * Check if an Android Live Update with the given name is currently active.
+ * Check if an Android ongoing notification with the given identifier is currently active.
  *
- * @param updateName - The name of the Live Update to check
+ * @param notificationId - The identifier of the ongoing notification to check
  * @returns true if the update is active, false otherwise
  *
  * @example
  * ```tsx
- * import { isAndroidLiveUpdateActive } from 'voltra'
+ * import { isAndroidOngoingNotificationActive } from 'voltra'
  *
- * if (isAndroidLiveUpdateActive('my-live-update')) {
+ * if (isAndroidOngoingNotificationActive('my-ongoing-notification')) {
  *   console.log('Update is running')
  * }
  * ```
  */
-export const isAndroidLiveUpdateActive = (updateName: string): boolean => {
-  return VoltraModule.isAndroidLiveUpdateActive(updateName)
+export const isAndroidOngoingNotificationActive = (notificationId: string): boolean => {
+  return VoltraModule.isAndroidOngoingNotificationActive(notificationId)
+}
+
+export const getAndroidOngoingNotificationStatus = (notificationId: string): AndroidOngoingNotificationStatus => {
+  return VoltraModule.getAndroidOngoingNotificationStatus(notificationId)
 }
 
 /**
  * @unstable This API is experimental and may change in future versions.
  *
- * End all active Android Live Updates.
+ * End all active Android ongoing notifications.
  *
- * This function stops and dismisses all currently running Live Updates in the app.
+ * This function stops and dismisses all currently running ongoing notifications in the app.
  *
  * @example
  * ```tsx
- * import { endAllAndroidLiveUpdates } from 'voltra'
+ * import { endAllAndroidOngoingNotifications } from 'voltra'
  *
- * await endAllAndroidLiveUpdates()
+ * await endAllAndroidOngoingNotifications()
  * ```
  */
-export async function endAllAndroidLiveUpdates(): Promise<void> {
-  return VoltraModule.endAllAndroidLiveUpdates()
+export async function endAllAndroidOngoingNotifications(): Promise<void> {
+  return VoltraModule.endAllAndroidOngoingNotifications()
+}
+
+export const canPostPromotedAndroidNotifications = (): boolean => {
+  return VoltraModule.canPostPromotedAndroidNotifications()
+}
+
+export const getAndroidOngoingNotificationCapabilities = (): AndroidOngoingNotificationCapabilities => {
+  return VoltraModule.getAndroidOngoingNotificationCapabilities()
 }

@@ -1,5 +1,3 @@
-import { Platform } from 'react-native'
-
 import type { EventSubscription } from './types.js'
 import VoltraModule from './VoltraModule.js'
 
@@ -8,36 +6,13 @@ export type BasicVoltraEvent = {
   timestamp: number
 }
 
-export type VoltraActivityState = 'active' | 'dismissed' | 'pending' | 'stale' | 'ended' | string
-export type VoltraActivityTokenReceivedEvent = BasicVoltraEvent & {
-  type: 'activityTokenReceived'
-  activityName: string
-  pushToken: string
-}
-export type VoltraActivityPushToStartTokenReceivedEvent = BasicVoltraEvent & {
-  type: 'activityPushToStartTokenReceived'
-  pushToStartToken: string
-}
-export type VoltraActivityUpdateEvent = BasicVoltraEvent & {
-  type: 'stateChange'
-  activityName: string
-  activityState: VoltraActivityState
-}
-
 export type VoltraInteractionEvent = BasicVoltraEvent & {
   type: 'interaction'
   identifier: string
   payload: string
 }
 
-const noopSubscription: EventSubscription = {
-  remove: () => {},
-}
-
 export type VoltraEventMap = {
-  activityTokenReceived: VoltraActivityTokenReceivedEvent
-  activityPushToStartTokenReceived: VoltraActivityPushToStartTokenReceivedEvent
-  stateChange: VoltraActivityUpdateEvent
   interaction: VoltraInteractionEvent
 }
 
@@ -45,13 +20,7 @@ export type VoltraEventMap = {
  * Add a listener for Voltra events.
  *
  * Supported events:
- * - `interaction`: User interactions with widgets (buttons, switches, checkboxes) (iOS only)
- * - `stateChange`: Live Activity state changes (iOS only)
- * - `activityTokenReceived`: Push token for Live Activity (iOS only)
- * - `activityPushToStartTokenReceived`: Push-to-start token (iOS only)
- *
- * Note: On Android, interactions open the app directly (optionally via deep links)
- * instead of emitting background events.
+ * - `interaction`: User interactions with widgets rendered inside a Voltra view.
  *
  * @param event The event type to listen for
  * @param listener Callback function to handle the event
@@ -61,10 +30,5 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
   event: K,
   listener: (event: VoltraEventMap[K]) => void
 ): EventSubscription {
-  if (Platform.OS !== 'ios') {
-    console.warn(`[Voltra] Event '${event}' is only supported on iOS. Returning no-op subscription.`)
-    return noopSubscription
-  }
-
   return VoltraModule.addListener(event, listener)
 }

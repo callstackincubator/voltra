@@ -1,115 +1,244 @@
 import type { ReactNode } from 'react'
 
-import type { VoltraNodeJson } from '../types.js'
+import type { ImageSource } from '../jsx/Image.js'
 
-/**
- * Android Live Update variants for Ongoing Notifications.
- *
- * Android ongoing notifications have a simpler structure than iOS Live Activities.
- * There's no Dynamic Island equivalent.
- */
-export type AndroidLiveUpdateVariants = {
-  /**
-   * The collapsed notification content (always visible in the notification shade).
-   * Height constraint: ~64dp
-   */
-  collapsed?: ReactNode
+export type AndroidOngoingNotificationFallbackBehavior = 'standard' | 'error'
 
-  /**
-   * The expanded notification content (visible when user expands the notification).
-   * Height constraint: up to 256dp
-   */
-  expanded?: ReactNode
-
-  /**
-   * Small icon resource name for the notification.
-   * Should reference a drawable resource (e.g., 'ic_notification')
-   */
-  smallIcon?: string
-
-  /**
-   * Notification channel ID (required on Android 8+).
-   * The channel must be created before starting the live update.
-   */
-  channelId?: string
+export type AndroidOngoingNotificationCommonDisplayProps = {
+  title?: string
+  subText?: string
+  shortCriticalText?: string
+  when?: Date | number
+  chronometer?: boolean
 }
 
-/**
- * Rendered Android Live Update variants to JSON.
- */
-export type AndroidLiveUpdateVariantsJson = {
-  /** Payload version - required for remote updates */
-  v: number
-  /** Shared stylesheet for all variants */
-  s?: Record<string, unknown>[]
-  /** Shared elements for deduplication */
-  e?: VoltraNodeJson[]
-  /** Collapsed notification content */
-  collapsed?: VoltraNodeJson
-  /** Expanded notification content */
-  expanded?: VoltraNodeJson
-  /** Small icon resource name */
-  smallIcon?: string
-  /** Notification channel ID */
-  channelId?: string
+export type AndroidOngoingNotificationProgressSegment = {
+  length: number
+  color?: string
 }
 
-/**
- * JSON representation of Android live update variants for rendering
- */
-export type AndroidLiveUpdateJson = AndroidLiveUpdateVariantsJson
+export type AndroidOngoingNotificationProgressPoint = {
+  position: number
+  color?: string
+}
+
+export type AndroidOngoingNotificationActionProps = {
+  title: string
+  deepLinkUrl: string
+  icon?: ImageSource
+}
+
+export type AndroidOngoingNotificationActionPayload = {
+  title: string
+  deepLinkUrl: string
+  icon?: ImageSource
+}
+
+export type AndroidOngoingNotificationProgressProps = AndroidOngoingNotificationCommonDisplayProps & {
+  text?: string
+  value: number
+  max: number
+  indeterminate?: boolean
+  largeIcon?: ImageSource
+  progressTrackerIcon?: ImageSource
+  progressStartIcon?: ImageSource
+  progressEndIcon?: ImageSource
+  segments?: AndroidOngoingNotificationProgressSegment[]
+  points?: AndroidOngoingNotificationProgressPoint[]
+  children?: ReactNode
+}
+
+export type AndroidOngoingNotificationBigTextProps = AndroidOngoingNotificationCommonDisplayProps & {
+  text: string
+  bigText?: string
+  largeIcon?: ImageSource
+  children?: ReactNode
+}
+
+export type AndroidOngoingNotificationProgressPayload = {
+  v: 1
+  kind: 'progress'
+  title?: string
+  subText?: string
+  text?: string
+  value: number
+  max: number
+  indeterminate?: boolean
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  largeIcon?: ImageSource
+  progressTrackerIcon?: ImageSource
+  progressStartIcon?: ImageSource
+  progressEndIcon?: ImageSource
+  segments?: AndroidOngoingNotificationProgressSegment[]
+  points?: AndroidOngoingNotificationProgressPoint[]
+  actions?: AndroidOngoingNotificationActionPayload[]
+}
+
+export type AndroidOngoingNotificationBigTextPayload = {
+  v: 1
+  kind: 'bigText'
+  title?: string
+  subText?: string
+  text: string
+  bigText?: string
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  largeIcon?: ImageSource
+  actions?: AndroidOngoingNotificationActionPayload[]
+}
+
+export type AndroidOngoingNotificationPayload =
+  | AndroidOngoingNotificationProgressPayload
+  | AndroidOngoingNotificationBigTextPayload
+
+export type AndroidOngoingNotificationContent = ReactNode
+
+export type AndroidOngoingNotificationInput =
+  | AndroidOngoingNotificationContent
+  | AndroidOngoingNotificationPayload
+  | string
 
 /**
- * Options for starting an Android Live Update
+ * Options for starting an Android ongoing notification.
  */
-export type StartAndroidLiveUpdateOptions = {
+export type StartAndroidOngoingNotificationOptions = {
   /**
-   * A unique name for this live update.
+   * A unique identifier for this ongoing notification.
    * Allows you to rebind to the same notification on app restart.
    */
-  updateName?: string
+  notificationId?: string
 
   /**
    * The notification channel ID to use.
-   * Overrides the channelId from variants if provided.
+   * The channel must already exist.
    */
-  channelId?: string
+  channelId: string
+
+  /**
+   * Small icon resource name for the notification.
+   * Overrides the smallIcon from variants if provided.
+   */
+  smallIcon?: string
+
+  /**
+   * Deep link URL to open when the notification is tapped.
+   */
+  deepLinkUrl?: string
+
+  /**
+   * Whether to request promoted ongoing presentation when supported.
+   */
+  requestPromotedOngoing?: boolean
+
+  /**
+   * Behavior when promotion is requested but unavailable.
+   */
+  fallbackBehavior?: AndroidOngoingNotificationFallbackBehavior
 }
 
 /**
- * Options for updating an Android Live Update
+ * Options for updating an Android ongoing notification.
  */
-export type UpdateAndroidLiveUpdateOptions = {
-  // Currently no additional options, but keeping for future extensibility
-}
+export type UpdateAndroidOngoingNotificationOptions = Omit<
+  Partial<StartAndroidOngoingNotificationOptions>,
+  'notificationId'
+>
 
 /**
- * Options for the useAndroidLiveUpdate hook
+ * Options for the useAndroidOngoingNotification hook.
  */
-export type UseAndroidLiveUpdateOptions = {
+export type UseAndroidOngoingNotificationOptions = StartAndroidOngoingNotificationOptions & {
   /**
-   * A unique name for this live update.
-   * Allows you to rebind to the same notification on app restart.
-   */
-  updateName?: string
-
-  /**
-   * Automatically start the live update when the component mounts.
+   * Automatically start the ongoing notification when the component mounts.
    */
   autoStart?: boolean
 
   /**
-   * Automatically update the live update when the component updates.
+   * Automatically update the ongoing notification when the component updates.
    */
   autoUpdate?: boolean
 }
 
+export type AndroidOngoingNotificationCapabilities = {
+  apiLevel: number
+  notificationsEnabled: boolean
+  supportsPromotedNotifications: boolean
+  canPostPromotedNotifications: boolean
+  canRequestPromotedOngoing: boolean
+}
+
+export type AndroidOngoingNotificationStatus = {
+  isActive: boolean
+  isDismissed: boolean
+  isPromoted?: boolean
+  hasPromotableCharacteristics?: boolean
+}
+
+export type AndroidOngoingNotificationStartResult =
+  | {
+      ok: true
+      notificationId: string
+      action: 'started'
+      reason?: undefined
+    }
+  | {
+      ok: false
+      notificationId: string
+      action?: undefined
+      reason: 'already_exists'
+    }
+
+export type AndroidOngoingNotificationUpdateResult =
+  | {
+      ok: true
+      notificationId: string
+      action: 'updated'
+      reason?: undefined
+    }
+  | {
+      ok: false
+      notificationId: string
+      action?: undefined
+      reason: 'not_found' | 'dismissed'
+    }
+
+export type AndroidOngoingNotificationUpsertResult =
+  | {
+      ok: true
+      notificationId: string
+      action: 'started' | 'updated'
+      reason?: undefined
+    }
+  | {
+      ok: false
+      notificationId: string
+      action?: undefined
+      reason: 'already_exists' | 'dismissed'
+    }
+
+export type AndroidOngoingNotificationStopResult =
+  | {
+      ok: true
+      notificationId: string
+      action: 'stopped'
+      reason?: undefined
+    }
+  | {
+      ok: false
+      notificationId: string
+      action?: undefined
+      reason: 'not_found'
+    }
+
 /**
- * Result from the useAndroidLiveUpdate hook
+ * Result from the useAndroidOngoingNotification hook.
  */
-export type UseAndroidLiveUpdateResult = {
-  start: (options?: StartAndroidLiveUpdateOptions) => Promise<void>
-  update: (options?: UpdateAndroidLiveUpdateOptions) => Promise<void>
-  end: () => Promise<void>
+export type UseAndroidOngoingNotificationResult = {
+  start: (options?: Partial<StartAndroidOngoingNotificationOptions>) => Promise<AndroidOngoingNotificationStartResult>
+  update: (options?: UpdateAndroidOngoingNotificationOptions) => Promise<AndroidOngoingNotificationUpdateResult>
+  end: () => Promise<AndroidOngoingNotificationStopResult>
   isActive: boolean
 }
