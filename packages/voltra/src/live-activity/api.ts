@@ -280,7 +280,7 @@ export const startLiveActivity = async (
   const targetId = await VoltraModule.startLiveActivity(payload, {
     target: 'liveActivity',
     deepLinkUrl: options?.deepLinkUrl,
-    activityId: options?.activityName,
+    activityName: options?.activityName,
     channelId: options?.channelId,
     ...normalizedSharedOptions,
   })
