@@ -1,9 +1,10 @@
 package voltra.parsing
 
 import android.util.Log
-import com.google.gson.Gson
 import voltra.generated.ShortNames
-import voltra.models.*
+import voltra.models.VoltraElement
+import voltra.models.VoltraNode
+import voltra.models.VoltraPayload
 
 /**
  * Utility to expand shortened keys in the Voltra payload back to their full names.
@@ -11,7 +12,6 @@ import voltra.models.*
  */
 object VoltraDecompressor {
     private const val TAG = "VoltraDecompressor"
-    private val gson = Gson()
 
     /**
      * Decompress the entire payload recursively.
@@ -42,15 +42,15 @@ object VoltraDecompressor {
      * Recursively decompress a map of props or styles.
      */
     @Suppress("UNCHECKED_CAST")
-    private fun decompressMap(map: Map<String, Any>): Map<String, Any> {
-        val result = mutableMapOf<String, Any>()
+    private fun decompressMap(map: Map<String, Any?>): Map<String, Any?> {
+        val result = mutableMapOf<String, Any?>()
 
         for ((key, value) in map) {
             val expandedKey = ShortNames.expand(key)
             val expandedValue =
                 when (value) {
                     is Map<*, *> -> {
-                        val mapValue = value as Map<String, Any>
+                        val mapValue = value as Map<String, Any?>
                         // Detect if this is a VoltraElement structure
                         if (mapValue["t"] is Number) {
                             Log.d(
@@ -67,7 +67,7 @@ object VoltraDecompressor {
                         value.map {
                             when (it) {
                                 is Map<*, *> -> {
-                                    val mapItem = it as Map<String, Any>
+                                    val mapItem = it as Map<String, Any?>
                                     // Detect elements in lists too
                                     if (mapItem["t"] is Number) {
                                         decompressElementStructure(mapItem)
@@ -98,13 +98,13 @@ object VoltraDecompressor {
      * Structure keys like "t", "i", "c" are preserved, but nested props and children are processed.
      */
     @Suppress("UNCHECKED_CAST")
-    private fun decompressElementStructure(map: Map<String, Any>): Map<String, Any> {
+    private fun decompressElementStructure(map: Map<String, Any?>): Map<String, Any?> {
         Log.d(TAG, "decompressElementStructure: Processing element with type=${map["t"]}")
         val result = map.toMutableMap()
 
         // Decompress the "p" (props) field - expand prop keys
         if (map["p"] is Map<*, *>) {
-            val originalProps = map["p"] as Map<String, Any>
+            val originalProps = map["p"] as Map<String, Any?>
             Log.d(TAG, "decompressElementStructure: Original props keys: ${originalProps.keys}")
             val decompressedProps = decompressMap(originalProps)
             Log.d(TAG, "decompressElementStructure: Decompressed props keys: ${decompressedProps.keys}")
@@ -127,7 +127,7 @@ object VoltraDecompressor {
     private fun decompressNodeValue(value: Any): Any =
         when (value) {
             is Map<*, *> -> {
-                val mapValue = value as Map<String, Any>
+                val mapValue = value as Map<String, Any?>
                 // Check if it's an element structure
                 if (mapValue["t"] is Number) {
                     decompressElementStructure(mapValue)

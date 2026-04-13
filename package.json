@@ -9,9 +9,9 @@
   "scripts": {
     "build": "npm run build --workspace voltra",
     "build:all": "turbo run build",
-    "build:plugin": "npm run build --workspace @voltrajs/expo-plugin",
+    "build:plugin": "npm run build --workspace @use-voltra/expo-plugin",
     "clean": "turbo run clean",
-    "clean:plugin": "npm run clean --workspace @voltrajs/expo-plugin",
+    "clean:plugin": "npm run clean --workspace @use-voltra/expo-plugin",
     "format:check": "npm run format:check --workspace voltra",
     "format:fix": "npm run format:fix --workspace voltra",
     "format:js:check": "prettier --check .",
@@ -40,19 +40,20 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
     "@types/node": "^20.19.25",
-    "@types/react": "~19.0.0",
+    "@types/react": "~19.2.10",
     "@types/react-is": "^19.2.0",
     "ajv": "^8.12.0",
     "expo-module-scripts": "^4.1.10",
     "oxlint": "^1.16.0",
     "prettier": "2.8.8",
-    "react": "19.0.0",
+    "react": "19.2.4",
     "ts-node": "^10.9.0",
     "turbo": "^2.8.3"
   },
   "overrides": {
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "react-test-renderer": "19.0.0"
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-test-renderer": "19.2.4",
+    "react-native": "0.83.2"
   }
 }

@@ -15,9 +15,10 @@ data class ResolvedStyle(
     val compositeStyle: CompositeStyle?,
 )
 
+@Composable
 fun resolveAndApplyStyle(
-    props: Map<String, Any>?,
-    sharedStyles: List<Map<String, Any>>?,
+    props: Map<String, Any?>?,
+    sharedStyles: List<Map<String, Any?>>?,
 ): ResolvedStyle {
     val resolvedStyle = resolveStyle(props, sharedStyles)
     val compositeStyle =
@@ -41,9 +42,9 @@ fun resolveAndApplyStyle(
  * or {"s": {...}} for inline styles.
  */
 private fun resolveStyle(
-    props: Map<String, Any>?,
-    sharedStyles: List<Map<String, Any>>?,
-): Map<String, Any>? {
+    props: Map<String, Any?>?,
+    sharedStyles: List<Map<String, Any?>>?,
+): Map<String, Any?>? {
     if (props == null) return null
 
     val styleRef = props["style"]
@@ -57,7 +58,7 @@ private fun resolveStyle(
         is Map<*, *> -> {
             // It's already an inline style
             @Suppress("UNCHECKED_CAST")
-            styleRef as? Map<String, Any>
+            styleRef as? Map<String, Any?>
         }
 
         else -> {
@@ -81,7 +82,7 @@ private fun resolveStyle(
 @Composable
 fun applyClickableIfNeeded(
     modifier: GlanceModifier,
-    props: Map<String, Any>?,
+    props: Map<String, Any?>?,
     elementId: String?,
     widgetId: String,
     componentType: Int,

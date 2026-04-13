@@ -1,11 +1,12 @@
 import { createElement } from 'react'
 
+import type { AndroidColorValue } from '../dynamic-colors.js'
 import { VOLTRA_MARK_TAG } from './BarMark.js'
 import type { ChartDataPoint } from './chart-types.js'
 
 export type PointMarkProps = {
   data: ChartDataPoint[]
-  color?: string
+  color?: AndroidColorValue
   symbol?: string
   symbolSize?: number
 }

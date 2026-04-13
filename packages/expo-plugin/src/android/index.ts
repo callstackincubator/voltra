@@ -14,7 +14,7 @@ import { configureAndroidManifest } from './manifest'
  * 3. Configure AndroidManifest (receiver entries)
  */
 export const withAndroid: ConfigPlugin<AndroidPluginProps> = (config, props) => {
-  const { widgets, userImagesPath, fonts } = props
+  const { enableNotifications, widgets, userImagesPath, fonts } = props
 
   if (!config.android?.package) {
     throw new Error(
@@ -33,6 +33,6 @@ export const withAndroid: ConfigPlugin<AndroidPluginProps> = (config, props) => 
     [generateAndroidWidgetFiles, { widgets, userImagesPath, fonts }],
 
     // 2. Configure AndroidManifest (must run after files are generated)
-    [configureAndroidManifest, { widgets }],
+    [configureAndroidManifest, { enableNotifications, widgets }],
   ])
 }

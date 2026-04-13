@@ -67,54 +67,151 @@ class VoltraModule : Module() {
                 eventBusUnsubscribe = null
             }
 
-            // Android Live Update APIs
+            // Android ongoing notification APIs
 
-            AsyncFunction("startAndroidLiveUpdate") {
+            AsyncFunction("startAndroidOngoingNotification") {
                 payload: String,
                 options: Map<String, Any?>,
                 ->
 
-                Log.d(TAG, "startAndroidLiveUpdate called")
+                Log.d(TAG, "startAndroidOngoingNotification called")
 
-                val updateName = options["updateName"] as? String
-                val channelId = options["channelId"] as? String ?: "voltra_live_updates"
-
-                Log.d(TAG, "updateName=$updateName, channelId=$channelId")
+                val ongoingNotificationOptions =
+                    AndroidOngoingNotificationOptions(
+                        notificationId = options["notificationId"] as? String,
+                        channelId = options["channelId"] as? String,
+                        smallIcon = options["smallIcon"] as? String,
+                        deepLinkUrl = options["deepLinkUrl"] as? String,
+                        requestPromotedOngoing = options["requestPromotedOngoing"] as? Boolean,
+                        fallbackBehavior = options["fallbackBehavior"] as? String,
+                    )
 
                 val result =
                     runBlocking {
-                        notificationManager.startLiveUpdate(payload, updateName, channelId)
+                        notificationManager.startOngoingNotification(payload, ongoingNotificationOptions)
                     }
 
-                Log.d(TAG, "startAndroidLiveUpdate returning: $result")
-                result
+                Log.d(TAG, "startAndroidOngoingNotification returning: $result")
+                mapOf(
+                    "ok" to result.ok,
+                    "notificationId" to result.notificationId,
+                    "action" to result.action,
+                    "reason" to result.reason,
+                )
             }
 
-            AsyncFunction("updateAndroidLiveUpdate") {
+            AsyncFunction("updateAndroidOngoingNotification") {
                 notificationId: String,
                 payload: String,
+                options: Map<String, Any?>?,
                 ->
 
-                Log.d(TAG, "updateAndroidLiveUpdate called with notificationId=$notificationId")
+                Log.d(TAG, "updateAndroidOngoingNotification called with notificationId=$notificationId")
 
-                runBlocking {
-                    notificationManager.updateLiveUpdate(notificationId, payload)
-                }
+                val ongoingNotificationOptions =
+                    AndroidOngoingNotificationOptions(
+                        channelId = options?.get("channelId") as? String,
+                        smallIcon = options?.get("smallIcon") as? String,
+                        deepLinkUrl = options?.get("deepLinkUrl") as? String,
+                        requestPromotedOngoing = options?.get("requestPromotedOngoing") as? Boolean,
+                        fallbackBehavior = options?.get("fallbackBehavior") as? String,
+                    )
 
-                Log.d(TAG, "updateAndroidLiveUpdate completed")
+                val result =
+                    runBlocking {
+                        notificationManager.updateOngoingNotification(
+                            notificationId,
+                            payload,
+                            ongoingNotificationOptions,
+                        )
+                    }
+
+                Log.d(TAG, "updateAndroidOngoingNotification returning: $result")
+                mapOf(
+                    "ok" to result.ok,
+                    "notificationId" to result.notificationId,
+                    "action" to result.action,
+                    "reason" to result.reason,
+                )
             }
 
-            AsyncFunction("stopAndroidLiveUpdate") { notificationId: String ->
-                Log.d(TAG, "stopAndroidLiveUpdate called with notificationId=$notificationId")
-                notificationManager.stopLiveUpdate(notificationId)
+            AsyncFunction("upsertAndroidOngoingNotification") {
+                payload: String,
+                options: Map<String, Any?>,
+                ->
+
+                Log.d(TAG, "upsertAndroidOngoingNotification called")
+
+                val ongoingNotificationOptions =
+                    AndroidOngoingNotificationOptions(
+                        notificationId = options["notificationId"] as? String,
+                        channelId = options["channelId"] as? String,
+                        smallIcon = options["smallIcon"] as? String,
+                        deepLinkUrl = options["deepLinkUrl"] as? String,
+                        requestPromotedOngoing = options["requestPromotedOngoing"] as? Boolean,
+                        fallbackBehavior = options["fallbackBehavior"] as? String,
+                    )
+
+                val result =
+                    runBlocking {
+                        notificationManager.upsertOngoingNotification(payload, ongoingNotificationOptions)
+                    }
+
+                Log.d(TAG, "upsertAndroidOngoingNotification returning: $result")
+                mapOf(
+                    "ok" to result.ok,
+                    "notificationId" to result.notificationId,
+                    "action" to result.action,
+                    "reason" to result.reason,
+                )
             }
 
-            Function("isAndroidLiveUpdateActive") { updateName: String ->
-                notificationManager.isLiveUpdateActive(updateName)
+            AsyncFunction("stopAndroidOngoingNotification") { notificationId: String ->
+                Log.d(TAG, "stopAndroidOngoingNotification called with notificationId=$notificationId")
+                val result = notificationManager.stopOngoingNotification(notificationId)
+                mapOf(
+                    "ok" to result.ok,
+                    "notificationId" to result.notificationId,
+                    "action" to result.action,
+                    "reason" to result.reason,
+                )
             }
 
-            AsyncFunction("endAllAndroidLiveUpdates") {
-                notificationManager.endAllLiveUpdates()
+            Function("isAndroidOngoingNotificationActive") { notificationId: String ->
+                notificationManager.isOngoingNotificationActive(notificationId)
+            }
+
+            Function("getAndroidOngoingNotificationStatus") { notificationId: String ->
+                val status = notificationManager.getOngoingNotificationStatus(notificationId)
+                mapOf(
+                    "isActive" to status.isActive,
+                    "isDismissed" to status.isDismissed,
+                    "isPromoted" to status.isPromoted,
+                    "hasPromotableCharacteristics" to status.hasPromotableCharacteristics,
+                )
+            }
+
+            AsyncFunction("endAllAndroidOngoingNotifications") {
+                notificationManager.endAllOngoingNotifications()
+            }
+
+            Function("canPostPromotedAndroidNotifications") {
+                notificationManager.canPostPromotedAndroidNotifications()
+            }
+
+            Function("getAndroidOngoingNotificationCapabilities") {
+                val capabilities = notificationManager.getOngoingNotificationCapabilities()
+                mapOf(
+                    "apiLevel" to capabilities.apiLevel,
+                    "notificationsEnabled" to capabilities.notificationsEnabled,
+                    "supportsPromotedNotifications" to capabilities.supportsPromotedNotifications,
+                    "canPostPromotedNotifications" to capabilities.canPostPromotedNotifications,
+                    "canRequestPromotedOngoing" to capabilities.canRequestPromotedOngoing,
+                )
+            }
+
+            AsyncFunction("openAndroidNotificationSettings") {
+                notificationManager.openPromotedNotificationSettings()
             }
 
             // Android Widget APIs

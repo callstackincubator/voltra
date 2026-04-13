@@ -1,7 +1,7 @@
 import React from 'react'
 
-import { BasicLiveActivityUI } from '@voltrajs-example/components/live-activities/BasicLiveActivityUI'
-import { MusicPlayerLiveActivityUI } from '@voltrajs-example/components/live-activities/MusicPlayerLiveActivityUI'
+import { BasicLiveActivityUI } from '@use-voltra-example/components/live-activities/BasicLiveActivityUI'
+import { MusicPlayerLiveActivityUI } from '@use-voltra-example/components/live-activities/MusicPlayerLiveActivityUI'
 import { renderLiveActivityToString } from '../../server.js'
 
 const getPayloadSize = async (variants: Parameters<typeof renderLiveActivityToString>[0]): Promise<number> => {

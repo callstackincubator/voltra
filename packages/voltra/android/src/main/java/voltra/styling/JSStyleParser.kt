@@ -61,7 +61,7 @@ object JSStyleParser {
     /**
      * Parse color string (delegates to JSColorParser).
      */
-    fun color(value: Any?): androidx.compose.ui.graphics.Color? = JSColorParser.parse(value)
+    fun color(value: Any?): VoltraColorValue? = JSColorParser.parse(value)
 
     /**
      * Parse edge insets using short property names from JS payload.

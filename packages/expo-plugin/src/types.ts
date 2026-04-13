@@ -199,6 +199,11 @@ export interface AndroidWidgetServerUpdateConfig {
  */
 export interface AndroidPluginConfig {
   /**
+   * Enable Android notification-related manifest plumbing used by Voltra features
+   * such as Live Updates.
+   */
+  enableNotifications?: boolean
+  /**
    * Android home screen widgets
    * Separate from iOS widgets to allow platform-specific configurations
    */
@@ -285,6 +290,7 @@ export interface IOSPluginProps {
  * Props passed to Android-related plugins
  */
 export interface AndroidPluginProps {
+  enableNotifications?: boolean
   widgets: AndroidWidgetConfig[]
   userImagesPath?: string
   fonts?: string[]

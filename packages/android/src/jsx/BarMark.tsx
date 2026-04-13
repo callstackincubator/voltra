@@ -1,12 +1,13 @@
 import { createElement } from 'react'
 
+import type { AndroidColorValue } from '../dynamic-colors.js'
 import type { ChartDataPoint } from './chart-types.js'
 
 export const VOLTRA_MARK_TAG = Symbol.for('VOLTRA_MARK_TAG')
 
 export type BarMarkProps = {
   data: ChartDataPoint[]
-  color?: string
+  color?: AndroidColorValue
   stacking?: 'grouped'
   cornerRadius?: number
   width?: number

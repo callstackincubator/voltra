@@ -31,6 +31,7 @@ object ShortNames {
             "bw" to "borderWidth",
             "b" to "bottom",
             "bs" to "buttonStyle",
+            "csa" to "chartScrollableAxes",
             "chk" to "checked",
             "clip" to "clipped",
             "c" to "color",

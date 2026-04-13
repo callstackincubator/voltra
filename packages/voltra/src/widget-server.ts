@@ -1,30 +1,30 @@
 /// <reference types="node" />
 
-import type { AndroidWidgetVariants } from '@voltrajs/android-server'
-import { createWidgetUpdateExpressHandler as createSharedWidgetUpdateExpressHandler } from '@voltrajs/server'
-import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@voltrajs/server'
-import { createWidgetUpdateNodeHandler as createSharedWidgetUpdateNodeHandler } from '@voltrajs/server'
+import type { AndroidWidgetVariants } from '@use-voltra/android-server'
+import { renderAndroidWidgetToString } from '@use-voltra/android-server'
+import { renderWidgetToString } from '@use-voltra/ios-server'
+import type { WidgetVariants } from '@use-voltra/ios-server'
+import { createWidgetUpdateExpressHandler as createSharedWidgetUpdateExpressHandler } from '@use-voltra/server'
+import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@use-voltra/server'
+import { createWidgetUpdateNodeHandler as createSharedWidgetUpdateNodeHandler } from '@use-voltra/server'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltrajs/server'
-import { renderAndroidWidgetToString } from '@voltrajs/android-server'
-import { renderWidgetToString } from '@voltrajs/ios-server'
-import type { WidgetVariants } from '@voltrajs/ios-server'
+} from '@use-voltra/server'
 
-export { renderAndroidWidgetToString } from '@voltrajs/android-server'
-export type { AndroidWidgetVariants } from '@voltrajs/android-server'
-export { renderWidgetToString } from '@voltrajs/ios-server'
-export type { WidgetVariants } from '@voltrajs/ios-server'
+export { renderAndroidWidgetToString } from '@use-voltra/android-server'
+export type { AndroidWidgetVariants } from '@use-voltra/android-server'
+export { renderWidgetToString } from '@use-voltra/ios-server'
+export type { WidgetVariants } from '@use-voltra/ios-server'
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
-} from '@voltrajs/server'
-export type { WidgetPlatform, WidgetTheme } from '@voltrajs/server'
+} from '@use-voltra/server'
+export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 /**
  * Options for creating the widget update handler.
@@ -35,30 +35,32 @@ export interface WidgetUpdateHandlerOptions {
   validateToken?: (token: string) => Promise<boolean> | boolean
 }
 
-function toSharedOptions(options: WidgetUpdateHandlerOptions) {
+const toSharedOptions = (options: WidgetUpdateHandlerOptions) => {
+  const renderAndroid = options.renderAndroid
+
   return {
     validateToken: options.validateToken,
     renderIos: async (request: WidgetRenderRequest) => {
       const variants = await options.renderIos(request)
       return variants ? renderWidgetToString(variants) : null
     },
-    renderAndroid: options.renderAndroid
+    renderAndroid: renderAndroid
       ? async (request: WidgetRenderRequest) => {
-          const variants = await options.renderAndroid?.(request)
+          const variants = await renderAndroid(request)
           return variants ? renderAndroidWidgetToString(variants) : null
         }
       : undefined,
   }
 }
 
-export function createWidgetUpdateHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateHandler {
+export const createWidgetUpdateHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateHandler => {
   return createSharedWidgetUpdateHandler(toSharedOptions(options))
 }
 
-export function createWidgetUpdateNodeHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateNodeHandler {
+export const createWidgetUpdateNodeHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateNodeHandler => {
   return createSharedWidgetUpdateNodeHandler(toSharedOptions(options))
 }
 
-export function createWidgetUpdateExpressHandler(options: WidgetUpdateHandlerOptions): WidgetUpdateExpressHandler {
+export const createWidgetUpdateExpressHandler = (options: WidgetUpdateHandlerOptions): WidgetUpdateExpressHandler => {
   return createSharedWidgetUpdateExpressHandler(toSharedOptions(options))
 }

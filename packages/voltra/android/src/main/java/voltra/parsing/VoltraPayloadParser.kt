@@ -1,23 +1,27 @@
 package voltra.parsing
 
 import android.util.Log
-import com.google.gson.GsonBuilder
-import voltra.models.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import voltra.models.VoltraPayload
 
+@OptIn(ExperimentalSerializationApi::class)
 object VoltraPayloadParser {
     private const val TAG = "VoltraPayloadParser"
 
-    private val gson =
-        GsonBuilder()
-            .registerTypeAdapter(VoltraNode::class.java, VoltraNodeDeserializer())
-            .create()
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+        }
 
     fun parse(jsonString: String): VoltraPayload {
         Log.d(TAG, "Parsing payload, length=${jsonString.length}")
         // Log first 500 chars to see the structure
         Log.d(TAG, "Payload preview: ${jsonString.take(500)}")
 
-        val rawResult = gson.fromJson(jsonString, VoltraPayload::class.java)
+        val rawResult = json.decodeFromString<VoltraPayload>(jsonString)
 
         Log.d(TAG, "Decompressing payload...")
         val result = VoltraDecompressor.decompress(rawResult)

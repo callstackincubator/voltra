@@ -3,13 +3,12 @@ package voltra.glance.renderers
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.appwidget.components.Scaffold
 import androidx.glance.appwidget.components.TitleBar
 import androidx.glance.text.FontFamily
-import androidx.glance.unit.ColorProvider
-import com.google.gson.Gson
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.resolveAndApplyStyle
@@ -17,9 +16,7 @@ import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.payload.ComponentTypeID
 import voltra.styling.JSColorParser
-
-private const val TAG = "ComplexRenderers"
-private val gson = Gson()
+import voltra.styling.toColorProvider
 
 @Composable
 fun RenderTitleBar(
@@ -45,17 +42,13 @@ fun RenderTitleBar(
 
     val textColor =
         element.p?.get("textColor")?.let {
-            JSColorParser.parse(it as String)?.let { color ->
-                ColorProvider(color)
-            }
-        } ?: androidx.glance.GlanceTheme.colors.onSurface
+            JSColorParser.parse(it as String)?.toColorProvider()
+        } ?: GlanceTheme.colors.onSurface
 
     val iconColor =
         element.p?.get("iconColor")?.let {
-            JSColorParser.parse(it as String)?.let { color ->
-                ColorProvider(color)
-            }
-        } ?: androidx.glance.GlanceTheme.colors.onSurface
+            JSColorParser.parse(it as String)?.toColorProvider()
+        } ?: GlanceTheme.colors.onSurface
 
     val fontFamilyString = element.p?.get("fontFamily") as? String
     val fontFamily =
@@ -103,10 +96,8 @@ fun RenderScaffold(
 
     val backgroundColor =
         element.p?.get("backgroundColor")?.let {
-            JSColorParser.parse(it as String)?.let { color ->
-                ColorProvider(color)
-            }
-        } ?: androidx.glance.GlanceTheme.colors.widgetBackground
+            JSColorParser.parse(it as String)?.toColorProvider()
+        } ?: GlanceTheme.colors.widgetBackground
 
     val horizontalPadding = (element.p?.get("horizontalPadding") as? Number)?.toFloat()?.dp ?: 12.dp
 

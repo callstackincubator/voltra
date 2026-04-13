@@ -1,11 +1,12 @@
 import { createElement } from 'react'
 
+import type { AndroidColorValue } from '../dynamic-colors.js'
 import { VOLTRA_MARK_TAG } from './BarMark.js'
 
 export type RuleMarkProps = {
   xValue?: string | number
   yValue?: number
-  color?: string
+  color?: AndroidColorValue
   lineWidth?: number
 }
 

@@ -1,1 +1,1 @@
-export { VoltraStyleProp, VoltraTextStyle, VoltraTextStyleProp, VoltraViewStyle } from '@voltrajs/core'
+export { VoltraStyleProp, VoltraTextStyle, VoltraTextStyleProp, VoltraViewStyle } from '@use-voltra/ios'

@@ -1,7 +1,7 @@
-import { createAndroidWidgetUpdateHandler, renderAndroidWidgetToString } from '@voltrajs/android-server'
-import { createIOSWidgetUpdateHandler, renderWidgetToString, Voltra } from '@voltrajs/ios-server'
-import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@voltrajs/server'
-import { VoltraAndroid } from '../android/index.js'
+import { createAndroidWidgetUpdateHandler, renderAndroidWidgetToString } from '@use-voltra/android-server'
+import { createIOSWidgetUpdateHandler, renderWidgetToString, Voltra } from '@use-voltra/ios-server'
+import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@use-voltra/server'
+import { AndroidDynamicColors, VoltraAndroid } from '../android/index.js'
 import { createWidgetUpdateHandler as createCompatibilityWidgetUpdateHandler } from '../widget-server.js'
 
 describe('server package split', () => {
@@ -93,6 +93,24 @@ describe('server package split', () => {
     expect(await androidResponse.text()).toBe('{"platform":"android"}')
   })
 
+  it('includes the parsed URL on the render request', async () => {
+    let renderUrl: string | undefined
+
+    const handler = createSharedWidgetUpdateHandler({
+      renderAndroid: async (request) => {
+        renderUrl = request.url.toString()
+        return '{"platform":"android"}'
+      },
+    })
+
+    const response = await handler(
+      new Request('https://example.com/widgets?widgetId=clock&platform=android&theme=dark')
+    )
+
+    expect(response.status).toBe(200)
+    expect(renderUrl).toBe('https://example.com/widgets?widgetId=clock&platform=android&theme=dark')
+  })
+
   it('serializes iOS widgets through the iOS server package adapter', async () => {
     const variants = {
       systemSmall: <Voltra.Text>Hello</Voltra.Text>,
@@ -122,6 +140,31 @@ describe('server package split', () => {
 
     expect(response.status).toBe(200)
     expect(await response.text()).toBe(renderAndroidWidgetToString(variants))
+  })
+
+  it('preserves Android semantic color tokens through server handlers', async () => {
+    const variants = [
+      {
+        size: { width: 150, height: 100 },
+        content: (
+          <VoltraAndroid.FilledButton
+            text="Hello"
+            backgroundColor={AndroidDynamicColors.primary}
+            contentColor={AndroidDynamicColors.onPrimary}
+          />
+        ),
+      },
+    ]
+    const handler = createAndroidWidgetUpdateHandler({
+      render: async () => variants,
+    })
+
+    const response = await handler(new Request('https://example.com/widgets?widgetId=clock&platform=android'))
+    const payload = await response.text()
+
+    expect(response.status).toBe(200)
+    expect(payload).toContain('"~p"')
+    expect(payload).toContain('"~op"')
   })
 
   it('keeps the root compatibility handler API unchanged', async () => {

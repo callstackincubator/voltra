@@ -20,6 +20,8 @@ import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser
 import voltra.styling.SizeValue
+import voltra.styling.resolveColor
+import java.util.Locale
 
 private const val TAG = "ChartRenderers"
 
@@ -49,7 +51,7 @@ fun RenderChart(
         return
     }
 
-    val marks = parseMarksJson(marksJson)
+    val marks = resolveChartMarksColors(parseMarksJson(marksJson))
     if (marks.isEmpty()) {
         Log.w(TAG, "Chart element has no valid marks after parsing")
         return
@@ -148,24 +150,36 @@ fun RenderChart(
     )
 }
 
+@Composable
 private fun parseForegroundStyleScale(json: String?): Map<String, Int>? {
-    if (json.isNullOrEmpty()) return null
-    return try {
-        val gson = com.google.gson.Gson()
-        val type = object : com.google.gson.reflect.TypeToken<List<List<String>>>() {}.type
-        val pairs: List<List<String>> = gson.fromJson(json, type)
-        val map = mutableMapOf<String, Int>()
-        for (pair in pairs) {
-            if (pair.size >= 2) {
-                val color = JSColorParser.parse(pair[1])
-                if (color != null) {
-                    map[pair[0]] = color.toArgb()
-                }
+    val pairs = parseForegroundStyleScaleEntries(json) ?: return null
+
+    val map = mutableMapOf<String, Int>()
+    for (pair in pairs) {
+        if (pair.size >= 2) {
+            val color = JSColorParser.parse(pair[1])?.resolveColor()
+            if (color != null) {
+                map[pair[0]] = color.toArgb()
             }
         }
-        if (map.isEmpty()) null else map
-    } catch (e: Exception) {
-        Log.w(TAG, "Failed to parse foregroundStyleScale", e)
-        null
     }
+
+    return if (map.isEmpty()) null else map
+}
+
+@Composable
+private fun resolveChartMarksColors(marks: List<WireMark>): List<WireMark> =
+    marks.map { mark ->
+        val colorString = mark.props["c"] as? String ?: return@map mark
+        val color = JSColorParser.parse(colorString)?.resolveColor() ?: return@map mark
+        mark.copy(props = mark.props + ("c" to toRgbaHexString(color.toArgb())))
+    }
+
+private fun toRgbaHexString(argb: Int): String {
+    val red = (argb shr 16) and 0xFF
+    val green = (argb shr 8) and 0xFF
+    val blue = argb and 0xFF
+    val alpha = (argb ushr 24) and 0xFF
+
+    return String.format(Locale.US, "#%02x%02x%02x%02x", red, green, blue, alpha)
 }

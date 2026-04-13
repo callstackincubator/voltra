@@ -4,6 +4,10 @@
     "lib": ["ES2020", "DOM"],
     "rootDir": "./src",
     "moduleResolution": "node",
+    "paths": {
+      "@use-voltra/android/server": ["../android/build/types/server.d.ts"],
+      "@use-voltra/android/internal": ["../android/build/types/internal.d.ts"]
+    },
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,

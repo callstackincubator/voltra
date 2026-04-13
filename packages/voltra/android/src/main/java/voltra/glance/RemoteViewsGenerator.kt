@@ -62,7 +62,7 @@ object RemoteViewsGenerator {
         context: Context,
         node: VoltraNode,
         sharedElements: List<VoltraNode>?,
-        sharedStyles: List<Map<String, Any>>?,
+        sharedStyles: List<Map<String, Any?>>?,
         size: DpSize,
     ): RemoteViews {
         // Create a new GlanceRemoteViews instance each time to avoid caching issues

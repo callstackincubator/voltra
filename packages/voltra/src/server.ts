@@ -1,6 +1,6 @@
 /// <reference types="node" />
-export { Voltra, renderLiveActivityToString, renderWidgetToString } from '@voltrajs/ios-server'
-export type { WidgetVariants } from '@voltrajs/ios-server'
+export { Voltra, renderLiveActivityToString, renderWidgetToString } from '@use-voltra/ios-server'
+export type { WidgetVariants } from '@use-voltra/ios-server'
 
 // Widget Server Update Handler
 export {

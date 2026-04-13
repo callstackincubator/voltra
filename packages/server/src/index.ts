@@ -36,6 +36,8 @@ export type WidgetRenderer = (request: WidgetRenderRequest) => WidgetRenderResul
  * Contains the widget ID, family, and any auth headers from the request.
  */
 export interface WidgetRenderRequest {
+  /** Parsed request URL, including all query parameters. */
+  url: URL
   /** The widget ID requesting an update */
   widgetId: string
   /** The platform the request is coming from */
@@ -180,6 +182,7 @@ export function createWidgetUpdateHandler(options: WidgetUpdateHandlerOptions): 
       }
 
       const renderRequest: WidgetRenderRequest = {
+        url,
         widgetId,
         platform,
         theme,

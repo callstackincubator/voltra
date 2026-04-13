@@ -4,6 +4,7 @@
 
 import type { ReactNode } from 'react'
 
+import type { AndroidColorValue } from '../../dynamic-colors.js'
 import type { VoltraAndroidBaseProps } from '../baseProps.js'
 
 export type ImageProps = VoltraAndroidBaseProps & {
@@ -18,9 +19,9 @@ export type ImageProps = VoltraAndroidBaseProps & {
   /** Opacity (0.0 to 1.0) */
   alpha?: number
   /** Tint color */
-  tintColor?: string
+  tintColor?: AndroidColorValue
   /** Background color used when the image is missing */
-  fallbackColor?: string
+  fallbackColor?: AndroidColorValue
   /** Custom fallback content rendered when the image is missing */
   fallback?: ReactNode
 }

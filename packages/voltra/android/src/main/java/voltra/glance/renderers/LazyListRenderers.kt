@@ -132,7 +132,7 @@ fun RenderLazyVerticalGrid(
     }
 }
 
-private fun extractHorizontalAlignment(props: Map<String, Any>?): Alignment.Horizontal =
+private fun extractHorizontalAlignment(props: Map<String, Any?>?): Alignment.Horizontal =
     when (props?.get("horizontalAlignment") as? String) {
         "start" -> Alignment.Horizontal.Start
         "center-horizontally" -> Alignment.Horizontal.CenterHorizontally
@@ -140,7 +140,7 @@ private fun extractHorizontalAlignment(props: Map<String, Any>?): Alignment.Hori
         else -> Alignment.Horizontal.Start
     }
 
-private fun extractVerticalAlignment(props: Map<String, Any>?): Alignment.Vertical =
+private fun extractVerticalAlignment(props: Map<String, Any?>?): Alignment.Vertical =
     when (props?.get("verticalAlignment") as? String) {
         "top" -> Alignment.Vertical.Top
         "center" -> Alignment.Vertical.CenterVertically

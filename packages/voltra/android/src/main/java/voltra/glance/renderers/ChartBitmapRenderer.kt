@@ -6,11 +6,9 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
-import android.util.Log
 import androidx.compose.ui.graphics.toArgb
 import voltra.styling.JSColorParser
-
-private const val TAG = "ChartBitmapRenderer"
+import voltra.styling.VoltraColorValue
 
 private val DEFAULT_PALETTE =
     intArrayOf(
@@ -45,24 +43,19 @@ data class SectorPoint(
 )
 
 fun parseMarksJson(marksJson: String): List<WireMark> {
-    return try {
-        val gson = com.google.gson.Gson()
-        val type = object : com.google.gson.reflect.TypeToken<List<List<Any>>>() {}.type
-        val outer: List<List<Any>> = gson.fromJson(marksJson, type)
-        outer.mapNotNull { row ->
-            if (row.size < 3) return@mapNotNull null
-            val markType = row[0] as? String ?: return@mapNotNull null
+    return parseMarksTuples(marksJson).mapNotNull { row ->
+        if (row.size < 3) return@mapNotNull null
+        val markType = row[0] as? String ?: return@mapNotNull null
 
-            @Suppress("UNCHECKED_CAST")
-            val data = row[1] as? List<List<Any>>
+        @Suppress("UNCHECKED_CAST")
+        val data =
+            (row[1] as? List<*>)?.mapNotNull { point ->
+                (point as? List<*>)?.toList() as? List<Any>
+            }
 
-            @Suppress("UNCHECKED_CAST")
-            val props = (row[2] as? Map<String, Any>) ?: emptyMap()
-            WireMark(markType, data, props)
-        }
-    } catch (e: Exception) {
-        Log.w(TAG, "Failed to parse marks JSON", e)
-        emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val props = row[2] as? Map<String, Any> ?: emptyMap()
+        WireMark(markType, data, props)
     }
 }
 
@@ -92,7 +85,10 @@ private fun extractSectorPoints(data: List<List<Any>>?): List<SectorPoint> {
 private fun wireColor(props: Map<String, Any>): Int? {
     val colorStr = props["c"] as? String ?: return null
     return try {
-        JSColorParser.parse(colorStr)?.toArgb()
+        when (val color = JSColorParser.parse(colorStr)) {
+            is VoltraColorValue.Static -> color.color.toArgb()
+            else -> null
+        }
     } catch (_: Exception) {
         null
     }

@@ -7,7 +7,7 @@ import voltra.models.VoltraNode
 data class VoltraRenderContext(
     val widgetId: String,
     val sharedElements: List<VoltraNode>? = null,
-    val sharedStyles: List<Map<String, Any>>? = null,
+    val sharedStyles: List<Map<String, Any?>>? = null,
     val widgetSize: DpSize? = null,
 )
 

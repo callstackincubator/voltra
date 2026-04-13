@@ -1,17 +1,12 @@
 {
   "expo": {
     "name": "Voltra Example",
-    "slug": "voltra-example",
+    "slug": "voltra",
     "scheme": "voltra",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/voltra-icon.jpg",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "androidNavigationBar": {
-      "visible": "edgeToEdge",
-      "barStyle": "light-content"
-    },
     "splash": {
       "image": "./assets/voltra-splash.jpg",
       "resizeMode": "cover",
@@ -61,6 +56,7 @@
             }
           ],
           "android": {
+            "enableNotifications": true,
             "widgets": [
               {
                 "id": "voltra",
@@ -128,6 +124,21 @@
                   "intervalMinutes": 15,
                   "refresh": true
                 }
+              },
+              {
+                "id": "material_colors",
+                "displayName": "Material Colors Widget",
+                "description": "Compare client-side and server-side rendering with Android dynamic colors",
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
+                "resizeMode": "horizontal|vertical",
+                "widgetCategory": "home_screen",
+                "initialStatePath": "./widgets/android/android-material-colors-initial.tsx",
+                "serverUpdate": {
+                  "url": "http://10.0.2.2:3333",
+                  "intervalMinutes": 15,
+                  "refresh": true
+                }
               }
             ]
           },
@@ -139,6 +150,13 @@
           ]
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "color": "#8232FF",
+          "defaultChannel": "voltra_live_updates"
+        }
+      ],
       "expo-router",
       [
         "expo-build-properties",
@@ -148,6 +166,28 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "VoltraExampleLiveActivity",
+                  "bundleIdentifier": "com.callstackincubator.voltraexample.VoltraExampleLiveActivity",
+                  "entitlements": {
+                    "com.apple.security.application-groups": ["group.callstackincubator.voltraexample"]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "531aac5b-d8a5-4263-8ac3-7eaf19e75021"
+      },
+      "router": {}
+    },
+    "owner": "aitwar"
   }
 }

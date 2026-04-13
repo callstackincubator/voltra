@@ -66,6 +66,7 @@ const withVoltra: VoltraConfigPlugin = (config, props = {}) => {
   // Apply Android configuration (files, manifest)
   if (props.android) {
     config = withAndroid(config, {
+      enableNotifications: props.android.enableNotifications,
       widgets: props.android.widgets ?? [],
       ...(props?.fonts ? { fonts: props.fonts } : {}),
     })

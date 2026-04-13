@@ -12,6 +12,10 @@ Android widgets have different layout and styling rules compared to iOS Live Act
 
 Voltra abstracts these differences where possible, but provides platform-specific namespaces to ensure your UI looks and behaves correctly on each platform.
 
+Voltra also exposes Android-specific semantic dynamic colors through `AndroidDynamicColors`, which lets widgets follow the current Material palette without requiring a JavaScript re-render. See [Dynamic Colors](./development/dynamic-colors).
+
+Voltra also supports Android ongoing notifications for app-driven, persistent status updates. See [Managing Android Ongoing Notifications](./development/managing-ongoing-notifications).
+
 ### Simple Android Widget
 
 ```tsx
@@ -63,3 +67,5 @@ Learn more in the [Testing and Previews guide](./development/testing-and-preview
 ## Next Steps
 
 Check out the [Setup guide](./setup) to set up Voltra for Android.
+
+For notification-based experiences, see [Managing Android Ongoing Notifications](./development/managing-ongoing-notifications).

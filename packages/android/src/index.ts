@@ -1,5 +1,10 @@
 // Android component namespace
 export * as VoltraAndroid from './jsx/primitives.js'
+export { AndroidDynamicColors } from './dynamic-colors.js'
+export { renderAndroidLiveUpdateToJson, renderAndroidLiveUpdateToString } from './live-update/renderer.js'
+export { AndroidOngoingNotification } from './ongoing-notification/components.js'
+export { renderAndroidOngoingNotificationPayload } from './ongoing-notification/renderer.js'
+export { renderAndroidViewToJson, renderAndroidWidgetToJson, renderAndroidWidgetToString } from './widgets/renderer.js'
 
 // Android types
 export type { VoltraAndroidBaseProps } from './jsx/baseProps.js'
@@ -9,6 +14,60 @@ export type {
   VoltraAndroidTextStyleProp,
   VoltraAndroidViewStyle,
 } from './styles/types.js'
+export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
+export type {
+  AndroidLiveUpdateJson,
+  AndroidLiveUpdateVariants,
+  AndroidLiveUpdateVariantsJson,
+  StartAndroidLiveUpdateOptions,
+  UpdateAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateOptions,
+  UseAndroidLiveUpdateResult,
+} from './live-update/types.js'
+export type {
+  EventSubscription,
+  PreloadImageFailure,
+  PreloadImageOptions,
+  PreloadImagesResult,
+  VoltraElementJson,
+  VoltraElementRef,
+  VoltraNodeJson,
+  VoltraPropValue,
+  WidgetServerCredentials,
+} from './types.js'
+export type {
+  AndroidWidgetSize,
+  AndroidWidgetSizeVariant,
+  AndroidWidgetVariants,
+  UpdateAndroidWidgetOptions,
+  WidgetInfo,
+} from './widgets/types.js'
+
+export type {
+  AndroidOngoingNotificationActionPayload,
+  AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationBigTextPayload,
+  AndroidOngoingNotificationBigTextProps,
+  AndroidOngoingNotificationCapabilities,
+  AndroidOngoingNotificationCommonDisplayProps,
+  AndroidOngoingNotificationContent,
+  AndroidOngoingNotificationFallbackBehavior,
+  AndroidOngoingNotificationInput,
+  AndroidOngoingNotificationPayload,
+  AndroidOngoingNotificationProgressPayload,
+  AndroidOngoingNotificationProgressPoint,
+  AndroidOngoingNotificationProgressProps,
+  AndroidOngoingNotificationProgressSegment,
+  AndroidOngoingNotificationStartResult,
+  AndroidOngoingNotificationStatus,
+  AndroidOngoingNotificationStopResult,
+  AndroidOngoingNotificationUpdateResult,
+  AndroidOngoingNotificationUpsertResult,
+  StartAndroidOngoingNotificationOptions,
+  UpdateAndroidOngoingNotificationOptions,
+  UseAndroidOngoingNotificationOptions,
+  UseAndroidOngoingNotificationResult,
+} from './ongoing-notification/types.js'
 
 // Component prop types
 export type { BoxProps } from './jsx/Box.js'
