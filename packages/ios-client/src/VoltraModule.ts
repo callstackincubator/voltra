@@ -11,7 +11,7 @@ import type {
 export type StartVoltraOptions = {
   target?: string
   deepLinkUrl?: string
-  activityId?: string
+  activityName?: string
   staleDate?: number
   relevanceScore?: number
   channelId?: string
