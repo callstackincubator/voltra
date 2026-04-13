@@ -12,12 +12,6 @@
       "import": "./build/esm/index.js",
       "default": "./build/esm/index.js"
     },
-    "./client": {
-      "types": "./build/types/client.d.ts",
-      "require": "./build/cjs/client.js",
-      "import": "./build/esm/client.js",
-      "default": "./build/esm/client.js"
-    },
     "./server": {
       "types": "./build/types/server.d.ts",
       "require": "./build/cjs/server.js",
@@ -58,8 +52,6 @@
   "license": "MIT",
   "homepage": "https://use-voltra.dev",
   "peerDependencies": {
-    "expo": "*",
-    "react": "*",
-    "react-native": "*"
+    "react": "*"
   }
 }

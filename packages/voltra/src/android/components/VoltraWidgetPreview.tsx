@@ -1,5 +1,1 @@
-export {
-  VoltraWidgetPreview,
-  type AndroidWidgetFamily,
-  type VoltraWidgetPreviewProps,
-} from '@use-voltra/android/client'
+export { VoltraWidgetPreview, type VoltraWidgetPreviewProps } from '@use-voltra/android-client'
