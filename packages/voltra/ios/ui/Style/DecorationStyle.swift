@@ -11,6 +11,8 @@ struct DecorationStyle {
 
 struct DecorationModifier: ViewModifier {
   let style: DecorationStyle
+  let layout: LayoutStyle?
+  @Environment(\.voltraEnvironment) private var voltraEnvironment
 
   private func point(from unitPoint: UnitPoint, in size: CGSize) -> CGPoint {
     CGPoint(x: unitPoint.x * size.width, y: unitPoint.y * size.height)
@@ -105,9 +107,43 @@ struct DecorationModifier: ViewModifier {
     .allowsHitTesting(false)
   }
 
+  private var suppressesDecorativeContainerEffects: Bool {
+    voltraEnvironment.widget?.suppressesDecorativeContainerEffects == true
+  }
+
+  private var isFullBleedBackgroundCandidate: Bool {
+    guard let layout else { return false }
+
+    if let flex = layout.flex, flex > 0 {
+      return true
+    }
+
+    if layout.flexGrow > 0 {
+      return true
+    }
+
+    return layout.width == .fill && layout.height == .fill
+  }
+
+  private var resolvedBackgroundColor: BackgroundValue? {
+    guard suppressesDecorativeContainerEffects, isFullBleedBackgroundCandidate else {
+      return style.backgroundColor
+    }
+
+    return nil
+  }
+
+  private var resolvedGlassEffect: GlassEffect? {
+    guard suppressesDecorativeContainerEffects else {
+      return style.glassEffect
+    }
+
+    return nil
+  }
+
   func body(content: Content) -> some View {
     content
-      .voltraIfLet(style.backgroundColor) { content, bg in
+      .voltraIfLet(resolvedBackgroundColor) { content, bg in
         switch bg {
         case let .color(color):
           content.background(color)
@@ -151,7 +187,7 @@ struct DecorationModifier: ViewModifier {
             y: shadow.offset.height
           )
       }
-      .voltraIfLet(style.glassEffect) { content, glassEffect in
+      .voltraIfLet(resolvedGlassEffect) { content, glassEffect in
         if #available(iOS 26.0, *) {
           switch glassEffect {
           case .clear:

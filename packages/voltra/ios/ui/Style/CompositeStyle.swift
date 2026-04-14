@@ -20,7 +20,7 @@ struct CompositeStyleModifier: ViewModifier {
         content
           .voltraIfLet(layout.padding) { c, p in c.padding(p) }
           .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: contentAlignment)
-          .modifier(DecorationModifier(style: decoration))
+          .modifier(DecorationModifier(style: decoration, layout: layout))
           .modifier(RenderingModifier(style: rendering))
           .layoutValue(key: FlexItemLayoutKey.self, value: FlexItemValues(
             flexGrow: layout.flexGrow,
@@ -53,7 +53,7 @@ struct CompositeStyleModifier: ViewModifier {
               alignment: alignment
             )
           }
-          .modifier(DecorationModifier(style: decoration))
+          .modifier(DecorationModifier(style: decoration, layout: layout))
           .modifier(RenderingModifier(style: rendering))
       }
     }
