@@ -25,11 +25,11 @@ import {
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent.js'
 import { shorten } from '../payload/short-names.js'
+import { serializeResolvablePropValue, serializeStyleObject } from '../resolvable/serialize.js'
 import { VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'
 import { ContextRegistry, getContextRegistry } from './context-registry.js'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher.js'
 import { createElementRegistry, type ElementRegistry, preScanForDuplicates } from './element-registry.js'
-import { flattenStyle } from './flatten-styles.js'
 import { getRenderCache, type RenderCache } from './render-cache.js'
 import { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry.js'
 
@@ -306,35 +306,6 @@ export const renderVariantToJson = (element: ReactNode, componentRegistry: Compo
   return renderNode(element, context)
 }
 
-function compressStyleObject(style: any): any {
-  if (style === null || style === undefined) {
-    return style
-  }
-
-  const flattened = flattenStyle(style)
-  const compressed: Record<string, any> = {}
-
-  for (const [key, value] of Object.entries(flattened)) {
-    const shortKey = shorten(key)
-
-    if (value === null || value === undefined) {
-      continue
-    }
-
-    if (typeof value === 'object' && !Array.isArray(value) && value.constructor === Object) {
-      const compressedNested: Record<string, any> = {}
-      for (const [nestedKey, nestedValue] of Object.entries(value)) {
-        compressedNested[nestedKey] = nestedValue
-      }
-      compressed[shortKey] = compressedNested
-    } else {
-      compressed[shortKey] = value
-    }
-  }
-
-  return compressed
-}
-
 function isReactNode(value: unknown): value is ReactNode {
   if (value === null || value === undefined || value === false || value === true) {
     return false
@@ -364,7 +335,7 @@ export function transformProps(
         const index = context.stylesheetRegistry.registerStyle(value as object)
         transformed[shortKey] = index
       } else {
-        transformed[shortKey] = compressStyleObject(value)
+        transformed[shortKey] = serializeStyleObject(value) as VoltraPropValue
       }
     } else if (isReactNode(value)) {
       const serializedComponent = renderNode(value, {
@@ -379,14 +350,14 @@ export function transformProps(
       transformed[shortKey] = serializedComponent
     } else {
       const shortKey = shorten(key)
-      transformed[shortKey] = value as VoltraPropValue
+      transformed[shortKey] = serializeResolvablePropValue(value)
     }
   }
 
   return transformed
 }
 
-export const VOLTRA_PAYLOAD_VERSION = 1
+export const VOLTRA_PAYLOAD_VERSION = 2
 
 export const createVoltraRenderer = (componentRegistry: ComponentRegistry) => {
   const rootNodes: { name: string; node: ReactNode }[] = []

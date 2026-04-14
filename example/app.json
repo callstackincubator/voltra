@@ -53,6 +53,13 @@
                 "intervalMinutes": 15,
                 "refresh": true
               }
+            },
+            {
+              "id": "resolvable_playground",
+              "displayName": "Resolvable Values",
+              "description": "Minimal widget playground for runtime env resolution",
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "initialStatePath": "./widgets/ios/ios-resolvable-playground-initial.tsx"
             }
           ],
           "android": {

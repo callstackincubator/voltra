@@ -20,6 +20,9 @@ public struct VoltraElement: Hashable {
   /// Optional shared elements for resolving element references
   public let sharedElements: [JSONValue]?
 
+  /// Runtime-only values used when resolving wrapped payload expressions.
+  public let resolvableEnvironment: ResolvableEnvironment
+
   // MARK: - Hashable
 
   public func hash(into hasher: inout Hasher) {
@@ -27,13 +30,35 @@ public struct VoltraElement: Hashable {
     hasher.combine(id)
     hasher.combine(children)
     hasher.combine(_props)
+    hasher.combine(resolvableEnvironment)
   }
 
   public static func == (lhs: VoltraElement, rhs: VoltraElement) -> Bool {
     lhs.type == rhs.type &&
       lhs.id == rhs.id &&
       lhs.children == rhs.children &&
-      lhs._props == rhs._props
+      lhs._props == rhs._props &&
+      lhs.resolvableEnvironment == rhs.resolvableEnvironment
+  }
+
+  private static let emptyJSONObjectData = Data("{}".utf8)
+
+  private init(
+    type: String,
+    id: String?,
+    children: VoltraNode?,
+    props: [String: JSONValue]?,
+    stylesheet: [[String: JSONValue]]?,
+    sharedElements: [JSONValue]?,
+    resolvableEnvironment: ResolvableEnvironment
+  ) {
+    self.type = type
+    self.id = id
+    self.children = children
+    _props = props
+    self.stylesheet = stylesheet
+    self.sharedElements = sharedElements
+    self.resolvableEnvironment = resolvableEnvironment
   }
 
   // MARK: - Computed Properties
@@ -45,7 +70,7 @@ public struct VoltraElement: Hashable {
     for (key, value) in props {
       // Expand short key to full name using unified ShortNames mapping
       let fullKey = ShortNames.expand(key)
-      expanded[fullKey] = value
+      expanded[fullKey] = resolveValueIfNeeded(value)
     }
     return expanded.isEmpty ? nil : expanded
   }
@@ -63,7 +88,7 @@ public struct VoltraElement: Hashable {
        let stylesheet = stylesheet,
        index >= 0, index < stylesheet.count
     {
-      styleDict = stylesheet[index]
+     styleDict = stylesheet[index]
     }
     // Handle inline style (object)
     else if let objectValue = styleValue.objectValue {
@@ -76,7 +101,7 @@ public struct VoltraElement: Hashable {
     for (key, value) in styleDict {
       // Use unified ShortNames mapping for style properties
       let expandedKey = ShortNames.expand(key)
-      expanded[expandedKey] = value
+      expanded[expandedKey] = resolveValueIfNeeded(value)
     }
 
     return expanded
@@ -124,6 +149,21 @@ public struct VoltraElement: Hashable {
 
     // Store shared elements reference
     self.sharedElements = sharedElements
+
+    // Resolvable payloads are evaluated lazily against the runtime environment.
+    resolvableEnvironment = .init()
+  }
+
+  public func withResolvableEnvironment(_ environment: ResolvableEnvironment) -> VoltraElement {
+    .init(
+      type: type,
+      id: id,
+      children: children,
+      props: _props,
+      stylesheet: stylesheet,
+      sharedElements: sharedElements,
+      resolvableEnvironment: environment
+    )
   }
 
   /// Get component prop by name - handles both single component and array
@@ -137,7 +177,7 @@ public struct VoltraElement: Hashable {
   public func parameters<T: Decodable>(_: T.Type) -> T {
     guard let props = props else {
       // Return default instance if decoding fails
-      return try! JSONDecoder().decode(T.self, from: "{}".data(using: .utf8)!)
+      return try! JSONDecoder().decode(T.self, from: Self.emptyJSONObjectData)
     }
 
     do {
@@ -147,7 +187,30 @@ public struct VoltraElement: Hashable {
       return try JSONDecoder().decode(T.self, from: jsonData)
     } catch {
       // Return default instance if decoding fails
-      return try! JSONDecoder().decode(T.self, from: "{}".data(using: .utf8)!)
+      return try! JSONDecoder().decode(T.self, from: Self.emptyJSONObjectData)
+    }
+  }
+
+  private func resolveValueIfNeeded(_ value: JSONValue) -> JSONValue {
+    guard containsResolvableValue(value) else {
+      return value
+    }
+
+    return ResolvableValueEvaluator.resolve(value, environment: resolvableEnvironment)
+  }
+
+  private func containsResolvableValue(_ value: JSONValue) -> Bool {
+    switch value {
+    case .null, .bool, .int, .double, .string:
+      return false
+    case let .array(items):
+      return items.contains(where: containsResolvableValue)
+    case let .object(object):
+      if object.keys.contains(ResolvableWireKey.sentinel) {
+        return true
+      }
+
+      return object.values.contains(where: containsResolvableValue)
     }
   }
 }

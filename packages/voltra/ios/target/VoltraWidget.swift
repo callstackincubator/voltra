@@ -42,7 +42,11 @@ public struct VoltraWidget: Widget {
 
   private func defaultConfig() -> some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
-      Voltra(root: rootNode(for: .lockScreen, from: context.state), activityId: context.activityID)
+      Voltra(
+        root: rootNode(for: .lockScreen, from: context.state),
+        activityId: context.activityID,
+        resolvableEnvironment: .init()
+      )
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
         .voltraIfLet(context.state.activityBackgroundTint) { view, tint in
           let color = JSColorParser.parse(tint)
@@ -65,29 +69,29 @@ public struct VoltraWidget: Widget {
   private func dynamicIslandContent(context: ActivityViewContext<VoltraAttributes>) -> DynamicIsland {
     let dynamicIsland = DynamicIsland {
       DynamicIslandExpandedRegion(.leading) {
-        Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID)
+        Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID, resolvableEnvironment: .init())
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       }
       DynamicIslandExpandedRegion(.trailing) {
-        Voltra(root: rootNode(for: .islandExpandedTrailing, from: context.state), activityId: context.activityID)
+        Voltra(root: rootNode(for: .islandExpandedTrailing, from: context.state), activityId: context.activityID, resolvableEnvironment: .init())
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       }
       DynamicIslandExpandedRegion(.center) {
-        Voltra(root: rootNode(for: .islandExpandedCenter, from: context.state), activityId: context.activityID)
+        Voltra(root: rootNode(for: .islandExpandedCenter, from: context.state), activityId: context.activityID, resolvableEnvironment: .init())
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       }
       DynamicIslandExpandedRegion(.bottom) {
-        Voltra(root: rootNode(for: .islandExpandedBottom, from: context.state), activityId: context.activityID)
+        Voltra(root: rootNode(for: .islandExpandedBottom, from: context.state), activityId: context.activityID, resolvableEnvironment: .init())
           .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
       }
     } compactLeading: {
-      Voltra(root: rootNode(for: .islandCompactLeading, from: context.state), activityId: context.activityID)
+      Voltra(root: rootNode(for: .islandCompactLeading, from: context.state), activityId: context.activityID, resolvableEnvironment: .init())
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
     } compactTrailing: {
-      Voltra(root: rootNode(for: .islandCompactTrailing, from: context.state), activityId: context.activityID)
+      Voltra(root: rootNode(for: .islandCompactTrailing, from: context.state), activityId: context.activityID, resolvableEnvironment: .init())
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
     } minimal: {
-      Voltra(root: rootNode(for: .islandMinimal, from: context.state), activityId: context.activityID)
+      Voltra(root: rootNode(for: .islandMinimal, from: context.state), activityId: context.activityID, resolvableEnvironment: .init())
         .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
     }
 
@@ -130,17 +134,17 @@ private struct VoltraAdaptiveLockScreenView: View {
 
     // 1. Try dedicated Watch region
     if let nodes = context.state.regions[.supplementalActivityFamiliesSmall], !nodes.isEmpty {
-      Voltra(root: rootNodeProvider(.supplementalActivityFamiliesSmall, context.state), activityId: context.activityID)
+      Voltra(root: rootNodeProvider(.supplementalActivityFamiliesSmall, context.state), activityId: context.activityID, resolvableEnvironment: .init())
     }
     // 2. Compose from compact Dynamic Island regions
     else if hasCompactContent {
       HStack(spacing: 0) {
         if !leading.isEmpty {
-          Voltra(root: rootNodeProvider(.islandCompactLeading, context.state), activityId: context.activityID)
+          Voltra(root: rootNodeProvider(.islandCompactLeading, context.state), activityId: context.activityID, resolvableEnvironment: .init())
         }
         Spacer()
         if !trailing.isEmpty {
-          Voltra(root: rootNodeProvider(.islandCompactTrailing, context.state), activityId: context.activityID)
+          Voltra(root: rootNodeProvider(.islandCompactTrailing, context.state), activityId: context.activityID, resolvableEnvironment: .init())
         }
       }
       .frame(maxWidth: .infinity)
@@ -153,6 +157,6 @@ private struct VoltraAdaptiveLockScreenView: View {
 
   private func defaultContent() -> some View {
     // Default content for both StandBy (.medium) and unknown activity families
-    Voltra(root: rootNodeProvider(.lockScreen, context.state), activityId: context.activityID)
+    Voltra(root: rootNodeProvider(.lockScreen, context.state), activityId: context.activityID, resolvableEnvironment: .init())
   }
 }
