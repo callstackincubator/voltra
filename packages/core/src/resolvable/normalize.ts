@@ -14,7 +14,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return Object.prototype.toString.call(value) === '[object Object]'
 }
 
-const isResolvableCondition = (value: unknown): value is ResolvableCondition => {
+export const isResolvableCondition = (value: unknown): value is ResolvableCondition => {
   return (
     isResolvableExpression(value) &&
     (value.kind === 'eq' ||

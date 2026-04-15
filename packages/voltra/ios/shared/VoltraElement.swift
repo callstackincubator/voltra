@@ -150,7 +150,6 @@ public struct VoltraElement: Hashable {
     // Store shared elements reference
     self.sharedElements = sharedElements
 
-    // Resolvable payloads are evaluated lazily against the runtime environment.
     resolvableEnvironment = .init()
   }
 

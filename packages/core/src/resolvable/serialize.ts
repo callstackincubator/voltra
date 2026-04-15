@@ -20,7 +20,7 @@ import type {
 } from './internal.js'
 import { isResolvableExpression } from './public.js'
 import type { ResolvableExpression } from './public.js'
-import { normalizeResolvableJsonValue, normalizeResolvableValue } from './normalize.js'
+import { isResolvableCondition, normalizeResolvableJsonValue, normalizeResolvableValue } from './normalize.js'
 
 const serializeConditionTuple = (condition: NormalizedResolvableCondition): VoltraResolvableConditionTuple => {
   switch (condition.type) {
@@ -61,18 +61,6 @@ const isNormalizedResolvableValue = (value: NormalizedResolvableJsonValue): valu
   }
 
   return 'type' in value && (value.type === 'env' || value.type === 'when' || value.type === 'match')
-}
-
-const isResolvableCondition = (value: unknown): boolean => {
-  return (
-    isResolvableExpression(value) &&
-    (value.kind === 'eq' ||
-      value.kind === 'ne' ||
-      value.kind === 'and' ||
-      value.kind === 'or' ||
-      value.kind === 'not' ||
-      value.kind === 'inList')
-  )
 }
 
 const isResolvableValueExpression = (value: unknown): value is ResolvableExpression<unknown> => {
