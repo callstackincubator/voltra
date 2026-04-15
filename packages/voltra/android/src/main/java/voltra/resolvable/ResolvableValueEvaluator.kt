@@ -360,6 +360,21 @@ internal object ResolvableValueEvaluator {
             else -> null
         }
 
+    /**
+     * Evaluate a pre-resolved condition tuple (e.g., from `element.p["condition"]`).
+     * By the time this is called, all `$rv` env references inside the tuple are already
+     * replaced with literal values by [ResolvablePayloadResolver], so the environment
+     * is not needed for evaluation.
+     */
+    internal fun evaluateCondition(conditionTuple: Any?): Boolean =
+        try {
+            val condition = parseCondition(conditionTuple)
+            evaluate(condition, ResolvableRuntimeEnvironment { null })
+        } catch (e: Exception) {
+            logWarning("Failed to evaluate condition: ${e.message}", e)
+            false
+        }
+
     private fun logWarning(
         message: String,
         error: Throwable?,

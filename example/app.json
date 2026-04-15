@@ -58,7 +58,14 @@
               "id": "resolvable_playground",
               "displayName": "Resolvable Values",
               "description": "Minimal widget playground for runtime env resolution",
-              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge",
+                "accessoryCircular",
+                "accessoryRectangular",
+                "accessoryInline"
+              ],
               "initialStatePath": "./widgets/ios/ios-resolvable-playground-initial.tsx"
             }
           ],
