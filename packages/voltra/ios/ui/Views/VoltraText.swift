@@ -11,6 +11,11 @@ public struct VoltraText: VoltraView {
 
   public var body: some View {
     let textContent: String = {
+      // p.txt resolved value (from ResolvableExpression children) takes priority
+      if let textProp = element.props?["text"]?.stringValue {
+        return textProp
+      }
+      // Backward compat: static string children
       if let children = element.children, case let .text(text) = children {
         return text
       }

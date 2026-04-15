@@ -50,7 +50,7 @@ fun RenderText(
             resolveAndApplyStyle(element.p, renderContext.sharedStyles).compositeStyle
         }
 
-    val text = extractTextFromNode(element.c)
+    val text: String = (element.p?.get("text") as? String) ?: extractTextFromNode(element.c)
     val renderAsBitmap = element.p?.get("renderAsBitmap") as? Boolean ?: false
     val textStyle = resolvedStyle?.text ?: voltra.styling.TextStyle.Default
 

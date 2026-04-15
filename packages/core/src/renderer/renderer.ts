@@ -25,7 +25,7 @@ import {
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent.js'
 import { shorten } from '../payload/short-names.js'
-import { serializeResolvablePropValue, serializeStyleObject } from '../resolvable/serialize.js'
+import { isResolvableValueExpression, serializeResolvablePropValue, serializeStyleObject } from '../resolvable/serialize.js'
 import { VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'
 import { ContextRegistry, getContextRegistry } from './context-registry.js'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher.js'
@@ -208,6 +208,22 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
 
       const { children, ...parameters } = child.props as { children?: ReactNode; [key: string]: unknown }
       const isTextComponent = child.type === 'Text' || child.type === 'AndroidText'
+
+      // Short-circuit: ResolvableExpression as children of a Text component is serialized
+      // via p.txt (wire key for "text") so the native resolver handles it at render time.
+      if (isTextComponent && isResolvableValueExpression(children)) {
+        const id = typeof parameters.id === 'string' ? parameters.id : undefined
+        const { id: _id, ...cleanParameters } = parameters
+        const transformedProps = transformProps({ ...cleanParameters, text: children }, context)
+        const hasProps = Object.keys(transformedProps).length > 0
+        return {
+          t: context.componentRegistry.getComponentId(child.type),
+          ...(id ? { i: id } : {}),
+          c: '',
+          ...(hasProps ? { p: transformedProps } : {}),
+        }
+      }
+
       const childContext: VoltraRenderingContext = {
         ...context,
         inStringOnlyContext: isTextComponent,

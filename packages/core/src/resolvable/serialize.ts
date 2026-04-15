@@ -63,7 +63,7 @@ const isNormalizedResolvableValue = (value: NormalizedResolvableJsonValue): valu
   return 'type' in value && (value.type === 'env' || value.type === 'when' || value.type === 'match')
 }
 
-const isResolvableValueExpression = (value: unknown): value is ResolvableExpression<unknown> => {
+export const isResolvableValueExpression = (value: unknown): value is ResolvableExpression<unknown> => {
   return isResolvableExpression(value) && !isResolvableCondition(value)
 }
 
