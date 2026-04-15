@@ -1,5 +1,5 @@
 export * as VoltraAndroid from './jsx/primitives.js'
-export { AndroidDynamicColors } from './dynamic-colors.js'
+export { and, env, eq, inList, match, ne, not, or, when } from '@use-voltra/core'
 export { AndroidOngoingNotification } from '@use-voltra/android'
 
 export type { VoltraAndroidBaseProps } from './jsx/baseProps.js'
@@ -9,7 +9,14 @@ export type {
   VoltraAndroidTextStyleProp,
   VoltraAndroidViewStyle,
 } from './styles/types.js'
-export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
+export type { AndroidColorValue } from './dynamic-colors.js'
+export type {
+  ResolvableCondition,
+  ResolvableEnvironmentKey,
+  ResolvableEnvironmentValueMap,
+  ResolvableValue,
+  ResolvableWidgetRenderingMode,
+} from '@use-voltra/core'
 
 export type { BoxProps } from './jsx/Box.js'
 export type { ButtonProps } from './jsx/Button.js'

@@ -131,6 +131,29 @@ class VoltraPayloadParserTest {
     }
 
     @Test
+    fun resolvesAndroidMaterialColorEnvInStyleToToken() {
+        val payload =
+            VoltraPayloadParser.parse(
+                """
+                {
+                  "v": 2,
+                  "collapsed": {
+                    "t": 18,
+                    "p": {
+                      "txt": "Hi",
+                      "s": { "c": { "${'$'}rv": [0, 2] } }
+                    }
+                  }
+                }
+                """.trimIndent(),
+            )
+
+        val collapsed = (payload.collapsed as VoltraNode.Element).element
+        val style = collapsed.p?.get("style") as Map<*, *>
+        assertEquals("~p", style["color"])
+    }
+
+    @Test
     fun decompressesShortenedKeysInNestedPropsWithoutChangingElementShape() {
         val payload =
             VoltraPayloadParser.parse(

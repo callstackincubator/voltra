@@ -39,6 +39,11 @@ let package = Package(
       ],
       sources: [
         "JSONValue.swift",
+        "Resolvable/ResolvableConstants.swift",
+        "Resolvable/ResolvableEnvironment.swift",
+        "Resolvable/ResolvableValue.swift",
+        "Resolvable/ResolvableValueEvaluator.swift",
+        "Resolvable/ResolvableValueParser.swift",
         "VoltraPayloadMigrator.swift",
         "VoltraRegion.swift",
         "ComponentTypeID.swift",

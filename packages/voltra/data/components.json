@@ -157,7 +157,10 @@
     "xAxisGridStyle": "xgs",
     "xAxisVisibility": "xav",
     "yAxisGridStyle": "ygs",
-    "yAxisVisibility": "yav"
+    "yAxisVisibility": "yav",
+    "condition": "cond",
+    "else": "els",
+    "cases": "cas"
   },
   "styleProperties": [
     "padding",
@@ -1296,6 +1299,34 @@
           "description": "Map of series name to color string"
         }
       }
+    },
+    {
+      "name": "ControlIf",
+      "description": "Control-flow component: renders children when condition is true, else branch otherwise",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "ControlSwitch",
+      "description": "Control-flow component: selects a child branch by matching a value against cases",
+      "swiftAvailability": "iOS 13.0, macOS 10.15",
+      "parameters": {}
+    },
+    {
+      "name": "AndroidControlIf",
+      "description": "Control-flow component: renders children when condition is true, else branch otherwise",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "AndroidControlSwitch",
+      "description": "Control-flow component: selects a child branch by matching a value against cases",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "parameters": {}
     },
     {
       "name": "AndroidChart",

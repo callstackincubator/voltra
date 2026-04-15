@@ -1,4 +1,5 @@
 export * as Voltra from './jsx/primitives.js'
+export { and, env, eq, inList, match, ne, not, or, when } from '@use-voltra/core'
 export { renderLiveActivityToJson, renderLiveActivityToString } from './live-activity/renderer.js'
 export type {
   DismissalPolicy,
@@ -18,6 +19,11 @@ export type {
   VoltraElementRef,
   VoltraNodeJson,
   VoltraPropValue,
+  ResolvableCondition,
+  ResolvableEnvironmentKey,
+  ResolvableEnvironmentValueMap,
+  ResolvableValue,
+  ResolvableWidgetRenderingMode,
   WidgetServerCredentials,
 } from './types.js'
 export { renderWidgetToJson, renderWidgetToString } from './widgets/renderer.js'

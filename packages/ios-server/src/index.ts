@@ -73,6 +73,8 @@ const COMPONENT_NAME_TO_ID: Record<string, number> = {
   Link: 19,
   View: 20,
   Chart: 21,
+  ControlIf: 22,
+  ControlSwitch: 23,
 }
 
 const defaultComponentRegistry: ComponentRegistry = {

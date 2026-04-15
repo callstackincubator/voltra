@@ -1,7 +1,7 @@
 import { createAndroidWidgetUpdateHandler, renderAndroidWidgetToString } from '@use-voltra/android-server'
 import { createIOSWidgetUpdateHandler, renderWidgetToString, Voltra } from '@use-voltra/ios-server'
 import { createWidgetUpdateHandler as createSharedWidgetUpdateHandler } from '@use-voltra/server'
-import { AndroidDynamicColors, VoltraAndroid } from '../android/index.js'
+import { env, VoltraAndroid } from '../android/index.js'
 import { createWidgetUpdateHandler as createCompatibilityWidgetUpdateHandler } from '../widget-server.js'
 
 describe('server package split', () => {
@@ -142,17 +142,11 @@ describe('server package split', () => {
     expect(await response.text()).toBe(renderAndroidWidgetToString(variants))
   })
 
-  it('preserves Android semantic color tokens through server handlers', async () => {
+  it('preserves Android Material env color expressions through server handlers', async () => {
     const variants = [
       {
         size: { width: 150, height: 100 },
-        content: (
-          <VoltraAndroid.FilledButton
-            text="Hello"
-            backgroundColor={AndroidDynamicColors.primary}
-            contentColor={AndroidDynamicColors.onPrimary}
-          />
-        ),
+        content: <VoltraAndroid.FilledButton text="Hello" backgroundColor={env.primary} contentColor={env.onPrimary} />,
       },
     ]
     const handler = createAndroidWidgetUpdateHandler({
@@ -163,8 +157,9 @@ describe('server package split', () => {
     const payload = await response.text()
 
     expect(response.status).toBe(200)
-    expect(payload).toContain('"~p"')
-    expect(payload).toContain('"~op"')
+    expect(payload).toContain('"$rv"')
+    expect(payload).toContain('[0,2]')
+    expect(payload).toContain('[0,3]')
   })
 
   it('keeps the root compatibility handler API unchanged', async () => {
