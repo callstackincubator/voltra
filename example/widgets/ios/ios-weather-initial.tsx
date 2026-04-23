@@ -1,11 +1,11 @@
 import type { WidgetVariants } from 'voltra'
 
-import { IosWeatherWidget } from './IosWeatherWidget'
+import { WeatherWidget } from './IosWeatherWidget'
 
 const initialState: WidgetVariants = {
-  systemSmall: <IosWeatherWidget />,
-  systemMedium: <IosWeatherWidget />,
-  systemLarge: <IosWeatherWidget />,
+  systemSmall: <WeatherWidget />,
+  systemMedium: <WeatherWidget />,
+  systemLarge: <WeatherWidget />,
 }
 
 export default initialState

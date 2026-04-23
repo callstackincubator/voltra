@@ -3,7 +3,7 @@ import { View } from 'react-native'
 import { afterAll, beforeAll, describe, expect, Mock, render, spyOn, test } from 'react-native-harness'
 import { VoltraWidgetPreview } from 'voltra/client'
 
-import { IosWeatherWidget } from '../../widgets/ios/IosWeatherWidget'
+import { WeatherWidget } from '../../widgets/ios/IosWeatherWidget'
 import { SAMPLE_WEATHER_DATA } from '../../widgets/weather-types'
 
 describe('Widget snapshots', () => {
@@ -34,7 +34,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.sunny} />
+            <WeatherWidget weather={SAMPLE_WEATHER_DATA.sunny} />
           </VoltraWidgetPreview>
         </View>
       </View>
@@ -52,7 +52,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.rainy} />
+            <WeatherWidget weather={SAMPLE_WEATHER_DATA.rainy} />
           </VoltraWidgetPreview>
         </View>
       </View>
@@ -70,7 +70,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.snowy} />
+            <WeatherWidget weather={SAMPLE_WEATHER_DATA.snowy} />
           </VoltraWidgetPreview>
         </View>
       </View>
@@ -88,7 +88,7 @@ describe('Widget snapshots', () => {
       <View style={previewWrapperStyle}>
         <View testID="voltra-preview" style={previewStyle}>
           <VoltraWidgetPreview family="systemSmall">
-            <IosWeatherWidget weather={SAMPLE_WEATHER_DATA.stormy} />
+            <WeatherWidget weather={SAMPLE_WEATHER_DATA.stormy} />
           </VoltraWidgetPreview>
         </View>
       </View>
