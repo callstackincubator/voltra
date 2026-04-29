@@ -38,12 +38,53 @@ enum JSColorParser {
     return nil
   }
 
+  /// Returns true for neutral foreground colors that should follow WidgetKit's
+  /// reduced-presentation text color instead of preserving a hard-coded shade.
+  static func shouldUsePrimaryColorInReducedPresentation(_ value: Any?) -> Bool {
+    guard let components = parseColorComponents(value) else { return false }
+    return isNeutralColor(components.red, components.green, components.blue)
+  }
+
   /// Check if a string is a valid hex color (6 or 8 hex digits)
   private static func isHexColor(_ string: String) -> Bool {
     guard string.count == 6 || string.count == 8 else { return false }
     // Check if all characters are valid hex digits (0-9, a-f)
     let hexChars = CharacterSet(charactersIn: "0123456789abcdef")
     return string.unicodeScalars.allSatisfy { hexChars.contains($0) }
+  }
+
+  private static func parseColorComponents(_ value: Any?) -> (red: Double, green: Double, blue: Double, alpha: Double)? {
+    guard let string = value as? String else { return nil }
+
+    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    if trimmed.isEmpty { return nil }
+
+    if trimmed.hasPrefix("#") {
+      return parseHexComponents(trimmed)
+    }
+
+    if isHexColor(trimmed) {
+      return parseHexComponents("#" + trimmed)
+    }
+
+    if trimmed.hasPrefix("rgb") {
+      return parseRGBComponents(trimmed)
+    }
+
+    if trimmed.hasPrefix("hsl") {
+      return parseHSLComponents(trimmed)
+    }
+
+    return parseNamedColorComponents(trimmed)
+  }
+
+  private static func isNeutralColor(_ red: Double, _ green: Double, _ blue: Double) -> Bool {
+    let maxComponent = max(red, green, blue)
+    let minComponent = min(red, green, blue)
+    guard maxComponent > 0 else { return true }
+
+    let saturation = (maxComponent - minComponent) / maxComponent
+    return saturation <= 0.2
   }
 
   /// Parse named color strings
@@ -105,10 +146,56 @@ enum JSColorParser {
     }
   }
 
+  private static func parseNamedColorComponents(_ name: String) -> (red: Double, green: Double, blue: Double, alpha: Double)? {
+    switch name {
+    case "red":
+      return (1, 0, 0, 1)
+    case "orange":
+      return (1, 0.5, 0, 1)
+    case "yellow":
+      return (1, 1, 0, 1)
+    case "green":
+      return (0, 1, 0, 1)
+    case "mint":
+      return (0.62, 0.98, 0.84, 1)
+    case "teal":
+      return (0, 0.5, 0.5, 1)
+    case "cyan":
+      return (0, 1, 1, 1)
+    case "blue":
+      return (0, 0, 1, 1)
+    case "indigo":
+      return (0.29, 0, 0.51, 1)
+    case "purple":
+      return (0.5, 0, 0.5, 1)
+    case "pink":
+      return (1, 0.75, 0.8, 1)
+    case "brown":
+      return (0.6, 0.4, 0.2, 1)
+    case "white":
+      return (1, 1, 1, 1)
+    case "gray":
+      return (0.5, 0.5, 0.5, 1)
+    case "black":
+      return (0, 0, 0, 1)
+    case "clear", "transparent":
+      return (0, 0, 0, 0)
+    case "primary", "secondary":
+      return (0.5, 0.5, 0.5, 1)
+    default:
+      return nil
+    }
+  }
+
   // MARK: - Hex Parser
 
   /// Supports #RGB, #RGBA, #RRGGBB, #RRGGBBAA
   private static func parseHex(_ hex: String) -> Color? {
+    guard let parsed = parseHexComponents(hex) else { return nil }
+    return Color(.sRGB, red: parsed.red, green: parsed.green, blue: parsed.blue, opacity: parsed.alpha)
+  }
+
+  private static func parseHexComponents(_ hex: String) -> (red: Double, green: Double, blue: Double, alpha: Double)? {
     let hexSanitized = hex.replacingOccurrences(of: "#", with: "")
 
     var rgb: UInt64 = 0
@@ -142,7 +229,7 @@ enum JSColorParser {
       return nil
     }
 
-    return Color(.sRGB, red: r, green: g, blue: b, opacity: a)
+    return (r, g, b, a)
   }
 
   // MARK: - RGB Parser
@@ -151,6 +238,12 @@ enum JSColorParser {
   /// - rgb(255, 0, 0), rgba(255, 0, 0, 0.5)
   /// - rgb(255 0 0 / 80%), rgba(255 0 0 / 0.8)
   private static func parseRGB(_ string: String) -> Color? {
+    guard let parsed = parseRGBComponents(string) else { return nil }
+
+    return Color(.sRGB, red: parsed.red, green: parsed.green, blue: parsed.blue, opacity: parsed.alpha)
+  }
+
+  private static func parseRGBComponents(_ string: String) -> (red: Double, green: Double, blue: Double, alpha: Double)? {
     guard let function = parseFunctionCall(string, allowedNames: ["rgb", "rgba"]) else { return nil }
 
     let isRgba = function.name == "rgba"
@@ -162,7 +255,7 @@ enum JSColorParser {
     }
     guard let parsed else { return nil }
 
-    return Color(.sRGB, red: parsed.r, green: parsed.g, blue: parsed.b, opacity: parsed.a)
+    return (parsed.r, parsed.g, parsed.b, parsed.a)
   }
 
   // MARK: - HSL Parser
@@ -171,6 +264,11 @@ enum JSColorParser {
   /// - hsl(120, 100%, 50%), hsla(120, 100%, 50%, 0.5)
   /// - hsl(120 100% 50% / 30%), hsla(120 100% 50% / 0.3)
   private static func parseHSL(_ string: String) -> Color? {
+    guard let parsed = parseHSLComponents(string) else { return nil }
+    return Color(.sRGB, red: parsed.red, green: parsed.green, blue: parsed.blue, opacity: parsed.alpha)
+  }
+
+  private static func parseHSLComponents(_ string: String) -> (red: Double, green: Double, blue: Double, alpha: Double)? {
     guard let function = parseFunctionCall(string, allowedNames: ["hsl", "hsla"]) else { return nil }
 
     let isHsla = function.name == "hsla"
@@ -182,14 +280,8 @@ enum JSColorParser {
     }
     guard let parsed else { return nil }
 
-    let h = parsed.h
-    let s = parsed.s
-    let l = parsed.l
-    let a = parsed.a
-
-    // Convert HSL to RGB (HSL != HSB/HSV)
-    let (r, g, b) = hslToRgb(h: h, s: s, l: l)
-    return Color(.sRGB, red: r, green: g, blue: b, opacity: a)
+    let (r, g, b) = hslToRgb(h: parsed.h, s: parsed.s, l: parsed.l)
+    return (r, g, b, parsed.a)
   }
 
   private struct FunctionCall {

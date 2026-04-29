@@ -155,6 +155,7 @@ enum StyleConverter {
 
     if let color = JSColorParser.parse(js["color"]) {
       style.color = color
+      style.usesPrimaryColorInReducedPresentation = JSColorParser.shouldUsePrimaryColorInReducedPresentation(js["color"])
     }
 
     if let size = JSStyleParser.number(js["fontSize"]) {

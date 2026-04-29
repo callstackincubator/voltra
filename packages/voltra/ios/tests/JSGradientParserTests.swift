@@ -186,4 +186,16 @@ final class JSColorParserTests: XCTestCase {
     XCTAssertNil(JSColorParser.parse("rgb(255,0)"))
     XCTAssertNil(JSColorParser.parse("hsl(120, 100, 50%)"))
   }
+
+  func testReducedPresentationPrimaryColorDetectionTreatsNeutralColorsAsAdaptive() {
+    XCTAssertTrue(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#F9FAFB"))
+    XCTAssertTrue(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#6B7280"))
+    XCTAssertTrue(JSColorParser.shouldUsePrimaryColorInReducedPresentation("white"))
+  }
+
+  func testReducedPresentationPrimaryColorDetectionPreservesSemanticAccents() {
+    XCTAssertFalse(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#34D399"))
+    XCTAssertFalse(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#F87171"))
+    XCTAssertFalse(JSColorParser.shouldUsePrimaryColorInReducedPresentation("green"))
+  }
 }

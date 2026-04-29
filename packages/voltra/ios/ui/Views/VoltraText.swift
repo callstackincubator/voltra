@@ -60,7 +60,10 @@ public struct VoltraText: VoltraView {
     }()
 
     let resolvedColor: Color = {
-      if let widget = voltraEnvironment.widget, widget.usesReducedBackgroundPresentation {
+      if let widget = voltraEnvironment.widget,
+         widget.usesReducedBackgroundPresentation,
+         textStyle.usesPrimaryColorInReducedPresentation
+      {
         return .primary
       }
 

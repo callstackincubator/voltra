@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TextStyle {
   var color: Color = .primary
+  var usesPrimaryColorInReducedPresentation = false
   var fontSize: CGFloat = 17
   var fontWeight: Font.Weight = .regular
   var fontFamily: String?
@@ -19,7 +20,10 @@ struct TextStyleModifier: ViewModifier {
   @Environment(\.voltraEnvironment) private var voltraEnvironment
 
   private var resolvedColor: Color {
-    if let widget = voltraEnvironment.widget, widget.usesReducedBackgroundPresentation {
+    if let widget = voltraEnvironment.widget,
+       widget.usesReducedBackgroundPresentation,
+       style.usesPrimaryColorInReducedPresentation
+    {
       return .primary
     }
 
