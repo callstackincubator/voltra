@@ -1314,21 +1314,6 @@
       "parameters": {}
     },
     {
-      "name": "AndroidControlIf",
-      "description": "Control-flow component: renders children when condition is true, else branch otherwise",
-      "swiftAvailability": "Not available",
-      "androidAvailability": "Android 12+",
-      "hasChildren": true,
-      "parameters": {}
-    },
-    {
-      "name": "AndroidControlSwitch",
-      "description": "Control-flow component: selects a child branch by matching a value against cases",
-      "swiftAvailability": "Not available",
-      "androidAvailability": "Android 12+",
-      "parameters": {}
-    },
-    {
       "name": "AndroidChart",
       "description": "Android charts component for data visualization",
       "swiftAvailability": "Not available",
@@ -1372,6 +1357,21 @@
           "description": "Enable scrolling on the given axis"
         }
       }
+    },
+    {
+      "name": "AndroidControlIf",
+      "description": "Control-flow component: renders children when condition is true, else branch otherwise",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "hasChildren": true,
+      "parameters": {}
+    },
+    {
+      "name": "AndroidControlSwitch",
+      "description": "Control-flow component: selects a child branch by matching a value against cases",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 12+",
+      "parameters": {}
     }
   ]
 }

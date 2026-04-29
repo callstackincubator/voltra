@@ -32,9 +32,9 @@ object ComponentTypeID {
     const val SQUARE_ICON_BUTTON = 17
     const val TEXT = 18
     const val TITLE_BAR = 19
-    const val CONTROL_IF = 20
-    const val CONTROL_SWITCH = 21
-    const val CHART = 22
+    const val CHART = 20
+    const val CONTROL_IF = 21
+    const val CONTROL_SWITCH = 22
 
     /**
      * Get component name from numeric ID
@@ -61,9 +61,9 @@ object ComponentTypeID {
             17 -> "AndroidSquareIconButton"
             18 -> "AndroidText"
             19 -> "AndroidTitleBar"
-            20 -> "AndroidControlIf"
-            21 -> "AndroidControlSwitch"
-            22 -> "AndroidChart"
+            20 -> "AndroidChart"
+            21 -> "AndroidControlIf"
+            22 -> "AndroidControlSwitch"
             else -> null
         }
 }

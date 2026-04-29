@@ -8,29 +8,29 @@
  * Component IDs are assigned sequentially based on order in components.json (0-indexed)
  */
 export const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
-  AndroidFilledButton: 0,
-  AndroidImage: 1,
-  AndroidSwitch: 2,
-  AndroidCheckBox: 3,
-  AndroidRadioButton: 4,
-  AndroidBox: 5,
-  AndroidButton: 6,
-  AndroidCircleIconButton: 7,
-  AndroidCircularProgressIndicator: 8,
-  AndroidColumn: 9,
-  AndroidLazyColumn: 10,
-  AndroidLazyVerticalGrid: 11,
-  AndroidLinearProgressIndicator: 12,
-  AndroidOutlineButton: 13,
-  AndroidRow: 14,
-  AndroidScaffold: 15,
-  AndroidSpacer: 16,
-  AndroidSquareIconButton: 17,
-  AndroidText: 18,
-  AndroidTitleBar: 19,
-  AndroidControlIf: 20,
-  AndroidControlSwitch: 21,
-  AndroidChart: 22,
+  'AndroidFilledButton': 0,
+  'AndroidImage': 1,
+  'AndroidSwitch': 2,
+  'AndroidCheckBox': 3,
+  'AndroidRadioButton': 4,
+  'AndroidBox': 5,
+  'AndroidButton': 6,
+  'AndroidCircleIconButton': 7,
+  'AndroidCircularProgressIndicator': 8,
+  'AndroidColumn': 9,
+  'AndroidLazyColumn': 10,
+  'AndroidLazyVerticalGrid': 11,
+  'AndroidLinearProgressIndicator': 12,
+  'AndroidOutlineButton': 13,
+  'AndroidRow': 14,
+  'AndroidScaffold': 15,
+  'AndroidSpacer': 16,
+  'AndroidSquareIconButton': 17,
+  'AndroidText': 18,
+  'AndroidTitleBar': 19,
+  'AndroidChart': 20,
+  'AndroidControlIf': 21,
+  'AndroidControlSwitch': 22
 }
 
 /**
@@ -57,9 +57,9 @@ export const ANDROID_COMPONENT_ID_TO_NAME: Record<number, string> = {
   17: 'AndroidSquareIconButton',
   18: 'AndroidText',
   19: 'AndroidTitleBar',
-  20: 'AndroidControlIf',
-  21: 'AndroidControlSwitch',
-  22: 'AndroidChart',
+  20: 'AndroidChart',
+  21: 'AndroidControlIf',
+  22: 'AndroidControlSwitch'
 }
 
 /**
@@ -69,11 +69,7 @@ export const ANDROID_COMPONENT_ID_TO_NAME: Record<number, string> = {
 export function getAndroidComponentId(name: string): number {
   const id = ANDROID_COMPONENT_NAME_TO_ID[name]
   if (id === undefined) {
-    throw new Error(
-      `Unknown Android component name: "${name}". Available components: ${Object.keys(
-        ANDROID_COMPONENT_NAME_TO_ID
-      ).join(', ')}`
-    )
+    throw new Error(`Unknown Android component name: "${name}". Available components: ${Object.keys(ANDROID_COMPONENT_NAME_TO_ID).join(', ')}`)
   }
   return id
 }
@@ -85,9 +81,7 @@ export function getAndroidComponentId(name: string): number {
 export function getAndroidComponentName(id: number): string {
   const name = ANDROID_COMPONENT_ID_TO_NAME[id]
   if (name === undefined) {
-    throw new Error(
-      `Unknown Android component ID: ${id}. Valid IDs: 0-${Object.keys(ANDROID_COMPONENT_ID_TO_NAME).length - 1}`
-    )
+    throw new Error(`Unknown Android component ID: ${id}. Valid IDs: 0-${Object.keys(ANDROID_COMPONENT_ID_TO_NAME).length - 1}`)
   }
   return name
 }
