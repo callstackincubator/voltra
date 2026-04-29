@@ -1,3 +1,5 @@
+export * from './ControlIf.js'
+export * from './ControlSwitch.js'
 export * from './AreaMark.js'
 export * from './BarMark.js'
 export * from './Button.js'

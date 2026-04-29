@@ -117,77 +117,89 @@ public indirect enum VoltraNode: Hashable, View {
 struct VoltraElementView: View {
   let element: VoltraElement
 
+  @Environment(\.voltraEnvironment) private var voltraEnvironment
+
+  private var resolvedElement: VoltraElement {
+    element.withResolvableEnvironment(voltraEnvironment.resolvableEnvironment)
+  }
+
   var body: some View {
-    switch element.type {
+    switch resolvedElement.type {
     case "Button":
-      VoltraButton(element)
+      VoltraButton(resolvedElement)
 
     case "Link":
-      VoltraLink(element)
+      VoltraLink(resolvedElement)
 
     case "VStack":
-      VoltraVStack(element)
+      VoltraVStack(resolvedElement)
 
     case "HStack":
-      VoltraHStack(element)
+      VoltraHStack(resolvedElement)
 
     case "View":
-      VoltraFlexView(element)
+      VoltraFlexView(resolvedElement)
 
     case "ZStack":
-      VoltraZStack(element)
+      VoltraZStack(resolvedElement)
 
     case "Text":
-      VoltraText(element)
+      VoltraText(resolvedElement)
 
     case "Image":
-      VoltraImage(element)
+      VoltraImage(resolvedElement)
 
     case "Symbol":
-      VoltraSymbol(element)
+      VoltraSymbol(resolvedElement)
 
     case "Divider":
-      VoltraDivider(element)
+      VoltraDivider(resolvedElement)
 
     case "Spacer":
-      VoltraSpacer(element)
+      VoltraSpacer(resolvedElement)
 
     case "Label":
-      VoltraLabel(element)
+      VoltraLabel(resolvedElement)
 
     case "Toggle":
-      VoltraToggle(element)
+      VoltraToggle(resolvedElement)
 
     case "Gauge":
-      VoltraGauge(element)
+      VoltraGauge(resolvedElement)
 
     case "LinearProgressView":
-      VoltraLinearProgressView(element)
+      VoltraLinearProgressView(resolvedElement)
 
     case "CircularProgressView":
-      VoltraCircularProgressView(element)
+      VoltraCircularProgressView(resolvedElement)
 
     case "Timer":
-      VoltraTimer(element)
+      VoltraTimer(resolvedElement)
 
     case "GroupBox":
-      VoltraGroupBox(element)
+      VoltraGroupBox(resolvedElement)
 
     case "LinearGradient":
-      VoltraLinearGradient(element)
+      VoltraLinearGradient(resolvedElement)
 
     case "GlassContainer":
-      VoltraGlassContainer(element)
+      VoltraGlassContainer(resolvedElement)
 
     case "Mask":
-      VoltraMask(element)
+      VoltraMask(resolvedElement)
 
     case "Chart":
       if #available(iOS 16.0, macOS 13.0, *) {
-        VoltraChart(element)
+        VoltraChart(resolvedElement)
       } else {
         EmptyView()
       }
+
+    case "ControlIf":
+      VoltraControlIf(resolvedElement)
+
+    case "ControlSwitch":
+      VoltraControlSwitch(resolvedElement)
 
     default:
       EmptyView()

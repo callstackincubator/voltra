@@ -1,9 +1,13 @@
 import { Stack } from 'expo-router'
+import { useEffect } from 'react'
+import { Platform } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { reloadWidgets, updateWidget } from 'voltra/client'
 
 import { BackgroundWrapper } from '~/components/BackgroundWrapper'
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
+import { resolvablePlaygroundVariants } from '~/widgets/ios/IosResolvablePlaygroundWidget'
 
 updateAndroidVoltraWidget({ width: 300, height: 200 })
 
@@ -18,6 +22,20 @@ export const unstable_settings = {
 
 export default function Layout() {
   useVoltraEvents()
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') {
+      return
+    }
+    void (async () => {
+      try {
+        await updateWidget('resolvable_playground', resolvablePlaygroundVariants)
+        await reloadWidgets(['resolvable_playground'])
+      } catch {
+        // Widget host may be unavailable (e.g. simulator without extension).
+      }
+    })()
+  }, [])
 
   return (
     <SafeAreaProvider>

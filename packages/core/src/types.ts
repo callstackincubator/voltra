@@ -1,4 +1,33 @@
-export type VoltraPropValue = string | number | boolean | null | VoltraNodeJson
+import { RESOLVABLE_ENV_IDS } from './resolvable/constants.js'
+
+export type VoltraJsonPrimitive = string | number | boolean | null
+
+export type VoltraResolvableEnvironmentId = (typeof RESOLVABLE_ENV_IDS)[keyof typeof RESOLVABLE_ENV_IDS]
+
+export type VoltraSerializableValue =
+  | VoltraJsonPrimitive
+  | VoltraSerializableValue[]
+  | { [key: string]: VoltraSerializableValue }
+  | VoltraWrappedResolvableValue
+
+export type VoltraResolvableConditionTuple =
+  | [0, VoltraSerializableValue, VoltraSerializableValue]
+  | [1, VoltraSerializableValue, VoltraSerializableValue]
+  | [2, VoltraResolvableConditionTuple[]]
+  | [3, VoltraResolvableConditionTuple[]]
+  | [4, VoltraResolvableConditionTuple]
+  | [5, VoltraSerializableValue, VoltraSerializableValue[]]
+
+export type VoltraResolvableValueTuple =
+  | [0, VoltraResolvableEnvironmentId]
+  | [1, VoltraResolvableConditionTuple, VoltraSerializableValue, VoltraSerializableValue]
+  | [2, VoltraSerializableValue, Record<string, VoltraSerializableValue>]
+
+export type VoltraWrappedResolvableValue = {
+  $rv: VoltraResolvableValueTuple
+}
+
+export type VoltraPropValue = VoltraSerializableValue | VoltraNodeJson
 
 export type VoltraElementJson = {
   t: number

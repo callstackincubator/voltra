@@ -29,6 +29,8 @@ export const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
   AndroidText: 18,
   AndroidTitleBar: 19,
   AndroidChart: 20,
+  AndroidControlIf: 21,
+  AndroidControlSwitch: 22,
 }
 
 /**
@@ -56,6 +58,8 @@ export const ANDROID_COMPONENT_ID_TO_NAME: Record<number, string> = {
   18: 'AndroidText',
   19: 'AndroidTitleBar',
   20: 'AndroidChart',
+  21: 'AndroidControlIf',
+  22: 'AndroidControlSwitch',
 }
 
 /**

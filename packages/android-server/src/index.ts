@@ -37,7 +37,14 @@ export type {
   WidgetUpdateHandler,
   WidgetUpdateNodeHandler,
 } from '@use-voltra/server'
-export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from '@use-voltra/android'
+export type { AndroidColorValue } from '@use-voltra/android'
+export type {
+  ResolvableCondition,
+  ResolvableEnvironmentKey,
+  ResolvableEnvironmentValueMap,
+  ResolvableValue,
+  ResolvableWidgetRenderingMode,
+} from '@use-voltra/android'
 export type { WidgetPlatform, WidgetTheme } from '@use-voltra/server'
 
 export type AndroidWidgetSize = {
@@ -75,7 +82,9 @@ const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
   AndroidSquareIconButton: 17,
   AndroidText: 18,
   AndroidTitleBar: 19,
-  AndroidChart: 20,
+  AndroidControlIf: 20,
+  AndroidControlSwitch: 21,
+  AndroidChart: 22,
 }
 
 const getAndroidComponentId = (name: string): number => {

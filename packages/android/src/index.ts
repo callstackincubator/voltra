@@ -1,6 +1,6 @@
 // Android component namespace
 export * as VoltraAndroid from './jsx/primitives.js'
-export { AndroidDynamicColors } from './dynamic-colors.js'
+export { and, env, eq, inList, match, ne, not, or, when } from '@use-voltra/core'
 export { renderAndroidLiveUpdateToJson, renderAndroidLiveUpdateToString } from './live-update/renderer.js'
 export { AndroidOngoingNotification } from './ongoing-notification/components.js'
 export { renderAndroidOngoingNotificationPayload } from './ongoing-notification/renderer.js'
@@ -14,7 +14,14 @@ export type {
   VoltraAndroidTextStyleProp,
   VoltraAndroidViewStyle,
 } from './styles/types.js'
-export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
+export type { AndroidColorValue } from './dynamic-colors.js'
+export type {
+  ResolvableCondition,
+  ResolvableEnvironmentKey,
+  ResolvableEnvironmentValueMap,
+  ResolvableValue,
+  ResolvableWidgetRenderingMode,
+} from '@use-voltra/core'
 export type {
   AndroidLiveUpdateJson,
   AndroidLiveUpdateVariants,

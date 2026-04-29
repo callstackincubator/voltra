@@ -21,15 +21,14 @@ public protocol VoltraPayloadMigration {
 /// Manages payload version migrations
 public enum VoltraPayloadMigrator {
   /// Current (latest) payload version
-  public static let currentVersion = 1
+  public static let currentVersion = 2
 
   /// Registered migrations, keyed by source version
   /// When adding a new version:
   /// 1. Increment currentVersion
   /// 2. Add migration: [oldVersion: VOldToVNewMigration.self]
-  private static let migrations: [Int: any VoltraPayloadMigration.Type] = [:
-    // Empty for v1, add as needed:
-    // 1: V1ToV2Migration.self,
+  private static let migrations: [Int: any VoltraPayloadMigration.Type] = [
+    1: V1ToV2Migration.self,
   ]
 
   /// Migrate a payload to the current version
@@ -59,5 +58,20 @@ public enum VoltraPayloadMigrator {
     }
 
     return currentJson
+  }
+}
+
+private enum V1ToV2Migration: VoltraPayloadMigration {
+  static let fromVersion = 1
+  static let toVersion = 2
+
+  static func migrate(_ json: JSONValue) throws -> JSONValue {
+    guard case let .object(payload) = json else {
+      throw VoltraPayloadError.invalidPayloadStructure
+    }
+
+    var migrated = payload
+    migrated["v"] = .int(toVersion)
+    return .object(migrated)
   }
 }

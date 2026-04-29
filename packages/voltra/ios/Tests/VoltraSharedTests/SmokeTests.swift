@@ -2,7 +2,7 @@
 import XCTest
 
 final class SmokeTests: XCTestCase {
-  func testOneEqualsOne() {
-    XCTAssertEqual(1, 1)
+  func testSharedCoreCurrentPayloadVersionIsTwo() {
+    XCTAssertEqual(VoltraPayloadMigrator.currentVersion, 2)
   }
 }

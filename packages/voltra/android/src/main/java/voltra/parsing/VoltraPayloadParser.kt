@@ -5,6 +5,8 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import voltra.models.VoltraPayload
+import voltra.resolvable.AndroidWidgetResolvableEnvironment
+import voltra.resolvable.ResolvablePayloadResolver
 
 @OptIn(ExperimentalSerializationApi::class)
 object VoltraPayloadParser {
@@ -24,7 +26,9 @@ object VoltraPayloadParser {
         val rawResult = json.decodeFromString<VoltraPayload>(jsonString)
 
         Log.d(TAG, "Decompressing payload...")
-        val result = VoltraDecompressor.decompress(rawResult)
+        val decompressed = VoltraDecompressor.decompress(rawResult)
+        val result =
+            ResolvablePayloadResolver.resolve(decompressed, AndroidWidgetResolvableEnvironment)
 
         Log.d(
             TAG,

@@ -288,9 +288,7 @@ public struct VoltraHomeWidgetView: View {
     Group {
       if let root = entry.rootNode {
         // No parsing here - just render the pre-parsed AST
-        let content = Voltra(root: root, activityId: "widget")
-          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-          .widgetURL(resolveDeepLinkURL(entry))
+        let content = widgetContent(root: root)
 
         if showRefreshButton {
           content.overlay(alignment: .topTrailing) {
@@ -304,6 +302,19 @@ public struct VoltraHomeWidgetView: View {
       }
     }
     .disableWidgetMarginsIfAvailable()
+  }
+
+  @ViewBuilder
+  private func widgetContent(root: VoltraNode) -> some View {
+    if #available(iOSApplicationExtension 17.0, *) {
+      VoltraHomeWidgetResolvedRoot(root: root, activityId: "widget")
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .widgetURL(resolveDeepLinkURL(entry))
+    } else {
+      Voltra(root: root, activityId: "widget")
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .widgetURL(resolveDeepLinkURL(entry))
+    }
   }
 
   @ViewBuilder
@@ -335,6 +346,42 @@ public struct VoltraHomeWidgetView: View {
       RoundedRectangle(cornerRadius: 18, style: .continuous)
         .fill(Color(UIColor.secondarySystemBackground))
     )
+  }
+}
+
+@available(iOSApplicationExtension 17.0, *)
+private struct VoltraHomeWidgetResolvedRoot: View {
+  let root: VoltraNode
+  let activityId: String
+
+  @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+  @Environment(\.showsWidgetContainerBackground) private var showsWidgetContainerBackground
+
+  var body: some View {
+    Voltra(
+      root: root,
+      activityId: activityId,
+      resolvableEnvironment: .init(
+        renderingMode: renderingModeName,
+        showsWidgetContainerBackground: showsWidgetContainerBackground
+      )
+    )
+  }
+
+  private var renderingModeName: String {
+    if widgetRenderingMode == .accented {
+      return "accented"
+    }
+
+    if widgetRenderingMode == .fullColor {
+      return "fullColor"
+    }
+
+    if widgetRenderingMode == .vibrant {
+      return "vibrant"
+    }
+
+    return "fullColor"
   }
 }
 

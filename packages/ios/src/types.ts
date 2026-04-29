@@ -1,4 +1,14 @@
-export type { VoltraElementJson, VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '@use-voltra/core'
+export type {
+  ResolvableCondition,
+  ResolvableEnvironmentKey,
+  ResolvableEnvironmentValueMap,
+  ResolvableValue,
+  ResolvableWidgetRenderingMode,
+  VoltraElementJson,
+  VoltraElementRef,
+  VoltraNodeJson,
+  VoltraPropValue,
+} from '@use-voltra/core'
 
 export type EventSubscription = {
   remove: () => void

@@ -16,4 +16,11 @@ export type {
   AndroidOngoingNotificationProgressSegment,
 } from './ongoing-notification/types.js'
 export { renderAndroidWidgetToString } from './widgets/renderer.js'
-export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
+export type { AndroidColorValue } from './dynamic-colors.js'
+export type {
+  ResolvableCondition,
+  ResolvableEnvironmentKey,
+  ResolvableEnvironmentValueMap,
+  ResolvableValue,
+  ResolvableWidgetRenderingMode,
+} from '@use-voltra/core'

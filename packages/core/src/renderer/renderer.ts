@@ -25,11 +25,17 @@ import {
 
 import { isVoltraComponent } from '../jsx/createVoltraComponent.js'
 import { shorten } from '../payload/short-names.js'
+import type { ResolvableCondition } from '../resolvable/public.js'
+import {
+  isResolvableValueExpression,
+  serializeCondition,
+  serializeResolvablePropValue,
+  serializeStyleObject,
+} from '../resolvable/serialize.js'
 import { VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'
 import { ContextRegistry, getContextRegistry } from './context-registry.js'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher.js'
 import { createElementRegistry, type ElementRegistry, preScanForDuplicates } from './element-registry.js'
-import { flattenStyle } from './flatten-styles.js'
 import { getRenderCache, type RenderCache } from './render-cache.js'
 import { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry.js'
 
@@ -208,10 +214,69 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
 
       const { children, ...parameters } = child.props as { children?: ReactNode; [key: string]: unknown }
       const isTextComponent = child.type === 'Text' || child.type === 'AndroidText'
+      const isIfComponent = child.type === 'ControlIf' || child.type === 'AndroidControlIf'
+      const isMatchComponent = child.type === 'ControlSwitch' || child.type === 'AndroidControlSwitch'
+
+      // Short-circuit: ResolvableExpression as children of a Text component is serialized
+      // via p.txt (wire key for "text") so the native resolver handles it at render time.
+      if (isTextComponent && isResolvableValueExpression(children)) {
+        const id = typeof parameters.id === 'string' ? parameters.id : undefined
+        const { id: _id, ...cleanParameters } = parameters
+        const transformedProps = transformProps({ ...cleanParameters, text: children }, context)
+        const hasProps = Object.keys(transformedProps).length > 0
+        return {
+          t: context.componentRegistry.getComponentId(child.type),
+          ...(id ? { i: id } : {}),
+          c: '',
+          ...(hasProps ? { p: transformedProps } : {}),
+        }
+      }
+
       const childContext: VoltraRenderingContext = {
         ...context,
         inStringOnlyContext: isTextComponent,
       }
+
+      if (isIfComponent) {
+        const id = typeof parameters.id === 'string' ? parameters.id : undefined
+        const condition = parameters.condition as ResolvableCondition
+        const elseNode = parameters.else as ReactNode | undefined
+        const thenRendered = children !== null && children !== undefined ? renderNode(children, childContext) : []
+        const elseRendered =
+          elseNode !== null && elseNode !== undefined ? renderNode(elseNode, childContext) : undefined
+        const props: Record<string, VoltraPropValue> = {
+          [shorten('condition')]: serializeCondition(condition),
+        }
+        if (elseRendered !== undefined) {
+          props[shorten('else')] = elseRendered
+        }
+        return {
+          t: context.componentRegistry.getComponentId(child.type),
+          ...(id ? { i: id } : {}),
+          c: thenRendered,
+          p: props,
+        }
+      }
+
+      if (isMatchComponent) {
+        const id = typeof parameters.id === 'string' ? parameters.id : undefined
+        const value = parameters.value
+        const cases = parameters.cases as Record<string, ReactNode>
+        const serializedValue = serializeResolvablePropValue(value)
+        const serializedCases: Record<string, VoltraNodeJson> = {}
+        for (const [caseKey, caseNode] of Object.entries(cases)) {
+          serializedCases[caseKey] = renderNode(caseNode as ReactNode, childContext)
+        }
+        return {
+          t: context.componentRegistry.getComponentId(child.type),
+          ...(id ? { i: id } : {}),
+          p: {
+            [shorten('value')]: serializedValue,
+            [shorten('cases')]: serializedCases,
+          },
+        }
+      }
+
       const renderedChildren =
         children !== null && children !== undefined ? renderNode(children, childContext) : isTextComponent ? '' : []
 
@@ -306,35 +371,6 @@ export const renderVariantToJson = (element: ReactNode, componentRegistry: Compo
   return renderNode(element, context)
 }
 
-function compressStyleObject(style: any): any {
-  if (style === null || style === undefined) {
-    return style
-  }
-
-  const flattened = flattenStyle(style)
-  const compressed: Record<string, any> = {}
-
-  for (const [key, value] of Object.entries(flattened)) {
-    const shortKey = shorten(key)
-
-    if (value === null || value === undefined) {
-      continue
-    }
-
-    if (typeof value === 'object' && !Array.isArray(value) && value.constructor === Object) {
-      const compressedNested: Record<string, any> = {}
-      for (const [nestedKey, nestedValue] of Object.entries(value)) {
-        compressedNested[nestedKey] = nestedValue
-      }
-      compressed[shortKey] = compressedNested
-    } else {
-      compressed[shortKey] = value
-    }
-  }
-
-  return compressed
-}
-
 function isReactNode(value: unknown): value is ReactNode {
   if (value === null || value === undefined || value === false || value === true) {
     return false
@@ -364,7 +400,7 @@ export function transformProps(
         const index = context.stylesheetRegistry.registerStyle(value as object)
         transformed[shortKey] = index
       } else {
-        transformed[shortKey] = compressStyleObject(value)
+        transformed[shortKey] = serializeStyleObject(value) as VoltraPropValue
       }
     } else if (isReactNode(value)) {
       const serializedComponent = renderNode(value, {
@@ -379,14 +415,14 @@ export function transformProps(
       transformed[shortKey] = serializedComponent
     } else {
       const shortKey = shorten(key)
-      transformed[shortKey] = value as VoltraPropValue
+      transformed[shortKey] = serializeResolvablePropValue(value)
     }
   }
 
   return transformed
 }
 
-export const VOLTRA_PAYLOAD_VERSION = 1
+export const VOLTRA_PAYLOAD_VERSION = 2
 
 export const createVoltraRenderer = (componentRegistry: ComponentRegistry) => {
   const rootNodes: { name: string; node: ReactNode }[] = []

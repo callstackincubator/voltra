@@ -288,7 +288,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
 
   const handleUpsertPayload = async () => {
     try {
-      const payloadString = renderedPayload || renderAndroidOngoingNotificationPayload(content)
+      const payloadString = renderAndroidOngoingNotificationPayload(content)
       const payload = JSON.parse(payloadString) as AndroidOngoingNotificationPayload
       const result = await upsertAndroidOngoingNotification(payload, getOngoingNotificationOptions())
       syncActiveState(result.notificationId)

@@ -159,6 +159,8 @@ private fun RenderElement(element: VoltraElement) {
         ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element)
         ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element)
         ComponentTypeID.CHART -> RenderChart(element)
+        ComponentTypeID.CONTROL_IF -> RenderControlIf(element)
+        ComponentTypeID.CONTROL_SWITCH -> RenderControlSwitch(element)
     }
 }
 
@@ -194,5 +196,7 @@ fun RenderElementWithModifier(
         ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element, modifier)
         ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element, modifier)
         ComponentTypeID.CHART -> RenderChart(element, modifier)
+        ComponentTypeID.CONTROL_IF -> RenderControlIf(element)
+        ComponentTypeID.CONTROL_SWITCH -> RenderControlSwitch(element)
     }
 }

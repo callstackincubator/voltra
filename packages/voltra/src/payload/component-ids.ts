@@ -30,6 +30,8 @@ export const COMPONENT_NAME_TO_ID: Record<string, number> = {
   Link: 19,
   View: 20,
   Chart: 21,
+  ControlIf: 22,
+  ControlSwitch: 23,
 }
 
 /**
@@ -58,6 +60,8 @@ export const COMPONENT_ID_TO_NAME: Record<number, string> = {
   19: 'Link',
   20: 'View',
   21: 'Chart',
+  22: 'ControlIf',
+  23: 'ControlSwitch',
 }
 
 /**
