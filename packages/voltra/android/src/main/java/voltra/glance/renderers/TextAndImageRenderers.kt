@@ -53,6 +53,10 @@ fun RenderText(
     val text = extractTextFromNode(element.c)
     val renderAsBitmap = element.p?.get("renderAsBitmap") as? Boolean ?: false
     val textStyle = resolvedStyle?.text ?: voltra.styling.TextStyle.Default
+    val maxLines =
+        (element.p?.get("maxLines") as? Number)?.toInt()
+            ?: textStyle.lineLimit
+            ?: Int.MAX_VALUE
 
     if (renderAsBitmap && textStyle.fontFamily != null) {
         val context = LocalContext.current
@@ -67,6 +71,7 @@ fun RenderText(
             val bitmapTextStyle =
                 textStyle.copy(
                     color = textStyle.color?.let { VoltraColorValue.Static(it.resolveColor(context)) },
+                    lineLimit = maxLines,
                 )
             // Use screen width as max constraint
             val maxWidthPx = (context.resources.displayMetrics.widthPixels * 0.9f).toInt()
@@ -95,7 +100,7 @@ fun RenderText(
     }
 
     val glanceTextStyle = textStyle.toGlanceTextStyle()
-    Text(text = text, modifier = finalModifier, style = glanceTextStyle)
+    Text(text = text, modifier = finalModifier, style = glanceTextStyle, maxLines = maxLines)
 }
 
 @Composable
