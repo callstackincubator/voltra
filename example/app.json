@@ -37,15 +37,27 @@
           "widgets": [
             {
               "id": "weather",
-              "displayName": "Weather Widget",
-              "description": "Shows current weather conditions",
+              "displayName": {
+                "pl": "Widget pogody",
+                "en": "Weather Widget"
+              },
+              "description": {
+                "pl": "Pokazuje aktualne warunki pogodowe",
+                "en": "Shows current weather conditions"
+              },
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
               "initialStatePath": "./widgets/ios/ios-weather-initial.tsx"
             },
             {
               "id": "portfolio",
-              "displayName": "Portfolio Widget",
-              "description": "Shows portfolio performance with a chart and live updates",
+              "displayName": {
+                "pl": "Widget portfela",
+                "en": "Portfolio Widget"
+              },
+              "description": {
+                "pl": "Pokazuje wyniki portfela z wykresem i aktualizacjami na żywo",
+                "en": "Shows portfolio performance with a chart and live updates"
+              },
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
               "initialStatePath": "./widgets/ios/ios-portfolio-initial.tsx",
               "serverUpdate": {
@@ -60,8 +72,14 @@
             "widgets": [
               {
                 "id": "voltra",
-                "displayName": "Voltra Widget",
-                "description": "Voltra logo widget",
+                "displayName": {
+                  "pl": "Widget Voltra",
+                  "en": "Voltra Widget"
+                },
+                "description": {
+                  "pl": "Widget z logo Voltra",
+                  "en": "Voltra logo widget"
+                },
                 "minCellWidth": 2,
                 "minCellHeight": 2,
                 "targetCellWidth": 2,
@@ -73,8 +91,14 @@
               },
               {
                 "id": "interactive_todos",
-                "displayName": "Interactive Todos Widget",
-                "description": "Testing interactive widgets with checkboxes, switches, and buttons",
+                "displayName": {
+                  "pl": "Interaktywna lista zadań",
+                  "en": "Interactive Todos Widget"
+                },
+                "description": {
+                  "pl": "Test interaktywnych widgetów z polami wyboru, przełącznikami i przyciskami",
+                  "en": "Testing interactive widgets with checkboxes, switches, and buttons"
+                },
                 "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
@@ -83,8 +107,14 @@
               },
               {
                 "id": "image_preloading",
-                "displayName": "Image Preloading Widget",
-                "description": "Test image preloading on Android",
+                "displayName": {
+                  "pl": "Widget wstępnego ładowania obrazów",
+                  "en": "Image Preloading Widget"
+                },
+                "description": {
+                  "pl": "Test wstępnego ładowania obrazów na Androidzie",
+                  "en": "Test image preloading on Android"
+                },
                 "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
@@ -92,8 +122,14 @@
               },
               {
                 "id": "image_fallback",
-                "displayName": "Image Fallback Widget",
-                "description": "Test image fallback with backgroundColor from styles",
+                "displayName": {
+                  "pl": "Widget zapasowego obrazu",
+                  "en": "Image Fallback Widget"
+                },
+                "description": {
+                  "pl": "Test zapasowego obrazu z kolorem tła ze stylów",
+                  "en": "Test image fallback with backgroundColor from styles"
+                },
                 "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
@@ -102,8 +138,14 @@
               },
               {
                 "id": "chart_widget",
-                "displayName": "Chart Widget",
-                "description": "Test Chart component",
+                "displayName": {
+                  "pl": "Widget wykresu",
+                  "en": "Chart Widget"
+                },
+                "description": {
+                  "pl": "Test komponentu Chart",
+                  "en": "Test Chart component"
+                },
                 "targetCellWidth": 3,
                 "targetCellHeight": 3,
                 "resizeMode": "horizontal|vertical",
@@ -112,8 +154,14 @@
               },
               {
                 "id": "portfolio",
-                "displayName": "Portfolio Widget",
-                "description": "Shows portfolio performance with a chart and live updates",
+                "displayName": {
+                  "pl": "Widget portfela",
+                  "en": "Portfolio Widget"
+                },
+                "description": {
+                  "pl": "Pokazuje wyniki portfela z wykresem i aktualizacjami na żywo",
+                  "en": "Shows portfolio performance with a chart and live updates"
+                },
                 "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",
@@ -127,8 +175,14 @@
               },
               {
                 "id": "material_colors",
-                "displayName": "Material Colors Widget",
-                "description": "Compare client-side and server-side rendering with Android dynamic colors",
+                "displayName": {
+                  "pl": "Widget kolorów Material",
+                  "en": "Material Colors Widget"
+                },
+                "description": {
+                  "pl": "Porównanie renderowania po stronie klienta i serwera z dynamicznymi kolorami Androida",
+                  "en": "Compare client-side and server-side rendering with Android dynamic colors"
+                },
                 "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "resizeMode": "horizontal|vertical",

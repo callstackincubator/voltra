@@ -3,9 +3,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
-import type { WidgetConfig } from '../../types'
+import type { WidgetConfig, WidgetLabel } from '../../types'
+import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 import { logger } from '../../utils/logger'
 import { prerenderWidgetState } from '../../utils/prerender'
+import { isWidgetLocalizedMap, widgetLabelEnglish } from '../../utils/widgetLabel'
 
 export interface GenerateSwiftFilesOptions {
   targetPath: string
@@ -39,6 +41,8 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   // Prerender widget initial states if any widgets have initialStatePath configured
   const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot, renderWidgetToString)
 
+  syncVoltraWidgetGalleryStrings(targetPath, widgets)
+
   // Generate the initial states Swift file
   const initialStatesContent = generateInitialStatesSwift(prerenderedStates)
   const initialStatesPath = path.join(targetPath, 'VoltraWidgetInitialStates.swift')
@@ -57,8 +61,135 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
 }
 
 // ============================================================================
-// Widget Bundle
+// Widget gallery localization: *.lproj/VoltraWidgets.strings + LocalizedStringResource
+//
+// We use classic .strings tables (not .xcstrings): the `xcode` npm library assigns
+// unknown lastKnownFileType to .xcstrings, so Xcode may not treat them as string tables
+// and lookups fall back to English defaultValue.
+//
+// LocalizedStringResource is still appropriate for extensions (deferred resolution).
+// https://developer.apple.com/documentation/foundation/localizedstringresource
 // ============================================================================
+
+function escapeForSwiftStringLiteral(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+}
+
+function escapeDotStringsValue(s: string): string {
+  return escapeForSwiftStringLiteral(s)
+}
+
+function collectGalleryStringsByLocale(widgets: WidgetConfig[]): Map<string, Record<string, string>> {
+  const byLocale = new Map<string, Record<string, string>>()
+
+  const add = (locale: string, key: string, value: string) => {
+    let bucket = byLocale.get(locale)
+    if (!bucket) {
+      bucket = {}
+      byLocale.set(locale, bucket)
+    }
+    bucket[key] = value
+  }
+
+  for (const w of widgets) {
+    if (isWidgetLocalizedMap(w.displayName)) {
+      const key = `voltra_widget_${w.id}_displayName`
+      for (const [locale, val] of Object.entries(w.displayName)) {
+        if (typeof val === 'string' && val.trim()) {
+          add(locale, key, val)
+        }
+      }
+    }
+    if (isWidgetLocalizedMap(w.description)) {
+      const key = `voltra_widget_${w.id}_description`
+      for (const [locale, val] of Object.entries(w.description)) {
+        if (typeof val === 'string' && val.trim()) {
+          add(locale, key, val)
+        }
+      }
+    }
+  }
+
+  return byLocale
+}
+
+function formatVoltraWidgetsStringsFile(entries: Record<string, string>): string {
+  const sortedKeys = Object.keys(entries).sort()
+  const lines = sortedKeys.map((k) => `"${k}" = "${escapeDotStringsValue(entries[k]!)}";`)
+  return `/* Voltra widget gallery strings (auto-generated) */\n${lines.join('\n')}\n`
+}
+
+/** Remove generated gallery strings and obsolete string catalog before rewriting. */
+function clearVoltraWidgetGalleryStringArtifacts(targetPath: string): void {
+  const catalogPath = path.join(targetPath, 'VoltraWidgets.xcstrings')
+  if (fs.existsSync(catalogPath)) {
+    fs.unlinkSync(catalogPath)
+  }
+
+  if (!fs.existsSync(targetPath)) {
+    return
+  }
+
+  for (const entry of fs.readdirSync(targetPath)) {
+    if (!entry.endsWith('.lproj')) {
+      continue
+    }
+    const stringsPath = path.join(targetPath, entry, VOLTRA_WIDGET_STRINGS_BASENAME)
+    if (fs.existsSync(stringsPath)) {
+      fs.unlinkSync(stringsPath)
+    }
+    const dirPath = path.join(targetPath, entry)
+    try {
+      if (fs.existsSync(dirPath) && fs.readdirSync(dirPath).length === 0) {
+        fs.rmdirSync(dirPath)
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Writes `<locale>.lproj/VoltraWidgets.strings` for locale-map gallery labels.
+ */
+function syncVoltraWidgetGalleryStrings(targetPath: string, widgets: WidgetConfig[] | undefined): void {
+  const list = widgets ?? []
+  clearVoltraWidgetGalleryStringArtifacts(targetPath)
+
+  if (list.length === 0) {
+    return
+  }
+
+  const byLocale = collectGalleryStringsByLocale(list)
+  if (byLocale.size === 0) {
+    return
+  }
+
+  for (const [locale, kv] of byLocale) {
+    const lproj = path.join(targetPath, `${locale}.lproj`)
+    fs.mkdirSync(lproj, { recursive: true })
+    fs.writeFileSync(path.join(lproj, VOLTRA_WIDGET_STRINGS_BASENAME), formatVoltraWidgetsStringsFile(kv), 'utf8')
+  }
+}
+
+function widgetUsesGalleryLocalization(widget: WidgetConfig): boolean {
+  return isWidgetLocalizedMap(widget.displayName) || isWidgetLocalizedMap(widget.description)
+}
+
+/**
+ * Widget gallery title / description: deferred lookup via LocalizedStringResource when using a locale map
+ * (recommended for extensions); plain Text for single-string config.
+ */
+function iosWidgetGalleryLabelSwiftExpr(widgetId: string, field: 'displayName' | 'description', label: WidgetLabel): string {
+  if (!isWidgetLocalizedMap(label)) {
+    return `Text("${escapeForSwiftStringLiteral(label)}")`
+  }
+
+  const key = `voltra_widget_${widgetId}_${field}`
+  const defaultEnglish = escapeForSwiftStringLiteral(widgetLabelEnglish(label))
+
+  return `Text(LocalizedStringResource("${key}", defaultValue: String.LocalizationValue("${defaultEnglish}"), table: "VoltraWidgets"))`
+}
 
 /**
  * Generates Swift code for a single widget struct
@@ -69,6 +200,9 @@ function generateWidgetStruct(widget: WidgetConfig): string {
 
   // Sanitize the widget id for use as a Swift identifier
   const structName = `VoltraWidget_${widget.id}`
+
+  const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
+  const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
 
   return dedent`
     public struct ${structName}: Widget {
@@ -86,8 +220,8 @@ function generateWidgetStruct(widget: WidgetConfig): string {
         ) { entry in
           VoltraHomeWidgetView(entry: entry)
         }
-        .configurationDisplayName("${widget.displayName}")
-        .description("${widget.description}")
+        .configurationDisplayName(${displayNameExpr})
+        .description(${descriptionExpr})
         .supportedFamilies([${familiesSwift}])
         .contentMarginsDisabled()
       }
@@ -105,6 +239,9 @@ function generateWidgetBundleSwift(widgets: WidgetConfig[]): string {
   // Generate widget bundle body entries
   const widgetInstances = widgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
 
+  const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
+  const foundationImport = needsFoundation ? 'import Foundation\n' : ''
+
   return dedent`
     //
     //  VoltraWidgetBundle.swift
@@ -113,7 +250,7 @@ function generateWidgetBundleSwift(widgets: WidgetConfig[]): string {
     //  This file defines which Voltra widgets are available in your app.
     //
 
-    import SwiftUI
+    ${foundationImport}import SwiftUI
     import WidgetKit
     import VoltraWidget
 

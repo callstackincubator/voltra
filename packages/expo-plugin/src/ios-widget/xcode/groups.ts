@@ -14,11 +14,12 @@ export interface AddPbxGroupOptions {
  */
 export function addPbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
   const { targetName, widgetFiles } = options
-  const { swiftFiles, intentFiles, assetDirectories, entitlementFiles, plistFiles } = widgetFiles
+  const { swiftFiles, intentFiles, assetDirectories, entitlementFiles, plistFiles, localizedStringResources } =
+    widgetFiles
 
   // Add PBX group with all widget files
   const { uuid: pbxGroupUuid } = xcodeProject.addPbxGroup(
-    [...swiftFiles, ...intentFiles, ...entitlementFiles, ...plistFiles, ...assetDirectories],
+    [...swiftFiles, ...intentFiles, ...entitlementFiles, ...plistFiles, ...assetDirectories, ...localizedStringResources],
     targetName,
     targetName
   )
@@ -39,8 +40,16 @@ export function addPbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOpti
  */
 export function ensurePbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
   const { targetName, widgetFiles } = options
-  const { swiftFiles, intentFiles, assetDirectories, entitlementFiles, plistFiles } = widgetFiles
-  const allFiles = [...swiftFiles, ...intentFiles, ...entitlementFiles, ...plistFiles, ...assetDirectories]
+  const { swiftFiles, intentFiles, assetDirectories, entitlementFiles, plistFiles, localizedStringResources } =
+    widgetFiles
+  const allFiles = [
+    ...swiftFiles,
+    ...intentFiles,
+    ...entitlementFiles,
+    ...plistFiles,
+    ...assetDirectories,
+    ...localizedStringResources,
+  ]
 
   const existingGroup = xcodeProject.pbxGroupByName(targetName)
   if (!existingGroup) {

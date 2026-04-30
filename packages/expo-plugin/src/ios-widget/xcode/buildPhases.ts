@@ -29,7 +29,8 @@ export function addBuildPhases(xcodeProject: XcodeProject, options: AddBuildPhas
   const buildPath = `""`
   const folderType = 'app_extension'
 
-  const { swiftFiles, intentFiles, assetDirectories } = widgetFiles
+  const { swiftFiles, intentFiles, assetDirectories, localizedStringResources } = widgetFiles
+  const resourcePaths = [...assetDirectories, ...localizedStringResources]
 
   // Sources build phase
   xcodeProject.addBuildPhase(
@@ -61,7 +62,7 @@ export function addBuildPhases(xcodeProject: XcodeProject, options: AddBuildPhas
   xcodeProject.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', targetUuid, folderType, buildPath)
 
   // Resources build phase
-  xcodeProject.addBuildPhase([...assetDirectories], 'PBXResourcesBuildPhase', 'Resources', targetUuid)
+  xcodeProject.addBuildPhase([...resourcePaths], 'PBXResourcesBuildPhase', 'Resources', targetUuid)
 }
 
 /**
@@ -73,7 +74,8 @@ export function ensureBuildPhases(xcodeProject: XcodeProject, options: EnsureBui
   const folderType = 'app_extension'
   const mainTargetUuid = options.mainTargetUuid ?? xcodeProject.getFirstTarget().uuid
 
-  const { swiftFiles, intentFiles, assetDirectories } = widgetFiles
+  const { swiftFiles, intentFiles, assetDirectories, localizedStringResources } = widgetFiles
+  const resourcePaths = [...assetDirectories, ...localizedStringResources]
 
   dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXSourcesBuildPhase', 'Sources')
   dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXFrameworksBuildPhase', 'Frameworks')
@@ -115,11 +117,11 @@ export function ensureBuildPhases(xcodeProject: XcodeProject, options: EnsureBui
   // Resources build phase
   let resourcesPhase = xcodeProject.buildPhaseObject('PBXResourcesBuildPhase', 'Resources', targetUuid)
   if (!resourcesPhase) {
-    xcodeProject.addBuildPhase([...assetDirectories], 'PBXResourcesBuildPhase', 'Resources', targetUuid)
+    xcodeProject.addBuildPhase([...resourcePaths], 'PBXResourcesBuildPhase', 'Resources', targetUuid)
     resourcesPhase = xcodeProject.buildPhaseObject('PBXResourcesBuildPhase', 'Resources', targetUuid)
   }
   if (resourcesPhase) {
-    ensureBuildPhaseFiles(xcodeProject, resourcesPhase, [...assetDirectories])
+    ensureBuildPhaseFiles(xcodeProject, resourcesPhase, [...resourcePaths])
   }
 }
 

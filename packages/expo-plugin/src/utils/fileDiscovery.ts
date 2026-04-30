@@ -4,6 +4,9 @@ import * as path from 'path'
 import type { WidgetFiles } from '../types'
 import { logger } from './logger'
 
+/** Table name matches basename without extension; co-located per locale in *.lproj */
+export const VOLTRA_WIDGET_STRINGS_BASENAME = 'VoltraWidgets.strings'
+
 /**
  * Scans the widget extension target directory and returns categorized file lists.
  *
@@ -21,6 +24,7 @@ export function getWidgetFiles(targetPath: string, targetName: string): WidgetFi
     plistFiles: [],
     assetDirectories: [],
     intentFiles: [],
+    localizedStringResources: [],
   }
 
   if (!fs.existsSync(targetPath)) {
@@ -34,6 +38,16 @@ export function getWidgetFiles(targetPath: string, targetName: string): WidgetFi
   }
 
   const files = fs.readdirSync(targetPath)
+
+  for (const entry of files) {
+    if (!entry.endsWith('.lproj')) {
+      continue
+    }
+    const stringsPath = path.join(targetPath, entry, VOLTRA_WIDGET_STRINGS_BASENAME)
+    if (fs.existsSync(stringsPath)) {
+      widgetFiles.localizedStringResources.push(`${entry}/${VOLTRA_WIDGET_STRINGS_BASENAME}`)
+    }
+  }
 
   for (const file of files) {
     const itemPath = path.join(targetPath, file)

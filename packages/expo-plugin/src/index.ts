@@ -91,5 +91,7 @@ export type {
   VoltraConfigPlugin,
   WidgetConfig,
   WidgetFamily,
+  WidgetLabel,
+  WidgetLocalizedCopy,
   WidgetServerUpdateConfig,
 } from './types'

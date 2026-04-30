@@ -7,6 +7,92 @@ import type { AndroidWidgetConfig, ConfigPluginProps, WidgetConfig, WidgetFamily
  * Validation functions for the Voltra plugin
  */
 
+/** Widget id: Swift / Kotlin identifier fragment and Android XML token fragment */
+const WIDGET_ID_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+
+/**
+ * Locale keys in app.json become iOS `.lproj` folder names and Android `values-*` qualifiers (after mapping).
+ * Restrict to safe, BCP-47-like tags: no slashes, spaces, or exotic punctuation.
+ */
+const LOCALE_KEY_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/
+
+const MAX_LOCALE_KEY_LENGTH = 32
+
+function validateHomeScreenWidgetId(widgetId: unknown): asserts widgetId is string {
+  if (!widgetId || typeof widgetId !== 'string') {
+    throw new Error('Widget ID is required and must be a string')
+  }
+
+  if (!WIDGET_ID_PATTERN.test(widgetId)) {
+    throw new Error(
+      `Widget ID '${widgetId}' is invalid. ` +
+        'Must start with a letter or underscore and contain only alphanumeric characters and underscores.'
+    )
+  }
+}
+
+function assertValidLocaleKey(localeKey: string, widgetId: string, fieldName: string): void {
+  if (localeKey.trim() !== localeKey) {
+    throw new Error(
+      `Widget '${widgetId}': ${fieldName} locale key '${localeKey}' must not have leading or trailing whitespace`
+    )
+  }
+
+  if (!localeKey) {
+    throw new Error(`Widget '${widgetId}': ${fieldName} locale map contains an empty locale key`)
+  }
+
+  if (localeKey.length > MAX_LOCALE_KEY_LENGTH) {
+    throw new Error(
+      `Widget '${widgetId}': ${fieldName} locale key '${localeKey}' exceeds ${MAX_LOCALE_KEY_LENGTH} characters`
+    )
+  }
+
+  if (!LOCALE_KEY_PATTERN.test(localeKey)) {
+    throw new Error(
+      `Widget '${widgetId}': ${fieldName} locale key '${localeKey}' is invalid. ` +
+        'Use BCP-47-style tags (e.g. en, pl, pt-BR, zh-Hans). Letters, digits, single separators _ or - only.'
+    )
+  }
+}
+
+function validateWidgetLabel(value: unknown, widgetId: string, fieldName: string): void {
+  if (typeof value === 'string') {
+    if (!value.trim()) {
+      throw new Error(`Widget '${widgetId}': ${fieldName} is required`)
+    }
+    return
+  }
+
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(
+      `Widget '${widgetId}': ${fieldName} must be a string or a locale map (e.g. { "en": "...", "pl": "..." })`
+    )
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+  if (entries.length === 0) {
+    throw new Error(`Widget '${widgetId}': ${fieldName} locale map must not be empty`)
+  }
+
+  const localeKeys = new Set<string>()
+  for (const [locale, v] of entries) {
+    assertValidLocaleKey(locale, widgetId, fieldName)
+
+    const normalized = locale.toLowerCase().replace(/_/g, '-')
+    if (localeKeys.has(normalized)) {
+      throw new Error(
+        `Widget '${widgetId}': ${fieldName} duplicates locale '${locale}' (underscore and hyphen forms count as the same, e.g. pt_BR vs pt-BR)`
+      )
+    }
+    localeKeys.add(normalized)
+
+    if (typeof v !== 'string' || !v.trim()) {
+      throw new Error(`Widget '${widgetId}': ${fieldName}.${locale} must be a non-empty string`)
+    }
+  }
+}
+
 // ============================================================================
 // iOS Widget Validation
 // ============================================================================
@@ -26,27 +112,10 @@ const VALID_FAMILIES: Set<WidgetFamily> = new Set([
  * Throws an error if validation fails.
  */
 export function validateWidgetConfig(widget: WidgetConfig): void {
-  // Validate widget ID
-  if (!widget.id || typeof widget.id !== 'string') {
-    throw new Error('Widget ID is required and must be a string')
-  }
+  validateHomeScreenWidgetId(widget.id)
 
-  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(widget.id)) {
-    throw new Error(
-      `Widget ID '${widget.id}' is invalid. ` +
-        'Must start with a letter or underscore and contain only alphanumeric characters and underscores.'
-    )
-  }
-
-  // Validate display name
-  if (!widget.displayName?.trim()) {
-    throw new Error(`Widget '${widget.id}': displayName is required`)
-  }
-
-  // Validate description
-  if (!widget.description?.trim()) {
-    throw new Error(`Widget '${widget.id}': description is required`)
-  }
+  validateWidgetLabel(widget.displayName, widget.id, 'displayName')
+  validateWidgetLabel(widget.description, widget.id, 'description')
 
   // Validate supported families if provided
   if (widget.supportedFamilies) {
@@ -74,27 +143,10 @@ export function validateWidgetConfig(widget: WidgetConfig): void {
  * Throws an error if validation fails.
  */
 export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): void {
-  // Validate widget ID
-  if (!widget.id || typeof widget.id !== 'string') {
-    throw new Error('Widget ID is required and must be a string')
-  }
+  validateHomeScreenWidgetId(widget.id)
 
-  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(widget.id)) {
-    throw new Error(
-      `Widget ID '${widget.id}' is invalid. ` +
-        'Must start with a letter or underscore and contain only alphanumeric characters and underscores.'
-    )
-  }
-
-  // Validate display name
-  if (!widget.displayName?.trim()) {
-    throw new Error(`Widget '${widget.id}': displayName is required`)
-  }
-
-  // Validate description
-  if (!widget.description?.trim()) {
-    throw new Error(`Widget '${widget.id}': description is required`)
-  }
+  validateWidgetLabel(widget.displayName, widget.id, 'displayName')
+  validateWidgetLabel(widget.description, widget.id, 'description')
 
   // Validate targetCellWidth
   if (typeof widget.targetCellWidth !== 'number') {

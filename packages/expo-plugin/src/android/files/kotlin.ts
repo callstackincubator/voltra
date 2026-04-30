@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import type { AndroidWidgetConfig } from '../../types'
+import { widgetLabelEnglish } from '../../utils/widgetLabel'
 
 export interface GenerateKotlinFilesProps {
   platformProjectRoot: string
@@ -49,6 +50,7 @@ export async function generateWidgetReceivers(props: GenerateKotlinFilesProps): 
  */
 function generateWidgetReceiverClass(widget: AndroidWidgetConfig, packageName: string): string {
   const className = `VoltraWidget_${widget.id}Receiver`
+  const labelForComment = widgetLabelEnglish(widget.displayName)
 
   if (widget.serverUpdate) {
     const refreshEnabled = widget.serverUpdate.refresh === true
@@ -62,7 +64,7 @@ function generateWidgetReceiverClass(widget: AndroidWidgetConfig, packageName: s
       import voltra.widget.VoltraWidgetUpdateScheduler
 
       /**
-       * Auto-generated widget receiver for ${widget.displayName}
+       * Auto-generated widget receiver for ${labelForComment}
        * Widget ID: ${widget.id}
        * Server Update: ${widget.serverUpdate.url} (every ${widget.serverUpdate.intervalMinutes ?? 15} minutes)
        * Refresh Button: ${refreshEnabled}
@@ -110,7 +112,7 @@ function generateWidgetReceiverClass(widget: AndroidWidgetConfig, packageName: s
     import voltra.widget.VoltraWidgetReceiver
 
     /**
-     * Auto-generated widget receiver for ${widget.displayName}
+     * Auto-generated widget receiver for ${labelForComment}
      * Widget ID: ${widget.id}
      */
     class ${className} : VoltraWidgetReceiver() {

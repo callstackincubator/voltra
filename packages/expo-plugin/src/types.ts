@@ -9,6 +9,14 @@ import { ConfigPlugin } from '@expo/config-plugins'
 // ============================================================================
 
 /**
+ * Per-locale strings for widget picker/gallery labels (`displayName`, `description`).
+ * Keys should be BCP-47-style locale tags (e.g. `en`, `pl`, `pt-BR`). Plain `string` is still allowed for a single-language setup.
+ */
+export type WidgetLocalizedCopy = Record<string, string>;
+
+export type WidgetLabel = string | WidgetLocalizedCopy
+
+/**
  * Supported widget size families
  */
 export type WidgetFamily =
@@ -30,13 +38,14 @@ export interface WidgetConfig {
    */
   id: string
   /**
-   * Display name shown in the widget gallery
+   * Display name shown in the widget gallery.
+   * For locale maps, keys must be BCP-47-like (`en`, `pl`, `pt-BR`); include `en` when possible so defaults align with Android `values/` and iOS fallbacks.
    */
-  displayName: string
+  displayName: WidgetLabel
   /**
-   * Description shown in the widget gallery
+   * Description shown in the widget gallery (same rules as `displayName`).
    */
-  description: string
+  description: WidgetLabel
   /**
    * Supported widget sizes
    * @default ['systemSmall', 'systemMedium', 'systemLarge']
@@ -89,6 +98,8 @@ export interface WidgetFiles {
   plistFiles: string[]
   assetDirectories: string[]
   intentFiles: string[]
+  /** Paths relative to the widget extension root (e.g. en.lproj/VoltraWidgets.strings) */
+  localizedStringResources: string[]
 }
 
 // ============================================================================
@@ -104,13 +115,13 @@ export interface AndroidWidgetConfig {
    */
   id: string
   /**
-   * Display name shown in the widget picker
+   * Display name shown in the widget picker (same localization rules as iOS `widgets[].displayName`).
    */
-  displayName: string
+  displayName: WidgetLabel
   /**
-   * Description shown in the widget picker
+   * Description shown in the widget picker (same localization rules as iOS `widgets[].description`).
    */
-  description: string
+  description: WidgetLabel
   /**
    * Minimum width in dp. If provided, takes precedence over minCellWidth.
    */
