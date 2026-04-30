@@ -24,8 +24,6 @@ public struct VoltraGlassContainer: VoltraView {
           children
         }.applyStyle(element.style)
       }
-    } else {
-      EmptyView()
     }
   }
 }
