@@ -2,10 +2,7 @@ import { pickLocalizedValue } from './localePick'
 
 describe('pickLocalizedValue', () => {
   it('prefers exact locale tag match', () => {
-    const out = pickLocalizedValue(
-      { en: '{"a":1}', pl: '{"a":2}', 'pt-BR': '{"a":3}' },
-      ['pt-BR', 'en']
-    )
+    const out = pickLocalizedValue({ en: '{"a":1}', pl: '{"a":2}', 'pt-BR': '{"a":3}' }, ['pt-BR', 'en'])
     expect(out).toBe('{"a":3}')
   })
 

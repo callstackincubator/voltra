@@ -227,7 +227,9 @@ function escapeAndroidStringRes(text: string): string {
 
 function generateVoltraWidgetsStringResourcesXml(widgets: AndroidWidgetConfig[], localeKey: string | null): string {
   const localeComment =
-    localeKey === null ? 'default (values/)' : `locale ${localeKey} → values-${localeKeyToAndroidValuesQualifier(localeKey)}`
+    localeKey === null
+      ? 'default (values/)'
+      : `locale ${localeKey} → values-${localeKeyToAndroidValuesQualifier(localeKey)}`
 
   const stringEntries = widgets
     .map((widget) => {

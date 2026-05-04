@@ -183,7 +183,11 @@ function widgetUsesGalleryLocalization(widget: WidgetConfig): boolean {
  * Widget gallery title / description: deferred lookup via LocalizedStringResource when using a locale map
  * (recommended for extensions); plain Text for single-string config.
  */
-function iosWidgetGalleryLabelSwiftExpr(widgetId: string, field: 'displayName' | 'description', label: WidgetLabel): string {
+function iosWidgetGalleryLabelSwiftExpr(
+  widgetId: string,
+  field: 'displayName' | 'description',
+  label: WidgetLabel
+): string {
   if (!isWidgetLocalizedMap(label)) {
     return `Text("${escapeForSwiftStringLiteral(label)}")`
   }

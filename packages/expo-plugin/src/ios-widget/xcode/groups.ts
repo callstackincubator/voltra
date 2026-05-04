@@ -19,7 +19,14 @@ export function addPbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOpti
 
   // Add PBX group with all widget files
   const { uuid: pbxGroupUuid } = xcodeProject.addPbxGroup(
-    [...swiftFiles, ...intentFiles, ...entitlementFiles, ...plistFiles, ...assetDirectories, ...localizedStringResources],
+    [
+      ...swiftFiles,
+      ...intentFiles,
+      ...entitlementFiles,
+      ...plistFiles,
+      ...assetDirectories,
+      ...localizedStringResources,
+    ],
     targetName,
     targetName
   )

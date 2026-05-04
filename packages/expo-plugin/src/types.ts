@@ -12,7 +12,7 @@ import { ConfigPlugin } from '@expo/config-plugins'
  * Per-locale strings for widget picker/gallery labels (`displayName`, `description`).
  * Keys should be BCP-47-style locale tags (e.g. `en`, `pl`, `pt-BR`). Plain `string` is still allowed for a single-language setup.
  */
-export type WidgetLocalizedCopy = Record<string, string>;
+export type WidgetLocalizedCopy = Record<string, string>
 
 export type WidgetLabel = string | WidgetLocalizedCopy
 

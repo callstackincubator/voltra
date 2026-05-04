@@ -6,9 +6,7 @@ describe('validateInitialStatePath', () => {
   })
 
   it('accepts a locale map of paths', () => {
-    expect(() =>
-      validateInitialStatePath({ en: './widgets/en.tsx', pl: './widgets/pl.tsx' }, 'w')
-    ).not.toThrow()
+    expect(() => validateInitialStatePath({ en: './widgets/en.tsx', pl: './widgets/pl.tsx' }, 'w')).not.toThrow()
   })
 
   it('rejects empty locale map', () => {
