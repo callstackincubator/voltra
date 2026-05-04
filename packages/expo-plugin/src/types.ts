@@ -17,6 +17,12 @@ export type WidgetLocalizedCopy = Record<string, string>;
 export type WidgetLabel = string | WidgetLocalizedCopy
 
 /**
+ * Build-time widget initial state source: a single file path, or per-locale paths (same key rules as `WidgetLocalizedCopy`).
+ * Each path must point to a module that exports the widget variants / default export for prerendering.
+ */
+export type WidgetInitialStatePath = string | WidgetLocalizedCopy
+
+/**
  * Supported widget size families
  */
 export type WidgetFamily =
@@ -52,10 +58,10 @@ export interface WidgetConfig {
    */
   supportedFamilies?: WidgetFamily[]
   /**
-   * Path to a file that default exports a WidgetVariants object for initial widget state.
+   * Path to a file that default exports a WidgetVariants object for initial widget state (or a locale map of paths).
    * This will be pre-rendered at build time and bundled into the iOS app.
    */
-  initialStatePath?: string
+  initialStatePath?: WidgetInitialStatePath
   /**
    * Configuration for server-driven widget updates.
    * When configured, the widget will periodically fetch new content from a remote server
@@ -157,10 +163,10 @@ export interface AndroidWidgetConfig {
    */
   widgetCategory?: 'home_screen' | 'keyguard' | 'home_screen|keyguard'
   /**
-   * Path to a file that default exports a WidgetVariants object for initial widget state.
+   * Path to a file that default exports a WidgetVariants object for initial widget state (or a locale map of paths).
    * This will be pre-rendered at build time and bundled into the app.
    */
-  initialStatePath?: string
+  initialStatePath?: WidgetInitialStatePath
   /**
    * Configuration for server-driven widget updates.
    * When configured, the widget will periodically fetch new content from a remote server

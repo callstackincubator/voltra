@@ -1,7 +1,13 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import type { AndroidWidgetConfig, ConfigPluginProps, WidgetConfig, WidgetFamily } from './types'
+import type {
+  AndroidWidgetConfig,
+  ConfigPluginProps,
+  WidgetConfig,
+  WidgetFamily,
+  WidgetInitialStatePath,
+} from './types'
 
 /**
  * Validation functions for the Voltra plugin
@@ -93,6 +99,65 @@ function validateWidgetLabel(value: unknown, widgetId: string, fieldName: string
   }
 }
 
+/**
+ * Validates optional initialStatePath: plain string or locale map of project-relative file paths.
+ */
+export function validateInitialStatePath(
+  value: WidgetInitialStatePath | undefined,
+  widgetId: string,
+  projectRoot?: string
+): void {
+  if (value === undefined) {
+    return
+  }
+
+  const assertPathExists = (relativePath: string, ctx: string) => {
+    if (!relativePath.trim()) {
+      throw new Error(`Widget '${widgetId}': initialStatePath ${ctx} must be a non-empty path`)
+    }
+    if (projectRoot) {
+      const fullPath = path.join(projectRoot, relativePath)
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`Widget '${widgetId}': initialStatePath file not found at ${relativePath}`)
+      }
+    }
+  }
+
+  if (typeof value === 'string') {
+    assertPathExists(value, '')
+    return
+  }
+
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(
+      `Widget '${widgetId}': initialStatePath must be a string or a locale map of paths (e.g. { "en": "./widgets/en.tsx", "pl": "./widgets/pl.tsx" })`
+    )
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+  if (entries.length === 0) {
+    throw new Error(`Widget '${widgetId}': initialStatePath locale map must not be empty`)
+  }
+
+  const localeKeys = new Set<string>()
+  for (const [locale, v] of entries) {
+    assertValidLocaleKey(locale, widgetId, 'initialStatePath')
+
+    const normalized = locale.toLowerCase().replace(/_/g, '-')
+    if (localeKeys.has(normalized)) {
+      throw new Error(
+        `Widget '${widgetId}': initialStatePath duplicates locale '${locale}' (underscore and hyphen forms count as the same)`
+      )
+    }
+    localeKeys.add(normalized)
+
+    if (typeof v !== 'string' || !v.trim()) {
+      throw new Error(`Widget '${widgetId}': initialStatePath.${locale} must be a non-empty path string`)
+    }
+    assertPathExists(v, `.${locale}`)
+  }
+}
+
 // ============================================================================
 // iOS Widget Validation
 // ============================================================================
@@ -116,6 +181,8 @@ export function validateWidgetConfig(widget: WidgetConfig): void {
 
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
+  /** File existence is checked when `projectRoot` is available (e.g. Android prebuild). */
+  validateInitialStatePath(widget.initialStatePath, widget.id)
 
   // Validate supported families if provided
   if (widget.supportedFamilies) {
@@ -147,6 +214,7 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
 
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
+  validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
 
   // Validate targetCellWidth
   if (typeof widget.targetCellWidth !== 'number') {

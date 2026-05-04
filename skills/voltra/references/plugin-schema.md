@@ -18,10 +18,10 @@ Voltra plugin config lives under `expo.plugins`.
 Use top-level `widgets` for iOS widget gallery registration.
 
 - `id`: unique identifier, use alphanumeric and underscores only
-- `displayName`
-- `description`
+- `displayName` (string or per-locale map)
+- `description` (string or per-locale map)
 - `supportedFamilies`: array of iOS families such as `systemSmall`, `systemMedium`, `systemLarge`
-- `initialStatePath`
+- `initialStatePath` (string or per-locale map of paths for localized pre-render)
 - `serverUpdate.url`: widget endpoint, Voltra appends `widgetId`, `platform=ios`, and `family`
 - `serverUpdate.intervalMinutes`: polling interval, default `15`, subject to WidgetKit throttling
 
@@ -38,8 +38,8 @@ Other important Apple-side keys:
 Use `android.widgets` for Android widget registration.
 
 - `id`: unique identifier, use alphanumeric and underscores only
-- `displayName`
-- `description`
+- `displayName` (string or per-locale map)
+- `description` (string or per-locale map)
 - `targetCellWidth`
 - `targetCellHeight`
 - `minCellWidth`
@@ -48,7 +48,7 @@ Use `android.widgets` for Android widget registration.
 - `minHeight`
 - `resizeMode`
 - `widgetCategory`
-- `initialStatePath`
+- `initialStatePath` (string or per-locale map of paths)
 - `serverUpdate.url`: widget endpoint, Voltra appends `widgetId` and `platform=android`
 - `serverUpdate.intervalMinutes`: polling interval; use at least 15 minutes
 - `previewImage`

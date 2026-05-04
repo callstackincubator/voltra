@@ -296,12 +296,12 @@ function generatePlaceholderLayoutXml(): string {
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="?android:attr/colorBackground">
-        <TextView
+        <ProgressBar
+            style="?android:attr/progressBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Loading..."
-            android:textColor="?android:attr/textColorPrimary" />
+            android:indeterminate="true" />
     </FrameLayout>
   `
 }

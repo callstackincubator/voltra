@@ -91,6 +91,7 @@ export type {
   VoltraConfigPlugin,
   WidgetConfig,
   WidgetFamily,
+  WidgetInitialStatePath,
   WidgetLabel,
   WidgetLocalizedCopy,
   WidgetServerUpdateConfig,

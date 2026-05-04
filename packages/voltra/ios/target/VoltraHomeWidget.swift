@@ -348,19 +348,14 @@ public struct VoltraHomeWidgetView: View {
   }
 
   private func placeholderView(widgetId _: String) -> some View {
-    VStack(alignment: .leading, spacing: 8) {
-      Text("Almost ready")
-        .font(.headline)
-      Text("Open the app once to sync data for this widget.")
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .padding(16)
-    .background(
+    ZStack {
       RoundedRectangle(cornerRadius: 18, style: .continuous)
         .fill(Color(UIColor.secondarySystemBackground))
-    )
+      ProgressView()
+        .progressViewStyle(.circular)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .padding(16)
   }
 }
 

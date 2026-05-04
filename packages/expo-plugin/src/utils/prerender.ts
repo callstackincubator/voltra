@@ -5,6 +5,8 @@ import vm from 'node:vm'
 import * as babel from '@babel/core'
 
 import { MODULE_EXTENSIONS } from '../constants'
+import type { WidgetInitialStatePath, WidgetLabel } from '../types'
+import { isWidgetLocalizedMap } from './widgetLabel'
 
 /**
  * Type for the widget renderer function
@@ -16,8 +18,11 @@ export type WidgetRenderer = (variants: any) => string
  */
 export interface PrerenderableWidget {
   id: string
-  initialStatePath?: string
+  initialStatePath?: WidgetInitialStatePath
 }
+
+/** widgetId -> locale key -> prerendered JSON string (single-file widgets use `__default`) */
+export type PrerenderedWidgetStates = Map<string, Map<string, string>>
 
 /**
  * Check if a module specifier is a relative or absolute path (local file)
@@ -168,36 +173,38 @@ function evaluateWidgetModule(projectRoot: string, filePath: string): any {
  * @param widgets - Array of widget configurations
  * @param projectRoot - Root directory of the Expo project
  * @param renderer - The renderer function to use (voltra/server or voltra/android/server)
- * @returns Map of widgetId -> prerendered widget state as JSON string
+ * @returns Map of widgetId -> (locale key -> prerendered JSON string)
  */
 export async function prerenderWidgetState(
   widgets: PrerenderableWidget[],
   projectRoot: string,
   renderer: WidgetRenderer
-): Promise<Map<string, string>> {
-  const prerenderedStates = new Map<string, string>()
+): Promise<PrerenderedWidgetStates> {
+  const prerenderedStates: PrerenderedWidgetStates = new Map()
 
   for (const widget of widgets) {
     if (!widget.initialStatePath) {
       continue
     }
 
+    const pathSpec = widget.initialStatePath
+    const perLocalePaths: Record<string, string> = isWidgetLocalizedMap(pathSpec as WidgetLabel)
+      ? (pathSpec as Record<string, string>)
+      : { __default: pathSpec as string }
+
+    const inner = new Map<string, string>()
+
     try {
-      // Resolve the absolute path to the widget file
-      const absoluteWidgetPath = path.resolve(projectRoot, widget.initialStatePath)
-
-      // Evaluate the module (transpiles with Babel and executes in VM)
-      const widgetVariants = evaluateWidgetModule(projectRoot, absoluteWidgetPath)
-
-      // Render the widget variants to a JSON string
-      const prerenderedState = renderer(widgetVariants)
-
-      prerenderedStates.set(widget.id, prerenderedState)
+      for (const [localeKey, relativePath] of Object.entries(perLocalePaths)) {
+        const absoluteWidgetPath = path.resolve(projectRoot, relativePath)
+        const widgetVariants = evaluateWidgetModule(projectRoot, absoluteWidgetPath)
+        const prerenderedState = renderer(widgetVariants)
+        inner.set(localeKey, prerenderedState)
+      }
+      prerenderedStates.set(widget.id, inner)
     } catch (error) {
       throw new Error(
-        `Failed to prerender widget state for ${widget.id} (${widget.initialStatePath}): ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Failed to prerender widget state for ${widget.id}: ${error instanceof Error ? error.message : String(error)}`
       )
     }
   }

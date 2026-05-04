@@ -6,6 +6,7 @@ import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
 import type { WidgetConfig, WidgetLabel } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 import { logger } from '../../utils/logger'
+import type { PrerenderedWidgetStates } from '../../utils/prerender'
 import { prerenderWidgetState } from '../../utils/prerender'
 import { isWidgetLocalizedMap, widgetLabelEnglish } from '../../utils/widgetLabel'
 
@@ -48,7 +49,9 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   const initialStatesPath = path.join(targetPath, 'VoltraWidgetInitialStates.swift')
   fs.writeFileSync(initialStatesPath, initialStatesContent)
 
-  logger.info(`Generated VoltraWidgetInitialStates.swift with ${prerenderedStates.size} pre-rendered widget states`)
+  logger.info(
+    `Generated VoltraWidgetInitialStates.swift with ${prerenderedStates.size} widget(s) (localized initial states where configured)`
+  )
 
   // Generate the widget bundle Swift file
   const widgetBundleContent =
@@ -303,18 +306,22 @@ function generateDefaultWidgetBundleSwift(): string {
 // ============================================================================
 
 /**
- * Generates Swift code that bundles pre-rendered widget initial states.
+ * Generates Swift code that bundles pre-rendered widget initial states (per locale when configured).
  */
-function generateInitialStatesSwift(prerenderedStates: Map<string, string>): string {
+function generateInitialStatesSwift(prerenderedStates: PrerenderedWidgetStates): string {
   if (prerenderedStates.size === 0) {
     return generateEmptyInitialStatesSwift()
   }
 
-  // Generate the bundled states dictionary
-  const stateEntries = Array.from(prerenderedStates.entries())
-    .map(([widgetId, json]) => {
-      const delimiter = getSwiftRawStringDelimiter(json)
-      return `"${widgetId}": ${delimiter}"${json}"${delimiter}`
+  const widgetEntries = Array.from(prerenderedStates.entries())
+    .map(([widgetId, perLocale]) => {
+      const localeEntries = Array.from(perLocale.entries())
+        .map(([localeKey, json]) => {
+          const delimiter = getSwiftRawStringDelimiter(json)
+          return `"${escapeForSwiftStringLiteral(localeKey)}": ${delimiter}"${json}"${delimiter}`
+        })
+        .join(',\n        ')
+      return `"${widgetId}": [\n        ${localeEntries}\n      ]`
     })
     .join(',\n    ')
 
@@ -329,14 +336,18 @@ function generateInitialStatesSwift(prerenderedStates: Map<string, string>): str
     import Foundation
 
     public enum VoltraWidgetInitialStates {
-      private static let bundledStates: [String: String] = [
-        ${stateEntries}
+      private static let bundledLocalizedStates: [String: [String: String]] = [
+        ${widgetEntries}
       ]
 
-      /// Get the bundled initial state JSON for a widget.
+      /// Get the bundled initial state JSON for a widget, matching the device locale when multiple locales were built.
       /// Returns nil if no initial state was configured for the widget.
       public static func getInitialState(for widgetId: String) -> Data? {
-        guard let jsonString = bundledStates[widgetId] else { return nil }
+        guard let perLocale = bundledLocalizedStates[widgetId] else { return nil }
+        let tags = VoltraInitialStateLocale.preferredLanguageTags()
+        guard let jsonString = VoltraInitialStateLocale.pickJson(from: perLocale, preferredLanguages: tags) else {
+          return nil
+        }
         return jsonString.data(using: .utf8)
       }
     }

@@ -46,7 +46,10 @@
                 "en": "Shows current weather conditions"
               },
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-              "initialStatePath": "./widgets/ios/ios-weather-initial.tsx"
+              "initialStatePath": {
+                "en": "./widgets/ios/ios-weather-initial.tsx",
+                "pl": "./widgets/ios/ios-weather-initial.tsx"
+              }
             },
             {
               "id": "portfolio",

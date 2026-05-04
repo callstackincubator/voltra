@@ -29,9 +29,20 @@ Add `initialStatePath` to your widget configuration in `app.json`:
 }
 ```
 
+### Localized initial states
+
+Use a locale map so the config plugin pre-renders one bundle per language; iOS and Android pick the best match at runtime from the device locale (fallback order: preferred languages → language-only → `en` → first locale):
+
+```json
+"initialStatePath": {
+  "en": "./widgets/weather-initial.tsx",
+  "pl": "./widgets/weather-initial-pl.tsx"
+}
+```
+
 ## Implementation
 
-Create a file at the specified `initialStatePath` that exports a `WidgetVariants` object:
+Create a file at each configured path that exports a `WidgetVariants` object (or use the same file path for multiple locales if copy is identical):
 
 ```tsx
 import { Voltra, type WidgetVariants } from 'voltra'

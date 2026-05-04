@@ -22,6 +22,7 @@
     "build": "node ../../scripts/build-package.mjs packages/expo-plugin",
     "clean": "rm -rf build",
     "lint": "oxlint src",
+    "test": "jest --config jest.config.js",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
@@ -54,5 +55,11 @@
     "expo": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.19.25",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.4"
   }
 }

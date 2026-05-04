@@ -17,7 +17,10 @@ Add `initialStatePath` to your widget configuration in the `android` section of 
             "widgets": [
               {
                 "id": "weather",
-                "name": "Weather Widget",
+                "displayName": "Weather Widget",
+                "description": "Shows current weather",
+                "targetCellWidth": 2,
+                "targetCellHeight": 2,
                 "initialStatePath": "./widgets/weather-android-initial.tsx"
               }
             ]
@@ -28,6 +31,8 @@ Add `initialStatePath` to your widget configuration in the `android` section of 
   }
 }
 ```
+
+For multiple locales, set `initialStatePath` to a map of locale tag → file path (same pattern as iOS); the first-run payload matches the device locale when possible.
 
 ## Implementation
 

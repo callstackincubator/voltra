@@ -54,8 +54,8 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 **Widget Configuration Properties:**
 
 - `id`: Unique identifier for the widget (alphanumeric with underscores only)
-- `displayName`: Name shown in the widget picker
-- `description`: Description shown in the widget picker
+- `displayName`: Name shown in the widget picker (plain string, or per-locale map; same rules as iOS `widgets[].displayName`)
+- `description`: Description shown in the widget picker (same rules as `displayName`)
 - `targetCellWidth`: Target widget width in grid cells (1-5, required)
 - `targetCellHeight`: Target widget height in grid cells (1-5, required)
 - `minCellWidth`: (optional) Minimum width in grid cells (defaults to targetCellWidth)
@@ -64,7 +64,7 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `minHeight`: (optional) Minimum height in dp (overrides minCellHeight calculation)
 - `resizeMode`: (optional) Widget resize behavior (`"none"` | `"horizontal"` | `"vertical"` | `"horizontal|vertical"`, default: `"horizontal|vertical"`)
 - `widgetCategory`: (optional) Widget category (`"home_screen"` | `"keyguard"` | `"home_screen|keyguard"`, default: `"home_screen"`)
-- `initialStatePath`: (optional) Path to a file that exports initial widget state (see [Widget Pre-rendering](../development/widget-pre-rendering))
+- `initialStatePath`: (optional) Path to a file that exports initial widget state, or a locale map of paths for localized build-time pre-rendering (see [Widget Pre-rendering](../development/widget-pre-rendering))
 - `previewImage`: (optional) Path to preview image for widget picker (PNG/JPG/WebP)
 - `previewLayout`: (optional) Path to custom XML layout for widget picker preview (Android 12+)
 - `serverUpdate`: (optional) Enable server-driven updates. See [Server-driven widgets](../development/server-driven-widgets) for full details.

@@ -3,7 +3,11 @@ import path from 'path'
 
 import type { AndroidWidgetConfig } from '../../types'
 import { logger } from '../../utils/logger'
+import type { PrerenderedWidgetStates } from '../../utils/prerender'
 import { prerenderWidgetState } from '../../utils/prerender'
+
+/** Wrapped asset shape when multiple locales are built; matches Android reader in VoltraWidgetManager */
+export const VOLTRA_LOCALIZED_INITIAL_STATE_KEY = '__voltraLocales'
 
 export interface GenerateInitialStatesOptions {
   widgets: AndroidWidgetConfig[]
@@ -29,8 +33,12 @@ export async function generateAndroidInitialStates(options: GenerateInitialState
     renderAndroidWidgetToString: RenderAndroidWidgetToString
   }
 
-  // Prerender widget states
-  const prerenderedStates = await prerenderWidgetState(widgets, projectRoot, renderAndroidWidgetToString)
+  // Prerender widget states (per locale when `initialStatePath` is a locale map)
+  const prerenderedStates: PrerenderedWidgetStates = await prerenderWidgetState(
+    widgets,
+    projectRoot,
+    renderAndroidWidgetToString
+  )
 
   if (prerenderedStates.size === 0) {
     return
@@ -42,16 +50,22 @@ export async function generateAndroidInitialStates(options: GenerateInitialState
     fs.mkdirSync(assetsDir, { recursive: true })
   }
 
-  // Convert Map to Object for JSON serialization
-  const statesObj: Record<string, any> = {}
-  for (const [id, stateJson] of prerenderedStates.entries()) {
+  // Convert Map to Object for JSON serialization (legacy flat shape vs localized wrapper)
+  const statesObj: Record<string, unknown> = {}
+  for (const [id, perLocale] of prerenderedStates.entries()) {
     try {
-      // Parse the JSON string so it's embedded as an object in the final JSON
-      statesObj[id] = JSON.parse(stateJson)
+      if (perLocale.size === 1 && perLocale.has('__default')) {
+        const raw = perLocale.get('__default')!
+        statesObj[id] = JSON.parse(raw)
+      } else {
+        const locales: Record<string, unknown> = {}
+        for (const [localeKey, jsonStr] of perLocale.entries()) {
+          locales[localeKey] = JSON.parse(jsonStr)
+        }
+        statesObj[id] = { [VOLTRA_LOCALIZED_INITIAL_STATE_KEY]: locales }
+      }
     } catch (e) {
       logger.warn(`Failed to parse prerendered state for widget ${id}: ${e}`)
-      // If it's not valid JSON, we might skip it or include it as string?
-      // renderWidgetToString should return valid JSON.
     }
   }
 
