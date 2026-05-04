@@ -37,7 +37,7 @@ export async function generateWidgetInfoFiles(props: {
     fs.mkdirSync(valuesPath, { recursive: true })
   }
 
-  // Default strings (development / fallback language — prefers `en` in locale maps): res/values/voltra_widgets.xml
+  // Default strings (development / fallback language — prefers English locale entries in locale maps): res/values/voltra_widgets.xml
   const stringsPath = path.join(valuesPath, VOLTRA_WIDGET_STRINGS_FILE)
   fs.writeFileSync(stringsPath, generateVoltraWidgetsStringResourcesXml(widgets, null), 'utf8')
 
@@ -160,22 +160,71 @@ function generateWidgetInfoXml(
 
 const VOLTRA_WIDGET_STRINGS_FILE = 'voltra_widgets.xml'
 
-/** Locale maps use `en` for default English; unqualified `values/` covers that so skip `values-en/`. */
+/** Locale maps use `en` for the canonical default English locale; unqualified `values/` covers that so skip `values-en/`. */
 const DEFAULT_WIDGET_LOCALE_QUALIFIER = 'en'
+
+function isAlpha(value: string): boolean {
+  return /^[a-z]+$/i.test(value)
+}
+
+function isNumeric(value: string): boolean {
+  return /^\d+$/.test(value)
+}
+
+function isScriptSubtag(value: string): boolean {
+  return value.length === 4 && isAlpha(value)
+}
+
+function isRegionSubtag(value: string): boolean {
+  return (value.length === 2 && isAlpha(value)) || (value.length === 3 && isNumeric(value))
+}
+
+function formatScriptSubtag(value: string): string {
+  const lower = value.toLowerCase()
+  return `${lower[0]?.toUpperCase() ?? ''}${lower.slice(1)}`
+}
 
 /**
  * Maps BCP-style locale keys from app.json to Android resource folder qualifiers.
- * Examples: `pl` → `pl`, `pt-BR` / `pt_BR` → `pt-rBR`
+ * Examples: `pl` → `pl`, `pt-BR` / `pt_BR` → `pt-rBR`, `zh-Hans` → `b+zh+Hans`
  */
 function localeKeyToAndroidValuesQualifier(localeKey: string): string {
   const normalized = localeKey.trim().replace(/_/g, '-')
   const segments = normalized.split('-').filter(Boolean)
-  if (segments.length >= 2 && segments[1].length >= 2) {
-    const lang = segments[0].toLowerCase()
-    const region = segments[1].toUpperCase()
-    return `${lang}-r${region}`
+
+  const language = segments[0]?.toLowerCase()
+  if (!language) {
+    return normalized.toLowerCase()
   }
-  return segments[0]?.toLowerCase() ?? normalized.toLowerCase()
+
+  const rest = segments.slice(1)
+  if (rest.length === 0) {
+    return language
+  }
+
+  const [first, ...tail] = rest
+  if (first && isRegionSubtag(first) && tail.length === 0) {
+    return `${language}-r${first.toUpperCase()}`
+  }
+
+  const bcp47Segments = [language]
+  for (const segment of rest) {
+    if (isScriptSubtag(segment)) {
+      bcp47Segments.push(formatScriptSubtag(segment))
+      continue
+    }
+    if (isRegionSubtag(segment)) {
+      bcp47Segments.push(segment.toUpperCase())
+      continue
+    }
+    bcp47Segments.push(segment.toLowerCase())
+  }
+
+  return `b+${bcp47Segments.join('+')}`
+}
+
+export const __test__ = {
+  localeKeyToAndroidValuesQualifier,
 }
 
 function collectAndroidLocaleKeysFromWidgets(widgets: AndroidWidgetConfig[]): Set<string> {
@@ -216,7 +265,7 @@ function resolveAndroidWidgetLabel(
 function escapeAndroidStringRes(text: string): string {
   return text
     .replace(/\\/g, '\\\\')
-    .replace(/\"/g, '\\"')
+    .replace(/"/g, '\\"')
     .replace(/'/g, "\\'")
     .replace(/\n/g, '\\n')
     .replace(/\r/g, '\\r')

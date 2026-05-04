@@ -45,7 +45,7 @@ export interface WidgetConfig {
   id: string
   /**
    * Display name shown in the widget gallery.
-   * For locale maps, keys must be BCP-47-like (`en`, `pl`, `pt-BR`); include `en` when possible so defaults align with Android `values/` and iOS fallbacks.
+   * For locale maps, keys must be BCP-47-like (`en`, `pl`, `pt-BR`, `zh-Hans`); include an English locale when possible so defaults align with Android `values/` and iOS fallbacks.
    */
   displayName: WidgetLabel
   /**

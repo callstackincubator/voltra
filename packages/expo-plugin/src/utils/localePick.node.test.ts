@@ -16,4 +16,9 @@ describe('pickLocalizedValue', () => {
     expect(pickLocalizedValue({ __default: 'd', pl: 'pl' }, ['fr'])).toBe('d')
     expect(pickLocalizedValue({ zz: 'z', aa: 'a' }, ['fr'])).toBe('a')
   })
+
+  it('prefers english-family locales when plain en is absent', () => {
+    expect(pickLocalizedValue({ 'en-US': 'us', pl: 'pl' }, ['en'])).toBe('us')
+    expect(pickLocalizedValue({ de: 'de', en_GB: 'gb' }, ['en'])).toBe('gb')
+  })
 })
