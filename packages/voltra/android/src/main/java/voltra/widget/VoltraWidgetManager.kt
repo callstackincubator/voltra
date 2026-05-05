@@ -126,18 +126,16 @@ class VoltraWidgetManager(
         return picked.toString()
     }
 
-    private fun preferredLanguageTags(res: Resources): List<String> {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    private fun preferredLanguageTags(res: Resources): List<String> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val locales = res.configuration.locales
             (0 until locales.size()).map { locales[it].toLanguageTag() }
         } else {
             @Suppress("DEPRECATION")
             listOf(res.configuration.locale.toLanguageTag())
         }
-    }
 
-    private fun normalizeLocaleTag(tag: String): String =
-        tag.trim().lowercase().replace('_', '-')
+    private fun normalizeLocaleTag(tag: String): String = tag.trim().lowercase().replace('_', '-')
 
     /** Mirrors `packages/expo-plugin/src/utils/localePick.ts` */
     private fun pickLocalizedPayload(
@@ -149,6 +147,7 @@ class VoltraWidgetManager(
             return null
         }
         val preferred = preferredLanguageTags(res)
+
         fun keyNorm(k: String) = normalizeLocaleTag(k)
         val byNorm = keys.associateBy { keyNorm(it) }
 

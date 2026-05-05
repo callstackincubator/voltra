@@ -63,6 +63,66 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   logger.info(`Generated VoltraWidgetBundle.swift with ${widgets?.length ?? 0} home screen widgets`)
 }
 
+const GENERATED_INITIAL_STATE_LOCALE_HELPER = dedent`
+  private enum VoltraGeneratedInitialStateLocale {
+    static func pickJson(from perLocale: [String: String], preferredLanguages: [String]) -> String? {
+      let entries = perLocale.filter { !$0.value.isEmpty }
+      if entries.isEmpty {
+        return nil
+      }
+
+      func normalize(_ tag: String) -> String {
+        tag.trimmingCharacters(in: .whitespacesAndNewlines)
+          .lowercased()
+          .replacingOccurrences(of: "_", with: "-")
+      }
+
+      var byNorm: [String: String] = [:]
+      for (k, v) in entries {
+        byNorm[normalize(k)] = v
+      }
+
+      for pref in preferredLanguages {
+        let n = normalize(pref)
+        if let direct = byNorm[n] {
+          return direct
+        }
+        let lang = n.split(separator: "-").first.map(String.init) ?? n
+        for (key, val) in entries {
+          let kn = normalize(key)
+          let keyLang = kn.split(separator: "-").first.map(String.init) ?? kn
+          if keyLang == lang {
+            return val
+          }
+        }
+      }
+
+      if let en = byNorm["en"] {
+        return en
+      }
+      if let englishFamily = entries.keys.sorted().first(where: {
+        let normalized = normalize($0)
+        return normalized == "en" || normalized.hasPrefix("en-")
+      }) {
+        return entries[englishFamily]
+      }
+      if let def = byNorm["__default"] {
+        return def
+      }
+
+      let sorted = entries.keys.sorted()
+      guard let firstKey = sorted.first else {
+        return nil
+      }
+      return entries[firstKey]
+    }
+
+    static func preferredLanguageTags() -> [String] {
+      Locale.preferredLanguages
+    }
+  }
+`
+
 // ============================================================================
 // Widget gallery localization: *.lproj/VoltraWidgets.strings + LocalizedStringResource
 //
@@ -339,6 +399,8 @@ function generateInitialStatesSwift(prerenderedStates: PrerenderedWidgetStates):
 
     import Foundation
 
+    ${GENERATED_INITIAL_STATE_LOCALE_HELPER}
+
     public enum VoltraWidgetInitialStates {
       private static let bundledLocalizedStates: [String: [String: String]] = [
         ${widgetEntries}
@@ -348,8 +410,8 @@ function generateInitialStatesSwift(prerenderedStates: PrerenderedWidgetStates):
       /// Returns nil if no initial state was configured for the widget.
       public static func getInitialState(for widgetId: String) -> Data? {
         guard let perLocale = bundledLocalizedStates[widgetId] else { return nil }
-        let tags = VoltraInitialStateLocale.preferredLanguageTags()
-        guard let jsonString = VoltraInitialStateLocale.pickJson(from: perLocale, preferredLanguages: tags) else {
+        let tags = VoltraGeneratedInitialStateLocale.preferredLanguageTags()
+        guard let jsonString = VoltraGeneratedInitialStateLocale.pickJson(from: perLocale, preferredLanguages: tags) else {
           return nil
         }
         return jsonString.data(using: .utf8)
@@ -403,4 +465,8 @@ function getSwiftRawStringDelimiter(str: string): string {
   // Find the maximum number of consecutive '#' after a '"'
   const maxHashes = Math.max(...matches.map((m) => m.length - 1)) // -1 to exclude the '"'
   return '#'.repeat(maxHashes + 1)
+}
+
+export const __test__ = {
+  generateInitialStatesSwift,
 }
