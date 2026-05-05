@@ -126,3 +126,36 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   ]
 }
 ```
+
+### Localizing `displayName` and `description`
+
+Use a locale map when the widget gallery label should be translated:
+
+```json
+{
+  "widgets": [
+    {
+      "id": "weather",
+      "displayName": {
+        "en": "Weather",
+        "pl": "Pogoda",
+        "zh-Hans": "天气"
+      },
+      "description": {
+        "en": "Current weather conditions",
+        "pl": "Aktualne warunki pogodowe",
+        "zh-Hans": "当前天气状况"
+      }
+    }
+  ]
+}
+```
+
+Use BCP-47-style locale tags such as `en`, `en-US`, `pt-BR`, or `zh-Hans`.
+
+Fallback behavior:
+
+- Voltra first tries the device locale.
+- If there is no exact match, it falls back to the language-only match.
+- If there is still no match, it prefers an English locale such as `en` or `en-US`.
+- If no English entry exists, it uses the first configured locale.

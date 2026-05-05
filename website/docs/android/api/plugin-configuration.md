@@ -72,6 +72,43 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   - `intervalMinutes`: Update interval in minutes (default: `15`, minimum 15 per WorkManager)
   - `refresh`: Show a native refresh button (default: `false`)
 
+### Localizing `displayName` and `description`
+
+Use a locale map when the widget picker label should be translated:
+
+```json
+{
+  "android": {
+    "widgets": [
+      {
+        "id": "weather",
+        "displayName": {
+          "en": "Weather",
+          "pl": "Pogoda",
+          "zh-Hans": "天气"
+        },
+        "description": {
+          "en": "Current weather conditions",
+          "pl": "Aktualne warunki pogodowe",
+          "zh-Hans": "当前天气状况"
+        },
+        "targetCellWidth": 2,
+        "targetCellHeight": 2
+      }
+    ]
+  }
+}
+```
+
+Use BCP-47-style locale tags such as `en`, `en-US`, `pt-BR`, or `zh-Hans`.
+
+Fallback behavior:
+
+- Voltra first tries the device locale.
+- If there is no exact match, it falls back to the language-only match.
+- If there is still no match, it prefers an English locale such as `en` or `en-US`.
+- If no English entry exists, it uses the first configured locale.
+
 ## Widget Sizing
 
 ### Grid Cells vs Density-Independent Pixels (dp)
