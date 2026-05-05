@@ -1,6 +1,6 @@
 {
   "name": "voltra",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Build Live Activities with JSX in React Native",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
@@ -87,15 +87,15 @@
   "license": "MIT",
   "homepage": "https://use-voltra.dev",
   "dependencies": {
-    "@use-voltra/android": "1.4.0",
-    "@use-voltra/android-client": "1.4.0",
-    "@use-voltra/android-server": "1.4.0",
-    "@use-voltra/core": "1.4.0",
-    "@use-voltra/expo-plugin": "1.4.0",
-    "@use-voltra/ios": "1.4.0",
-    "@use-voltra/ios-client": "1.4.0",
-    "@use-voltra/ios-server": "1.4.0",
-    "@use-voltra/server": "1.4.0",
+    "@use-voltra/android": "1.4.1",
+    "@use-voltra/android-client": "1.4.1",
+    "@use-voltra/android-server": "1.4.1",
+    "@use-voltra/core": "1.4.1",
+    "@use-voltra/expo-plugin": "1.4.1",
+    "@use-voltra/ios": "1.4.1",
+    "@use-voltra/ios-client": "1.4.1",
+    "@use-voltra/ios-server": "1.4.1",
+    "@use-voltra/server": "1.4.1",
     "react-is": "^19.2.0"
   },
   "peerDependencies": {

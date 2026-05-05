@@ -1,5 +1,12 @@
 # @use-voltra/server
 
+## 1.4.1
+
+### Patch Changes
+
+- a5a315b: Fix `maxLines` text truncation on Android widgets so line limits apply correctly.
+- iOS home screen widgets now match Tinted and Clear system appearances: no more default opaque white card behind your widget, with colors and gradients adjusted so content stays readable.
+
 ## 1.4.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/ios-client",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Client-only Voltra APIs for iOS",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
@@ -25,7 +25,7 @@
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
   },
   "dependencies": {
-    "@use-voltra/ios": "1.4.0"
+    "@use-voltra/ios": "1.4.1"
   },
   "keywords": [
     "react-native",
