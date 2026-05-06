@@ -137,7 +137,9 @@ public enum VoltraWidgetServerFetcher {
     }
 
     // Add Voltra-specific headers
-    let systemVersion = UIDevice.current.systemVersion
+    let systemVersion = await MainActor.run {
+      UIDevice.current.systemVersion
+    }
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     request.setValue("VoltraWidget/1.0 (iOS/\(systemVersion))", forHTTPHeaderField: "User-Agent")
 

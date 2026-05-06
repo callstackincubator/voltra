@@ -4,7 +4,7 @@ Live Activities have strict size limits (4KB per update), making image handling 
 
 - **Base64 encoding**: Best for small, static images (< 1KB)
 - **Build-time asset copying**: Best for medium-sized images that are known at build time
-- **Runtime preloading**: Best for dynamic images from remote URLs
+- **Runtime preloading**: Best for dynamic images from remote URLs or inline SVG data
 
 ## Base64 encoding
 
@@ -48,7 +48,7 @@ You can then reference these images using their assetName:
 
 ## Runtime preloading
 
-For dynamic images from remote URLs, use Voltra's image preloading API to cache images in App Group shared storage.
+For dynamic images from remote URLs or inline SVG markup, use Voltra's image preloading API to cache images in App Group shared storage. SVG inputs are rasterized to PNG before storage.
 
 The image preloading system works by:
 

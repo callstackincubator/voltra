@@ -2,7 +2,13 @@ import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, StyleSheet, Text, View } from 'react-native'
 import { VoltraAndroid } from '@use-voltra/android'
-import { clearPreloadedImages, preloadImages, reloadWidgets, updateAndroidWidget } from '@use-voltra/android-client'
+import {
+  clearPreloadedImages,
+  preloadImages,
+  reloadWidgets,
+  updateAndroidWidget,
+  VoltraWidgetPreview,
+} from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
@@ -12,12 +18,70 @@ function generateRandomUrl(): string {
   return `https://picsum.photos/id/${Math.floor(Math.random() * 200)}/300/200`
 }
 
+const ANDROID_SVG_OPTIONS = {
+  green: {
+    key: 'android-widget-svg-test-green',
+    color: '#34C759',
+    title: 'Show Green SVG in Widget',
+  },
+  purple: {
+    key: 'android-widget-svg-test-purple',
+    color: '#7C3AED',
+    title: 'Show Purple SVG in Widget',
+  },
+} as const
+
+type AndroidSvgOption = (typeof ANDROID_SVG_OPTIONS)[keyof typeof ANDROID_SVG_OPTIONS]
+
+function createAndroidTestSvg(color: string): string {
+  return `
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="12" fill="${color}"/>
+  <path d="M15 25.5l6.2 6.2L34 17" stroke="white" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+`
+}
+
+function AndroidSvgWidgetContent({ assetKey, color }: { assetKey: string; color: string }) {
+  return (
+    <VoltraAndroid.Box
+      style={{
+        padding: 14,
+        backgroundColor: '#1E293B',
+        borderRadius: 16,
+        flex: 1,
+      }}
+    >
+      <VoltraAndroid.Column horizontalAlignment="center-horizontally" verticalAlignment="center-vertically">
+        <VoltraAndroid.Image source={{ assetName: assetKey }} style={{ width: 42, height: 42 }} resizeMode="contain" />
+
+        <VoltraAndroid.Spacer style={{ height: 10 }} />
+
+        <VoltraAndroid.Text maxLines={1} style={{ fontSize: 16, fontWeight: 'bold', color: '#FFFFFF' }}>
+          SVG preload
+        </VoltraAndroid.Text>
+        <VoltraAndroid.Text maxLines={1} style={{ fontSize: 12, color: '#CBD5E1' }}>
+          {color}
+        </VoltraAndroid.Text>
+
+        <VoltraAndroid.Spacer style={{ height: 14 }} />
+
+        <VoltraAndroid.Text maxLines={2} style={{ fontSize: 11, color: '#94A3B8', textAlign: 'center' }}>
+          Preloaded SVG asset
+        </VoltraAndroid.Text>
+      </VoltraAndroid.Column>
+    </VoltraAndroid.Box>
+  )
+}
+
 export default function AndroidImagePreloadingScreen() {
   const router = useRouter()
   const [url, setUrl] = useState(generateRandomUrl())
   const [isProcessing, setIsProcessing] = useState(false)
   const [assetKey] = useState('android-preload-test')
   const [updateCount, setUpdateCount] = useState(0)
+  const [isSvgProcessing, setIsSvgProcessing] = useState(false)
+  const [selectedSvgOption, setSelectedSvgOption] = useState<AndroidSvgOption | null>(null)
 
   const handleUpdateAndPreload = async () => {
     if (!url.trim()) {
@@ -129,6 +193,40 @@ export default function AndroidImagePreloadingScreen() {
     }
   }
 
+  const handleShowSvgWidget = async (option: AndroidSvgOption) => {
+    setIsSvgProcessing(true)
+
+    try {
+      const result = await preloadImages([
+        {
+          key: option.key,
+          svg: createAndroidTestSvg(option.color),
+          width: 48,
+          height: 48,
+        },
+      ])
+
+      if (result.failed.length > 0) {
+        throw new Error(result.failed[0].error)
+      }
+
+      await updateAndroidWidget('image_preloading', [
+        {
+          size: { width: 300, height: 200 },
+          content: <AndroidSvgWidgetContent assetKey={option.key} color={option.color} />,
+        },
+      ])
+      await reloadWidgets(['image_preloading'])
+
+      setSelectedSvgOption(option)
+      Alert.alert('Success', 'SVG preloaded and widget updated!')
+    } catch (error) {
+      Alert.alert('Error', `Failed to update SVG widget: ${error}`)
+    } finally {
+      setIsSvgProcessing(false)
+    }
+  }
+
   return (
     <ScreenLayout
       title="Android Image Preloading"
@@ -162,6 +260,39 @@ export default function AndroidImagePreloadingScreen() {
         <Button title="Clear Images" variant="secondary" onPress={handleClearImages} />
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>SVG Widget Test</Text>
+        <Text style={styles.sectionText}>
+          Preload an inline SVG as a PNG asset and update the Android image preloading widget to render it.
+        </Text>
+
+        <View style={styles.buttonRow}>
+          <Button
+            title={isSvgProcessing ? 'Updating...' : ANDROID_SVG_OPTIONS.green.title}
+            variant={selectedSvgOption?.key === ANDROID_SVG_OPTIONS.green.key ? 'primary' : 'secondary'}
+            style={selectedSvgOption?.key === ANDROID_SVG_OPTIONS.green.key ? styles.greenButtonSelected : undefined}
+            onPress={() => handleShowSvgWidget(ANDROID_SVG_OPTIONS.green)}
+            disabled={isSvgProcessing}
+          />
+          <Button
+            title={ANDROID_SVG_OPTIONS.purple.title}
+            variant={selectedSvgOption?.key === ANDROID_SVG_OPTIONS.purple.key ? 'primary' : 'secondary'}
+            style={selectedSvgOption?.key === ANDROID_SVG_OPTIONS.purple.key ? styles.purpleButtonSelected : undefined}
+            onPress={() => handleShowSvgWidget(ANDROID_SVG_OPTIONS.purple)}
+            disabled={isSvgProcessing}
+          />
+        </View>
+
+        {selectedSvgOption ? (
+          <View style={styles.previewContainer}>
+            <Text style={styles.inputLabel}>Preview</Text>
+            <VoltraWidgetPreview key={selectedSvgOption.key} family="mediumWide" style={styles.widgetPreview}>
+              <AndroidSvgWidgetContent assetKey={selectedSvgOption.key} color={selectedSvgOption.color} />
+            </VoltraWidgetPreview>
+          </View>
+        ) : null}
+      </View>
+
       <View style={styles.footer}>
         <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
       </View>
@@ -189,6 +320,38 @@ const styles = StyleSheet.create({
     marginTop: 16,
     flexDirection: 'column',
     gap: 12,
+  },
+  section: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  sectionText: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#CBD5F5',
+  },
+  greenButtonSelected: {
+    backgroundColor: '#34C759',
+  },
+  purpleButtonSelected: {
+    backgroundColor: '#7C3AED',
+  },
+  previewContainer: {
+    marginTop: 16,
+  },
+  widgetPreview: {
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   footer: {
     marginTop: 24,

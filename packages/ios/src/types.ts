@@ -4,12 +4,23 @@ export type EventSubscription = {
   remove: () => void
 }
 
-export type PreloadImageOptions = {
-  url: string
+type PreloadImageBaseOptions = {
   key: string
+  width?: number
+  height?: number
+}
+
+export type PreloadImageUrlOptions = PreloadImageBaseOptions & {
+  url: string
   method?: 'GET' | 'POST' | 'PUT'
   headers?: Record<string, string>
 }
+
+export type PreloadImageSvgOptions = PreloadImageBaseOptions & {
+  svg: string
+}
+
+export type PreloadImageOptions = PreloadImageUrlOptions | PreloadImageSvgOptions
 
 export type PreloadImageFailure = {
   key: string

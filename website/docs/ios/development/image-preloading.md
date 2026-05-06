@@ -17,14 +17,17 @@ The image preloading system works by:
 
 ### `preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>`
 
-Downloads images to App Group storage for use in Live Activities.
+Downloads bitmap images to App Group storage or rasterizes SVGs to PNG before storing them for use in Live Activities.
 
 ```typescript
 type PreloadImageOptions = {
-  url: string // The URL to download the image from
   key: string // The assetName to use when referencing this image
+  url?: string // The URL to download the image from
+  svg?: string // Inline SVG markup to rasterize and cache as PNG
   method?: 'GET' | 'POST' | 'PUT' // HTTP method (default: 'GET')
   headers?: Record<string, string> // Optional HTTP headers
+  width?: number // Required when rasterizing SVG
+  height?: number // Required when rasterizing SVG
 }
 
 type PreloadImagesResult = {
@@ -43,6 +46,12 @@ const result = await preloadImages([
     url: 'https://example.com/album-art.jpg',
     key: 'current-song-artwork',
     headers: { Authorization: 'Bearer token' },
+  },
+  {
+    key: 'status-icon-active',
+    svg: '<svg viewBox="0 0 24 24"><path fill="#34C759" d="..." /></svg>',
+    width: 24,
+    height: 24,
   },
 ])
 
@@ -111,6 +120,7 @@ ActivityKit enforces a 4KB limit per Live Activity update. Images are validated 
 
 - **Content-Length header**: If available, images larger than 4KB are rejected before download
 - **Actual size**: After download, the actual data size is validated
+- **SVG rasterization**: SVG inputs are converted to PNG before storage and the generated PNG is size-checked
 - **Image validation**: Ensures the downloaded data is a valid image format
 
 Images that exceed 4KB will result in a preload failure with a descriptive error message.
@@ -142,6 +152,8 @@ if (result.succeeded.length === 2) {
 
 - `"Image 'key-name' is too large: 5120 bytes (max 4096 bytes for Live Activities)"` - Image exceeds 4KB limit
 - `"Invalid image data for 'key-name'"` - Downloaded data is not a valid image
+- `"Invalid SVG data for 'key-name'"` - SVG markup is malformed or contains unsupported external/script references
+- `"SVG 'key-name' requires positive width and height"` - SVG rasterization needs explicit dimensions
 - `"HTTP error: 404"` - Server returned an error status code
 - `"App Group not configured"` - Missing App Group configuration in the config plugin
 
