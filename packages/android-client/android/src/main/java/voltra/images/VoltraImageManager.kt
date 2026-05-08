@@ -4,80 +4,66 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.net.Uri
-import android.util.Log
-import androidx.core.content.FileProvider
 import com.caverock.androidsvg.SVG
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.math.ceil
 
 class VoltraImageManager(
-    private val context: Context,
+    context: Context,
 ) {
     companion object {
-        private const val TAG = "VoltraImageManager"
-        private const val PREFS_NAME = "voltra_preload_images"
-        private const val CACHE_DIR_NAME = "voltra_widget_images"
         private const val MAX_SVG_SIZE_BYTES = 256 * 1024
     }
 
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val store = VoltraImageStore(context)
 
-    suspend fun preloadImage(
+    suspend fun preloadUrlImage(
         key: String,
-        url: String? = null,
-        svg: String? = null,
+        url: String,
         method: String = "GET",
         headers: Map<String, String>? = null,
         width: Int? = null,
         height: Int? = null,
     ): String =
         withContext(Dispatchers.IO) {
-            val data = resolveImageData(key, url, svg, method, headers, width, height)
-            saveImageData(key, data)
+            val data = downloadUrlImage(key, url, method, headers, width, height)
+            store.saveImageData(key, data)
             key
         }
 
-    fun getUriForKey(key: String): String? = prefs.getString(key, null)
-
-    fun clearPreloadedImages(keys: List<String>?) {
-        val cacheDir = File(context.cacheDir, CACHE_DIR_NAME)
-        if (keys == null) {
-            // Clear all
-            prefs.all.keys.forEach { key ->
-                deleteFileForKey(key, cacheDir)
-            }
-            prefs.edit().clear().apply()
-        } else {
-            // Clear specific keys
-            keys.forEach { key ->
-                deleteFileForKey(key, cacheDir)
-                prefs.edit().remove(key).apply()
-            }
-        }
-    }
-
-    private fun resolveImageData(
+    suspend fun preloadSvgImage(
         key: String,
-        url: String?,
-        svg: String?,
+        svg: String,
+        width: Int? = null,
+        height: Int? = null,
+    ): String =
+        withContext(Dispatchers.IO) {
+            val inlineSvg = svg.trim()
+            require(inlineSvg.isNotEmpty()) { "Image '$key' must provide svg" }
+
+            val data = rasterizeSvg(key, inlineSvg, width, height)
+            store.saveImageData(key, data)
+            key
+        }
+
+    fun getUriForKey(key: String): String? = store.getUriForKey(key)
+
+    fun clearPreloadedImages(keys: List<String>?) = store.clearPreloadedImages(keys)
+
+    private fun downloadUrlImage(
+        key: String,
+        url: String,
         method: String,
         headers: Map<String, String>?,
         width: Int?,
         height: Int?,
     ): ByteArray {
-        val inlineSvg = svg?.trim()
-        if (!inlineSvg.isNullOrEmpty()) {
-            return rasterizeSvg(key, inlineSvg, width, height)
-        }
-
-        val urlString = url?.trim()
-        require(!urlString.isNullOrEmpty()) { "Image '$key' must provide either url or svg" }
+        val urlString = url.trim()
+        require(urlString.isNotEmpty()) { "Image '$key' must provide url" }
 
         val connection = URL(urlString).openConnection() as HttpURLConnection
         connection.requestMethod = method
@@ -104,46 +90,6 @@ class VoltraImageManager(
         } finally {
             connection.disconnect()
         }
-    }
-
-    private fun saveImageData(
-        key: String,
-        data: ByteArray,
-    ) {
-        val cacheDir = File(context.cacheDir, CACHE_DIR_NAME)
-        if (!cacheDir.exists()) {
-            cacheDir.mkdirs()
-        }
-
-        // Append timestamp to force refresh
-        val filename = "${key}_${System.currentTimeMillis()}.png"
-        val file = File(cacheDir, filename)
-        file.writeBytes(data)
-
-        val uri =
-            FileProvider
-                .getUriForFile(
-                    context,
-                    "${context.packageName}.voltra.fileprovider",
-                    file,
-                ).toString()
-
-        // Delete old file if exists
-        getUriForKey(key)?.let { oldUriString ->
-            try {
-                val oldUri = Uri.parse(oldUriString)
-                context.contentResolver.delete(oldUri, null, null)
-                // Also try to delete the file directly just in case
-                val oldFilename = oldUri.lastPathSegment
-                if (oldFilename != null) {
-                    File(cacheDir, oldFilename).delete()
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to delete old image file: $oldUriString", e)
-            }
-        }
-
-        prefs.edit().putString(key, uri).apply()
     }
 
     private fun isSvgData(
@@ -210,23 +156,6 @@ class VoltraImageManager(
                 !lower.contains("xlink:href='http"),
         ) {
             "Invalid SVG data for '$key'"
-        }
-    }
-
-    private fun deleteFileForKey(
-        key: String,
-        cacheDir: File,
-    ) {
-        getUriForKey(key)?.let { uriString ->
-            try {
-                val uri = Uri.parse(uriString)
-                val filename = uri.lastPathSegment
-                if (filename != null) {
-                    File(cacheDir, filename).delete()
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to delete file for key: $key", e)
-            }
         }
     }
 }

@@ -34,6 +34,8 @@ export type {
   EventSubscription,
   PreloadImageFailure,
   PreloadImageOptions,
+  PreloadImageSvgOptions,
+  PreloadImageUrlOptions,
   PreloadImagesResult,
   VoltraElementJson,
   VoltraElementRef,

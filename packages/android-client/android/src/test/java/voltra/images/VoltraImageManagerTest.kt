@@ -19,7 +19,7 @@ class VoltraImageManagerTest {
             val manager = VoltraImageManager(context)
 
             val key =
-                manager.preloadImage(
+                manager.preloadSvgImage(
                     key = "svg_icon",
                     svg =
                         """

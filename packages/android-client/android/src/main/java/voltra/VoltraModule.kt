@@ -246,15 +246,23 @@ class VoltraModule(
                                 }
 
                             try {
-                                imageManager.preloadImage(
-                                    key = key,
-                                    url = url,
-                                    svg = svg,
-                                    method = method,
-                                    headers = headers,
-                                    width = width,
-                                    height = height,
-                                )
+                                if (!svg.isNullOrBlank()) {
+                                    imageManager.preloadSvgImage(
+                                        key = key,
+                                        svg = svg,
+                                        width = width,
+                                        height = height,
+                                    )
+                                } else {
+                                    imageManager.preloadUrlImage(
+                                        key = key,
+                                        url = url ?: throw IllegalArgumentException("Image '$key' must provide either url or svg"),
+                                        method = method,
+                                        headers = headers,
+                                        width = width,
+                                        height = height,
+                                    )
+                                }
                                 Pair(key, null)
                             } catch (error: Exception) {
                                 Log.e(TAG, "Error preloading image: $key", error)

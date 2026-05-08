@@ -130,25 +130,30 @@ enum VoltraImagePreload {
   // MARK: - Private
 
   private static func loadAndSaveImage(_ options: PreloadImageOptions) async throws {
-    let data = try await resolveImageData(options)
+    guard let svg = options.svg?.trimmingCharacters(in: .whitespacesAndNewlines), !svg.isEmpty else {
+      let data = try await downloadUrlImage(options)
+      try saveImageData(data, key: options.key)
+      return
+    }
 
+    let data = try await rasterizeSvg(svg, key: options.key, width: options.width, height: options.height)
+    try saveImageData(data, key: options.key)
+  }
+
+  private static func saveImageData(_ data: Data, key: String) throws {
     if data.count >= maxImageSizeInBytes {
-      throw PreloadError.imageTooLarge(key: options.key, size: data.count)
+      throw PreloadError.imageTooLarge(key: key, size: data.count)
     }
 
     guard UIImage(data: data) != nil else {
-      throw PreloadError.invalidImageData(key: options.key)
+      throw PreloadError.invalidImageData(key: key)
     }
 
-    try VoltraImageStore.saveImage(data, key: options.key)
-    VoltraLogger.image.info("Preloaded '\(options.key)' (\(data.count) bytes)")
+    try VoltraImageStore.saveImage(data, key: key)
+    VoltraLogger.image.info("Preloaded '\(key)' (\(data.count) bytes)")
   }
 
-  private static func resolveImageData(_ options: PreloadImageOptions) async throws -> Data {
-    if let inlineSvg = options.svg?.trimmingCharacters(in: .whitespacesAndNewlines), !inlineSvg.isEmpty {
-      return try await rasterizeSvg(inlineSvg, key: options.key, width: options.width, height: options.height)
-    }
-
+  private static func downloadUrlImage(_ options: PreloadImageOptions) async throws -> Data {
     guard let urlString = options.url?.trimmingCharacters(in: .whitespacesAndNewlines), !urlString.isEmpty else {
       throw PreloadError.invalidSource(key: options.key)
     }

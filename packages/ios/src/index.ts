@@ -18,6 +18,8 @@ export type {
   EventSubscription,
   PreloadImageFailure,
   PreloadImageOptions,
+  PreloadImageSvgOptions,
+  PreloadImageUrlOptions,
   PreloadImagesResult,
   UpdateWidgetOptions,
   VoltraElementJson,
