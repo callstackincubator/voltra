@@ -19,20 +19,35 @@ The image preloading system works by:
 
 Downloads bitmap images to App Group storage or rasterizes SVGs to PNG before storing them for use in Live Activities.
 
+Each item must be either a URL preload (`url`) or an SVG preload (`svg`). The TypeScript types express this as a union of two variants:
+
 ```typescript
-type PreloadImageOptions = {
+type PreloadImageUrlOptions = {
   key: string // The assetName to use when referencing this image
-  url?: string // The URL to download the image from
-  svg?: string // Inline SVG markup to rasterize and cache as PNG
+  url: string // URL to download the image from
   method?: 'GET' | 'POST' | 'PUT' // HTTP method (default: 'GET')
   headers?: Record<string, string> // Optional HTTP headers
-  width?: number // Required when rasterizing SVG
-  height?: number // Required when rasterizing SVG
+  width?: number
+  height?: number
+}
+
+type PreloadImageSvgOptions = {
+  key: string // The assetName to use when referencing this image
+  svg: string // Inline SVG markup to rasterize and cache as PNG
+  width?: number // Typically required for SVG rasterization (see native errors if omitted)
+  height?: number
+}
+
+type PreloadImageOptions = PreloadImageUrlOptions | PreloadImageSvgOptions
+
+type PreloadImageFailure = {
+  key: string
+  error: string
 }
 
 type PreloadImagesResult = {
   succeeded: string[] // Keys of successfully downloaded images
-  failed: { key: string; error: string }[] // Failed downloads with error messages
+  failed: PreloadImageFailure[] // Failed downloads with error messages
 }
 ```
 
