@@ -68,5 +68,10 @@
     "type": "file",
     "name": "server-driven-widgets",
     "label": "Server-driven widgets"
+  },
+  {
+    "type": "file",
+    "name": "configurable-widgets",
+    "label": "Configurable widgets"
   }
 ]

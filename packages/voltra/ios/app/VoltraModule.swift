@@ -136,6 +136,12 @@ public class VoltraModule: Module {
       self.impl.clearWidgetServerCredentials()
     }
 
+    // Returns the current configurable widget parameter values stored by the widget extension.
+    // Must be called after the widget has been placed and edited at least once.
+    Function("getWidgetParameters") { (widgetId: String) -> [String: String] in
+      return self.impl.getWidgetParameters(widgetId: widgetId)
+    }
+
     View(VoltraRN.self) {
       Prop("payload") { (view, payload: String) in
         view.setPayload(payload)

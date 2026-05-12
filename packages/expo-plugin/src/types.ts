@@ -34,6 +34,51 @@ export type WidgetFamily =
   | 'accessoryRectangular'
   | 'accessoryInline'
 
+// ============================================================================
+// Configurable Widget Types
+// ============================================================================
+
+/**
+ * A single configurable parameter for a widget.
+ *
+ * Parameters are surfaced as native controls in the iOS "Edit Widget" sheet (iOS 17+).
+ * The parameter `id` is used as the Swift property name in the generated intent struct
+ * and as the key in the parameters dictionary returned by `getWidgetParameters()`.
+ * It must be a valid Swift identifier (alphanumeric + underscores, not starting with a digit).
+ */
+export type WidgetParameter =
+  | {
+      id: string
+      type: 'bool'
+      /** Label shown next to the toggle in the widget edit sheet. */
+      label: WidgetLabel
+      default?: boolean
+    }
+  | {
+      id: string
+      type: 'int'
+      /** Label shown next to the number input in the widget edit sheet. */
+      label: WidgetLabel
+      default?: number
+      min?: number
+      max?: number
+    }
+  | {
+      id: string
+      type: 'double'
+      /** Label shown next to the number input in the widget edit sheet. */
+      label: WidgetLabel
+      default?: number
+    }
+  | {
+      id: string
+      type: 'enum'
+      /** Label shown above the picker in the widget edit sheet. */
+      label: WidgetLabel
+      cases: Array<{ value: string; label: WidgetLabel }>
+      default?: string
+    }
+
 /**
  * Configuration for a single home screen widget
  */
@@ -62,6 +107,25 @@ export interface WidgetConfig {
    * This will be pre-rendered at build time and bundled into the iOS app.
    */
   initialStatePath?: WidgetInitialStatePath
+  /**
+   * Configurable parameters for the widget (iOS 17+).
+   *
+   * When set, the widget gains an "Edit Widget" button that presents a native configuration
+   * sheet. Each parameter maps to a native control (`bool` → toggle, `int`/`double` → number
+   * input, `enum` → picker). Current parameter values can be read on the React Native side via
+   * `getWidgetParameters(widgetId)`.
+   *
+   * For server-driven widgets, the current parameter values are automatically appended as
+   * query parameters on every server fetch. For non-server widgets, the `outdatedStatePath`
+   * content is shown when parameters change until the React Native app re-renders the widget.
+   */
+  parameters?: WidgetParameter[]
+  /**
+   * Path to a file that default exports a WidgetVariants object representing the "outdated"
+   * state shown when the user changes parameters but the React Native app hasn't re-rendered
+   * the widget yet. Only relevant for non-server-driven configurable widgets.
+   */
+  outdatedStatePath?: WidgetInitialStatePath
   /**
    * Configuration for server-driven widget updates.
    * When configured, the widget will periodically fetch new content from a remote server

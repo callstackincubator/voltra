@@ -90,13 +90,15 @@ public enum VoltraWidgetServerFetcher {
   /// - `family` query parameter (e.g., "systemSmall")
   /// - `platform` query parameter (`ios`)
   /// - `theme` query parameter (`light` or `dark`)
+  /// - One query parameter per entry in `parameters` (configurable widget values)
   /// - `Authorization: Bearer <token>` header (if credentials stored in Keychain)
   /// - Any custom headers stored in Keychain
   ///
   /// Returns the raw JSON data from the server, ready to be parsed by VoltraNode.
   public static func fetchWidgetContent(
     widgetId: String,
-    family: String
+    family: String,
+    parameters: [String: String] = [:]
   ) async throws -> Data {
     guard let baseUrl = serverUrl(for: widgetId) else {
       throw FetchError.noServerUrl
@@ -114,6 +116,9 @@ public enum VoltraWidgetServerFetcher {
     queryItems.append(URLQueryItem(name: "family", value: family))
     queryItems.append(URLQueryItem(name: "platform", value: "ios"))
     queryItems.append(URLQueryItem(name: "theme", value: theme))
+    for (key, value) in parameters.sorted(by: { $0.key < $1.key }) {
+      queryItems.append(URLQueryItem(name: key, value: value))
+    }
     components.queryItems = queryItems
 
     guard let url = components.url else {

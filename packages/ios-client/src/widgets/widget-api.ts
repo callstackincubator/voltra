@@ -63,3 +63,31 @@ export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
 
   return VoltraModule.getActiveWidgets()
 }
+
+/**
+ * Returns the current parameter values for a configurable widget (iOS 17+).
+ *
+ * Parameter values are written to App Group storage by the widget extension when the user
+ * edits the widget. The returned object is keyed by parameter ID (as defined in the config
+ * plugin) with string-encoded values — cast as needed (`"true"`/`"false"` for booleans,
+ * numeric strings for `int`/`double`, raw enum values for `enum` parameters).
+ *
+ * Returns an empty object if the widget has not been placed or edited yet, or if
+ * `groupIdentifier` is not configured in the Voltra plugin.
+ *
+ * @param widgetId - The widget identifier as defined in the config plugin.
+ *
+ * @example
+ * ```ts
+ * const params = getWidgetParameters('news')
+ * // { category: 'tech', showImages: 'true' }
+ *
+ * const showImages = params.showImages === 'true'
+ * const category = params.category ?? 'top'
+ * ```
+ */
+export const getWidgetParameters = (widgetId: string): Record<string, string> => {
+  if (!assertRunningOnApple()) return {}
+
+  return VoltraModule.getWidgetParameters(widgetId)
+}

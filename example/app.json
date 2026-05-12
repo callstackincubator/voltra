@@ -68,6 +68,45 @@
                 "intervalMinutes": 15,
                 "refresh": true
               }
+            },
+            {
+              "id": "greeting",
+              "displayName": "Greeting Widget",
+              "description": "A personalized greeting you can customize from the home screen",
+              "supportedFamilies": ["systemSmall", "systemMedium"],
+              "initialStatePath": "./widgets/ios/ios-greeting-initial.tsx",
+              "outdatedStatePath": "./widgets/ios/ios-greeting-outdated.tsx",
+              "parameters": [
+                {
+                  "id": "name",
+                  "type": "enum",
+                  "label": "Name",
+                  "cases": [
+                    { "value": "friend", "label": "Friend" },
+                    { "value": "world", "label": "World" },
+                    { "value": "team", "label": "Team" },
+                    { "value": "there", "label": "There" }
+                  ],
+                  "default": "friend"
+                },
+                {
+                  "id": "theme",
+                  "type": "enum",
+                  "label": "Theme",
+                  "cases": [
+                    { "value": "purple", "label": "Purple" },
+                    { "value": "ocean", "label": "Ocean" },
+                    { "value": "sunset", "label": "Sunset" }
+                  ],
+                  "default": "purple"
+                },
+                {
+                  "id": "showEmoji",
+                  "type": "bool",
+                  "label": "Show Emoji",
+                  "default": true
+                }
+              ]
             }
           ],
           "android": {

@@ -97,6 +97,13 @@ const TESTING_GROUNDS_SECTIONS = [
       'Test server-driven widget updates. Widgets fetch fresh content from a remote server without the user opening the app. Manage auth credentials and trigger reloads.',
     route: '/testing-grounds/server-driven-widgets',
   },
+  {
+    id: 'configurable-widget',
+    title: 'Configurable Widget',
+    description:
+      'Test the configurable widget feature (iOS 17+). Edit the Greeting Widget from the home screen, then read its parameters back in the app and re-render with the new values.',
+    route: '/testing-grounds/configurable-widget',
+  },
   ...(Platform.OS === 'ios'
     ? [
         {

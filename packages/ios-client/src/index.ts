@@ -39,6 +39,7 @@ export {
   clearAllWidgets,
   clearWidget,
   getActiveWidgets,
+  getWidgetParameters,
   reloadWidgets,
   type ScheduledWidgetEntry,
   scheduleWidget,

@@ -9,6 +9,7 @@ export {
   clearWidgetServerCredentials,
   endAllLiveActivities,
   getActiveWidgets,
+  getWidgetParameters,
   isGlassSupported,
   isHeadless,
   isLiveActivityActive,

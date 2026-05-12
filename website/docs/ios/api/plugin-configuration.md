@@ -98,6 +98,14 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `description`: Description shown in the widget gallery (same localization rules as `displayName`)
 - `supportedFamilies`: Array of supported widget sizes (`systemSmall`, `systemMedium`, `systemLarge`)
 - `initialStatePath`: (optional) Project-relative path to a file that exports initial widget state, **or** a locale map of paths for localized build-time pre-rendering (see [Widget Pre-rendering](../development/widget-pre-rendering))
+- `parameters`: (optional) Array of configurable parameters surfaced as native controls in the iOS "Edit Widget" sheet (iOS 17+). See [Configurable widgets](../development/configurable-widgets) for full details.
+  - `id`: Parameter identifier, used as the key in `getWidgetParameters()`. Must be a valid Swift identifier.
+  - `type`: `"enum"` | `"bool"` | `"int"` | `"double"`
+  - `label`: Label shown next to the control in the edit sheet
+  - `default`: (optional) Default value
+  - `cases`: (enum only) Array of `{ value, label }` objects defining the picker options
+  - `min` / `max`: (int/double only) Optional bounds
+- `outdatedStatePath`: (optional) Path to a pre-rendered state shown when the user has changed parameters but the app hasn't re-rendered yet (non-server widgets only). See [Configurable widgets](../development/configurable-widgets).
 - `serverUpdate`: (optional) Enable server-driven updates. See [Server-driven widgets](../development/server-driven-widgets) for full details.
   - `url`: The Voltra SSR endpoint URL
   - `intervalMinutes`: Update interval in minutes (default: `15`)

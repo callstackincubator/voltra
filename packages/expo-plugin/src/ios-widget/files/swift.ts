@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
-import type { WidgetConfig, WidgetLabel } from '../../types'
+import type { WidgetConfig, WidgetLabel, WidgetParameter } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 import { logger } from '../../utils/logger'
 import type { PrerenderedWidgetStates } from '../../utils/prerender'
@@ -42,10 +42,16 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   // Prerender widget initial states if any widgets have initialStatePath configured
   const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot, renderWidgetToString)
 
+  // Prerender outdated states for configurable widgets that have outdatedStatePath configured
+  const outdatedStateWidgets = (widgets || [])
+    .filter((w) => w.outdatedStatePath)
+    .map((w) => ({ ...w, initialStatePath: w.outdatedStatePath }))
+  const prerenderedOutdatedStates = await prerenderWidgetState(outdatedStateWidgets, projectRoot, renderWidgetToString)
+
   syncVoltraWidgetGalleryStrings(targetPath, widgets)
 
-  // Generate the initial states Swift file
-  const initialStatesContent = generateInitialStatesSwift(prerenderedStates)
+  // Generate the initial states Swift file (includes outdated states)
+  const initialStatesContent = generateInitialStatesSwift(prerenderedStates, prerenderedOutdatedStates)
   const initialStatesPath = path.join(targetPath, 'VoltraWidgetInitialStates.swift')
   fs.writeFileSync(initialStatesPath, initialStatesContent)
 
@@ -258,14 +264,163 @@ function iosWidgetGalleryLabelSwiftExpr(
   return `Text(LocalizedStringResource("${key}", defaultValue: String.LocalizationValue("${defaultEnglish}"), table: "VoltraWidgets"))`
 }
 
+// ============================================================================
+// Configurable Widget Code Generation
+// ============================================================================
+
+/** Turns an arbitrary string into a valid Swift identifier. */
+function sanitizeSwiftIdentifier(s: string): string {
+  const sanitized = s.replace(/[^a-zA-Z0-9_]/g, '_')
+  return /^[0-9]/.test(sanitized) ? `_${sanitized}` : sanitized
+}
+
+/** Generates an AppEnum Swift type for a single enum parameter. */
+function generateParameterEnum(widgetId: string, param: WidgetParameter & { type: 'enum' }): string {
+  const enumName = `VoltraWidget_${widgetId}_${param.id}`
+  const title = escapeForSwiftStringLiteral(widgetLabelEnglish(param.label))
+
+  const cases = param.cases
+    .map((c) => `  case ${sanitizeSwiftIdentifier(c.value)} = "${escapeForSwiftStringLiteral(c.value)}"`)
+    .join('\n')
+
+  const caseReprs = param.cases
+    .map(
+      (c) =>
+        `    .${sanitizeSwiftIdentifier(c.value)}: "${escapeForSwiftStringLiteral(widgetLabelEnglish(c.label))}"`
+    )
+    .join(',\n')
+
+  return dedent`
+    @available(iOS 17.0, *)
+    enum ${enumName}: String, AppEnum {
+    ${cases}
+
+      static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "${title}")
+      static var caseDisplayRepresentations: [Self: DisplayRepresentation] = [
+    ${caseReprs},
+      ]
+    }
+  `
+}
+
+/** Generates the WidgetConfigurationIntent struct for a configurable widget. */
+function generateWidgetIntent(widget: WidgetConfig): string {
+  const intentName = `VoltraWidget_${widget.id}_Intent`
+  const params = widget.parameters!
+
+  const paramDecls = params
+    .map((p) => {
+      const title = escapeForSwiftStringLiteral(widgetLabelEnglish(p.label))
+      switch (p.type) {
+        case 'bool': {
+          const def = p.default !== undefined ? (p.default ? 'true' : 'false') : 'false'
+          return `  @Parameter(title: "${title}", default: ${def})\n  var ${p.id}: Bool`
+        }
+        case 'int': {
+          const def = p.default !== undefined ? String(Math.trunc(p.default)) : '0'
+          return `  @Parameter(title: "${title}", default: ${def})\n  var ${p.id}: Int`
+        }
+        case 'double': {
+          const def = p.default !== undefined ? String(p.default) : '0.0'
+          return `  @Parameter(title: "${title}", default: ${def})\n  var ${p.id}: Double`
+        }
+        case 'enum': {
+          const enumName = `VoltraWidget_${widget.id}_${p.id}`
+          const defaultCase = p.default !== undefined ? p.default : p.cases[0]?.value ?? ''
+          const def = `.${sanitizeSwiftIdentifier(defaultCase)}`
+          return `  @Parameter(title: "${title}", default: ${def})\n  var ${p.id}: ${enumName}`
+        }
+      }
+    })
+    .join('\n\n')
+
+  const paramValues = params
+    .map((p) => {
+      switch (p.type) {
+        case 'bool':
+          return `      "${p.id}": ${p.id} ? "true" : "false"`
+        case 'int':
+          return `      "${p.id}": String(${p.id})`
+        case 'double':
+          return `      "${p.id}": String(${p.id})`
+        case 'enum':
+          return `      "${p.id}": ${p.id}.rawValue`
+      }
+    })
+    .join(',\n')
+
+  const title = escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)
+
+  return dedent`
+    @available(iOS 17.0, *)
+    struct ${intentName}: VoltraWidgetConfigurationIntent {
+      static var title: LocalizedStringResource = "${title}"
+
+    ${paramDecls}
+
+      init() {}
+
+      var parameterValues: [String: String] {
+        [
+    ${paramValues},
+        ]
+      }
+    }
+  `
+}
+
 /**
- * Generates Swift code for a single widget struct
+ * Generates Swift code for a configurable widget struct (iOS 17+).
+ * Uses AppIntentConfiguration and VoltraConfigurableHomeWidgetProvider.
  */
-function generateWidgetStruct(widget: WidgetConfig): string {
+function generateConfigurableWidgetStruct(widget: WidgetConfig): string {
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
+  const structName = `VoltraWidget_${widget.id}`
+  const intentName = `VoltraWidget_${widget.id}_Intent`
 
-  // Sanitize the widget id for use as a Swift identifier
+  const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
+  const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
+
+  return dedent`
+    @available(iOS 17.0, *)
+    public struct ${structName}: Widget {
+      private let widgetId = "${widget.id}"
+
+      public init() {}
+
+      public var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+          kind: "Voltra_Widget_${widget.id}",
+          intent: ${intentName}.self,
+          provider: VoltraConfigurableHomeWidgetProvider<${intentName}>(
+            widgetId: widgetId,
+            initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId),
+            outdatedState: VoltraWidgetInitialStates.getOutdatedState(for: widgetId)
+          )
+        ) { entry in
+          VoltraHomeWidgetView(entry: entry)
+        }
+        .configurationDisplayName(${displayNameExpr})
+        .description(${descriptionExpr})
+        .supportedFamilies([${familiesSwift}])
+        .contentMarginsDisabled()
+      }
+    }
+  `
+}
+
+/**
+ * Generates Swift code for a single widget struct.
+ * Configurable widgets (with parameters) use AppIntentConfiguration; others use StaticConfiguration.
+ */
+function generateWidgetStruct(widget: WidgetConfig): string {
+  if (widget.parameters && widget.parameters.length > 0) {
+    return generateConfigurableWidgetStruct(widget)
+  }
+
+  const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
+  const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
   const structName = `VoltraWidget_${widget.id}`
 
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
@@ -300,14 +455,42 @@ function generateWidgetStruct(widget: WidgetConfig): string {
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
 function generateWidgetBundleSwift(widgets: WidgetConfig[]): string {
-  // Generate widget structs
+  const configurableWidgets = widgets.filter((w) => w.parameters && w.parameters.length > 0)
+  const staticWidgets = widgets.filter((w) => !w.parameters || w.parameters.length === 0)
+
+  // Generate enum types and intent structs for configurable widgets
+  const configurableTypes = configurableWidgets
+    .flatMap((w) => [
+      ...w.parameters!.filter((p): p is WidgetParameter & { type: 'enum' } => p.type === 'enum').map((p) =>
+        generateParameterEnum(w.id, p)
+      ),
+      generateWidgetIntent(w),
+    ])
+    .join('\n\n')
+
+  // Generate widget structs (configurable first, then static)
   const widgetStructs = widgets.map(generateWidgetStruct).join('\n\n')
 
-  // Generate widget bundle body entries
-  const widgetInstances = widgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
+  // Bundle body: static widgets are instantiated directly; configurable ones are guarded
+  const widgetInstances = [
+    ...staticWidgets.map((w) => `VoltraWidget_${w.id}()`),
+    ...(configurableWidgets.length > 0
+      ? [
+          `if #available(iOSApplicationExtension 17.0, *) {\n        ${configurableWidgets
+            .map((w) => `VoltraWidget_${w.id}()`)
+            .join('\n        ')}\n      }`,
+        ]
+      : []),
+  ].join('\n        ')
 
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
   const foundationImport = needsFoundation ? 'import Foundation\n' : ''
+  const appIntentsImport = configurableWidgets.length > 0 ? 'import AppIntents\n' : ''
+
+  const configurableSection =
+    configurableTypes.length > 0
+      ? `\n// MARK: - Configurable Widget Types\n\n${configurableTypes}\n`
+      : ''
 
   return dedent`
     //
@@ -317,7 +500,7 @@ function generateWidgetBundleSwift(widgets: WidgetConfig[]): string {
     //  This file defines which Voltra widgets are available in your app.
     //
 
-    ${foundationImport}import SwiftUI
+    ${appIntentsImport}${foundationImport}import SwiftUI
     import WidgetKit
     import VoltraWidget
 
@@ -331,7 +514,7 @@ function generateWidgetBundleSwift(widgets: WidgetConfig[]): string {
         ${widgetInstances}
       }
     }
-
+    ${configurableSection}
     // MARK: - Home Screen Widget Definitions
 
     ${widgetStructs}
@@ -369,15 +552,8 @@ function generateDefaultWidgetBundleSwift(): string {
 // Initial States
 // ============================================================================
 
-/**
- * Generates Swift code that bundles pre-rendered widget initial states (per locale when configured).
- */
-function generateInitialStatesSwift(prerenderedStates: PrerenderedWidgetStates): string {
-  if (prerenderedStates.size === 0) {
-    return generateEmptyInitialStatesSwift()
-  }
-
-  const widgetEntries = Array.from(prerenderedStates.entries())
+function buildBundledStatesDict(prerenderedStates: PrerenderedWidgetStates): string {
+  return Array.from(prerenderedStates.entries())
     .map(([widgetId, perLocale]) => {
       const localeEntries = Array.from(perLocale.entries())
         .map(([localeKey, json]) => {
@@ -388,58 +564,77 @@ function generateInitialStatesSwift(prerenderedStates: PrerenderedWidgetStates):
       return `"${widgetId}": [\n        ${localeEntries}\n      ]`
     })
     .join(',\n    ')
-
-  return dedent`
-    //
-    //  VoltraWidgetInitialStates.swift
-    //
-    //  Auto-generated by Voltra config plugin.
-    //  Contains pre-rendered initial states for home screen widgets.
-    //
-
-    import Foundation
-
-    ${GENERATED_INITIAL_STATE_LOCALE_HELPER}
-
-    public enum VoltraWidgetInitialStates {
-      private static let bundledLocalizedStates: [String: [String: String]] = [
-        ${widgetEntries}
-      ]
-
-      /// Get the bundled initial state JSON for a widget, matching the device locale when multiple locales were built.
-      /// Returns nil if no initial state was configured for the widget.
-      public static func getInitialState(for widgetId: String) -> Data? {
-        guard let perLocale = bundledLocalizedStates[widgetId] else { return nil }
-        let tags = VoltraGeneratedInitialStateLocale.preferredLanguageTags()
-        guard let jsonString = VoltraGeneratedInitialStateLocale.pickJson(from: perLocale, preferredLanguages: tags) else {
-          return nil
-        }
-        return jsonString.data(using: .utf8)
-      }
-    }
-  `
 }
 
 /**
- * Generates empty Swift code when no widgets have initial states configured.
+ * Generates Swift code that bundles pre-rendered widget initial states and outdated states.
  */
-function generateEmptyInitialStatesSwift(): string {
+function generateInitialStatesSwift(
+  prerenderedStates: PrerenderedWidgetStates,
+  prerenderedOutdatedStates: PrerenderedWidgetStates = new Map()
+): string {
+  const hasInitial = prerenderedStates.size > 0
+  const hasOutdated = prerenderedOutdatedStates.size > 0
+  const needsLocaleHelper = hasInitial || hasOutdated
+
+  const localeHelperSection = needsLocaleHelper ? `\n${GENERATED_INITIAL_STATE_LOCALE_HELPER}\n` : ''
+
+  const initialStatesDict = hasInitial ? buildBundledStatesDict(prerenderedStates) : ''
+  const outdatedStatesDict = hasOutdated ? buildBundledStatesDict(prerenderedOutdatedStates) : ''
+
+  const initialStatesDecl = hasInitial
+    ? `  private static let bundledLocalizedStates: [String: [String: String]] = [\n    ${initialStatesDict}\n  ]`
+    : `  private static let bundledLocalizedStates: [String: [String: String]] = [:]`
+
+  const outdatedStatesDecl = hasOutdated
+    ? `  private static let bundledLocalizedOutdatedStates: [String: [String: String]] = [\n    ${outdatedStatesDict}\n  ]`
+    : `  private static let bundledLocalizedOutdatedStates: [String: [String: String]] = [:]`
+
+  const getStateFn = needsLocaleHelper
+    ? `  public static func getInitialState(for widgetId: String) -> Data? {
+    guard let perLocale = bundledLocalizedStates[widgetId] else { return nil }
+    let tags = VoltraGeneratedInitialStateLocale.preferredLanguageTags()
+    guard let jsonString = VoltraGeneratedInitialStateLocale.pickJson(from: perLocale, preferredLanguages: tags) else {
+      return nil
+    }
+    return jsonString.data(using: .utf8)
+  }`
+    : `  public static func getInitialState(for widgetId: String) -> Data? { return nil }`
+
+  const getOutdatedFn = needsLocaleHelper
+    ? `  public static func getOutdatedState(for widgetId: String) -> Data? {
+    guard let perLocale = bundledLocalizedOutdatedStates[widgetId] else { return nil }
+    let tags = VoltraGeneratedInitialStateLocale.preferredLanguageTags()
+    guard let jsonString = VoltraGeneratedInitialStateLocale.pickJson(from: perLocale, preferredLanguages: tags) else {
+      return nil
+    }
+    return jsonString.data(using: .utf8)
+  }`
+    : `  public static func getOutdatedState(for widgetId: String) -> Data? { return nil }`
+
   return dedent`
     //
     //  VoltraWidgetInitialStates.swift
     //
     //  Auto-generated by Voltra config plugin.
-    //  No widget initial states configured.
+    //  Contains pre-rendered initial and outdated states for home screen widgets.
     //
 
     import Foundation
-
+    ${localeHelperSection}
     public enum VoltraWidgetInitialStates {
-      /// Get the bundled initial state JSON for a widget.
-      /// Always returns nil since no initial states are configured.
-      public static func getInitialState(for widgetId: String) -> Data? {
-        return nil
-      }
+    ${initialStatesDecl}
+
+    ${outdatedStatesDecl}
+
+      /// Get the bundled initial state JSON for a widget, matching the device locale.
+      /// Returns nil if no initial state was configured for the widget.
+    ${getStateFn}
+
+      /// Get the bundled outdated state JSON for a configurable widget, matching the device locale.
+      /// Shown when widget parameters change but the React Native app hasn't re-rendered yet.
+      /// Returns nil if no outdated state was configured for the widget.
+    ${getOutdatedFn}
     }
   `
 }
@@ -469,4 +664,7 @@ function getSwiftRawStringDelimiter(str: string): string {
 
 export const __test__ = {
   generateInitialStatesSwift,
+  generateParameterEnum,
+  generateWidgetIntent,
+  generateConfigurableWidgetStruct,
 }

@@ -5,6 +5,7 @@
 //  Widget definitions are generated dynamically by the config plugin.
 //
 
+import AppIntents
 import Foundation
 import os
 import SwiftUI
@@ -127,8 +128,10 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
     self.initialState = initialState
   }
 
-  public func placeholder(in _: Context) -> VoltraHomeWidgetEntry {
-    VoltraHomeWidgetEntry(date: Date(), rootNode: nil, widgetId: widgetId)
+  public func placeholder(in context: Context) -> VoltraHomeWidgetEntry {
+    let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
+    let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
+    return VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
   }
 
   public func getSnapshot(in context: Context, completion: @escaping (VoltraHomeWidgetEntry) -> Void) {
@@ -208,7 +211,6 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
 
         let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
 
-        // Schedule next update based on configured interval
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? Date().addingTimeInterval(900)
         completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
 
@@ -254,23 +256,6 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
     }
   }
 
-  /// Parse JSON data into a VoltraNode for the given widget family.
-  /// This moves all parsing work to the Provider (background thread).
-  private func parseJsonToNode(data: Data, family: WidgetFamily) -> VoltraNode? {
-    // 1. Select content for the target family
-    let selectedData = selectContentForFamily(data, family: family)
-
-    // 2. Normalize the JSON
-    guard let normalized = normalizeJsonData(selectedData),
-          let jsonString = String(data: normalized, encoding: .utf8),
-          let json = try? JSONValue.parse(from: jsonString)
-    else {
-      return nil
-    }
-
-    // 3. Parse into VoltraNode AST
-    return VoltraNode.parse(from: json)
-  }
 }
 
 public struct VoltraHomeWidgetView: View {
@@ -443,6 +428,153 @@ private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Dat
 
   // Final fallback: empty array
   return Data("[]".utf8)
+}
+
+// MARK: - JSON parsing helper
+
+/// Parses JSON data into a VoltraNode for the given widget family.
+/// Shared by both TimelineProvider and AppIntentTimelineProvider.
+private func parseJsonToNode(data: Data, family: WidgetFamily) -> VoltraNode? {
+  let selectedData = selectContentForFamily(data, family: family)
+  guard let normalized = normalizeJsonData(selectedData),
+        let jsonString = String(data: normalized, encoding: .utf8),
+        let json = try? JSONValue.parse(from: jsonString)
+  else { return nil }
+  return VoltraNode.parse(from: json)
+}
+
+// MARK: - Configurable Widget Support
+
+// File-level coalescing state for VoltraConfigurableHomeWidgetProvider.
+// Static stored properties are not allowed in generic types, so these live at module scope.
+private var _configurableWidgetLastFetchTimes: [String: Date] = [:]
+private let _configurableWidgetCoalesceInterval: TimeInterval = 3
+
+/// Protocol that generated WidgetConfigurationIntent structs conform to.
+/// Provides a platform-agnostic bridge between typed Swift parameters and the generic provider.
+@available(iOS 17.0, *)
+public protocol VoltraWidgetConfigurationIntent: WidgetConfigurationIntent {
+  /// Current parameter values encoded as strings, keyed by parameter ID.
+  /// Used to persist values for the RN `getWidgetParameters` API and to
+  /// detect when parameters have changed since the last render.
+  var parameterValues: [String: String] { get }
+}
+
+/// A fully reusable `AppIntentTimelineProvider` for configurable home screen widgets.
+/// The generated widget struct instantiates this with the concrete intent type.
+@available(iOS 17.0, *)
+public struct VoltraConfigurableHomeWidgetProvider<Intent: VoltraWidgetConfigurationIntent>: AppIntentTimelineProvider {
+  public let widgetId: String
+  public let initialState: Data?
+  public let outdatedState: Data?
+
+  public init(widgetId: String, initialState: Data? = nil, outdatedState: Data? = nil) {
+    self.widgetId = widgetId
+    self.initialState = initialState
+    self.outdatedState = outdatedState
+  }
+
+  public func placeholder(in context: Context) -> VoltraHomeWidgetEntry {
+    let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
+    let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
+    return VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
+  }
+
+  public func snapshot(for _: Intent, in context: Context) async -> VoltraHomeWidgetEntry {
+    if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId),
+       let firstEntry = timeline.entries.first
+    {
+      let node = parseJsonToNode(data: firstEntry.json, family: context.family)
+      return VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId, deepLinkUrl: firstEntry.deepLinkUrl)
+    }
+    let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
+    let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
+    return VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
+  }
+
+  public func timeline(for configuration: Intent, in context: Context) async -> Timeline<VoltraHomeWidgetEntry> {
+    VoltraHomeWidgetStore.pruneExpiredEntries(widgetId: widgetId)
+
+    let currentParams = configuration.parameterValues
+    let storedParams = VoltraWidgetDefaults.widgetParameters(for: widgetId)
+    // Only consider parameters changed if something was stored before (i.e. widget has been
+    // placed and configured at least once), to avoid showing the outdated state on first launch.
+    let paramsChanged = storedParams != nil && storedParams != currentParams
+
+    try? VoltraWidgetDefaults.setWidgetParameters(currentParams, for: widgetId)
+
+    if VoltraWidgetServerFetcher.serverUrl(for: widgetId) != nil {
+      return await serverDrivenTimeline(parameters: currentParams, in: context)
+    }
+
+    if paramsChanged, let outdatedData = outdatedState {
+      let node = parseJsonToNode(data: outdatedData, family: context.family)
+      let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
+      return Timeline(entries: [entry], policy: .never)
+    }
+
+    return localTimeline(in: context)
+  }
+
+  // MARK: - Server-Driven Timeline
+
+  private func serverDrivenTimeline(parameters: [String: String], in context: Context) async -> Timeline<VoltraHomeWidgetEntry> {
+    let familyKey = familyToKey(context.family)
+    let intervalMinutes = VoltraWidgetServerFetcher.updateInterval(for: widgetId)
+
+    if let lastFetch = _configurableWidgetLastFetchTimes[widgetId],
+       Date().timeIntervalSince(lastFetch) < _configurableWidgetCoalesceInterval
+    {
+      VoltraLogger.widget.info("Coalescing fetch for '\(widgetId)' family '\(familyKey)'")
+      return localTimeline(in: context)
+    }
+
+    do {
+      let data = try await VoltraWidgetServerFetcher.fetchWidgetContent(
+        widgetId: widgetId,
+        family: familyKey,
+        parameters: parameters
+      )
+
+      _configurableWidgetLastFetchTimes[widgetId] = Date()
+
+      let node = parseJsonToNode(data: data, family: context.family)
+
+      if node != nil, let jsonString = String(data: data, encoding: .utf8) {
+        try? VoltraWidgetDefaults.setWidgetJson(jsonString, for: widgetId, deepLinkUrl: nil)
+      }
+
+      let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
+      let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? Date().addingTimeInterval(900)
+      VoltraLogger.widget.info("Server-driven update succeeded for '\(widgetId)', next update in \(intervalMinutes)m")
+      return Timeline(entries: [entry], policy: .after(nextUpdate))
+    } catch {
+      VoltraLogger.widget.error("Server-driven update failed for '\(widgetId)': \(error.localizedDescription)")
+      return localTimeline(in: context)
+    }
+  }
+
+  // MARK: - Local Timeline
+
+  private func localTimeline(in context: Context) -> Timeline<VoltraHomeWidgetEntry> {
+    if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId), !timeline.entries.isEmpty {
+      let entries = timeline.entries.map { timelineEntry in
+        let node = parseJsonToNode(data: timelineEntry.json, family: context.family)
+        return VoltraHomeWidgetEntry(date: timelineEntry.date, rootNode: node, widgetId: widgetId, deepLinkUrl: timelineEntry.deepLinkUrl)
+      }
+      return Timeline(entries: entries, policy: .never)
+    }
+
+    let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
+    let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
+    let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
+
+    if VoltraWidgetServerFetcher.serverUrl(for: widgetId) != nil {
+      let retryDate = Date().addingTimeInterval(900)
+      return Timeline(entries: [entry], policy: .after(retryDate))
+    }
+    return Timeline(entries: [entry], policy: .never)
+  }
 }
 
 // MARK: - Deep link helpers

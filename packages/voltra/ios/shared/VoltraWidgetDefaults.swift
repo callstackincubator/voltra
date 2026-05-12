@@ -37,6 +37,14 @@ public enum VoltraWidgetDefaults {
     try? resolvedDefaults().string(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
   }
 
+  public static func widgetParameters(for widgetId: String) -> [String: String]? {
+    guard let jsonString = try? resolvedDefaults().string(forKey: VoltraStorageKeys.widgetParameters(widgetId)),
+          let data = jsonString.data(using: .utf8),
+          let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String]
+    else { return nil }
+    return dict
+  }
+
   // MARK: - Write
 
   public static func setWidgetJson(_ json: String, for widgetId: String, deepLinkUrl: String?) throws {
@@ -55,6 +63,14 @@ public enum VoltraWidgetDefaults {
       defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
     }
 
+    defaults.synchronize()
+  }
+
+  public static func setWidgetParameters(_ parameters: [String: String], for widgetId: String) throws {
+    let defaults = try resolvedDefaults()
+    let data = try JSONSerialization.data(withJSONObject: parameters)
+    guard let jsonString = String(data: data, encoding: .utf8) else { return }
+    defaults.set(jsonString, forKey: VoltraStorageKeys.widgetParameters(widgetId))
     defaults.synchronize()
   }
 
@@ -79,6 +95,7 @@ public enum VoltraWidgetDefaults {
     defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
     defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
     defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
+    defaults.removeObject(forKey: VoltraStorageKeys.widgetParameters(widgetId))
     defaults.synchronize()
   }
 
@@ -96,6 +113,7 @@ public enum VoltraWidgetDefaults {
       defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
       defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
       defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
+      defaults.removeObject(forKey: VoltraStorageKeys.widgetParameters(widgetId))
     }
     defaults.synchronize()
   }

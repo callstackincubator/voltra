@@ -201,6 +201,13 @@ export interface VoltraModuleSpec {
   clearWidgetServerCredentials(): Promise<void>
 
   /**
+   * Returns the current parameter values for a configurable widget, as last set by the
+   * widget extension when the user edited the widget. Returns an empty object if the widget
+   * has not been placed or edited yet.
+   */
+  getWidgetParameters(widgetId: string): Record<string, string>
+
+  /**
    * Add an event listener
    */
   addListener(event: string, listener: (event: any) => void): EventSubscription

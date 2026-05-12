@@ -49,6 +49,7 @@ export interface VoltraIOSModuleSpec {
   getActiveWidgets<T = any>(): Promise<T[]>
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
+  getWidgetParameters(widgetId: string): Record<string, string>
   addListener(event: string, listener: (event: any) => void): EventSubscription
 }
 

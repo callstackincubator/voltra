@@ -239,6 +239,10 @@ public class VoltraModuleImpl {
     VoltraWidgetService.clearWidgetServerCredentials()
   }
 
+  func getWidgetParameters(widgetId: String) -> [String: String] {
+    VoltraWidgetDefaults.widgetParameters(for: widgetId) ?? [:]
+  }
+
   // MARK: - Private Helpers
 
   private func mapError(_ error: Error) -> Error {
