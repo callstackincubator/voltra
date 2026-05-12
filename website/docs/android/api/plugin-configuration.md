@@ -7,23 +7,20 @@ The Voltra Expo config plugin accepts Android-specific configuration options in 
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/android-client",
         {
-          "groupIdentifier": "group.your.bundle.identifier",
-          "android": {
-            "enableNotifications": true,
-            "widgets": [
-              {
-                "id": "weather",
-                "displayName": "Weather Widget",
-                "description": "Shows current weather conditions",
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "initialStatePath": "./widgets/weather-initial.tsx",
-                "previewImage": "./assets/widgets/weather-preview.png"
-              }
-            ]
-          }
+          "enableNotifications": true,
+          "widgets": [
+            {
+              "id": "weather",
+              "displayName": "Weather Widget",
+              "description": "Shows current weather conditions",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "initialStatePath": "./widgets/weather-initial.tsx",
+              "previewImage": "./assets/widgets/weather-preview.png"
+            }
+          ]
         }
       ]
     ]
@@ -33,7 +30,7 @@ The Voltra Expo config plugin accepts Android-specific configuration options in 
 
 ## Android-Specific Configuration
 
-### `android.enableNotifications` (optional)
+### `enableNotifications` (optional)
 
 Enables Android notification-related manifest plumbing used by Voltra features such as ongoing notifications.
 
@@ -47,7 +44,7 @@ This does not grant runtime notification permission automatically. Your app stil
 
 For setup and usage examples, see [Managing Android Ongoing Notifications](../development/managing-ongoing-notifications).
 
-### `android.widgets` (optional)
+### `widgets` (optional)
 
 Array of widget configurations for Home Screen widgets. Each widget will be available in the Android widget picker.
 
@@ -78,25 +75,23 @@ Use a locale map when the widget picker label should be translated:
 
 ```json
 {
-  "android": {
-    "widgets": [
-      {
-        "id": "weather",
-        "displayName": {
-          "en": "Weather",
-          "pl": "Pogoda",
-          "zh-Hans": "天气"
-        },
-        "description": {
-          "en": "Current weather conditions",
-          "pl": "Aktualne warunki pogodowe",
-          "zh-Hans": "当前天气状况"
-        },
-        "targetCellWidth": 2,
-        "targetCellHeight": 2
-      }
-    ]
-  }
+  "widgets": [
+    {
+      "id": "weather",
+      "displayName": {
+        "en": "Weather",
+        "pl": "Pogoda",
+        "zh-Hans": "天气"
+      },
+      "description": {
+        "en": "Current weather conditions",
+        "pl": "Aktualne warunki pogodowe",
+        "zh-Hans": "当前天气状况"
+      },
+      "targetCellWidth": 2,
+      "targetCellHeight": 2
+    }
+  ]
 }
 ```
 
@@ -258,14 +253,12 @@ See [Widget Pre-rendering](../development/widget-pre-rendering) for details on c
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/android-client",
         {
-          "groupIdentifier": "group.com.example.app",
-          "android": {
-            "enableNotifications": true,
-            "widgets": [
-              {
-                "id": "voltra",
+          "enableNotifications": true,
+          "widgets": [
+            {
+              "id": "voltra",
                 "displayName": "Voltra Widget",
                 "description": "Voltra logo widget",
                 "minCellWidth": 2,
@@ -284,9 +277,8 @@ See [Widget Pre-rendering](../development/widget-pre-rendering) for details on c
                 "targetCellWidth": 2,
                 "targetCellHeight": 2,
                 "previewLayout": "./assets/widgets/todos-preview.xml"
-              }
-            ]
-          }
+            }
+          ]
         }
       ]
     ]

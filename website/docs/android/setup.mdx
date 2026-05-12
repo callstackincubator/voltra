@@ -2,34 +2,37 @@ import { PackageManagerTabs } from '@rspress/core/theme'
 
 # Android Setup
 
-Once you have [installed Voltra](../getting-started/installation), you need to configure the Expo plugin for Android.
+Once you have [installed Voltra](../getting-started/installation) for Android, configure the Expo plugin.
 
 ## 1. Configure the Expo Plugin
 
-Add the Voltra plugin to your `app.json` or `app.config.js`:
+Add `@use-voltra/android-client` to your `app.json` or `app.config.js`:
 
 ```json
 {
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/android-client",
         {
-          "android": {
-            "widgets": [
-              {
-                "id": "my_widget",
-                "name": "My First Widget",
-                "description": "A simple Voltra widget"
-              }
-            ]
-          }
+          "enableNotifications": true,
+          "widgets": [
+            {
+              "id": "my_widget",
+              "displayName": "My First Widget",
+              "description": "A simple Voltra widget",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2
+            }
+          ]
         }
       ]
     ]
   }
 }
 ```
+
+See [Plugin Configuration](../api/plugin-configuration) for all options.
 
 ## 2. Prebuild for Android
 

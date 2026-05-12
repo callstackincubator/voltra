@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { requestPinAndroidWidget, updateAndroidWidget } from 'voltra/android/client'
+import { requestPinAndroidWidget, updateAndroidWidget } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

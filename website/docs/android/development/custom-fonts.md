@@ -13,13 +13,13 @@ List your font paths in the top-level `fonts` array. These can be local files or
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/android-client",
         {
           "fonts": [
             "node_modules/@expo-google-fonts/pacifico/400Regular/Pacifico_400Regular.ttf",
             "./assets/fonts/MyCustomFont.ttf"
           ],
-          "android": { "widgets": [...] }
+          "widgets": []
         }
       ]
     ]
@@ -38,7 +38,7 @@ The plugin copies each font file to `android/app/src/main/assets/fonts/` automat
 ### 3. Use `renderAsBitmap` on Text
 
 ```tsx
-import { VoltraAndroid } from 'voltra/android'
+import { VoltraAndroid } from '@use-voltra/android-client'
 
 <VoltraAndroid.Text
   renderAsBitmap

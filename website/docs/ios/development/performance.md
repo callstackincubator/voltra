@@ -7,7 +7,7 @@ Voltra provides automatic optimizations to help you create efficient Live Activi
 Reuse JSX elements by creating them once, storing them in variables, and reusing them across your JSX tree. Voltra automatically detects duplicate element references and stores them only once in the payload, using lightweight references (`{ $r: index }`) for subsequent occurrences.
 
 ```tsx
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios-client'
 
 // ✅ Good: Create element once and reuse
 const sharedButton = <Voltra.Button onPress="action">Click me</Voltra.Button>

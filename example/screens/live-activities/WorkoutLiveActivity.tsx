@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
-import { useLiveActivity } from 'voltra/client'
+import { useLiveActivity } from '@use-voltra/ios-client'
 
 import { WorkoutLiveActivityUI } from '../../components/live-activities/WorkoutLiveActivityUI'
 import { LiveActivityExampleComponent } from './types'

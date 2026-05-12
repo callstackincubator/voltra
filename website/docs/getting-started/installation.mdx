@@ -2,17 +2,29 @@ import { PackageManagerTabs } from '@rspress/core/theme'
 
 # Installation
 
-To use Voltra in your project, you only need to install one package.
+Voltra ships as platform packages. Install only what your app needs.
 
-## 1. Install the package
+## 1. Install packages
 
-Add Voltra to your Expo project:
+### iOS (Live Activities and widgets)
 
-<PackageManagerTabs command="install voltra" />
+<PackageManagerTabs command="install @use-voltra/ios-client" />
+
+### Android (Home Screen widgets and ongoing notifications)
+
+<PackageManagerTabs command="install @use-voltra/android-client" />
+
+### Server rendering (optional)
+
+Use these in your backend or SSR service—not in the React Native app bundle:
+
+- **iOS payloads:** `@use-voltra/ios-server`
+- **Android payloads:** `@use-voltra/android-server`
+- **Cross-platform widget HTTP handlers:** `@use-voltra/server`
 
 ## 2. Next Steps
 
-After installing the package, you need to configure the Voltra Expo plugin for each platform you want to support.
+After installing packages, configure the Voltra Expo plugin for each platform you support:
 
 - [Configure iOS Setup](../ios/setup)
 - [Configure Android Setup](../android/setup)

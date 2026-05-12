@@ -20,7 +20,7 @@ Voltra emits events whenever a Live Activity's state changes. This allows you to
 Use `addVoltraListener` with the `'stateChange'` event type to subscribe to state change events:
 
 ```typescript
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 const subscription = addVoltraListener('stateChange', (event) => {
   console.log('Activity name:', event.activityName)
@@ -66,7 +66,7 @@ To enable server-side updates for your Live Activities, you need to obtain push 
 Activity push tokens are used to update existing Live Activities via push notifications. Listen for these tokens using `addVoltraListener` with the `'activityTokenReceived'` event type:
 
 ```typescript
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 const subscription = addVoltraListener('activityTokenReceived', (event) => {
   console.log('Activity name:', event.activityName)
@@ -89,7 +89,7 @@ For more information about using push tokens for server-side updates, see the [s
 Push-to-start tokens (available on iOS 17.2+) allow you to start Live Activities remotely via push notifications. Listen for these tokens using `addVoltraListener` with the `'activityPushToStartTokenReceived'` event type:
 
 ```typescript
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 const subscription = addVoltraListener('activityPushToStartTokenReceived', (event) => {
   console.log('Push-to-start token:', event.pushToStartToken)
@@ -114,7 +114,7 @@ When users interact with buttons or toggles in your Live Activity, Voltra emits 
 Subscribe to interaction events using `addVoltraListener` with the `'interaction'` event type:
 
 ```typescript
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 const subscription = addVoltraListener('interaction', (event) => {
   console.log('Component interacted:', event.identifier)
@@ -145,7 +145,7 @@ Always clean up your event subscriptions to prevent memory leaks. If you're usin
 
 ```typescript
 import { useEffect } from 'react'
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 function MyComponent() {
   useEffect(() => {

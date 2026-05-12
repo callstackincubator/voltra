@@ -7,7 +7,7 @@ Voltra provides SwiftUI primitives with JSX bindings, allowing developers to cre
 All Voltra components are available through the main `Voltra` namespace:
 
 ```tsx
-import Voltra from 'voltra'
+import { Voltra } from '@use-voltra/ios-client'
 
 const MyComponent = () => {
   // Use any component

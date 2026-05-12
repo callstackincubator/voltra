@@ -1,6 +1,6 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
-import { AndroidOngoingNotification } from 'voltra/android'
-import { useAndroidOngoingNotification } from 'voltra/android/client'
+import { AndroidOngoingNotification } from '@use-voltra/android'
+import { useAndroidOngoingNotification } from '@use-voltra/android-client'
 
 import { LiveActivityExampleComponent } from './types'
 

@@ -1,6 +1,6 @@
 import { Platform } from 'react-native'
 
-import VoltraModule from './VoltraModule.js'
+import { getNativeVoltra } from './VoltraModule.js'
 
 export function isGlassSupported(): boolean {
   if (Platform.OS !== 'ios') return false
@@ -17,5 +17,5 @@ export function isGlassSupported(): boolean {
 
 export function isHeadless(): boolean {
   if (Platform.OS !== 'ios') return false
-  return VoltraModule.isHeadless?.() ?? false
+  return getNativeVoltra().isHeadless?.() ?? false
 }

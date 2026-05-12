@@ -60,7 +60,7 @@ The image preloading system works by:
 Once images are preloaded, reference them using the `assetName` property:
 
 ```typescript
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios-client'
 
 function MusicPlayerLiveActivity({ song }) {
   return {

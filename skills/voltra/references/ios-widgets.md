@@ -4,8 +4,7 @@ Use this reference for iOS widget UI, scheduled widgets, widget families, or iOS
 
 ## Domain Rules
 
-- Use `Voltra` from `voltra` for iOS widget UI trees.
-- Use `voltra/client` for iOS widget APIs such as `updateWidget`, `scheduleWidget`, `reloadWidgets`, `clearWidget`, `clearAllWidgets`, `getActiveWidgets`, and `VoltraWidgetPreview`.
+- Use `Voltra` and widget APIs such as `updateWidget`, `scheduleWidget`, `reloadWidgets`, `clearWidget`, `clearAllWidgets`, `getActiveWidgets`, and `VoltraWidgetPreview` from `@use-voltra/ios-client`.
 - Do not use `VoltraAndroid` or Android widget primitives in iOS widget code.
 - Widget registration lives in the Voltra plugin config. If the task includes `widgets`, `supportedFamilies`, or `initialStatePath`, also read `app-config.md`.
 - If the task includes `serverUpdate`, widget polling intervals, widget auth credentials, or `createWidgetUpdateHandler`, also read `server-driven-widgets.md`.

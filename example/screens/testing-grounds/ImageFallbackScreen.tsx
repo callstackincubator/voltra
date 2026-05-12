@@ -1,8 +1,8 @@
 import { Link } from 'expo-router'
 import React from 'react'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { startLiveActivity } from 'voltra/client'
+import { Voltra } from '@use-voltra/ios'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

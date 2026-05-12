@@ -7,7 +7,7 @@ Use this reference for Voltra widgets that fetch content from your server on a s
 - This flow is for Home Screen widgets, not APNS Live Activity updates.
 - Configure `serverUpdate` in the Voltra plugin config before writing widget server code.
 - Rebuild native apps after adding or changing `serverUpdate`, `keychainGroup`, or widget registration.
-- Use `createWidgetUpdateHandler`, `createWidgetUpdateNodeHandler`, or `createWidgetUpdateExpressHandler` from `voltra/server` for the server endpoint.
+- iOS: `createIOSWidgetUpdateNodeHandler` from `@use-voltra/ios-server`. Android: `createAndroidWidgetUpdateNodeHandler` from `@use-voltra/android-server`. Cross-platform HTTP: `@use-voltra/server`.
 - Use `setWidgetServerCredentials` after login and `clearWidgetServerCredentials` on logout when the endpoint requires auth.
 - If the endpoint is public, skip credential storage entirely.
 - Keep render paths platform-specific: `renderIos` returns iOS `WidgetVariants`; `renderAndroid` returns Android size variants.

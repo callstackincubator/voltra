@@ -18,8 +18,7 @@ Voltra works by serializing your JSX components into a lightweight JSON format t
 Here's how simple it is to create a live activity:
 
 ```tsx
-import { startLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { startLiveActivity, Voltra } from '@use-voltra/ios-client'
 
 const activityUI = (
   <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
@@ -47,8 +46,7 @@ Voltra also supports server-side updates through push notifications. You can use
 The same components you use in your app work on the server:
 
 ```tsx
-import { renderLiveActivityToString } from 'voltra/server'
-import { Voltra } from 'voltra'
+import { renderLiveActivityToString, Voltra } from '@use-voltra/ios-server'
 
 // Render JSX to JSON payload on your server
 const payload = renderLiveActivityToString({

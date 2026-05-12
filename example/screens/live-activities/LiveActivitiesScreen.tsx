@@ -1,7 +1,7 @@
 import { Link } from 'expo-router'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { endAllLiveActivities } from 'voltra/client'
+import { endAllLiveActivities } from '@use-voltra/ios-client'
 
 import { ActiveWidgetsIOSCard } from '~/components/ActiveWidgetsIOSCard'
 import { Button } from '~/components/Button'

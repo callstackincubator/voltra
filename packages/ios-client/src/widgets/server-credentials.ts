@@ -1,5 +1,5 @@
 import type { WidgetServerCredentials } from '../types.js'
-import VoltraModule from '../VoltraModule.js'
+import { getNativeVoltra } from '../VoltraModule.js'
 
 export type { WidgetServerCredentials } from '../types.js'
 
@@ -8,9 +8,9 @@ export async function setWidgetServerCredentials(credentials: WidgetServerCreden
     throw new Error('[Voltra][iOS] setWidgetServerCredentials: token is required')
   }
 
-  return VoltraModule.setWidgetServerCredentials(credentials)
+  return getNativeVoltra().setWidgetServerCredentials(credentials)
 }
 
 export async function clearWidgetServerCredentials(): Promise<void> {
-  return VoltraModule.clearWidgetServerCredentials()
+  return getNativeVoltra().clearWidgetServerCredentials()
 }

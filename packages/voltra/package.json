@@ -2,71 +2,98 @@
   "name": "voltra",
   "version": "1.4.1",
   "description": "Build Live Activities with JSX in React Native",
-  "main": "build/cjs/index.js",
-  "module": "build/esm/index.js",
-  "types": "build/types/index.d.ts",
+  "main": "build/commonjs/index.js",
+  "module": "build/module/index.js",
+  "types": "build/typescript/commonjs/index.d.ts",
   "exports": {
     ".": {
-      "types": "./build/types/index.d.ts",
-      "require": "./build/cjs/index.js",
-      "import": "./build/esm/index.js",
-      "default": "./build/esm/index.js"
+      "source": "./src/index.ts",
+      "import": {
+        "types": "./build/typescript/module/index.d.ts",
+        "default": "./build/module/index.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/index.d.ts",
+        "default": "./build/commonjs/index.js"
+      },
+      "default": "./build/module/index.js"
     },
     "./client": {
-      "types": "./build/types/client.d.ts",
-      "require": "./build/cjs/client.js",
-      "import": "./build/esm/client.js",
-      "default": "./build/esm/client.js"
+      "source": "./src/client.ts",
+      "import": {
+        "types": "./build/typescript/module/client.d.ts",
+        "default": "./build/module/client.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/client.d.ts",
+        "default": "./build/commonjs/client.js"
+      },
+      "default": "./build/module/client.js"
     },
     "./server": {
-      "types": "./build/types/server.d.ts",
-      "require": "./build/cjs/server.js",
-      "import": "./build/esm/server.js",
-      "default": "./build/esm/server.js"
+      "source": "./src/ios/server.ts",
+      "import": {
+        "types": "./build/typescript/module/ios/server.d.ts",
+        "default": "./build/module/ios/server.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/ios/server.d.ts",
+        "default": "./build/commonjs/ios/server.js"
+      },
+      "default": "./build/module/ios/server.js"
     },
     "./android": {
-      "types": "./build/types/android/index.d.ts",
-      "require": "./build/cjs/android/index.js",
-      "import": "./build/esm/android/index.js",
-      "default": "./build/esm/android/index.js"
+      "source": "./src/android/index.ts",
+      "import": {
+        "types": "./build/typescript/module/android/index.d.ts",
+        "default": "./build/module/android/index.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/android/index.d.ts",
+        "default": "./build/commonjs/android/index.js"
+      },
+      "default": "./build/module/android/index.js"
     },
     "./android/server": {
-      "types": "./build/types/android/server.d.ts",
-      "require": "./build/cjs/android/server.js",
-      "import": "./build/esm/android/server.js",
-      "default": "./build/esm/android/server.js"
+      "source": "./src/android/server.ts",
+      "import": {
+        "types": "./build/typescript/module/android/server.d.ts",
+        "default": "./build/module/android/server.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/android/server.d.ts",
+        "default": "./build/commonjs/android/server.js"
+      },
+      "default": "./build/module/android/server.js"
     },
     "./android/client": {
-      "types": "./build/types/android/client.d.ts",
-      "require": "./build/cjs/android/client.js",
-      "import": "./build/esm/android/client.js",
-      "default": "./build/esm/android/client.js"
+      "source": "./src/android/client.ts",
+      "import": {
+        "types": "./build/typescript/module/android/client.d.ts",
+        "default": "./build/module/android/client.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/android/client.d.ts",
+        "default": "./build/commonjs/android/client.js"
+      },
+      "default": "./build/module/android/client.js"
     },
-    "./app.plugin.js": "./app.plugin.js",
-    "./expo-module.config.json": "./expo-module.config.json"
+    "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "node ../../scripts/build-package.mjs packages/voltra",
+    "build": "npm run clean && bob build",
     "clean": "rm -rf build",
-    "format:check": "npm run format:js:check && npm run format:kotlin:check && npm run format:swift:check",
-    "format:fix": "npm run format:js:fix && npm run format:kotlin:fix && npm run format:swift:fix",
+    "format:check": "npm run format:js:check",
+    "format:fix": "npm run format:js:fix && npm run lint:fix",
     "format:js:check": "prettier --check .",
     "format:js:fix": "prettier --write .",
-    "format:kotlin:check": "ktlint \"android/**/*.kt\"",
-    "format:kotlin:fix": "ktlint -F \"android/**/*.kt\"",
-    "format:swift:check": "swiftformat --lint ios",
-    "format:swift:fix": "swiftformat ios",
+    "generate": "ts-node generator/generate-types.ts",
     "lint": "oxlint src generator",
     "lint:fix": "oxlint --fix src generator",
     "test": "expo-module test",
     "test:js": "npm run test",
-    "test:kotlin": "cd ../../example/android && ./gradlew :voltra:testDebugUnitTest",
-    "test:swift": "cd ios && swift test",
-    "test:native": "npm run test:kotlin && npm run test:swift",
     "test:all": "npm run test:js && npm run test:native",
-    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
-    "prepublishOnly": "expo-module prepublishOnly",
-    "expo-module": "expo-module"
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
   },
   "keywords": [
     "react-native",
@@ -91,7 +118,6 @@
     "@use-voltra/android-client": "1.4.1",
     "@use-voltra/android-server": "1.4.1",
     "@use-voltra/core": "1.4.1",
-    "@use-voltra/expo-plugin": "1.4.1",
     "@use-voltra/ios": "1.4.1",
     "@use-voltra/ios-client": "1.4.1",
     "@use-voltra/ios-server": "1.4.1",
@@ -99,8 +125,38 @@
     "react-is": "^19.2.0"
   },
   "peerDependencies": {
-    "expo": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "build",
+    "exclude": "**/{__tests__,__fixtures__,__mocks__,__rsc_tests__}/**",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true,
+          "sourceMaps": true
+        }
+      ],
+      [
+        "commonjs",
+        {
+          "esm": true,
+          "sourceMaps": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.0",
+    "typescript": "~5.9.2"
   }
 }

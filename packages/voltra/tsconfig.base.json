@@ -12,10 +12,10 @@
       "@use-voltra/android/server": ["../android/build/types/server.d.ts"],
       "@use-voltra/android-server": ["../android-server/build/types/index.d.ts"],
       "@use-voltra/core": ["../core/build/types/index.d.ts"],
-      "@use-voltra/ios": ["../ios/build/types/index.d.ts"],
+      "@use-voltra/ios": ["../ios/build/typescript/commonjs/index.d.ts"],
       "@use-voltra/ios-client": ["../ios-client/build/types/index.d.ts"],
       "@use-voltra/ios/client": ["../ios-client/build/types/index.d.ts"],
-      "@use-voltra/ios/server": ["../ios/build/types/server.d.ts"],
+      "@use-voltra/ios/server": ["../ios/build/typescript/commonjs/server.d.ts"],
       "@use-voltra/ios-server": ["../ios-server/build/types/index.d.ts"],
       "@use-voltra/server": ["../server/build/types/index.d.ts"]
     }

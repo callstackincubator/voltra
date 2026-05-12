@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle } from 'react'
-import { useLiveActivity } from 'voltra/client'
+import { useLiveActivity } from '@use-voltra/ios-client'
 
 import {
   FlightLiveActivityIslandCompactLeading,

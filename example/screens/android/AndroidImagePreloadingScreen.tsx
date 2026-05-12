@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { VoltraAndroid } from 'voltra'
-import { clearPreloadedImages, preloadImages, reloadWidgets, updateAndroidWidget } from 'voltra/android/client'
+import { VoltraAndroid } from '@use-voltra/android'
+import { clearPreloadedImages, preloadImages, reloadWidgets, updateAndroidWidget } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { TextInput } from '~/components/TextInput'

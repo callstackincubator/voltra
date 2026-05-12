@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router'
 import React, { useMemo, useState } from 'react'
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { useLiveActivity } from 'voltra/client'
+import { Voltra } from '@use-voltra/ios'
+import { useLiveActivity } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

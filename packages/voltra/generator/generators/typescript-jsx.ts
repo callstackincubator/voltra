@@ -4,6 +4,17 @@ type GeneratedFiles = {
   [filename: string]: string
 }
 
+export type TypeScriptJSXPlatform = 'ios' | 'android'
+
+const isIosComponent = (component: ComponentDefinition): boolean => component.swiftAvailability !== 'Not available'
+
+const isAndroidComponent = (component: ComponentDefinition): boolean => !!component.androidAvailability
+
+const filterComponentsForPlatform = (
+  components: ComponentDefinition[],
+  platform: TypeScriptJSXPlatform
+): ComponentDefinition[] => components.filter(platform === 'ios' ? isIosComponent : isAndroidComponent)
+
 const toTSType = (param: ComponentParameter): string => {
   let baseType: string
   if (param.type === 'component') {
@@ -54,18 +65,23 @@ import type { VoltraBaseProps } from '../baseProps'
   return header + propsType + '\n'
 }
 
-export const generateTypeScriptJSX = (data: ComponentsData): { props: GeneratedFiles; jsx: GeneratedFiles } => {
+export const generateTypeScriptJSX = (
+  data: ComponentsData,
+  platform: TypeScriptJSXPlatform
+): { props: GeneratedFiles; jsx: GeneratedFiles } => {
   const propsFiles: GeneratedFiles = {}
   const jsxFiles: GeneratedFiles = {}
+  const components = filterComponentsForPlatform(data.components, platform)
+  const platformLabel = platform === 'ios' ? 'iOS' : 'Android'
 
   // Generate individual props type files
-  for (const component of data.components) {
+  for (const component of components) {
     const filename = `${component.name}.ts`
     propsFiles[filename] = generatePropsTypeFile(component, data.version)
   }
 
   // Generate marker file
-  propsFiles['.generated'] = `This directory contains auto-generated component props type files.
+  propsFiles['.generated'] = `This directory contains auto-generated ${platformLabel} component props type files.
 DO NOT EDIT MANUALLY.
 
 Generated from: data/components.json

@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router'
 import React, { useEffect, useState } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { reloadWidgets, scheduleWidget, updateWidget, VoltraWidgetPreview, WidgetFamily } from 'voltra/client'
+import { Voltra } from '@use-voltra/ios'
+import { reloadWidgets, scheduleWidget, updateWidget, VoltraWidgetPreview, WidgetFamily } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

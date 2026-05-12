@@ -18,7 +18,7 @@ Voltra turns React Native JSX into SwiftUI and Jetpack Compose Glance so you can
 
 - **Type-Safe & Developer-Friendly**: The Voltra schema, hooks, and examples ship with TypeScript definitions, tests, and docs so AI coding agents stay productive.
 
-- **Works With Your Setup**: Compatible with Expo Dev Client and bare React Native projects. The config plugin automatically wires native extension targets for you.
+- **Works With Your Setup**: Compatible with Expo Dev Client and bare React Native projects. Platform config plugins wire native extension targets for you.
 
 ## Documentation
 
@@ -38,18 +38,44 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). You 
 > [!NOTE]
 > The library isn't supported in Expo Go. To set it up correctly, you need to use [Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/).
 
-Install the package:
+Install the client package for each platform you need:
 
 ```sh
-npm install voltra
+# iOS
+npm install @use-voltra/ios-client
+
+# Android
+npm install @use-voltra/android-client
 ```
 
-Add the config plugin to your `app.json`:
+Add the Expo plugins to your `app.json`:
 
 ```json
 {
   "expo": {
-    "plugins": ["voltra"]
+    "plugins": [
+      [
+        "@use-voltra/ios-client",
+        {
+          "groupIdentifier": "group.your.bundle.identifier",
+          "enablePushNotifications": true
+        }
+      ],
+      [
+        "@use-voltra/android-client",
+        {
+          "widgets": [
+            {
+              "id": "my_widget",
+              "displayName": "My Widget",
+              "description": "A Voltra widget",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2
+            }
+          ]
+        }
+      ]
+    ]
   }
 }
 ```
@@ -61,8 +87,7 @@ See the [documentation](https://use-voltra.dev/getting-started/installation) for
 ## Quick example
 
 ```tsx
-import { useLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { useLiveActivity, Voltra } from '@use-voltra/ios-client'
 
 export function OrderTracker({ orderId }: { orderId: string }) {
   const ui = (
@@ -94,7 +119,7 @@ Voltra is a cross-platform library that supports:
 
 ## Authors
 
-`voltra` is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
+Voltra is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
 
 If you think it's cool, please star it 🌟. This project will always remain free to use.
 
@@ -103,9 +128,9 @@ If you think it's cool, please star it 🌟. This project will always remain fre
 Like the project? ⚛️ [Join the Callstack team](https://callstack.com/careers/?utm_campaign=Senior_RN&utm_source=github&utm_medium=readme) who does amazing stuff for clients and drives React Native Open Source! 🔥
 
 [callstack-readme-with-love]: https://callstack.com/?utm_source=github.com&utm_medium=referral&utm_campaign=voltra&utm_term=readme-with-love
-[license-badge]: https://img.shields.io/npm/l/voltra?style=for-the-badge
+[license-badge]: https://img.shields.io/npm/l/@use-voltra/ios?style=for-the-badge
 [license]: https://github.com/callstackincubator/voltra/blob/main/LICENSE.txt
-[npm-downloads-badge]: https://img.shields.io/npm/dm/voltra?style=for-the-badge
-[npm-downloads]: https://www.npmjs.com/package/voltra
+[npm-downloads-badge]: https://img.shields.io/npm/dm/@use-voltra/ios-client?style=for-the-badge
+[npm-downloads]: https://www.npmjs.com/package/@use-voltra/ios-client
 [prs-welcome-badge]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge
 [prs-welcome]: ./CONTRIBUTING.md

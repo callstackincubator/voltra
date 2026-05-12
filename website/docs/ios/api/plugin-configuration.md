@@ -7,7 +7,7 @@ The Voltra Expo config plugin accepts several configuration options in your `app
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "groupIdentifier": "group.your.bundle.identifier",
           "enablePushNotifications": true,
@@ -76,7 +76,7 @@ This is useful when:
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "groupIdentifier": "group.your.bundle.identifier",
           "targetName": "widget"

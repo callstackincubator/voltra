@@ -126,7 +126,7 @@ jobs:
 
       - name: Run Kotlin native tests
         working-directory: example/android
-        run: ./gradlew :voltra:testDebugUnitTest
+        run: ./gradlew :use-voltra_android-client:testDebugUnitTest
 
   native-swift-test:
     name: '[Swift] Test'

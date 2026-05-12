@@ -5,7 +5,7 @@ import { renderLiveActivityToString, type DismissalPolicy, type LiveActivityVari
 import { addVoltraListener } from '../events.js'
 import { logger } from '../logger.js'
 import { assertRunningOnApple, useUpdateOnHMR } from '../utils/index.js'
-import VoltraModule from '../VoltraModule.js'
+import { getNativeVoltra } from '../VoltraModule.js'
 
 export type SharedLiveActivityOptions = {
   staleDate?: number
@@ -182,7 +182,7 @@ export const startLiveActivity = async (
   const payload = renderLiveActivityToString(variants)
 
   const normalizedSharedOptions = normalizeSharedLiveActivityOptions(options)
-  const targetId = await VoltraModule.startLiveActivity(payload, {
+  const targetId = await getNativeVoltra().startLiveActivity(payload, {
     target: 'liveActivity',
     deepLinkUrl: options?.deepLinkUrl,
     activityName: options?.activityName,
@@ -202,23 +202,23 @@ export const updateLiveActivity = async (
   const payload = renderLiveActivityToString(variants)
 
   const normalizedSharedOptions = normalizeSharedLiveActivityOptions(options)
-  return VoltraModule.updateLiveActivity(targetId, payload, normalizedSharedOptions)
+  return getNativeVoltra().updateLiveActivity(targetId, payload, normalizedSharedOptions ?? {})
 }
 
 export const stopLiveActivity = async (targetId: string, options?: EndLiveActivityOptions): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
   const normalizedOptions = normalizeEndLiveActivityOptions(options)
-  return VoltraModule.endLiveActivity(targetId, normalizedOptions)
+  return getNativeVoltra().endLiveActivity(targetId, normalizedOptions ?? { dismissalPolicy: { type: 'immediate' } })
 }
 
 export const isLiveActivityActive = (activityName: string): boolean => {
   if (!assertRunningOnApple()) return false
 
-  return VoltraModule.isLiveActivityActive(activityName)
+  return getNativeVoltra().isLiveActivityActive(activityName)
 }
 
 export async function endAllLiveActivities(): Promise<void> {
   if (!assertRunningOnApple()) return Promise.resolve()
-  return VoltraModule.endAllLiveActivities()
+  return getNativeVoltra().endAllLiveActivities()
 }

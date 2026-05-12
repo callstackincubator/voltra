@@ -1,6 +1,6 @@
 import React from 'react'
 
-import type { VoltraAndroidBaseProps } from '../jsx/baseProps.js'
+import type { VoltraAndroidBaseProps } from './baseProps.js'
 import type { AreaMarkProps } from './AreaMark.js'
 import type { BarMarkProps } from './BarMark.js'
 import { VOLTRA_MARK_TAG } from './BarMark.js'

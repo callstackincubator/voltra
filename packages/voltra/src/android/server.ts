@@ -21,5 +21,5 @@ export {
   renderAndroidWidgetToJson,
   renderAndroidWidgetToString,
   type AndroidWidgetRenderOptions,
-} from './widgets/renderer.js'
-export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
+} from '@use-voltra/android/internal'
+export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from '@use-voltra/android'

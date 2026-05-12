@@ -5,7 +5,7 @@ import {
   AndroidOngoingNotification,
   type AndroidOngoingNotificationPayload,
   type StartAndroidOngoingNotificationOptions,
-} from 'voltra/android'
+} from '@use-voltra/android'
 import {
   getAndroidOngoingNotificationCapabilities,
   isAndroidOngoingNotificationActive,
@@ -14,7 +14,7 @@ import {
   stopAndroidOngoingNotification,
   upsertAndroidOngoingNotification,
   updateAndroidOngoingNotification,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

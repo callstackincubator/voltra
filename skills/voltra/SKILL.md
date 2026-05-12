@@ -18,8 +18,8 @@ Use this as the single Voltra skill entrypoint. Keep all product-wide ground tru
 - If a task appears to require native code, first check whether Voltra already exposes a JS API or config option. Prefer that path.
 - Do not scaffold native extension code manually. Voltra's config plugin owns native target setup.
 - Do not use plain React Native primitives inside Voltra-rendered trees. Avoid `View`, `Text`, `Pressable`, `TouchableOpacity`, and similar RN UI primitives for Live Activity or Android widget content.
-- For iOS Voltra UI, use `Voltra.*` from `voltra`.
-- For Android Voltra UI, use `VoltraAndroid.*` from `voltra/android` for Android-only code. If existing project code imports `VoltraAndroid` from `voltra`, follow the repo's established pattern, but prefer `voltra/android` for new Android-only code.
+- For iOS app code, import `Voltra` and runtime APIs from `@use-voltra/ios-client`.
+- For Android app code, import `VoltraAndroid` and runtime APIs from `@use-voltra/android-client`.
 - Keep iOS and Android authoring paths separate unless the user explicitly asks for a shared abstraction.
 - Update config before writing registration-dependent UI code.
 - Treat images as a Voltra concern, not a native-code concern. Prefer Voltra image props, Voltra asset directories, and Voltra preloading APIs.

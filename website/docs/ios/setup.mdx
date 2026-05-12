@@ -17,7 +17,7 @@ Add the Voltra plugin to your `app.json` or `app.config.js`. For iOS, you typica
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "groupIdentifier": "group.your.bundle.identifier",
           "enablePushNotifications": true
@@ -49,8 +49,7 @@ Now let's create a simple "Hello World" live activity. Create a new component:
 
 ```tsx
 import React from 'react'
-import { startLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { startLiveActivity, Voltra } from '@use-voltra/ios-client'
 
 function HelloWorldActivity() {
   const activityUI = (

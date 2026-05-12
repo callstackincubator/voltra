@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ES2020",
+    "rootDir": "../../..",
+    "baseUrl": "../../..",
+    "paths": {
+      "@use-voltra/expo-plugin": ["packages/expo-plugin/src/index.ts"],
+      "voltra": ["packages/voltra/src/index.ts"],
+      "voltra/*": ["packages/voltra/src/*"],
+      "voltra/android/server": ["packages/voltra/src/android/server.ts"]
+    }
+  },
+  "include": ["./src"]
+}

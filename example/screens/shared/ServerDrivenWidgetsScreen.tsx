@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { reloadAndroidWidgets, VoltraWidgetPreview as AndroidVoltraWidgetPreview } from 'voltra/android/client'
+import { reloadAndroidWidgets, VoltraWidgetPreview as AndroidVoltraWidgetPreview } from '@use-voltra/android-client'
 import {
   clearWidgetServerCredentials,
   reloadWidgets,
   setWidgetServerCredentials,
   VoltraWidgetPreview,
-} from 'voltra/client'
+} from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

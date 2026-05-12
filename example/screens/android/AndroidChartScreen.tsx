@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { AndroidWidgetFamily, VoltraWidgetPreview } from 'voltra/android/client'
+import { AndroidWidgetFamily, VoltraWidgetPreview } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

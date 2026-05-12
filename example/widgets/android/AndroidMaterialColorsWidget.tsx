@@ -1,5 +1,5 @@
 import React from 'react'
-import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 
 export type AndroidMaterialColorsRenderSource = 'client' | 'server' | 'initial'
 

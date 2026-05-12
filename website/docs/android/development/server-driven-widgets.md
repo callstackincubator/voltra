@@ -24,23 +24,21 @@ Add the `serverUpdate` option to your Android widget in `app.json` or `app.confi
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/android-client",
         {
-          "android": {
-            "widgets": [
-              {
-                "id": "dynamic_weather",
-                "displayName": "Dynamic Weather",
-                "description": "Weather with live server updates",
-                "targetCellWidth": 2,
-                "targetCellHeight": 1,
-                "serverUpdate": {
-                  "url": "https://api.example.com/widgets/render",
-                  "intervalMinutes": 60
-                }
+          "widgets": [
+            {
+              "id": "dynamic_weather",
+              "displayName": "Dynamic Weather",
+              "description": "Weather with live server updates",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
+              "serverUpdate": {
+                "url": "https://api.example.com/widgets/render",
+                "intervalMinutes": 60
               }
-            ]
-          }
+            }
+          ]
         }
       ]
     ]
@@ -67,11 +65,11 @@ Voltra provides widget server handlers for the common runtime styles. Use `creat
 ```tsx
 import { createServer } from 'node:http'
 import React from 'react'
-import { createWidgetUpdateNodeHandler } from 'voltra/server'
-import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+import { createAndroidWidgetUpdateNodeHandler } from '@use-voltra/android-server'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
 
-const handler = createWidgetUpdateNodeHandler({
-  renderAndroid: async (req) => {
+const handler = createAndroidWidgetUpdateNodeHandler({
+  render: async (req) => {
     // req.widgetId — the widget requesting an update
     // req.platform — always "android" for Android widget requests
     // req.theme    — the system color scheme ("light" or "dark")
@@ -107,12 +105,6 @@ const handler = createWidgetUpdateNodeHandler({
     ]
   },
 
-  // Also handle iOS requests from the same endpoint
-  renderIos: async (req) => {
-    // ...
-    return null // or return iOS variants
-  },
-
   validateToken: async (token) => {
     return token === 'valid-token'
   },
@@ -126,8 +118,8 @@ The handler responds to GET requests with these query parameters:
 | Parameter | Description |
 |-----------|-------------|
 | `widgetId` | The widget identifier (required) |
-| `platform` | The requesting platform. Must be `android` or `ios` (required). |
-| `family` | The widget family/size (iOS only — absent for Android) |
+| `platform` | The requesting platform. Must be `android` (required). |
+| `family` | Not used on Android |
 | `theme` | The system color scheme (`light` or `dark`) |
 
 The `User-Agent` header is set to `VoltraWidget/<version> (Android/<version>)`.
@@ -141,7 +133,7 @@ Widgets on Android are part of the main app binary, so the WorkManager backgroun
 Call `setWidgetServerCredentials` after the user logs in:
 
 ```typescript
-import { setWidgetServerCredentials } from 'voltra/client'
+import { setWidgetServerCredentials } from '@use-voltra/android-client'
 
 await setWidgetServerCredentials({
   token: userAccessToken,
@@ -158,7 +150,7 @@ The `token` is required and is sent as `Authorization: Bearer <token>` on every 
 Call `clearWidgetServerCredentials` when the user logs out:
 
 ```typescript
-import { clearWidgetServerCredentials } from 'voltra/client'
+import { clearWidgetServerCredentials } from '@use-voltra/android-client'
 
 await clearWidgetServerCredentials()
 ```
@@ -194,7 +186,7 @@ Your server should return all size variants in every response. When the user res
 You can force-refresh server-driven widgets outside of the regular interval:
 
 ```typescript
-import { reloadWidgets } from 'voltra/client'
+import { reloadWidgets } from '@use-voltra/android-client'
 
 // Reload specific widgets (triggers an immediate WorkManager fetch)
 await reloadWidgets(['dynamic_weather'])

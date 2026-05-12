@@ -2,7 +2,7 @@ import { renderWidgetToString, type ScheduledWidgetEntry, type WidgetInfo, type 
 
 import type { UpdateWidgetOptions } from '../types.js'
 import { assertRunningOnApple } from '../utils/assertRunningOnApple.js'
-import VoltraModule from '../VoltraModule.js'
+import { getNativeVoltra } from '../VoltraModule.js'
 
 export type { UpdateWidgetOptions } from '../types.js'
 export type { ScheduledWidgetEntry, WidgetInfo } from '@use-voltra/ios'
@@ -16,7 +16,7 @@ export const updateWidget = async (
 
   const payload = renderWidgetToString(variants)
 
-  return VoltraModule.updateWidget(widgetId, payload, {
+  return getNativeVoltra().updateWidget(widgetId, payload, {
     deepLinkUrl: options?.deepLinkUrl,
   })
 }
@@ -24,19 +24,19 @@ export const updateWidget = async (
 export const reloadWidgets = async (widgetIds?: string[]): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
-  return VoltraModule.reloadWidgets(widgetIds ?? null)
+  return getNativeVoltra().reloadWidgets(widgetIds ?? null)
 }
 
 export const clearWidget = async (widgetId: string): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
-  return VoltraModule.clearWidget(widgetId)
+  return getNativeVoltra().clearWidget(widgetId)
 }
 
 export const clearAllWidgets = async (): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 
-  return VoltraModule.clearAllWidgets()
+  return getNativeVoltra().clearAllWidgets()
 }
 
 export const scheduleWidget = async (widgetId: string, entries: ScheduledWidgetEntry[]): Promise<void> => {
@@ -55,11 +55,11 @@ export const scheduleWidget = async (widgetId: string, entries: ScheduledWidgetE
 
   const timelineJson = JSON.stringify(timelineData)
 
-  return VoltraModule.scheduleWidget(widgetId, timelineJson)
+  return getNativeVoltra().scheduleWidget(widgetId, timelineJson)
 }
 
 export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
   if (!assertRunningOnApple()) return []
 
-  return VoltraModule.getActiveWidgets()
+  return getNativeVoltra().getActiveWidgets()
 }

@@ -18,18 +18,7 @@ __tests__/
 /.swiftformat
 /.editorconfig
 
-# Android build artifacts
-/android/.gradle/
-/android/src/androidTest/
-/android/src/test/
-/android/build/
-
-# Swift test infrastructure (package-only)
-/ios/Package.swift
-/ios/Tests/
-/ios/.build/
-
-# Source files (we publish the built version)
+# Development tools and generators
 /src/
 
 # Development tools and generators

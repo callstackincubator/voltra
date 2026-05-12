@@ -1,5 +1,5 @@
 import { Platform } from 'react-native'
-import { updateAndroidWidget } from 'voltra/android/client'
+import { updateAndroidWidget } from '@use-voltra/android-client'
 
 import { AndroidVoltraWidget } from './AndroidVoltraWidget'
 

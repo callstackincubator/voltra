@@ -1,5 +1,5 @@
 import { createVoltraComponent } from './createVoltraComponent.js'
-import type { CheckBoxProps } from './props/CheckBox.js'
+import type { AndroidCheckBoxProps as CheckBoxProps } from './props/AndroidCheckBox.js'
 
 export type { CheckBoxProps }
 export const CheckBox = createVoltraComponent<CheckBoxProps>('AndroidCheckBox')

@@ -16,8 +16,8 @@ Voltra provides APIs that make building and testing Home Screen widgets easier d
 
 ```tsx
 import { ScrollView, View } from 'react-native'
-import { VoltraWidgetPreview } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { VoltraWidgetPreview } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios-client'
 
 function MyWidgetContent() {
   return (
@@ -66,8 +66,8 @@ Widget updates are throttled to around an update per minute. iOS limits how freq
 :::
 
 ```typescript
-import { updateWidget } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { updateWidget } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios-client'
 
 await updateWidget('weather', {
   systemSmall: <Voltra.Text>72°F</Voltra.Text>,
@@ -105,8 +105,8 @@ This is perfect for weather forecasts, calendar events, news rotation, or any co
 :::
 
 ```typescript
-import { scheduleWidget } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { scheduleWidget } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios-client'
 
 // Schedule weather updates throughout the day
 await scheduleWidget('weather', [
@@ -183,7 +183,7 @@ Widgets are configured through the Voltra Expo config plugin. Add the widget con
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "widgets": [
             {
@@ -238,7 +238,7 @@ await updateWidget('minimal', {
 Detect which widgets are currently installed on the user's home screen:
 
 ```typescript
-import { getActiveWidgets } from 'voltra/client'
+import { getActiveWidgets } from '@use-voltra/ios-client'
 
 const widgets = await getActiveWidgets()
 // [{ name: 'weather', family: 'systemSmall', kind: '...' }]
@@ -251,7 +251,7 @@ See [Querying Active Widgets](./querying-active-widgets) for more details.
 Force widget timelines to refresh their content after updating shared resources like preloaded images:
 
 ```typescript
-import { reloadWidgets } from 'voltra/client'
+import { reloadWidgets } from '@use-voltra/ios-client'
 
 // Reload specific widgets
 await reloadWidgets(['weather', 'calendar'])
@@ -265,7 +265,7 @@ await reloadWidgets()
 Remove stored widget data, causing widgets to show their placeholder state:
 
 ```typescript
-import { clearWidget, clearAllWidgets } from 'voltra/client'
+import { clearWidget, clearAllWidgets } from '@use-voltra/ios-client'
 
 // Clear specific widget
 await clearWidget('weather')

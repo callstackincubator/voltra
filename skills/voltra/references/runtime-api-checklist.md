@@ -4,7 +4,7 @@ Use Android-specific Voltra widget APIs when possible.
 
 Widget runtime entrypoint:
 
-- `voltra/android/client`
+- `@use-voltra/android-client`
 
 Use these for widgets:
 

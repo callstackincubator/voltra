@@ -1,6 +1,6 @@
 import React, { forwardRef, useEffect, useImperativeHandle } from 'react'
-import { Voltra } from 'voltra'
-import { useLiveActivity } from 'voltra/client'
+import { Voltra } from '@use-voltra/ios'
+import { useLiveActivity } from '@use-voltra/ios-client'
 
 import {
   LiquidGlassLiveActivityUI,

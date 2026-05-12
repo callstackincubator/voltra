@@ -1,7 +1,7 @@
 import { screen } from '@react-native-harness/ui'
 import { View } from 'react-native'
 import { describe, expect, render, test } from 'react-native-harness'
-import { VoltraLiveActivityPreview } from 'voltra/client'
+import { VoltraLiveActivityPreview } from '@use-voltra/ios-client'
 
 import {
   BasicLiveActivityUI,

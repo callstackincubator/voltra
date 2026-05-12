@@ -1,5 +1,5 @@
 import { createVoltraComponent } from './createVoltraComponent.js'
-import type { ImageProps } from './props/Image.js'
+import type { AndroidImageProps as ImageProps } from './props/AndroidImage.js'
 
 export type { ImageProps }
 export type ImageSource = { assetName: string } | { base64: string }

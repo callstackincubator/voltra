@@ -5,11 +5,10 @@ import {
   renderVariantToJson,
   type ComponentRegistry,
   VOLTRA_PAYLOAD_VERSION,
+  type VoltraNodeJson,
 } from '@use-voltra/core'
-
-import { getAndroidComponentId } from '../android/payload/component-ids.js'
-import { getComponentId } from '../payload/component-ids.js'
-import type { VoltraNodeJson } from '../types.js'
+import { getAndroidComponentId } from '@use-voltra/android'
+import { getComponentId } from '@use-voltra/ios'
 
 const defaultComponentRegistry: ComponentRegistry = {
   getComponentId: (name: string) => getComponentId(name),

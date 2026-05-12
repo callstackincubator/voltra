@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { getActiveWidgets, WidgetInfo } from 'voltra/android/client'
+import { getActiveWidgets, WidgetInfo } from '@use-voltra/android-client'
 
 import { Card } from './Card'
 

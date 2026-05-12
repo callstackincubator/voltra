@@ -1,9 +1,9 @@
 import type { PreloadImageOptions, PreloadImagesResult } from './types.js'
-import VoltraModule from './VoltraModule.js'
+import { getNativeVoltraAndroid } from './native/NativeVoltraAndroid.js'
 
 export async function preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult> {
   try {
-    return await VoltraModule.preloadImages(images)
+    return await getNativeVoltraAndroid().preloadImages(images)
   } catch (error) {
     return {
       succeeded: [],
@@ -17,7 +17,7 @@ export async function preloadImages(images: PreloadImageOptions[]): Promise<Prel
 
 export async function clearPreloadedImages(keys?: string[]): Promise<void> {
   try {
-    await VoltraModule.clearPreloadedImages(keys ?? null)
+    await getNativeVoltraAndroid().clearPreloadedImages(keys ?? null)
   } catch (error) {
     console.error('Failed to clear preloaded images:', error)
   }
@@ -25,7 +25,7 @@ export async function clearPreloadedImages(keys?: string[]): Promise<void> {
 
 export async function reloadWidgets(widgetIds?: string[]): Promise<void> {
   try {
-    await VoltraModule.reloadAndroidWidgets(widgetIds ?? null)
+    await getNativeVoltraAndroid().reloadAndroidWidgets(widgetIds ?? null)
   } catch (error) {
     console.error('Failed to reload Android widgets:', error)
   }

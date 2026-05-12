@@ -1,10 +1,8 @@
 import React from 'react'
 import { brotliDecompressSync } from 'zlib'
 
-import { HStack } from '../jsx/HStack'
-import { Image } from '../jsx/Image'
-import { Text } from '../jsx/Text'
-import { VStack } from '../jsx/VStack'
+import { Voltra } from '@use-voltra/ios'
+
 import { renderLiveActivityToString, renderWidgetToString } from '../server'
 
 function parsePayload(base64: string) {
@@ -16,11 +14,11 @@ function parsePayload(base64: string) {
 describe('E2E', () => {
   test('Full Live Activity render', async () => {
     const variants = {
-      lockScreen: <Text>LS</Text>,
+      lockScreen: <Voltra.Text>LS</Voltra.Text>,
       island: {
-        expanded: { center: <Text>C</Text> },
-        compact: { leading: <Text>L</Text>, trailing: <Text>T</Text> },
-        minimal: <Text>M</Text>,
+        expanded: { center: <Voltra.Text>C</Voltra.Text> },
+        compact: { leading: <Voltra.Text>L</Voltra.Text>, trailing: <Voltra.Text>T</Voltra.Text> },
+        minimal: <Voltra.Text>M</Voltra.Text>,
       },
     }
     const output = await renderLiveActivityToString(variants)
@@ -31,13 +29,13 @@ describe('E2E', () => {
 
   test('Full Widget render', () => {
     const variants = {
-      systemSmall: <Text>S</Text>,
-      systemMedium: <Text>M</Text>,
-      systemLarge: <Text>L</Text>,
-      systemExtraLarge: <Text>XL</Text>,
-      accessoryCircular: <Text>AC</Text>,
-      accessoryRectangular: <Text>AR</Text>,
-      accessoryInline: <Text>AI</Text>,
+      systemSmall: <Voltra.Text>S</Voltra.Text>,
+      systemMedium: <Voltra.Text>M</Voltra.Text>,
+      systemLarge: <Voltra.Text>L</Voltra.Text>,
+      systemExtraLarge: <Voltra.Text>XL</Voltra.Text>,
+      accessoryCircular: <Voltra.Text>AC</Voltra.Text>,
+      accessoryRectangular: <Voltra.Text>AR</Voltra.Text>,
+      accessoryInline: <Voltra.Text>AI</Voltra.Text>,
     }
     const output = renderWidgetToString(variants)
     expect(typeof output).toBe('string')
@@ -48,16 +46,16 @@ describe('E2E', () => {
 
   test('Complex nested UI', async () => {
     const ui = (
-      <VStack>
-        <HStack>
-          <Image source={{ assetName: 'icon' }} />
-          <Text>Title</Text>
-        </HStack>
-        <Text>Description text that is somewhat long but reasonable.</Text>
-        <HStack>
-          <Text>Status: OK</Text>
-        </HStack>
-      </VStack>
+      <Voltra.VStack>
+        <Voltra.HStack>
+          <Voltra.Image source={{ assetName: 'icon' }} />
+          <Voltra.Text>Title</Voltra.Text>
+        </Voltra.HStack>
+        <Voltra.Text>Description text that is somewhat long but reasonable.</Voltra.Text>
+        <Voltra.HStack>
+          <Voltra.Text>Status: OK</Voltra.Text>
+        </Voltra.HStack>
+      </Voltra.VStack>
     )
     const output = await renderLiveActivityToString({ lockScreen: ui })
     const buffer = Buffer.from(output, 'base64')
@@ -65,7 +63,7 @@ describe('E2E', () => {
   })
 
   test('Payload roundtrip', async () => {
-    const ui = <Text>Hello</Text>
+    const ui = <Voltra.Text>Hello</Voltra.Text>
     const output = await renderLiveActivityToString({ lockScreen: ui })
     const json = parsePayload(output)
 

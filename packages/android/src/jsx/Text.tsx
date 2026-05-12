@@ -1,9 +1,9 @@
 import { VoltraAndroidTextStyleProp } from '../styles/types.js'
 import { createVoltraComponent } from './createVoltraComponent.js'
-import type { TextProps as GeneratedTextProps } from './props/Text.js'
+import type { AndroidTextProps } from './props/AndroidText.js'
 
 // Update 'style' to use Android text style prop
-export type TextProps = Omit<GeneratedTextProps, 'style'> & {
+export type TextProps = Omit<AndroidTextProps, 'style'> & {
   style?: VoltraAndroidTextStyleProp
 }
 

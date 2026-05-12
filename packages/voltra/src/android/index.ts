@@ -1,29 +1,8 @@
-export * as VoltraAndroid from './jsx/primitives.js'
-export { AndroidDynamicColors } from './dynamic-colors.js'
-export { AndroidOngoingNotification } from '@use-voltra/android'
-
-export type { VoltraAndroidBaseProps } from './jsx/baseProps.js'
+export { AndroidDynamicColors, AndroidOngoingNotification, VoltraAndroid } from '@use-voltra/android'
 export type {
-  VoltraAndroidStyleProp,
-  VoltraAndroidTextStyle,
-  VoltraAndroidTextStyleProp,
-  VoltraAndroidViewStyle,
-} from './styles/types.js'
-export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
-
-export type { BoxProps } from './jsx/Box.js'
-export type { ButtonProps } from './jsx/Button.js'
-export type { CircularProgressIndicatorProps } from './jsx/CircularProgressIndicator.js'
-export type { ColumnProps } from './jsx/Column.js'
-export type { ImageProps } from './jsx/Image.js'
-export type { LazyColumnProps } from './jsx/LazyColumn.js'
-export type { LazyVerticalGridProps } from './jsx/LazyVerticalGrid.js'
-export type { LinearProgressIndicatorProps } from './jsx/LinearProgressIndicator.js'
-export type { RowProps } from './jsx/Row.js'
-export type { SpacerProps } from './jsx/Spacer.js'
-export type { TextProps } from './jsx/Text.js'
-
-export type {
+  AndroidColorValue,
+  AndroidDynamicColorRole,
+  AndroidDynamicColorToken,
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
   AndroidOngoingNotificationBigTextPayload,
@@ -34,8 +13,8 @@ export type {
   AndroidOngoingNotificationFallbackBehavior,
   AndroidOngoingNotificationInput,
   AndroidOngoingNotificationPayload,
-  AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressPayload,
+  AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
   AndroidOngoingNotificationStartResult,
@@ -43,8 +22,24 @@ export type {
   AndroidOngoingNotificationStopResult,
   AndroidOngoingNotificationUpdateResult,
   AndroidOngoingNotificationUpsertResult,
+  BoxProps,
+  ButtonProps,
+  CircularProgressIndicatorProps,
+  ColumnProps,
+  ImageProps,
+  LazyColumnProps,
+  LazyVerticalGridProps,
+  LinearProgressIndicatorProps,
+  RowProps,
+  SpacerProps,
   StartAndroidOngoingNotificationOptions,
+  TextProps,
   UpdateAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationResult,
+  VoltraAndroidBaseProps,
+  VoltraAndroidStyleProp,
+  VoltraAndroidTextStyle,
+  VoltraAndroidTextStyleProp,
+  VoltraAndroidViewStyle,
 } from '@use-voltra/android'

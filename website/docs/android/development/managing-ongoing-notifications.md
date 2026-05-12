@@ -21,7 +21,7 @@ Voltra already provides a server-side API for converting JSX into the semantic p
 
 Use these APIs only in server-side or backend code. Do not import them from your React Native app runtime.
 
-Use `voltra/android/server`.
+Use `@use-voltra/android-server`.
 
 The main renderer APIs are:
 
@@ -41,11 +41,9 @@ Add `android.enableNotifications` to the Voltra Expo plugin config:
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/android-client",
         {
-          "android": {
-            "enableNotifications": true
-          }
+          "enableNotifications": true
         }
       ]
     ]
@@ -55,7 +53,7 @@ Add `android.enableNotifications` to the Voltra Expo plugin config:
 
 This adds the Android manifest entries required by Voltra's notification features.
 
-See [Plugin Configuration](../api/plugin-configuration#androidenablenotifications-optional) for details.
+See [Plugin Configuration](../api/plugin-configuration#enablenotifications-optional) for details.
 
 ### 2. Create a notification channel
 
@@ -80,7 +78,7 @@ On Android 13 and above, posting notifications requires runtime permission.
 import {
   hasAndroidNotificationPermission,
   requestAndroidNotificationPermission,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 const granted =
   (await hasAndroidNotificationPermission()) || (await requestAndroidNotificationPermission())
@@ -128,7 +126,7 @@ Voltra provides two built-in layouts:
 import {
   AndroidOngoingNotification,
   startAndroidOngoingNotification,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 const result = await startAndroidOngoingNotification(
   <AndroidOngoingNotification.Progress
@@ -155,7 +153,7 @@ if (result.ok) {
 import {
   AndroidOngoingNotification,
   startAndroidOngoingNotification,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 await startAndroidOngoingNotification(
   <AndroidOngoingNotification.BigText
@@ -178,7 +176,7 @@ Use the same `notificationId` to update an existing notification.
 import {
   AndroidOngoingNotification,
   updateAndroidOngoingNotification,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 await updateAndroidOngoingNotification(
   'order-123',
@@ -201,7 +199,7 @@ If your app may re-enter the same flow multiple times, `upsertAndroidOngoingNoti
 import {
   AndroidOngoingNotification,
   upsertAndroidOngoingNotification,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 const result = await upsertAndroidOngoingNotification(
   <AndroidOngoingNotification.Progress
@@ -226,7 +224,7 @@ This API is especially useful for remote updates, where the same incoming push m
 ## Stopping a notification
 
 ```tsx
-import { stopAndroidOngoingNotification } from 'voltra/android/client'
+import { stopAndroidOngoingNotification } from '@use-voltra/android-client'
 
 await stopAndroidOngoingNotification('order-123')
 ```
@@ -234,7 +232,7 @@ await stopAndroidOngoingNotification('order-123')
 To dismiss every active Voltra ongoing notification at once:
 
 ```tsx
-import { endAllAndroidOngoingNotifications } from 'voltra/android/client'
+import { endAllAndroidOngoingNotifications } from '@use-voltra/android-client'
 
 await endAllAndroidOngoingNotifications()
 ```
@@ -244,8 +242,8 @@ await endAllAndroidOngoingNotifications()
 For React screens and flows, use `useAndroidOngoingNotification()`.
 
 ```tsx
-import { AndroidOngoingNotification } from 'voltra/android'
-import { useAndroidOngoingNotification } from 'voltra/android/client'
+import { AndroidOngoingNotification } from '@use-voltra/android-client'
+import { useAndroidOngoingNotification } from '@use-voltra/android-client'
 
 function DeliveryNotification({ orderId, etaMinutes }) {
   const { start, update, end, isActive } = useAndroidOngoingNotification(
@@ -282,7 +280,7 @@ Use `autoStart` to create the notification when the component mounts, and `autoU
 You can add action buttons as children of `Progress` or `BigText`.
 
 ```tsx
-import { AndroidOngoingNotification } from 'voltra/android/client'
+import { AndroidOngoingNotification } from '@use-voltra/android-client'
 
 <AndroidOngoingNotification.Progress title="Driver is approaching" value={32} max={100}>
   <AndroidOngoingNotification.Action
@@ -332,7 +330,7 @@ Use `renderAndroidOngoingNotificationPayloadToJson()` when preparing a payload o
 import {
   AndroidOngoingNotification,
   renderAndroidOngoingNotificationPayloadToJson,
-} from 'voltra/android/server'
+} from '@use-voltra/android-server'
 
 const payload = renderAndroidOngoingNotificationPayloadToJson(
   <AndroidOngoingNotification.Progress
@@ -386,7 +384,7 @@ import * as TaskManager from 'expo-task-manager'
 import {
   stopAndroidOngoingNotification,
   upsertAndroidOngoingNotification,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 const TASK_NAME = 'voltra-ongoing-notification-task'
 
@@ -471,7 +469,7 @@ import {
   getAndroidOngoingNotificationCapabilities,
   getAndroidOngoingNotificationStatus,
   openAndroidNotificationSettings,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 const status = getAndroidOngoingNotificationStatus('order-123')
 const capabilities = getAndroidOngoingNotificationCapabilities()

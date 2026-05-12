@@ -1,5 +1,5 @@
 import { createVoltraComponent } from './createVoltraComponent.js'
-import type { CircleIconButtonProps } from './props/CircleIconButton.js'
+import type { AndroidCircleIconButtonProps as CircleIconButtonProps } from './props/AndroidCircleIconButton.js'
 
 export type { CircleIconButtonProps }
 export const CircleIconButton = createVoltraComponent<CircleIconButtonProps>('AndroidCircleIconButton', {

@@ -7,7 +7,7 @@ import {
   setWidgetServerCredentials,
   updateAndroidWidget,
   VoltraWidgetPreview,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

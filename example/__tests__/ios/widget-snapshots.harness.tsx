@@ -1,7 +1,7 @@
 import { screen } from '@react-native-harness/ui'
 import { View } from 'react-native'
 import { afterAll, beforeAll, describe, expect, Mock, render, spyOn, test } from 'react-native-harness'
-import { VoltraWidgetPreview } from 'voltra/client'
+import { VoltraWidgetPreview } from '@use-voltra/ios-client'
 
 import { IosWeatherWidget } from '../../widgets/ios/IosWeatherWidget'
 import { SAMPLE_WEATHER_DATA } from '../../widgets/weather-types'

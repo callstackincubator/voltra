@@ -1,0 +1,96 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.0.0"
+    classpath "org.jetbrains.kotlin:kotlin-serialization:2.0.21"
+  }
+
+  ext.safeExtGet = { prop, fallback ->
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+  }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
+apply plugin: 'com.facebook.react'
+
+def safeExtGet = { prop, fallback ->
+  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+// Read version from package.json for BuildConfig
+def packageJsonFile = new File(project.projectDir.parentFile, "package.json")
+def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
+def voltraVersion = packageJson.version
+
+android {
+  namespace "voltra"
+
+  compileSdkVersion safeExtGet("compileSdkVersion", 36)
+
+  defaultConfig {
+    minSdkVersion safeExtGet("minSdkVersion", 31)
+    targetSdkVersion safeExtGet("targetSdkVersion", 36)
+    versionCode 1
+    versionName "0.1.0"
+    buildConfigField "String", "VOLTRA_VERSION", "\"${voltraVersion}\""
+  }
+
+  buildFeatures {
+    buildConfig true
+    compose true
+  }
+
+  lintOptions {
+    abortOnError false
+  }
+
+  testOptions {
+    unitTests.all {
+      testLogging {
+        events "passed", "failed", "skipped"
+        exceptionFormat "full"
+        showCauses true
+        showExceptions true
+        showStackTraces true
+      }
+    }
+  }
+}
+
+dependencies {
+  // React Native
+  implementation "com.facebook.react:react-android"
+
+  // Jetpack Glance
+  api "androidx.glance:glance:1.2.0-rc01"
+  api "androidx.glance:glance-appwidget:1.2.0-rc01"
+
+  // Compose runtime (required for Glance)
+  api "androidx.compose.runtime:runtime:1.6.8"
+
+  // WorkManager (for periodic server-driven widget updates)
+  api "androidx.work:work-runtime-ktx:2.9.1"
+
+  // DataStore (credential storage for widget server updates)
+  api "androidx.datastore:datastore-preferences:1.1.4"
+
+  // Google Tink (encryption for credential storage)
+  implementation "com.google.crypto.tink:tink-android:1.19.0"
+
+  // Coroutines
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+
+  // Kotlinx Serialization
+  implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
+
+  // Unit tests
+  testImplementation "junit:junit:4.13.2"
+  testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1"
+  testImplementation "org.robolectric:robolectric:4.14.1"
+}

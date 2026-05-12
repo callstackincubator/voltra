@@ -1,5 +1,5 @@
 import React from 'react'
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
 
 export function BasicLiveActivityUI() {
   return (

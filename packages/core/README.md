@@ -13,7 +13,7 @@ For installation and setup instructions, see the Voltra documentation: [use-volt
 
 ## Authors
 
-`voltra` is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
+Voltra is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
 
 If you think it's cool, please star it 🌟. This project will always remain free to use.
 
@@ -22,9 +22,9 @@ If you think it's cool, please star it 🌟. This project will always remain fre
 Like the project? ⚛️ [Join the Callstack team](https://callstack.com/careers/?utm_campaign=Senior_RN&utm_source=github&utm_medium=readme) who does amazing stuff for clients and drives React Native Open Source! 🔥
 
 [callstack-readme-with-love]: https://callstack.com/?utm_source=github.com&utm_medium=referral&utm_campaign=voltra&utm_term=readme-with-love
-[license-badge]: https://img.shields.io/npm/l/voltra?style=for-the-badge
+[license-badge]: https://img.shields.io/npm/l/@use-voltra/core?style=for-the-badge
 [license]: https://github.com/callstackincubator/voltra/blob/main/LICENSE.txt
-[npm-downloads-badge]: https://img.shields.io/npm/dm/voltra?style=for-the-badge
-[npm-downloads]: https://www.npmjs.com/package/voltra
+[npm-downloads-badge]: https://img.shields.io/npm/dm/@use-voltra/core?style=for-the-badge
+[npm-downloads]: https://www.npmjs.com/package/@use-voltra/core
 [prs-welcome-badge]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge
 [prs-welcome]: ./CONTRIBUTING.md

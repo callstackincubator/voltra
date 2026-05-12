@@ -26,14 +26,11 @@
     },
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "keychainGroup": "$(AppIdentifierPrefix)group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
-          "liveActivity": {
-            "supplementalActivityFamilies": ["small"]
-          },
           "widgets": [
             {
               "id": "weather",
@@ -70,9 +67,19 @@
               }
             }
           ],
-          "android": {
-            "enableNotifications": true,
-            "widgets": [
+          "fonts": [
+            "@expo-google-fonts/merriweather/400Regular/Merriweather_400Regular.ttf",
+            "@expo-google-fonts/merriweather/700Bold/Merriweather_700Bold.ttf",
+            "@expo-google-fonts/pacifico/400Regular/Pacifico_400Regular.ttf",
+            "@expo-google-fonts/press-start-2p/400Regular/PressStart2P_400Regular.ttf"
+          ]
+        }
+      ],
+      [
+        "@use-voltra/android-client",
+        {
+          "enableNotifications": true,
+          "widgets": [
               {
                 "id": "voltra",
                 "displayName": {

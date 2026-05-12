@@ -1,3 +1,4 @@
+export { Voltra } from '@use-voltra/ios'
 export {
   VoltraLiveActivityPreview,
   type VoltraLiveActivityPreviewProps,
@@ -6,6 +7,7 @@ export { VoltraView, type VoltraViewProps } from './components/VoltraView.js'
 export { VoltraWidgetPreview, type VoltraWidgetPreviewProps } from './components/VoltraWidgetPreview.js'
 export * from './events.js'
 export { isGlassSupported, isHeadless } from './helpers.js'
+export { logger, type VoltraLogLevel } from './logger.js'
 export {
   endAllLiveActivities,
   type EndLiveActivityOptions,
@@ -28,6 +30,9 @@ export {
   type PreloadImagesResult,
   reloadLiveActivities,
 } from './preload.js'
+export { assertRunningOnApple } from './utils/assertRunningOnApple.js'
+export { useUpdateOnHMR } from './utils/useUpdateOnHMR.js'
+export * from './utils/helpers.js'
 export type { VoltraElementJson, VoltraNodeJson } from './types.js'
 export {
   clearWidgetServerCredentials,

@@ -1,7 +1,7 @@
 import React from 'react'
 
 import { AndroidDynamicColors, VoltraAndroid } from '../android/index.js'
-import { renderAndroidViewToJson, renderAndroidWidgetToString } from '../android/widgets/renderer.js'
+import { renderAndroidViewToJson, renderAndroidWidgetToString } from '@use-voltra/android/internal'
 
 describe('Android semantic color tokens', () => {
   it('exports the stable token map', () => {

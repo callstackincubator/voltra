@@ -125,8 +125,8 @@ Unfortunately, iOS suspends background apps after approximately 30 seconds. This
 :::
 
 ```typescript
-import { useLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { useLiveActivity } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios-client'
 
 function OrderLiveActivity({ orderId, status }) {
   const variants = {
@@ -177,8 +177,8 @@ For testing and development, Voltra provides a `VoltraView` component that rende
 - Previewing how your Live Activity will look
 
 ```tsx
-import { VoltraView } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { VoltraView } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios-client'
 
 function MyComponent() {
   const handleInteraction = (event: VoltraInteractionEvent) => {

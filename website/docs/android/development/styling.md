@@ -2,7 +2,7 @@
 
 You can style Voltra components on Android using React Native-style `style` props. These properties are automatically converted to Jetpack Compose Glance modifiers. 
 
-For Android system-aware colors, use [`AndroidDynamicColors`](./dynamic-colors) from `voltra/android` instead of snapshotting palette values in JavaScript.
+For Android system-aware colors, use [`AndroidDynamicColors`](./dynamic-colors) from `@use-voltra/android` instead of snapshotting palette values in JavaScript.
 
 :::warning Glance Limitations
 Android widgets are built using **Jetpack Compose Glance**, which has a significantly more limited styling API compared to standard Compose or SwiftUI. Many common React Native style properties are either not supported or have limited support.
@@ -49,7 +49,7 @@ In addition to general styles, `Image` components support:
 Android widgets can use semantic Material color roles that resolve through native `GlanceTheme.colors.*` values during rendering.
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
 
 const element = (
   <VoltraAndroid.Box
@@ -89,16 +89,16 @@ The following properties are **NOT supported** on Android due to Glance limitati
 ## Example
 
 ```tsx
-import { Voltra } from 'voltra'
+import { VoltraAndroid } from '@use-voltra/android-client'
 
 const element = (
-  <Voltra.VStack
+  <VoltraAndroid.Column
     style={{
       padding: 16,
       backgroundColor: '#101828',
     }}
   >
-    <Voltra.Text
+    <VoltraAndroid.Text
       style={{
         color: '#F8FAFC',
         fontSize: 18,
@@ -106,7 +106,7 @@ const element = (
       }}
     >
       Android Widget Text
-    </Voltra.Text>
-  </Voltra.VStack>
+    </VoltraAndroid.Text>
+  </VoltraAndroid.Column>
 )
 ```

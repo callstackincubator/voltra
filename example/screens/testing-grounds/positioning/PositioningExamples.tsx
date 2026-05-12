@@ -1,6 +1,6 @@
 import React from 'react'
-import { Voltra } from 'voltra'
-import { VoltraView } from 'voltra/client'
+import { Voltra } from '@use-voltra/ios'
+import { VoltraView } from '@use-voltra/ios-client'
 
 export type PositioningExampleProps = {
   testID?: string

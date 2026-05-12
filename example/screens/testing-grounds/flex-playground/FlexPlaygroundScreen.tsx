@@ -1,8 +1,8 @@
 import { Link } from 'expo-router'
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { VoltraView } from 'voltra/client'
+import { Voltra } from '@use-voltra/ios'
+import { VoltraView } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'

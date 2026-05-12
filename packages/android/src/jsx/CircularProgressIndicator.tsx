@@ -1,5 +1,5 @@
 import { createVoltraComponent } from './createVoltraComponent.js'
-import type { CircularProgressIndicatorProps } from './props/CircularProgressIndicator.js'
+import type { AndroidCircularProgressIndicatorProps as CircularProgressIndicatorProps } from './props/AndroidCircularProgressIndicator.js'
 
 export type { CircularProgressIndicatorProps }
 export const CircularProgressIndicator = createVoltraComponent<CircularProgressIndicatorProps>(

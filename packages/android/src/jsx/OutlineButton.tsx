@@ -1,5 +1,5 @@
 import { createVoltraComponent } from './createVoltraComponent.js'
-import type { OutlineButtonProps } from './props/OutlineButton.js'
+import type { AndroidOutlineButtonProps as OutlineButtonProps } from './props/AndroidOutlineButton.js'
 
 export type { OutlineButtonProps }
 export const OutlineButton = createVoltraComponent<OutlineButtonProps>('AndroidOutlineButton', {

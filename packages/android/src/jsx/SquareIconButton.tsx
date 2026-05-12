@@ -1,5 +1,5 @@
 import { createVoltraComponent } from './createVoltraComponent.js'
-import type { SquareIconButtonProps } from './props/SquareIconButton.js'
+import type { AndroidSquareIconButtonProps as SquareIconButtonProps } from './props/AndroidSquareIconButton.js'
 
 export type { SquareIconButtonProps }
 export const SquareIconButton = createVoltraComponent<SquareIconButtonProps>('AndroidSquareIconButton', {

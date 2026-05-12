@@ -1,16 +1,12 @@
 {
+  "extends": "expo-module-scripts/tsconfig.base",
   "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020"],
     "rootDir": "./src",
+    "baseUrl": ".",
     "moduleResolution": "node",
-    "jsx": "react-jsx",
-    "strict": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true
+    "paths": {
+      "@use-voltra/core": ["../core/build/types/index.d.ts"]
+    }
   },
   "include": ["./src"],
   "exclude": ["**/__mocks__/*", "**/__tests__/*", "**/__rsc_tests__/*"]

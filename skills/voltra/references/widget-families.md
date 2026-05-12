@@ -13,7 +13,7 @@ Use these iOS widget families when defining `WidgetVariants`:
 Working rules:
 
 - Build widget content with `Voltra.*` components.
-- Use `VoltraWidgetPreview` from `voltra/client` to preview widget content in React Native screens.
+- Use `VoltraWidgetPreview` from `@use-voltra/ios-client` to preview widget content in React Native screens.
 - Use `updateWidget` for immediate updates.
 - Use `scheduleWidget` for timeline-based or scheduled widget updates. This is the correct Voltra API for predictable future widget content changes on iOS.
 - Use `Voltra.Image` for widget images. Bundled assets and preloaded image keys are both referenced through `assetName`.

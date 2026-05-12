@@ -18,7 +18,7 @@ Voltra supports configuring how Live Activities behave after they end. You can c
 **Immediate dismissal (default behavior):**
 
 ```typescript
-import { startLiveActivity } from 'voltra/client'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 await startLiveActivity(variants, {
   dismissalPolicy: 'immediate', // or omit for default
@@ -36,7 +36,7 @@ await startLiveActivity(variants, {
 **Update dismissal policy for active Live Activities:**
 
 ```typescript
-import { updateLiveActivity } from 'voltra/client'
+import { updateLiveActivity } from '@use-voltra/ios-client'
 
 await updateLiveActivity(activityId, variants, {
   dismissalPolicy: { after: 60 },
@@ -46,7 +46,7 @@ await updateLiveActivity(activityId, variants, {
 **Set dismissal policy when ending a Live Activity:**
 
 ```typescript
-import { stopLiveActivity } from 'voltra/client'
+import { stopLiveActivity } from '@use-voltra/ios-client'
 
 await stopLiveActivity(activityId, {
   dismissalPolicy: { after: 10 },
@@ -64,7 +64,7 @@ Voltra provides additional configuration options to control Live Activity behavi
 The `staleDate` option allows you to specify when a Live Activity should be considered stale and automatically dismissed by the system.
 
 ```typescript
-import { startLiveActivity } from 'voltra/client'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 // Dismiss the Live Activity after 1 hour
 await startLiveActivity(variants, {
@@ -79,7 +79,7 @@ await startLiveActivity(variants, {
 The `relevanceScore` option helps iOS prioritize which Live Activities to display when space is limited. Higher scores (closer to 1.0) indicate more important activities.
 
 ```typescript
-import { startLiveActivity } from 'voltra/client'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 // High priority Live Activity (e.g., active delivery)
 await startLiveActivity(variants, {
@@ -99,7 +99,7 @@ await startLiveActivity(variants, {
 The `channelId` option subscribes the Live Activity to a broadcast channel for server-side updates. When provided, the activity receives updates via broadcast push notifications instead of individual device tokens—one server notification updates all activities on that channel. Requires `enablePushNotifications: true` and the Broadcast Capability enabled in your Apple Developer account.
 
 ```typescript
-import { startLiveActivity } from 'voltra/client'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 await startLiveActivity(variants, {
   activityName: 'match-123',
