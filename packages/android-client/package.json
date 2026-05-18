@@ -28,7 +28,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "npm run build:expo-plugin && npm run clean && bob build",
+    "build": "npm run clean && npm run build:expo-plugin && bob build",
     "build:expo-plugin": "node ../../scripts/build-package.mjs packages/android-client/expo-plugin",
     "clean": "rm -rf build && npm run clean:expo-plugin",
     "clean:expo-plugin": "rm -rf expo-plugin/build",
