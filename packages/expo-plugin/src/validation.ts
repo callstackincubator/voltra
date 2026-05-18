@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import type { WidgetInitialStatePath, WidgetLabel } from './types'
+import type { WidgetInitialStatePath } from './types'
 
 /** Widget id: Swift / Kotlin identifier fragment and Android XML token fragment */
 const WIDGET_ID_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/

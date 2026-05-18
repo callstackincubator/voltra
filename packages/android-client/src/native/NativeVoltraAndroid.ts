@@ -70,16 +70,16 @@ type RequestPinGlanceAppWidgetOptionsSpec = Readonly<{
 export interface Spec extends TurboModule {
   startAndroidOngoingNotification(
     payload: string,
-    options: StartAndroidOngoingNotificationOptionsSpec,
+    options: StartAndroidOngoingNotificationOptionsSpec
   ): Promise<AndroidOngoingNotificationResultSpec>
   upsertAndroidOngoingNotification(
     payload: string,
-    options: StartAndroidOngoingNotificationOptionsSpec,
+    options: StartAndroidOngoingNotificationOptionsSpec
   ): Promise<AndroidOngoingNotificationResultSpec>
   updateAndroidOngoingNotification(
     notificationId: string,
     payload: string,
-    options?: UpdateAndroidOngoingNotificationOptionsSpec,
+    options?: UpdateAndroidOngoingNotificationOptionsSpec
   ): Promise<AndroidOngoingNotificationResultSpec>
   stopAndroidOngoingNotification(notificationId: string): Promise<AndroidOngoingNotificationResultSpec>
   isAndroidOngoingNotificationActive(notificationId: string): boolean
@@ -88,18 +88,11 @@ export interface Spec extends TurboModule {
   canPostPromotedAndroidNotifications(): boolean
   getAndroidOngoingNotificationCapabilities(): AndroidOngoingNotificationCapabilitiesSpec
   openAndroidNotificationSettings(): Promise<void>
-  updateAndroidWidget(
-    widgetId: string,
-    jsonString: string,
-    options?: Readonly<{ deepLinkUrl?: string }>,
-  ): Promise<void>
+  updateAndroidWidget(widgetId: string, jsonString: string, options?: Readonly<{ deepLinkUrl?: string }>): Promise<void>
   reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
   clearAndroidWidget(widgetId: string): Promise<void>
   clearAllAndroidWidgets(): Promise<void>
-  requestPinGlanceAppWidget(
-    widgetId: string,
-    options?: RequestPinGlanceAppWidgetOptionsSpec,
-  ): Promise<boolean>
+  requestPinGlanceAppWidget(widgetId: string, options?: RequestPinGlanceAppWidgetOptionsSpec): Promise<boolean>
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>
   clearPreloadedImages(keys?: string[] | null): Promise<void>
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>

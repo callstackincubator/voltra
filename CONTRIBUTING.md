@@ -89,19 +89,19 @@ This runs the generator (`packages/voltra/generator/generate-types.ts`).
 
 The generator filters components by platform (`swiftAvailability` for iOS, `androidAvailability` for Android) and writes outputs to the packages that own each runtime:
 
-| Output | Path |
-| --- | --- |
-| **TypeScript prop types (iOS)** | `packages/ios/src/jsx/props/*.ts` |
-| **TypeScript prop types (Android)** | `packages/android/src/jsx/props/*.ts` |
-| **Swift parameter structs** | `packages/ios-client/ios/ui/Generated/Parameters/*.swift` |
-| **Kotlin parameter structs** | `packages/android-client/android/src/main/java/voltra/models/parameters/*Parameters.kt` |
-| **iOS component ID mappings (TS)** | `packages/ios/src/payload/component-ids.ts` |
-| **Android component ID mappings (TS)** | `packages/android/src/payload/component-ids.ts` |
-| **iOS component ID mappings (Swift)** | `packages/ios-client/ios/shared/ComponentTypeID.swift` |
-| **Android component ID mappings (Kotlin)** | `packages/android-client/android/src/main/java/voltra/payload/ComponentTypeID.kt` |
-| **Short name mappings (TS)** | `packages/core/src/payload/short-names.ts` |
-| **Short name mappings (Swift)** | `packages/ios-client/ios/shared/ShortNames.swift` |
-| **Short name mappings (Kotlin)** | `packages/android-client/android/src/main/java/voltra/generated/ShortNames.kt` |
+| Output                                     | Path                                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| **TypeScript prop types (iOS)**            | `packages/ios/src/jsx/props/*.ts`                                                       |
+| **TypeScript prop types (Android)**        | `packages/android/src/jsx/props/*.ts`                                                   |
+| **Swift parameter structs**                | `packages/ios-client/ios/ui/Generated/Parameters/*.swift`                               |
+| **Kotlin parameter structs**               | `packages/android-client/android/src/main/java/voltra/models/parameters/*Parameters.kt` |
+| **iOS component ID mappings (TS)**         | `packages/ios/src/payload/component-ids.ts`                                             |
+| **Android component ID mappings (TS)**     | `packages/android/src/payload/component-ids.ts`                                         |
+| **iOS component ID mappings (Swift)**      | `packages/ios-client/ios/shared/ComponentTypeID.swift`                                  |
+| **Android component ID mappings (Kotlin)** | `packages/android-client/android/src/main/java/voltra/payload/ComponentTypeID.kt`       |
+| **Short name mappings (TS)**               | `packages/core/src/payload/short-names.ts`                                              |
+| **Short name mappings (Swift)**            | `packages/ios-client/ios/shared/ShortNames.swift`                                       |
+| **Short name mappings (Kotlin)**           | `packages/android-client/android/src/main/java/voltra/generated/ShortNames.kt`          |
 
 After generation, the script formats JS (iOS and Android packages), Kotlin (`@use-voltra/android-client`), and Swift (`@use-voltra/ios-client`).
 

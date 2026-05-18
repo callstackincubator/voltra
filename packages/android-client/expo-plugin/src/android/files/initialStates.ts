@@ -4,8 +4,6 @@ import path from 'path'
 import type { AndroidWidgetConfig } from '../../types'
 import { logger, prerenderWidgetState, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
 
-
-
 /** Wrapped asset shape when multiple locales are built; matches Android reader in VoltraWidgetManager */
 export const VOLTRA_LOCALIZED_INITIAL_STATE_KEY = '__voltraLocales'
 

@@ -1,5 +1,10 @@
 export * as Voltra from './jsx/primitives.js'
-export { getComponentId, getComponentName, COMPONENT_ID_TO_NAME, COMPONENT_NAME_TO_ID } from './payload/component-ids.js'
+export {
+  getComponentId,
+  getComponentName,
+  COMPONENT_ID_TO_NAME,
+  COMPONENT_NAME_TO_ID,
+} from './payload/component-ids.js'
 export { renderLiveActivityToJson, renderLiveActivityToString } from './live-activity/renderer.js'
 export type {
   DismissalPolicy,

@@ -30,8 +30,7 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
 
   const hasServerDrivenWidgets = props.widgets?.some((w) => w.serverUpdate) ?? false
   const keychainGroup =
-    props.keychainGroup ??
-    (hasServerDrivenWidgets ? `$(AppIdentifierPrefix)${iosBundleIdentifier}` : undefined)
+    props.keychainGroup ?? (hasServerDrivenWidgets ? `$(AppIdentifierPrefix)${iosBundleIdentifier}` : undefined)
 
   config = withIOS(config, {
     groupIdentifier: props.groupIdentifier,

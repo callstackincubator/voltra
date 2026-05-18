@@ -1,11 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import {
-  validateHomeScreenWidgetId,
-  validateInitialStatePath,
-  validateWidgetLabel,
-} from '@use-voltra/expo-plugin'
+import { validateHomeScreenWidgetId, validateInitialStatePath, validateWidgetLabel } from '@use-voltra/expo-plugin'
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
 

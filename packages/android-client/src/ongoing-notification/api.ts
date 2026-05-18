@@ -266,7 +266,9 @@ export const openAndroidNotificationSettings = async (): Promise<void> => {
 export const stopAndroidOngoingNotification = async (
   notificationId: string
 ): Promise<AndroidOngoingNotificationStopResult> => {
-  return (await getNativeVoltraAndroid().stopAndroidOngoingNotification(notificationId)) as AndroidOngoingNotificationStopResult
+  return (await getNativeVoltraAndroid().stopAndroidOngoingNotification(
+    notificationId
+  )) as AndroidOngoingNotificationStopResult
 }
 
 export const isAndroidOngoingNotificationActive = (notificationId: string): boolean => {

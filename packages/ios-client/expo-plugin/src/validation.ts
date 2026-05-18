@@ -1,8 +1,4 @@
-import {
-  validateHomeScreenWidgetId,
-  validateInitialStatePath,
-  validateWidgetLabel,
-} from '@use-voltra/expo-plugin'
+import { validateHomeScreenWidgetId, validateInitialStatePath, validateWidgetLabel } from '@use-voltra/expo-plugin'
 
 import type { IOSConfigPluginProps, IOSWidgetConfig, IOSWidgetFamily } from './types'
 

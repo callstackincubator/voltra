@@ -31,7 +31,7 @@ export type VoltraInteractionEvent = BasicVoltraEvent & {
 }
 
 const noopSubscription: EventSubscription = {
-  remove: () => { },
+  remove: () => {},
 }
 
 export type VoltraEventMap = {
@@ -50,13 +50,15 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
     return noopSubscription
   }
 
-  const voltraModule = getNativeVoltra();
+  const voltraModule = getNativeVoltra()
 
   switch (event) {
     case 'activityTokenReceived':
       return voltraModule.onActivityTokenReceived(listener as (arg: VoltraActivityTokenReceivedEvent) => void)
     case 'activityPushToStartTokenReceived':
-      return voltraModule.onActivityPushToStartTokenReceived(listener as (arg: VoltraActivityPushToStartTokenReceivedEvent) => void)
+      return voltraModule.onActivityPushToStartTokenReceived(
+        listener as (arg: VoltraActivityPushToStartTokenReceivedEvent) => void
+      )
     case 'stateChange':
       return voltraModule.onStateChanged(listener as (arg: VoltraActivityUpdateEvent) => void)
     case 'interaction':

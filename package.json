@@ -38,7 +38,9 @@
     "release": "changeset publish"
   },
   "devDependencies": {
+    "@babel/plugin-transform-export-namespace-from": "^7.25.9",
     "@changesets/cli": "^2.29.8",
+    "@react-native/babel-preset": "0.83.2",
     "@types/node": "^20.19.25",
     "@types/react": "~19.2.10",
     "@types/react-is": "^19.2.0",
