@@ -154,8 +154,25 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
 
   if (isLazy(element)) {
     const lazyElement = element as ReactElement<unknown, LazyExoticComponent<ComponentType<unknown>>>
-    const { lazy } = lazyElement.type as unknown as { lazy: () => ReactNode }
-    return renderNode(lazy(), context)
+    const lazyType = lazyElement.type as unknown as {
+      _init?: (payload: unknown) => ComponentType<unknown>
+      _payload?: unknown
+    }
+
+    if (typeof lazyType._init !== 'function') {
+      throw new Error('Lazy component could not be resolved by the Voltra renderer.')
+    }
+
+    try {
+      const resolvedType = lazyType._init(lazyType._payload)
+      return renderNode({ ...lazyElement, type: resolvedType }, context)
+    } catch (error) {
+      if (error instanceof Promise) {
+        throw new Error('Lazy component suspended! Voltra does not support Suspense/Promises.')
+      }
+
+      throw error
+    }
   }
 
   if (isContextProvider(element)) {
