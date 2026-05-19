@@ -71,10 +71,10 @@ Files in `ios-files/` are copied by the config plugin into the generated widget 
 
 ## Props synchronization
 
-Component props are kept in sync across TypeScript, Swift, and Kotlin via a **custom code generator**. The single source of truth is:
+Component props are kept in sync across TypeScript, Swift, and Kotlin via a **custom code generator**. The single source of truth is the private generator workspace:
 
 ```
-packages/voltra/data/components.json
+packages/generator/data/components.json
 ```
 
 This file defines all components, their parameters, platform availability, and short names used for payload compression.
@@ -85,7 +85,7 @@ This file defines all components, their parameters, platform availability, and s
 npm run generate
 ```
 
-This runs the generator (`packages/voltra/generator/generate-types.ts`).
+This runs the generator script in `@use-voltra/generator` at `packages/generator/generator/generate-types.ts`.
 
 The generator filters components by platform (`swiftAvailability` for iOS, `androidAvailability` for Android) and writes outputs to the packages that own each runtime:
 
@@ -105,7 +105,7 @@ The generator filters components by platform (`swiftAvailability` for iOS, `andr
 
 After generation, the script formats JS (iOS and Android packages), Kotlin (`@use-voltra/android-client`), and Swift (`@use-voltra/ios-client`).
 
-⚠️ **Important**: When adding new components or modifying props, always update `packages/voltra/data/components.json` first, then run the generator. Do not manually edit generated files (directories include a `.generated` marker file). Component `.tsx` files that call `createVoltraComponent` are still written by hand in `packages/ios/src/jsx/` and `packages/android/src/jsx/`.
+⚠️ **Important**: `packages/generator` is a private tooling workspace, not a published runtime package. When adding new components or modifying props, always update `packages/generator/data/components.json` first, then run the generator. Do not manually edit generated files (directories include a `.generated` marker file). Component `.tsx` files that call `createVoltraComponent` are still written by hand in `packages/ios/src/jsx/` and `packages/android/src/jsx/`.
 
 ## Payload size budget
 
@@ -141,7 +141,7 @@ The payload schema has a version number to support forward compatibility. When t
 
 The version is defined in two places that must stay in sync:
 
-- **TypeScript**: `packages/voltra/src/renderer/renderer.ts` → `VOLTRA_PAYLOAD_VERSION`
+- **TypeScript**: `packages/core/src/renderer/renderer.ts` → `VOLTRA_PAYLOAD_VERSION`
 - **Swift**: `packages/ios-client/ios/shared/VoltraPayloadMigrator.swift` → `currentVersion`
 
 ### When to increment the version

@@ -1,0 +1,14 @@
+{
+  "name": "@use-voltra/generator",
+  "private": true,
+  "version": "1.4.1",
+  "description": "Private schema and code generation tooling for Voltra",
+  "scripts": {
+    "format:js:fix": "prettier --write .",
+    "generate": "ts-node generator/generate-types.ts"
+  },
+  "devDependencies": {
+    "prettier": "2.8.8",
+    "ts-node": "^10.9.0"
+  }
+}

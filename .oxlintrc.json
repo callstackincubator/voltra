@@ -368,7 +368,7 @@
       }
     },
     {
-      "files": ["packages/voltra/src/**/*.{ts,tsx,js,jsx}", "packages/voltra/generator/**/*.{ts,tsx,js,jsx}"],
+      "files": ["packages/generator/generator/**/*.{ts,tsx,js,jsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",
