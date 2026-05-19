@@ -5,7 +5,8 @@
   "description": "Private schema and code generation tooling for Voltra",
   "scripts": {
     "format:js:fix": "prettier --write .",
-    "generate": "ts-node generator/generate-types.ts"
+    "generate": "ts-node generator/generate-types.ts",
+    "test": "TS_NODE_PROJECT=generator/tsconfig.json node --test --require ts-node/register/transpile-only test/*.test.js"
   },
   "devDependencies": {
     "prettier": "2.8.8",
