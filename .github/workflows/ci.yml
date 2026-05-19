@@ -89,7 +89,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Run JS tests via Turbo
         run: npm run test:js
 
   native-kotlin-test:
