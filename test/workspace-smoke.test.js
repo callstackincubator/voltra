@@ -205,7 +205,10 @@ test('root generate script succeeds end to end', () => {
 })
 
 test('package sources do not import the removed facade package', () => {
-  const matches = findMatchingFiles(FACADE_SCAN_DIRS, /from\s+['"]voltra['"]|require\(\s*['"]voltra['"]\s*\)/g)
+  const matches = findMatchingFiles(
+    FACADE_SCAN_DIRS,
+    /from\s+['"]voltra(?:\/[^'"]+)?['"]|require\(\s*['"]voltra(?:\/[^'"]+)?['"]\s*\)|import\(\s*['"]voltra(?:\/[^'"]+)?['"]\s*\)/g
+  )
   assert.deepEqual(matches, [])
 })
 

@@ -37,9 +37,8 @@ type RenderWidgetToString = (variants: unknown) => string
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
   const { targetPath, projectRoot, widgets } = options
 
-  // Dynamic import for ESM module compatibility
-  // voltra/server is an ESM module, but the plugin is compiled to CommonJS
-  const serverModuleId = 'voltra/server'
+  // Dynamic import keeps the plugin CommonJS-compatible while resolving the current package entry.
+  const serverModuleId = '@use-voltra/ios/server'
   const { renderWidgetToString } = (await import(serverModuleId)) as {
     renderWidgetToString: RenderWidgetToString
   }

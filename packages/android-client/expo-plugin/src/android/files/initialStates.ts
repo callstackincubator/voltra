@@ -24,9 +24,8 @@ type RenderAndroidWidgetToString = (variants: unknown) => string
 export async function generateAndroidInitialStates(options: GenerateInitialStatesOptions): Promise<void> {
   const { widgets, projectRoot, platformProjectRoot } = options
 
-  // Dynamic import for ESM module compatibility
-  // voltra/android/server is an ESM module, but the plugin is compiled to CommonJS
-  const androidServerModuleId = 'voltra/android/server'
+  // Dynamic import keeps the plugin CommonJS-compatible while resolving the current package entry.
+  const androidServerModuleId = '@use-voltra/android/server'
   const { renderAndroidWidgetToString } = (await import(androidServerModuleId)) as {
     renderAndroidWidgetToString: RenderAndroidWidgetToString
   }
