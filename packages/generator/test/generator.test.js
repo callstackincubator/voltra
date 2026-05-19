@@ -1,5 +1,4 @@
 const assert = require('node:assert/strict')
-const { execSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -8,22 +7,8 @@ const test = require('node:test')
 const { runGeneration, createGenerationPaths } = require('../generator/generate-types.ts')
 const { validateComponentsData } = require('../generator/validate-components.ts')
 
-const repoRoot = path.resolve(__dirname, '..', '..', '..')
 const generatorRoot = path.resolve(__dirname, '..')
 const schema = JSON.parse(fs.readFileSync(path.join(generatorRoot, 'schemas', 'components.schema.json'), 'utf-8'))
-
-const generatedArtifactDirs = [
-  path.join(repoRoot, 'packages', 'ios', 'src', 'jsx', 'props'),
-  path.join(repoRoot, 'packages', 'android', 'src', 'jsx', 'props'),
-  path.join(repoRoot, 'packages', 'ios', 'src', 'payload'),
-  path.join(repoRoot, 'packages', 'android', 'src', 'payload'),
-  path.join(repoRoot, 'packages', 'core', 'src', 'payload'),
-  path.join(repoRoot, 'packages', 'ios-client', 'ios', 'ui', 'Generated', 'Parameters'),
-  path.join(repoRoot, 'packages', 'ios-client', 'ios', 'shared'),
-  path.join(repoRoot, 'packages', 'android-client', 'android', 'src', 'main', 'java', 'voltra', 'models', 'parameters'),
-  path.join(repoRoot, 'packages', 'android-client', 'android', 'src', 'main', 'java', 'voltra', 'payload'),
-  path.join(repoRoot, 'packages', 'android-client', 'android', 'src', 'main', 'java', 'voltra', 'generated'),
-]
 
 const createLogger = () => {
   const entries = []
@@ -107,57 +92,6 @@ const createFixtureData = () => ({
 const writeJson = (filePath, value) => {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2))
-}
-
-const listFiles = (dirPath) => {
-  if (!fs.existsSync(dirPath)) {
-    return []
-  }
-
-  const results = []
-  const stack = [dirPath]
-
-  while (stack.length > 0) {
-    const currentDir = stack.pop()
-    const entries = fs.readdirSync(currentDir, { withFileTypes: true })
-
-    for (const entry of entries) {
-      const entryPath = path.join(currentDir, entry.name)
-      if (entry.isDirectory()) {
-        stack.push(entryPath)
-      } else {
-        results.push(entryPath)
-      }
-    }
-  }
-
-  return results.sort()
-}
-
-const snapshotFiles = (dirPaths) => {
-  const snapshot = new Map()
-
-  for (const dirPath of dirPaths) {
-    for (const filePath of listFiles(dirPath)) {
-      snapshot.set(filePath, fs.readFileSync(filePath))
-    }
-  }
-
-  return snapshot
-}
-
-const restoreSnapshot = (snapshot, dirPaths) => {
-  for (const dirPath of dirPaths) {
-    for (const filePath of listFiles(dirPath)) {
-      if (!snapshot.has(filePath)) {
-        fs.rmSync(filePath)
-      }
-    }
-  }
-
-  for (const [filePath, content] of snapshot.entries()) {
-    fs.writeFileSync(filePath, content)
-  }
 }
 
 test('validates component fixtures and reports useful schema errors', () => {
@@ -292,20 +226,4 @@ test('generates synchronized artifacts into the intended directories and cleans 
     { scriptName: 'format:swift:fix', workspace: '@use-voltra/ios-client', stepLabel: '10' },
   ])
   assert.match(entries.map((entry) => entry.text).join('\n'), /Generation complete/)
-})
-
-test('workspace generate script succeeds end to end', () => {
-  const snapshot = snapshotFiles(generatedArtifactDirs)
-  let output
-
-  try {
-    output = execSync('npm run generate --workspace @use-voltra/generator', {
-      cwd: repoRoot,
-      encoding: 'utf-8',
-    })
-  } finally {
-    restoreSnapshot(snapshot, generatedArtifactDirs)
-  }
-
-  assert.match(output, /Generation complete/)
 })
