@@ -6,6 +6,7 @@ export {
   renderAndroidOngoingNotificationPayload,
   renderAndroidOngoingNotificationPayloadToJson,
 } from '@use-voltra/android/server'
+import { getAndroidComponentId } from '@use-voltra/android'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
@@ -54,45 +55,8 @@ export type AndroidWidgetVariants = AndroidWidgetSizeVariant[]
 
 type AndroidWidgetRenderOptions = Record<string, never>
 
-const ANDROID_COMPONENT_NAME_TO_ID: Record<string, number> = {
-  AndroidFilledButton: 0,
-  AndroidImage: 1,
-  AndroidSwitch: 2,
-  AndroidCheckBox: 3,
-  AndroidRadioButton: 4,
-  AndroidBox: 5,
-  AndroidButton: 6,
-  AndroidCircleIconButton: 7,
-  AndroidCircularProgressIndicator: 8,
-  AndroidColumn: 9,
-  AndroidLazyColumn: 10,
-  AndroidLazyVerticalGrid: 11,
-  AndroidLinearProgressIndicator: 12,
-  AndroidOutlineButton: 13,
-  AndroidRow: 14,
-  AndroidScaffold: 15,
-  AndroidSpacer: 16,
-  AndroidSquareIconButton: 17,
-  AndroidText: 18,
-  AndroidTitleBar: 19,
-  AndroidChart: 20,
-}
-
-const getAndroidComponentId = (name: string): number => {
-  const id = ANDROID_COMPONENT_NAME_TO_ID[name]
-  if (id === undefined) {
-    throw new Error(
-      `Unknown Android component name: "${name}". Available components: ${Object.keys(
-        ANDROID_COMPONENT_NAME_TO_ID
-      ).join(', ')}`
-    )
-  }
-
-  return id
-}
-
 const androidComponentRegistry = {
-  getComponentId: (name: string) => getAndroidComponentId(name),
+  getComponentId: getAndroidComponentId,
 }
 
 export const renderAndroidWidgetToJson = (
