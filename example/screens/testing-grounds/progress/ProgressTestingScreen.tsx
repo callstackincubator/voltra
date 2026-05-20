@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
+import { StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { VoltraWidgetPreview } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 export default function ProgressTestingScreen() {
   const router = useRouter()
@@ -103,13 +104,10 @@ export default function ProgressTestingScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Progress Testing</Text>
-        <Text style={styles.subheading}>
-          Test VoltraLinearProgressView and VoltraCircularProgressView with new label and styling support.
-        </Text>
-
+    <ScreenLayout
+      title="Progress Testing"
+      description="Test VoltraLinearProgressView and VoltraCircularProgressView with new label and styling support."
+    >
         {/* 1. Live Preview */}
         <Card>
           <Card.Title>Live Preview</Card.Title>
@@ -318,17 +316,11 @@ export default function ProgressTestingScreen() {
         <View style={styles.footer}>
           <Button title="Back" variant="ghost" onPress={() => router.back()} />
         </View>
-      </ScrollView>
-    </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  content: { padding: 20 },
-  heading: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
-  subheading: { fontSize: 14, color: '#CBD5F5', marginBottom: 24 },
   previewContainer: { flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', gap: 12, padding: 10 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   label: { color: '#fff', fontSize: 16 },

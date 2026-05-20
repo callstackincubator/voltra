@@ -42,9 +42,6 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: '#8232FF',
   },
-  primaryButtonPressed: {
-    backgroundColor: '#6B28E0', // Darker purple for pressed state
-  },
   primaryButtonText: {
     color: '#FFFFFF',
   },
@@ -65,9 +62,6 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
     fontWeight: '600',
   },
-  secondaryActionButton: {
-    marginLeft: 12,
-  },
   buttonDisabled: {
     opacity: 0.6,
   },
@@ -77,14 +71,5 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  endAllButton: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.35)',
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-  },
-  endAllButtonText: {
-    color: '#F87171',
   },
 })

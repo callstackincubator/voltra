@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { VoltraAndroid } from '@use-voltra/android'
 import { AndroidWidgetFamily, VoltraWidgetPreview } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 const WIDGET_SIZES: { id: AndroidWidgetFamily; title: string }[] = [
   { id: 'mediumWide', title: 'Medium Wide' },
@@ -79,94 +80,72 @@ export default function AndroidCustomFontScreen() {
   const [selectedSize, setSelectedSize] = useState<AndroidWidgetFamily>('large')
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Custom Font Widgets</Text>
-        <Text style={styles.subheading}>
-          Demonstrates custom font rendering on Android Glance widgets.{'\n'}
-          Text with <Text style={styles.code}>renderAsBitmap</Text> is drawn to a Canvas bitmap with a custom Typeface
-          loaded from <Text style={styles.code}>assets/fonts/</Text>.
-        </Text>
+    <ScreenLayout title="Custom Font Widgets">
+      <Text style={styles.description}>
+        Demonstrates custom font rendering on Android Glance widgets.{`\n`}
+        Text with <Text style={styles.code}>renderAsBitmap</Text> is drawn to a Canvas bitmap with a custom Typeface
+        loaded from <Text style={styles.code}>assets/fonts/</Text>.
+      </Text>
 
-        <Card>
-          <Card.Title>Widget Size</Card.Title>
-          <View style={styles.buttonRow}>
-            {WIDGET_SIZES.map((size) => (
-              <Button
-                key={size.id}
-                title={size.title}
-                variant={selectedSize === size.id ? 'primary' : 'secondary'}
-                onPress={() => setSelectedSize(size.id)}
-                style={styles.choiceButton}
-              />
-            ))}
-          </View>
-        </Card>
-
-        <Card>
-          <Card.Title>Live Preview</Card.Title>
-          <Card.Text>
-            Pacifico (script) and Press Start 2P (pixel) are rendered as bitmaps. Compare with the native Glance text
-            below them.
-          </Card.Text>
-          <View style={styles.previewContainer}>
-            <View style={styles.previewWrapper}>
-              <VoltraWidgetPreview family={selectedSize} style={styles.widgetBorder}>
-                <CustomFontShowcaseWidget />
-              </VoltraWidgetPreview>
-            </View>
-          </View>
-        </Card>
-
-        <Card>
-          <Card.Title>How It Works</Card.Title>
-          <Card.Text>
-            1. Add font packages (e.g. @expo-google-fonts/pacifico) or place .ttf files in your project{'\n'}
-            2. Add font paths to the &quot;fonts&quot; array in your Voltra plugin config{'\n'}
-            3. Set fontFamily in style to the filename without extension{'\n'}
-            4. Add renderAsBitmap prop to {'<'}Text{'>'}
-            {'\n'}
-            5. Run prebuild — the plugin copies fonts to assets/fonts/ automatically
-          </Card.Text>
-        </Card>
-
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      <Card>
+        <Card.Title>Widget Size</Card.Title>
+        <View style={styles.buttonRow}>
+          {WIDGET_SIZES.map((size) => (
+            <Button
+              key={size.id}
+              title={size.title}
+              variant={selectedSize === size.id ? 'primary' : 'secondary'}
+              onPress={() => setSelectedSize(size.id)}
+              style={styles.choiceButton}
+            />
+          ))}
         </View>
-      </ScrollView>
-    </View>
+      </Card>
+
+      <Card>
+        <Card.Title>Live Preview</Card.Title>
+        <Card.Text>
+          Pacifico (script) and Press Start 2P (pixel) are rendered as bitmaps. Compare with the native Glance text
+          below them.
+        </Card.Text>
+        <View style={styles.previewContainer}>
+          <View style={styles.previewWrapper}>
+            <VoltraWidgetPreview family={selectedSize} style={styles.widgetBorder}>
+              <CustomFontShowcaseWidget />
+            </VoltraWidgetPreview>
+          </View>
+        </View>
+      </Card>
+
+      <Card>
+        <Card.Title>How It Works</Card.Title>
+        <Card.Text>
+          1. Add font packages (e.g. @expo-google-fonts/pacifico) or place .ttf files in your project{`\n`}
+          2. Add font paths to the &quot;fonts&quot; array in your Voltra plugin config{`\n`}
+          3. Set fontFamily in style to the filename without extension{`\n`}
+          4. Add renderAsBitmap prop to {'<'}Text{'>'}
+          {`\n`}
+          5. Run prebuild — the plugin copies fonts to assets/fonts/ automatically
+        </Card.Text>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
+  description: {
     fontSize: 14,
     lineHeight: 20,
     color: '#CBD5F5',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   code: {
     fontFamily: 'monospace',
     color: '#A78BFA',
-  },
-  scrollArea: {
-    marginHorizontal: -4,
   },
   buttonRow: {
     flexDirection: 'row',

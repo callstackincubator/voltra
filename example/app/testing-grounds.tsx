@@ -1,5 +1,6 @@
-import TestingGroundsScreen from '~/screens/testing-grounds/TestingGroundsScreen'
+import { Redirect } from 'expo-router'
+import { Platform } from 'react-native'
 
-export default function TestingGroundsIndex() {
-  return <TestingGroundsScreen />
+export default function TestingGroundsRedirect() {
+  return <Redirect href={Platform.OS === 'android' ? '/android/others' : '/ios/others'} />
 }

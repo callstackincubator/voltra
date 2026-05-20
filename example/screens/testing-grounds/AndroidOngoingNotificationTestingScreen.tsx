@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppState, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { AppState, PermissionsAndroid, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   AndroidOngoingNotification,
   type AndroidOngoingNotificationPayload,
@@ -18,6 +18,7 @@ import {
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 type OngoingNotificationStyle = 'progress' | 'bigText'
 
@@ -345,24 +346,18 @@ export default function AndroidOngoingNotificationTestingScreen() {
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          <Text style={styles.heading}>Android Ongoing Notifications</Text>
-          <Text style={styles.subheading}>This testing ground is only available on Android.</Text>
-        </ScrollView>
-      </View>
+      <ScreenLayout
+        title="Android Ongoing Notifications"
+        description="This example is only available on Android."
+      />
     )
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Android Ongoing Notifications</Text>
-        <Text style={styles.subheading}>
-          Test semantic Android ongoing notification payloads, capability checks, rich progress fields, and action
-          buttons. For remote testing, send a real notification whose `data` contains the payload shown below.
-        </Text>
-
+    <ScreenLayout
+      title="Android Ongoing Notifications"
+      description="Test semantic Android ongoing notification payloads, capability checks, rich progress fields, and action buttons. For remote testing, send a real notification whose data contains the payload shown below."
+    >
         <Card>
           <Card.Title>Rich Progress Fallback</Card.Title>
           <Card.Text>
@@ -699,17 +694,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
           <Card.Text>Use `operation: "stop"` with the same `notificationId` to stop it remotely.</Card.Text>
           <Text style={styles.codeBlock}>{sampleExpoPushRequest}</Text>
         </Card>
-      </ScrollView>
-    </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  content: { padding: 20 },
-  heading: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
-  subheading: { fontSize: 14, color: '#CBD5F5', marginBottom: 24, lineHeight: 20 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
   column: { marginBottom: 16, gap: 10 },
   label: { color: '#FFFFFF', fontSize: 16, flexShrink: 0 },

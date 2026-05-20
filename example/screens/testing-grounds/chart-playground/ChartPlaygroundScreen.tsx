@@ -1,11 +1,12 @@
 import { Link } from 'expo-router'
 import React, { useCallback, useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { VoltraView } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 // ─── data helpers ───────────────────────────────────────────────────────────
 
@@ -79,19 +80,15 @@ export default function ChartPlaygroundScreen() {
   }, [])
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Chart Playground</Text>
-        <Text style={styles.subheading}>
-          All SwiftUI chart mark types powered by Voltra. Tap Randomize to animate between data sets.
-        </Text>
+    <ScreenLayout
+      title="Chart Playground"
+      description="All SwiftUI chart mark types powered by Voltra. Tap Randomize to animate between data sets."
+    >
+      <View style={styles.randomizeRow}>
+        <Button title="🎲 Randomize All" onPress={randomizeAll} variant="primary" />
+      </View>
 
-        <View style={styles.randomizeRow}>
-          <Button title="🎲 Randomize All" onPress={randomizeAll} variant="primary" />
-        </View>
-
-        {/* BarMark */}
-        <Card>
+      <Card>
           <Card.Title>BarMark</Card.Title>
           <Card.Text>Single series bar chart with rounded corners.</Card.Text>
           <View style={styles.refreshRow}>
@@ -106,10 +103,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.BarMark data={barData} color="#4285f4" cornerRadius={4} />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* BarMark multi-series */}
-        <Card>
+      <Card>
           <Card.Title>BarMark — Multi-series</Card.Title>
           <Card.Text>
             Two series (A & B) rendered as grouped bars using the supported `stacking` grouped mode.
@@ -127,10 +124,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.BarMark data={multiData} stacking="grouped" cornerRadius={4} />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* LineMark */}
-        <Card>
+      <Card>
           <Card.Title>LineMark</Card.Title>
           <Card.Text>Smooth monotone line chart.</Card.Text>
           <View style={styles.refreshRow}>
@@ -141,10 +138,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.LineMark data={lineData} color="#34a853" interpolation="monotone" lineWidth={2} />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* AreaMark */}
-        <Card>
+      <Card>
           <Card.Title>AreaMark</Card.Title>
           <Card.Text>Filled area chart — the classic stocks-app look.</Card.Text>
           <View style={styles.refreshRow}>
@@ -155,10 +152,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.AreaMark data={areaData} color="#4285f4" interpolation="monotone" />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* PointMark */}
-        <Card>
+      <Card>
           <Card.Title>PointMark</Card.Title>
           <Card.Text>
             Scatter plot with numeric x and y axes plus both vertical and horizontal reference lines.
@@ -184,10 +181,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.RuleMark xValue={pointRuleX} yValue={pointRuleY} color="#ea4335" lineWidth={2} />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* RuleMark */}
-        <Card>
+      <Card>
           <Card.Title>RuleMark</Card.Title>
           <Card.Text>
             Bar chart with both horizontal and vertical reference lines. When both `xValue` and `yValue` are set, both
@@ -214,10 +211,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.RuleMark xValue={ruleX} yValue={ruleY} color="#ea4335" lineWidth={2} />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* SectorMark — pie */}
-        <Card>
+      <Card>
           <Card.Title>SectorMark — Pie</Card.Title>
           <Card.Text>Pie chart built with SectorMark (iOS 17+).</Card.Text>
           <View style={styles.refreshRow}>
@@ -228,10 +225,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.SectorMark data={sectorData} angularInset={2} />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* SectorMark — donut */}
-        <Card>
+      <Card>
           <Card.Title>SectorMark — Donut</Card.Title>
           <Card.Text>Same data as above but with an inner radius to create a donut chart.</Card.Text>
           <View style={styles.refreshRow}>
@@ -247,10 +244,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.SectorMark data={sectorData} innerRadius={0.5} angularInset={2} />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* Combo: Bar + Line */}
-        <Card>
+      <Card>
           <Card.Title>Combo — Bar + Line</Card.Title>
           <Card.Text>Multiple mark types composited in one chart.</Card.Text>
           <View style={styles.refreshRow}>
@@ -273,10 +270,10 @@ export default function ChartPlaygroundScreen() {
               <Voltra.LineMark data={comboLineData} color="#ea4335" lineWidth={2} interpolation="monotone" />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
         {/* Axis visibility */}
-        <Card>
+      <Card>
           <Card.Title>Hidden Axes</Card.Title>
           <Card.Text>Chart with both axes hidden — clean minimal look.</Card.Text>
           <ChartPreview>
@@ -289,42 +286,18 @@ export default function ChartPlaygroundScreen() {
               <Voltra.AreaMark data={areaData} color="#4285f4" interpolation="monotone" />
             </Voltra.Chart>
           </ChartPreview>
-        </Card>
+      </Card>
 
-        <View style={styles.footer}>
-          <Link href="/testing-grounds" asChild>
-            <Button title="Back to Testing Grounds" variant="ghost" />
-          </Link>
-        </View>
-      </ScrollView>
-    </View>
+      <View style={styles.footer}>
+        <Link href="/testing-grounds" asChild>
+          <Button title="Back to Testing Grounds" variant="ghost" />
+        </Link>
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    backgroundColor: '#0F172A',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 16,
-  },
   randomizeRow: {
     marginBottom: 8,
   },

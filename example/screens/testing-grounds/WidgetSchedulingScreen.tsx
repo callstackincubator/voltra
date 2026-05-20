@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
+import { Alert, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { reloadWidgets, scheduleWidget, VoltraWidgetPreview } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 export default function WidgetSchedulingScreen() {
   const colorScheme = useColorScheme()
@@ -190,14 +191,10 @@ export default function WidgetSchedulingScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Widget Scheduling</Text>
-        <Text style={styles.subheading}>
-          Test widget timeline scheduling with multiple states. Configure when each state should appear and watch the
-          widget transition automatically.
-        </Text>
-
+    <ScreenLayout
+      title="Widget Scheduling"
+      description="Test widget timeline scheduling with multiple states. Configure when each state should appear and watch the widget transition automatically."
+    >
         {/* Configuration */}
         <Card>
           <Card.Title>⚙️ Configuration</Card.Title>
@@ -348,34 +345,11 @@ export default function WidgetSchedulingScreen() {
         <View style={styles.footer}>
           <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
         </View>
-      </ScrollView>
-    </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 24,
-  },
   bold: {
     fontWeight: '700',
     color: '#FFFFFF',

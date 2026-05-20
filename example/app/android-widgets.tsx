@@ -1,5 +1,5 @@
-import AndroidScreen from '~/screens/android/AndroidScreen'
+import { Redirect } from 'expo-router'
 
-export default function AndroidWidgetsIndex() {
-  return <AndroidScreen />
+export default function AndroidWidgetsRedirect() {
+  return <Redirect href="/android/widgets" />
 }

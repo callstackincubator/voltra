@@ -1,11 +1,12 @@
 import { Link } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, StyleSheet, Text, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { clearPreloadedImages, preloadImages, reloadLiveActivities, startLiveActivity } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import { TextInput } from '~/components/TextInput'
 
 function generateRandomKey(): string {
@@ -92,14 +93,10 @@ export default function ImagePreloadingScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={[styles.scrollView, styles.content]}>
-        <Text style={styles.heading}>Image Preloading</Text>
-        <Text style={styles.subheading}>
-          Test image preloading functionality for Live Activities. Download images to App Group storage and verify they
-          appear in Live Activities.
-        </Text>
-
+    <ScreenLayout
+      title="Image Preloading"
+      description="Test image preloading functionality for Live Activities. Download images to App Group storage and verify they appear in Live Activities."
+    >
         <Card>
           <Card.Title>Show and Download</Card.Title>
           <Card.Text>Enter a URL to start a Live Activity and preload the image automatically.</Card.Text>
@@ -132,32 +129,11 @@ export default function ImagePreloadingScreen() {
             <Button title="Back to Testing Grounds" variant="ghost" />
           </Link>
         </View>
-      </View>
-    </ScrollView>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0B0F1A',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   inputContainer: {
     marginTop: 16,
   },

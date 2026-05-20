@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
+import { StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { VoltraWidgetPreview } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 const DEFAULT_TEMPLATES = {
   running: 'Time remaining: {time}',
@@ -86,13 +87,10 @@ export default function TimerTestingScreen() {
   )
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Timer Testing</Text>
-        <Text style={styles.subheading}>
-          Test the VoltraTimer component behaviors, including native text updates for Live Activities.
-        </Text>
-
+    <ScreenLayout
+      title="Timer Testing"
+      description="Test the VoltraTimer component behaviors, including native text updates for Live Activities."
+    >
         {/* Preview */}
         <Card>
           <Card.Title>Live Preview</Card.Title>
@@ -208,17 +206,11 @@ export default function TimerTestingScreen() {
         <View style={styles.footer}>
           <Button title="Back" variant="ghost" onPress={() => router.back()} />
         </View>
-      </ScrollView>
-    </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  content: { padding: 20 },
-  heading: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
-  subheading: { fontSize: 14, color: '#CBD5F5', marginBottom: 24 },
   previewContainer: { alignItems: 'center', padding: 10 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   col: { marginBottom: 16 },

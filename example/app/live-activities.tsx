@@ -1,5 +1,5 @@
-import LiveActivitiesScreen from '~/screens/live-activities/LiveActivitiesScreen'
+import { Redirect } from 'expo-router'
 
-export default function LiveActivitiesIndex() {
-  return <LiveActivitiesScreen />
+export default function LiveActivitiesRedirect() {
+  return <Redirect href="/ios/activity" />
 }

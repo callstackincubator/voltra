@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native'
 import { requestPinAndroidWidget, updateAndroidWidget } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import { AndroidImageFallbackWidget } from '~/widgets/android/AndroidImageFallbackWidget'
 
 const WIDGET_ID = 'image_fallback'
@@ -104,97 +105,65 @@ export default function AndroidImageFallbackScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Image Fallback Widget (Android)</Text>
-        <Text style={styles.subheading}>
-          Test the new image fallback behavior on Android widgets. Pin the widget to your home screen, then use the
-          buttons below to switch between different examples.
-        </Text>
+    <ScreenLayout
+      title="Image Fallback Widget (Android)"
+      description="Test the new image fallback behavior on Android widgets. Pin the widget to your home screen, then use the buttons below to switch between different examples."
+    >
+      <Card>
+        <Card.Title>1. Pin Widget to Home Screen</Card.Title>
+        <Card.Text>
+          First, pin the widget to your home screen. You can then use the buttons below to update it with different
+          examples.
+        </Card.Text>
+        <View style={styles.buttonContainer}>
+          <Button
+            title={isPinning ? 'Requesting Pin...' : 'Pin Widget to Home Screen'}
+            variant="primary"
+            onPress={handlePinWidget}
+            disabled={isPinning}
+          />
+        </View>
+      </Card>
 
-        <Card>
-          <Card.Title>1. Pin Widget to Home Screen</Card.Title>
-          <Card.Text>
-            First, pin the widget to your home screen. You can then use the buttons below to update it with different
-            examples.
-          </Card.Text>
-          <View style={styles.buttonContainer}>
+      <Card>
+        <Card.Title>2. Select Example to Display</Card.Title>
+        <Card.Text>Choose an example to display in the widget. The widget will update immediately on your home screen.</Card.Text>
+
+        {EXAMPLES.map((example) => (
+          <View key={example.id} style={styles.exampleItem}>
             <Button
-              title={isPinning ? 'Requesting Pin...' : 'Pin Widget to Home Screen'}
-              variant="primary"
-              onPress={handlePinWidget}
-              disabled={isPinning}
+              title={example.title}
+              variant={selectedExample === example.id ? 'primary' : 'secondary'}
+              onPress={() => handleUpdateWidget(example.id)}
+              disabled={isUpdating}
+              style={styles.exampleButton}
             />
+            <Text style={styles.exampleDescription}>{example.description}</Text>
           </View>
-        </Card>
+        ))}
+      </Card>
 
-        <Card>
-          <Card.Title>2. Select Example to Display</Card.Title>
-          <Card.Text>
-            Choose an example to display in the widget. The widget will update immediately on your home screen.
-          </Card.Text>
+      <View style={styles.infoBox}>
+        <Text style={styles.infoTitle}>Migration Note</Text>
+        <Text style={styles.infoText}>
+          The <Text style={styles.code}>fallbackColor</Text> prop has been removed from the Image component.
+        </Text>
+        <Text style={[styles.infoText, { marginTop: 8 }]}>Before: <Text style={styles.code}>fallbackColor=&quot;#E0E0E0&quot;</Text></Text>
+        <Text style={styles.infoText}>After: <Text style={styles.code}>style={'{{ backgroundColor: "#E0E0E0" }}'}</Text></Text>
+        <Text style={[styles.infoText, { marginTop: 12 }]}>
+          All style properties (backgroundColor, borderRadius, borders, etc.) now apply consistently to image
+          fallbacks on both iOS and Android.
+        </Text>
+      </View>
 
-          {EXAMPLES.map((example) => (
-            <View key={example.id} style={styles.exampleItem}>
-              <Button
-                title={example.title}
-                variant={selectedExample === example.id ? 'primary' : 'secondary'}
-                onPress={() => handleUpdateWidget(example.id)}
-                disabled={isUpdating}
-                style={styles.exampleButton}
-              />
-              <Text style={styles.exampleDescription}>{example.description}</Text>
-            </View>
-          ))}
-        </Card>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>Migration Note</Text>
-          <Text style={styles.infoText}>
-            The <Text style={styles.code}>fallbackColor</Text> prop has been removed from the Image component.
-          </Text>
-          <Text style={[styles.infoText, { marginTop: 8 }]}>
-            Before: <Text style={styles.code}>fallbackColor=&quot;#E0E0E0&quot;</Text>
-          </Text>
-          <Text style={styles.infoText}>
-            After: <Text style={styles.code}>style={'{{ backgroundColor: "#E0E0E0" }}'}</Text>
-          </Text>
-          <Text style={[styles.infoText, { marginTop: 12 }]}>
-            All style properties (backgroundColor, borderRadius, borders, etc.) now apply consistently to image
-            fallbacks on both iOS and Android.
-          </Text>
-        </View>
-
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
-        </View>
-      </ScrollView>
-    </View>
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   buttonContainer: {
     marginTop: 16,
   },

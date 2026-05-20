@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "Voltra Example",
+    "name": "Voltra",
     "slug": "voltra",
     "scheme": "voltra",
     "version": "1.0.0",
     "orientation": "portrait",
+    "backgroundColor": "#020617",
     "icon": "./assets/voltra-icon.jpg",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/voltra-splash.jpg",
       "resizeMode": "cover",
-      "backgroundColor": "#8232FF"
+      "backgroundColor": "#020617"
     },
     "android": {
       "package": "com.callstackincubator.voltraexample",

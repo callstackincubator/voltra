@@ -6,6 +6,7 @@ import { reloadWidgets, scheduleWidget, updateWidget, VoltraWidgetPreview, Widge
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import { IosWeatherWidget } from '~/widgets/ios/IosWeatherWidget'
 import { SAMPLE_WEATHER_DATA, type WeatherCondition, type WeatherData } from '~/widgets/weather-types'
 
@@ -250,153 +251,118 @@ export default function WeatherTestingScreen() {
   }, [])
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Weather Widget Testing</Text>
-        <Text style={styles.subheading}>
-          Test the weather widget with different conditions and widget sizes. Choose from Sunny, Cloudy, or Rainy
-          weather with beautiful gradient backgrounds.
-        </Text>
+    <ScreenLayout
+      title="Weather Widget Testing"
+      description="Test the weather widget with different conditions and widget sizes. Choose from Sunny, Cloudy, or Rainy weather with beautiful gradient backgrounds."
+    >
+      <Card>
+        <Card.Title>Current Weather: {WEATHER_CONDITIONS.find((c) => c.id === selectedWeather)?.label}</Card.Title>
+        <Card.Text>
+          Temperature: {currentWeather.temperature}°F
+          {currentWeather.highTemp && currentWeather.lowTemp ? (
+            <>
+              {' '}
+              • High: {currentWeather.highTemp}° • Low: {currentWeather.lowTemp}°
+            </>
+          ) : null}
+          {currentWeather.location ? <> • {currentWeather.location}</> : null}
+        </Card.Text>
+      </Card>
 
-        {/* Current Weather Display */}
-        <Card>
-          <Card.Title>Current Weather: {WEATHER_CONDITIONS.find((c) => c.id === selectedWeather)?.label}</Card.Title>
-          <Card.Text>
-            Temperature: {currentWeather.temperature}°F
-            {currentWeather.highTemp && currentWeather.lowTemp ? (
-              <>
-                {' '}
-                • High: {currentWeather.highTemp}° • Low: {currentWeather.lowTemp}°
-              </>
-            ) : null}
-            {currentWeather.location ? <> • {currentWeather.location}</> : null}
-          </Card.Text>
-        </Card>
-
-        {/* Widget Family Selection */}
-        <Card>
-          <Card.Title>Widget Family: {WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.title}</Card.Title>
-          <Card.Text>{WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.description}</Card.Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.familyScroll}>
-            <View style={styles.familyButtons}>
-              {WIDGET_FAMILIES.map((family) => (
-                <Button
-                  key={family.id}
-                  title={family.title}
-                  variant={selectedFamily === family.id ? 'primary' : 'secondary'}
-                  onPress={() => setSelectedFamily(family.id)}
-                  style={styles.familyButton}
-                />
-              ))}
-            </View>
-          </ScrollView>
-        </Card>
-
-        {/* Weather Condition Buttons */}
-        <Card>
-          <Card.Title>Weather Conditions</Card.Title>
-          <Card.Text>Select a weather condition to update the widget:</Card.Text>
-          <View style={styles.weatherButtons}>
-            {WEATHER_CONDITIONS.map((condition) => (
+      <Card>
+        <Card.Title>Widget Family: {WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.title}</Card.Title>
+        <Card.Text>{WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.description}</Card.Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.familyScroll}>
+          <View style={styles.familyButtons}>
+            {WIDGET_FAMILIES.map((family) => (
               <Button
-                key={condition.id}
-                title={`${condition.emoji} ${condition.label}`}
-                variant={selectedWeather === condition.id ? 'primary' : 'secondary'}
-                onPress={() => handleWeatherChange(condition.id)}
-                style={styles.weatherButton}
-                disabled={isUpdating}
+                key={family.id}
+                title={family.title}
+                variant={selectedFamily === family.id ? 'primary' : 'secondary'}
+                onPress={() => setSelectedFamily(family.id)}
+                style={styles.familyButton}
               />
             ))}
           </View>
-        </Card>
+        </ScrollView>
+      </Card>
 
-        {/* Quick Actions */}
-        <Card>
-          <Card.Title>Quick Actions</Card.Title>
-          <View style={styles.quickActions}>
-            <Button title="🎲 Random Weather" variant="secondary" onPress={handleRandomWeather} disabled={isUpdating} />
-            <Button title="🎨 Custom Weather" variant="secondary" onPress={handleCustomWeather} disabled={isUpdating} />
-          </View>
-        </Card>
-
-        {/* Timeline Scheduling */}
-        <Card>
-          <Card.Title>📅 Timeline Scheduling </Card.Title>
-          <Card.Text>
-            Schedule multiple weather updates in advance. iOS will automatically display each forecast at the scheduled
-            time, even when the app is closed.
-          </Card.Text>
-          <Button
-            style={{ marginTop: 16 }}
-            title="Schedule Timeline"
-            variant="primary"
-            onPress={handleScheduleForecast}
-            disabled={isUpdating}
-          />
-          <Card.Text style={styles.timelineNote}>
-            Schedules 4 entries: 1 (+5sec), 2 (+1min), 3 (+2min), 4 (+3min). Each has a different background color.
-            Note: iOS may delay updates based on battery/visibility. Test with Xcode attached for immediate updates.
-          </Card.Text>
-        </Card>
-
-        {/* Widget Preview */}
-        <Card>
-          <Card.Title>Widget Preview</Card.Title>
-          <Card.Text>
-            This shows how the weather widget will appear on your home screen. The widget updates in real-time when you
-            change the weather condition above.
-          </Card.Text>
-          <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family={selectedFamily} style={widgetPreviewStyle}>
-              <IosWeatherWidget weather={currentWeather} />
-            </VoltraWidgetPreview>
-          </View>
-        </Card>
-
-        {/* Instructions */}
-        <Card>
-          <Card.Title>How to Test</Card.Title>
-          <Card.Text>
-            1. Select a widget family (size) above{'\n'}
-            2. Choose different weather conditions (Sunny, Cloudy, Rainy){'\n'}
-            3. Notice how the gradient background changes{'\n'}
-            4. Check your home screen to see the live widget update{'\n'}
-            5. Try the random weather button for variety
-          </Card.Text>
-        </Card>
-
-        {/* Back Button */}
-        <View style={styles.footer}>
-          <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
+      <Card>
+        <Card.Title>Weather Conditions</Card.Title>
+        <Card.Text>Select a weather condition to update the widget:</Card.Text>
+        <View style={styles.weatherButtons}>
+          {WEATHER_CONDITIONS.map((condition) => (
+            <Button
+              key={condition.id}
+              title={`${condition.emoji} ${condition.label}`}
+              variant={selectedWeather === condition.id ? 'primary' : 'secondary'}
+              onPress={() => handleWeatherChange(condition.id)}
+              style={styles.weatherButton}
+              disabled={isUpdating}
+            />
+          ))}
         </View>
-      </ScrollView>
-    </View>
+      </Card>
+
+      <Card>
+        <Card.Title>Quick Actions</Card.Title>
+        <View style={styles.quickActions}>
+          <Button title="🎲 Random Weather" variant="secondary" onPress={handleRandomWeather} disabled={isUpdating} />
+          <Button title="🎨 Custom Weather" variant="secondary" onPress={handleCustomWeather} disabled={isUpdating} />
+        </View>
+      </Card>
+
+      <Card>
+        <Card.Title>📅 Timeline Scheduling </Card.Title>
+        <Card.Text>
+          Schedule multiple weather updates in advance. iOS will automatically display each forecast at the scheduled
+          time, even when the app is closed.
+        </Card.Text>
+        <Button
+          style={{ marginTop: 16 }}
+          title="Schedule Timeline"
+          variant="primary"
+          onPress={handleScheduleForecast}
+          disabled={isUpdating}
+        />
+        <Card.Text style={styles.timelineNote}>
+          Schedules 4 entries: 1 (+5sec), 2 (+1min), 3 (+2min), 4 (+3min). Each has a different background color.
+          Note: iOS may delay updates based on battery/visibility. Test with Xcode attached for immediate updates.
+        </Card.Text>
+      </Card>
+
+      <Card>
+        <Card.Title>Widget Preview</Card.Title>
+        <Card.Text>
+          This shows how the weather widget will appear on your home screen. The widget updates in real-time when you
+          change the weather condition above.
+        </Card.Text>
+        <View style={styles.previewContainer}>
+          <VoltraWidgetPreview family={selectedFamily} style={widgetPreviewStyle}>
+            <IosWeatherWidget weather={currentWeather} />
+          </VoltraWidgetPreview>
+        </View>
+      </Card>
+
+      <Card>
+        <Card.Title>How to Test</Card.Title>
+        <Card.Text>
+          1. Select a widget family (size) above{'\n'}
+          2. Choose different weather conditions (Sunny, Cloudy, Rainy){'\n'}
+          3. Notice how the gradient background changes{'\n'}
+          4. Check your home screen to see the live widget update{'\n'}
+          5. Try the random weather button for variety
+        </Card.Text>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 24,
-  },
   weatherButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',

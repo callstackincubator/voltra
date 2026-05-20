@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useMemo, useState } from 'react'
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Platform, StyleSheet, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { useLiveActivity } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import { TextInput } from '~/components/TextInput'
 
 export default function ChannelUpdatesTestingScreen() {
@@ -55,63 +56,40 @@ export default function ChannelUpdatesTestingScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Channel-Based Updates</Text>
-        <Text style={styles.subheading}>Start a minimal Live Activity subscribed to a specific broadcast channel.</Text>
-
-        <Card>
-          <Card.Title>Live Activity Channel</Card.Title>
-          <Card.Text>Use an APNs broadcast channel ID for this activity.</Card.Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              value={channelId}
-              onChangeText={setChannelId}
-              placeholder="e.g. com.voltra.example.channel"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <Button
-              title={isSubmitting ? 'Starting...' : 'Show live activity'}
-              onPress={handleShowLiveActivity}
-              disabled={isSubmitting}
-            />
-          </View>
-        </Card>
-
-        <View style={styles.footer}>
-          <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.push('/testing-grounds')} />
+    <ScreenLayout
+      title="Channel-Based Updates"
+      description="Start a minimal Live Activity subscribed to a specific broadcast channel."
+    >
+      <Card>
+        <Card.Title>Live Activity Channel</Card.Title>
+        <Card.Text>Use an APNs broadcast channel ID for this activity.</Card.Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            value={channelId}
+            onChangeText={setChannelId}
+            placeholder="e.g. com.voltra.example.channel"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         </View>
-      </ScrollView>
-    </View>
+
+        <View style={styles.buttonContainer}>
+          <Button
+            title={isSubmitting ? 'Starting...' : 'Show live activity'}
+            onPress={handleShowLiveActivity}
+            disabled={isSubmitting}
+          />
+        </View>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.push('/testing-grounds')} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   inputContainer: {
     marginTop: 16,
   },

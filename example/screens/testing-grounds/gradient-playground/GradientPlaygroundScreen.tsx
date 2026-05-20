@@ -1,11 +1,12 @@
 import { Link } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { VoltraView } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 type GradientType = 'linear' | 'radial' | 'conic'
 type Direction = 'to right' | 'to bottom' | 'to bottom right' | 'to top right'
@@ -81,10 +82,7 @@ export default function GradientPlaygroundScreen() {
   const decreaseBorderRadius = () => setBorderRadius((prev) => Math.max(prev - 8, 0))
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Gradient Playground</Text>
-        <Text style={styles.subheading}>Test CSS gradient strings as backgroundColor on Voltra views.</Text>
+    <ScreenLayout title="Gradient Playground" description="Test CSS gradient strings as backgroundColor on Voltra views.">
         <Text style={styles.warningText}>
           Playground uses parser-compatible CSS syntax only. If a preview is blank, this indicates a gradient parser bug
           in iOS rendering.
@@ -232,34 +230,11 @@ export default function GradientPlaygroundScreen() {
             <Button title="Back to Testing Grounds" variant="ghost" />
           </Link>
         </View>
-      </ScrollView>
-    </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   warningText: {
     fontSize: 12,
     lineHeight: 18,
