@@ -123,8 +123,8 @@ Voltra provides two built-in layouts:
 ### Progress notification
 
 ```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
 import {
-  AndroidOngoingNotification,
   startAndroidOngoingNotification,
 } from '@use-voltra/android-client'
 
@@ -150,8 +150,8 @@ if (result.ok) {
 ### Big text notification
 
 ```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
 import {
-  AndroidOngoingNotification,
   startAndroidOngoingNotification,
 } from '@use-voltra/android-client'
 
@@ -173,8 +173,8 @@ await startAndroidOngoingNotification(
 Use the same `notificationId` to update an existing notification.
 
 ```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
 import {
-  AndroidOngoingNotification,
   updateAndroidOngoingNotification,
 } from '@use-voltra/android-client'
 
@@ -196,8 +196,8 @@ await updateAndroidOngoingNotification(
 If your app may re-enter the same flow multiple times, `upsertAndroidOngoingNotification()` can be easier than separate start/update logic.
 
 ```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
 import {
-  AndroidOngoingNotification,
   upsertAndroidOngoingNotification,
 } from '@use-voltra/android-client'
 
@@ -242,7 +242,7 @@ await endAllAndroidOngoingNotifications()
 For React screens and flows, use `useAndroidOngoingNotification()`.
 
 ```tsx
-import { AndroidOngoingNotification } from '@use-voltra/android-client'
+import { AndroidOngoingNotification } from '@use-voltra/android'
 import { useAndroidOngoingNotification } from '@use-voltra/android-client'
 
 function DeliveryNotification({ orderId, etaMinutes }) {
@@ -280,7 +280,7 @@ Use `autoStart` to create the notification when the component mounts, and `autoU
 You can add action buttons as children of `Progress` or `BigText`.
 
 ```tsx
-import { AndroidOngoingNotification } from '@use-voltra/android-client'
+import { AndroidOngoingNotification } from '@use-voltra/android'
 
 <AndroidOngoingNotification.Progress title="Driver is approaching" value={32} max={100}>
   <AndroidOngoingNotification.Action

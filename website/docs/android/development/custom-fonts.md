@@ -38,7 +38,7 @@ The plugin copies each font file to `android/app/src/main/assets/fonts/` automat
 ### 3. Use `renderAsBitmap` on Text
 
 ```tsx
-import { VoltraAndroid } from '@use-voltra/android-client'
+import { VoltraAndroid } from '@use-voltra/android'
 
 <VoltraAndroid.Text
   renderAsBitmap

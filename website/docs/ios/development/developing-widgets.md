@@ -16,8 +16,8 @@ Voltra provides APIs that make building and testing Home Screen widgets easier d
 
 ```tsx
 import { ScrollView, View } from 'react-native'
+import { Voltra } from '@use-voltra/ios'
 import { VoltraWidgetPreview } from '@use-voltra/ios-client'
-import { Voltra } from '@use-voltra/ios-client'
 
 function MyWidgetContent() {
   return (
@@ -66,8 +66,8 @@ Widget updates are throttled to around an update per minute. iOS limits how freq
 :::
 
 ```typescript
+import { Voltra } from '@use-voltra/ios'
 import { updateWidget } from '@use-voltra/ios-client'
-import { Voltra } from '@use-voltra/ios-client'
 
 await updateWidget('weather', {
   systemSmall: <Voltra.Text>72°F</Voltra.Text>,
@@ -105,8 +105,8 @@ This is perfect for weather forecasts, calendar events, news rotation, or any co
 :::
 
 ```typescript
+import { Voltra } from '@use-voltra/ios'
 import { scheduleWidget } from '@use-voltra/ios-client'
-import { Voltra } from '@use-voltra/ios-client'
 
 // Schedule weather updates throughout the day
 await scheduleWidget('weather', [

@@ -49,7 +49,7 @@ In addition to general styles, `Image` components support:
 Android widgets can use semantic Material color roles that resolve through native `GlanceTheme.colors.*` values during rendering.
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 
 const element = (
   <VoltraAndroid.Box
@@ -89,7 +89,7 @@ The following properties are **NOT supported** on Android due to Glance limitati
 ## Example
 
 ```tsx
-import { VoltraAndroid } from '@use-voltra/android-client'
+import { VoltraAndroid } from '@use-voltra/android'
 
 const element = (
   <VoltraAndroid.Column

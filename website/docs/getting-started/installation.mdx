@@ -2,29 +2,48 @@ import { PackageManagerTabs } from '@rspress/core/theme'
 
 # Installation
 
-Voltra ships as platform packages. Install only what your app needs.
+Voltra v2 ships as platform packages. In most apps, you install one package for JSX primitives and one package for runtime APIs per platform.
 
 ## 1. Install packages
 
 ### iOS (Live Activities and widgets)
 
-<PackageManagerTabs command="install @use-voltra/ios-client" />
+<PackageManagerTabs command="install @use-voltra/ios @use-voltra/ios-client" />
 
 ### Android (Home Screen widgets and ongoing notifications)
 
-<PackageManagerTabs command="install @use-voltra/android-client" />
+<PackageManagerTabs command="install @use-voltra/android @use-voltra/android-client" />
+
+Use the platform package for JSX primitives:
+
+- `@use-voltra/ios` exports `Voltra`
+- `@use-voltra/android` exports `VoltraAndroid`, `AndroidDynamicColors`, and `AndroidOngoingNotification`
+
+Use the client package for React Native runtime APIs:
+
+- `@use-voltra/ios-client` exports `startLiveActivity`, `updateWidget`, `VoltraView`, `VoltraWidgetPreview`, and other app-side APIs
+- `@use-voltra/android-client` exports `updateAndroidWidget`, `requestPinAndroidWidget`, `reloadAndroidWidgets`, `VoltraView`, `VoltraWidgetPreview`, and other app-side APIs
 
 ### Server rendering (optional)
 
-Use these in your backend or SSR service—not in the React Native app bundle:
+Use these in your backend or SSR service-not in the React Native app bundle:
 
 - **iOS payloads:** `@use-voltra/ios-server`
 - **Android payloads:** `@use-voltra/android-server`
 - **Cross-platform widget HTTP handlers:** `@use-voltra/server`
 
-## 2. Next Steps
+## 2. Import patterns
+
+The docs use these package boundaries consistently:
+
+- React Native app code: JSX from `@use-voltra/ios` or `@use-voltra/android`, lifecycle APIs from the matching `*-client` package
+- Node/server code: JSX plus render helpers from `@use-voltra/ios-server` or `@use-voltra/android-server`
+- Pre-render files such as `initialStatePath`: import from `@use-voltra/ios` or `@use-voltra/android`, not from client packages
+
+## 3. Next Steps
 
 After installing packages, configure the Voltra Expo plugin for each platform you support:
 
 - [Configure iOS Setup](../ios/setup)
 - [Configure Android Setup](../android/setup)
+- [Migrate from v1 to v2](./migration-v2)

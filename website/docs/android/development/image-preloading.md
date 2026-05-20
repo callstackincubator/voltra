@@ -81,7 +81,7 @@ await clearPreloadedImages()
 Once images are preloaded, reference them using the `assetName` property in the `VoltraAndroid.Image` component:
 
 ```tsx
-import { VoltraAndroid } from '@use-voltra/android-client'
+import { VoltraAndroid } from '@use-voltra/android'
 
 function MusicWidget({ albumKey }) {
   return (

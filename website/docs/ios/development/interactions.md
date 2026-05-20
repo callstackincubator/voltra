@@ -132,8 +132,8 @@ Here's a complete example showing how to handle interactions:
 
 ```typescript
 import { useEffect } from 'react'
+import { Voltra } from '@use-voltra/ios'
 import { useLiveActivity } from '@use-voltra/ios-client'
-import { Voltra } from '@use-voltra/ios-client'
 import { addVoltraListener } from '@use-voltra/ios-client'
 
 function MyLiveActivity() {

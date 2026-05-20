@@ -19,7 +19,7 @@ Voltra also supports Android ongoing notifications for app-driven, persistent st
 ### Simple Android Widget
 
 ```tsx
-import { VoltraAndroid } from '@use-voltra/android-client'
+import { VoltraAndroid } from '@use-voltra/android'
 
 const MyWidget = () => (
   <VoltraAndroid.Column

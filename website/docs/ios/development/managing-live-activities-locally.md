@@ -22,8 +22,8 @@ The imperative APIs provide direct, programmatic control over Live Activities. T
 Use `startLiveActivity()` to create and display a new Live Activity.
 
 ```typescript
+import { Voltra } from '@use-voltra/ios'
 import { startLiveActivity } from '@use-voltra/ios-client'
-import { Voltra } from '@use-voltra/ios-client'
 
 const variants = {
   lockScreen: (
@@ -71,8 +71,8 @@ const activityId = await startLiveActivity(variants, {
 Use `updateLiveActivity()` to modify the content and configuration of an active Live Activity.
 
 ```typescript
+import { Voltra } from '@use-voltra/ios'
 import { updateLiveActivity } from '@use-voltra/ios-client'
-import { Voltra } from '@use-voltra/ios-client'
 
 const updatedVariants = {
   lockScreen: (

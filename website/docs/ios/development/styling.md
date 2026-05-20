@@ -110,7 +110,7 @@ See the [Layout & Containers](../components/layout) documentation for details on
 ### Example
 
 ```tsx
-import { Voltra } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios'
 
 const element = (
   <Voltra.VStack
@@ -300,7 +300,7 @@ For detailed instructions, see Apple's documentation on [Applying custom fonts t
 Once your fonts are added to the project, you can use them with the `fontFamily` style property:
 
 ```tsx
-import { Voltra } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios'
 
 const element = (
   <Voltra.Text

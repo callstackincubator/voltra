@@ -17,7 +17,7 @@ On Android, you use `VoltraAndroid` components which map to Glance primitives:
 ### Example Widget
 
 ```tsx
-import { VoltraAndroid } from '@use-voltra/android-client'
+import { VoltraAndroid } from '@use-voltra/android'
 
 const WeatherWidget = ({ temperature, condition }) => (
   <VoltraAndroid.Box
@@ -43,12 +43,12 @@ const WeatherWidget = ({ temperature, condition }) => (
 
 ## Update API
 
-To update a widget's content, use the `updateWidget` function from `@use-voltra/android-client`:
+To update a widget's content, use the `updateAndroidWidget` function from `@use-voltra/android-client`:
 
 ```typescript
-import { updateWidget } from '@use-voltra/android-client'
+import { updateAndroidWidget } from '@use-voltra/android-client'
 
-await updateWidget('weather_widget', <WeatherWidget temperature={22} condition="Sunny" />)
+await updateAndroidWidget('weather_widget', <WeatherWidget temperature={22} condition="Sunny" />)
 ```
 
 ## Layout Constraints

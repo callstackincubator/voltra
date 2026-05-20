@@ -7,7 +7,7 @@ These colors follow the current Android Material palette, so widgets can pick up
 ## Importing dynamic colors
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 ```
 
 `AndroidDynamicColors` includes these roles:
@@ -43,7 +43,7 @@ import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
 ## Example
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 
 export function WeatherWidget() {
   return (
@@ -95,7 +95,7 @@ You can use `AndroidDynamicColors.*` anywhere Android accepts a color value, inc
 Dynamic color tokens work in server-rendered Android widgets too.
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 
 const content = (
   <VoltraAndroid.Box

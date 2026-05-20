@@ -8,7 +8,7 @@ Voltra changes this by providing a JavaScript-based API and JSX components that 
 
 - **React Native Everywhere:** Extend your React Native app with native platform features using the same JSX syntax you already know.
 - **No Native Code Required:** Build complex widget layouts and live activities without touching Xcode or Android Studio for UI code.
-- **Unified Components:** Use a shared set of components that render idiomatically on both iOS and Android.
+- **Platform-native JSX:** Use platform-specific primitives that map directly to SwiftUI on iOS and Glance on Android.
 - **Real-time Updates:** Stream updates to your activities and widgets via push notifications (APNS/FCM) from any JavaScript runtime.
 
 ## How it works
@@ -18,7 +18,8 @@ Voltra works by serializing your JSX components into a lightweight JSON format t
 Here's how simple it is to create a live activity:
 
 ```tsx
-import { startLiveActivity, Voltra } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 const activityUI = (
   <Voltra.VStack style={{ padding: 16, borderRadius: 18, backgroundColor: '#101828' }}>
@@ -46,7 +47,7 @@ Voltra also supports server-side updates through push notifications. You can use
 The same components you use in your app work on the server:
 
 ```tsx
-import { renderLiveActivityToString, Voltra } from '@use-voltra/ios-server'
+import { Voltra, renderLiveActivityToString } from '@use-voltra/ios-server'
 
 // Render JSX to JSON payload on your server
 const payload = renderLiveActivityToString({

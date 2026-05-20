@@ -2,7 +2,7 @@ import { PackageManagerTabs } from '@rspress/core/theme'
 
 # iOS Setup
 
-Once you have [installed Voltra](../getting-started/installation), you need to configure the Expo plugin for iOS.
+Once you have [installed Voltra](../getting-started/installation), configure the iOS Expo plugin and use `@use-voltra/ios` for JSX.
 
 :::info Minimum iOS Version
 Voltra requires **iOS 16.2 or later**. Make sure your app's deployment target is set to iOS 16.2 or higher. See the [expo-build-properties](https://docs.expo.dev/build-reference/variables/) documentation for details on configuring your iOS deployment target.
@@ -10,7 +10,7 @@ Voltra requires **iOS 16.2 or later**. Make sure your app's deployment target is
 
 ## 1. Configure the Expo Plugin
 
-Add the Voltra plugin to your `app.json` or `app.config.js`. For iOS, you typically need to specify a `groupIdentifier` to enable data sharing between your main app and the Live Activity extension.
+Add the iOS client plugin to your `app.json` or `app.config.js`. For iOS, you typically need to specify a `groupIdentifier` to enable data sharing between your main app and the Live Activity extension.
 
 ```json
 {
@@ -49,7 +49,8 @@ Now let's create a simple "Hello World" live activity. Create a new component:
 
 ```tsx
 import React from 'react'
-import { startLiveActivity, Voltra } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 function HelloWorldActivity() {
   const activityUI = (

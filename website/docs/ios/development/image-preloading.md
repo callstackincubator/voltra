@@ -83,7 +83,7 @@ await clearPreloadedImages()
 Once images are preloaded, reference them using the `assetName` property:
 
 ```typescript
-import { Voltra } from '@use-voltra/ios-client'
+import { Voltra } from '@use-voltra/ios'
 
 function MusicPlayerLiveActivity({ song }) {
   return {

@@ -73,7 +73,7 @@ Voltra provides a server-side API that allows you to render React components int
 Import the server-side rendering functions from  `@use-voltra/ios-server`:
 
 ```tsx
-import { renderLiveActivityToString, Voltra } from '@use-voltra/ios-server'
+import { Voltra, renderLiveActivityToString } from '@use-voltra/ios-server'
 
 // Render your UI components to a JSON string
 const jsonPayload = renderLiveActivityToString({
@@ -246,8 +246,8 @@ Starting with iOS 18 and iPadOS 18, you can use **broadcast push notifications**
 Pass the `channelId` option when starting a Live Activity to subscribe it to a broadcast channel:
 
 ```typescript
+import { Voltra } from '@use-voltra/ios'
 import { startLiveActivity } from '@use-voltra/ios-client'
-import { Voltra } from '@use-voltra/ios-client'
 
 const activityId = await startLiveActivity(variants, {
   activityName: 'match-123',

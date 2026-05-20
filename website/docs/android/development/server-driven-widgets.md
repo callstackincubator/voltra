@@ -60,13 +60,13 @@ On the Android emulator, use `10.0.2.2` instead of `localhost` to reach the host
 
 ## Building the server
 
-Voltra provides widget server handlers for the common runtime styles. Use `createWidgetUpdateHandler()` for Fetch-compatible runtimes, `createWidgetUpdateNodeHandler()` for `node:http`, and `createWidgetUpdateExpressHandler()` for Express-style handlers. All three share the same request parsing, platform validation, token validation, and response serialization.
+Voltra provides widget server handlers for the common runtime styles. Use `createAndroidWidgetUpdateHandler()` for Fetch-compatible runtimes, `createAndroidWidgetUpdateNodeHandler()` for `node:http`, and `createAndroidWidgetUpdateExpressHandler()` for Express-style handlers. All three share the same request parsing, platform validation, token validation, and response serialization.
 
 ```tsx
 import { createServer } from 'node:http'
 import React from 'react'
 import { createAndroidWidgetUpdateNodeHandler } from '@use-voltra/android-server'
-import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android-client'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 
 const handler = createAndroidWidgetUpdateNodeHandler({
   render: async (req) => {
@@ -186,13 +186,13 @@ Your server should return all size variants in every response. When the user res
 You can force-refresh server-driven widgets outside of the regular interval:
 
 ```typescript
-import { reloadWidgets } from '@use-voltra/android-client'
+import { reloadAndroidWidgets } from '@use-voltra/android-client'
 
 // Reload specific widgets (triggers an immediate WorkManager fetch)
-await reloadWidgets(['dynamic_weather'])
+await reloadAndroidWidgets(['dynamic_weather'])
 
 // Reload all widgets
-await reloadWidgets()
+await reloadAndroidWidgets()
 ```
 
 For server-driven widgets, this enqueues an immediate one-time WorkManager request to fetch fresh content. For local-only widgets, it re-renders from cached data.
@@ -224,9 +224,13 @@ Provide a meaningful initial state (e.g. "Loading..." or placeholder content) ra
 
 ## Cross-platform server
 
-A single server can handle both iOS and Android requests using `createWidgetUpdateHandler`:
+A single server can handle both iOS and Android requests using `createWidgetUpdateHandler` from `@use-voltra/server`:
 
 ```tsx
+import { Voltra } from '@use-voltra/ios'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
+import { createWidgetUpdateHandler } from '@use-voltra/server'
+
 const handler = createWidgetUpdateHandler({
   renderIos: async (req) => {
     // Return WidgetVariants (systemSmall, systemMedium, etc.)
@@ -245,7 +249,7 @@ const handler = createWidgetUpdateHandler({
 
 The handler uses the required `platform` query parameter to route requests to the correct render function.
 
-If you're serving the endpoint from Node or Express, use `createWidgetUpdateNodeHandler()` or `createWidgetUpdateExpressHandler()` instead.
+If you're serving the cross-platform endpoint from Node or Express, use `createWidgetUpdateNodeHandler()` or `createWidgetUpdateExpressHandler()` from `@use-voltra/server` instead.
 
 ## Architecture overview
 
