@@ -202,12 +202,7 @@ export default function LiveActivitiesScreen() {
 
       {CARD_ORDER.map(renderCard)}
 
-      <Button
-        title="End all live activities"
-        variant="secondary"
-        onPress={handleEndAll}
-        style={styles.endAllButton}
-      />
+      <Button title="End all live activities" variant="secondary" onPress={handleEndAll} style={styles.endAllButton} />
 
       <BasicLiveActivity ref={basicRef} onIsActiveChange={handleBasicStatusChange} />
       <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />

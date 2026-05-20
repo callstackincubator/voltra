@@ -108,214 +108,214 @@ export default function ProgressTestingScreen() {
       title="Progress Testing"
       description="Test VoltraLinearProgressView and VoltraCircularProgressView with new label and styling support."
     >
-        {/* 1. Live Preview */}
-        <Card>
-          <Card.Title>Live Preview</Card.Title>
-          <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
-              {renderProgressWidget()}
-            </VoltraWidgetPreview>
-          </View>
-          {mode === 'timer' && (
-            <Button title="Reset / Start Timer" variant="primary" onPress={resetTimer} style={{ marginTop: 16 }} />
-          )}
-        </Card>
-
-        {/* 2. Configuration */}
-        <Card>
-          <Card.Title>Base Configuration</Card.Title>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Type</Text>
-            <View style={styles.toggleGroup}>
-              <Button
-                title="Linear"
-                variant={type === 'linear' ? 'primary' : 'secondary'}
-                onPress={() => setType('linear')}
-                style={styles.smButton}
-              />
-              <Button
-                title="Circular"
-                variant={type === 'circular' ? 'primary' : 'secondary'}
-                onPress={() => setType('circular')}
-                style={styles.smButton}
-              />
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Mode</Text>
-            <View style={styles.toggleGroup}>
-              <Button
-                title="Determinate"
-                variant={mode === 'determinate' ? 'primary' : 'secondary'}
-                onPress={() => setMode('determinate')}
-                style={styles.smButton}
-              />
-              <Button
-                title="Timer"
-                disabled={type === 'circular'}
-                variant={mode === 'timer' ? 'primary' : 'secondary'}
-                onPress={() => setMode('timer')}
-                style={styles.smButton}
-              />
-              <Button
-                title="Indeterminate"
-                disabled={type === 'linear'}
-                variant={mode === 'indeterminate' ? 'primary' : 'secondary'}
-                onPress={() => setMode('indeterminate')}
-                style={styles.smButton}
-              />
-            </View>
-          </View>
-
-          {mode === 'determinate' && (
-            <View style={styles.row}>
-              <Text style={styles.label}>Progress: {progressValue}%</Text>
-              <View style={styles.toggleGroup}>
-                <Button
-                  title="-10"
-                  variant="secondary"
-                  onPress={() => setProgressValue(Math.max(0, progressValue - 10))}
-                  style={styles.smButton}
-                />
-                <Button
-                  title="+10"
-                  variant="secondary"
-                  onPress={() => setProgressValue(Math.min(100, progressValue + 10))}
-                  style={styles.smButton}
-                />
-              </View>
-            </View>
-          )}
-
-          {mode === 'timer' && (
-            <>
-              <View style={styles.row}>
-                <Text style={styles.label}>Duration (seconds)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={durationSec}
-                  onChangeText={setDurationSec}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Count Down</Text>
-                <Button
-                  title={countDown ? 'ON' : 'OFF'}
-                  variant={countDown ? 'primary' : 'secondary'}
-                  onPress={() => setCountDown(!countDown)}
-                  style={styles.smButton}
-                />
-              </View>
-              <Text style={styles.info}>Note: Custom styling is ignored for Timers to support realtime updates.</Text>
-            </>
-          )}
-        </Card>
-
-        {/* 3. Styling Configuration */}
-        <Card>
-          <Card.Title>Styling Configuration</Card.Title>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Track Color</Text>
-            <TextInput style={styles.input} value={trackColor} onChangeText={setTrackColor} />
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Progress Color</Text>
-            <TextInput style={styles.input} value={progressColor} onChangeText={setProgressColor} />
-          </View>
-
-          {type === 'linear' ? (
-            <>
-              <View style={styles.row}>
-                <Text style={styles.label}>Height: {height}</Text>
-                <View style={styles.toggleGroup}>
-                  <Button
-                    title="Small"
-                    variant={height === 4 ? 'primary' : 'secondary'}
-                    onPress={() => setHeight(4)}
-                    style={styles.smButton}
-                  />
-                  <Button
-                    title="Medium"
-                    variant={height === 8 ? 'primary' : 'secondary'}
-                    onPress={() => setHeight(8)}
-                    style={styles.smButton}
-                  />
-                  <Button
-                    title="Large"
-                    variant={height === 16 ? 'primary' : 'secondary'}
-                    onPress={() => setHeight(16)}
-                    style={styles.smButton}
-                  />
-                </View>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Corner Radius: {cornerRadius}</Text>
-                <View style={styles.toggleGroup}>
-                  <Button
-                    title="None"
-                    variant={cornerRadius === 0 ? 'primary' : 'secondary'}
-                    onPress={() => setCornerRadius(0)}
-                    style={styles.smButton}
-                  />
-                  <Button
-                    title="Small"
-                    variant={cornerRadius === 4 ? 'primary' : 'secondary'}
-                    onPress={() => setCornerRadius(4)}
-                    style={styles.smButton}
-                  />
-                  <Button
-                    title="Full"
-                    variant={cornerRadius === 20 ? 'primary' : 'secondary'}
-                    onPress={() => setCornerRadius(20)}
-                    style={styles.smButton}
-                  />
-                </View>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Custom Thumb</Text>
-                <Button
-                  title={useThumb ? 'ON' : 'OFF'}
-                  variant={useThumb ? 'primary' : 'secondary'}
-                  onPress={() => setUseThumb(!useThumb)}
-                  style={styles.smButton}
-                />
-              </View>
-            </>
-          ) : (
-            <View style={styles.row}>
-              <Text style={styles.label}>Line Width: {lineWidth}</Text>
-              <View style={styles.toggleGroup}>
-                <Button
-                  title="2"
-                  variant={lineWidth === 2 ? 'primary' : 'secondary'}
-                  onPress={() => setLineWidth(2)}
-                  style={styles.smButton}
-                />
-                <Button
-                  title="6"
-                  variant={lineWidth === 6 ? 'primary' : 'secondary'}
-                  onPress={() => setLineWidth(6)}
-                  style={styles.smButton}
-                />
-                <Button
-                  title="12"
-                  variant={lineWidth === 12 ? 'primary' : 'secondary'}
-                  onPress={() => setLineWidth(12)}
-                  style={styles.smButton}
-                />
-              </View>
-            </View>
-          )}
-        </Card>
-
-        <View style={styles.footer}>
-          <Button title="Back" variant="ghost" onPress={() => router.back()} />
+      {/* 1. Live Preview */}
+      <Card>
+        <Card.Title>Live Preview</Card.Title>
+        <View style={styles.previewContainer}>
+          <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
+            {renderProgressWidget()}
+          </VoltraWidgetPreview>
         </View>
+        {mode === 'timer' && (
+          <Button title="Reset / Start Timer" variant="primary" onPress={resetTimer} style={{ marginTop: 16 }} />
+        )}
+      </Card>
+
+      {/* 2. Configuration */}
+      <Card>
+        <Card.Title>Base Configuration</Card.Title>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Type</Text>
+          <View style={styles.toggleGroup}>
+            <Button
+              title="Linear"
+              variant={type === 'linear' ? 'primary' : 'secondary'}
+              onPress={() => setType('linear')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Circular"
+              variant={type === 'circular' ? 'primary' : 'secondary'}
+              onPress={() => setType('circular')}
+              style={styles.smButton}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Mode</Text>
+          <View style={styles.toggleGroup}>
+            <Button
+              title="Determinate"
+              variant={mode === 'determinate' ? 'primary' : 'secondary'}
+              onPress={() => setMode('determinate')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Timer"
+              disabled={type === 'circular'}
+              variant={mode === 'timer' ? 'primary' : 'secondary'}
+              onPress={() => setMode('timer')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Indeterminate"
+              disabled={type === 'linear'}
+              variant={mode === 'indeterminate' ? 'primary' : 'secondary'}
+              onPress={() => setMode('indeterminate')}
+              style={styles.smButton}
+            />
+          </View>
+        </View>
+
+        {mode === 'determinate' && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Progress: {progressValue}%</Text>
+            <View style={styles.toggleGroup}>
+              <Button
+                title="-10"
+                variant="secondary"
+                onPress={() => setProgressValue(Math.max(0, progressValue - 10))}
+                style={styles.smButton}
+              />
+              <Button
+                title="+10"
+                variant="secondary"
+                onPress={() => setProgressValue(Math.min(100, progressValue + 10))}
+                style={styles.smButton}
+              />
+            </View>
+          </View>
+        )}
+
+        {mode === 'timer' && (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Duration (seconds)</Text>
+              <TextInput
+                style={styles.input}
+                value={durationSec}
+                onChangeText={setDurationSec}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Count Down</Text>
+              <Button
+                title={countDown ? 'ON' : 'OFF'}
+                variant={countDown ? 'primary' : 'secondary'}
+                onPress={() => setCountDown(!countDown)}
+                style={styles.smButton}
+              />
+            </View>
+            <Text style={styles.info}>Note: Custom styling is ignored for Timers to support realtime updates.</Text>
+          </>
+        )}
+      </Card>
+
+      {/* 3. Styling Configuration */}
+      <Card>
+        <Card.Title>Styling Configuration</Card.Title>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Track Color</Text>
+          <TextInput style={styles.input} value={trackColor} onChangeText={setTrackColor} />
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Progress Color</Text>
+          <TextInput style={styles.input} value={progressColor} onChangeText={setProgressColor} />
+        </View>
+
+        {type === 'linear' ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Height: {height}</Text>
+              <View style={styles.toggleGroup}>
+                <Button
+                  title="Small"
+                  variant={height === 4 ? 'primary' : 'secondary'}
+                  onPress={() => setHeight(4)}
+                  style={styles.smButton}
+                />
+                <Button
+                  title="Medium"
+                  variant={height === 8 ? 'primary' : 'secondary'}
+                  onPress={() => setHeight(8)}
+                  style={styles.smButton}
+                />
+                <Button
+                  title="Large"
+                  variant={height === 16 ? 'primary' : 'secondary'}
+                  onPress={() => setHeight(16)}
+                  style={styles.smButton}
+                />
+              </View>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Corner Radius: {cornerRadius}</Text>
+              <View style={styles.toggleGroup}>
+                <Button
+                  title="None"
+                  variant={cornerRadius === 0 ? 'primary' : 'secondary'}
+                  onPress={() => setCornerRadius(0)}
+                  style={styles.smButton}
+                />
+                <Button
+                  title="Small"
+                  variant={cornerRadius === 4 ? 'primary' : 'secondary'}
+                  onPress={() => setCornerRadius(4)}
+                  style={styles.smButton}
+                />
+                <Button
+                  title="Full"
+                  variant={cornerRadius === 20 ? 'primary' : 'secondary'}
+                  onPress={() => setCornerRadius(20)}
+                  style={styles.smButton}
+                />
+              </View>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Custom Thumb</Text>
+              <Button
+                title={useThumb ? 'ON' : 'OFF'}
+                variant={useThumb ? 'primary' : 'secondary'}
+                onPress={() => setUseThumb(!useThumb)}
+                style={styles.smButton}
+              />
+            </View>
+          </>
+        ) : (
+          <View style={styles.row}>
+            <Text style={styles.label}>Line Width: {lineWidth}</Text>
+            <View style={styles.toggleGroup}>
+              <Button
+                title="2"
+                variant={lineWidth === 2 ? 'primary' : 'secondary'}
+                onPress={() => setLineWidth(2)}
+                style={styles.smButton}
+              />
+              <Button
+                title="6"
+                variant={lineWidth === 6 ? 'primary' : 'secondary'}
+                onPress={() => setLineWidth(6)}
+                style={styles.smButton}
+              />
+              <Button
+                title="12"
+                variant={lineWidth === 12 ? 'primary' : 'secondary'}
+                onPress={() => setLineWidth(12)}
+                style={styles.smButton}
+              />
+            </View>
+          </View>
+        )}
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back" variant="ghost" onPress={() => router.back()} />
+      </View>
     </ScreenLayout>
   )
 }

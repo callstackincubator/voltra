@@ -87,7 +87,7 @@ export default function ServerDrivenWidgetsScreen() {
         </Card.Text>
         {Platform.OS === 'android' ? (
           <View style={[styles.codeBlock, { backgroundColor: '#1a1a2e', marginTop: 8 }]}>
-            <Text style={[styles.codeText, { color: '#fbbf24' }]}> 
+            <Text style={[styles.codeText, { color: '#fbbf24' }]}>
               ⚠️ Android emulator: use 10.0.2.2 instead of localhost to reach the host machine. Real devices need the
               host`s LAN IP.
             </Text>
@@ -193,8 +193,8 @@ export default function ServerDrivenWidgetsScreen() {
           <Text style={styles.codeText}>npx tsx example/server/widget-server.tsx</Text>
         </View>
         <Card.Text>
-          {`\n`}The server renders portfolio widgets with randomized chart data. Each request returns different portfolio
-          performance data so you can see the widget update.{`\n\n`}
+          {`\n`}The server renders portfolio widgets with randomized chart data. Each request returns different
+          portfolio performance data so you can see the widget update.{`\n\n`}
           iOS uses <Text style={styles.code}>Voltra.*</Text> components while Android uses{' '}
           <Text style={styles.code}>VoltraAndroid.*</Text> components. The server handles both via separate{' '}
           <Text style={styles.code}>render</Text> and <Text style={styles.code}>renderAndroid</Text> callbacks.

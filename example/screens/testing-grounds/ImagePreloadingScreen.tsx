@@ -97,38 +97,38 @@ export default function ImagePreloadingScreen() {
       title="Image Preloading"
       description="Test image preloading functionality for Live Activities. Download images to App Group storage and verify they appear in Live Activities."
     >
-        <Card>
-          <Card.Title>Show and Download</Card.Title>
-          <Card.Text>Enter a URL to start a Live Activity and preload the image automatically.</Card.Text>
+      <Card>
+        <Card.Title>Show and Download</Card.Title>
+        <Card.Text>Enter a URL to start a Live Activity and preload the image automatically.</Card.Text>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Image URL</Text>
-            <TextInput
-              placeholder="https://example.com/image.jpg"
-              value={url}
-              onChangeText={setUrl}
-              keyboardType="url"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          <View style={styles.buttonRow}>
-            <Button
-              title={isProcessing ? 'Processing...' : 'Show and Download'}
-              variant="primary"
-              onPress={handleShowAndDownload}
-              disabled={isProcessing}
-            />
-            <Button title="Clear Images" variant="secondary" onPress={handleClearImages} />
-          </View>
-        </Card>
-
-        <View style={styles.footer}>
-          <Link href="/testing-grounds" asChild>
-            <Button title="Back to Testing Grounds" variant="ghost" />
-          </Link>
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Image URL</Text>
+          <TextInput
+            placeholder="https://example.com/image.jpg"
+            value={url}
+            onChangeText={setUrl}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         </View>
+
+        <View style={styles.buttonRow}>
+          <Button
+            title={isProcessing ? 'Processing...' : 'Show and Download'}
+            variant="primary"
+            onPress={handleShowAndDownload}
+            disabled={isProcessing}
+          />
+          <Button title="Clear Images" variant="secondary" onPress={handleClearImages} />
+        </View>
+      </Card>
+
+      <View style={styles.footer}>
+        <Link href="/testing-grounds" asChild>
+          <Button title="Back to Testing Grounds" variant="ghost" />
+        </Link>
+      </View>
     </ScreenLayout>
   )
 }

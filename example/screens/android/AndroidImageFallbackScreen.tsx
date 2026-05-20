@@ -127,7 +127,9 @@ export default function AndroidImageFallbackScreen() {
 
       <Card>
         <Card.Title>2. Select Example to Display</Card.Title>
-        <Card.Text>Choose an example to display in the widget. The widget will update immediately on your home screen.</Card.Text>
+        <Card.Text>
+          Choose an example to display in the widget. The widget will update immediately on your home screen.
+        </Card.Text>
 
         {EXAMPLES.map((example) => (
           <View key={example.id} style={styles.exampleItem}>
@@ -148,11 +150,15 @@ export default function AndroidImageFallbackScreen() {
         <Text style={styles.infoText}>
           The <Text style={styles.code}>fallbackColor</Text> prop has been removed from the Image component.
         </Text>
-        <Text style={[styles.infoText, { marginTop: 8 }]}>Before: <Text style={styles.code}>fallbackColor=&quot;#E0E0E0&quot;</Text></Text>
-        <Text style={styles.infoText}>After: <Text style={styles.code}>style={'{{ backgroundColor: "#E0E0E0" }}'}</Text></Text>
+        <Text style={[styles.infoText, { marginTop: 8 }]}>
+          Before: <Text style={styles.code}>fallbackColor=&quot;#E0E0E0&quot;</Text>
+        </Text>
+        <Text style={styles.infoText}>
+          After: <Text style={styles.code}>style={'{{ backgroundColor: "#E0E0E0" }}'}</Text>
+        </Text>
         <Text style={[styles.infoText, { marginTop: 12 }]}>
-          All style properties (backgroundColor, borderRadius, borders, etc.) now apply consistently to image
-          fallbacks on both iOS and Android.
+          All style properties (backgroundColor, borderRadius, borders, etc.) now apply consistently to image fallbacks
+          on both iOS and Android.
         </Text>
       </View>
 

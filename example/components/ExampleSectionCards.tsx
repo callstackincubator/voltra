@@ -8,7 +8,8 @@ export type ExampleSection = {
   id: string
   title: string
   description: string
-  route: '/testing-grounds/weather'
+  route:
+    | '/testing-grounds/weather'
     | '/testing-grounds/timer'
     | '/testing-grounds/styling'
     | '/testing-grounds/positioning'

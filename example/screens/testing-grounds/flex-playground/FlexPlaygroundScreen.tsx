@@ -191,7 +191,9 @@ export default function FlexPlaygroundScreen() {
               <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'left' }}>textAlign: left</Voltra.Text>
             </Voltra.View>
             <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
-              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'center' }}>textAlign: center</Voltra.Text>
+              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'center' }}>
+                textAlign: center
+              </Voltra.Text>
             </Voltra.View>
             <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
               <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'right' }}>textAlign: right</Voltra.Text>

@@ -92,79 +92,74 @@ export default function AndroidWidgetPinScreen() {
       title="Pin Widget to Home Screen"
       description="Select a widget and pin it to your home screen. Optionally set preview dimensions to show how the widget will look."
     >
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Widget</Text>
-          {AVAILABLE_WIDGETS.map((widget) => (
-            <View key={widget.id} style={styles.widgetOption}>
-              <Button
-                title={widget.name}
-                variant={selectedWidgetId === widget.id ? 'primary' : 'secondary'}
-                onPress={() => {
-                  setSelectedWidgetId(widget.id)
-                  resetPreviewDimensions()
-                }}
-                style={styles.widgetButton}
-              />
-              <Text style={styles.widgetDescription}>{widget.description}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preview Dimensions (optional)</Text>
-          <View style={styles.previewInputs}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Width (dp)</Text>
-              <TextInput
-                style={styles.input}
-                value={previewWidth}
-                onChangeText={setPreviewWidth}
-                keyboardType="numeric"
-                placeholder={String(selectedWidget.defaultPreviewWidth)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Height (dp)</Text>
-              <TextInput
-                style={styles.input}
-                value={previewHeight}
-                onChangeText={setPreviewHeight}
-                keyboardType="numeric"
-                placeholder={String(selectedWidget.defaultPreviewHeight)}
-              />
-            </View>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Widget</Text>
+        {AVAILABLE_WIDGETS.map((widget) => (
+          <View key={widget.id} style={styles.widgetOption}>
+            <Button
+              title={widget.name}
+              variant={selectedWidgetId === widget.id ? 'primary' : 'secondary'}
+              onPress={() => {
+                setSelectedWidgetId(widget.id)
+                resetPreviewDimensions()
+              }}
+              style={styles.widgetButton}
+            />
+            <Text style={styles.widgetDescription}>{widget.description}</Text>
           </View>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Preview Dimensions (optional)</Text>
+        <View style={styles.previewInputs}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Width (dp)</Text>
+            <TextInput
+              style={styles.input}
+              value={previewWidth}
+              onChangeText={setPreviewWidth}
+              keyboardType="numeric"
+              placeholder={String(selectedWidget.defaultPreviewWidth)}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Height (dp)</Text>
+            <TextInput
+              style={styles.input}
+              value={previewHeight}
+              onChangeText={setPreviewHeight}
+              keyboardType="numeric"
+              placeholder={String(selectedWidget.defaultPreviewHeight)}
+            />
+          </View>
+        </View>
+        <Button title="Reset to Defaults" variant="ghost" onPress={resetPreviewDimensions} style={styles.resetButton} />
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.buttonRow}>
           <Button
-            title="Reset to Defaults"
-            variant="ghost"
-            onPress={resetPreviewDimensions}
-            style={styles.resetButton}
+            title="Pin with Preview"
+            variant="primary"
+            onPress={() => handlePinWidget(true)}
+            disabled={isPinning}
+            style={styles.pinButton}
+          />
+          <Button
+            title="Pin without Preview"
+            variant="secondary"
+            onPress={() => handlePinWidget(false)}
+            disabled={isPinning}
+            style={styles.pinButton}
           />
         </View>
+        {isPinning && <Text style={styles.loadingText}>Requesting pin...</Text>}
+      </View>
 
-        <View style={styles.section}>
-          <View style={styles.buttonRow}>
-            <Button
-              title="Pin with Preview"
-              variant="primary"
-              onPress={() => handlePinWidget(true)}
-              disabled={isPinning}
-              style={styles.pinButton}
-            />
-            <Button
-              title="Pin without Preview"
-              variant="secondary"
-              onPress={() => handlePinWidget(false)}
-              disabled={isPinning}
-              style={styles.pinButton}
-            />
-          </View>
-          {isPinning && <Text style={styles.loadingText}>Requesting pin...</Text>}
-        </View>
-
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
-        </View>
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
+      </View>
     </ScreenLayout>
   )
 }

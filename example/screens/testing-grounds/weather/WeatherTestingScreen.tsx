@@ -326,8 +326,8 @@ export default function WeatherTestingScreen() {
           disabled={isUpdating}
         />
         <Card.Text style={styles.timelineNote}>
-          Schedules 4 entries: 1 (+5sec), 2 (+1min), 3 (+2min), 4 (+3min). Each has a different background color.
-          Note: iOS may delay updates based on battery/visibility. Test with Xcode attached for immediate updates.
+          Schedules 4 entries: 1 (+5sec), 2 (+1min), 3 (+2min), 4 (+3min). Each has a different background color. Note:
+          iOS may delay updates based on battery/visibility. Test with Xcode attached for immediate updates.
         </Card.Text>
       </Card>
 

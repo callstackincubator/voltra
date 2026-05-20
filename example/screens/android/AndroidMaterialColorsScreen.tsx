@@ -134,7 +134,9 @@ export default function AndroidMaterialColorsScreen() {
     >
       <Card>
         <Card.Title>1. Pin the Widget</Card.Title>
-        <Card.Text>Add the widget to your home screen once, then switch between client-side and server-side renders.</Card.Text>
+        <Card.Text>
+          Add the widget to your home screen once, then switch between client-side and server-side renders.
+        </Card.Text>
         <View style={styles.buttonContainer}>
           <Button
             title={isPinning ? 'Requesting pin...' : 'Pin widget to home screen'}
