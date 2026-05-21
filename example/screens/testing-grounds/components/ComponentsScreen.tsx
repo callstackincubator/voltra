@@ -1,11 +1,12 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React from 'react'
-import { FlatList, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { VoltraView } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 const IMAGE =
   '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'
@@ -296,69 +297,29 @@ const COMPONENTS_DATA = [
 ]
 
 export default function ComponentsScreen() {
-  const renderHeader = () => (
-    <>
-      <Text style={styles.heading}>Components Showcase</Text>
-      <Text style={styles.subheading}>
-        Explore all available Voltra components. Each example demonstrates the component&apos;s functionality and
-        styling capabilities within Live Activities.
-      </Text>
-    </>
-  )
-
-  const renderItem = ({ item }: { item: (typeof COMPONENTS_DATA)[0] }) => (
-    <Card key={item.id}>
-      <Card.Title>{item.title}</Card.Title>
-      <Card.Text>{item.description}</Card.Text>
-      <View style={styles.exampleContainer}>{item.renderExample()}</View>
-    </Card>
-  )
-
-  const renderFooter = () => (
-    <View style={styles.footer}>
-      <Link href="/testing-grounds" asChild>
-        <Button title="Back to Testing Grounds" variant="ghost" />
-      </Link>
-    </View>
-  )
+  const router = useRouter()
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        style={[styles.scrollView]}
-        contentContainerStyle={styles.content}
-        data={COMPONENTS_DATA}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
-        renderItem={renderItem}
-        ListFooterComponent={renderFooter}
-      />
-    </View>
+    <ScreenLayout
+      title="Components"
+      description="Explore all available Voltra components including Button, Text, VStack, HStack, ZStack, Image, and more."
+    >
+      {COMPONENTS_DATA.map((item) => (
+        <Card key={item.id}>
+          <Card.Title>{item.title}</Card.Title>
+          <Card.Text>{item.description}</Card.Text>
+          <View style={styles.exampleContainer}>{item.renderExample()}</View>
+        </Card>
+      ))}
+
+      <View style={styles.footer}>
+        <Button title="Back" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   footer: {
     marginTop: 24,
     alignItems: 'center',

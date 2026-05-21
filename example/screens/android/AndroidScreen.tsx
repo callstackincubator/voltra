@@ -7,7 +7,7 @@ export default function AndroidScreen() {
   return (
     <ScreenLayout
       title="Android Widgets"
-      description="Build Android home screen widgets with React Native. Explore pinning, previews, charts, server-driven updates, theming, and asset handling."
+      description="Build Android home screen widgets with React Native. Explore pinning, previews, charts, and server-driven updates."
     >
       <ActiveWidgetsAndroidCard />
       <ExampleSectionCards sections={ANDROID_WIDGET_SECTIONS} />

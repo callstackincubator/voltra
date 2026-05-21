@@ -1,11 +1,12 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React from 'react'
-import { FlatList, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 import { VoltraView } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 const STYLING_DATA = [
   {
@@ -250,69 +251,29 @@ const STYLING_DATA = [
 ]
 
 export default function StylingScreen() {
-  const renderHeader = () => (
-    <>
-      <Text style={styles.heading}>Styling Examples</Text>
-      <Text style={styles.subheading}>
-        Explore Voltra&apos;s styling capabilities. Each example demonstrates different styling properties that can be
-        applied to Voltra components.
-      </Text>
-    </>
-  )
-
-  const renderItem = ({ item }: { item: (typeof STYLING_DATA)[0] }) => (
-    <Card key={item.id}>
-      <Card.Title>{item.title}</Card.Title>
-      <Card.Text>{item.description}</Card.Text>
-      {item.renderExample()}
-    </Card>
-  )
-
-  const renderFooter = () => (
-    <View style={styles.footer}>
-      <Link href="/testing-grounds" asChild>
-        <Button title="Back to Testing Grounds" variant="ghost" />
-      </Link>
-    </View>
-  )
+  const router = useRouter()
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        style={[styles.scrollView]}
-        contentContainerStyle={styles.content}
-        data={STYLING_DATA}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
-        renderItem={renderItem}
-        ListFooterComponent={renderFooter}
-      />
-    </View>
+    <ScreenLayout
+      title="Styling"
+      description="Explore Voltra styling properties including padding, margins, colors, borders, shadows, and typography."
+    >
+      {STYLING_DATA.map((item) => (
+        <Card key={item.id}>
+          <Card.Title>{item.title}</Card.Title>
+          <Card.Text>{item.description}</Card.Text>
+          {item.renderExample()}
+        </Card>
+      ))}
+
+      <View style={styles.footer}>
+        <Button title="Back" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   footer: {
     marginTop: 24,
     alignItems: 'center',

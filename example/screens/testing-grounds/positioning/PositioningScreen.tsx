@@ -1,9 +1,10 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React from 'react'
-import { FlatList, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 import {
   AbsolutePositioningBasicExample,
@@ -63,72 +64,32 @@ const POSITIONING_DATA = [
 ]
 
 export default function PositioningScreen() {
-  const renderHeader = () => (
-    <>
-      <Text style={styles.heading}>Positioning Examples</Text>
-      <Text style={styles.subheading}>
-        Explore Voltra&apos;s positioning modes: static (default), relative (offset from natural position), and absolute
-        (center-based coordinates). Red dots mark reference points in absolute positioning examples.
-      </Text>
-    </>
-  )
-
-  const renderItem = ({ item }: { item: (typeof POSITIONING_DATA)[0] }) => {
-    const { Component } = item
-    return (
-      <Card key={item.id}>
-        <Card.Title>{item.title}</Card.Title>
-        <Card.Text>{item.description}</Card.Text>
-        <Component />
-      </Card>
-    )
-  }
-
-  const renderFooter = () => (
-    <View style={styles.footer}>
-      <Link href="/testing-grounds" asChild>
-        <Button title="Back to Testing Grounds" variant="ghost" />
-      </Link>
-    </View>
-  )
+  const router = useRouter()
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        style={[styles.scrollView]}
-        contentContainerStyle={styles.content}
-        data={POSITIONING_DATA}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
-        renderItem={renderItem}
-        ListFooterComponent={renderFooter}
-      />
-    </View>
+    <ScreenLayout
+      title="Positioning"
+      description="Learn about static, relative, and absolute positioning modes. See how left, top, and zIndex properties work with visual examples."
+    >
+      {POSITIONING_DATA.map((item) => {
+        const { Component } = item
+        return (
+          <Card key={item.id}>
+            <Card.Title>{item.title}</Card.Title>
+            <Card.Text>{item.description}</Card.Text>
+            <Component />
+          </Card>
+        )
+      })}
+
+      <View style={styles.footer}>
+        <Button title="Back" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   footer: {
     marginTop: 24,
     alignItems: 'center',
