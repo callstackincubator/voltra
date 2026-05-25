@@ -1,6 +1,11 @@
 import React, { useState } from 'react'
 import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
-import { reloadAndroidWidgets, VoltraWidgetPreview as AndroidVoltraWidgetPreview } from '@use-voltra/android-client'
+import {
+  clearWidgetServerCredentials as clearWidgetServerCredentialsAndroid,
+  reloadWidgets as reloadWidgetsAndroid,
+  setWidgetServerCredentials as setWidgetServerCredentialsAndroid,
+  VoltraWidgetPreview as VoltraWidgetPreviewAndroid
+} from '@use-voltra/android-client'
 import {
   clearWidgetServerCredentials,
   reloadWidgets,
@@ -23,12 +28,21 @@ export default function ServerDrivenWidgetsScreen() {
   const handleSetCredentials = async () => {
     setIsLoading(true)
     try {
-      await setWidgetServerCredentials({
-        token,
-        headers: {
-          'X-Widget-Source': 'voltra-example',
-        },
-      })
+      if (Platform.OS === 'android') {
+        await setWidgetServerCredentialsAndroid({
+          token,
+          headers: {
+            'X-Widget-Source': 'voltra-example',
+          },
+        })
+      } else {
+        await setWidgetServerCredentials({
+          token,
+          headers: {
+            'X-Widget-Source': 'voltra-example',
+          },
+        })
+      }
       setCredentialsSet(true)
       Alert.alert(
         'Success',
@@ -44,7 +58,11 @@ export default function ServerDrivenWidgetsScreen() {
   const handleClearCredentials = async () => {
     setIsLoading(true)
     try {
-      await clearWidgetServerCredentials()
+      if (Platform.OS === 'android') {
+        await clearWidgetServerCredentialsAndroid()
+      } else {
+        await clearWidgetServerCredentials()
+      }
       setCredentialsSet(false)
       Alert.alert('Success', 'Widget server credentials cleared.')
     } catch (error) {
@@ -57,7 +75,7 @@ export default function ServerDrivenWidgetsScreen() {
   const handleReloadWidgets = async () => {
     try {
       if (Platform.OS === 'android') {
-        await reloadAndroidWidgets(['portfolio'])
+        await reloadWidgetsAndroid(['portfolio'])
         Alert.alert('Success', 'Android widgets reloaded. WorkManager will fetch fresh content from the server.')
       } else {
         await reloadWidgets(['portfolio'])
@@ -209,9 +227,9 @@ export default function ServerDrivenWidgetsScreen() {
         </Card.Text>
         <View style={styles.previewContainer}>
           {Platform.OS === 'android' ? (
-            <AndroidVoltraWidgetPreview family="mediumWide" style={styles.widgetPreview}>
+            <VoltraWidgetPreviewAndroid family="mediumWide" style={styles.widgetPreview}>
               <AndroidPortfolioWidget />
-            </AndroidVoltraWidgetPreview>
+            </VoltraWidgetPreviewAndroid>
           ) : (
             <VoltraWidgetPreview family="systemMedium" style={styles.widgetPreview}>
               <IosPortfolioWidget />
