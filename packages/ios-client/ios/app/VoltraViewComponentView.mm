@@ -1,5 +1,10 @@
 #import "VoltraViewComponentView.h"
-#import <Voltra-Swift.h>
+
+#if __has_include("Voltra/Voltra-Swift.h")
+#import "Voltra/Voltra-Swift.h"
+#else
+#import "Voltra-Swift.h"
+#endif
 
 #import <react/renderer/components/VoltraSpec/ComponentDescriptors.h>
 #import <react/renderer/components/VoltraSpec/Props.h>

@@ -1,5 +1,10 @@
 #import "NativeVoltra.h"
-#import <Voltra-Swift.h>
+
+#if __has_include("Voltra/Voltra-Swift.h")
+#import "Voltra/Voltra-Swift.h"
+#else
+#import "Voltra-Swift.h"
+#endif
 
 @interface NativeVoltra () {
   VoltraModule *_module;
