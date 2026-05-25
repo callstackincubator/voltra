@@ -281,7 +281,7 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
 
       public init() {}
 
-      public var body: some IOSWidgetConfiguration {
+      public var body: some WidgetConfiguration {
         StaticConfiguration(
           kind: "Voltra_Widget_${widget.id}",
           provider: VoltraHomeWidgetProvider(
