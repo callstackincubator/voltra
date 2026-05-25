@@ -4,7 +4,7 @@ import {
   clearWidgetServerCredentials as clearWidgetServerCredentialsAndroid,
   reloadWidgets as reloadWidgetsAndroid,
   setWidgetServerCredentials as setWidgetServerCredentialsAndroid,
-  VoltraWidgetPreview as VoltraWidgetPreviewAndroid
+  VoltraWidgetPreview as VoltraWidgetPreviewAndroid,
 } from '@use-voltra/android-client'
 import {
   clearWidgetServerCredentials,
