@@ -1,11 +1,12 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { VoltraView } from 'voltra/client'
+import { StyleSheet, Text, View } from 'react-native'
+import { Voltra } from '@use-voltra/ios'
+import { VoltraView } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 type FlexDirection = 'row' | 'column'
 type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'stretch'
@@ -44,6 +45,7 @@ const JUSTIFY_CONTENT_LABELS: Record<JustifyContent, string> = {
 }
 
 export default function FlexPlaygroundScreen() {
+  const router = useRouter()
   const [flexDirection, setFlexDirection] = useState<FlexDirection>('column')
   const [alignItems, setAlignItems] = useState<AlignItems>('stretch')
   const [justifyContent, setJustifyContent] = useState<JustifyContent>('flex-start')
@@ -75,178 +77,140 @@ export default function FlexPlaygroundScreen() {
   const decreasePadding = () => setContainerPadding((prev) => Math.max(prev - 4, 0))
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Flex Layout Playground</Text>
-        <Text style={styles.subheading}>
-          Experiment with flex properties using the new View component with dynamic flexDirection.
-        </Text>
+    <ScreenLayout
+      title="Flex Layout Playground"
+      description="Experiment with flex properties using the new View component with dynamic flexDirection."
+    >
+      <Card>
+        <Card.Title>Controls</Card.Title>
 
-        {/* Controls */}
-        <Card>
-          <Card.Title>Controls</Card.Title>
-
-          {/* Flex Direction */}
-          <View style={styles.controlRow}>
-            <Text style={styles.controlLabel}>Flex Direction:</Text>
-            <Button title={FLEX_DIRECTION_LABELS[flexDirection]} onPress={cycleFlexDirection} variant="secondary" />
-          </View>
-
-          {/* Align Items */}
-          <View style={styles.controlRow}>
-            <Text style={styles.controlLabel}>Align Items:</Text>
-            <Button title={ALIGN_ITEMS_LABELS[alignItems]} onPress={cycleAlignItems} variant="secondary" />
-          </View>
-
-          {/* Justify Content */}
-          <View style={styles.controlRow}>
-            <Text style={styles.controlLabel}>Justify Content:</Text>
-            <Button title={JUSTIFY_CONTENT_LABELS[justifyContent]} onPress={cycleJustifyContent} variant="secondary" />
-          </View>
-
-          {/* Gap */}
-          <View style={styles.controlRow}>
-            <Text style={styles.controlLabel}>Gap: {gap}px</Text>
-            <View style={styles.buttonGroup}>
-              <Button title="-" onPress={decreaseGap} variant="secondary" />
-              <Button title="+" onPress={increaseGap} variant="secondary" />
-            </View>
-          </View>
-
-          {/* Container Padding */}
-          <View style={styles.controlRow}>
-            <Text style={styles.controlLabel}>Padding: {containerPadding}px</Text>
-            <View style={styles.buttonGroup}>
-              <Button title="-" onPress={decreasePadding} variant="secondary" />
-              <Button title="+" onPress={increasePadding} variant="secondary" />
-            </View>
-          </View>
-        </Card>
-
-        {/* Preview */}
-        <Card>
-          <Card.Title>Live Preview</Card.Title>
-          <Text style={styles.previewSubtext}>See how your flex settings affect the layout below</Text>
-
-          <VoltraView style={{ width: '100%', height: 300, backgroundColor: '#1E293B', padding: 8, marginTop: 12 }}>
-            <Voltra.View
-              style={{
-                backgroundColor: '#334155',
-                padding: containerPadding,
-                width: '100%',
-                height: '100%',
-                flexDirection,
-                alignItems,
-                justifyContent,
-                gap,
-              }}
-            >
-              <Voltra.View
-                style={{
-                  backgroundColor: '#EF4444',
-                  padding: 12,
-                  borderRadius: 8,
-                  width: flexDirection === 'row' ? 80 : undefined,
-                  height: flexDirection === 'column' ? 60 : undefined,
-                }}
-              >
-                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 1</Voltra.Text>
-              </Voltra.View>
-
-              <Voltra.View
-                style={{
-                  backgroundColor: '#3B82F6',
-                  padding: 12,
-                  borderRadius: 8,
-                  width: flexDirection === 'row' ? 100 : undefined,
-                  height: flexDirection === 'column' ? 80 : undefined,
-                }}
-              >
-                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 2</Voltra.Text>
-              </Voltra.View>
-
-              <Voltra.View
-                style={{
-                  backgroundColor: '#10B981',
-                  padding: 12,
-                  borderRadius: 8,
-                  width: flexDirection === 'row' ? 60 : undefined,
-                  height: flexDirection === 'column' ? 50 : undefined,
-                }}
-              >
-                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 3</Voltra.Text>
-              </Voltra.View>
-            </Voltra.View>
-          </VoltraView>
-        </Card>
-
-        {/* Text Align Test */}
-        <Card>
-          <Card.Title>Text Align in Flex</Card.Title>
-          <Text style={styles.previewSubtext}>Text alignment within stretched flex children</Text>
-
-          <VoltraView style={{ width: '100%', height: 200, backgroundColor: '#1E293B', padding: 8, marginTop: 12 }}>
-            <Voltra.View
-              style={{
-                backgroundColor: '#334155',
-                padding: 8,
-                width: '100%',
-                height: '100%',
-                flexDirection: 'column',
-                alignItems: 'stretch',
-                gap: 8,
-              }}
-            >
-              <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
-                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'left' }}>textAlign: left</Voltra.Text>
-              </Voltra.View>
-              <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
-                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'center' }}>
-                  textAlign: center
-                </Voltra.Text>
-              </Voltra.View>
-              <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
-                <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'right' }}>
-                  textAlign: right
-                </Voltra.Text>
-              </Voltra.View>
-            </Voltra.View>
-          </VoltraView>
-        </Card>
-
-        <View style={styles.footer}>
-          <Link href="/testing-grounds" asChild>
-            <Button title="Back to Testing Grounds" variant="ghost" />
-          </Link>
+        <View style={styles.controlRow}>
+          <Text style={styles.controlLabel}>Flex Direction:</Text>
+          <Button title={FLEX_DIRECTION_LABELS[flexDirection]} onPress={cycleFlexDirection} variant="secondary" />
         </View>
-      </ScrollView>
-    </View>
+
+        <View style={styles.controlRow}>
+          <Text style={styles.controlLabel}>Align Items:</Text>
+          <Button title={ALIGN_ITEMS_LABELS[alignItems]} onPress={cycleAlignItems} variant="secondary" />
+        </View>
+
+        <View style={styles.controlRow}>
+          <Text style={styles.controlLabel}>Justify Content:</Text>
+          <Button title={JUSTIFY_CONTENT_LABELS[justifyContent]} onPress={cycleJustifyContent} variant="secondary" />
+        </View>
+
+        <View style={styles.controlRow}>
+          <Text style={styles.controlLabel}>Gap: {gap}px</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="-" onPress={decreaseGap} variant="secondary" />
+            <Button title="+" onPress={increaseGap} variant="secondary" />
+          </View>
+        </View>
+
+        <View style={styles.controlRow}>
+          <Text style={styles.controlLabel}>Padding: {containerPadding}px</Text>
+          <View style={styles.buttonGroup}>
+            <Button title="-" onPress={decreasePadding} variant="secondary" />
+            <Button title="+" onPress={increasePadding} variant="secondary" />
+          </View>
+        </View>
+      </Card>
+
+      <Card>
+        <Card.Title>Live Preview</Card.Title>
+        <Text style={styles.previewSubtext}>See how your flex settings affect the layout below</Text>
+
+        <VoltraView style={{ width: '100%', height: 300, backgroundColor: '#1E293B', padding: 8, marginTop: 12 }}>
+          <Voltra.View
+            style={{
+              backgroundColor: '#334155',
+              padding: containerPadding,
+              width: '100%',
+              height: '100%',
+              flexDirection,
+              alignItems,
+              justifyContent,
+              gap,
+            }}
+          >
+            <Voltra.View
+              style={{
+                backgroundColor: '#EF4444',
+                padding: 12,
+                borderRadius: 8,
+                width: flexDirection === 'row' ? 80 : undefined,
+                height: flexDirection === 'column' ? 60 : undefined,
+              }}
+            >
+              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 1</Voltra.Text>
+            </Voltra.View>
+
+            <Voltra.View
+              style={{
+                backgroundColor: '#3B82F6',
+                padding: 12,
+                borderRadius: 8,
+                width: flexDirection === 'row' ? 100 : undefined,
+                height: flexDirection === 'column' ? 80 : undefined,
+              }}
+            >
+              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 2</Voltra.Text>
+            </Voltra.View>
+
+            <Voltra.View
+              style={{
+                backgroundColor: '#10B981',
+                padding: 12,
+                borderRadius: 8,
+                width: flexDirection === 'row' ? 60 : undefined,
+                height: flexDirection === 'column' ? 50 : undefined,
+              }}
+            >
+              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: 'bold' }}>Item 3</Voltra.Text>
+            </Voltra.View>
+          </Voltra.View>
+        </VoltraView>
+      </Card>
+
+      <Card>
+        <Card.Title>Text Align in Flex</Card.Title>
+        <Text style={styles.previewSubtext}>Text alignment within stretched flex children</Text>
+
+        <VoltraView style={{ width: '100%', height: 200, backgroundColor: '#1E293B', padding: 8, marginTop: 12 }}>
+          <Voltra.View
+            style={{
+              backgroundColor: '#334155',
+              padding: 8,
+              width: '100%',
+              height: '100%',
+              flexDirection: 'column',
+              alignItems: 'stretch',
+              gap: 8,
+            }}
+          >
+            <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
+              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'left' }}>textAlign: left</Voltra.Text>
+            </Voltra.View>
+            <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
+              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'center' }}>
+                textAlign: center
+              </Voltra.Text>
+            </Voltra.View>
+            <Voltra.View style={{ backgroundColor: '#1E293B', padding: 8, flex: 1 }}>
+              <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, textAlign: 'right' }}>textAlign: right</Voltra.Text>
+            </Voltra.View>
+          </Voltra.View>
+        </VoltraView>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 20,
-  },
   controlRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

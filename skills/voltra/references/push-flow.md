@@ -4,9 +4,9 @@ Use this flow for iOS Live Activity server-driven updates:
 
 1. Enable `enablePushNotifications: true` in the Voltra plugin config.
 2. Start the Live Activity or subscribe to token events in the app.
-3. Capture Voltra push tokens with `addVoltraListener` from `voltra/client`.
+3. Capture Voltra push tokens with `addVoltraListener` from `@use-voltra/ios-client`.
 4. Send the token or channel identifier to your backend.
-5. Render the Live Activity UI payload with `renderLiveActivityToString` from `voltra/server`.
+5. Render the Live Activity UI payload with `renderLiveActivityToString` from `@use-voltra/ios-server`.
 6. Send the APNS request with the Voltra-generated UI JSON in the payload.
 
 Important concepts:

@@ -1,6 +1,12 @@
 // Android component namespace
 export * as VoltraAndroid from './jsx/primitives.js'
 export { AndroidDynamicColors } from './dynamic-colors.js'
+export {
+  getAndroidComponentId,
+  getAndroidComponentName,
+  ANDROID_COMPONENT_ID_TO_NAME,
+  ANDROID_COMPONENT_NAME_TO_ID,
+} from './payload/component-ids.js'
 export { renderAndroidLiveUpdateToJson, renderAndroidLiveUpdateToString } from './live-update/renderer.js'
 export { AndroidOngoingNotification } from './ongoing-notification/components.js'
 export { renderAndroidOngoingNotificationPayload } from './ongoing-notification/renderer.js'

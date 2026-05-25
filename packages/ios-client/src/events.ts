@@ -1,7 +1,7 @@
 import { Platform } from 'react-native'
 
 import type { EventSubscription } from './types.js'
-import VoltraModule from './VoltraModule.js'
+import { getNativeVoltra } from './VoltraModule.js'
 
 export type BasicVoltraEvent = {
   source: string
@@ -50,5 +50,21 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
     return noopSubscription
   }
 
-  return VoltraModule.addListener(event, listener)
+  const voltraModule = getNativeVoltra()
+
+  switch (event) {
+    case 'activityTokenReceived':
+      return voltraModule.onActivityTokenReceived(listener as (arg: VoltraActivityTokenReceivedEvent) => void)
+    case 'activityPushToStartTokenReceived':
+      return voltraModule.onActivityPushToStartTokenReceived(
+        listener as (arg: VoltraActivityPushToStartTokenReceivedEvent) => void
+      )
+    case 'stateChange':
+      return voltraModule.onStateChanged(listener as (arg: VoltraActivityUpdateEvent) => void)
+    case 'interaction':
+      return voltraModule.onInteraction(listener as (arg: VoltraInteractionEvent) => void)
+    default:
+      console.warn(`[Voltra] Event '${event}' is not supported. Returning no-op subscription.`)
+      return noopSubscription
+  }
 }

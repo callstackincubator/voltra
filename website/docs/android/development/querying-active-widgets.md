@@ -7,7 +7,7 @@ On Android, you can detect every active instance of your widgets currently place
 The `getActiveWidgets` function returns a promise that resolves to an array of all active widget instances for your app.
 
 ```typescript
-import { getActiveWidgets } from 'voltra/android'
+import { getActiveWidgets } from '@use-voltra/android-client'
 
 async function checkAndroidWidgets() {
   const activeWidgets = await getActiveWidgets()

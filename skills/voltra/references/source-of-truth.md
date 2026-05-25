@@ -18,15 +18,16 @@ Hosted docs to use for guidance:
 
 Core facts:
 
-- iOS UI namespace: `Voltra` from `voltra`
-- Android UI namespace for Android-only code: `VoltraAndroid` from `voltra/android`
-- iOS runtime API entrypoint: `voltra/client`
-- iOS server rendering entrypoint: `voltra/server`
-- Android runtime API entrypoint: `voltra/android/client`
-- Android-only package entrypoints exist: `voltra/android`, `voltra/android/client`, `voltra/android/server`
+- iOS app install: `@use-voltra/ios-client` (re-exports `Voltra` and runtime APIs)
+- Android app install: `@use-voltra/android-client` (re-exports `VoltraAndroid` and runtime APIs)
+- iOS server rendering entrypoint: `@use-voltra/ios-server`
+- Android server rendering entrypoint: `@use-voltra/android-server`
+- Cross-platform widget HTTP handlers: `@use-voltra/server`
+- iOS Expo plugin: `@use-voltra/ios-client`
+- Android Expo plugin: `@use-voltra/android-client`
 
 Default rule:
 
-- For new Android-only code, prefer `voltra/android` and `voltra/android/client`.
-- If existing project code already uses `VoltraAndroid` from `voltra`, matching that local pattern can be acceptable for consistency.
+- Install only the `@use-voltra/*` client packages you need for app runtime code.
+- Widget `initialStatePath` modules run in Node during prebuild: import from `@use-voltra/ios` or `@use-voltra/android`, not the `-client` packages.
 - Use `use-voltra.dev` for documentation lookups.

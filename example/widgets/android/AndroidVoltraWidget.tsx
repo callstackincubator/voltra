@@ -1,4 +1,4 @@
-import { VoltraAndroid } from 'voltra/android'
+import { VoltraAndroid } from '@use-voltra/android'
 
 export const AndroidVoltraWidget = ({ time }: { time: string }) => {
   return (

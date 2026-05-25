@@ -29,8 +29,8 @@ Android notes:
 
 Use preloading when the image comes from a remote URL or runtime data.
 
-- iOS preloading API: `preloadImages`, `reloadLiveActivities`, `clearPreloadedImages` from `voltra/client`
-- Android preloading API: `preloadImages`, `reloadWidgets`, `clearPreloadedImages` from `voltra/android/client`
+- iOS preloading API: `preloadImages`, `reloadLiveActivities`, `clearPreloadedImages` from `@use-voltra/ios-client`
+- Android preloading API: `preloadImages`, `reloadWidgets`, `clearPreloadedImages` from `@use-voltra/android-client`
 
 After preloading, reference the image with the same `key` via `assetName`.
 

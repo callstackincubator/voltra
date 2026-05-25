@@ -1,19 +1,20 @@
 ![voltra-banner](https://use-voltra.dev/voltra-baner.jpg)
 
-### Voltra for iOS
+### Voltra for iOS — JSX and rendering
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/ios` contains the iOS implementation package for Voltra, including the JSX namespace, Live Activities, and iOS widgets APIs.
+`@use-voltra/ios` contains the iOS JSX namespace (`Voltra`), payload rendering, and the `@use-voltra/ios/server` entry for Node.js.
 
-> [!WARNING]
-> This package is not intended to be installed directly in your app. Most apps should install `voltra` instead.
+**React Native apps** should install [`@use-voltra/ios-client`](../ios-client) only. The client package depends on this one and re-exports everything you need for app code, including `Voltra`.
 
-For installation and setup instructions, see the Voltra documentation: [use-voltra.dev](https://use-voltra.dev).
+Use `@use-voltra/ios` directly when you need server rendering (`@use-voltra/ios-server` builds on top of it) or when working inside the monorepo.
+
+See [use-voltra.dev](https://use-voltra.dev/ios/setup) for app setup.
 
 ## Authors
 
-`voltra` is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
+Voltra is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
 
 If you think it's cool, please star it 🌟. This project will always remain free to use.
 
@@ -22,9 +23,9 @@ If you think it's cool, please star it 🌟. This project will always remain fre
 Like the project? ⚛️ [Join the Callstack team](https://callstack.com/careers/?utm_campaign=Senior_RN&utm_source=github&utm_medium=readme) who does amazing stuff for clients and drives React Native Open Source! 🔥
 
 [callstack-readme-with-love]: https://callstack.com/?utm_source=github.com&utm_medium=referral&utm_campaign=voltra&utm_term=readme-with-love
-[license-badge]: https://img.shields.io/npm/l/voltra?style=for-the-badge
+[license-badge]: https://img.shields.io/npm/l/@use-voltra/ios?style=for-the-badge
 [license]: https://github.com/callstackincubator/voltra/blob/main/LICENSE.txt
-[npm-downloads-badge]: https://img.shields.io/npm/dm/voltra?style=for-the-badge
-[npm-downloads]: https://www.npmjs.com/package/voltra
+[npm-downloads-badge]: https://img.shields.io/npm/dm/@use-voltra/ios?style=for-the-badge
+[npm-downloads]: https://www.npmjs.com/package/@use-voltra/ios
 [prs-welcome-badge]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge
-[prs-welcome]: ./CONTRIBUTING.md
+[prs-welcome]: ../../CONTRIBUTING.md

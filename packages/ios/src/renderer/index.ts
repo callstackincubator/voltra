@@ -1,4 +1,3 @@
-export { flattenStyle } from './flatten-styles.js'
 export {
   type ComponentRegistry,
   createVoltraRenderer,

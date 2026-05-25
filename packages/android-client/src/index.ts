@@ -1,21 +1,9 @@
 export {
-  endAllAndroidLiveUpdates,
-  isAndroidLiveUpdateActive,
-  startAndroidLiveUpdate,
-  stopAndroidLiveUpdate,
-  updateAndroidLiveUpdate,
-  useAndroidLiveUpdate,
-} from './live-update/api.js'
-export type {
-  AndroidLiveUpdateJson,
-  AndroidLiveUpdateVariants,
-  AndroidLiveUpdateVariantsJson,
-  StartAndroidLiveUpdateOptions,
-  UpdateAndroidLiveUpdateOptions,
-  UseAndroidLiveUpdateOptions,
-  UseAndroidLiveUpdateResult,
-} from './live-update/types.js'
-export { AndroidOngoingNotification, renderAndroidOngoingNotificationPayload } from '@use-voltra/android'
+  AndroidDynamicColors,
+  AndroidOngoingNotification,
+  renderAndroidOngoingNotificationPayload,
+  VoltraAndroid,
+} from '@use-voltra/android'
 export {
   canPostPromotedAndroidNotifications,
   endAllAndroidOngoingNotifications,

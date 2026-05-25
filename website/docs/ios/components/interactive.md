@@ -34,7 +34,7 @@ Buttons fire interaction events that you can handle in your app:
 Handle the event:
 
 ```typescript
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 const subscription = addVoltraListener('interaction', (event) => {
   if (event.identifier === 'play-button') {
@@ -167,7 +167,7 @@ Toggles a boolean state via an intent. Fires an interaction event when changed.
 Handle toggle events:
 
 ```typescript
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 const subscription = addVoltraListener('interaction', (event) => {
   if (event.identifier === 'notifications-toggle') {

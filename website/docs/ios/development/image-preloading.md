@@ -36,7 +36,7 @@ type PreloadImagesResult = {
 **Example:**
 
 ```typescript
-import { preloadImages } from 'voltra/client'
+import { preloadImages } from '@use-voltra/ios-client'
 
 const result = await preloadImages([
   {
@@ -55,7 +55,7 @@ console.log('Failed:', result.failed)
 Reloads Live Activities to pick up newly preloaded images. If no `activityNames` are provided, all active Live Activities will be reloaded.
 
 ```typescript
-import { reloadLiveActivities } from 'voltra/client'
+import { reloadLiveActivities } from '@use-voltra/ios-client'
 
 // Reload all Live Activities
 await reloadLiveActivities()
@@ -69,7 +69,7 @@ await reloadLiveActivities(['music-player', 'order-tracker'])
 Removes preloaded images from App Group storage. If no `keys` are provided, all preloaded images will be cleared.
 
 ```typescript
-import { clearPreloadedImages } from 'voltra/client'
+import { clearPreloadedImages } from '@use-voltra/ios-client'
 
 // Clear specific images
 await clearPreloadedImages(['album-art', 'profile-pic'])
@@ -83,7 +83,7 @@ await clearPreloadedImages()
 Once images are preloaded, reference them using the `assetName` property:
 
 ```typescript
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
 
 function MusicPlayerLiveActivity({ song }) {
   return {
@@ -153,7 +153,7 @@ Image preloading requires App Group configuration in your Expo config plugin:
 {
   "plugins": [
     [
-      "voltra",
+      "@use-voltra/ios-client",
       {
         "groupIdentifier": "group.your.app"
       }

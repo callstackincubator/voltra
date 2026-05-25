@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Platform } from 'react-native'
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 export const useVoltraEvents = (): void => {
   useEffect(() => {

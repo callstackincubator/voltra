@@ -1,0 +1,242 @@
+import { PackageManagerTabs } from '@rspress/core/theme'
+
+# Migration to v2
+
+Voltra v2 introduces two major architectural changes:
+
+- The old Voltra umbrella package is gone. Voltra now ships as separate iOS, Android, and server packages.
+- The native layer moved from Expo Modules to Turbo Modules.
+
+We made these changes to fix a few long-standing problems in the old package layout.
+
+The old umbrella package made it too easy for React Native code to leak into server builds, especially when people only wanted server-side rendering or pre-rendering. It also forced many apps to pull in both platform surfaces even when they only shipped iOS or only shipped Android.
+
+The Turbo Module migration also changes the native integration layer, so upgrading to v2 requires updating package installs, Expo plugin configuration, and some API usage.
+
+This guide walks through the package, import, and configuration changes you need to make when upgrading to v2.
+
+## What changed
+
+### Package split
+
+Old setups commonly used package paths like:
+
+- `voltra`
+- `voltra/client`
+- `voltra/server`
+- `voltra/android`
+- `voltra/android/client`
+- `voltra/android/server`
+
+v2 uses scoped packages instead:
+
+- `@use-voltra/ios`
+- `@use-voltra/ios-client`
+- `@use-voltra/ios-server`
+- `@use-voltra/android`
+- `@use-voltra/android-client`
+- `@use-voltra/android-server`
+- `@use-voltra/server`
+
+### Platform-specific JSX namespaces
+
+The old docs implied one shared component namespace. v2 documents the real platform split:
+
+- iOS JSX primitives come from `@use-voltra/ios` as `Voltra`
+- Android JSX primitives come from `@use-voltra/android` as `VoltraAndroid`
+- Android semantic color tokens also live in `@use-voltra/android` as `AndroidDynamicColors`
+- Android ongoing notification JSX lives in `@use-voltra/android` as `AndroidOngoingNotification`
+
+### Client APIs stay in `*-client`
+
+Use `@use-voltra/ios-client` and `@use-voltra/android-client` for runtime APIs that run inside the React Native app, such as:
+
+- starting or updating Live Activities
+- updating widgets
+- pinning Android widgets
+- preview components such as `VoltraView` and `VoltraWidgetPreview`
+- event listeners and hooks
+
+### Server APIs are platform-specific
+
+Use platform server packages for server-side rendering:
+
+- `@use-voltra/ios-server` for Live Activities and iOS widgets
+- `@use-voltra/android-server` for Android widgets and ongoing notification payloads
+
+Use `@use-voltra/server` only for cross-platform widget HTTP handlers.
+
+## Installation changes
+
+Install the packages that match the layers you use.
+
+### iOS app code
+
+<PackageManagerTabs command="install @use-voltra/ios @use-voltra/ios-client" />
+
+### Android app code
+
+<PackageManagerTabs command="install @use-voltra/android @use-voltra/android-client" />
+
+### Optional server packages
+
+<PackageManagerTabs command="install @use-voltra/ios-server @use-voltra/android-server @use-voltra/server" />
+
+## Import mapping
+
+### iOS app code
+
+```tsx
+// v1
+import { Voltra } from 'voltra'
+import { startLiveActivity } from 'voltra/client'
+
+// v2
+import { Voltra } from '@use-voltra/ios'
+import { startLiveActivity } from '@use-voltra/ios-client'
+```
+
+### iOS server code
+
+```tsx
+// v1
+import { renderLiveActivityToString, Voltra } from 'voltra/server'
+
+// v2
+import { Voltra, renderLiveActivityToString } from '@use-voltra/ios-server'
+```
+
+### Android widget code
+
+```tsx
+// v1
+import { VoltraAndroid } from 'voltra/android'
+import { updateWidget } from 'voltra/android'
+
+// v2
+import { VoltraAndroid } from '@use-voltra/android'
+import { updateAndroidWidget } from '@use-voltra/android-client'
+```
+
+### Android server widget code
+
+```tsx
+// v1
+import { createWidgetUpdateNodeHandler } from 'voltra/server'
+import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+
+// v2
+import { createAndroidWidgetUpdateNodeHandler } from '@use-voltra/android-server'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
+```
+
+## Expo plugin migration
+
+The old docs used a single `voltra` plugin and nested per-platform config. v2 uses platform-specific plugins.
+
+### iOS
+
+```json
+// v1
+{
+  "expo": {
+    "plugins": [
+      [
+        "voltra",
+        {
+          "ios": {
+            "groupIdentifier": "group.example.app",
+            "widgets": []
+          }
+        }
+      ]
+    ]
+  }
+}
+
+// v2
+{
+  "expo": {
+    "plugins": [
+      [
+        "@use-voltra/ios-client",
+        {
+          "groupIdentifier": "group.example.app",
+          "widgets": []
+        }
+      ]
+    ]
+  }
+}
+```
+
+### Android
+
+```json
+// v1
+{
+  "expo": {
+    "plugins": [
+      [
+        "voltra",
+        {
+          "android": {
+            "widgets": []
+          }
+        }
+      ]
+    ]
+  }
+}
+
+// v2
+{
+  "expo": {
+    "plugins": [
+      [
+        "@use-voltra/android-client",
+        {
+          "widgets": []
+        }
+      ]
+    ]
+  }
+}
+```
+
+## API renames to watch for
+
+- Android widget updates: `updateWidget(...)` -> `updateAndroidWidget(...)`
+- Android widget reloads: `reloadWidgets(...)` for image-preloading remains, but widget refresh APIs use `reloadAndroidWidgets(...)`
+- Android widget server handlers: `createWidgetUpdateHandler(...)` style examples should become `createAndroidWidgetUpdateHandler(...)`, `createAndroidWidgetUpdateNodeHandler(...)`, or `createAndroidWidgetUpdateExpressHandler(...)`
+- iOS widget server handlers: use `createIOSWidgetUpdateHandler(...)`, `createIOSWidgetUpdateNodeHandler(...)`, or `createIOSWidgetUpdateExpressHandler(...)`
+
+## Pre-render files
+
+`initialStatePath` files run in Node during prebuild, not in the React Native runtime.
+
+Use:
+
+- `@use-voltra/ios` for iOS widget JSX and types
+- `@use-voltra/android` for Android widget JSX and types
+
+Do not import `@use-voltra/ios-client` or `@use-voltra/android-client` from pre-render files.
+
+## Recommended migration order
+
+1. Replace package installs.
+2. Swap the Expo plugin to the platform-specific package.
+3. Move JSX imports to `@use-voltra/ios` or `@use-voltra/android`.
+4. Move runtime APIs to the matching `*-client` package.
+5. Move server rendering code to `@use-voltra/ios-server` or `@use-voltra/android-server`.
+6. Rename Android widget APIs that became platform-specific.
+7. Verify `initialStatePath` files only import from platform packages.
+
+## After migrating
+
+Re-run prebuild for any platform whose plugin configuration changed:
+
+```bash
+npx expo prebuild --platform ios
+npx expo prebuild --platform android
+```

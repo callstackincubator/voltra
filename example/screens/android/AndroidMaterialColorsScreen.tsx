@@ -1,16 +1,17 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native'
 import {
   reloadAndroidWidgets,
   requestPinAndroidWidget,
   setWidgetServerCredentials,
   updateAndroidWidget,
   VoltraWidgetPreview,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import {
   AndroidMaterialColorsWidget,
   type AndroidMaterialColorsRenderSource,
@@ -127,108 +128,82 @@ export default function AndroidMaterialColorsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Material Colors Widget</Text>
-        <Text style={styles.subheading}>
-          Test the same Android widget through both render paths. It uses Android semantic color tokens, so both
-          client-side and server-side rendering resolve native Material You colors directly inside Glance.
-        </Text>
-
-        <Card>
-          <Card.Title>1. Pin the Widget</Card.Title>
-          <Card.Text>
-            Add the widget to your home screen once, then switch between client-side and server-side renders.
-          </Card.Text>
-          <View style={styles.buttonContainer}>
-            <Button
-              title={isPinning ? 'Requesting pin...' : 'Pin widget to home screen'}
-              variant="primary"
-              onPress={handlePinWidget}
-              disabled={isPinning}
-            />
-          </View>
-        </Card>
-
-        <Card>
-          <Card.Title>2. Choose the Render Path</Card.Title>
-          <Card.Text>
-            Both buttons target the same <Text style={styles.code}>{WIDGET_ID}</Text> widget. Use them to compare how
-            Material dynamic colors flow through the client and server pipelines.
-          </Card.Text>
-          <View style={styles.actionsRow}>
-            <Button
-              title={isRenderingClient ? 'Rendering on client...' : 'Render on client'}
-              variant="primary"
-              onPress={handleRenderOnClient}
-              disabled={isRenderingClient || isRenderingServer}
-              style={styles.actionButton}
-            />
-            <Button
-              title={isRenderingServer ? 'Rendering on server...' : 'Render on server'}
-              variant="secondary"
-              onPress={handleRenderOnServer}
-              disabled={isRenderingClient || isRenderingServer}
-              style={styles.actionButton}
-            />
-          </View>
-        </Card>
-
-        <Card>
-          <Card.Title>Preview</Card.Title>
-          <Card.Text>
-            This in-app preview mirrors the widget design. The home screen widget is the real test, but this makes it
-            easier to see which render path you triggered last.
-          </Card.Text>
-          <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family="mediumSquare" style={styles.previewFrame}>
-              <AndroidMaterialColorsWidget source={previewSource} renderedAt={previewTimestamp} />
-            </VoltraWidgetPreview>
-          </View>
-        </Card>
-
-        <Card>
-          <Card.Title>Server Setup</Card.Title>
-          <Card.Text>Run the example widget server before using the server render button:</Card.Text>
-          <View style={styles.codeBlock}>
-            <Text style={styles.codeText}>npm run widget:server --workspace voltra-example</Text>
-          </View>
-          <Card.Text>
-            Android emulators use <Text style={styles.code}>10.0.2.2</Text> in the widget config, so the built-in
-            server-driven refresh hits your host machine automatically.
-          </Card.Text>
-        </Card>
-
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
+    <ScreenLayout
+      title="Material Colors Widget"
+      description="Test the same Android widget through both render paths. It uses Android semantic color tokens, so both client-side and server-side rendering resolve native Material You colors directly inside Glance."
+    >
+      <Card>
+        <Card.Title>1. Pin the Widget</Card.Title>
+        <Card.Text>
+          Add the widget to your home screen once, then switch between client-side and server-side renders.
+        </Card.Text>
+        <View style={styles.buttonContainer}>
+          <Button
+            title={isPinning ? 'Requesting pin...' : 'Pin widget to home screen'}
+            variant="primary"
+            onPress={handlePinWidget}
+            disabled={isPinning}
+          />
         </View>
-      </ScrollView>
-    </View>
+      </Card>
+
+      <Card>
+        <Card.Title>2. Choose the Render Path</Card.Title>
+        <Card.Text>
+          Both buttons target the same <Text style={styles.code}>{WIDGET_ID}</Text> widget. Use them to compare how
+          Material dynamic colors flow through the client and server pipelines.
+        </Card.Text>
+        <View style={styles.actionsRow}>
+          <Button
+            title={isRenderingClient ? 'Rendering on client...' : 'Render on client'}
+            variant="primary"
+            onPress={handleRenderOnClient}
+            disabled={isRenderingClient || isRenderingServer}
+            style={styles.actionButton}
+          />
+          <Button
+            title={isRenderingServer ? 'Rendering on server...' : 'Render on server'}
+            variant="secondary"
+            onPress={handleRenderOnServer}
+            disabled={isRenderingClient || isRenderingServer}
+            style={styles.actionButton}
+          />
+        </View>
+      </Card>
+
+      <Card>
+        <Card.Title>Preview</Card.Title>
+        <Card.Text>
+          This in-app preview mirrors the widget design. The home screen widget is the real test, but this makes it
+          easier to see which render path you triggered last.
+        </Card.Text>
+        <View style={styles.previewContainer}>
+          <VoltraWidgetPreview family="mediumSquare" style={styles.previewFrame}>
+            <AndroidMaterialColorsWidget source={previewSource} renderedAt={previewTimestamp} />
+          </VoltraWidgetPreview>
+        </View>
+      </Card>
+
+      <Card>
+        <Card.Title>Server Setup</Card.Title>
+        <Card.Text>Run the example widget server before using the server render button:</Card.Text>
+        <View style={styles.codeBlock}>
+          <Text style={styles.codeText}>npm run widget:server --workspace voltra-example</Text>
+        </View>
+        <Card.Text>
+          Android emulators use <Text style={styles.code}>10.0.2.2</Text> in the widget config, so the built-in
+          server-driven refresh hits your host machine automatically.
+        </Card.Text>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   buttonContainer: {
     marginTop: 16,
   },

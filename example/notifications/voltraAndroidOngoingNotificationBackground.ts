@@ -1,8 +1,8 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
-import type { AndroidOngoingNotificationPayload } from 'voltra/android'
-import type { StartAndroidOngoingNotificationOptions } from 'voltra/android/client'
-import { stopAndroidOngoingNotification, upsertAndroidOngoingNotification } from 'voltra/android/client'
+import type { AndroidOngoingNotificationPayload } from '@use-voltra/android'
+import type { StartAndroidOngoingNotificationOptions } from '@use-voltra/android-client'
+import { stopAndroidOngoingNotification, upsertAndroidOngoingNotification } from '@use-voltra/android-client'
 
 export const VOLTRA_BACKGROUND_NOTIFICATION_TASK = 'voltra-background-notification-task'
 const DEFAULT_CHANNEL_ID = 'voltra_live_updates'

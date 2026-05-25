@@ -1,7 +1,6 @@
 import { Stack } from 'expo-router'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import { BackgroundWrapper } from '~/components/BackgroundWrapper'
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
@@ -9,7 +8,7 @@ updateAndroidVoltraWidget({ width: 300, height: 200 })
 
 const STACK_SCREEN_OPTIONS = {
   headerShown: false,
-  contentStyle: { backgroundColor: 'transparent' },
+  contentStyle: { backgroundColor: '#020617' },
 }
 
 export const unstable_settings = {
@@ -21,10 +20,9 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
-      <Stack
-        screenOptions={STACK_SCREEN_OPTIONS}
-        screenLayout={({ children }) => <BackgroundWrapper>{children}</BackgroundWrapper>}
-      >
+      <Stack screenOptions={STACK_SCREEN_OPTIONS}>
+        <Stack.Screen name="ios/(tabs)" />
+        <Stack.Screen name="android/(tabs)" />
         <Stack.Screen
           name="voltraui/[activityName]"
           options={{
@@ -33,9 +31,6 @@ export default function Layout() {
             sheetAllowedDetents: 'fitToContents',
           }}
         />
-        <Stack.Screen name="live-activities" />
-        <Stack.Screen name="android-widgets" />
-        <Stack.Screen name="testing-grounds" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </SafeAreaProvider>

@@ -8,8 +8,10 @@
  */
 import { createServer } from 'node:http'
 
+import { renderAndroidWidgetToString } from '@use-voltra/android-server'
+import { renderWidgetToString } from '@use-voltra/ios-server'
+import { createWidgetUpdateNodeHandler } from '@use-voltra/server'
 import React from 'react'
-import { createWidgetUpdateNodeHandler } from 'voltra/server'
 import { IosPortfolioWidget } from '../widgets/ios/IosPortfolioWidget'
 import { AndroidMaterialColorsServerWidget } from '../widgets/android/AndroidMaterialColorsWidget'
 import { AndroidPortfolioWidget } from '../widgets/android/AndroidPortfolioWidget'
@@ -60,12 +62,13 @@ const handler = createWidgetUpdateNodeHandler({
     console.log(`[${now}] [iOS] Rendering portfolio widget → ${changeText} (${balance})`)
 
     const content = <IosPortfolioWidget portfolio={{ chartData, change, balance, time: now }} />
-
-    return {
+    const variants = {
       systemSmall: content,
       systemMedium: content,
       systemLarge: content,
     }
+
+    return renderWidgetToString(variants)
   },
 
   renderAndroid: async (req: any) => {
@@ -75,11 +78,12 @@ const handler = createWidgetUpdateNodeHandler({
       console.log(`[${now}] [Android] Rendering material colors widget`)
 
       const content = <AndroidMaterialColorsServerWidget renderedAt={now} />
-
-      return [
+      const variants = [
         { size: { width: 200, height: 200 }, content },
         { size: { width: 300, height: 200 }, content },
       ]
+
+      return renderAndroidWidgetToString(variants)
     }
 
     if (req.widgetId !== 'portfolio') {
@@ -93,11 +97,12 @@ const handler = createWidgetUpdateNodeHandler({
     console.log(`[${now}] [Android] Rendering portfolio widget → ${changeText} (${balance})`)
 
     const content = <AndroidPortfolioWidget portfolio={{ chartData, change, balance, time: now }} />
-
-    return [
+    const variants = [
       { size: { width: 200, height: 200 }, content },
       { size: { width: 300, height: 200 }, content },
     ]
+
+    return renderAndroidWidgetToString(variants)
   },
   validateToken: (token: string) => {
     const validToken = token === 'demo-token'

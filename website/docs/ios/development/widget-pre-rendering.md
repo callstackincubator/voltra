@@ -11,7 +11,7 @@ Add `initialStatePath` to your widget configuration in `app.json`:
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "widgets": [
             {
@@ -45,7 +45,7 @@ Use a locale map so the config plugin pre-renders one bundle per language; iOS a
 Create a file at each configured path that exports a `WidgetVariants` object (or use the same file path for multiple locales if copy is identical):
 
 ```tsx
-import { Voltra, type WidgetVariants } from 'voltra'
+import { Voltra, type WidgetVariants } from '@use-voltra/ios'
 
 const initialState: WidgetVariants = {
   systemSmall: <Voltra.Text>Content</Voltra.Text>,
@@ -56,6 +56,10 @@ const initialState: WidgetVariants = {
 export default initialState
 ```
 
+:::info
+`initialStatePath` files are **not** part of your React Native app bundle. They run in Node.js during prebuild. Import `Voltra` and types from `@use-voltra/ios`, not `@use-voltra/ios-client` — the client package pulls in native modules that are unavailable in the prebuild sandbox.
+:::
+
 ## Build Process
 
 During build time, Voltra transpiles your widget files with Babel and executes them in a Node.js environment to generate initial states that are bundled into the iOS app.
@@ -65,4 +69,4 @@ During build time, Voltra transpiles your widget files with Babel and executes t
 - **Node.js Environment**: Code runs in Node.js, not in React Native or iOS
 - **Babel Support**: TypeScript is supported via Babel transpilation
 - **No Bundling**: Import resolution works for local files but there is no bundler involved
-- **Voltra Imports**: Do not use `voltra/client` or `voltra/server` imports; use `voltra` instead
+- **Voltra Imports**: Use `@use-voltra/ios` for JSX and types in `initialStatePath` files. Do not import from `@use-voltra/ios-client` or other React Native client APIs.

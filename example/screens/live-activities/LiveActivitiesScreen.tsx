@@ -1,12 +1,11 @@
-import { Link } from 'expo-router'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { endAllLiveActivities } from 'voltra/client'
+import { StyleSheet, Text, View } from 'react-native'
+import { endAllLiveActivities } from '@use-voltra/ios-client'
 
-import { ActiveWidgetsIOSCard } from '~/components/ActiveWidgetsIOSCard'
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { NotificationsCard } from '~/components/NotificationsCard'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import BasicLiveActivity from '~/screens/live-activities/BasicLiveActivity'
 import CompassLiveActivity from '~/screens/live-activities/CompassLiveActivity'
 import DeepLinksLiveActivity from '~/screens/live-activities/DeepLinksLiveActivity'
@@ -195,76 +194,32 @@ export default function LiveActivitiesScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Voltra</Text>
-        <Text style={styles.subheading}>
-          Voltra is a library that lets you build custom Live Activities and Dynamic Island layouts using React Native -
-          no need to open Xcode anymore.
-        </Text>
+    <ScreenLayout
+      title="Live Activities"
+      description="Build custom Live Activities and Dynamic Island layouts with React Native, then start, update, and end them from one place."
+    >
+      <NotificationsCard />
 
-        <View style={styles.navigationButtons}>
-          <Link href="/testing-grounds" asChild>
-            <Button title="Testing Grounds" variant="secondary" />
-          </Link>
-        </View>
+      {CARD_ORDER.map(renderCard)}
 
-        <ActiveWidgetsIOSCard />
+      <Button title="End all live activities" variant="secondary" onPress={handleEndAll} style={styles.endAllButton} />
 
-        <NotificationsCard />
-
-        {CARD_ORDER.map(renderCard)}
-
-        <Button
-          title="End all live activities"
-          variant="secondary"
-          onPress={handleEndAll}
-          style={styles.endAllButton}
-        />
-
-        <BasicLiveActivity ref={basicRef} onIsActiveChange={handleBasicStatusChange} />
-        <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
-        <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
-        <DeepLinksLiveActivity ref={deepLinksRef} onIsActiveChange={handleDeepLinksStatusChange} />
-        <FlightLiveActivity ref={flightRef} onIsActiveChange={handleFlightStatusChange} />
-        <WorkoutLiveActivity ref={workoutRef} onIsActiveChange={handleWorkoutStatusChange} />
-        <CompassLiveActivity ref={compassRef} onIsActiveChange={handleCompassStatusChange} />
-        <SupplementalFamiliesLiveActivity
-          ref={supplementalFamiliesRef}
-          onIsActiveChange={handleSupplementalFamiliesStatusChange}
-        />
-      </ScrollView>
-    </View>
+      <BasicLiveActivity ref={basicRef} onIsActiveChange={handleBasicStatusChange} />
+      <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
+      <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
+      <DeepLinksLiveActivity ref={deepLinksRef} onIsActiveChange={handleDeepLinksStatusChange} />
+      <FlightLiveActivity ref={flightRef} onIsActiveChange={handleFlightStatusChange} />
+      <WorkoutLiveActivity ref={workoutRef} onIsActiveChange={handleWorkoutStatusChange} />
+      <CompassLiveActivity ref={compassRef} onIsActiveChange={handleCompassStatusChange} />
+      <SupplementalFamiliesLiveActivity
+        ref={supplementalFamiliesRef}
+        onIsActiveChange={handleSupplementalFamiliesStatusChange}
+      />
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
-  navigationButtons: {
-    marginTop: 16,
-    flexDirection: 'row',
-    gap: 12,
-  },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',

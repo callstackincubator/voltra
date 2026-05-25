@@ -1,4 +1,4 @@
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
 
 import {
   DEFAULT_WEATHER,

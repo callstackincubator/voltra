@@ -1,13 +1,13 @@
 # Dynamic colors
 
-Voltra supports Android dynamic colors through semantic tokens exposed from `voltra/android`.
+Voltra supports Android dynamic colors through semantic tokens exposed from `@use-voltra/android`.
 
 These colors follow the current Android Material palette, so widgets can pick up wallpaper and theme changes without waiting for JavaScript to run again.
 
 ## Importing dynamic colors
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 ```
 
 `AndroidDynamicColors` includes these roles:
@@ -43,7 +43,7 @@ import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
 ## Example
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 
 export function WeatherWidget() {
   return (
@@ -95,7 +95,7 @@ You can use `AndroidDynamicColors.*` anywhere Android accepts a color value, inc
 Dynamic color tokens work in server-rendered Android widgets too.
 
 ```tsx
-import { AndroidDynamicColors, VoltraAndroid } from 'voltra/android'
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 
 const content = (
   <VoltraAndroid.Box

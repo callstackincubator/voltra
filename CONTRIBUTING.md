@@ -12,23 +12,30 @@ All work on Voltra happens directly on GitHub. Contributors send pull requests w
 
 1. Fork the repo and create your branch from `main` (a guide on [how to fork a repository](https://help.github.com/articles/fork-a-repo/)).
 2. Run `npm install` to install all required dependencies.
-3. Build the plugin: `npm run build --workspace @use-voltra/expo-plugin`.
+3. Build the plugins: `npm run build:plugin`.
 4. Now you are ready to make changes.
 
 ## Architecture overview
 
 ### JS/TS code structure
 
-The JavaScript/TypeScript code has **two separate entry points** that must be maintained as independent boundaries:
+The JavaScript/TypeScript code is split by platform and runtime boundary:
 
-- **Client entry (`packages/voltra/src/index.ts`)**: React Native code that runs in the app. Exports JSX components, hooks, and the imperative API for managing Live Activities.
-- **Server entry (`packages/voltra/src/server.ts`)**: Node.js code for rendering Voltra components to string payloads. Used for server-side rendering and push notification payloads.
+- **iOS JSX (`packages/ios`)**: `Voltra` components and `@use-voltra/ios/server` rendering helpers.
+- **iOS client (`packages/ios-client`)**: React Native runtime APIs, previews, and the iOS Expo config plugin.
+- **Android JSX (`packages/android`)**: `VoltraAndroid` components and `@use-voltra/android/server` rendering helpers.
+- **Android client (`packages/android-client`)**: React Native runtime APIs and the Android Expo config plugin.
+- **Server packages (`packages/ios-server`, `packages/android-server`, `packages/server`)**: Node-only rendering and HTTP widget handlers.
 
-⚠️ **Important**: These two entry points must remain separate. Client code should not import server-only dependencies, and server code should not import React Native-specific modules.
+⚠️ **Important**: Keep client and server entry points separate. App bundles must not import server-only packages.
 
-### Expo config plugin (`packages/expo-plugin/`)
+### Expo config plugins
 
-The Expo plugin in `packages/expo-plugin/src/` handles all Xcode project setup during `expo prebuild`:
+- `packages/expo-plugin/` — shared validation, locale picking, prerender utilities
+- `packages/ios-client/expo-plugin/` — iOS Live Activities, widget extension, Xcode setup
+- `packages/android-client/expo-plugin/` — Android widgets and manifest
+
+The iOS plugin handles Xcode project setup during `expo prebuild`:
 
 1. **Creates the widget extension target** with proper build settings
 2. **Copies template files** from `ios-files/` (widget bundle, assets, Info.plist) into the extension target
@@ -36,27 +43,23 @@ The Expo plugin in `packages/expo-plugin/src/` handles all Xcode project setup d
 4. **Sets up entitlements** for App Groups (optional, for event forwarding)
 5. **Configures push notifications** (optional)
 
-### Swift code distribution (`ios/`)
+### Swift code distribution (`packages/ios-client/ios/`)
 
-Voltra's Swift code lives in `ios/` and is distributed as a **CocoaPods package** with multiple subspecs:
+Voltra's Swift sources for the iOS React Native client live under `@use-voltra/ios-client` and ship as **CocoaPods** pods:
+
+- **`Voltra.podspec`**: React Native Turbo Module + Fabric view + shared Swift UI (`ios/app/`, `ios/ui/`, `ios/shared/`).
+- **`VoltraWidget.podspec`**: Widget extension Swift (`ios/ui/`, `ios/shared/`, `ios/target/`).
 
 ```ruby
-# From ios/Voltra.podspec
-s.subspec 'Core' do |ss|
-  # React Native bridge module (auto-linked by Expo)
-  ss.source_files = ["app/**/*.swift", "shared/**/*.swift", "ui/**/*.swift"]
-end
-
-s.subspec 'Widget' do |ss|
-  # Widget extension code (used by Live Activity target)
-  ss.source_files = ["shared/**/*.swift", "ui/**/*.swift", "target/**/*.swift"]
-end
+# From packages/ios-client/Voltra.podspec (paths relative to the podspec)
+s.source_files = [
+  "ios/app/**/*.swift",
+  "ios/app/**/*.m",
+  "ios/app/**/*.mm",
+  "ios/ui/**/*.swift",
+  "ios/shared/**/*.swift",
+]
 ```
-
-- **`Core` subspec**: Contains the React Native module (`app/`), shared code (`shared/`), and UI components (`ui/`). Auto-linked by Expo in the main app.
-- **`Widget` subspec**: Contains shared code, UI components, and widget-specific files (`target/`). Used by the Live Activity extension target.
-
-This separation ensures the widget extension doesn't include unnecessary React Native dependencies.
 
 ### Template files (`ios-files/`)
 
@@ -68,13 +71,13 @@ Files in `ios-files/` are copied by the config plugin into the generated widget 
 
 ## Props synchronization
 
-Component props are kept in sync between TypeScript and Swift via a **custom code generator**. The single source of truth is:
+Component props are kept in sync across TypeScript, Swift, and Kotlin via a **custom code generator**. The single source of truth is the private generator workspace:
 
 ```
-data/components.json
+packages/generator/data/components.json
 ```
 
-This file defines all components, their parameters, types, and short names used for payload compression.
+This file defines all components, their parameters, platform availability, and short names used for payload compression.
 
 ### Running the generator
 
@@ -82,14 +85,27 @@ This file defines all components, their parameters, types, and short names used 
 npm run generate
 ```
 
-This generates:
+This runs the generator script in `@use-voltra/generator` at `packages/generator/generator/generate-types.ts`.
 
-- **TypeScript prop types**: `src/jsx/props/*.ts`
-- **Swift parameter structs**: `ios/ui/Generated/Parameters/*.swift`
-- **Component ID mappings**: `src/payload/component-ids.ts` and `ios/shared/ComponentTypeID.swift`
-- **Short name mappings**: `src/payload/short-names.ts` and `ios/shared/ShortNames.swift`
+The generator filters components by platform (`swiftAvailability` for iOS, `androidAvailability` for Android) and writes outputs to the packages that own each runtime:
 
-⚠️ **Important**: When adding new components or modifying props, always update `data/components.json` first, then run the generator. Do not manually edit generated files (marked with `.generated`).
+| Output                                     | Path                                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| **TypeScript prop types (iOS)**            | `packages/ios/src/jsx/props/*.ts`                                                       |
+| **TypeScript prop types (Android)**        | `packages/android/src/jsx/props/*.ts`                                                   |
+| **Swift parameter structs**                | `packages/ios-client/ios/ui/Generated/Parameters/*.swift`                               |
+| **Kotlin parameter structs**               | `packages/android-client/android/src/main/java/voltra/models/parameters/*Parameters.kt` |
+| **iOS component ID mappings (TS)**         | `packages/ios/src/payload/component-ids.ts`                                             |
+| **Android component ID mappings (TS)**     | `packages/android/src/payload/component-ids.ts`                                         |
+| **iOS component ID mappings (Swift)**      | `packages/ios-client/ios/shared/ComponentTypeID.swift`                                  |
+| **Android component ID mappings (Kotlin)** | `packages/android-client/android/src/main/java/voltra/payload/ComponentTypeID.kt`       |
+| **Short name mappings (TS)**               | `packages/core/src/payload/short-names.ts`                                              |
+| **Short name mappings (Swift)**            | `packages/ios-client/ios/shared/ShortNames.swift`                                       |
+| **Short name mappings (Kotlin)**           | `packages/android-client/android/src/main/java/voltra/generated/ShortNames.kt`          |
+
+After generation, the script formats JS (iOS and Android packages), Kotlin (`@use-voltra/android-client`), and Swift (`@use-voltra/ios-client`).
+
+⚠️ **Important**: `packages/generator` is a private tooling workspace, not a published runtime package. When adding new components or modifying props, always update `packages/generator/data/components.json` first, then run the generator. Do not manually edit generated files (directories include a `.generated` marker file). Component `.tsx` files that call `createVoltraComponent` are still written by hand in `packages/ios/src/jsx/` and `packages/android/src/jsx/`.
 
 ## Payload size budget
 
@@ -125,8 +141,8 @@ The payload schema has a version number to support forward compatibility. When t
 
 The version is defined in two places that must stay in sync:
 
-- **TypeScript**: `packages/voltra/src/renderer/renderer.ts` → `VOLTRA_PAYLOAD_VERSION`
-- **Swift**: `packages/voltra/ios/shared/VoltraPayloadMigrator.swift` → `currentVersion`
+- **TypeScript**: `packages/core/src/renderer/renderer.ts` → `VOLTRA_PAYLOAD_VERSION`
+- **Swift**: `packages/ios-client/ios/shared/VoltraPayloadMigrator.swift` → `currentVersion`
 
 ### When to increment the version
 
@@ -181,7 +197,7 @@ The `example/` directory contains an Expo app for testing changes.
 
 ```sh
 # 1) Build the plugin
-npm run build --workspace @use-voltra/expo-plugin
+npm run build:plugin
 
 # 2) Install example dependencies
 (cd example && npm install)
@@ -193,7 +209,7 @@ npm run build --workspace @use-voltra/expo-plugin
 (cd example && npx expo run:ios)
 ```
 
-If iterating on the plugin, rebuild after each change in `packages/expo-plugin/src/`.
+If iterating on a plugin, rebuild after each change under `packages/expo-plugin/src/`, `packages/ios-client/expo-plugin/src/`, or `packages/android-client/expo-plugin/src/`.
 
 ### Running tests
 

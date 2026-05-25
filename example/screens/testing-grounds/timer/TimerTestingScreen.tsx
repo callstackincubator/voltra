@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { VoltraWidgetPreview } from 'voltra/client'
+import { StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
+import { Voltra } from '@use-voltra/ios'
+import { VoltraWidgetPreview } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 const DEFAULT_TEMPLATES = {
   running: 'Time remaining: {time}',
@@ -86,139 +87,130 @@ export default function TimerTestingScreen() {
   )
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Timer Testing</Text>
-        <Text style={styles.subheading}>
-          Test the VoltraTimer component behaviors, including native text updates for Live Activities.
-        </Text>
+    <ScreenLayout
+      title="Timer Testing"
+      description="Test the VoltraTimer component behaviors, including native text updates for Live Activities."
+    >
+      {/* Preview */}
+      <Card>
+        <Card.Title>Live Preview</Card.Title>
+        <View style={styles.previewContainer}>
+          <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
+            {renderTimerWidget()}
+          </VoltraWidgetPreview>
+        </View>
+        <Button title="Reset / Start Timer" variant="primary" onPress={resetTimer} style={{ marginTop: 16 }} />
+      </Card>
 
-        {/* Preview */}
-        <Card>
-          <Card.Title>Live Preview</Card.Title>
-          <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
-              {renderTimerWidget()}
-            </VoltraWidgetPreview>
-          </View>
-          <Button title="Reset / Start Timer" variant="primary" onPress={resetTimer} style={{ marginTop: 16 }} />
-        </Card>
+      {/* Configuration */}
+      <Card>
+        <Card.Title>Configuration</Card.Title>
 
-        {/* Configuration */}
-        <Card>
-          <Card.Title>Configuration</Card.Title>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Mode</Text>
-            <View style={styles.toggleGroup}>
-              <Button
-                title="Timer"
-                variant={mode === 'timer' ? 'primary' : 'secondary'}
-                onPress={() => setMode('timer')}
-                style={styles.smButton}
-              />
-              <Button
-                title="Stopwatch"
-                variant={mode === 'stopwatch' ? 'primary' : 'secondary'}
-                onPress={() => setMode('stopwatch')}
-                style={styles.smButton}
-              />
-            </View>
-          </View>
-
-          {mode === 'timer' && (
-            <>
-              <View style={styles.row}>
-                <Text style={styles.label}>Direction</Text>
-                <View style={styles.toggleGroup}>
-                  <Button
-                    title="Down"
-                    variant={direction === 'down' ? 'primary' : 'secondary'}
-                    onPress={() => setDirection('down')}
-                    style={styles.smButton}
-                  />
-                  <Button
-                    title="Up"
-                    variant={direction === 'up' ? 'primary' : 'secondary'}
-                    onPress={() => setDirection('up')}
-                    style={styles.smButton}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.row}>
-                <Text style={styles.label}>Duration (seconds)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={durationSec}
-                  onChangeText={setDurationSec}
-                  keyboardType="numeric"
-                />
-              </View>
-            </>
-          )}
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Style</Text>
-            <View style={styles.toggleGroup}>
-              <Button
-                title="Timer"
-                variant={textStyle === 'timer' ? 'primary' : 'secondary'}
-                onPress={() => setTextStyle('timer')}
-                style={styles.smButton}
-              />
-              <Button
-                title="Relative"
-                variant={textStyle === 'relative' ? 'primary' : 'secondary'}
-                onPress={() => setTextStyle('relative')}
-                style={styles.smButton}
-              />
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Show Hours</Text>
-            <View style={styles.toggleGroup}>
-              <Button
-                title="Off"
-                variant={!showHours ? 'primary' : 'secondary'}
-                onPress={() => setShowHours(false)}
-                style={styles.smButton}
-              />
-              <Button
-                title="On"
-                variant={showHours ? 'primary' : 'secondary'}
-                onPress={() => setShowHours(true)}
-                style={styles.smButton}
-              />
-            </View>
-          </View>
-
-          <View style={styles.col}>
-            <Text style={styles.label}>Templates (JSON)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={templateJson}
-              onChangeText={setTemplateJson}
-              multiline
+        <View style={styles.row}>
+          <Text style={styles.label}>Mode</Text>
+          <View style={styles.toggleGroup}>
+            <Button
+              title="Timer"
+              variant={mode === 'timer' ? 'primary' : 'secondary'}
+              onPress={() => setMode('timer')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Stopwatch"
+              variant={mode === 'stopwatch' ? 'primary' : 'secondary'}
+              onPress={() => setMode('stopwatch')}
+              style={styles.smButton}
             />
           </View>
-        </Card>
-
-        <View style={styles.footer}>
-          <Button title="Back" variant="ghost" onPress={() => router.back()} />
         </View>
-      </ScrollView>
-    </View>
+
+        {mode === 'timer' && (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Direction</Text>
+              <View style={styles.toggleGroup}>
+                <Button
+                  title="Down"
+                  variant={direction === 'down' ? 'primary' : 'secondary'}
+                  onPress={() => setDirection('down')}
+                  style={styles.smButton}
+                />
+                <Button
+                  title="Up"
+                  variant={direction === 'up' ? 'primary' : 'secondary'}
+                  onPress={() => setDirection('up')}
+                  style={styles.smButton}
+                />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <Text style={styles.label}>Duration (seconds)</Text>
+              <TextInput
+                style={styles.input}
+                value={durationSec}
+                onChangeText={setDurationSec}
+                keyboardType="numeric"
+              />
+            </View>
+          </>
+        )}
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Style</Text>
+          <View style={styles.toggleGroup}>
+            <Button
+              title="Timer"
+              variant={textStyle === 'timer' ? 'primary' : 'secondary'}
+              onPress={() => setTextStyle('timer')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Relative"
+              variant={textStyle === 'relative' ? 'primary' : 'secondary'}
+              onPress={() => setTextStyle('relative')}
+              style={styles.smButton}
+            />
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Show Hours</Text>
+          <View style={styles.toggleGroup}>
+            <Button
+              title="Off"
+              variant={!showHours ? 'primary' : 'secondary'}
+              onPress={() => setShowHours(false)}
+              style={styles.smButton}
+            />
+            <Button
+              title="On"
+              variant={showHours ? 'primary' : 'secondary'}
+              onPress={() => setShowHours(true)}
+              style={styles.smButton}
+            />
+          </View>
+        </View>
+
+        <View style={styles.col}>
+          <Text style={styles.label}>Templates (JSON)</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            value={templateJson}
+            onChangeText={setTemplateJson}
+            multiline
+          />
+        </View>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  content: { padding: 20 },
-  heading: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
-  subheading: { fontSize: 14, color: '#CBD5F5', marginBottom: 24 },
   previewContainer: { alignItems: 'center', padding: 10 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   col: { marginBottom: 16 },

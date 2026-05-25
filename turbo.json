@@ -6,7 +6,7 @@
       "outputs": ["build/**"]
     },
     "test": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build", "build"],
       "cache": false
     },
     "lint": {},

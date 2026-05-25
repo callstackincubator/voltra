@@ -2,6 +2,7 @@
 /android/build
 /example/android
 /packages/*/build
+/packages/*/expo-plugin/build
 /packages/*/.expo
 /packages/*/android/build
 /packages/*/ios/.build

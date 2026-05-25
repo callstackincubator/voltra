@@ -3,8 +3,6 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "voltra": ["./packages/voltra/src/index.ts"],
-      "voltra/*": ["./packages/voltra/src/*"],
       "@use-voltra/android": ["./packages/android/src/index.ts"],
       "@use-voltra/android-client": ["./packages/android-client/src/index.ts"],
       "@use-voltra/android/client": ["./packages/android-client/src/index.ts"],

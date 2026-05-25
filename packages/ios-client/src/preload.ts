@@ -1,7 +1,7 @@
 import { Platform } from 'react-native'
 
 import type { PreloadImageOptions, PreloadImagesResult } from './types.js'
-import VoltraModule from './VoltraModule.js'
+import { getNativeVoltra } from './VoltraModule.js'
 
 export type { PreloadImageOptions, PreloadImagesResult } from './types.js'
 
@@ -17,7 +17,7 @@ export async function preloadImages(images: PreloadImageOptions[]): Promise<Prel
   }
 
   try {
-    return await VoltraModule.preloadImages(images)
+    return await getNativeVoltra().preloadImages(images)
   } catch (error) {
     return {
       succeeded: [],
@@ -33,7 +33,7 @@ export async function reloadLiveActivities(activityNames?: string[]): Promise<vo
   if (!assertIOS('reloadLiveActivities')) return
 
   try {
-    await VoltraModule.reloadLiveActivities(activityNames ?? null)
+    await getNativeVoltra().reloadLiveActivities(activityNames ?? null)
   } catch (error) {
     console.error('Failed to reload Live Activities:', error)
   }
@@ -43,7 +43,7 @@ export async function clearPreloadedImages(keys?: string[]): Promise<void> {
   if (!assertIOS('clearPreloadedImages')) return
 
   try {
-    await VoltraModule.clearPreloadedImages(keys ?? null)
+    await getNativeVoltra().clearPreloadedImages(keys ?? null)
   } catch (error) {
     console.error('Failed to clear preloaded images:', error)
   }

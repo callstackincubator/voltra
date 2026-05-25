@@ -20,7 +20,7 @@ import {
 } from '@use-voltra/android'
 
 import { useUpdateOnHMR } from '../utils/index.js'
-import VoltraModule from '../VoltraModule.js'
+import { getNativeVoltraAndroid } from '../native/NativeVoltraAndroid.js'
 
 const NOTIFICATION_PERMISSION = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
 
@@ -202,7 +202,7 @@ export const startAndroidOngoingNotification = async (
   input: AndroidOngoingNotificationInput,
   options: StartAndroidOngoingNotificationOptions
 ): Promise<AndroidOngoingNotificationStartResult> => {
-  return (await VoltraModule.startAndroidOngoingNotification(
+  return (await getNativeVoltraAndroid().startAndroidOngoingNotification(
     serializeAndroidOngoingNotificationInput(input),
     getStartAndroidOngoingNotificationOptions(input, options)
   )) as AndroidOngoingNotificationStartResult
@@ -212,7 +212,7 @@ export const upsertAndroidOngoingNotification = async (
   input: AndroidOngoingNotificationInput,
   options: StartAndroidOngoingNotificationOptions
 ): Promise<AndroidOngoingNotificationUpsertResult> => {
-  return (await VoltraModule.upsertAndroidOngoingNotification(
+  return (await getNativeVoltraAndroid().upsertAndroidOngoingNotification(
     serializeAndroidOngoingNotificationInput(input),
     getStartAndroidOngoingNotificationOptions(input, options)
   )) as AndroidOngoingNotificationUpsertResult
@@ -223,7 +223,7 @@ export const updateAndroidOngoingNotification = async (
   input: AndroidOngoingNotificationInput,
   options?: UpdateAndroidOngoingNotificationOptions
 ): Promise<AndroidOngoingNotificationUpdateResult> => {
-  return (await VoltraModule.updateAndroidOngoingNotification(
+  return (await getNativeVoltraAndroid().updateAndroidOngoingNotification(
     notificationId,
     serializeAndroidOngoingNotificationInput(input),
     getFilteredAndroidOngoingNotificationUpdateOptions(options)
@@ -260,31 +260,33 @@ export const openAndroidNotificationSettings = async (): Promise<void> => {
     return
   }
 
-  return VoltraModule.openAndroidNotificationSettings()
+  return getNativeVoltraAndroid().openAndroidNotificationSettings()
 }
 
 export const stopAndroidOngoingNotification = async (
   notificationId: string
 ): Promise<AndroidOngoingNotificationStopResult> => {
-  return (await VoltraModule.stopAndroidOngoingNotification(notificationId)) as AndroidOngoingNotificationStopResult
+  return (await getNativeVoltraAndroid().stopAndroidOngoingNotification(
+    notificationId
+  )) as AndroidOngoingNotificationStopResult
 }
 
 export const isAndroidOngoingNotificationActive = (notificationId: string): boolean => {
-  return VoltraModule.isAndroidOngoingNotificationActive(notificationId)
+  return getNativeVoltraAndroid().isAndroidOngoingNotificationActive(notificationId)
 }
 
 export const getAndroidOngoingNotificationStatus = (notificationId: string): AndroidOngoingNotificationStatus => {
-  return VoltraModule.getAndroidOngoingNotificationStatus(notificationId)
+  return getNativeVoltraAndroid().getAndroidOngoingNotificationStatus(notificationId)
 }
 
 export async function endAllAndroidOngoingNotifications(): Promise<void> {
-  return VoltraModule.endAllAndroidOngoingNotifications()
+  return getNativeVoltraAndroid().endAllAndroidOngoingNotifications()
 }
 
 export const canPostPromotedAndroidNotifications = (): boolean => {
-  return VoltraModule.canPostPromotedAndroidNotifications()
+  return getNativeVoltraAndroid().canPostPromotedAndroidNotifications()
 }
 
 export const getAndroidOngoingNotificationCapabilities = (): AndroidOngoingNotificationCapabilities => {
-  return VoltraModule.getAndroidOngoingNotificationCapabilities()
+  return getNativeVoltraAndroid().getAndroidOngoingNotificationCapabilities()
 }

@@ -5,7 +5,7 @@ import {
   type WidgetInfo,
 } from '@use-voltra/android'
 
-import VoltraModule from '../VoltraModule.js'
+import { getNativeVoltraAndroid } from '../native/NativeVoltraAndroid.js'
 
 export type {
   AndroidWidgetSize,
@@ -22,30 +22,30 @@ export const updateAndroidWidget = async (
 ): Promise<void> => {
   const payload = renderAndroidWidgetToString(variants)
 
-  return VoltraModule.updateAndroidWidget(widgetId, payload, {
+  return getNativeVoltraAndroid().updateAndroidWidget(widgetId, payload, {
     deepLinkUrl: options?.deepLinkUrl,
   })
 }
 
 export const reloadAndroidWidgets = async (widgetIds?: string[]): Promise<void> => {
-  return VoltraModule.reloadAndroidWidgets(widgetIds ?? null)
+  return getNativeVoltraAndroid().reloadAndroidWidgets(widgetIds ?? null)
 }
 
 export const clearAndroidWidget = async (widgetId: string): Promise<void> => {
-  return VoltraModule.clearAndroidWidget(widgetId)
+  return getNativeVoltraAndroid().clearAndroidWidget(widgetId)
 }
 
 export const clearAllAndroidWidgets = async (): Promise<void> => {
-  return VoltraModule.clearAllAndroidWidgets()
+  return getNativeVoltraAndroid().clearAllAndroidWidgets()
 }
 
 export const requestPinAndroidWidget = async (
   widgetId: string,
   options?: { previewWidth?: number; previewHeight?: number }
 ): Promise<boolean> => {
-  return VoltraModule.requestPinGlanceAppWidget(widgetId, options)
+  return getNativeVoltraAndroid().requestPinGlanceAppWidget(widgetId, options)
 }
 
 export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
-  return VoltraModule.getActiveWidgets()
+  return getNativeVoltraAndroid().getActiveWidgets() as Promise<WidgetInfo[]>
 }

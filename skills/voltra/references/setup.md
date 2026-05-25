@@ -5,13 +5,13 @@ Use this reference when the task is about bootstrapping or installation.
 ## Domain Rules
 
 - Voltra is not supported in Expo Go. Use Expo Dev Client or a native build.
-- Start with the Voltra package, Expo config plugin, and `expo prebuild`.
+- Install `@use-voltra/ios-client` and/or `@use-voltra/android-client`, then configure the matching Expo plugins and run `expo prebuild`.
 - If setup also requires widget registration or push settings, also read `app-config.md`.
 
 ## Setup Flow
 
-1. Install `voltra`.
-2. Add the Voltra plugin to `app.json` or `app.config.*`.
+1. Install `@use-voltra/ios-client` and/or `@use-voltra/android-client`.
+2. Add `@use-voltra/ios-client` and/or `@use-voltra/android-client` to `app.json` or `app.config.*`.
 3. For iOS, ensure the deployment target meets Voltra's minimum supported version.
 4. Run `expo prebuild` for the target platform.
 5. Continue with the relevant platform reference.

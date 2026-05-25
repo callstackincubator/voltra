@@ -1,5 +1,5 @@
 import React from 'react'
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
 
 type CompassLiveActivityUIProps = {
   /** Heading in degrees (0-360, where 0 = North) */

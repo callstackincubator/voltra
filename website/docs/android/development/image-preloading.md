@@ -33,7 +33,7 @@ type PreloadImagesResult = {
 **Example:**
 
 ```typescript
-import { preloadImages } from 'voltra/android'
+import { preloadImages } from '@use-voltra/android-client'
 
 const result = await preloadImages([
   {
@@ -53,7 +53,7 @@ if (result.succeeded.includes('current-album')) {
 Reloads Android widgets to pick up newly preloaded images. If no `widgetIds` are provided, all active widgets will be reloaded.
 
 ```typescript
-import { reloadWidgets } from 'voltra/android'
+import { reloadWidgets } from '@use-voltra/android-client'
 
 // Reload all widgets
 await reloadWidgets()
@@ -67,7 +67,7 @@ await reloadWidgets(['weather_widget'])
 Removes preloaded images from the Android cache. If no `keys` are provided, all preloaded images will be cleared.
 
 ```typescript
-import { clearPreloadedImages } from 'voltra/android'
+import { clearPreloadedImages } from '@use-voltra/android-client'
 
 // Clear specific images
 await clearPreloadedImages(['current-album'])
@@ -81,7 +81,7 @@ await clearPreloadedImages()
 Once images are preloaded, reference them using the `assetName` property in the `VoltraAndroid.Image` component:
 
 ```tsx
-import { VoltraAndroid } from 'voltra'
+import { VoltraAndroid } from '@use-voltra/android'
 
 function MusicWidget({ albumKey }) {
   return (

@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle } from 'react'
-import { useLiveActivity } from 'voltra/client'
+import { useLiveActivity } from '@use-voltra/ios-client'
 
 import { DeepLinksLiveActivityUI } from '../../components/live-activities/DeepLinksLiveActivityUI'
 import { LiveActivityExampleComponent } from './types'

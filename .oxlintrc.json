@@ -322,32 +322,36 @@
       }
     },
     {
-      "files": ["packages/expo-plugin/src/**/*.{ts,tsx,js,jsx}"],
+      "files": [
+        "packages/expo-plugin/src/**/*.{ts,tsx,js,jsx}",
+        "packages/ios-client/expo-plugin/src/**/*.{ts,tsx,js,jsx}",
+        "packages/android-client/expo-plugin/src/**/*.{ts,tsx,js,jsx}"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "paths": [
-              { "name": "voltra", "message": "@use-voltra/expo-plugin must stay installation-time only." },
-              { "name": "@use-voltra/core", "message": "@use-voltra/expo-plugin must stay installation-time only." },
-              { "name": "@use-voltra/server", "message": "@use-voltra/expo-plugin must stay installation-time only." },
-              { "name": "@use-voltra/ios", "message": "@use-voltra/expo-plugin must stay installation-time only." },
-              { "name": "@use-voltra/android", "message": "@use-voltra/expo-plugin must stay installation-time only." },
+              { "name": "voltra", "message": "Voltra config plugins must stay installation-time only." },
+              { "name": "@use-voltra/core", "message": "Voltra config plugins must stay installation-time only." },
+              { "name": "@use-voltra/server", "message": "Voltra config plugins must stay installation-time only." },
+              { "name": "@use-voltra/ios", "message": "Voltra config plugins must stay installation-time only." },
+              { "name": "@use-voltra/android", "message": "Voltra config plugins must stay installation-time only." },
               {
                 "name": "@use-voltra/ios-client",
-                "message": "@use-voltra/expo-plugin must stay installation-time only."
+                "message": "Voltra config plugins must stay installation-time only."
               },
               {
                 "name": "@use-voltra/android-client",
-                "message": "@use-voltra/expo-plugin must stay installation-time only."
+                "message": "Voltra config plugins must stay installation-time only."
               },
               {
                 "name": "@use-voltra/ios-server",
-                "message": "@use-voltra/expo-plugin must stay installation-time only."
+                "message": "Voltra config plugins must stay installation-time only."
               },
               {
                 "name": "@use-voltra/android-server",
-                "message": "@use-voltra/expo-plugin must stay installation-time only."
+                "message": "Voltra config plugins must stay installation-time only."
               },
               {
                 "name": "@use-voltra/ios/client",
@@ -364,7 +368,7 @@
       }
     },
     {
-      "files": ["packages/voltra/src/**/*.{ts,tsx,js,jsx}", "packages/voltra/generator/**/*.{ts,tsx,js,jsx}"],
+      "files": ["packages/generator/generator/**/*.{ts,tsx,js,jsx}"],
       "rules": {
         "no-restricted-imports": [
           "error",

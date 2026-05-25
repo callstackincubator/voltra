@@ -1,128 +1,16 @@
-import { useRouter } from 'expo-router'
-import React from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
-
 import { ActiveWidgetsAndroidCard } from '~/components/ActiveWidgetsAndroidCard'
-import { Button } from '~/components/Button'
-import { Card } from '~/components/Card'
-
-const ANDROID_SECTIONS = [
-  {
-    id: 'pin-widgets',
-    title: 'Pin Widgets',
-    description:
-      'Request to pin widgets directly from your app. Show the Android system pin widget dialog without leaving your app.',
-    route: '/android-widgets/pin',
-  },
-  {
-    id: 'image-preloading',
-    title: 'Image Preloading',
-    description:
-      'Test image preloading for Android Widgets. Download images to the app cache and verify they appear in your widgets.',
-    route: '/android-widgets/image-preloading',
-  },
-  {
-    id: 'image-fallback',
-    title: 'Image Fallback',
-    description:
-      'Test the new image fallback behavior using backgroundColor from styles. See how missing images render with different style properties.',
-    route: '/android-widgets/image-fallback',
-  },
-  {
-    id: 'preview-widgets',
-    title: 'Widget Previews',
-    description: 'Preview your Android widget layouts directly within the app using VoltraWidgetPreview.',
-    route: '/android-widgets/preview',
-  },
-  {
-    id: 'chart-widgets',
-    title: 'Chart Widgets',
-    description:
-      'Preview chart widgets rendered via Canvas bitmap. Supports bar, line, area, point, rule, and pie/donut charts.',
-    route: '/android-widgets/charts',
-  },
-  {
-    id: 'server-driven-widgets',
-    title: 'Server-Driven Widgets',
-    description:
-      'Serve dynamic widget content from a remote server using Voltra SSR. This example includes a sample widget server implementation.',
-    route: '/android-widgets/server-driven',
-  },
-  {
-    id: 'material-colors',
-    title: 'Material Colors',
-    description:
-      'Test one Android widget through both client-side and server-side rendering, using Material dynamic colors from the current device theme.',
-    route: '/android-widgets/material-colors',
-  },
-  {
-    id: 'custom-fonts',
-    title: 'Custom Fonts',
-    description:
-      'Render text with custom fonts in Android Glance widgets using bitmap rendering. Includes Pacifico (script) and Press Start 2P (pixel) demo.',
-    route: '/android-widgets/custom-fonts',
-  },
-  {
-    id: 'ongoing-notifications',
-    title: 'Android Ongoing Notifications',
-    description:
-      'Test semantic Android ongoing notifications with local start, update, upsert, stop, promotion capability checks, and real notification data payloads.',
-    route: '/testing-grounds/android-ongoing-notification',
-  },
-  // Add more Android-specific sections here as they are implemented
-]
+import { ExampleSectionCards } from '~/components/ExampleSectionCards'
+import { ScreenLayout } from '~/components/ScreenLayout'
+import { ANDROID_WIDGET_SECTIONS } from '~/screens/android/tabs/sections'
 
 export default function AndroidScreen() {
-  const router = useRouter()
-
   return (
-    <View style={styles.container}>
-      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Voltra for Android</Text>
-        <Text style={styles.subheading}>
-          Voltra for Android lets you build custom Android Widgets and ongoing notifications using React Native - no
-          need to write Kotlin or XML anymore.
-        </Text>
-
-        <ActiveWidgetsAndroidCard />
-
-        {ANDROID_SECTIONS.map((section) => (
-          <Card key={section.id}>
-            <Card.Title>{section.title}</Card.Title>
-            <Card.Text>{section.description}</Card.Text>
-            <View style={styles.buttonContainer}>
-              <Button title={`Explore ${section.title}`} variant="primary" onPress={() => router.push(section.route)} />
-            </View>
-          </Card>
-        ))}
-      </ScrollView>
-    </View>
+    <ScreenLayout
+      title="Android Widgets"
+      description="Build Android home screen widgets with React Native. Explore pinning, previews, charts, and server-driven updates."
+    >
+      <ActiveWidgetsAndroidCard />
+      <ExampleSectionCards sections={ANDROID_WIDGET_SECTIONS} />
+    </ScreenLayout>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
-  buttonContainer: {
-    marginTop: 16,
-  },
-})

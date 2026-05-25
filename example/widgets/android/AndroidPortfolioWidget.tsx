@@ -1,5 +1,5 @@
 import React from 'react'
-import { VoltraAndroid } from 'voltra/android'
+import { VoltraAndroid } from '@use-voltra/android'
 
 const { LineMark, AreaMark } = VoltraAndroid
 

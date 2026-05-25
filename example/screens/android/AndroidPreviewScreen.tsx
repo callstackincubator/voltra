@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { VoltraAndroid } from 'voltra/android'
-import { AndroidWidgetFamily, VoltraWidgetPreview } from 'voltra/android/client'
+import { VoltraAndroid } from '@use-voltra/android'
+import { AndroidWidgetFamily, VoltraWidgetPreview } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 const ANDROID_WIDGET_FAMILIES: { id: AndroidWidgetFamily; title: string; description: string }[] = [
   {
@@ -102,94 +103,63 @@ export default function AndroidPreviewScreen() {
   ]
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Widget Preview Testing</Text>
-        <Text style={styles.subheading}>
-          Test how your Android widgets look at different sizes without leaving the app. These previews use the actual
-          native Glance renderers for 100% accuracy.
-        </Text>
-
-        {/* Family Selection */}
-        <Card>
-          <Card.Title>Widget Size: {ANDROID_WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.title}</Card.Title>
-          <Card.Text>{ANDROID_WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.description}</Card.Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollArea}>
-            <View style={styles.buttonRow}>
-              {ANDROID_WIDGET_FAMILIES.map((family) => (
-                <Button
-                  key={family.id}
-                  title={family.title}
-                  variant={selectedFamily === family.id ? 'primary' : 'secondary'}
-                  onPress={() => setSelectedFamily(family.id)}
-                  style={styles.choiceButton}
-                />
-              ))}
-            </View>
-          </ScrollView>
-        </Card>
-
-        {/* Color Selection */}
-        <Card>
-          <Card.Title>Customize Style</Card.Title>
+    <ScreenLayout
+      title="Widget Preview Testing"
+      description="Test how your Android widgets look at different sizes without leaving the app. These previews use the actual native Glance renderers for 100% accuracy."
+    >
+      <Card>
+        <Card.Title>Widget Size: {ANDROID_WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.title}</Card.Title>
+        <Card.Text>{ANDROID_WIDGET_FAMILIES.find((f) => f.id === selectedFamily)?.description}</Card.Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollArea}>
           <View style={styles.buttonRow}>
-            {COLORS.map((color) => (
+            {ANDROID_WIDGET_FAMILIES.map((family) => (
               <Button
-                key={color.value}
-                title={color.name}
-                variant={accentColor === color.value ? 'primary' : 'secondary'}
-                onPress={() => setAccentColor(color.value)}
+                key={family.id}
+                title={family.title}
+                variant={selectedFamily === family.id ? 'primary' : 'secondary'}
+                onPress={() => setSelectedFamily(family.id)}
                 style={styles.choiceButton}
               />
             ))}
           </View>
-        </Card>
+        </ScrollView>
+      </Card>
 
-        {/* Preview Area */}
-        <Card>
-          <Card.Title>Live Preview</Card.Title>
-          <Card.Text>This is rendered using a native Android View inside the app.</Card.Text>
-          <View style={styles.previewContainer}>
-            <View style={styles.previewWrapper}>
-              <VoltraWidgetPreview family={selectedFamily} style={styles.widgetBorder}>
-                <PreviewWidget title="Voltra Android" color={accentColor} />
-              </VoltraWidgetPreview>
-            </View>
-          </View>
-        </Card>
-
-        {/* Back Button */}
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      <Card>
+        <Card.Title>Customize Style</Card.Title>
+        <View style={styles.buttonRow}>
+          {COLORS.map((color) => (
+            <Button
+              key={color.value}
+              title={color.name}
+              variant={accentColor === color.value ? 'primary' : 'secondary'}
+              onPress={() => setAccentColor(color.value)}
+              style={styles.choiceButton}
+            />
+          ))}
         </View>
-      </ScrollView>
-    </View>
+      </Card>
+
+      <Card>
+        <Card.Title>Live Preview</Card.Title>
+        <Card.Text>This is rendered using a native Android View inside the app.</Card.Text>
+        <View style={styles.previewContainer}>
+          <View style={styles.previewWrapper}>
+            <VoltraWidgetPreview family={selectedFamily} style={styles.widgetBorder}>
+              <PreviewWidget title="Voltra Android" color={accentColor} />
+            </VoltraWidgetPreview>
+          </View>
+        </View>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 24,
-  },
   scrollArea: {
     marginHorizontal: -4,
   },

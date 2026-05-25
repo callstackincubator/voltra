@@ -1,4 +1,4 @@
-import { VoltraAndroid } from 'voltra/android'
+import { VoltraAndroid } from '@use-voltra/android'
 
 interface ImageFallbackWidgetProps {
   example?: 'colors' | 'styled' | 'transparent' | 'custom' | 'mixed'

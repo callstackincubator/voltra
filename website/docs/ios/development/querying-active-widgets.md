@@ -15,7 +15,7 @@ There may be a slight delay in the data returned by this API. iOS caches widget 
 :::
 
 ```typescript
-import { getActiveWidgets } from 'voltra/client'
+import { getActiveWidgets } from '@use-voltra/ios-client'
 
 async function checkWidgets() {
   const activeWidgets = await getActiveWidgets()

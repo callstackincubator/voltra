@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ES2020",
+    "rootDir": "../../..",
+    "baseUrl": "../../..",
+    "paths": {
+      "@use-voltra/expo-plugin": ["packages/expo-plugin/src/index.ts"]
+    }
+  },
+  "include": ["./src"]
+}

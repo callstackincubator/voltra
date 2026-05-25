@@ -1,4 +1,4 @@
-import { VoltraAndroid } from 'voltra/android'
+import { VoltraAndroid } from '@use-voltra/android'
 
 const { BarMark, LineMark, AreaMark, PointMark, RuleMark, SectorMark } = VoltraAndroid
 

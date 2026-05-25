@@ -25,7 +25,7 @@ When a user interacts with a button or toggle in your Live Activity, Voltra auto
 To handle interactions, subscribe to Voltra UI events using the `addVoltraListener` function with the `'interaction'` event type:
 
 ```typescript
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 const subscription = addVoltraListener('interaction', (event) => {
   console.log('Component interacted:', event.identifier)
@@ -70,7 +70,7 @@ If you don't provide an explicit `id` prop, Voltra will automatically generate a
 When users tap on the Live Activity itself (not on a button or link), your app can be launched via a deep link. Configure the deep link URL when starting a Live Activity:
 
 ```typescript
-import { useLiveActivity } from 'voltra/client'
+import { useLiveActivity } from '@use-voltra/ios-client'
 
 const { start } = useLiveActivity(
   {
@@ -132,9 +132,9 @@ Here's a complete example showing how to handle interactions:
 
 ```typescript
 import { useEffect } from 'react'
-import { useLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
-import { addVoltraListener } from 'voltra/client'
+import { Voltra } from '@use-voltra/ios'
+import { useLiveActivity } from '@use-voltra/ios-client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 function MyLiveActivity() {
   const { start, update } = useLiveActivity(

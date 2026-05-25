@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { VoltraAndroid } from 'voltra'
-import { clearPreloadedImages, preloadImages, reloadWidgets, updateAndroidWidget } from 'voltra/android/client'
+import { Alert, StyleSheet, Text, View } from 'react-native'
+import { VoltraAndroid } from '@use-voltra/android'
+import { clearPreloadedImages, preloadImages, reloadWidgets, updateAndroidWidget } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import { TextInput } from '~/components/TextInput'
 
 function generateRandomUrl(): string {
@@ -129,73 +130,46 @@ export default function AndroidImagePreloadingScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Android Image Preloading</Text>
-        <Text style={styles.subheading}>
-          Test preloading images for Android widgets. Enter a URL to preload an image and update the widget, or
-          overwrite existing preloaded images.
-        </Text>
+    <ScreenLayout
+      title="Android Image Preloading"
+      description="Test preloading images for Android widgets. Enter a URL to preload an image and update the widget, or overwrite existing preloaded images."
+    >
+      <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>Image URL</Text>
+        <TextInput
+          placeholder="https://example.com/image.jpg"
+          value={url}
+          onChangeText={setUrl}
+          keyboardType="url"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Image URL</Text>
-          <TextInput
-            placeholder="https://example.com/image.jpg"
-            value={url}
-            onChangeText={setUrl}
-            keyboardType="url"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
+      <View style={styles.buttonRow}>
+        <Button
+          title={isProcessing ? 'Processing...' : 'Setup Widget'}
+          variant="primary"
+          onPress={handleUpdateAndPreload}
+          disabled={isProcessing}
+        />
+        <Button
+          title={isProcessing ? 'Processing...' : 'Overwrite & Reload'}
+          variant="primary"
+          onPress={handleOverwriteAndReload}
+          disabled={isProcessing}
+        />
+        <Button title="Clear Images" variant="secondary" onPress={handleClearImages} />
+      </View>
 
-        <View style={styles.buttonRow}>
-          <Button
-            title={isProcessing ? 'Processing...' : 'Setup Widget'}
-            variant="primary"
-            onPress={handleUpdateAndPreload}
-            disabled={isProcessing}
-          />
-          <Button
-            title={isProcessing ? 'Processing...' : 'Overwrite & Reload'}
-            variant="primary"
-            onPress={handleOverwriteAndReload}
-            disabled={isProcessing}
-          />
-          <Button title="Clear Images" variant="secondary" onPress={handleClearImages} />
-        </View>
-
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
-        </View>
-      </ScrollView>
-    </View>
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0B0F1A',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
-  },
   inputContainer: {
     marginTop: 16,
   },

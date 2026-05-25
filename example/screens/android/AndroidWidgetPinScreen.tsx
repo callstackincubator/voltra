@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { requestPinAndroidWidget } from 'voltra/android/client'
+import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
+import { requestPinAndroidWidget } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 const AVAILABLE_WIDGETS = [
   {
@@ -87,103 +88,83 @@ export default function AndroidWidgetPinScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={[styles.scrollView]} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Pin Widget to Home Screen</Text>
-        <Text style={styles.subheading}>
-          Select a widget and pin it to your home screen. Optionally set preview dimensions to show how the widget will
-          look.
-        </Text>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Widget</Text>
-          {AVAILABLE_WIDGETS.map((widget) => (
-            <View key={widget.id} style={styles.widgetOption}>
-              <Button
-                title={widget.name}
-                variant={selectedWidgetId === widget.id ? 'primary' : 'secondary'}
-                onPress={() => {
-                  setSelectedWidgetId(widget.id)
-                  resetPreviewDimensions()
-                }}
-                style={styles.widgetButton}
-              />
-              <Text style={styles.widgetDescription}>{widget.description}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preview Dimensions (optional)</Text>
-          <View style={styles.previewInputs}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Width (dp)</Text>
-              <TextInput
-                style={styles.input}
-                value={previewWidth}
-                onChangeText={setPreviewWidth}
-                keyboardType="numeric"
-                placeholder={String(selectedWidget.defaultPreviewWidth)}
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Height (dp)</Text>
-              <TextInput
-                style={styles.input}
-                value={previewHeight}
-                onChangeText={setPreviewHeight}
-                keyboardType="numeric"
-                placeholder={String(selectedWidget.defaultPreviewHeight)}
-              />
-            </View>
+    <ScreenLayout
+      title="Pin Widget to Home Screen"
+      description="Select a widget and pin it to your home screen. Optionally set preview dimensions to show how the widget will look."
+    >
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Widget</Text>
+        {AVAILABLE_WIDGETS.map((widget) => (
+          <View key={widget.id} style={styles.widgetOption}>
+            <Button
+              title={widget.name}
+              variant={selectedWidgetId === widget.id ? 'primary' : 'secondary'}
+              onPress={() => {
+                setSelectedWidgetId(widget.id)
+                resetPreviewDimensions()
+              }}
+              style={styles.widgetButton}
+            />
+            <Text style={styles.widgetDescription}>{widget.description}</Text>
           </View>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Preview Dimensions (optional)</Text>
+        <View style={styles.previewInputs}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Width (dp)</Text>
+            <TextInput
+              style={styles.input}
+              value={previewWidth}
+              onChangeText={setPreviewWidth}
+              keyboardType="numeric"
+              placeholder={String(selectedWidget.defaultPreviewWidth)}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Height (dp)</Text>
+            <TextInput
+              style={styles.input}
+              value={previewHeight}
+              onChangeText={setPreviewHeight}
+              keyboardType="numeric"
+              placeholder={String(selectedWidget.defaultPreviewHeight)}
+            />
+          </View>
+        </View>
+        <Button title="Reset to Defaults" variant="ghost" onPress={resetPreviewDimensions} style={styles.resetButton} />
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.buttonRow}>
           <Button
-            title="Reset to Defaults"
-            variant="ghost"
-            onPress={resetPreviewDimensions}
-            style={styles.resetButton}
+            title="Pin with Preview"
+            variant="primary"
+            onPress={() => handlePinWidget(true)}
+            disabled={isPinning}
+            style={styles.pinButton}
+          />
+          <Button
+            title="Pin without Preview"
+            variant="secondary"
+            onPress={() => handlePinWidget(false)}
+            disabled={isPinning}
+            style={styles.pinButton}
           />
         </View>
+        {isPinning && <Text style={styles.loadingText}>Requesting pin...</Text>}
+      </View>
 
-        <View style={styles.section}>
-          <View style={styles.buttonRow}>
-            <Button
-              title="Pin with Preview"
-              variant="primary"
-              onPress={() => handlePinWidget(true)}
-              disabled={isPinning}
-              style={styles.pinButton}
-            />
-            <Button
-              title="Pin without Preview"
-              variant="secondary"
-              onPress={() => handlePinWidget(false)}
-              disabled={isPinning}
-              style={styles.pinButton}
-            />
-          </View>
-          {isPinning && <Text style={styles.loadingText}>Requesting pin...</Text>}
-        </View>
-
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
-        </View>
-      </ScrollView>
-    </View>
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
   section: {
     marginBottom: 24,
   },
@@ -192,17 +173,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     marginBottom: 12,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 8,
   },
   widgetOption: {
     marginTop: 12,
@@ -254,12 +224,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8232FF',
     textAlign: 'center',
-  },
-  noteText: {
-    marginTop: 8,
-    fontSize: 11,
-    color: '#94A3B8',
-    fontStyle: 'italic',
   },
   footer: {
     marginTop: 24,

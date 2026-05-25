@@ -110,7 +110,7 @@ See the [Layout & Containers](../components/layout) documentation for details on
 ### Example
 
 ```tsx
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
 
 const element = (
   <Voltra.VStack
@@ -269,7 +269,7 @@ The simplest way is to specify fonts directly in the Voltra plugin configuration
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "groupIdentifier": "group.com.example.app",
           "fonts": ["./assets/fonts", "./assets/custom-font.ttf"]
@@ -300,7 +300,7 @@ For detailed instructions, see Apple's documentation on [Applying custom fonts t
 Once your fonts are added to the project, you can use them with the `fontFamily` style property:
 
 ```tsx
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
 
 const element = (
   <Voltra.Text

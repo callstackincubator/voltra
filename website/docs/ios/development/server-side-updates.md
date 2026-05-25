@@ -15,7 +15,7 @@ To enable server-side updates via push notifications, you need to configure the 
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "enablePushNotifications": true
         }
@@ -32,7 +32,7 @@ To enable server-side updates via push notifications, you need to configure the 
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "enablePushNotifications": true,
           "groupIdentifier": "group.your.app.voltraui",
@@ -70,10 +70,10 @@ Voltra provides a server-side API that allows you to render React components int
 
 ### Using the server-side API
 
-Import the server-side rendering functions from `voltra/server`:
+Import the server-side rendering functions from  `@use-voltra/ios-server`:
 
 ```tsx
-import { renderLiveActivityToString, Voltra } from 'voltra/server'
+import { Voltra, renderLiveActivityToString } from '@use-voltra/ios-server'
 
 // Render your UI components to a JSON string
 const jsonPayload = renderLiveActivityToString({
@@ -184,7 +184,7 @@ Voltra provides specialized push tokens that are different from regular device t
 To update existing Live Activities, use activity push tokens:
 
 ```tsx
-import { addVoltraListener } from 'voltra/client'
+import { addVoltraListener } from '@use-voltra/ios-client'
 
 useEffect(() => {
   const subscription = addVoltraListener('activityTokenReceived', ({
@@ -246,8 +246,8 @@ Starting with iOS 18 and iPadOS 18, you can use **broadcast push notifications**
 Pass the `channelId` option when starting a Live Activity to subscribe it to a broadcast channel:
 
 ```typescript
-import { startLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 const activityId = await startLiveActivity(variants, {
   activityName: 'match-123',
@@ -285,7 +285,7 @@ When Live Activity tokens change or need to be refreshed, iOS may wake your app 
 Use the `isHeadless()` function to determine if your app is running in the background:
 
 ```typescript
-import { isHeadless } from 'voltra/client'
+import { isHeadless } from '@use-voltra/ios-client'
 
 // In your app's entry point or root component
 if (isHeadless()) {
@@ -303,7 +303,7 @@ When the app is launched in headless mode for token handling, **do not mount you
 
 ```typescript
 // In your app's entry point (e.g., App.tsx, index.js)
-import { isHeadless, addVoltraListener } from 'voltra/client'
+import { isHeadless, addVoltraListener } from '@use-voltra/ios-client'
 
 function App() {
   // Handle token events even in headless mode

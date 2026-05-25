@@ -1,12 +1,11 @@
-import { requireNativeView } from 'expo'
 import React, { type ReactNode, useEffect, useMemo } from 'react'
-import { type StyleProp, View, type ViewStyle } from 'react-native'
+import { type StyleProp, type ViewStyle } from 'react-native'
 
 import { renderVoltraVariantToJson } from '@use-voltra/ios'
 
-import { addVoltraListener, type VoltraInteractionEvent } from '../events.js'
+import VoltraFabricView from '../native/VoltraRNNativeComponent'
 
-const NativeVoltraView = requireNativeView('VoltraModule')
+import { addVoltraListener, type VoltraInteractionEvent } from '../events.js'
 
 const generateViewId = () => `voltra-view-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 
@@ -46,9 +45,5 @@ export function VoltraView({ id, children, style, onInteraction, testID }: Voltr
     return () => subscription.remove()
   }, [viewId, onInteraction])
 
-  return (
-    <View testID={testID} style={style}>
-      <NativeVoltraView payload={payload} viewId={viewId} style={voltraViewStyle} />
-    </View>
-  )
+  return <VoltraFabricView payload={payload} style={[voltraViewStyle, style]} testID={testID} viewId={viewId} />
 }

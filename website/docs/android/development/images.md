@@ -53,7 +53,7 @@ Android drawable resources have strict naming conventions. Voltra automatically 
 Reference these images using their sanitized name in the `assetName` property. You do not need to include the file extension.
 
 ```tsx
-import { VoltraAndroid } from 'voltra'
+import { VoltraAndroid } from '@use-voltra/android'
 
 // assets/voltra-android/logo.png -> "logo"
 <VoltraAndroid.Image
@@ -81,7 +81,7 @@ The image preloading system works by:
 Once images are preloaded, reference them using the key you provided:
 
 ```tsx
-import { VoltraAndroid } from 'voltra'
+import { VoltraAndroid } from '@use-voltra/android'
 
 function ProfileWidget({ user }) {
   return (

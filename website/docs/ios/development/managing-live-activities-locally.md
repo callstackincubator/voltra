@@ -22,8 +22,8 @@ The imperative APIs provide direct, programmatic control over Live Activities. T
 Use `startLiveActivity()` to create and display a new Live Activity.
 
 ```typescript
-import { startLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
+import { startLiveActivity } from '@use-voltra/ios-client'
 
 const variants = {
   lockScreen: (
@@ -71,8 +71,8 @@ const activityId = await startLiveActivity(variants, {
 Use `updateLiveActivity()` to modify the content and configuration of an active Live Activity.
 
 ```typescript
-import { updateLiveActivity } from 'voltra/client'
-import { Voltra } from 'voltra'
+import { Voltra } from '@use-voltra/ios'
+import { updateLiveActivity } from '@use-voltra/ios-client'
 
 const updatedVariants = {
   lockScreen: (
@@ -109,7 +109,7 @@ await updateLiveActivity(activityId, updatedVariants, {
 Use `stopLiveActivity()` to end a Live Activity.
 
 ```typescript
-import { stopLiveActivity } from 'voltra/client'
+import { stopLiveActivity } from '@use-voltra/ios-client'
 
 await stopLiveActivity(activityId, {
   dismissalPolicy: { after: 10 }, // Keep visible for 10 seconds after ending
@@ -126,7 +126,7 @@ await stopLiveActivity(activityId, {
 Use `isLiveActivityActive()` to check if a specific Live Activity is currently active.
 
 ```typescript
-import { isLiveActivityActive } from 'voltra/client'
+import { isLiveActivityActive } from '@use-voltra/ios-client'
 
 if (isLiveActivityActive('order-123')) {
   console.log('Live Activity is active')
@@ -146,7 +146,7 @@ if (isLiveActivityActive('order-123')) {
 #### Platform detection
 
 ```typescript
-import { isGlassSupported, isHeadless } from 'voltra/client'
+import { isGlassSupported, isHeadless } from '@use-voltra/ios-client'
 
 // Check if the device supports Liquid Glass (iOS 26+)
 if (isGlassSupported()) {
@@ -165,7 +165,7 @@ if (isHeadless()) {
 Use `endAllLiveActivities()` to immediately end all active Live Activities in your app.
 
 ```typescript
-import { endAllLiveActivities } from 'voltra/client'
+import { endAllLiveActivities } from '@use-voltra/ios-client'
 
 // End all Live Activities (useful for cleanup or logout scenarios)
 await endAllLiveActivities()

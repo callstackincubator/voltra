@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "Voltra Example",
+    "name": "Voltra",
     "slug": "voltra",
     "scheme": "voltra",
     "version": "1.0.0",
     "orientation": "portrait",
+    "backgroundColor": "#020617",
     "icon": "./assets/voltra-icon.jpg",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/voltra-splash.jpg",
       "resizeMode": "cover",
-      "backgroundColor": "#8232FF"
+      "backgroundColor": "#020617"
     },
     "android": {
       "package": "com.callstackincubator.voltraexample",
@@ -26,14 +27,11 @@
     },
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "keychainGroup": "$(AppIdentifierPrefix)group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
-          "liveActivity": {
-            "supplementalActivityFamilies": ["small"]
-          },
           "widgets": [
             {
               "id": "weather",
@@ -70,135 +68,144 @@
               }
             }
           ],
-          "android": {
-            "enableNotifications": true,
-            "widgets": [
-              {
-                "id": "voltra",
-                "displayName": {
-                  "pl": "Widget Voltra",
-                  "en": "Voltra Widget"
-                },
-                "description": {
-                  "pl": "Widget z logo Voltra",
-                  "en": "Voltra logo widget"
-                },
-                "minCellWidth": 2,
-                "minCellHeight": 2,
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android/android-voltra-widget-initial.tsx",
-                "previewImage": "./assets/voltra-icon.jpg"
+          "fonts": [
+            "@expo-google-fonts/merriweather/400Regular/Merriweather_400Regular.ttf",
+            "@expo-google-fonts/merriweather/700Bold/Merriweather_700Bold.ttf",
+            "@expo-google-fonts/pacifico/400Regular/Pacifico_400Regular.ttf",
+            "@expo-google-fonts/press-start-2p/400Regular/PressStart2P_400Regular.ttf"
+          ]
+        }
+      ],
+      [
+        "@use-voltra/android-client",
+        {
+          "enableNotifications": true,
+          "widgets": [
+            {
+              "id": "voltra",
+              "displayName": {
+                "pl": "Widget Voltra",
+                "en": "Voltra Widget"
               },
-              {
-                "id": "interactive_todos",
-                "displayName": {
-                  "pl": "Interaktywna lista zadań",
-                  "en": "Interactive Todos Widget"
-                },
-                "description": {
-                  "pl": "Test interaktywnych widgetów z polami wyboru, przełącznikami i przyciskami",
-                  "en": "Testing interactive widgets with checkboxes, switches, and buttons"
-                },
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen",
-                "previewLayout": "./assets/widgets/todos-preview.xml"
+              "description": {
+                "pl": "Widget z logo Voltra",
+                "en": "Voltra logo widget"
               },
-              {
-                "id": "image_preloading",
-                "displayName": {
-                  "pl": "Widget wstępnego ładowania obrazów",
-                  "en": "Image Preloading Widget"
-                },
-                "description": {
-                  "pl": "Test wstępnego ładowania obrazów na Androidzie",
-                  "en": "Test image preloading on Android"
-                },
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen"
+              "minCellWidth": 2,
+              "minCellHeight": 2,
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-voltra-widget-initial.tsx",
+              "previewImage": "./assets/voltra-icon.jpg"
+            },
+            {
+              "id": "interactive_todos",
+              "displayName": {
+                "pl": "Interaktywna lista zadań",
+                "en": "Interactive Todos Widget"
               },
-              {
-                "id": "image_fallback",
-                "displayName": {
-                  "pl": "Widget zapasowego obrazu",
-                  "en": "Image Fallback Widget"
-                },
-                "description": {
-                  "pl": "Test zapasowego obrazu z kolorem tła ze stylów",
-                  "en": "Test image fallback with backgroundColor from styles"
-                },
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android/android-image-fallback-initial.tsx"
+              "description": {
+                "pl": "Test interaktywnych widgetów z polami wyboru, przełącznikami i przyciskami",
+                "en": "Testing interactive widgets with checkboxes, switches, and buttons"
               },
-              {
-                "id": "chart_widget",
-                "displayName": {
-                  "pl": "Widget wykresu",
-                  "en": "Chart Widget"
-                },
-                "description": {
-                  "pl": "Test komponentu Chart",
-                  "en": "Test Chart component"
-                },
-                "targetCellWidth": 3,
-                "targetCellHeight": 3,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android-chart-widget-initial.tsx"
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "previewLayout": "./assets/widgets/todos-preview.xml"
+            },
+            {
+              "id": "image_preloading",
+              "displayName": {
+                "pl": "Widget wstępnego ładowania obrazów",
+                "en": "Image Preloading Widget"
               },
-              {
-                "id": "portfolio",
-                "displayName": {
-                  "pl": "Widget portfela",
-                  "en": "Portfolio Widget"
-                },
-                "description": {
-                  "pl": "Pokazuje wyniki portfela z wykresem i aktualizacjami na żywo",
-                  "en": "Shows portfolio performance with a chart and live updates"
-                },
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android/android-portfolio-initial.tsx",
-                "serverUpdate": {
-                  "url": "http://10.0.2.2:3333",
-                  "intervalMinutes": 15,
-                  "refresh": true
-                }
+              "description": {
+                "pl": "Test wstępnego ładowania obrazów na Androidzie",
+                "en": "Test image preloading on Android"
               },
-              {
-                "id": "material_colors",
-                "displayName": {
-                  "pl": "Widget kolorów Material",
-                  "en": "Material Colors Widget"
-                },
-                "description": {
-                  "pl": "Porównanie renderowania po stronie klienta i serwera z dynamicznymi kolorami Androida",
-                  "en": "Compare client-side and server-side rendering with Android dynamic colors"
-                },
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android/android-material-colors-initial.tsx",
-                "serverUpdate": {
-                  "url": "http://10.0.2.2:3333",
-                  "intervalMinutes": 15,
-                  "refresh": true
-                }
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen"
+            },
+            {
+              "id": "image_fallback",
+              "displayName": {
+                "pl": "Widget zapasowego obrazu",
+                "en": "Image Fallback Widget"
+              },
+              "description": {
+                "pl": "Test zapasowego obrazu z kolorem tła ze stylów",
+                "en": "Test image fallback with backgroundColor from styles"
+              },
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-image-fallback-initial.tsx"
+            },
+            {
+              "id": "chart_widget",
+              "displayName": {
+                "pl": "Widget wykresu",
+                "en": "Chart Widget"
+              },
+              "description": {
+                "pl": "Test komponentu Chart",
+                "en": "Test Chart component"
+              },
+              "targetCellWidth": 3,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android-chart-widget-initial.tsx"
+            },
+            {
+              "id": "portfolio",
+              "displayName": {
+                "pl": "Widget portfela",
+                "en": "Portfolio Widget"
+              },
+              "description": {
+                "pl": "Pokazuje wyniki portfela z wykresem i aktualizacjami na żywo",
+                "en": "Shows portfolio performance with a chart and live updates"
+              },
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-portfolio-initial.tsx",
+              "serverUpdate": {
+                "url": "http://10.0.2.2:3333",
+                "intervalMinutes": 15,
+                "refresh": true
               }
-            ]
-          },
+            },
+            {
+              "id": "material_colors",
+              "displayName": {
+                "pl": "Widget kolorów Material",
+                "en": "Material Colors Widget"
+              },
+              "description": {
+                "pl": "Porównanie renderowania po stronie klienta i serwera z dynamicznymi kolorami Androida",
+                "en": "Compare client-side and server-side rendering with Android dynamic colors"
+              },
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-material-colors-initial.tsx",
+              "serverUpdate": {
+                "url": "http://10.0.2.2:3333",
+                "intervalMinutes": 15,
+                "refresh": true
+              }
+            }
+          ],
           "fonts": [
             "@expo-google-fonts/merriweather/400Regular/Merriweather_400Regular.ttf",
             "@expo-google-fonts/merriweather/700Bold/Merriweather_700Bold.ttf",

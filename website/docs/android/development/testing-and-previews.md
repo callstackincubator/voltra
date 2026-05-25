@@ -14,8 +14,8 @@ The `VoltraWidgetPreview` component renders Voltra Android JSX content at the ex
 ### Usage
 
 ```tsx
-import { VoltraAndroid } from 'voltra/android'
-import { VoltraWidgetPreview } from 'voltra/android/client'
+import { VoltraAndroid } from '@use-voltra/android'
+import { VoltraWidgetPreview } from '@use-voltra/android-client'
 
 export function MyWidgetPreview() {
   return (
@@ -54,7 +54,8 @@ Android widgets use responsive sizing. Voltra provides several standard families
 If you need more control or want to test custom dimensions, you can use the low-level `VoltraView` component.
 
 ```tsx
-import { VoltraView } from 'voltra/android/client'
+import { VoltraAndroid } from '@use-voltra/android'
+import { VoltraView } from '@use-voltra/android-client'
 
 <VoltraView style={{ width: 200, height: 100 }}>
   <VoltraAndroid.Box style={{ backgroundColor: 'blue', flex: 1 }}>

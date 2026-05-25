@@ -22,7 +22,7 @@ Add the `serverUpdate` option to your widget in `app.json` or `app.config.js`:
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "widgets": [
             {
@@ -58,10 +58,10 @@ Voltra provides widget server handlers for the common runtime styles. Use `creat
 ```tsx
 import { createServer } from 'node:http'
 import React from 'react'
-import { createWidgetUpdateNodeHandler, Voltra } from 'voltra/server'
+import { createIOSWidgetUpdateNodeHandler, Voltra } from '@use-voltra/ios-server'
 
-const handler = createWidgetUpdateNodeHandler({
-  renderIos: async (req) => {
+const handler = createIOSWidgetUpdateNodeHandler({
+  render: async (req) => {
     // req.widgetId — the widget requesting an update
     // req.platform — always "ios" for iOS widget requests
     // req.family   — the widget size ("systemSmall", "systemMedium", etc.)
@@ -111,15 +111,15 @@ The handler responds to GET requests with these query parameters:
 | `family` | The widget family/size (iOS only) |
 | `theme` | The system color scheme (`light` or `dark`) |
 
-The `Authorization: Bearer <token>` header is automatically extracted and passed to `validateToken` and `renderIos`. The `User-Agent` header is set to `VoltraWidget/1.0 (iOS/<version>)`.
+The `Authorization: Bearer <token>` header is automatically extracted and passed to `validateToken` and `render`. The `User-Agent` header is set to `VoltraWidget/1.0 (iOS/<version>)`.
 
 For Fetch-native runtimes, use `createWidgetUpdateHandler()` instead of the Node adapter:
 
 ```tsx
-import { createWidgetUpdateHandler, Voltra } from 'voltra/server'
+import { createIOSWidgetUpdateHandler, Voltra } from '@use-voltra/ios-server'
 
-export const GET = createWidgetUpdateHandler({
-  renderIos: async (req) => ({
+export const GET = createIOSWidgetUpdateHandler({
+  render: async (req) => ({
     systemSmall: <Voltra.Text>{req.widgetId}</Voltra.Text>,
   }),
 })
@@ -134,7 +134,7 @@ Widgets run in a separate extension process and can't access your app's network 
 Call `setWidgetServerCredentials` after the user logs in:
 
 ```typescript
-import { setWidgetServerCredentials } from 'voltra/client'
+import { setWidgetServerCredentials } from '@use-voltra/ios-client'
 
 await setWidgetServerCredentials({
   token: userAccessToken,
@@ -151,7 +151,7 @@ The `token` is required and is sent as `Authorization: Bearer <token>` on every 
 Call `clearWidgetServerCredentials` when the user logs out:
 
 ```typescript
-import { clearWidgetServerCredentials } from 'voltra/client'
+import { clearWidgetServerCredentials } from '@use-voltra/ios-client'
 
 await clearWidgetServerCredentials()
 ```
@@ -167,7 +167,7 @@ For credentials to be shared between the main app and the widget extension, both
   "expo": {
     "plugins": [
       [
-        "voltra",
+        "@use-voltra/ios-client",
         {
           "keychainGroup": "$(AppIdentifierPrefix)com.example.shared",
           "widgets": [...]
@@ -209,7 +209,7 @@ When WidgetKit reloads timelines, it may call `getTimeline` multiple times for e
 You can force-refresh server-driven widgets outside of the regular interval:
 
 ```typescript
-import { reloadWidgets } from 'voltra/client'
+import { reloadWidgets } from '@use-voltra/ios-client'
 
 // Reload specific widgets
 await reloadWidgets(['dynamic_weather'])

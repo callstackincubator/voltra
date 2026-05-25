@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
-import { Voltra } from 'voltra'
-import { reloadWidgets, scheduleWidget, VoltraWidgetPreview } from 'voltra/client'
+import { Alert, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native'
+import { Voltra } from '@use-voltra/ios'
+import { reloadWidgets, scheduleWidget, VoltraWidgetPreview } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 export default function WidgetSchedulingScreen() {
   const colorScheme = useColorScheme()
@@ -190,192 +191,164 @@ export default function WidgetSchedulingScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Widget Scheduling</Text>
-        <Text style={styles.subheading}>
-          Test widget timeline scheduling with multiple states. Configure when each state should appear and watch the
-          widget transition automatically.
-        </Text>
+    <ScreenLayout
+      title="Widget Scheduling"
+      description="Test widget timeline scheduling with multiple states. Configure when each state should appear and watch the widget transition automatically."
+    >
+      {/* Configuration */}
+      <Card>
+        <Card.Title>⚙️ Configuration</Card.Title>
+        <Card.Text>Set when each future state should appear:</Card.Text>
 
-        {/* Configuration */}
+        <View style={styles.configRow}>
+          <Text style={styles.configLabel}>State 2 (minutes from now):</Text>
+          <TextInput
+            style={styles.input}
+            value={minutesUntilSecond}
+            onChangeText={setMinutesUntilSecond}
+            keyboardType="numeric"
+            placeholder="2"
+          />
+        </View>
+
+        <View style={styles.configRow}>
+          <Text style={styles.configLabel}>State 3 (minutes from now):</Text>
+          <TextInput
+            style={styles.input}
+            value={minutesUntilThird}
+            onChangeText={setMinutesUntilThird}
+            keyboardType="numeric"
+            placeholder="5"
+          />
+        </View>
+      </Card>
+
+      {/* Schedule Timeline */}
+      <Card>
+        <Card.Title>📅 Schedule Timeline</Card.Title>
+        <Card.Text>
+          Schedules three widget states:{'\n\n'}• State 1 (Blue): Yesterday - shows as current{'\n'}• State 2 (Green):{' '}
+          {minutesUntilSecond || '2'} minutes from now{'\n'}• State 3 (Purple): {minutesUntilThird || '5'} minutes from
+          now{'\n\n'}
+          Add the widget to your home screen to see it transition between states.
+        </Card.Text>
+        <View style={styles.buttonGroup}>
+          <Button
+            title="Schedule Timeline"
+            variant="primary"
+            onPress={handleScheduleTimeline}
+            disabled={isScheduling}
+            style={{ flex: 1 }}
+          />
+          {scheduledTimes && (
+            <Button title="Clear" variant="secondary" onPress={handleClearTimeline} style={{ minWidth: 80 }} />
+          )}
+        </View>
+      </Card>
+
+      {/* Scheduled Times */}
+      {scheduledTimes && (
         <Card>
-          <Card.Title>⚙️ Configuration</Card.Title>
-          <Card.Text>Set when each future state should appear:</Card.Text>
-
-          <View style={styles.configRow}>
-            <Text style={styles.configLabel}>State 2 (minutes from now):</Text>
-            <TextInput
-              style={styles.input}
-              value={minutesUntilSecond}
-              onChangeText={setMinutesUntilSecond}
-              keyboardType="numeric"
-              placeholder="2"
-            />
-          </View>
-
-          <View style={styles.configRow}>
-            <Text style={styles.configLabel}>State 3 (minutes from now):</Text>
-            <TextInput
-              style={styles.input}
-              value={minutesUntilThird}
-              onChangeText={setMinutesUntilThird}
-              keyboardType="numeric"
-              placeholder="5"
-            />
-          </View>
-        </Card>
-
-        {/* Schedule Timeline */}
-        <Card>
-          <Card.Title>📅 Schedule Timeline</Card.Title>
-          <Card.Text>
-            Schedules three widget states:{'\n\n'}• State 1 (Blue): Yesterday - shows as current{'\n'}• State 2 (Green):{' '}
-            {minutesUntilSecond || '2'} minutes from now{'\n'}• State 3 (Purple): {minutesUntilThird || '5'} minutes
-            from now{'\n\n'}
-            Add the widget to your home screen to see it transition between states.
-          </Card.Text>
-          <View style={styles.buttonGroup}>
-            <Button
-              title="Schedule Timeline"
-              variant="primary"
-              onPress={handleScheduleTimeline}
-              disabled={isScheduling}
-              style={{ flex: 1 }}
-            />
-            {scheduledTimes && (
-              <Button title="Clear" variant="secondary" onPress={handleClearTimeline} style={{ minWidth: 80 }} />
-            )}
-          </View>
-        </Card>
-
-        {/* Scheduled Times */}
-        {scheduledTimes && (
-          <Card>
-            <Card.Title>⏰ Scheduled Times</Card.Title>
-            <View style={styles.timelineInfo}>
-              <View style={styles.timelineEntry}>
-                <View style={[styles.statusDot, { backgroundColor: '#3498DB' }]} />
-                <View style={styles.timelineText}>
-                  <Text style={styles.timelineLabel}>State 1 (Current)</Text>
-                  <Text style={styles.timelineTime}>{scheduledTimes.past}</Text>
-                </View>
-              </View>
-              <View style={styles.timelineEntry}>
-                <View style={[styles.statusDot, { backgroundColor: '#16A085' }]} />
-                <View style={styles.timelineText}>
-                  <Text style={styles.timelineLabel}>State 2</Text>
-                  <Text style={styles.timelineTime}>{scheduledTimes.second}</Text>
-                </View>
-              </View>
-              <View style={styles.timelineEntry}>
-                <View style={[styles.statusDot, { backgroundColor: '#8E44AD' }]} />
-                <View style={styles.timelineText}>
-                  <Text style={styles.timelineLabel}>State 3</Text>
-                  <Text style={styles.timelineTime}>{scheduledTimes.third}</Text>
-                </View>
+          <Card.Title>⏰ Scheduled Times</Card.Title>
+          <View style={styles.timelineInfo}>
+            <View style={styles.timelineEntry}>
+              <View style={[styles.statusDot, { backgroundColor: '#3498DB' }]} />
+              <View style={styles.timelineText}>
+                <Text style={styles.timelineLabel}>State 1 (Current)</Text>
+                <Text style={styles.timelineTime}>{scheduledTimes.past}</Text>
               </View>
             </View>
-          </Card>
-        )}
-
-        {/* Previews */}
-        <Card>
-          <Card.Title>Widget Previews</Card.Title>
-
-          <Text style={styles.previewLabel}>State 1 (Current) - Blue</Text>
-          <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
-              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#2C3E50', padding: 16 }}>
-                <Voltra.VStack spacing={8} alignment="center">
-                  <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#3498DB' }}>STATE 1</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Current State</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 14, color: '#BDC3C7' }}>Scheduled: Yesterday</Voltra.Text>
-                </Voltra.VStack>
-              </Voltra.ZStack>
-            </VoltraWidgetPreview>
-          </View>
-
-          <Text style={styles.previewLabel}>State 2 - Green</Text>
-          <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
-              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#16A085', padding: 16 }}>
-                <Voltra.VStack spacing={8} alignment="center">
-                  <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#F1C40F' }}>STATE 2</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Second State</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>
-                    +{minutesUntilSecond || '2'} minutes
-                  </Voltra.Text>
-                </Voltra.VStack>
-              </Voltra.ZStack>
-            </VoltraWidgetPreview>
-          </View>
-
-          <Text style={styles.previewLabel}>State 3 - Purple</Text>
-          <View style={styles.previewContainer}>
-            <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
-              <Voltra.ZStack style={{ flex: 1, backgroundColor: '#8E44AD', padding: 16 }}>
-                <Voltra.VStack spacing={8} alignment="center">
-                  <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#E74C3C' }}>STATE 3</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Third State</Voltra.Text>
-                  <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>
-                    +{minutesUntilThird || '5'} minutes
-                  </Voltra.Text>
-                </Voltra.VStack>
-              </Voltra.ZStack>
-            </VoltraWidgetPreview>
+            <View style={styles.timelineEntry}>
+              <View style={[styles.statusDot, { backgroundColor: '#16A085' }]} />
+              <View style={styles.timelineText}>
+                <Text style={styles.timelineLabel}>State 2</Text>
+                <Text style={styles.timelineTime}>{scheduledTimes.second}</Text>
+              </View>
+            </View>
+            <View style={styles.timelineEntry}>
+              <View style={[styles.statusDot, { backgroundColor: '#8E44AD' }]} />
+              <View style={styles.timelineText}>
+                <Text style={styles.timelineLabel}>State 3</Text>
+                <Text style={styles.timelineTime}>{scheduledTimes.third}</Text>
+              </View>
+            </View>
           </View>
         </Card>
+      )}
 
-        {/* How to Test */}
-        <Card>
-          <Card.Title>📝 How to Test</Card.Title>
-          <Card.Text>
-            1. Configure the timing for states 2 and 3 above{'\n'}
-            2. Click Schedule Timeline{'\n'}
-            3. Add the Weather widget to your home screen{'\n'}
-            4. Verify it shows State 1 (blue background){'\n'}
-            5. Wait for the scheduled times{'\n'}
-            6. Watch the widget automatically transition:{'\n'}
-            {'   '}• State 1 (Blue) → State 2 (Green) → State 3 (Purple){'\n\n'}
-            <Text style={styles.bold}>Note:</Text> iOS may delay widget updates based on battery level, widget
-            visibility, and system load. For immediate updates during testing, keep Xcode attached or use shorter time
-            intervals.
-          </Card.Text>
-        </Card>
+      {/* Previews */}
+      <Card>
+        <Card.Title>Widget Previews</Card.Title>
 
-        {/* Back Button */}
-        <View style={styles.footer}>
-          <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
+        <Text style={styles.previewLabel}>State 1 (Current) - Blue</Text>
+        <View style={styles.previewContainer}>
+          <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
+            <Voltra.ZStack style={{ flex: 1, backgroundColor: '#2C3E50', padding: 16 }}>
+              <Voltra.VStack spacing={8} alignment="center">
+                <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#3498DB' }}>STATE 1</Voltra.Text>
+                <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Current State</Voltra.Text>
+                <Voltra.Text style={{ fontSize: 14, color: '#BDC3C7' }}>Scheduled: Yesterday</Voltra.Text>
+              </Voltra.VStack>
+            </Voltra.ZStack>
+          </VoltraWidgetPreview>
         </View>
-      </ScrollView>
-    </View>
+
+        <Text style={styles.previewLabel}>State 2 - Green</Text>
+        <View style={styles.previewContainer}>
+          <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
+            <Voltra.ZStack style={{ flex: 1, backgroundColor: '#16A085', padding: 16 }}>
+              <Voltra.VStack spacing={8} alignment="center">
+                <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#F1C40F' }}>STATE 2</Voltra.Text>
+                <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Second State</Voltra.Text>
+                <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>
+                  +{minutesUntilSecond || '2'} minutes
+                </Voltra.Text>
+              </Voltra.VStack>
+            </Voltra.ZStack>
+          </VoltraWidgetPreview>
+        </View>
+
+        <Text style={styles.previewLabel}>State 3 - Purple</Text>
+        <View style={styles.previewContainer}>
+          <VoltraWidgetPreview family="systemMedium" style={widgetPreviewStyle}>
+            <Voltra.ZStack style={{ flex: 1, backgroundColor: '#8E44AD', padding: 16 }}>
+              <Voltra.VStack spacing={8} alignment="center">
+                <Voltra.Text style={{ fontSize: 48, fontWeight: '700', color: '#E74C3C' }}>STATE 3</Voltra.Text>
+                <Voltra.Text style={{ fontSize: 16, color: '#ECF0F1' }}>Third State</Voltra.Text>
+                <Voltra.Text style={{ fontSize: 14, color: '#E8F8F5' }}>
+                  +{minutesUntilThird || '5'} minutes
+                </Voltra.Text>
+              </Voltra.VStack>
+            </Voltra.ZStack>
+          </VoltraWidgetPreview>
+        </View>
+      </Card>
+
+      {/* How to Test */}
+      <Card>
+        <Card.Title>📝 How to Test</Card.Title>
+        <Card.Text>
+          1. Configure the timing for states 2 and 3 above{'\n'}
+          2. Click Schedule Timeline{'\n'}
+          3. Add the Weather widget to your home screen{'\n'}
+          4. Verify it shows State 1 (blue background){'\n'}
+          5. Wait for the scheduled times{'\n'}
+          6. Watch the widget automatically transition:{'\n'}
+          {'   '}• State 1 (Blue) → State 2 (Green) → State 3 (Purple){'\n\n'}
+          <Text style={styles.bold}>Note:</Text> iOS may delay widget updates based on battery level, widget visibility,
+          and system load. For immediate updates during testing, keep Xcode attached or use shorter time intervals.
+        </Card.Text>
+      </Card>
+
+      {/* Back Button */}
+      <View style={styles.footer}>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 24,
-  },
   bold: {
     fontWeight: '700',
     color: '#FFFFFF',

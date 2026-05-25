@@ -1,7 +1,6 @@
 import { Platform } from 'react-native'
 
 import type { EventSubscription } from './types.js'
-import VoltraModule from './VoltraModule.js'
 
 export type BasicVoltraEvent = {
   source: string
@@ -45,10 +44,13 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
   event: K,
   listener: (event: VoltraEventMap[K]) => void
 ): EventSubscription {
+  void listener
+
   if (Platform.OS !== 'ios') {
     console.warn(`[Voltra] Event '${event}' is only supported on iOS. Returning no-op subscription.`)
     return noopSubscription
   }
 
-  return VoltraModule.addListener(event, listener)
+  console.warn(`[Voltra] Event '${event}' is only supported on iOS. Returning no-op subscription.`)
+  return noopSubscription
 }

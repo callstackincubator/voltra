@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
-import { AndroidWidgetFamily, VoltraWidgetPreview } from 'voltra/android/client'
+import { AndroidWidgetFamily, VoltraWidgetPreview } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 import { AreaChartWidget, BarChartWidget, LineChartWidget, PieChartWidget } from '~/widgets/AndroidChartWidget'
 
 type ChartType = 'bar' | 'line' | 'area' | 'pie'
@@ -42,90 +43,63 @@ export default function AndroidChartScreen() {
   const [selectedSize, setSelectedSize] = useState<AndroidWidgetFamily>('large')
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Chart Widgets</Text>
-        <Text style={styles.subheading}>
-          Preview Android chart widgets rendered via Canvas bitmap. Charts are drawn natively using
-          android.graphics.Canvas and displayed as a Glance Image.
-        </Text>
-
-        <Card>
-          <Card.Title>Chart Type</Card.Title>
-          <Card.Text>{CHART_TYPES.find((c) => c.id === selectedChart)?.description}</Card.Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollArea}>
-            <View style={styles.buttonRow}>
-              {CHART_TYPES.map((chart) => (
-                <Button
-                  key={chart.id}
-                  title={chart.title}
-                  variant={selectedChart === chart.id ? 'primary' : 'secondary'}
-                  onPress={() => setSelectedChart(chart.id)}
-                  style={styles.choiceButton}
-                />
-              ))}
-            </View>
-          </ScrollView>
-        </Card>
-
-        <Card>
-          <Card.Title>Widget Size</Card.Title>
+    <ScreenLayout
+      title="Chart Widgets"
+      description="Preview Android chart widgets rendered via Canvas bitmap. Charts are drawn natively using android.graphics.Canvas and displayed as a Glance Image."
+    >
+      <Card>
+        <Card.Title>Chart Type</Card.Title>
+        <Card.Text>{CHART_TYPES.find((c) => c.id === selectedChart)?.description}</Card.Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollArea}>
           <View style={styles.buttonRow}>
-            {WIDGET_SIZES.map((size) => (
+            {CHART_TYPES.map((chart) => (
               <Button
-                key={size.id}
-                title={size.title}
-                variant={selectedSize === size.id ? 'primary' : 'secondary'}
-                onPress={() => setSelectedSize(size.id)}
+                key={chart.id}
+                title={chart.title}
+                variant={selectedChart === chart.id ? 'primary' : 'secondary'}
+                onPress={() => setSelectedChart(chart.id)}
                 style={styles.choiceButton}
               />
             ))}
           </View>
-        </Card>
+        </ScrollView>
+      </Card>
 
-        <Card>
-          <Card.Title>Live Preview</Card.Title>
-          <Card.Text>Rendered using the native Glance renderer with Canvas-based chart bitmap.</Card.Text>
-          <View style={styles.previewContainer}>
-            <View style={styles.previewWrapper}>
-              <VoltraWidgetPreview family={selectedSize} style={styles.widgetBorder}>
-                <ChartPreview chartType={selectedChart} />
-              </VoltraWidgetPreview>
-            </View>
-          </View>
-        </Card>
-
-        <View style={styles.footer}>
-          <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      <Card>
+        <Card.Title>Widget Size</Card.Title>
+        <View style={styles.buttonRow}>
+          {WIDGET_SIZES.map((size) => (
+            <Button
+              key={size.id}
+              title={size.title}
+              variant={selectedSize === size.id ? 'primary' : 'secondary'}
+              onPress={() => setSelectedSize(size.id)}
+              style={styles.choiceButton}
+            />
+          ))}
         </View>
-      </ScrollView>
-    </View>
+      </Card>
+
+      <Card>
+        <Card.Title>Live Preview</Card.Title>
+        <Card.Text>Rendered using the native Glance renderer with Canvas-based chart bitmap.</Card.Text>
+        <View style={styles.previewContainer}>
+          <View style={styles.previewWrapper}>
+            <VoltraWidgetPreview family={selectedSize} style={styles.widgetBorder}>
+              <ChartPreview chartType={selectedChart} />
+            </VoltraWidgetPreview>
+          </View>
+        </View>
+      </Card>
+
+      <View style={styles.footer}>
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
+      </View>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#CBD5F5',
-    marginBottom: 24,
-  },
   scrollArea: {
     marginHorizontal: -4,
   },

@@ -1,11 +1,11 @@
 import { useFocusEffect } from 'expo-router'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppState, PermissionsAndroid, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { AppState, PermissionsAndroid, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   AndroidOngoingNotification,
   type AndroidOngoingNotificationPayload,
   type StartAndroidOngoingNotificationOptions,
-} from 'voltra/android'
+} from '@use-voltra/android'
 import {
   getAndroidOngoingNotificationCapabilities,
   isAndroidOngoingNotificationActive,
@@ -14,10 +14,11 @@ import {
   stopAndroidOngoingNotification,
   upsertAndroidOngoingNotification,
   updateAndroidOngoingNotification,
-} from 'voltra/android/client'
+} from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
+import { ScreenLayout } from '~/components/ScreenLayout'
 
 type OngoingNotificationStyle = 'progress' | 'bigText'
 
@@ -345,371 +346,354 @@ export default function AndroidOngoingNotificationTestingScreen() {
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={styles.container}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          <Text style={styles.heading}>Android Ongoing Notifications</Text>
-          <Text style={styles.subheading}>This testing ground is only available on Android.</Text>
-        </ScrollView>
-      </View>
+      <ScreenLayout title="Android Ongoing Notifications" description="This example is only available on Android." />
     )
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <Text style={styles.heading}>Android Ongoing Notifications</Text>
-        <Text style={styles.subheading}>
-          Test semantic Android ongoing notification payloads, capability checks, rich progress fields, and action
-          buttons. For remote testing, send a real notification whose `data` contains the payload shown below.
-        </Text>
+    <ScreenLayout
+      title="Android Ongoing Notifications"
+      description="Test semantic Android ongoing notification payloads, capability checks, rich progress fields, and action buttons. For remote testing, send a real notification whose data contains the payload shown below."
+    >
+      <Card>
+        <Card.Title>Rich Progress Fallback</Card.Title>
+        <Card.Text>
+          Segments, points, and tracker/start/end icons are applied on API 36+ only and ignored silently on older
+          Android versions.
+        </Card.Text>
+        <Card.Text>Large icon and subtext remain available outside that richer path.</Card.Text>
+      </Card>
 
-        <Card>
-          <Card.Title>Rich Progress Fallback</Card.Title>
-          <Card.Text>
-            Segments, points, and tracker/start/end icons are applied on API 36+ only and ignored silently on older
-            Android versions.
-          </Card.Text>
-          <Card.Text>Large icon and subtext remain available outside that richer path.</Card.Text>
-        </Card>
+      <Card>
+        <Card.Title>Action Buttons</Card.Title>
+        <Card.Text>Action children launch their own deep links.</Card.Text>
+        <Card.Text>
+          Action icons are still wired into the payload, but standard Android notification UI usually does not render
+          them.
+        </Card.Text>
+        <Card.Text>Use the icon fields here to verify payload support, not visible action-button artwork.</Card.Text>
+        <Card.Text>Unknown children are ignored, so this screen only renders explicit action entries.</Card.Text>
+      </Card>
 
-        <Card>
-          <Card.Title>Action Buttons</Card.Title>
-          <Card.Text>Action children launch their own deep links.</Card.Text>
-          <Card.Text>
-            Action icons are still wired into the payload, but standard Android notification UI usually does not render
-            them.
-          </Card.Text>
-          <Card.Text>Use the icon fields here to verify payload support, not visible action-button artwork.</Card.Text>
-          <Card.Text>Unknown children are ignored, so this screen only renders explicit action entries.</Card.Text>
-        </Card>
+      <Card>
+        <Card.Title>Runtime Capabilities</Card.Title>
+        <Card.Text>{`API ${capabilities.apiLevel} • notifications ${
+          capabilities.notificationsEnabled ? 'enabled' : 'disabled'
+        }`}</Card.Text>
+        <Card.Text>{`Promoted support: ${capabilities.supportsPromotedNotifications ? 'yes' : 'no'}`}</Card.Text>
+        <Card.Text>{`Can post promoted notifications: ${
+          capabilities.canPostPromotedNotifications ? 'yes' : 'no'
+        }`}</Card.Text>
+        <Card.Text>{`Can request promoted ongoing: ${
+          capabilities.canRequestPromotedOngoing ? 'yes' : 'no'
+        }`}</Card.Text>
+        <View style={styles.buttonRow}>
+          <Button
+            title="Ask Notification Permission"
+            variant="secondary"
+            onPress={handleRequestNotificationPermission}
+          />
+        </View>
+        {permissionStatus ? <Text style={styles.status}>{permissionStatus}</Text> : null}
+      </Card>
 
-        <Card>
-          <Card.Title>Runtime Capabilities</Card.Title>
-          <Card.Text>{`API ${capabilities.apiLevel} • notifications ${
-            capabilities.notificationsEnabled ? 'enabled' : 'disabled'
-          }`}</Card.Text>
-          <Card.Text>{`Promoted support: ${capabilities.supportsPromotedNotifications ? 'yes' : 'no'}`}</Card.Text>
-          <Card.Text>{`Can post promoted notifications: ${
-            capabilities.canPostPromotedNotifications ? 'yes' : 'no'
-          }`}</Card.Text>
-          <Card.Text>{`Can request promoted ongoing: ${
-            capabilities.canRequestPromotedOngoing ? 'yes' : 'no'
-          }`}</Card.Text>
-          <View style={styles.buttonRow}>
+      <Card>
+        <Card.Title>Ongoing Notification Target</Card.Title>
+        <View style={styles.row}>
+          <Text style={styles.label}>Notification ID</Text>
+          <TextInput
+            style={styles.input}
+            value={notificationId}
+            onChangeText={setNotificationId}
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Channel ID</Text>
+          <TextInput style={styles.input} value={channelId} onChangeText={setChannelId} autoCapitalize="none" />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Small Icon</Text>
+          <TextInput style={styles.input} value={smallIcon} onChangeText={setSmallIcon} autoCapitalize="none" />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Request Promoted Ongoing</Text>
+          <Button
+            title={requestPromotedOngoing ? 'ON' : 'OFF'}
+            variant={requestPromotedOngoing ? 'primary' : 'secondary'}
+            onPress={() => setRequestPromotedOngoing((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Active State</Text>
+          <Text style={[styles.badge, activeState ? styles.badgeActive : styles.badgeIdle]}>
+            {activeState ? 'Active' : 'Idle'}
+          </Text>
+        </View>
+        <Button title="Refresh Active State" variant="secondary" onPress={handleRefreshActiveState} />
+      </Card>
+
+      <Card>
+        <Card.Title>Semantic Content</Card.Title>
+        <View style={styles.row}>
+          <Text style={styles.label}>Style</Text>
+          <View style={styles.toggleGroup}>
             <Button
-              title="Ask Notification Permission"
-              variant="secondary"
-              onPress={handleRequestNotificationPermission}
+              title="Progress"
+              variant={style === 'progress' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('progress')}
+              style={styles.smButton}
             />
-          </View>
-          {permissionStatus ? <Text style={styles.status}>{permissionStatus}</Text> : null}
-        </Card>
-
-        <Card>
-          <Card.Title>Ongoing Notification Target</Card.Title>
-          <View style={styles.row}>
-            <Text style={styles.label}>Notification ID</Text>
-            <TextInput
-              style={styles.input}
-              value={notificationId}
-              onChangeText={setNotificationId}
-              autoCapitalize="none"
-            />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Channel ID</Text>
-            <TextInput style={styles.input} value={channelId} onChangeText={setChannelId} autoCapitalize="none" />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Small Icon</Text>
-            <TextInput style={styles.input} value={smallIcon} onChangeText={setSmallIcon} autoCapitalize="none" />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Request Promoted Ongoing</Text>
             <Button
-              title={requestPromotedOngoing ? 'ON' : 'OFF'}
-              variant={requestPromotedOngoing ? 'primary' : 'secondary'}
-              onPress={() => setRequestPromotedOngoing((current) => !current)}
+              title="Big Text"
+              variant={style === 'bigText' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('bigText')}
               style={styles.smButton}
             />
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Active State</Text>
-            <Text style={[styles.badge, activeState ? styles.badgeActive : styles.badgeIdle]}>
-              {activeState ? 'Active' : 'Idle'}
-            </Text>
-          </View>
-          <Button title="Refresh Active State" variant="secondary" onPress={handleRefreshActiveState} />
-        </Card>
+        </View>
 
-        <Card>
-          <Card.Title>Semantic Content</Card.Title>
-          <View style={styles.row}>
-            <Text style={styles.label}>Style</Text>
-            <View style={styles.toggleGroup}>
-              <Button
-                title="Progress"
-                variant={style === 'progress' ? 'primary' : 'secondary'}
-                onPress={() => setStyle('progress')}
-                style={styles.smButton}
+        <View style={styles.row}>
+          <Text style={styles.label}>Title</Text>
+          <TextInput style={styles.input} value={title} onChangeText={setTitle} />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Text</Text>
+          <TextInput style={styles.input} value={text} onChangeText={setText} />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Sub Text</Text>
+          <TextInput style={styles.input} value={subText} onChangeText={setSubText} />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Short Critical</Text>
+          <TextInput style={styles.input} value={shortCriticalText} onChangeText={setShortCriticalText} />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Large Icon</Text>
+          <TextInput
+            style={styles.input}
+            value={largeIcon}
+            onChangeText={setLargeIcon}
+            placeholder="assetName"
+            placeholderTextColor="#6B7280"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Chronometer</Text>
+          <Button
+            title={chronometer ? 'ON' : 'OFF'}
+            variant={chronometer ? 'primary' : 'secondary'}
+            onPress={() => setChronometer((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+
+        {style === 'progress' ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Value</Text>
+              <TextInput
+                style={styles.input}
+                value={progressValue}
+                onChangeText={setProgressValue}
+                keyboardType="numeric"
               />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Max</Text>
+              <TextInput
+                style={styles.input}
+                value={progressMax}
+                onChangeText={setProgressMax}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Indeterminate</Text>
               <Button
-                title="Big Text"
-                variant={style === 'bigText' ? 'primary' : 'secondary'}
-                onPress={() => setStyle('bigText')}
+                title={indeterminate ? 'ON' : 'OFF'}
+                variant={indeterminate ? 'primary' : 'secondary'}
+                onPress={() => setIndeterminate((current) => !current)}
                 style={styles.smButton}
               />
             </View>
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>Title</Text>
-            <TextInput style={styles.input} value={title} onChangeText={setTitle} />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Text</Text>
-            <TextInput style={styles.input} value={text} onChangeText={setText} />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Sub Text</Text>
-            <TextInput style={styles.input} value={subText} onChangeText={setSubText} />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Short Critical</Text>
-            <TextInput style={styles.input} value={shortCriticalText} onChangeText={setShortCriticalText} />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Large Icon</Text>
-            <TextInput
-              style={styles.input}
-              value={largeIcon}
-              onChangeText={setLargeIcon}
-              placeholder="assetName"
-              placeholderTextColor="#6B7280"
-            />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Chronometer</Text>
-            <Button
-              title={chronometer ? 'ON' : 'OFF'}
-              variant={chronometer ? 'primary' : 'secondary'}
-              onPress={() => setChronometer((current) => !current)}
-              style={styles.smButton}
-            />
-          </View>
-
-          {style === 'progress' ? (
-            <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Tracker Icon</Text>
+              <TextInput
+                style={styles.input}
+                value={progressTrackerIcon}
+                onChangeText={setProgressTrackerIcon}
+                placeholder="assetName"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Start Icon</Text>
+              <TextInput
+                style={styles.input}
+                value={progressStartIcon}
+                onChangeText={setProgressStartIcon}
+                placeholder="assetName"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>End Icon</Text>
+              <TextInput
+                style={styles.input}
+                value={progressEndIcon}
+                onChangeText={setProgressEndIcon}
+                placeholder="assetName"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.label}>Segments JSON</Text>
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                value={segmentsJson}
+                onChangeText={setSegmentsJson}
+                multiline
+              />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.label}>Points JSON</Text>
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                value={pointsJson}
+                onChangeText={setPointsJson}
+                multiline
+              />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.label}>Action Buttons</Text>
               <View style={styles.row}>
-                <Text style={styles.label}>Value</Text>
+                <Text style={styles.label}>Primary Title</Text>
+                <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Primary Deep Link</Text>
                 <TextInput
                   style={styles.input}
-                  value={progressValue}
-                  onChangeText={setProgressValue}
-                  keyboardType="numeric"
+                  value={primaryActionDeepLinkUrl}
+                  onChangeText={setPrimaryActionDeepLinkUrl}
+                  autoCapitalize="none"
                 />
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Max</Text>
+                <Text style={styles.label}>Primary Icon</Text>
                 <TextInput
                   style={styles.input}
-                  value={progressMax}
-                  onChangeText={setProgressMax}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Indeterminate</Text>
-                <Button
-                  title={indeterminate ? 'ON' : 'OFF'}
-                  variant={indeterminate ? 'primary' : 'secondary'}
-                  onPress={() => setIndeterminate((current) => !current)}
-                  style={styles.smButton}
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Tracker Icon</Text>
-                <TextInput
-                  style={styles.input}
-                  value={progressTrackerIcon}
-                  onChangeText={setProgressTrackerIcon}
+                  value={primaryActionIcon}
+                  onChangeText={setPrimaryActionIcon}
+                  autoCapitalize="none"
                   placeholder="assetName"
                   placeholderTextColor="#6B7280"
                 />
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>Start Icon</Text>
+                <Text style={styles.label}>Secondary Title</Text>
+                <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Secondary Deep Link</Text>
                 <TextInput
                   style={styles.input}
-                  value={progressStartIcon}
-                  onChangeText={setProgressStartIcon}
+                  value={secondaryActionDeepLinkUrl}
+                  onChangeText={setSecondaryActionDeepLinkUrl}
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.column}>
+              <Text style={styles.label}>Big Text</Text>
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                value={bigText}
+                onChangeText={setBigText}
+                multiline
+              />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.label}>Action Buttons</Text>
+              <View style={styles.row}>
+                <Text style={styles.label}>Primary Title</Text>
+                <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Primary Deep Link</Text>
+                <TextInput
+                  style={styles.input}
+                  value={primaryActionDeepLinkUrl}
+                  onChangeText={setPrimaryActionDeepLinkUrl}
+                  autoCapitalize="none"
+                />
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Primary Icon</Text>
+                <TextInput
+                  style={styles.input}
+                  value={primaryActionIcon}
+                  onChangeText={setPrimaryActionIcon}
+                  autoCapitalize="none"
                   placeholder="assetName"
                   placeholderTextColor="#6B7280"
                 />
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>End Icon</Text>
+                <Text style={styles.label}>Secondary Title</Text>
+                <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Secondary Deep Link</Text>
                 <TextInput
                   style={styles.input}
-                  value={progressEndIcon}
-                  onChangeText={setProgressEndIcon}
-                  placeholder="assetName"
-                  placeholderTextColor="#6B7280"
+                  value={secondaryActionDeepLinkUrl}
+                  onChangeText={setSecondaryActionDeepLinkUrl}
+                  autoCapitalize="none"
                 />
               </View>
-              <View style={styles.column}>
-                <Text style={styles.label}>Segments JSON</Text>
-                <TextInput
-                  style={[styles.input, styles.multilineInput]}
-                  value={segmentsJson}
-                  onChangeText={setSegmentsJson}
-                  multiline
-                />
-              </View>
-              <View style={styles.column}>
-                <Text style={styles.label}>Points JSON</Text>
-                <TextInput
-                  style={[styles.input, styles.multilineInput]}
-                  value={pointsJson}
-                  onChangeText={setPointsJson}
-                  multiline
-                />
-              </View>
-              <View style={styles.column}>
-                <Text style={styles.label}>Action Buttons</Text>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Primary Title</Text>
-                  <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Primary Deep Link</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={primaryActionDeepLinkUrl}
-                    onChangeText={setPrimaryActionDeepLinkUrl}
-                    autoCapitalize="none"
-                  />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Primary Icon</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={primaryActionIcon}
-                    onChangeText={setPrimaryActionIcon}
-                    autoCapitalize="none"
-                    placeholder="assetName"
-                    placeholderTextColor="#6B7280"
-                  />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Secondary Title</Text>
-                  <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Secondary Deep Link</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={secondaryActionDeepLinkUrl}
-                    onChangeText={setSecondaryActionDeepLinkUrl}
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.column}>
-                <Text style={styles.label}>Big Text</Text>
-                <TextInput
-                  style={[styles.input, styles.multilineInput]}
-                  value={bigText}
-                  onChangeText={setBigText}
-                  multiline
-                />
-              </View>
-              <View style={styles.column}>
-                <Text style={styles.label}>Action Buttons</Text>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Primary Title</Text>
-                  <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Primary Deep Link</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={primaryActionDeepLinkUrl}
-                    onChangeText={setPrimaryActionDeepLinkUrl}
-                    autoCapitalize="none"
-                  />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Primary Icon</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={primaryActionIcon}
-                    onChangeText={setPrimaryActionIcon}
-                    autoCapitalize="none"
-                    placeholder="assetName"
-                    placeholderTextColor="#6B7280"
-                  />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Secondary Title</Text>
-                  <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Secondary Deep Link</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={secondaryActionDeepLinkUrl}
-                    onChangeText={setSecondaryActionDeepLinkUrl}
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-            </>
-          )}
-        </Card>
+            </View>
+          </>
+        )}
+      </Card>
 
-        <Card>
-          <Card.Title>Actions</Card.Title>
-          <View style={styles.buttonGrid}>
-            <Button title="Render Payload" variant="secondary" onPress={handleRenderPayload} />
-            <Button title="Start" variant="primary" onPress={handleStart} />
-            <Button title="Update" variant="secondary" onPress={handleUpdate} />
-            <Button title="Upsert" variant="secondary" onPress={handleUpsertPayload} />
-            <Button title="Stop" variant="ghost" onPress={handleStop} />
-          </View>
-          {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
-        </Card>
+      <Card>
+        <Card.Title>Actions</Card.Title>
+        <View style={styles.buttonGrid}>
+          <Button title="Render Payload" variant="secondary" onPress={handleRenderPayload} />
+          <Button title="Start" variant="primary" onPress={handleStart} />
+          <Button title="Update" variant="secondary" onPress={handleUpdate} />
+          <Button title="Upsert" variant="secondary" onPress={handleUpsertPayload} />
+          <Button title="Stop" variant="ghost" onPress={handleStop} />
+        </View>
+        {statusMessage ? <Text style={styles.status}>{statusMessage}</Text> : null}
+      </Card>
 
-        <Card>
-          <Card.Title>Rendered Payload</Card.Title>
-          <Text style={styles.codeBlock}>
-            {renderedPayload || 'Render a payload to inspect the semantic snapshot.'}
-          </Text>
-        </Card>
+      <Card>
+        <Card.Title>Rendered Payload</Card.Title>
+        <Text style={styles.codeBlock}>{renderedPayload || 'Render a payload to inspect the semantic snapshot.'}</Text>
+      </Card>
 
-        <Card>
-          <Card.Title>Real Notification Test</Card.Title>
-          <Card.Text>
-            Send a real high-priority notification whose `data.voltraOngoingNotification` contains this envelope. The
-            example&apos;s registered background task will parse it and upsert the ongoing notification.
-          </Card.Text>
-          <Card.Text>Use `operation: "stop"` with the same `notificationId` to stop it remotely.</Card.Text>
-          <Text style={styles.codeBlock}>{sampleExpoPushRequest}</Text>
-        </Card>
-      </ScrollView>
-    </View>
+      <Card>
+        <Card.Title>Real Notification Test</Card.Title>
+        <Card.Text>
+          Send a real high-priority notification whose `data.voltraOngoingNotification` contains this envelope. The
+          example&apos;s registered background task will parse it and upsert the ongoing notification.
+        </Card.Text>
+        <Card.Text>Use `operation: "stop"` with the same `notificationId` to stop it remotely.</Card.Text>
+        <Text style={styles.codeBlock}>{sampleExpoPushRequest}</Text>
+      </Card>
+    </ScreenLayout>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollView: { flex: 1 },
-  content: { padding: 20 },
-  heading: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 8 },
-  subheading: { fontSize: 14, color: '#CBD5F5', marginBottom: 24, lineHeight: 20 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
   column: { marginBottom: 16, gap: 10 },
   label: { color: '#FFFFFF', fontSize: 16, flexShrink: 0 },

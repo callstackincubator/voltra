@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "migration-v2",
+    "label": "Migration to v2"
+  },
+  {
+    "type": "file",
     "name": "prior-art",
     "label": "Prior Art"
   }

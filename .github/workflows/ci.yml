@@ -89,7 +89,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Run JS tests via Turbo
         run: npm run test:js
 
   native-kotlin-test:
@@ -126,7 +126,7 @@ jobs:
 
       - name: Run Kotlin native tests
         working-directory: example/android
-        run: ./gradlew :voltra:testDebugUnitTest
+        run: ./gradlew :use-voltra_android-client:testDebugUnitTest
 
   native-swift-test:
     name: '[Swift] Test'
