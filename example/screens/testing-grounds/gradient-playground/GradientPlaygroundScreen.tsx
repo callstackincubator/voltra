@@ -1,4 +1,4 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
@@ -30,6 +30,7 @@ const PRESETS: { label: string; colors: [string, string, ...string[]] }[] = [
 const ANGLE_OPTIONS = [0, 45, 90, 135, 180]
 
 export default function GradientPlaygroundScreen() {
+  const router = useRouter()
   const [gradientType, setGradientType] = useState<GradientType>('linear')
   const [direction, setDirection] = useState<Direction>('to right')
   const [angle, setAngle] = useState(90)
@@ -229,9 +230,7 @@ export default function GradientPlaygroundScreen() {
       </Card>
 
       <View style={styles.footer}>
-        <Link href="/testing-grounds" asChild>
-          <Button title="Back to Testing Grounds" variant="ghost" />
-        </Link>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
       </View>
     </ScreenLayout>
   )

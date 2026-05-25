@@ -163,7 +163,7 @@ export default function AndroidImageFallbackScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Button title="Back to Android Home" variant="ghost" onPress={() => router.push('/android-widgets')} />
+        <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
       </View>
     </ScreenLayout>
   )

@@ -83,7 +83,7 @@ export default function ChannelUpdatesTestingScreen() {
       </Card>
 
       <View style={styles.footer}>
-        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.push('/testing-grounds')} />
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
       </View>
     </ScreenLayout>
   )

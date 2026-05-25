@@ -1,4 +1,4 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, StyleSheet, Text, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
@@ -14,6 +14,7 @@ function generateRandomKey(): string {
 }
 
 export default function ImagePreloadingScreen() {
+  const router = useRouter()
   const [url, setUrl] = useState(`https://picsum.photos/id/${Math.floor(Math.random() * 120)}/100/100`)
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentAssetKey, setCurrentAssetKey] = useState<string | null>(null)
@@ -125,9 +126,7 @@ export default function ImagePreloadingScreen() {
       </Card>
 
       <View style={styles.footer}>
-        <Link href="/testing-grounds" asChild>
-          <Button title="Back to Testing Grounds" variant="ghost" />
-        </Link>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
       </View>
     </ScreenLayout>
   )

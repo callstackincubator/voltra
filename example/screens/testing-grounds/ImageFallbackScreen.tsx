@@ -1,4 +1,4 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React from 'react'
 import { Alert, StyleSheet, Text, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
@@ -9,6 +9,8 @@ import { Card } from '~/components/Card'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
 export default function ImageFallbackScreen() {
+  const router = useRouter()
+
   const handleShowExample = async (exampleName: string, content: React.ReactElement) => {
     try {
       await startLiveActivity(
@@ -315,9 +317,7 @@ export default function ImageFallbackScreen() {
       </View>
 
       <View style={styles.footer}>
-        <Link href="/testing-grounds" asChild>
-          <Button title="Back to Testing Grounds" variant="ghost" />
-        </Link>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
       </View>
     </ScreenLayout>
   )

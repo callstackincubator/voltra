@@ -1,4 +1,4 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
@@ -45,6 +45,7 @@ const JUSTIFY_CONTENT_LABELS: Record<JustifyContent, string> = {
 }
 
 export default function FlexPlaygroundScreen() {
+  const router = useRouter()
   const [flexDirection, setFlexDirection] = useState<FlexDirection>('column')
   const [alignItems, setAlignItems] = useState<AlignItems>('stretch')
   const [justifyContent, setJustifyContent] = useState<JustifyContent>('flex-start')
@@ -203,9 +204,7 @@ export default function FlexPlaygroundScreen() {
       </Card>
 
       <View style={styles.footer}>
-        <Link href="/testing-grounds" asChild>
-          <Button title="Back to Testing Grounds" variant="ghost" />
-        </Link>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
       </View>
     </ScreenLayout>
   )

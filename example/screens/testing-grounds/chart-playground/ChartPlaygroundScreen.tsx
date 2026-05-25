@@ -1,4 +1,4 @@
-import { Link } from 'expo-router'
+import { useRouter } from 'expo-router'
 import React, { useCallback, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
@@ -51,6 +51,7 @@ function ChartPreview({ children }: { children: React.ReactNode }) {
 // ─── screen ─────────────────────────────────────────────────────────────────
 
 export default function ChartPlaygroundScreen() {
+  const router = useRouter()
   const [barData, setBarData] = useState(randomBarData)
   const [multiData, setMultiData] = useState(randomMultiSeriesData)
   const [lineData, setLineData] = useState(randomLineData)
@@ -285,9 +286,7 @@ export default function ChartPlaygroundScreen() {
       </Card>
 
       <View style={styles.footer}>
-        <Link href="/testing-grounds" asChild>
-          <Button title="Back to Testing Grounds" variant="ghost" />
-        </Link>
+        <Button title="Back to Testing Grounds" variant="ghost" onPress={() => router.back()} />
       </View>
     </ScreenLayout>
   )
