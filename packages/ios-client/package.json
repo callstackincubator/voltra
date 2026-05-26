@@ -19,6 +19,7 @@
       "default": "./build/module/index.js"
     },
     "./package.json": "./package.json",
+    "./app.plugin": "./expo-plugin/app.plugin.js",
     "./app.plugin.js": "./expo-plugin/app.plugin.js"
   },
   "files": [
