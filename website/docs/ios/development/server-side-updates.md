@@ -274,7 +274,7 @@ For the full broadcast payload format and headers, see [Apple's broadcast push d
 | Server sends | One notification per device | One notification per channel |
 | `activityTokenReceived` event | Fires for each activity | Does not fire |
 | Best for | Per-user content (orders, rides) | Shared content (scores, flights) |
-| iOS version | 16.2+ | 18+ |
+| iOS version | 16.4+ | 18+ |
 
 ## Handling background execution
 

@@ -43,7 +43,7 @@ public class VoltraModuleImpl {
   // MARK: - Live Activities
 
   func startLiveActivity(jsonString: String, options: StartVoltraOptions?) async throws -> String {
-    guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+    guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
     guard VoltraLiveActivityService.areActivitiesEnabled() else {
       throw VoltraErrors.liveActivitiesNotEnabled
     }
@@ -86,7 +86,7 @@ public class VoltraModuleImpl {
   }
 
   func updateLiveActivity(activityId: String, jsonString: String, options: UpdateVoltraOptions?) async throws {
-    guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+    guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
 
     // Compress JSON using brotli level 2
     let compressedJson = try BrotliCompression.compress(jsonString: jsonString)
@@ -116,7 +116,7 @@ public class VoltraModuleImpl {
   }
 
   func endLiveActivity(activityId: String, options: EndVoltraOptions?) async throws {
-    guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+    guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
 
     // Convert dismissal policy options to ActivityKit type
     let dismissalPolicy = convertToActivityKitDismissalPolicy(options?.dismissalPolicy)
@@ -129,27 +129,27 @@ public class VoltraModuleImpl {
   }
 
   func endAllLiveActivities() async throws {
-    guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+    guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
     await liveActivityService.endAllActivities()
   }
 
   func getLatestVoltraActivityId() -> String? {
-    guard #available(iOS 16.2, *) else { return nil }
+    guard #available(iOS 16.4, *) else { return nil }
     return liveActivityService.getLatestActivity()?.id
   }
 
   func listVoltraActivityIds() -> [String] {
-    guard #available(iOS 16.2, *) else { return [] }
+    guard #available(iOS 16.4, *) else { return [] }
     return liveActivityService.getAllActivities().map(\.id)
   }
 
   func isLiveActivityActive(name: String) -> Bool {
-    guard #available(iOS 16.2, *) else { return false }
+    guard #available(iOS 16.4, *) else { return false }
     return liveActivityService.isActivityActive(name: name)
   }
 
   func reloadLiveActivities(activityNames: [String]?) async throws {
-    guard #available(iOS 16.2, *) else { throw VoltraErrors.unsupportedOS }
+    guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
 
     let activities = liveActivityService.getAllActivities()
 

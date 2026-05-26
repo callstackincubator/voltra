@@ -82,13 +82,13 @@ public class VoltraLiveActivityService {
 
   /// Check if Live Activities are supported on this OS version
   public static func isSupported() -> Bool {
-    guard #available(iOS 16.2, *) else { return false }
+    guard #available(iOS 16.4, *) else { return false }
     return true
   }
 
   /// Check if Live Activities are enabled for this app
   public static func areActivitiesEnabled() -> Bool {
-    guard #available(iOS 16.2, *) else { return false }
+    guard #available(iOS 16.4, *) else { return false }
     return ActivityAuthorizationInfo().areActivitiesEnabled
   }
 
