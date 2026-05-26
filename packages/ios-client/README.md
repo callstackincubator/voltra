@@ -92,7 +92,7 @@ export function OrderTracker({ orderId }: { orderId: string }) {
 
 ## Platform compatibility
 
-This package targets **iOS 16.2+** (Live Activities) and supports Home Screen widgets on supported iOS versions. Import UI and runtime APIs from `@use-voltra/ios-client`. For server-side rendering, use `@use-voltra/ios-server` in your backend only.
+This package targets **iOS 16.4+** (Live Activities) and supports Home Screen widgets on supported iOS versions. Import UI and runtime APIs from `@use-voltra/ios-client`. For server-side rendering, use `@use-voltra/ios-server` in your backend only.
 
 ## Authors
 

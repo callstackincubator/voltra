@@ -38,7 +38,7 @@ public struct VoltraWidget: Widget {
     .supplementalActivityFamilies([.small, .medium])
   }
 
-  // MARK: - Default Configuration (iOS 16.2 - 17.x)
+  // MARK: - Default Configuration (iOS 16.4 - 17.x)
 
   private func defaultConfig() -> some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
