@@ -167,35 +167,3 @@ final class JSGradientParserTests: XCTestCase {
     }
   }
 }
-
-final class JSColorParserTests: XCTestCase {
-  func testNamedColorsParse() {
-    XCTAssertNotNil(JSColorParser.parse("red"))
-    XCTAssertNotNil(JSColorParser.parse("green"))
-    XCTAssertNotNil(JSColorParser.parse("blue"))
-  }
-
-  func testRGBSlashSyntaxParses() {
-    XCTAssertNotNil(JSColorParser.parse("rgb(255 0 0 / 80%)"))
-    XCTAssertNotNil(JSColorParser.parse("rgba(255 0 0 / 0.8)"))
-    XCTAssertNotNil(JSColorParser.parse("hsl(240 100% 50% / 30%)"))
-  }
-
-  func testTrailingGarbageRejected() {
-    XCTAssertNil(JSColorParser.parse("rgba(255,0,0,0.8)garbage"))
-    XCTAssertNil(JSColorParser.parse("rgb(255,0)"))
-    XCTAssertNil(JSColorParser.parse("hsl(120, 100, 50%)"))
-  }
-
-  func testReducedPresentationPrimaryColorDetectionTreatsNeutralColorsAsAdaptive() {
-    XCTAssertTrue(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#F9FAFB"))
-    XCTAssertTrue(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#6B7280"))
-    XCTAssertTrue(JSColorParser.shouldUsePrimaryColorInReducedPresentation("white"))
-  }
-
-  func testReducedPresentationPrimaryColorDetectionPreservesSemanticAccents() {
-    XCTAssertFalse(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#34D399"))
-    XCTAssertFalse(JSColorParser.shouldUsePrimaryColorInReducedPresentation("#F87171"))
-    XCTAssertFalse(JSColorParser.shouldUsePrimaryColorInReducedPresentation("green"))
-  }
-}

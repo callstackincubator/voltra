@@ -61,8 +61,8 @@ let package = Package(
     .testTarget(
       name: "VoltraStyleTests",
       dependencies: ["VoltraStyleCore"],
-      path: "tests",
-      sources: ["JSGradientParserTests.swift"]
+      path: "Tests",
+      sources: ["JSGradientParserTests.swift", "JSColorParserTests.swift"]
     ),
   ]
 )

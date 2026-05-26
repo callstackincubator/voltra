@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+  import UIKit
+#endif
 
 enum JSColorParser {
   /// Parses Hex, RGB, RGBA, HSL, HSLA, and named color strings into SwiftUI Color.
@@ -30,7 +33,12 @@ enum JSColorParser {
       return parseHSL(trimmed)
     }
 
-    // 4. Named colors
+    // 4. light-dark() — CSS Color Level 4 adaptive color
+    if trimmed.hasPrefix("light-dark") {
+      return parseLightDark(trimmed)
+    }
+
+    // 5. Named colors
     if let namedColor = parseNamedColor(trimmed) {
       return namedColor
     }
@@ -85,6 +93,47 @@ enum JSColorParser {
 
     let saturation = (maxComponent - minComponent) / maxComponent
     return saturation <= 0.2
+  }
+
+  // MARK: - light-dark() Parser
+
+  /// Parses `light-dark(<lightColor>, <darkColor>)` into an adaptive Color that
+  /// automatically responds to the system color scheme via UITraitCollection.
+  private static func parseLightDark(_ string: String) -> Color? {
+    guard let function = parseFunctionCall(string, allowedNames: ["light-dark"]) else { return nil }
+
+    // Split on the first top-level comma — arguments may themselves contain commas
+    // (e.g. rgb(255, 0, 0)), so we must count parenthesis depth.
+    guard let splitIndex = findTopLevelComma(in: function.arguments) else { return nil }
+
+    let lightString = String(function.arguments[..<splitIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+    let darkString = String(function.arguments[function.arguments.index(after: splitIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard let lightColor = parse(lightString), let darkColor = parse(darkString) else { return nil }
+
+    #if canImport(UIKit)
+      return Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark
+          ? UIColor(darkColor)
+          : UIColor(lightColor)
+      })
+    #else
+      return lightColor
+    #endif
+  }
+
+  /// Returns the index of the first comma that is not nested inside parentheses.
+  private static func findTopLevelComma(in string: String) -> String.Index? {
+    var depth = 0
+    for index in string.indices {
+      switch string[index] {
+      case "(": depth += 1
+      case ")": depth -= 1
+      case "," where depth == 0: return index
+      default: break
+      }
+    }
+    return nil
   }
 
   /// Parse named color strings

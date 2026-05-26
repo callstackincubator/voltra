@@ -6,4 +6,5 @@ export type VoltraBaseProps = {
   id?: string
   style?: VoltraStyleProp
   children?: ReactNode
+  widgetAccentable?: boolean
 }

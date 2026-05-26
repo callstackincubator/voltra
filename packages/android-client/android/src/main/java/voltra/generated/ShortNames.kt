@@ -165,6 +165,7 @@ object ShortNames {
             "ul" to "underline",
             "v" to "value",
             "valig" to "verticalAlignment",
+            "wa" to "widgetAccentable",
             "wt" to "weight",
             "w" to "width",
             "xgs" to "xAxisGridStyle",

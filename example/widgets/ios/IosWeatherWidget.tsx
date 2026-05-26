@@ -145,6 +145,37 @@ export const IosWeatherWidget = ({ weather = DEFAULT_WEATHER }: WeatherWidgetPro
             🕒 {formatTime(weather.lastUpdated)}
           </Voltra.Text>
         ) : null}
+
+        {/* Track 1 PoC verification
+            - Background flips with dark/light mode (light-dark)
+            - Text receives system accent tint in accented rendering mode (widgetAccentable) */}
+        <Voltra.Spacer />
+        <Voltra.HStack spacing={6} style={{ marginTop: 8 }}>
+          <Voltra.View
+            style={{
+              backgroundColor: 'light-dark(rgba(0,0,0,0.15), rgba(255,255,255,0.15))',
+              borderRadius: 4,
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+            }}
+          >
+            <Voltra.Text style={{ fontSize: 9, color: 'light-dark(#000000, #ffffff)' }}>
+              light-dark
+            </Voltra.Text>
+          </Voltra.View>
+          <Voltra.View
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              borderRadius: 4,
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+            }}
+          >
+            <Voltra.Text widgetAccentable={true} style={{ fontSize: 9, color: '#ffffff' }}>
+              accentable
+            </Voltra.Text>
+          </Voltra.View>
+        </Voltra.HStack>
       </Voltra.VStack>
     </Voltra.LinearGradient>
   )

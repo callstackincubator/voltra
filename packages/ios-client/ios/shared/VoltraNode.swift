@@ -118,77 +118,82 @@ struct VoltraElementView: View {
   let element: VoltraElement
 
   var body: some View {
-    switch element.type {
-    case "Button":
-      VoltraButton(element)
+    Group {
+      switch element.type {
+      case "Button":
+        VoltraButton(element)
 
-    case "Link":
-      VoltraLink(element)
+      case "Link":
+        VoltraLink(element)
 
-    case "VStack":
-      VoltraVStack(element)
+      case "VStack":
+        VoltraVStack(element)
 
-    case "HStack":
-      VoltraHStack(element)
+      case "HStack":
+        VoltraHStack(element)
 
-    case "View":
-      VoltraFlexView(element)
+      case "View":
+        VoltraFlexView(element)
 
-    case "ZStack":
-      VoltraZStack(element)
+      case "ZStack":
+        VoltraZStack(element)
 
-    case "Text":
-      VoltraText(element)
+      case "Text":
+        VoltraText(element)
 
-    case "Image":
-      VoltraImage(element)
+      case "Image":
+        VoltraImage(element)
 
-    case "Symbol":
-      VoltraSymbol(element)
+      case "Symbol":
+        VoltraSymbol(element)
 
-    case "Divider":
-      VoltraDivider(element)
+      case "Divider":
+        VoltraDivider(element)
 
-    case "Spacer":
-      VoltraSpacer(element)
+      case "Spacer":
+        VoltraSpacer(element)
 
-    case "Label":
-      VoltraLabel(element)
+      case "Label":
+        VoltraLabel(element)
 
-    case "Toggle":
-      VoltraToggle(element)
+      case "Toggle":
+        VoltraToggle(element)
 
-    case "Gauge":
-      VoltraGauge(element)
+      case "Gauge":
+        VoltraGauge(element)
 
-    case "LinearProgressView":
-      VoltraLinearProgressView(element)
+      case "LinearProgressView":
+        VoltraLinearProgressView(element)
 
-    case "CircularProgressView":
-      VoltraCircularProgressView(element)
+      case "CircularProgressView":
+        VoltraCircularProgressView(element)
 
-    case "Timer":
-      VoltraTimer(element)
+      case "Timer":
+        VoltraTimer(element)
 
-    case "GroupBox":
-      VoltraGroupBox(element)
+      case "GroupBox":
+        VoltraGroupBox(element)
 
-    case "LinearGradient":
-      VoltraLinearGradient(element)
+      case "LinearGradient":
+        VoltraLinearGradient(element)
 
-    case "GlassContainer":
-      VoltraGlassContainer(element)
+      case "GlassContainer":
+        VoltraGlassContainer(element)
 
-    case "Mask":
-      VoltraMask(element)
+      case "Mask":
+        VoltraMask(element)
 
-    case "Chart":
-      if #available(iOS 16.0, macOS 13.0, *) {
-        VoltraChart(element)
+      case "Chart":
+        if #available(iOS 16.0, macOS 13.0, *) {
+          VoltraChart(element)
+        }
+
+      default:
+        EmptyView()
       }
-
-    default:
-      EmptyView()
+    }
+    .voltraIf(element.props?["widgetAccentable"]?.boolValue == true) { view in
+      view.widgetAccentable()
     }
   }
 }

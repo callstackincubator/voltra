@@ -162,6 +162,7 @@ public enum ShortNames {
     "ul": "underline",
     "v": "value",
     "valig": "verticalAlignment",
+    "wa": "widgetAccentable",
     "wt": "weight",
     "w": "width",
     "xgs": "xAxisGridStyle",
