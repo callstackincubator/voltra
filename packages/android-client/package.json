@@ -22,6 +22,7 @@
     "./app.plugin.js": "./expo-plugin/app.plugin.js"
   },
   "files": [
+    "app.plugin.js",
     "android",
     "build",
     "expo-plugin",
