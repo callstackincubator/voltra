@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ES2020",
+    "rootDir": "../..",
+    "baseUrl": "../..",
+    "paths": {
+      "voltra": ["packages/voltra/src/index.ts"],
+      "@use-voltra/core": ["packages/core/src/index.ts"],
+      "@use-voltra/ios": ["packages/ios/src/index.ts"],
+      "@use-voltra/ios-renderer": ["packages/ios-renderer/src/index.ts"],
+      "@use-voltra/server": ["packages/server/src/index.ts"]
+    }
+  }
+}

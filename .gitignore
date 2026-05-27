@@ -24,6 +24,7 @@ android.iml
 android/app/libs
 android/keystores/debug.keystore
 build/
+bundle/
 
 ## Node.js
 node_modules/
