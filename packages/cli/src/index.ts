@@ -39,6 +39,8 @@ export { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, getApplyHelpText, runAppl
 export { CLI_DEFAULTS } from './config/defaults'
 export { VoltraConfigLoadError, loadVoltraConfig } from './config/load'
 export { VoltraConfigNormalizationError, normalizeVoltraConfig } from './config/normalize'
+export { ensureGitWorktreeIsReady, getGitWorktreeStatus } from './git/status'
+export type { EnsureGitWorktreeOptions, EnsureGitWorktreeResult, GitWorktreeStatus } from './git/status'
 export {
   formatAmbiguousDiscoveryWarning,
   formatApplySummary,
