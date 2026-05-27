@@ -466,6 +466,9 @@ Can run in parallel with:
 
 **T7. Implement `voltra apply` command shell**
 
+Status:
+- completed
+
 Deliverables:
 - parse flags
 - route to `apply`

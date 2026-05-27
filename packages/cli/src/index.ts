@@ -1,22 +1,40 @@
+import { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, formatCommandError, runApplyCommand } from './commands/apply'
+
 const HELP_TEXT = [
   'voltra',
   '',
   'Usage:',
   '  voltra apply [--platform ios|android] [--config <path>]',
-  '',
-  'Status:',
-  '  CLI scaffolding is ready. The apply command is not implemented yet.',
+  '  voltra --help',
 ].join('\n')
 
 export async function runCli(argv: string[]): Promise<number> {
-  if (argv.includes('--help') || argv.includes('-h')) {
+  if (argv.length === 0) {
     process.stdout.write(`${HELP_TEXT}\n`)
-    return 0
+    return CLI_EXIT_CODE_SUCCESS
   }
 
-  process.stderr.write('voltra apply is not implemented yet. Run `voltra --help` for usage.\n')
-  return 1
+  if (argv[0] === '--help' || argv[0] === '-h') {
+    process.stdout.write(`${HELP_TEXT}\n`)
+    return CLI_EXIT_CODE_SUCCESS
+  }
+
+  const [command, ...commandArgs] = argv
+
+  try {
+    if (command === 'apply') {
+      return await runApplyCommand(commandArgs)
+    }
+
+    throw new Error(`Unknown command: ${command}`)
+  } catch (error) {
+    process.stderr.write(`${formatCommandError(error)}\n`)
+    return CLI_EXIT_CODE_FAILURE
+  }
 }
+
+export { applyVoltra } from './apply'
+export { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, getApplyHelpText, runApplyCommand } from './commands/apply'
 
 export { CLI_DEFAULTS } from './config/defaults'
 export { VoltraConfigLoadError, loadVoltraConfig } from './config/load'
