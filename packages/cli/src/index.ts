@@ -41,6 +41,12 @@ export { VoltraConfigLoadError, loadVoltraConfig } from './config/load'
 export { VoltraConfigNormalizationError, normalizeVoltraConfig } from './config/normalize'
 export { ensureGitWorktreeIsReady, getGitWorktreeStatus } from './git/status'
 export type { EnsureGitWorktreeOptions, EnsureGitWorktreeResult, GitWorktreeStatus } from './git/status'
+export { diffVoltraState } from './state/diff'
+export { getVoltraStatePath, loadVoltraState } from './state/load'
+export { saveVoltraState } from './state/save'
+export type { VoltraStateDiff } from './state/diff'
+export type { SaveVoltraStateInput } from './state/save'
+export type { VoltraState } from './state/load'
 export {
   formatAmbiguousDiscoveryWarning,
   formatApplySummary,
