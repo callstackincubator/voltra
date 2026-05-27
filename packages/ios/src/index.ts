@@ -5,6 +5,7 @@ export {
   COMPONENT_ID_TO_NAME,
   COMPONENT_NAME_TO_ID,
 } from './payload/component-ids.js'
+export { appIntentParam } from './app-intent.js'
 export { renderLiveActivityToJson, renderLiveActivityToString } from './live-activity/renderer.js'
 export type {
   DismissalPolicy,

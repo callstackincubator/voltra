@@ -23,7 +23,14 @@
     "build:bundle": "node scripts/build-bundle.mjs",
     "clean": "rm -rf build bundle",
     "lint": "oxlint src",
+    "test": "jest --config jest.config.js",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.19.25",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.4"
   },
   "keywords": [
     "voltra",

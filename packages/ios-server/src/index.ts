@@ -18,7 +18,7 @@ import {
 } from '@use-voltra/server'
 import type { ReactNode } from 'react'
 
-export { Voltra } from '@use-voltra/ios'
+export { Voltra, appIntentParam } from '@use-voltra/ios'
 export type { LiveActivityVariants, WidgetVariants }
 export type {
   WidgetRenderRequest,
