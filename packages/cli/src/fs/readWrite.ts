@@ -8,8 +8,12 @@ export async function pathExists(filePath: string): Promise<boolean> {
   try {
     await fs.access(filePath)
     return true
-  } catch {
-    return false
+  } catch (error: unknown) {
+    if (isNotFoundError(error)) {
+      return false
+    }
+
+    throw error
   }
 }
 
@@ -84,8 +88,13 @@ export async function removePathIfExists(targetPath: string): Promise<boolean> {
 async function writeTextFileAtomic(filePath: string, content: string): Promise<void> {
   const tempPath = `${filePath}.${crypto.randomUUID()}.tmp`
 
-  await fs.writeFile(tempPath, content, UTF8)
-  await fs.rename(tempPath, filePath)
+  try {
+    await fs.writeFile(tempPath, content, UTF8)
+    await fs.rename(tempPath, filePath)
+  } catch (error: unknown) {
+    await removeFileIfExists(tempPath).catch(() => undefined)
+    throw error
+  }
 }
 
 function isNotFoundError(error: unknown): error is NodeJS.ErrnoException {

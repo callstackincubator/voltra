@@ -396,6 +396,12 @@ Can run in parallel with:
 Status:
 - completed
 
+Review follow-up:
+- completed two review passes after T1-T4
+- fixed `pathExists` to only swallow missing-path errors instead of hiding all filesystem failures
+- cleaned up atomic write temp files on write or rename failure
+- improved scaffolded CLI help and default error output so the published binary shows real usage shape
+
 Deliverables:
 - summary formatter for created/updated/deleted files
 - warning formatter for dirty git state and ambiguous discovery

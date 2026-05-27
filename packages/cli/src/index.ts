@@ -1,10 +1,20 @@
+const HELP_TEXT = [
+  'voltra',
+  '',
+  'Usage:',
+  '  voltra apply [--platform ios|android] [--config <path>]',
+  '',
+  'Status:',
+  '  CLI scaffolding is ready. The apply command is not implemented yet.',
+].join('\n')
+
 export async function runCli(argv: string[]): Promise<number> {
   if (argv.includes('--help') || argv.includes('-h')) {
-    process.stdout.write('voltra CLI scaffolding is ready.\n')
+    process.stdout.write(`${HELP_TEXT}\n`)
     return 0
   }
 
-  process.stderr.write('voltra CLI is not implemented yet.\n')
+  process.stderr.write('voltra apply is not implemented yet. Run `voltra --help` for usage.\n')
   return 1
 }
 
