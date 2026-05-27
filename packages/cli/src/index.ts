@@ -9,6 +9,16 @@ export async function runCli(argv: string[]): Promise<number> {
 }
 
 export { CLI_DEFAULTS } from './config/defaults'
+export {
+  formatAmbiguousDiscoveryWarning,
+  formatApplySummary,
+  formatDirtyWorktreeWarning,
+  formatError,
+  formatPreflightFailure,
+  formatWarning,
+  PreflightError,
+  VoltraCliError,
+} from './reporting/summary'
 export type {
   AndroidProjectOverrides,
   AndroidWidgetConfig,
@@ -36,3 +46,4 @@ export type {
   WidgetLabel,
   WidgetLocalizedValue,
 } from './config/types'
+export type { ApplySummary, PreflightFailureReport, PreflightIssue, ReportedChange, ReportedChangeKind } from './reporting/summary'

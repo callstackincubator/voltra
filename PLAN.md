@@ -394,7 +394,7 @@ Can run in parallel with:
 **T4. Add CLI reporting primitives**
 
 Status:
-- pending
+- completed
 
 Deliverables:
 - summary formatter for created/updated/deleted files
