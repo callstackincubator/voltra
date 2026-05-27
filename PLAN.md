@@ -352,7 +352,7 @@ Can run in parallel with:
 **T2. Define config and normalized internal types**
 
 Status:
-- pending
+- completed
 
 Deliverables:
 - define public config types
