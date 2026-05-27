@@ -13,6 +13,7 @@ import { renderWidgetToString } from '@use-voltra/ios-server'
 import { createWidgetUpdateNodeHandler } from '@use-voltra/server'
 import React from 'react'
 import { IosPortfolioWidget } from '../widgets/ios/IosPortfolioWidget'
+import { IosReactiveWeatherWidget } from '../widgets/ios/IosReactiveWeatherWidget'
 import { AndroidMaterialColorsServerWidget } from '../widgets/android/AndroidMaterialColorsWidget'
 import { AndroidPortfolioWidget } from '../widgets/android/AndroidPortfolioWidget'
 
@@ -50,6 +51,15 @@ function generatePortfolioData() {
 
 const handler = createWidgetUpdateNodeHandler({
   renderIos: async (req: any) => {
+    if (req.widgetId === 'reactive') {
+      // Track 2 PoC: server renders the widget with variant-aware values preserved.
+      // appIntentParam('city') → "{{ appIntent.city }}" in the payload.
+      // light-dark() colors pass through unchanged.
+      // The extension resolves both against live device state + AppIntent params.
+      const content = <IosReactiveWeatherWidget />
+      return { systemSmall: content, systemMedium: content }
+    }
+
     if (req.widgetId !== 'portfolio') {
       return null
     }
@@ -117,6 +127,8 @@ createServer(handler).listen(PORT, () => {
   console.log(`\n  Portfolio chart:`)
   console.log(`  iOS:     GET http://localhost:${PORT}?widgetId=portfolio&platform=ios&family=systemSmall`)
   console.log(`  Android: GET http://10.0.2.2:${PORT}?widgetId=portfolio&platform=android`)
+  console.log(`\n  Reactive weather (Track 2 PoC — variant-aware payload):`)
+  console.log(`  iOS:     GET http://localhost:${PORT}?widgetId=reactive&platform=ios&family=systemSmall`)
   console.log(`\n  Material colors:`)
   console.log(`  Android: GET http://10.0.2.2:${PORT}?widgetId=material_colors&platform=android`)
   console.log(`\n  (Android emulator uses 10.0.2.2 to reach the host machine)`)
