@@ -373,7 +373,7 @@ Can run in parallel with:
 **T3. Add filesystem boundary module**
 
 Status:
-- pending
+- completed
 
 Deliverables:
 - add thin read/write helpers under `packages/cli/src/fs`
