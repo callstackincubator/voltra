@@ -44,5 +44,8 @@
     "url": "https://github.com/callstackincubator/voltra/issues"
   },
   "license": "MIT",
-  "homepage": "https://use-voltra.dev"
+  "homepage": "https://use-voltra.dev",
+  "dependencies": {
+    "cosmiconfig": "^9.0.0"
+  }
 }

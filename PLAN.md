@@ -421,6 +421,9 @@ Can run in parallel with:
 
 **T5. Implement config loading with `cosmiconfig`**
 
+Status:
+- completed
+
 Deliverables:
 - support `package.json` `voltra` key
 - support `.voltrarc*`

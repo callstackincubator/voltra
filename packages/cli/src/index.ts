@@ -19,6 +19,7 @@ export async function runCli(argv: string[]): Promise<number> {
 }
 
 export { CLI_DEFAULTS } from './config/defaults'
+export { VoltraConfigLoadError, loadVoltraConfig } from './config/load'
 export {
   formatAmbiguousDiscoveryWarning,
   formatApplySummary,
