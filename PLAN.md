@@ -445,6 +445,9 @@ Can run in parallel with:
 
 **T6. Implement config normalization**
 
+Status:
+- completed
+
 Deliverables:
 - resolve defaults from loaded config
 - derive `projectRoot`
