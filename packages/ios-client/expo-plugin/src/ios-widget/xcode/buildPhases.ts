@@ -29,8 +29,8 @@ export function addBuildPhases(xcodeProject: XcodeProject, options: AddBuildPhas
   const buildPath = `""`
   const folderType = 'app_extension'
 
-  const { swiftFiles, intentFiles, assetDirectories, localizedStringResources } = widgetFiles
-  const resourcePaths = [...assetDirectories, ...localizedStringResources]
+  const { swiftFiles, intentFiles, assetDirectories, localizedStringResources, bundleResources } = widgetFiles
+  const resourcePaths = [...assetDirectories, ...localizedStringResources, ...bundleResources]
 
   // Sources build phase
   xcodeProject.addBuildPhase(
@@ -74,8 +74,8 @@ export function ensureBuildPhases(xcodeProject: XcodeProject, options: EnsureBui
   const folderType = 'app_extension'
   const mainTargetUuid = options.mainTargetUuid ?? xcodeProject.getFirstTarget().uuid
 
-  const { swiftFiles, intentFiles, assetDirectories, localizedStringResources } = widgetFiles
-  const resourcePaths = [...assetDirectories, ...localizedStringResources]
+  const { swiftFiles, intentFiles, assetDirectories, localizedStringResources, bundleResources } = widgetFiles
+  const resourcePaths = [...assetDirectories, ...localizedStringResources, ...bundleResources]
 
   dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXSourcesBuildPhase', 'Sources')
   dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXFrameworksBuildPhase', 'Frameworks')

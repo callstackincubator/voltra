@@ -25,6 +25,7 @@ export function getIOSWidgetExtensionFiles(targetPath: string, targetName: strin
     assetDirectories: [],
     intentFiles: [],
     localizedStringResources: [],
+    bundleResources: [],
   }
 
   if (!fs.existsSync(targetPath)) {
@@ -76,6 +77,9 @@ export function getIOSWidgetExtensionFiles(targetPath: string, targetName: strin
         break
       case '.intentdefinition':
         widgetFiles.intentFiles.push(file)
+        break
+      case '.js':
+        widgetFiles.bundleResources.push(file)
         break
     }
   }

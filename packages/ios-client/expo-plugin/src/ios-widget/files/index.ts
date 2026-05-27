@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import type { IOSWidgetConfig } from '../../types'
+import { logger } from '../../utils/logger'
 import { generateAssets } from './assets'
 import { generateEntitlements } from './entitlements'
 import { generateInfoPlist } from './infoPlist'
@@ -29,6 +30,28 @@ export interface GenerateWidgetExtensionFilesProps {
  *
  * This should run before configureXcodeProject so the files exist when Xcode project is configured.
  */
+function copyRendererBundle(targetPath: string, projectRoot: string): void {
+  const dest = path.join(targetPath, 'ios-renderer.js')
+  const candidates = [
+    // Standard npm install location
+    path.join(projectRoot, 'node_modules', '@use-voltra', 'ios-renderer', 'bundle', 'ios-renderer.js'),
+    // Monorepo workspace (packages/ sibling)
+    path.join(projectRoot, '..', '..', 'packages', 'ios-renderer', 'bundle', 'ios-renderer.js'),
+  ]
+
+  for (const src of candidates) {
+    if (fs.existsSync(src)) {
+      fs.copyFileSync(src, dest)
+      logger.info('Copied ios-renderer.js to widget extension target')
+      return
+    }
+  }
+
+  logger.warn(
+    'ios-renderer.js not found — run `npm run build:bundle -w @use-voltra/ios-renderer` then re-run prebuild'
+  )
+}
+
 export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
   const { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber } = props
 
@@ -52,6 +75,11 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
 
       // Generate Assets.xcassets and copy user images
       generateAssets({ targetPath })
+
+      // Copy ios-renderer.js bundle when any widget uses AppIntent (iOS 17+)
+      if (widgets?.some((w) => w.appIntent)) {
+        copyRendererBundle(targetPath, projectRoot)
+      }
 
       // Generate Swift files (widget bundle, initial states)
       await generateSwiftFiles({

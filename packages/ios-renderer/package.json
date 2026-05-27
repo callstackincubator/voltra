@@ -12,6 +12,7 @@
       "import": "./build/esm/index.js",
       "default": "./build/esm/index.js"
     },
+    "./bundle/ios-renderer.js": "./bundle/ios-renderer.js",
     "./package.json": "./package.json"
   },
   "files": [

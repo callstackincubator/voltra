@@ -15,6 +15,26 @@ export type IOSWidgetFamily =
   | 'accessoryInline'
 
 /**
+ * A single user-configurable parameter exposed via AppIntent.
+ */
+export interface AppIntentParameter {
+  /** Swift property name and key used in appIntentParam() template expressions */
+  name: string
+  /** Label shown to the user in the widget configuration sheet */
+  title: string
+  /** Default value used before the user configures the widget */
+  default?: string
+}
+
+/**
+ * AppIntent configuration for a reactive widget (iOS 17+).
+ */
+export interface IOSWidgetAppIntentConfig {
+  /** Parameters the user can configure in the widget gallery. */
+  parameters: AppIntentParameter[]
+}
+
+/**
  * Configuration for a single iOS home screen widget.
  */
 export interface IOSWidgetConfig {
@@ -28,6 +48,12 @@ export interface IOSWidgetConfig {
   supportedFamilies?: IOSWidgetFamily[]
   initialStatePath?: WidgetInitialStatePath
   serverUpdate?: IOSWidgetServerUpdateConfig
+  /**
+   * AppIntent configuration for user-configurable widgets (iOS 17+).
+   * When set, the plugin generates an AppIntentConfiguration widget so users can
+   * configure parameters directly in the widget gallery — no server push required.
+   */
+  appIntent?: IOSWidgetAppIntentConfig
 }
 
 /**

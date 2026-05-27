@@ -66,6 +66,26 @@
                 "intervalMinutes": 15,
                 "refresh": true
               }
+            },
+            {
+              "id": "reactive",
+              "displayName": {
+                "en": "Reactive Weather Widget"
+              },
+              "description": {
+                "en": "Track 2 PoC: city name and colors resolved on-device via AppIntent + JS renderer"
+              },
+              "supportedFamilies": ["systemSmall", "systemMedium"],
+              "initialStatePath": "./widgets/ios/ios-reactive-weather-initial.tsx",
+              "appIntent": {
+                "parameters": [
+                  {
+                    "name": "city",
+                    "title": "City",
+                    "default": "New York"
+                  }
+                ]
+              }
             }
           ],
           "fonts": [
