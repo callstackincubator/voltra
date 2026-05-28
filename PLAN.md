@@ -649,6 +649,9 @@ Can run in parallel with:
 
 **T15. Implement Android apply flow**
 
+Status:
+- completed
+
 Deliverables:
 - combine discovery, manifest mutation, generated-file writes, and generated-file list emission
 - return created/updated file inventory for reporting and state tracking

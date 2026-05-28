@@ -4,6 +4,7 @@ import { loadVoltraConfig } from '../config/load'
 import { normalizeVoltraConfig } from '../config/normalize'
 import { removePathIfExists } from '../fs/readWrite'
 import { ensureGitWorktreeIsReady } from '../git/status'
+import { applyAndroidPlatform, createAndroidPreflightRunner } from '../platforms/android/apply'
 import { formatApplySummary, VoltraCliError } from '../reporting/summary'
 import { diffVoltraState } from '../state/diff'
 import { loadVoltraState } from '../state/load'
@@ -75,10 +76,11 @@ export async function applyVoltra(options: ApplyOptions): Promise<ApplyResult> {
 export async function runApplyPipeline(options: ApplyOptions, dependencies: ApplyDependencies): Promise<void> {
   const loadedConfig = await loadVoltraConfig({ configPath: options.configPath })
   const normalizedConfig = normalizeVoltraConfig(loadedConfig)
+  const resolvedDependencies = resolveApplyDependencies(normalizedConfig, dependencies)
   const gitStatus = await ensureGitWorktreeIsReady({ cwd: normalizedConfig.projectRoot })
-  const preflight = await runApplyPreflight(normalizedConfig, dependencies.preflightRunners, options.platform)
+  const preflight = await runApplyPreflight(normalizedConfig, resolvedDependencies.preflightRunners, options.platform)
   const previousState = await loadVoltraState(normalizedConfig.projectRoot)
-  const platformResults = await runPlatformApply(normalizedConfig, preflight, previousState, dependencies.applyRunners)
+  const platformResults = await runPlatformApply(normalizedConfig, preflight, previousState, resolvedDependencies.applyRunners)
   const nextGeneratedFiles = platformResults.flatMap((result) => result.generatedFiles)
   const stateDiff = diffVoltraState(previousState, nextGeneratedFiles)
   const deletedChanges = await removeStaleGeneratedFiles(normalizedConfig.projectRoot, stateDiff.staleFiles)
@@ -87,7 +89,21 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   const summaryWarnings = [gitStatus.warning, ...platformResults.flatMap((result) => result.warnings ?? [])].filter(isDefined)
   const summaryChanges = [...platformResults.flatMap((result) => result.changes), ...deletedChanges]
 
-  dependencies.writeStdout(`${formatApplySummary({ changes: summaryChanges, warnings: summaryWarnings })}\n`)
+  resolvedDependencies.writeStdout(`${formatApplySummary({ changes: summaryChanges, warnings: summaryWarnings })}\n`)
+}
+
+function resolveApplyDependencies(config: NormalizedVoltraConfig, dependencies: ApplyDependencies): ApplyDependencies {
+  return {
+    applyRunners: {
+      android: dependencies.applyRunners.android ?? applyAndroidPlatform,
+      ios: dependencies.applyRunners.ios,
+    },
+    preflightRunners: {
+      android: dependencies.preflightRunners.android ?? (config.android ? createAndroidPreflightRunner(config) : undefined),
+      ios: dependencies.preflightRunners.ios,
+    },
+    writeStdout: dependencies.writeStdout,
+  }
 }
 
 async function runPlatformApply(
