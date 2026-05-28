@@ -65,12 +65,13 @@ export function formatApplySummary(summary: ApplySummary): string {
   return lines.join('\n')
 }
 
-export function formatDirtyWorktreeWarning(details?: string): string {
-  if (!details) {
+export function formatDirtyWorktreeWarning(changeCount?: number): string {
+  if (!changeCount || changeCount <= 0) {
     return `${PREFIX} Warning: git worktree has uncommitted changes.`
   }
 
-  return `${PREFIX} Warning: git worktree has uncommitted changes. ${details}`
+  const noun = changeCount === 1 ? 'change' : 'changes'
+  return `${PREFIX} Warning: git worktree has ${changeCount} uncommitted ${noun}.`
 }
 
 export function formatAmbiguousDiscoveryWarning(subject: string, candidates: string[]): string {

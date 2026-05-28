@@ -24,13 +24,14 @@ If you apply only Android, the iOS client package is not required.
 ## Command
 
 ```sh
-voltra apply [--platform ios|android] [--config <path>]
+voltra apply [options]
 ```
 
 Options:
 
 - `--platform ios|android`: limit apply to one platform.
 - `--config <path>`: load config from an explicit file path.
+- `-y`, `--yes`: skip the dirty git worktree confirmation prompt.
 - `-h`, `--help`: show command help.
 
 Examples:
@@ -44,6 +45,9 @@ npx voltra apply --platform ios
 
 # Apply using an explicit config file
 npx voltra apply --config ./config/voltra.config.ts
+
+# Skip the dirty-worktree confirmation
+npx voltra apply --yes
 
 # Re-apply only Android without removing tracked iOS files
 npx voltra apply --platform android
@@ -200,7 +204,8 @@ If discovery is missing or ambiguous, `voltra apply` fails during preflight befo
 Before writing files, `voltra apply` checks the git worktree:
 
 - clean worktree: continue
-- dirty worktree in an interactive terminal: print a warning and ask for confirmation
+- dirty worktree in an interactive terminal: print a warning and ask for confirmation without listing modified paths
+- dirty worktree with `--yes`: continue without asking for confirmation
 - dirty worktree in a non-interactive environment: fail before applying changes
 - no git repository: continue without blocking apply
 

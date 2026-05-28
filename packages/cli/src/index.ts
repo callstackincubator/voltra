@@ -1,36 +1,68 @@
-import { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, formatCommandError, runApplyCommand } from './commands/apply'
+import { Command } from 'commander'
 
-const HELP_TEXT = [
-  'voltra',
-  '',
-  'Usage:',
-  '  voltra apply [--platform ios|android] [--config <path>]',
-  '  voltra --help',
-].join('\n')
+import { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, createApplyCommand, formatCommandError } from './commands/apply'
+
+function createProgram(): Command {
+  const program = new Command()
+  let exitCode = CLI_EXIT_CODE_SUCCESS
+
+  program
+    .name('voltra')
+    .description('Apply Voltra to native React Native projects')
+    .exitOverride()
+    .showHelpAfterError()
+    .showSuggestionAfterError()
+    .addHelpText(
+      'after',
+      [
+        '',
+        'Examples:',
+        '  voltra apply',
+        '  voltra apply --platform ios',
+        '  voltra apply --config ./voltra.config.ts --yes',
+      ].join('\n')
+    )
+
+  program.addCommand(
+    createApplyCommand((nextExitCode) => {
+      exitCode = nextExitCode
+    })
+  )
+
+  program.hook('postAction', () => {
+    program.setOptionValue('exitCode', exitCode)
+  })
+
+  return program
+}
 
 export async function runCli(argv: string[]): Promise<number> {
-  if (argv.length === 0) {
-    process.stdout.write(`${HELP_TEXT}\n`)
-    return CLI_EXIT_CODE_SUCCESS
-  }
-
-  if (argv[0] === '--help' || argv[0] === '-h') {
-    process.stdout.write(`${HELP_TEXT}\n`)
-    return CLI_EXIT_CODE_SUCCESS
-  }
-
-  const [command, ...commandArgs] = argv
+  const program = createProgram()
 
   try {
-    if (command === 'apply') {
-      return await runApplyCommand(commandArgs)
+    await program.parseAsync(['node', 'voltra', ...argv], { from: 'node' })
+    return program.getOptionValue('exitCode') ?? CLI_EXIT_CODE_SUCCESS
+  } catch (error) {
+    if (isCommanderError(error)) {
+      return isCommanderDisplayError(error) ? CLI_EXIT_CODE_SUCCESS : CLI_EXIT_CODE_FAILURE
     }
 
-    throw new Error(`Unknown command: ${command}`)
-  } catch (error) {
     process.stderr.write(`${formatCommandError(error)}\n`)
     return CLI_EXIT_CODE_FAILURE
   }
+}
+
+function isCommanderDisplayError(error: unknown): error is { code: string } {
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error.code === 'commander.helpDisplayed' || error.code === 'commander.version')
+  )
+}
+
+function isCommanderError(error: unknown): error is { code: string } {
+  return Boolean(error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error.code.startsWith('commander.'))
 }
 
 export { applyVoltra, runApplyPipeline } from './apply'

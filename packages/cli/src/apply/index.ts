@@ -22,6 +22,7 @@ import type { VoltraState } from '../state/load'
 export interface ApplyOptions {
   configPath?: string
   platform?: VoltraPlatform
+  allowDirty?: boolean
 }
 
 export interface ApplyResult {
@@ -79,7 +80,10 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   const loadedConfig = await loadVoltraConfig({ configPath: options.configPath })
   const normalizedConfig = normalizeVoltraConfig(loadedConfig)
   const resolvedDependencies = resolveApplyDependencies(normalizedConfig, dependencies)
-  const gitStatus = await ensureGitWorktreeIsReady({ cwd: normalizedConfig.projectRoot })
+  const gitStatus = await ensureGitWorktreeIsReady({
+    cwd: normalizedConfig.projectRoot,
+    allowDirty: options.allowDirty,
+  })
   const preflight = await runApplyPreflight(normalizedConfig, resolvedDependencies.preflightRunners, options.platform)
   const previousState = await loadVoltraState(normalizedConfig.projectRoot)
   const platformResults = await runPlatformApply(normalizedConfig, preflight, previousState, resolvedDependencies.applyRunners)

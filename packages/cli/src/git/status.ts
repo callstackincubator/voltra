@@ -1,15 +1,14 @@
 import { execFile } from 'node:child_process'
 import type { Readable, Writable } from 'node:stream'
-import { createInterface } from 'node:readline/promises'
 import { promisify } from 'node:util'
 
-import { formatDirtyWorktreeWarning, VoltraCliError } from '../reporting/summary'
+import { formatDirtyWorktreeWarning, formatError, VoltraCliError } from '../reporting/summary'
+
+import type * as ClackPrompts from '@clack/prompts'
 
 const execFileAsync = promisify(execFile)
 
 const GIT_NOT_REPOSITORY_EXIT_CODE = 128
-const DIRTY_ENTRY_PREVIEW_LIMIT = 5
-
 export interface GitWorktreeStatus {
   isGitRepository: boolean
   isDirty: boolean
@@ -88,7 +87,7 @@ export async function ensureGitWorktreeIsReady(options: EnsureGitWorktreeOptions
     return { status }
   }
 
-  const warning = formatDirtyWorktreeWarning(formatDirtyEntrySummary(status.entries))
+  const warning = formatDirtyWorktreeWarning(status.entries.length)
 
   if (options.allowDirty) {
     return { status, warning }
@@ -160,14 +159,6 @@ function splitGitStatusEntries(output: string): string[] {
     .filter((entry) => entry.length > 0)
 }
 
-function formatDirtyEntrySummary(entries: string[]): string {
-  const preview = entries.slice(0, DIRTY_ENTRY_PREVIEW_LIMIT)
-  const remaining = entries.length - preview.length
-  const suffix = remaining > 0 ? ` and ${remaining} more` : ''
-
-  return `Pending changes: ${preview.join(', ')}${suffix}`
-}
-
 function isInteractiveSession(options: EnsureGitWorktreeOptions): boolean {
   if (options.interactive !== undefined) {
     return options.interactive
@@ -182,15 +173,29 @@ function isInteractiveSession(options: EnsureGitWorktreeOptions): boolean {
 async function promptForDirtyWorktreeConfirmation(options: EnsureGitWorktreeOptions, warning: string): Promise<boolean> {
   const stdin = options.stdin ?? process.stdin
   const stdout = options.stdout ?? process.stdout
-  const readline = createInterface({ input: stdin, output: stdout })
+  const { confirm, isCancel } = await loadClackPrompts()
 
-  try {
-    stdout.write(`${warning}\n`)
-    const answer = await readline.question('[voltra] Continue anyway? [y/N] ')
-    const normalizedAnswer = answer.trim().toLowerCase()
+  stdout.write(`${warning}\n`)
 
-    return normalizedAnswer === 'y' || normalizedAnswer === 'yes'
-  } finally {
-    readline.close()
+  const response = await confirm({
+    message: 'Continue anyway?',
+    initialValue: false,
+    input: stdin,
+    output: stdout,
+  })
+
+  if (isCancel(response)) {
+    stdout.write(`${formatError('Cancelled.')}\n`)
+    return false
   }
+
+  return response === true
+}
+
+function loadClackPrompts() {
+  const dynamicImport = new Function('specifier', 'return import(specifier)') as (
+    specifier: string
+  ) => Promise<typeof ClackPrompts>
+
+  return dynamicImport('@clack/prompts')
 }
