@@ -672,6 +672,9 @@ Can run in parallel with:
 
 **T16. Implement iOS project discovery**
 
+Status:
+- completed
+
 Deliverables:
 - discover iOS root
 - discover `.xcodeproj`
