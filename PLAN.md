@@ -745,6 +745,9 @@ Can run in parallel with:
 
 **T19. Implement Podfile managed block mutation**
 
+Status:
+- completed
+
 Deliverables:
 - insert or update a Voltra-managed block for widget extension pods
 - keep unrelated Podfile content intact

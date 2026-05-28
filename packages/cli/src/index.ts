@@ -67,6 +67,8 @@ export { IOSEntitlementsMutationError, ensureEntitlements } from './platforms/io
 export type { EnsureEntitlementsOptions, EnsureEntitlementsResult } from './platforms/ios/entitlements'
 export { IOSInfoPlistMutationError, ensureInfoPlist } from './platforms/ios/plist'
 export type { EnsureInfoPlistOptions, EnsureInfoPlistResult } from './platforms/ios/plist'
+export { IOSPodfileMutationError, ensurePodfileBlock } from './platforms/ios/podfile'
+export type { EnsurePodfileBlockOptions, EnsurePodfileBlockResult } from './platforms/ios/podfile'
 export { diffVoltraState } from './state/diff'
 export { getVoltraStatePath, loadVoltraState } from './state/load'
 export { saveVoltraState } from './state/save'
