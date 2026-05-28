@@ -54,6 +54,8 @@ export { AndroidProjectDiscoveryError, discoverAndroidProject } from './discover
 export type { AndroidProjectDiscovery } from './discovery/android'
 export { ensureGitWorktreeIsReady, getGitWorktreeStatus } from './git/status'
 export type { EnsureGitWorktreeOptions, EnsureGitWorktreeResult, GitWorktreeStatus } from './git/status'
+export { AndroidGeneratedFilesError, generateAndroidFiles } from './platforms/android/generated'
+export type { GenerateAndroidFilesOptions, GenerateAndroidFilesResult } from './platforms/android/generated'
 export { diffVoltraState } from './state/diff'
 export { getVoltraStatePath, loadVoltraState } from './state/load'
 export { saveVoltraState } from './state/save'

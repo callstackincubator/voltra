@@ -603,6 +603,9 @@ Can run in parallel with:
 
 **T13. Adapt reusable Android generated-file logic for CLI use**
 
+Status:
+- completed
+
 Deliverables:
 - wire current Android generators behind CLI-friendly inputs
 - define generated file inventory output so state tracking can capture all owned files
