@@ -511,7 +511,7 @@ function generateAppIntentStruct(widget: WidgetConfig): string {
 
   return dedent`
     @available(iOS 17.0, *)
-    private struct ${intentName}: AppIntent {
+    private struct ${intentName}: WidgetConfigurationIntent {
       static var title: LocalizedStringResource = "${intentTitle}"
 
     ${paramDecls}
@@ -572,16 +572,19 @@ function generateAppIntentProvider(widget: WidgetConfig): string {
 
 function generateAppIntentView(widget: WidgetConfig): string {
   const entryName = `VoltraWidget_${widget.id}_Entry`
+  // Use a variable so the backslash is a string value, not a raw template character.
+  // dedent processes raw template strings, so `\\.` in source → `\\.` in output (double backslash).
+  const kp = (key: string) => `\\.${key}`
 
   return dedent`
     @available(iOS 17.0, *)
     private struct VoltraWidget_${widget.id}_ReactiveView: View {
       let entry: ${entryName}
 
-      @Environment(\\.colorScheme) private var colorScheme
-      @Environment(\\.widgetRenderingMode) private var widgetRenderingMode
-      @Environment(\\.widgetFamily) private var widgetFamily
-      @Environment(\\.showsWidgetContainerBackground) private var showsWidgetContainerBackground
+      @Environment(${kp('colorScheme')}) private var colorScheme
+      @Environment(${kp('widgetRenderingMode')}) private var widgetRenderingMode
+      @Environment(${kp('widgetFamily')}) private var widgetFamily
+      @Environment(${kp('showsWidgetContainerBackground')}) private var showsWidgetContainerBackground
 
       var body: some View {
         let resolvedJSON = VoltraJSRenderer.resolve(

@@ -46,16 +46,13 @@ public enum VoltraReactiveRenderer {
   }
 }
 
-/// Applies `.containerBackground(.clear, for: .widget)` on iOS 17+ extension targets.
-/// Used by all generated AppIntentConfiguration widget views.
+/// Applies `.containerBackground(.clear, for: .widget)`.
+/// Used by all generated AppIntentConfiguration widget views (always iOS 17+).
+@available(iOS 17.0, *)
 public struct VoltraReactiveContainerBackground: ViewModifier {
   public init() {}
 
   public func body(content: Content) -> some View {
-    if #available(iOSApplicationExtension 17.0, *) {
-      content.containerBackground(.clear, for: .widget)
-    } else {
-      content
-    }
+    content.containerBackground(.clear, for: .widget)
   }
 }
