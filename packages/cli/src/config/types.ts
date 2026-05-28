@@ -99,6 +99,7 @@ export interface VoltraIOSConfig {
   deploymentTarget?: string
   targetName?: string
   fonts?: string[]
+  userImagesPath?: string
   keychainGroup?: string
   project?: IOSProjectOverrides
 }
@@ -167,6 +168,7 @@ export interface NormalizedVoltraIOSConfig {
   deploymentTarget: string
   targetName?: string
   fonts: string[]
+  userImagesPath: string
   keychainGroup?: string
   project: NormalizedIOSProjectConfig
 }

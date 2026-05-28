@@ -16,9 +16,9 @@ export function normalizeTrackedStateFiles(files: string[] | unknown[], errorCon
       throw new VoltraCliError(`${errorContext} must contain only non-empty relative paths.`)
     }
 
-    const normalizedFilePath = normalizeRelativePath(filePath)
+    const normalizedFilePath = normalizeTrackedStateFilePath(filePath)
 
-    if (path.isAbsolute(normalizedFilePath) || normalizedFilePath.startsWith('../') || normalizedFilePath === '..') {
+    if (path.isAbsolute(normalizedFilePath)) {
       throw new VoltraCliError(`${errorContext} must contain only project-relative paths.`)
     }
 
@@ -31,6 +31,16 @@ export function normalizeTrackedStateFiles(files: string[] | unknown[], errorCon
   }
 
   return normalizedFiles.sort((left, right) => left.localeCompare(right))
+}
+
+function normalizeTrackedStateFilePath(filePath: string): string {
+  const normalizedFilePath = normalizeRelativePath(path.posix.normalize(filePath))
+
+  if (normalizedFilePath === '..' || normalizedFilePath.startsWith('../')) {
+    throw new VoltraCliError('Voltra state files must contain only project-relative paths.')
+  }
+
+  return normalizedFilePath
 }
 
 export function normalizeTrackedStateFilesForDiff(files: string[] | undefined): string[] {

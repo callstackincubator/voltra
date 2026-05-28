@@ -22,6 +22,10 @@ const APPWIDGET_PROVIDER_METADATA = 'android.appwidget.provider'
 const ONGOING_NOTIFICATION_RECEIVER = 'voltra.VoltraOngoingNotificationDismissedReceiver'
 const POST_NOTIFICATIONS_PERMISSION = 'android.permission.POST_NOTIFICATIONS'
 const POST_PROMOTED_NOTIFICATIONS_PERMISSION = 'android.permission.POST_PROMOTED_NOTIFICATIONS'
+const WIDGET_RECEIVER_NAME_PREFIX = '.widget.VoltraWidget_'
+const WIDGET_RECEIVER_NAME_SUFFIX = 'Receiver'
+const WIDGET_INFO_RESOURCE_PREFIX = '@xml/voltra_widget_'
+const WIDGET_INFO_RESOURCE_SUFFIX = '_info'
 
 export interface EnsureAndroidManifestOptions {
   projectRoot: string
@@ -92,13 +96,13 @@ export async function ensureAndroidManifest(options: EnsureAndroidManifestOption
   const permissions = manifest['uses-permission'] ?? []
   manifest['uses-permission'] = permissions
 
-  if (android.enableNotifications) {
-    ensurePermission(permissions, POST_NOTIFICATIONS_PERMISSION)
-    ensurePermission(permissions, POST_PROMOTED_NOTIFICATIONS_PERMISSION)
-  }
+  reconcileNotificationPermissions(permissions, android.enableNotifications)
 
   const receivers = application.receiver ?? []
   application.receiver = receivers
+
+  reconcileNotificationReceiver(receivers, android.enableNotifications)
+  removeStaleWidgetReceivers(receivers, android.widgets.map((widget) => widget.id))
 
   if (android.enableNotifications) {
     ensureNotificationReceiver(receivers)
@@ -165,6 +169,13 @@ function ensurePermission(permissions: AndroidManifestPermission[], permissionNa
   removeDuplicateEntries(permissions, (permission) => permission.$?.['android:name'] === permissionName)
 }
 
+function reconcileNotificationPermissions(permissions: AndroidManifestPermission[], enabled: boolean): void {
+  if (enabled) {
+    ensurePermission(permissions, POST_NOTIFICATIONS_PERMISSION)
+    ensurePermission(permissions, POST_PROMOTED_NOTIFICATIONS_PERMISSION)
+  }
+}
+
 function ensureNotificationReceiver(receivers: AndroidManifestReceiver[]): void {
   const receiver = findReceiverByName(receivers, ONGOING_NOTIFICATION_RECEIVER)
 
@@ -179,6 +190,15 @@ function ensureNotificationReceiver(receivers: AndroidManifestReceiver[]): void 
   }
 
   receivers.push(createReceiver(ONGOING_NOTIFICATION_RECEIVER, 'false'))
+}
+
+function reconcileNotificationReceiver(receivers: AndroidManifestReceiver[], enabled: boolean): void {
+  if (enabled) {
+    ensureNotificationReceiver(receivers)
+    return
+  }
+
+  removeEntries(receivers, (receiver) => receiver.$?.['android:name'] === ONGOING_NOTIFICATION_RECEIVER)
 }
 
 function ensureWidgetReceiver(receivers: AndroidManifestReceiver[], widgetId: string): void {
@@ -204,6 +224,27 @@ function ensureWidgetReceiver(receivers: AndroidManifestReceiver[], widgetId: st
   ensureAppWidgetUpdateIntentFilter(nextReceiver)
   ensureReceiverMetadata(nextReceiver, metadataResource)
   receivers.push(nextReceiver)
+}
+
+function removeStaleWidgetReceivers(receivers: AndroidManifestReceiver[], widgetIds: string[]): void {
+  const nextWidgetIds = new Set(widgetIds)
+
+  removeEntries(receivers, (receiver) => {
+    const receiverName = receiver.$?.['android:name']
+
+    if (!receiverName || !receiverName.startsWith(WIDGET_RECEIVER_NAME_PREFIX) || !receiverName.endsWith(WIDGET_RECEIVER_NAME_SUFFIX)) {
+      return false
+    }
+
+    const widgetId = receiverName.slice(WIDGET_RECEIVER_NAME_PREFIX.length, -WIDGET_RECEIVER_NAME_SUFFIX.length)
+
+    if (!widgetId || nextWidgetIds.has(widgetId)) {
+      return false
+    }
+
+    const metadataResource = getReceiverMetadataResource(receiver)
+    return metadataResource === undefined || isWidgetMetadataResource(metadataResource)
+  })
 }
 
 function ensureAppWidgetUpdateIntentFilter(receiver: AndroidManifestReceiver): void {
@@ -261,6 +302,14 @@ function findReceiverByName(receivers: AndroidManifestReceiver[], receiverName: 
   return receivers.find((receiver) => receiver.$?.['android:name'] === receiverName)
 }
 
+function getReceiverMetadataResource(receiver: AndroidManifestReceiver): string | undefined {
+  return receiver['meta-data']?.find((metadata) => metadata.$?.['android:name'] === APPWIDGET_PROVIDER_METADATA)?.$?.['android:resource']
+}
+
+function isWidgetMetadataResource(resource: string): boolean {
+  return resource.startsWith(WIDGET_INFO_RESOURCE_PREFIX) && resource.endsWith(WIDGET_INFO_RESOURCE_SUFFIX)
+}
+
 function createPermission(permissionName: string): AndroidManifestPermission {
   return {
     $: {
@@ -290,6 +339,17 @@ function removeDuplicateEntries<TEntry>(entries: TEntry[], isDuplicate: (entry: 
 
     if (!foundPrimary) {
       foundPrimary = true
+      index += 1
+      continue
+    }
+
+    entries.splice(index, 1)
+  }
+}
+
+function removeEntries<TEntry>(entries: TEntry[], shouldRemove: (entry: TEntry) => boolean): void {
+  for (let index = 0; index < entries.length; ) {
+    if (!shouldRemove(entries[index])) {
       index += 1
       continue
     }

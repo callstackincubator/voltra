@@ -37,6 +37,7 @@ export interface EnsureIOSWidgetTargetOptions {
   ios: NormalizedVoltraIOSConfig
   discovery: IOSProjectDiscovery
   generatedFiles: string[]
+  previousGeneratedFiles?: string[]
 }
 
 export interface EnsureIOSWidgetTargetResult {
@@ -52,15 +53,18 @@ export class IOSWidgetTargetMutationError extends VoltraCliError {
 }
 
 export async function ensureIOSWidgetTarget(options: EnsureIOSWidgetTargetOptions): Promise<EnsureIOSWidgetTargetResult> {
-  const { projectRoot, ios, discovery, generatedFiles } = options
+  const { projectRoot, ios, discovery, generatedFiles, previousGeneratedFiles } = options
   const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const context = openIOSXcodeProject(discovery)
   const beforeSerialized = JSON.stringify(context.project.toJSON())
   const productPath = `${targetName}.appex`
   const nextGeneratedFiles = normalizeGeneratedFilePaths(generatedFiles, projectRoot, discovery)
+  const previousWidgetFiles = normalizeGeneratedFilePaths(previousGeneratedFiles ?? [], projectRoot, discovery)
+  const staleTargetNames = getStaleWidgetTargetNames(previousWidgetFiles, targetName)
   const bundleIdentifier = resolveBundleIdentifier(context, discovery, targetName)
   const codeSigning = getMainAppCodeSigningSettings(context)
 
+  removeStaleWidgetTargets(context, staleTargetNames)
   ensureWidgetTarget(context, targetName, bundleIdentifier, ios.deploymentTarget, codeSigning)
 
   const widgetTarget = getWidgetTarget(context, targetName)
@@ -73,9 +77,10 @@ export async function ensureIOSWidgetTarget(options: EnsureIOSWidgetTargetOption
 
   ensureTargetDependency(context, widgetTarget)
   ensureTargetAttributes(context, widgetTarget)
-  removeStaleGeneratedFileReferences(context, widgetTarget, widgetGroup, nextGeneratedFiles)
+  removeStaleGeneratedFileReferences(context, widgetTarget, widgetGroup, previousWidgetFiles, nextGeneratedFiles)
   ensureBuildPhases(context, widgetTarget, productFile, nextGeneratedFiles)
   ensureWidgetGroupFiles(context, widgetGroup, targetName, nextGeneratedFiles)
+  removeEmptyWidgetGroups(context, staleTargetNames)
 
   const changePath = toRelativePath(projectRoot, discovery.pbxprojPath)
   const afterSerialized = JSON.stringify(context.project.toJSON())
@@ -253,6 +258,17 @@ function ensureTargetAttributes(context: IOSXcodeProjectContext, widgetTarget: P
   targetAttributes[widgetTarget.uuid] ??= { LastSwiftMigration: '1250' }
 }
 
+function removeStaleWidgetTargets(context: IOSXcodeProjectContext, staleTargetNames: string[]): void {
+  for (const staleTargetName of staleTargetNames) {
+    const staleTarget = getWidgetTargetOptional(context, staleTargetName)
+    if (!staleTarget) {
+      continue
+    }
+
+    staleTarget.removeFromProject()
+  }
+}
+
 function ensureBuildPhases(
   context: IOSXcodeProjectContext,
   widgetTarget: PBXNativeTarget,
@@ -263,7 +279,7 @@ function ensureBuildPhases(
   const resources = widgetTarget.getResourcesBuildPhase()
   widgetTarget.getFrameworksBuildPhase()
 
-  const fileReferences = generatedFiles.map((file) => ensureGeneratedFileReference(context, file))
+  const fileReferences = getBuildPhaseFileReferences(context, generatedFiles)
 
   for (const fileReference of fileReferences) {
     const relativePath = getReferenceRelativePath(context, fileReference)
@@ -284,25 +300,41 @@ function ensureBuildPhases(
   copyFilesPhase.ensureFile({ fileRef: productFile })
 }
 
+function getBuildPhaseFileReferences(context: IOSXcodeProjectContext, generatedFiles: string[]): PBXFileReference[] {
+  const references = new Map<string, PBXFileReference>()
+
+  for (const file of generatedFiles) {
+    const buildPhasePath = getBuildPhaseReferencePath(file)
+    if (!buildPhasePath || references.has(buildPhasePath)) {
+      continue
+    }
+
+    references.set(buildPhasePath, ensureGeneratedFileReference(context, buildPhasePath))
+  }
+
+  return [...references.values()]
+}
+
 function removeStaleGeneratedFileReferences(
   context: IOSXcodeProjectContext,
   widgetTarget: PBXNativeTarget,
   widgetGroup: PBXGroup,
+  previousGeneratedFiles: string[],
   generatedFiles: string[]
 ): void {
-  const generatedFileSet = new Set(generatedFiles)
+  const staleReferencePaths = getStaleReferencePaths(previousGeneratedFiles, generatedFiles)
+
+  if (staleReferencePaths.size === 0) {
+    return
+  }
+
   const staleReferences = [...context.project.values()].filter((object): object is PBXFileReference => {
     if (!PBXFileReference.is(object)) {
       return false
     }
 
     const relativePath = getReferenceRelativePath(context, object)
-
-    if (!isGeneratedWidgetFile(relativePath, widgetTarget.props.name, generatedFileSet)) {
-      return false
-    }
-
-    return !generatedFileSet.has(relativePath)
+    return staleReferencePaths.has(relativePath)
   })
 
   for (const reference of staleReferences) {
@@ -318,11 +350,18 @@ function ensureWidgetGroupFiles(
   targetName: string,
   generatedFiles: string[]
 ): void {
+  const groupedReferencePaths = new Set<string>()
   const localizedGroups = new Map<string, PBXGroup>()
 
   for (const file of generatedFiles) {
-    const reference = ensureGeneratedFileReference(context, file)
-    const relativeToTarget = getPathRelativeToTarget(file, targetName)
+    const groupReferencePath = getGroupReferencePath(file)
+    if (!groupReferencePath || groupedReferencePaths.has(groupReferencePath)) {
+      continue
+    }
+
+    groupedReferencePaths.add(groupReferencePath)
+    const reference = ensureGeneratedFileReference(context, groupReferencePath)
+    const relativeToTarget = getPathRelativeToTarget(groupReferencePath, targetName)
 
     if (!relativeToTarget) {
       continue
@@ -339,6 +378,18 @@ function ensureWidgetGroupFiles(
     }
 
     ensureGroupContainsReference(widgetGroup, reference)
+  }
+}
+
+function removeEmptyWidgetGroups(context: IOSXcodeProjectContext, staleTargetNames: string[]): void {
+  for (const staleTargetName of staleTargetNames) {
+    const staleGroup = context.mainGroup.getChildGroups().find((group) => group.getDisplayName() === staleTargetName)
+
+    if (!staleGroup || staleGroup.props.children.length > 0) {
+      continue
+    }
+
+    staleGroup.removeFromProject()
   }
 }
 
@@ -449,57 +500,43 @@ function isResourceFile(relativePath: string): boolean {
   return RESOURCE_EXTENSIONS.has(extension) || relativePath.endsWith('.xcassets')
 }
 
-function getReferenceRelativePath(context: IOSXcodeProjectContext, reference: PBXFileReference): string {
-  return normalizeRelativePath(path.relative(context.project.getProjectRoot(), reference.getFullPath()))
+function getBuildPhaseReferencePath(relativePath: string): string {
+  const normalizedPath = normalizeRelativePath(relativePath)
+  const assetCatalogIndex = normalizedPath.indexOf('/Assets.xcassets/')
+
+  if (assetCatalogIndex >= 0) {
+    return normalizedPath.slice(0, assetCatalogIndex + '/Assets.xcassets'.length)
+  }
+
+  return normalizedPath
 }
 
-function isGeneratedWidgetFile(
-  relativePath: string,
-  targetName: string | undefined,
-  generatedFiles: Set<string>
-): boolean {
-  if (!targetName) {
-    return false
+function getStaleReferencePaths(previousGeneratedFiles: string[], generatedFiles: string[]): Set<string> {
+  const currentReferencePaths = new Set(generatedFiles.flatMap((file) => [getBuildPhaseReferencePath(file), getGroupReferencePath(file)]))
+  const previousReferencePaths = new Set(previousGeneratedFiles.flatMap((file) => [getBuildPhaseReferencePath(file), getGroupReferencePath(file)]))
+
+  return new Set([...previousReferencePaths].filter((referencePath) => !currentReferencePaths.has(referencePath)))
+}
+
+function getGroupReferencePath(relativePath: string): string {
+  const normalizedPath = normalizeRelativePath(relativePath)
+  const assetCatalogIndex = normalizedPath.indexOf('/Assets.xcassets/')
+
+  if (assetCatalogIndex >= 0) {
+    const imagesetIndex = normalizedPath.indexOf('.imageset/', assetCatalogIndex)
+
+    if (imagesetIndex >= 0) {
+      return normalizedPath.slice(0, imagesetIndex + '.imageset'.length)
+    }
+
+    return normalizedPath.slice(0, assetCatalogIndex + '/Assets.xcassets'.length)
   }
 
-  if (!relativePath.startsWith(`${targetName}/`)) {
-    return false
-  }
+  return normalizedPath
+}
 
-  if (generatedFiles.has(relativePath)) {
-    return true
-  }
-
-  const pathWithinTarget = getPathRelativeToTarget(relativePath, targetName)
-
-  if (!pathWithinTarget) {
-    return false
-  }
-
-  if (pathWithinTarget.startsWith('Assets.xcassets/')) {
-    return true
-  }
-
-  if (pathWithinTarget.includes('.lproj/')) {
-    return true
-  }
-
-  const extension = path.extname(relativePath)
-  return (
-    extension === '.swift' ||
-    extension === '.plist' ||
-    extension === '.entitlements' ||
-    extension === '.strings' ||
-    extension === '.ttf' ||
-    extension === '.otf' ||
-    extension === '.woff' ||
-    extension === '.woff2' ||
-    extension === '.json' ||
-    extension === '.png' ||
-    extension === '.jpg' ||
-    extension === '.jpeg' ||
-    relativePath.endsWith('.xcassets')
-  )
+function getReferenceRelativePath(context: IOSXcodeProjectContext, reference: PBXFileReference): string {
+  return normalizeRelativePath(path.relative(context.project.getProjectRoot(), reference.getFullPath()))
 }
 
 function removeFileReferenceFromGroupTree(group: PBXGroup, reference: PBXFileReference): void {
@@ -519,18 +556,31 @@ function getPathRelativeToTarget(relativePath: string, targetName: string): stri
   return normalizedPath.slice(targetName.length + 1)
 }
 
+function getStaleWidgetTargetNames(previousGeneratedFiles: string[], targetName: string): string[] {
+  return [
+    ...new Set(
+      previousGeneratedFiles
+        .map(getWidgetTargetNameFromGeneratedPath)
+        .filter((candidate): candidate is string => candidate !== undefined && candidate !== targetName)
+    ),
+  ].sort()
+}
+
+function getWidgetTargetNameFromGeneratedPath(relativePath: string): string | undefined {
+  const normalizedPath = normalizeRelativePath(relativePath)
+  const [targetName] = normalizedPath.split(path.sep, 1)
+
+  return typeof targetName === 'string' && targetName.length > 0 ? targetName : undefined
+}
+
 function normalizeGeneratedFilePaths(generatedFiles: string[], projectRoot: string, discovery: IOSProjectDiscovery): string[] {
   const iosRootRelativePath = normalizeRelativePath(path.relative(projectRoot, discovery.iosRoot))
   const iosRootRelativePrefix = iosRootRelativePath === '.' ? '' : `${iosRootRelativePath}/`
 
-  return [...new Set(generatedFiles.map((file) => toIOSProjectRelativePath(file, iosRootRelativePrefix, discovery)))].sort()
+  return [...new Set(generatedFiles.map((file) => toIOSProjectRelativePath(file, iosRootRelativePrefix)).filter(isDefined))].sort()
 }
 
-function toIOSProjectRelativePath(
-  relativeFilePath: string,
-  iosRootRelativePrefix: string,
-  discovery: IOSProjectDiscovery
-): string {
+function toIOSProjectRelativePath(relativeFilePath: string, iosRootRelativePrefix: string): string | undefined {
   const normalizedPath = normalizeRelativePath(relativeFilePath)
 
   if (iosRootRelativePrefix.length === 0) {
@@ -541,9 +591,7 @@ function toIOSProjectRelativePath(
     return normalizedPath.slice(iosRootRelativePrefix.length)
   }
 
-  throw new IOSWidgetTargetMutationError(
-    `Generated iOS file is outside the discovered iOS root '${discovery.iosRoot}': ${relativeFilePath}`
-  )
+  return undefined
 }
 
 function resolveBundleIdentifier(context: IOSXcodeProjectContext, discovery: IOSProjectDiscovery, targetName: string): string {
@@ -555,7 +603,12 @@ function resolveBundleIdentifier(context: IOSXcodeProjectContext, discovery: IOS
     )
   }
 
-  return `${stripQuotes(mainTargetBundleIdentifier)}.${targetName}`
+  return `${stripQuotes(mainTargetBundleIdentifier)}.${sanitizeBundleIdentifierSegment(targetName)}`
+}
+
+function sanitizeBundleIdentifierSegment(targetName: string): string {
+  const sanitized = targetName.replace(/[^A-Za-z0-9-]/g, '-')
+  return sanitized.replace(/-+/g, '-').replace(/^-+|-+$/g, '')
 }
 
 function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainAppCodeSigningSettings {
@@ -580,4 +633,8 @@ function readBuildSettingString(value: unknown): string | undefined {
 
 function stripQuotes(value: string | undefined): string {
   return value?.replace(/^"|"$/g, '') ?? ''
+}
+
+function isDefined<TValue>(value: TValue | undefined): value is TValue {
+  return value !== undefined
 }

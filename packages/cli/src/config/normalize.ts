@@ -153,7 +153,8 @@ function normalizeServerUpdate(
   serverUpdate: { url: string; intervalMinutes?: number; refresh?: boolean },
   context: string,
   defaultIntervalMinutes: number,
-  defaultRefresh: boolean
+  defaultRefresh: boolean,
+  minimumIntervalMinutes: number
 ): { url: string; intervalMinutes: number; refresh: boolean } {
   assertObject(serverUpdate, context)
   assertNonEmptyString(serverUpdate.url, `${context}.url`)
@@ -161,6 +162,14 @@ function normalizeServerUpdate(
   if (serverUpdate.intervalMinutes !== undefined) {
     if (typeof serverUpdate.intervalMinutes !== 'number' || !Number.isFinite(serverUpdate.intervalMinutes)) {
       throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be a number`)
+    }
+
+    if (!Number.isInteger(serverUpdate.intervalMinutes)) {
+      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be an integer`)
+    }
+
+    if (serverUpdate.intervalMinutes < minimumIntervalMinutes) {
+      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be at least ${minimumIntervalMinutes}`)
     }
   }
 
@@ -178,6 +187,7 @@ function normalizeServerUpdate(
 function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig): NormalizedAndroidWidgetConfig {
   assertObject(widget, 'android.widgets[]')
   assertNonEmptyString(widget.id, 'android.widgets[].id')
+  assertValidWidgetId(widget.id, 'android.widgets[].id')
 
   return {
     ...widget,
@@ -191,7 +201,8 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
           widget.serverUpdate,
           `android.widgets[${widget.id}].serverUpdate`,
           CLI_DEFAULTS.android.serverUpdateIntervalMinutes,
-          CLI_DEFAULTS.android.serverUpdateRefresh
+          CLI_DEFAULTS.android.serverUpdateRefresh,
+          15
         )
       : undefined,
   }
@@ -200,6 +211,7 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
 function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): NormalizedIOSWidgetConfig {
   assertObject(widget, 'ios.widgets[]')
   assertNonEmptyString(widget.id, 'ios.widgets[].id')
+  assertValidWidgetId(widget.id, 'ios.widgets[].id')
 
   if (widget.supportedFamilies !== undefined) {
     if (!Array.isArray(widget.supportedFamilies)) {
@@ -224,7 +236,8 @@ function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): Norma
           widget.serverUpdate,
           `ios.widgets[${widget.id}].serverUpdate`,
           CLI_DEFAULTS.ios.serverUpdateIntervalMinutes,
-          CLI_DEFAULTS.ios.serverUpdateRefresh
+          CLI_DEFAULTS.ios.serverUpdateRefresh,
+          1
         )
       : undefined,
   }
@@ -239,6 +252,22 @@ function assertUniqueWidgetIds(widgetIds: string[], context: string): void {
     }
 
     seen.add(widgetId)
+  }
+}
+
+function assertValidWidgetId(widgetId: string, context: string): void {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(widgetId)) {
+    throw new VoltraConfigNormalizationError(
+      `${context} must start with a letter or underscore and contain only alphanumeric characters and underscores`
+    )
+  }
+}
+
+function assertValidIOSTargetName(targetName: string, context: string): void {
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(targetName)) {
+    throw new VoltraConfigNormalizationError(
+      `${context} must start with a letter and contain only letters, numbers, and underscores`
+    )
   }
 }
 
@@ -295,6 +324,7 @@ function normalizeIOSConfig(projectRoot: string, config: LoadedVoltraConfig['con
   assertOptionalString(config.deploymentTarget, 'ios.deploymentTarget')
   assertOptionalString(config.targetName, 'ios.targetName')
   assertOptionalStringArray(config.fonts, 'ios.fonts')
+  assertOptionalString(config.userImagesPath, 'ios.userImagesPath')
   assertOptionalString(config.keychainGroup, 'ios.keychainGroup')
 
   if (config.project !== undefined) {
@@ -311,6 +341,10 @@ function normalizeIOSConfig(projectRoot: string, config: LoadedVoltraConfig['con
     throw new VoltraConfigNormalizationError('ios.widgets must be an array')
   }
 
+  if (config.targetName !== undefined) {
+    assertValidIOSTargetName(config.targetName, 'ios.targetName')
+  }
+
   const widgets = (config.widgets ?? []).map((widget) => normalizeIOSWidget(projectRoot, widget))
   assertUniqueWidgetIds(
     widgets.map((widget) => widget.id),
@@ -324,6 +358,7 @@ function normalizeIOSConfig(projectRoot: string, config: LoadedVoltraConfig['con
     deploymentTarget: config.deploymentTarget ?? CLI_DEFAULTS.ios.deploymentTarget,
     targetName: config.targetName,
     fonts: (config.fonts ?? []).map((fontPath) => resolvePathFromProjectRoot(projectRoot, fontPath)),
+    userImagesPath: resolvePathFromProjectRoot(projectRoot, config.userImagesPath ?? CLI_DEFAULTS.ios.userImagesPath),
     keychainGroup: config.keychainGroup,
     project: {
       rootDir: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.rootDir),

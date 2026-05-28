@@ -77,7 +77,7 @@ When `--config` is provided, that file is loaded directly instead of searching.
 - `configDir` is the directory containing the loaded config file.
 - `projectRoot` defaults to `configDir`.
 - `projectRoot` can be overridden in config.
-- Relative widget, preview, font, and project-override paths resolve from `projectRoot`.
+- Relative widget, preview, font, asset, and project-override paths resolve from `projectRoot`.
 
 ## Config Shape
 
@@ -117,6 +117,7 @@ const config: VoltraConfig = {
     deploymentTarget: '16.0',
     targetName: 'ExampleLiveActivity',
     fonts: ['./assets/fonts/Inter-Regular.ttf'],
+    userImagesPath: './assets/voltra',
     project: {
       rootDir: './ios',
       xcodeprojPath: './ios/Example.xcodeproj',
@@ -155,7 +156,7 @@ export default config
 
 `voltra apply` is convention-first and only needs overrides for non-standard layouts or ambiguous native projects.
 
-For generated assets, Android reads `android.userImagesPath` and iOS uses the current default widget asset location under `./assets/voltra`.
+For generated assets, Android reads `android.userImagesPath` and iOS reads `ios.userImagesPath`. If `ios.userImagesPath` is omitted, it defaults to `./assets/voltra`.
 
 ### Android
 

@@ -9,6 +9,7 @@ export const DEFAULT_IOS_ENABLE_PUSH_NOTIFICATIONS = false
 export const DEFAULT_IOS_DEPLOYMENT_TARGET = '17.0'
 export const DEFAULT_IOS_SERVER_UPDATE_INTERVAL_MINUTES = 15
 export const DEFAULT_IOS_SERVER_UPDATE_REFRESH = false
+export const DEFAULT_IOS_USER_IMAGES_PATH = './assets/voltra'
 export const DEFAULT_IOS_WIDGET_FAMILIES: IOSWidgetFamily[] = ['systemSmall', 'systemMedium', 'systemLarge']
 
 /**
@@ -27,6 +28,7 @@ export const CLI_DEFAULTS = {
     enablePushNotifications: DEFAULT_IOS_ENABLE_PUSH_NOTIFICATIONS,
     serverUpdateIntervalMinutes: DEFAULT_IOS_SERVER_UPDATE_INTERVAL_MINUTES,
     serverUpdateRefresh: DEFAULT_IOS_SERVER_UPDATE_REFRESH,
+    userImagesPath: DEFAULT_IOS_USER_IMAGES_PATH,
     widgetFamilies: DEFAULT_IOS_WIDGET_FAMILIES,
   },
 } as const

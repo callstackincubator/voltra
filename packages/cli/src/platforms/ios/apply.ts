@@ -47,12 +47,12 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
     ios: iosConfig,
     discovery,
   })
-  const infoPlistResult = await ensureInfoPlist({
+  const entitlementsResult = await ensureEntitlements({
     projectRoot: context.config.projectRoot,
     ios: iosConfig,
     discovery,
   })
-  const entitlementsResult = await ensureEntitlements({
+  const infoPlistResult = await ensureInfoPlist({
     projectRoot: context.config.projectRoot,
     ios: iosConfig,
     discovery,
@@ -67,6 +67,7 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
     ios: iosConfig,
     discovery,
     generatedFiles: generatedResult.files,
+    previousGeneratedFiles: context.previousState?.files,
   })
 
   if (generatedResult.targetName !== xcodeTargetResult.targetName) {

@@ -22,7 +22,6 @@ const MODULE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '']
 const VALID_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg'])
 const FONT_EXTENSIONS = new Set(['.ttf', '.otf', '.woff', '.woff2'])
 const MAX_IMAGE_SIZE_BYTES = 4096
-const DEFAULT_USER_IMAGES_PATH = './assets/voltra'
 const DEFAULT_INITIAL_STATE_LOCALE = '__default'
 const VOLTRA_WIDGET_STRINGS_BASENAME = 'VoltraWidgets.strings'
 
@@ -149,7 +148,7 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
   const entitlementsResult = await generateEntitlementsFile(projectRoot, targetPath, targetName, ios)
   mergeSingleResult(entitlementsResult, changes, generatedFiles)
 
-  const assetResult = await generateAssetsCatalog(projectRoot, targetPath)
+  const assetResult = await generateAssetsCatalog(projectRoot, targetPath, ios.userImagesPath)
   mergeResult(assetResult, changes, warnings, generatedFiles)
 
   const fontsResult = await copyIOSFonts(projectRoot, targetPath, ios.fonts)
@@ -244,7 +243,8 @@ async function generateEntitlementsFile(
 
 async function generateAssetsCatalog(
   projectRoot: string,
-  targetPath: string
+  targetPath: string,
+  userImagesPath: string
 ): Promise<GenerateIOSFilesResult> {
   const changes: ReportedChange[] = []
   const warnings: string[] = []
@@ -257,8 +257,8 @@ async function generateAssetsCatalog(
   )
   mergeSingleResult(rootContentsResult, changes, generatedFiles)
 
-  const userImagesPath = path.resolve(projectRoot, DEFAULT_USER_IMAGES_PATH)
   const userImages = await collectUserImages(userImagesPath)
+  const seenAssetNames = new Map<string, string>()
 
   for (const imagePath of userImages) {
     const extension = path.extname(imagePath).toLowerCase()
@@ -267,7 +267,8 @@ async function generateAssetsCatalog(
       continue
     }
 
-    const imageName = sanitizeAssetName(path.basename(imagePath, extension))
+    const relativeAssetPath = path.relative(userImagesPath, imagePath).slice(0, -extension.length)
+    const imageName = getAssetName(relativeAssetPath, seenAssetNames)
     const imagesetPath = path.join(assetsCatalogPath, `${imageName}.imageset`)
     const imageFileName = `${imageName}${extension}`
     const imageResult = await copyGeneratedFile(projectRoot, imagePath, path.join(imagesetPath, imageFileName))
@@ -859,10 +860,26 @@ function isWidgetLocalizedMap(label: WidgetLabel): label is Record<string, strin
 
 function sanitizeAssetName(value: string): string {
   let sanitized = value.replace(/[^A-Za-z0-9_-]/g, '-')
+  sanitized = sanitized.replace(/-+/g, '-')
+  sanitized = sanitized.replace(/^[-_]+|[-_]+$/g, '')
   if (!/^[A-Za-z]/.test(sanitized)) {
     sanitized = `asset-${sanitized}`
   }
   return sanitized
+}
+
+function getAssetName(relativeAssetPath: string, seenAssetNames: Map<string, string>): string {
+  const assetName = sanitizeAssetName(path.basename(relativeAssetPath))
+  const existingPath = seenAssetNames.get(assetName)
+
+  if (existingPath && existingPath !== relativeAssetPath) {
+    throw new IOSGeneratedFilesError(
+      `iOS widget assets must have unique basenames. Found both '${existingPath}' and '${relativeAssetPath}' resolving to asset '${assetName}'.`
+    )
+  }
+
+  seenAssetNames.set(assetName, relativeAssetPath)
+  return assetName
 }
 
 function readPlistString(dict: Record<string, unknown>, key: string): string | undefined {
