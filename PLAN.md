@@ -831,6 +831,9 @@ Can run in parallel with:
 
 **T23. Integrate Xcode mutation into iOS apply flow**
 
+Status:
+- completed
+
 Deliverables:
 - add `project.pbxproj` mutation to iOS apply flow
 - ensure generated-file paths and target references stay aligned

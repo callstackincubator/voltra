@@ -5,6 +5,7 @@ import { ensureEntitlements } from './entitlements'
 import { generateIOSFiles } from './generated'
 import { ensureInfoPlist } from './plist'
 import { ensurePodfileBlock } from './podfile'
+import { ensureIOSWidgetTarget } from './xcodeTarget'
 
 import type { NormalizedVoltraConfig } from '../../config/types'
 import type { IOSProjectDiscovery } from '../../discovery/ios'
@@ -61,6 +62,18 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
     ios: iosConfig,
     discovery,
   })
+  const xcodeTargetResult = await ensureIOSWidgetTarget({
+    projectRoot: context.config.projectRoot,
+    ios: iosConfig,
+    discovery,
+    generatedFiles: generatedResult.files,
+  })
+
+  if (generatedResult.targetName !== xcodeTargetResult.targetName) {
+    throw new VoltraCliError(
+      `iOS generated files and Xcode target mutation resolved different widget target names: ${generatedResult.targetName} vs ${xcodeTargetResult.targetName}.`
+    )
+  }
 
   if (generatedResult.targetName !== podfileResult.targetName) {
     throw new VoltraCliError(
@@ -68,7 +81,7 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
     )
   }
 
-  const changes = [infoPlistResult.change, entitlementsResult.change, podfileResult.change].filter(isDefined)
+  const changes = [infoPlistResult.change, entitlementsResult.change, podfileResult.change, xcodeTargetResult.change].filter(isDefined)
 
   return {
     platform: 'ios',
