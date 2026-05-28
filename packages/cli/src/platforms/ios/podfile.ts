@@ -64,6 +64,7 @@ function buildManagedPodfileBlock(targetName: string): string {
     '',
     "  require 'pathname'",
     '  project_root = "#{Pod::Config.instance.installation_root}/.."',
+    "  abort('[voltra] Error: @use-voltra/ios-client must be installed in the app project before running pod install.') unless system(\"node --print \\\"require.resolve('@use-voltra/ios-client/package.json', {paths: ['#{project_root}']})\\\" >/dev/null 2>&1\")",
     "  voltra_client_root = `node --print \"require.resolve('@use-voltra/ios-client/package.json', {paths: ['#{project_root}']})\" 2>/dev/null`.strip.gsub('/package.json', '')",
     "  voltra_widget_podspec_root = File.join(voltra_client_root, 'ios')",
     '  podspec_dir_path = Pathname.new(voltra_widget_podspec_root).relative_path_from(Pathname.new(__dir__)).to_path',

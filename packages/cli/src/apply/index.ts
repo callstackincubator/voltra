@@ -1,5 +1,6 @@
 import path from 'node:path'
 
+import { normalizeRelativePath } from '../fs/path'
 import { loadVoltraConfig } from '../config/load'
 import { normalizeVoltraConfig } from '../config/normalize'
 import { removePathIfExists } from '../fs/readWrite'
@@ -82,7 +83,7 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   const preflight = await runApplyPreflight(normalizedConfig, resolvedDependencies.preflightRunners, options.platform)
   const previousState = await loadVoltraState(normalizedConfig.projectRoot)
   const platformResults = await runPlatformApply(normalizedConfig, preflight, previousState, resolvedDependencies.applyRunners)
-  const nextGeneratedFiles = platformResults.flatMap((result) => result.generatedFiles)
+  const nextGeneratedFiles = mergeGeneratedFiles(normalizedConfig, previousState, preflight.requestedPlatforms, platformResults)
   const stateDiff = diffVoltraState(previousState, nextGeneratedFiles)
   const deletedChanges = await removeStaleGeneratedFiles(normalizedConfig.projectRoot, stateDiff.staleFiles)
   await saveVoltraState(normalizedConfig.projectRoot, { files: stateDiff.nextFiles })
@@ -105,6 +106,91 @@ function resolveApplyDependencies(config: NormalizedVoltraConfig, dependencies: 
     },
     writeStdout: dependencies.writeStdout,
   }
+}
+
+function mergeGeneratedFiles(
+  config: NormalizedVoltraConfig,
+  previousState: VoltraState | undefined,
+  requestedPlatforms: VoltraPlatform[],
+  platformResults: PlatformApplyResult[]
+): string[] {
+  const nextGeneratedFilesByPlatform = new Map(platformResults.map((result) => [result.platform, result.generatedFiles] as const))
+  const mergedFiles = new Set<string>()
+  const platformRoots = getTrackedPlatformRoots(config)
+  const configuredPlatforms = getConfiguredPlatforms(config)
+  const isPartialApply = requestedPlatforms.length < configuredPlatforms.length
+
+  for (const previousFile of previousState?.files ?? []) {
+    const owningPlatform = getTrackedFilePlatform(previousFile, platformRoots)
+
+    if (!owningPlatform) {
+      if (isPartialApply) {
+        mergedFiles.add(previousFile)
+      }
+
+      continue
+    }
+
+    if (requestedPlatforms.includes(owningPlatform)) {
+      continue
+    }
+
+    mergedFiles.add(previousFile)
+  }
+
+  for (const platform of requestedPlatforms) {
+    for (const filePath of nextGeneratedFilesByPlatform.get(platform) ?? []) {
+      mergedFiles.add(filePath)
+    }
+  }
+
+  return [...mergedFiles]
+}
+
+function getTrackedPlatformRoots(config: NormalizedVoltraConfig): Partial<Record<VoltraPlatform, string>> {
+  const projectRoot = config.projectRoot
+  const androidRoot = config.android ? normalizeRelativePath(path.relative(projectRoot, config.android.project.rootDir ?? path.join(projectRoot, 'android'))) : undefined
+  const iosRoot = config.ios ? normalizeRelativePath(path.relative(projectRoot, config.ios.project.rootDir ?? path.join(projectRoot, 'ios'))) : undefined
+
+  return {
+    ...(androidRoot ? { android: androidRoot } : {}),
+    ...(iosRoot ? { ios: iosRoot } : {}),
+  }
+}
+
+function getConfiguredPlatforms(config: NormalizedVoltraConfig): VoltraPlatform[] {
+  const platforms: VoltraPlatform[] = []
+
+  if (config.android) {
+    platforms.push('android')
+  }
+
+  if (config.ios) {
+    platforms.push('ios')
+  }
+
+  return platforms
+}
+
+function getTrackedFilePlatform(
+  filePath: string,
+  platformRoots: Partial<Record<VoltraPlatform, string>>
+): VoltraPlatform | undefined {
+  const normalizedFilePath = normalizeRelativePath(filePath)
+
+  for (const platform of ['android', 'ios'] as const) {
+    const root = platformRoots[platform]
+
+    if (!root) {
+      continue
+    }
+
+    if (normalizedFilePath === root || normalizedFilePath.startsWith(`${root}/`)) {
+      return platform
+    }
+  }
+
+  return undefined
 }
 
 async function runPlatformApply(

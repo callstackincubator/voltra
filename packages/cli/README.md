@@ -16,7 +16,10 @@ It loads Voltra config, discovers the native project, generates Voltra-owned fil
 
 ```sh
 npm install --save-dev voltra
+npm install @use-voltra/ios-client
 ```
+
+If you apply only Android, the iOS client package is not required.
 
 ## Command
 
@@ -41,6 +44,9 @@ npx voltra apply --platform ios
 
 # Apply using an explicit config file
 npx voltra apply --config ./config/voltra.config.ts
+
+# Re-apply only Android without removing tracked iOS files
+npx voltra apply --platform android
 ```
 
 ## Config Files

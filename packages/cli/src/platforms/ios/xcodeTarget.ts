@@ -1,6 +1,15 @@
 import path from 'node:path'
 
-import { PBXFileReference, PBXGroup, PBXNativeTarget, XCBuildConfiguration, XCConfigurationList } from '@bacons/xcode'
+import {
+  PBXFileReference,
+  PBXFrameworksBuildPhase,
+  PBXGroup,
+  PBXNativeTarget,
+  PBXResourcesBuildPhase,
+  PBXSourcesBuildPhase,
+  XCBuildConfiguration,
+  XCConfigurationList,
+} from '@bacons/xcode'
 
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
@@ -64,6 +73,7 @@ export async function ensureIOSWidgetTarget(options: EnsureIOSWidgetTargetOption
 
   ensureTargetDependency(context, widgetTarget)
   ensureTargetAttributes(context, widgetTarget)
+  removeStaleGeneratedFileReferences(context, widgetTarget, widgetGroup, nextGeneratedFiles)
   ensureBuildPhases(context, widgetTarget, productFile, nextGeneratedFiles)
   ensureWidgetGroupFiles(context, widgetGroup, targetName, nextGeneratedFiles)
 
@@ -274,6 +284,34 @@ function ensureBuildPhases(
   copyFilesPhase.ensureFile({ fileRef: productFile })
 }
 
+function removeStaleGeneratedFileReferences(
+  context: IOSXcodeProjectContext,
+  widgetTarget: PBXNativeTarget,
+  widgetGroup: PBXGroup,
+  generatedFiles: string[]
+): void {
+  const generatedFileSet = new Set(generatedFiles)
+  const staleReferences = [...context.project.values()].filter((object): object is PBXFileReference => {
+    if (!PBXFileReference.is(object)) {
+      return false
+    }
+
+    const relativePath = getReferenceRelativePath(context, object)
+
+    if (!isGeneratedWidgetFile(relativePath, widgetTarget.props.name, generatedFileSet)) {
+      return false
+    }
+
+    return !generatedFileSet.has(relativePath)
+  })
+
+  for (const reference of staleReferences) {
+    removeFileReferenceFromTargetBuildPhases(widgetTarget, reference)
+    removeFileReferenceFromGroupTree(widgetGroup, reference)
+    reference.removeFromProject()
+  }
+}
+
 function ensureWidgetGroupFiles(
   context: IOSXcodeProjectContext,
   widgetGroup: PBXGroup,
@@ -301,6 +339,21 @@ function ensureWidgetGroupFiles(
     }
 
     ensureGroupContainsReference(widgetGroup, reference)
+  }
+}
+
+function removeFileReferenceFromTargetBuildPhases(target: PBXNativeTarget, reference: PBXFileReference): void {
+  for (const phase of [target.getSourcesBuildPhase(), target.getResourcesBuildPhase(), target.getFrameworksBuildPhase()]) {
+    removeBuildPhaseReference(phase, reference)
+  }
+}
+
+function removeBuildPhaseReference(
+  phase: PBXSourcesBuildPhase | PBXResourcesBuildPhase | PBXFrameworksBuildPhase,
+  reference: PBXFileReference
+): void {
+  if (phase.includesFile(reference)) {
+    phase.removeFileReference(reference)
   }
 }
 
@@ -398,6 +451,63 @@ function isResourceFile(relativePath: string): boolean {
 
 function getReferenceRelativePath(context: IOSXcodeProjectContext, reference: PBXFileReference): string {
   return normalizeRelativePath(path.relative(context.project.getProjectRoot(), reference.getFullPath()))
+}
+
+function isGeneratedWidgetFile(
+  relativePath: string,
+  targetName: string | undefined,
+  generatedFiles: Set<string>
+): boolean {
+  if (!targetName) {
+    return false
+  }
+
+  if (!relativePath.startsWith(`${targetName}/`)) {
+    return false
+  }
+
+  if (generatedFiles.has(relativePath)) {
+    return true
+  }
+
+  const pathWithinTarget = getPathRelativeToTarget(relativePath, targetName)
+
+  if (!pathWithinTarget) {
+    return false
+  }
+
+  if (pathWithinTarget.startsWith('Assets.xcassets/')) {
+    return true
+  }
+
+  if (pathWithinTarget.includes('.lproj/')) {
+    return true
+  }
+
+  const extension = path.extname(relativePath)
+  return (
+    extension === '.swift' ||
+    extension === '.plist' ||
+    extension === '.entitlements' ||
+    extension === '.strings' ||
+    extension === '.ttf' ||
+    extension === '.otf' ||
+    extension === '.woff' ||
+    extension === '.woff2' ||
+    extension === '.json' ||
+    extension === '.png' ||
+    extension === '.jpg' ||
+    extension === '.jpeg' ||
+    relativePath.endsWith('.xcassets')
+  )
+}
+
+function removeFileReferenceFromGroupTree(group: PBXGroup, reference: PBXFileReference): void {
+  group.props.children = group.props.children.filter((child) => child.uuid !== reference.uuid)
+
+  for (const childGroup of group.getChildGroups()) {
+    removeFileReferenceFromGroupTree(childGroup, reference)
+  }
 }
 
 function getPathRelativeToTarget(relativePath: string, targetName: string): string | null {
