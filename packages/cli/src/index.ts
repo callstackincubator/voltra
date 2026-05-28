@@ -63,6 +63,8 @@ export { AndroidManifestMutationError, ensureAndroidManifest } from './platforms
 export type { EnsureAndroidManifestOptions, EnsureAndroidManifestResult } from './platforms/android/manifest'
 export { IOSGeneratedFilesError, generateIOSFiles } from './platforms/ios/generated'
 export type { GenerateIOSFilesOptions, GenerateIOSFilesResult } from './platforms/ios/generated'
+export { resolveIOSWidgetTargetName } from './platforms/ios/targetName'
+export { applyIOSPlatform, createIOSPreflightRunner } from './platforms/ios/apply'
 export { IOSEntitlementsMutationError, ensureEntitlements } from './platforms/ios/entitlements'
 export type { EnsureEntitlementsOptions, EnsureEntitlementsResult } from './platforms/ios/entitlements'
 export { IOSInfoPlistMutationError, ensureInfoPlist } from './platforms/ios/plist'

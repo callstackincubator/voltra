@@ -11,6 +11,7 @@ import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 import { buildPlistXml, parsePlistFile } from './plist'
+import { resolveIOSWidgetTargetName } from './targetName'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { IOSWidgetFamily, NormalizedIOSWidgetConfig, NormalizedVoltraIOSConfig, WidgetLabel } from '../../config/types'
@@ -135,7 +136,7 @@ function createGeneratedFilesError(message: string): IOSGeneratedFilesError {
 
 export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promise<GenerateIOSFilesResult> {
   const { projectRoot, ios, discovery } = options
-  const targetName = resolveIOSTargetName(ios, discovery)
+  const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const targetPath = path.join(discovery.iosRoot, targetName)
   const mainAppMetadata = await readMainAppMetadata(discovery.infoPlistPath)
   const changes: ReportedChange[] = []
@@ -795,15 +796,6 @@ async function getLargeImageWarning(imagePath: string, fileName: string): Promis
   }
 
   return `Image '${fileName}' is ${stat.size} bytes. Large iOS widget images may not display correctly.`
-}
-
-function resolveIOSTargetName(ios: NormalizedVoltraIOSConfig, discovery: IOSProjectDiscovery): string {
-  if (ios.targetName) {
-    return ios.targetName
-  }
-
-  const sanitizedTargetName = discovery.mainTargetName.replace(/[^A-Za-z0-9_]/g, '')
-  return `${sanitizedTargetName}LiveActivity`
 }
 
 function collectGalleryStringsByLocale(widgets: NormalizedIOSWidgetConfig[]): Map<string, Record<string, string>> {

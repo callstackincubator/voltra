@@ -1,6 +1,7 @@
 import { readTextFile, writeTextFile } from '../../fs/readWrite'
 import { toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
+import { resolveIOSWidgetTargetName } from './targetName'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { NormalizedVoltraIOSConfig } from '../../config/types'
@@ -31,7 +32,7 @@ export class IOSPodfileMutationError extends VoltraCliError {
 
 export async function ensurePodfileBlock(options: EnsurePodfileBlockOptions): Promise<EnsurePodfileBlockResult> {
   const { projectRoot, ios, discovery } = options
-  const targetName = resolveWidgetTargetName(ios, discovery)
+  const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const currentContent = await readPodfile(discovery.podfilePath)
   const nextBlock = buildManagedPodfileBlock(targetName)
   const nextContent = reconcilePodfile(currentContent, nextBlock, targetName)
@@ -116,15 +117,6 @@ async function readPodfile(podfilePath: string): Promise<string> {
   } catch (error: unknown) {
     throw new IOSPodfileMutationError(`Failed to read Podfile at ${podfilePath}: ${getErrorMessage(error)}`)
   }
-}
-
-function resolveWidgetTargetName(ios: NormalizedVoltraIOSConfig, discovery: IOSProjectDiscovery): string {
-  if (ios.targetName) {
-    return ios.targetName
-  }
-
-  const sanitizedTargetName = discovery.mainTargetName.replace(/[^A-Za-z0-9_]/g, '')
-  return `${sanitizedTargetName}LiveActivity`
 }
 
 function stripTrailingWhitespace(value: string): string {

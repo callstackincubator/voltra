@@ -767,6 +767,9 @@ Can run in parallel with:
 
 **T20. Implement iOS Core apply flow**
 
+Status:
+- completed
+
 Deliverables:
 - combine iOS discovery, generated-file writes, plist mutation, entitlements mutation, and Podfile mutation
 - emit generated file inventory for state tracking

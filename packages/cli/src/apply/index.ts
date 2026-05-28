@@ -5,6 +5,7 @@ import { normalizeVoltraConfig } from '../config/normalize'
 import { removePathIfExists } from '../fs/readWrite'
 import { ensureGitWorktreeIsReady } from '../git/status'
 import { applyAndroidPlatform, createAndroidPreflightRunner } from '../platforms/android/apply'
+import { applyIOSPlatform, createIOSPreflightRunner } from '../platforms/ios/apply'
 import { formatApplySummary, VoltraCliError } from '../reporting/summary'
 import { diffVoltraState } from '../state/diff'
 import { loadVoltraState } from '../state/load'
@@ -96,11 +97,11 @@ function resolveApplyDependencies(config: NormalizedVoltraConfig, dependencies: 
   return {
     applyRunners: {
       android: dependencies.applyRunners.android ?? applyAndroidPlatform,
-      ios: dependencies.applyRunners.ios,
+      ios: dependencies.applyRunners.ios ?? applyIOSPlatform,
     },
     preflightRunners: {
       android: dependencies.preflightRunners.android ?? (config.android ? createAndroidPreflightRunner(config) : undefined),
-      ios: dependencies.preflightRunners.ios,
+      ios: dependencies.preflightRunners.ios ?? (config.ios ? createIOSPreflightRunner(config) : undefined),
     },
     writeStdout: dependencies.writeStdout,
   }
