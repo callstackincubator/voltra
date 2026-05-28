@@ -66,6 +66,18 @@
                 "intervalMinutes": 15,
                 "refresh": true
               }
+            },
+            {
+              "id": "reactive_codegen",
+              "displayName": "Codegen Temperature",
+              "description": "Track 3 PoC: build-time codegen temperature widget",
+              "supportedFamilies": ["systemSmall", "systemMedium"],
+              "initialStatePath": "./widgets/ios/ios-codegen-temperature-initial.tsx",
+              "appIntent": {
+                "parameters": [
+                  { "name": "temperature", "title": "Temperature", "default": "22°C" }
+                ]
+              }
             }
           ],
           "fonts": [

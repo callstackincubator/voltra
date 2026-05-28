@@ -8,6 +8,7 @@ import type { LiveActivityVariants } from './live-activity/types.js'
 import { ensurePayloadWithinBudget } from './payload.js'
 
 export * as Voltra from './jsx/primitives.js'
+export { appIntentParam } from './app-intent.js'
 export { renderWidgetToString } from './widgets/renderer.js'
 export type { WidgetVariants } from './widgets/types.js'
 

@@ -14,6 +14,7 @@ import {
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
 import type { IOSWidgetConfig } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
+import { generateCodegenWidgetCode, sanitizeSwiftId } from './swift-codegen'
 
 export interface GenerateSwiftFilesOptions {
   targetPath: string
@@ -56,6 +57,22 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   logger.info(
     `Generated VoltraWidgetInitialStates.swift with ${prerenderedStates.size} widget(s) (localized initial states where configured)`
   )
+
+  // Generate self-contained Swift files for codegen (appIntent) widgets
+  for (const widget of widgets ?? []) {
+    if (!widget.appIntent) continue
+    const perLocale = prerenderedStates.get(widget.id)
+    const payloadJson = perLocale?.get('__default') ?? (perLocale ? [...perLocale.values()][0] : undefined)
+    if (!payloadJson) {
+      logger.warn(`Skipping codegen for widget "${widget.id}": no prerendered payload found (set initialStatePath)`)
+      continue
+    }
+    const codegenContent = generateCodegenWidgetCode(widget, payloadJson)
+    const safeId = sanitizeSwiftId(widget.id)
+    const codegenPath = path.join(targetPath, `VoltraCodegen_${safeId}.swift`)
+    fs.writeFileSync(codegenPath, codegenContent)
+    logger.info(`Generated VoltraCodegen_${safeId}.swift for codegen widget "${widget.id}"`)
+  }
 
   // Generate the widget bundle Swift file
   const widgetBundleContent =
@@ -304,14 +321,30 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
 function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
-  // Generate widget structs
-  const widgetStructs = widgets.map(generateWidgetStruct).join('\n\n')
+  const staticWidgets = widgets.filter((w) => !w.appIntent)
+  const codegenWidgets = widgets.filter((w) => w.appIntent)
 
-  // Generate widget bundle body entries
-  const widgetInstances = widgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
+  // Inline struct definitions only for non-codegen widgets
+  const widgetStructs = staticWidgets.map(generateWidgetStruct).join('\n\n')
+
+  // Bundle body: static widgets use VoltraWidget_<id>(), codegen widgets use VoltraCodegenWidget_<safeId>()
+  const widgetInstances = widgets
+    .map((w) =>
+      w.appIntent ? `VoltraCodegenWidget_${sanitizeSwiftId(w.id)}()` : `VoltraWidget_${w.id}()`
+    )
+    .join('\n    ')
 
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
   const foundationImport = needsFoundation ? 'import Foundation\n' : ''
+
+  const structSection =
+    staticWidgets.length > 0
+      ? dedent`
+          // MARK: - Home Screen Widget Definitions
+
+          ${widgetStructs}
+        `
+      : ''
 
   return dedent`
     //
@@ -336,9 +369,7 @@ function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
       }
     }
 
-    // MARK: - Home Screen Widget Definitions
-
-    ${widgetStructs}
+    ${structSection}
   `
 }
 
