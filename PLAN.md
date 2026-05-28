@@ -625,6 +625,9 @@ Can run in parallel with:
 
 **T14. Implement CLI-native Android manifest mutator**
 
+Status:
+- completed
+
 Deliverables:
 - parse `AndroidManifest.xml`
 - ensure required permissions
