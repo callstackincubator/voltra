@@ -63,13 +63,17 @@ export async function ensureIOSWidgetTarget(options: EnsureIOSWidgetTargetOption
   const staleTargetNames = getStaleWidgetTargetNames(previousWidgetFiles, targetName)
   const bundleIdentifier = resolveBundleIdentifier(context, discovery, targetName)
   const codeSigning = getMainAppCodeSigningSettings(context)
+  const mainAppEntitlementsPath = getMainAppEntitlementsBuildSetting(projectRoot, discovery)
 
   removeStaleWidgetTargets(context, staleTargetNames)
+  ensureMainAppEntitlementsBuildSetting(context, mainAppEntitlementsPath)
   ensureWidgetTarget(context, targetName, bundleIdentifier, ios.deploymentTarget, codeSigning)
 
   const widgetTarget = getWidgetTarget(context, targetName)
   const widgetGroup = ensureWidgetGroup(context, targetName)
   const productFile = ensureProductFile(context, targetName, productPath)
+
+  sanitizeWidgetGroupChildren(widgetGroup)
 
   widgetTarget.props.productReference = productFile
   widgetTarget.props.productType = IOS_APP_EXTENSION_PRODUCT_TYPE
@@ -169,28 +173,28 @@ function buildWidgetBuildSettings(
   configurationName: string
 ): BuildSettings & Record<string, string | undefined> {
   const buildSettings: BuildSettings & Record<string, string | undefined> = {
-    ASSETCATALOG_COMPILER_APPICON_NAME: '""',
-    CODE_SIGN_ENTITLEMENTS: `"${targetName}/${targetName}.entitlements"`,
+    ASSETCATALOG_COMPILER_APPICON_NAME: '',
+    CODE_SIGN_ENTITLEMENTS: `${targetName}/${targetName}.entitlements`,
     CURRENT_PROJECT_VERSION: '1',
     INFOPLIST_FILE: `${targetName}/Info.plist`,
     INFOPLIST_OUTPUT_FORMAT: 'xml',
-    IPHONEOS_DEPLOYMENT_TARGET: `"${deploymentTarget}"`,
+    IPHONEOS_DEPLOYMENT_TARGET: deploymentTarget,
     MARKETING_VERSION: '1.0',
-    OTHER_SWIFT_FLAGS: `"$(inherited) -D EXPO_CONFIGURATION_${configurationName.toUpperCase()}"`,
-    PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
-    PRODUCT_NAME: '"$(TARGET_NAME)"',
-    SWIFT_OPTIMIZATION_LEVEL: '"-Onone"',
+    OTHER_SWIFT_FLAGS: `$(inherited) -D EXPO_CONFIGURATION_${configurationName.toUpperCase()}`,
+    PRODUCT_BUNDLE_IDENTIFIER: bundleIdentifier,
+    PRODUCT_NAME: '$(TARGET_NAME)',
+    SWIFT_OPTIMIZATION_LEVEL: '-Onone',
     SWIFT_VERSION: '5.0',
-    TARGETED_DEVICE_FAMILY: '"1,2"',
-    ...(codeSigning.codeSignStyle ? { CODE_SIGN_STYLE: `"${codeSigning.codeSignStyle}"` } : {}),
-    ...(codeSigning.developmentTeam ? { DEVELOPMENT_TEAM: `"${codeSigning.developmentTeam}"` } : {}),
+    TARGETED_DEVICE_FAMILY: '1,2',
+    ...(codeSigning.codeSignStyle ? { CODE_SIGN_STYLE: codeSigning.codeSignStyle } : {}),
+    ...(codeSigning.developmentTeam ? { DEVELOPMENT_TEAM: codeSigning.developmentTeam } : {}),
   }
 
   buildSettings.APPLICATION_EXTENSION_API_ONLY = 'YES'
   buildSettings.INFOPLIST_OUTPUT_FORMAT = 'xml'
 
   if (codeSigning.provisioningProfileSpecifier) {
-    buildSettings.PROVISIONING_PROFILE_SPECIFIER = `"${codeSigning.provisioningProfileSpecifier}"`
+    buildSettings.PROVISIONING_PROFILE_SPECIFIER = codeSigning.provisioningProfileSpecifier
   }
 
   return buildSettings
@@ -351,7 +355,6 @@ function ensureWidgetGroupFiles(
   generatedFiles: string[]
 ): void {
   const groupedReferencePaths = new Set<string>()
-  const localizedGroups = new Map<string, PBXGroup>()
 
   for (const file of generatedFiles) {
     const groupReferencePath = getGroupReferencePath(file)
@@ -368,13 +371,10 @@ function ensureWidgetGroupFiles(
     }
 
     if (relativeToTarget.includes('/')) {
-      const [groupName] = relativeToTarget.split('/', 1)
-      if (groupName.endsWith('.lproj')) {
-        const localeGroup = localizedGroups.get(groupName) ?? ensureChildGroup(widgetGroup, groupName, groupName)
-        localizedGroups.set(groupName, localeGroup)
-        ensureGroupContainsReference(localeGroup, reference)
-        continue
-      }
+      const parentGroup = ensureParentGroup(widgetGroup, relativeToTarget)
+      removeGroupReference(widgetGroup, reference)
+      ensureGroupContainsReference(parentGroup, reference)
+      continue
     }
 
     ensureGroupContainsReference(widgetGroup, reference)
@@ -445,21 +445,15 @@ function ensureParentGroup(rootGroup: PBXGroup, relativePath: string): PBXGroup 
   return group
 }
 
-function ensureChildGroup(parent: PBXGroup, name: string, relativePath: string): PBXGroup {
-  const existingGroup = parent.getChildGroups().find((group) => group.getDisplayName() === name)
-  if (existingGroup) {
-    existingGroup.props.path = relativePath
-    return existingGroup
-  }
-
-  return parent.createGroup({ name, path: relativePath, sourceTree: '<group>' })
-}
-
 function ensureGroupContainsReference(group: PBXGroup, reference: PBXFileReference): void {
   const alreadyPresent = group.props.children.some((child) => child.uuid === reference.uuid)
   if (!alreadyPresent) {
     group.props.children.push(reference)
   }
+}
+
+function removeGroupReference(group: PBXGroup, reference: PBXFileReference): void {
+  group.props.children = group.props.children.filter((child) => child.uuid !== reference.uuid)
 }
 
 function applyFileType(reference: PBXFileReference, relativePath: string): void {
@@ -523,12 +517,6 @@ function getGroupReferencePath(relativePath: string): string {
   const assetCatalogIndex = normalizedPath.indexOf('/Assets.xcassets/')
 
   if (assetCatalogIndex >= 0) {
-    const imagesetIndex = normalizedPath.indexOf('.imageset/', assetCatalogIndex)
-
-    if (imagesetIndex >= 0) {
-      return normalizedPath.slice(0, imagesetIndex + '.imageset'.length)
-    }
-
     return normalizedPath.slice(0, assetCatalogIndex + '/Assets.xcassets'.length)
   }
 
@@ -536,7 +524,85 @@ function getGroupReferencePath(relativePath: string): string {
 }
 
 function getReferenceRelativePath(context: IOSXcodeProjectContext, reference: PBXFileReference): string {
-  return normalizeRelativePath(path.relative(context.project.getProjectRoot(), reference.getFullPath()))
+  const segments = [stripQuotes(reference.props.path ?? '')].filter((segment) => segment.length > 0)
+  let parent = getPreferredParentGroup(reference)
+
+  while (parent && parent.uuid !== context.mainGroup.uuid) {
+    const parentPath = stripQuotes(parent.props.path ?? parent.props.name ?? '')
+    if (parentPath.length > 0) {
+      segments.unshift(parentPath)
+    }
+
+    parent = getPreferredParentGroup(parent)
+  }
+
+  if (segments.length === 0) {
+    throw new IOSWidgetTargetMutationError(`Unable to resolve Xcode file reference path for ${reference.uuid}`)
+  }
+
+  return normalizeRelativePath(segments.join('/'))
+}
+
+function getPreferredParentGroup(object: PBXFileReference | PBXGroup): PBXGroup | undefined {
+  const parentGroups = object.getReferrers().filter((referrer): referrer is PBXGroup => PBXGroup.is(referrer))
+
+  if (parentGroups.length <= 1) {
+    return parentGroups[0]
+  }
+
+  return [...parentGroups].sort((left, right) => getGroupSpecificity(right) - getGroupSpecificity(left))[0]
+}
+
+function getGroupSpecificity(group: PBXGroup): number {
+  const identifier = group.props.path ?? group.props.name ?? group.getDisplayName()
+
+  if (identifier.endsWith('.imageset')) {
+    return 4
+  }
+
+  if (identifier.endsWith('.xcassets') || identifier.endsWith('.lproj')) {
+    return 3
+  }
+
+  return 1
+}
+
+function sanitizeWidgetGroupChildren(widgetGroup: PBXGroup): void {
+  const staleChildren = widgetGroup.props.children.filter((child) => {
+    const identifier = stripQuotes('path' in child && typeof child.props.path === 'string' ? child.props.path : child.getDisplayName())
+
+    if (identifier.endsWith('.imageset')) {
+      return true
+    }
+
+    return PBXGroup.is(child) && identifier.endsWith('.xcassets')
+  })
+
+  widgetGroup.props.children = widgetGroup.props.children.filter((child) => !staleChildren.includes(child))
+
+  for (const child of staleChildren) {
+    if (PBXGroup.is(child)) {
+      removeGroupTree(child)
+      continue
+    }
+
+    child.removeFromProject()
+  }
+}
+
+function removeGroupTree(group: PBXGroup): void {
+  const childGroups = [...group.getChildGroups()]
+  const childFiles = group.props.children.filter((child): child is PBXFileReference => PBXFileReference.is(child))
+
+  for (const childGroup of childGroups) {
+    removeGroupTree(childGroup)
+  }
+
+  for (const childFile of childFiles) {
+    childFile.removeFromProject()
+  }
+
+  group.removeFromProject()
 }
 
 function removeFileReferenceFromGroupTree(group: PBXGroup, reference: PBXFileReference): void {
@@ -618,6 +684,28 @@ function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainApp
     codeSignStyle: readBuildSettingString(buildSettings.CODE_SIGN_STYLE),
     developmentTeam: readBuildSettingString(buildSettings.DEVELOPMENT_TEAM),
     provisioningProfileSpecifier: readBuildSettingString((buildSettings as unknown as { PROVISIONING_PROFILE_SPECIFIER?: unknown }).PROVISIONING_PROFILE_SPECIFIER),
+  }
+}
+
+function getMainAppEntitlementsBuildSetting(projectRoot: string, discovery: IOSProjectDiscovery): string | undefined {
+  if (!discovery.entitlementsPath) {
+    return undefined
+  }
+
+  return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
+}
+
+function ensureMainAppEntitlementsBuildSetting(
+  context: IOSXcodeProjectContext,
+  entitlementsPath: string | undefined
+): void {
+  for (const config of context.mainAppTarget.buildConfigurations.all) {
+    if (entitlementsPath) {
+      config.props.buildSettings.CODE_SIGN_ENTITLEMENTS = entitlementsPath
+      continue
+    }
+
+    delete config.props.buildSettings.CODE_SIGN_ENTITLEMENTS
   }
 }
 

@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises'
 
 import { PBXNativeTarget, XcodeProject } from '@bacons/xcode'
-import { Writer } from '@bacons/xcode/build/json/writer'
 
 import { VoltraCliError } from '../../reporting/summary'
 
@@ -9,6 +8,9 @@ import type { PBXCopyFilesBuildPhase, PBXFrameworksBuildPhase, PBXGroup, PBXReso
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 
 const IOS_APP_PRODUCT_TYPE = 'com.apple.product-type.application'
+const { build: buildXcodeProjectJson } = require('@bacons/xcode/json') as {
+  build(project: ReturnType<XcodeProject['toJSON']>): string
+}
 
 export interface IOSXcodeTargetBuildConfigurations {
   all: XCBuildConfiguration[]
@@ -116,7 +118,7 @@ export function ensureFrameworksGroup(context: IOSXcodeProjectContext): PBXGroup
 }
 
 export function saveIOSXcodeProject(context: IOSXcodeProjectContext): Promise<void> {
-  const contents = new Writer(context.project.toJSON()).getResults()
+  const contents = buildXcodeProjectJson(context.project.toJSON())
   return fs.writeFile(context.project.filePath, contents, 'utf8')
 }
 
