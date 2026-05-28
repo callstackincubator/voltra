@@ -61,6 +61,8 @@ export type { GenerateAndroidFilesOptions, GenerateAndroidFilesResult } from './
 export { applyAndroidPlatform, createAndroidPreflightRunner } from './platforms/android/apply'
 export { AndroidManifestMutationError, ensureAndroidManifest } from './platforms/android/manifest'
 export type { EnsureAndroidManifestOptions, EnsureAndroidManifestResult } from './platforms/android/manifest'
+export { IOSGeneratedFilesError, generateIOSFiles } from './platforms/ios/generated'
+export type { GenerateIOSFilesOptions, GenerateIOSFilesResult } from './platforms/ios/generated'
 export { diffVoltraState } from './state/diff'
 export { getVoltraStatePath, loadVoltraState } from './state/load'
 export { saveVoltraState } from './state/save'

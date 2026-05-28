@@ -698,6 +698,9 @@ Can run in parallel with:
 
 **T17. Adapt reusable iOS generated-file logic for CLI use**
 
+Status:
+- completed
+
 Deliverables:
 - wire widget extension file generation behind CLI-friendly inputs
 - define generated file inventory output for state tracking
