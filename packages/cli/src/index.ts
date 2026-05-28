@@ -50,6 +50,8 @@ export { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, getApplyHelpText, runAppl
 export { CLI_DEFAULTS } from './config/defaults'
 export { VoltraConfigLoadError, loadVoltraConfig } from './config/load'
 export { VoltraConfigNormalizationError, normalizeVoltraConfig } from './config/normalize'
+export { AndroidProjectDiscoveryError, discoverAndroidProject } from './discovery/android'
+export type { AndroidProjectDiscovery } from './discovery/android'
 export { ensureGitWorktreeIsReady, getGitWorktreeStatus } from './git/status'
 export type { EnsureGitWorktreeOptions, EnsureGitWorktreeResult, GitWorktreeStatus } from './git/status'
 export { diffVoltraState } from './state/diff'

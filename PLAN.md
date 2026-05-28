@@ -579,6 +579,9 @@ Can run in parallel with:
 
 **T12. Implement Android project discovery**
 
+Status:
+- completed
+
 Deliverables:
 - discover Android root
 - discover app module
