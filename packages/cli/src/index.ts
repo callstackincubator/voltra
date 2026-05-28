@@ -64,6 +64,7 @@ export type { EnsureAndroidManifestOptions, EnsureAndroidManifestResult } from '
 export { IOSGeneratedFilesError, generateIOSFiles } from './platforms/ios/generated'
 export type { GenerateIOSFilesOptions, GenerateIOSFilesResult } from './platforms/ios/generated'
 export { resolveIOSWidgetTargetName } from './platforms/ios/targetName'
+export { IOSWidgetTargetMutationError, ensureIOSWidgetTarget } from './platforms/ios/xcodeTarget'
 export { applyIOSPlatform, createIOSPreflightRunner } from './platforms/ios/apply'
 export { IOSEntitlementsMutationError, ensureEntitlements } from './platforms/ios/entitlements'
 export type { EnsureEntitlementsOptions, EnsureEntitlementsResult } from './platforms/ios/entitlements'
@@ -71,6 +72,7 @@ export { IOSInfoPlistMutationError, ensureInfoPlist } from './platforms/ios/plis
 export type { EnsureInfoPlistOptions, EnsureInfoPlistResult } from './platforms/ios/plist'
 export { IOSPodfileMutationError, ensurePodfileBlock } from './platforms/ios/podfile'
 export type { EnsurePodfileBlockOptions, EnsurePodfileBlockResult } from './platforms/ios/podfile'
+export type { EnsureIOSWidgetTargetOptions, EnsureIOSWidgetTargetResult } from './platforms/ios/xcodeTarget'
 export {
   ensureFrameworksGroup,
   ensureMainGroupChild,

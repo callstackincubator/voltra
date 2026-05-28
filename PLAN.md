@@ -810,6 +810,9 @@ Can run in parallel with:
 
 **T22. Implement widget target creation/update in Xcode project**
 
+Status:
+- completed
+
 Deliverables:
 - ensure widget extension target exists
 - ensure product file, build phases, groups, and dependencies are present
