@@ -721,6 +721,9 @@ Can run in parallel with:
 
 **T18. Implement CLI-native plist and entitlements mutators**
 
+Status:
+- completed
+
 Deliverables:
 - parse and update main app `Info.plist`
 - parse and update entitlements

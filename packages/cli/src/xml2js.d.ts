@@ -1,6 +1,7 @@
 declare module 'xml2js' {
   export interface ParserOptions {
     explicitArray?: boolean
+    explicitChildren?: boolean
     preserveChildrenOrder?: boolean
   }
 

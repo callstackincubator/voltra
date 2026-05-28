@@ -6,11 +6,11 @@ import { createRequire } from 'node:module'
 
 import * as babel from '@babel/core'
 import { renderWidgetToString } from '@use-voltra/ios'
-import { parseStringPromise } from 'xml2js'
 
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
+import { buildPlistXml, parsePlistFile } from './plist'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { IOSWidgetFamily, NormalizedIOSWidgetConfig, NormalizedVoltraIOSConfig, WidgetLabel } from '../../config/types'
@@ -119,17 +119,6 @@ interface MainAppMetadata {
   urlTypes?: Array<{ CFBundleURLSchemes: string[] }>
 }
 
-interface ParsedPlistNode {
-  key?: string | string[]
-  string?: string | string[]
-  integer?: string | string[]
-  real?: string | string[]
-  true?: unknown | unknown[]
-  false?: unknown | unknown[]
-  dict?: ParsedPlistNode | ParsedPlistNode[]
-  array?: ParsedPlistNode | ParsedPlistNode[]
-}
-
 type IOSWidgetRenderer = typeof renderWidgetToString
 type PrerenderedWidgetStates = Map<string, Map<string, string>>
 
@@ -138,6 +127,10 @@ export class IOSGeneratedFilesError extends VoltraCliError {
     super(message, 'VOLTRA_IOS_GENERATED_FILES_FAILED')
     this.name = 'IOSGeneratedFilesError'
   }
+}
+
+function createGeneratedFilesError(message: string): IOSGeneratedFilesError {
+  return new IOSGeneratedFilesError(message)
 }
 
 export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promise<GenerateIOSFilesResult> {
@@ -228,7 +221,7 @@ async function generateInfoPlistFile(
           }
         : undefined,
     Voltra_WidgetServerUrls: Object.keys(serverUrls).length > 0 ? serverUrls : undefined,
-  })
+  }, createGeneratedFilesError)
 
   return writeGeneratedTextFile(projectRoot, plistPath, infoPlist)
 }
@@ -243,7 +236,7 @@ async function generateEntitlementsFile(
   const entitlements = buildPlistXml({
     'com.apple.security.application-groups': ios.groupIdentifier ? [ios.groupIdentifier] : undefined,
     'keychain-access-groups': ios.keychainGroup ? [ios.keychainGroup] : undefined,
-  })
+  }, createGeneratedFilesError)
 
   return writeGeneratedTextFile(projectRoot, entitlementsPath, entitlements)
 }
@@ -355,9 +348,7 @@ async function generateLocalizedWidgetStrings(
 }
 
 async function readMainAppMetadata(infoPlistPath: string): Promise<MainAppMetadata> {
-  const content = await readTextFile(infoPlistPath)
-  const parsed = await parseStringPromise(content, { explicitArray: false })
-  const dict = getParsedPlistDict(parsed)
+  const dict = await parsePlistFile(infoPlistPath, 'main app Info.plist', (message: string) => new IOSGeneratedFilesError(message))
   const shortVersionString = readPlistString(dict, 'CFBundleShortVersionString') ?? '1.0.0'
   const buildNumber = readPlistString(dict, 'CFBundleVersion') ?? '1'
   const urlTypes = readUrlTypes(dict)
@@ -882,24 +873,6 @@ function sanitizeAssetName(value: string): string {
   return sanitized
 }
 
-function getParsedPlistDict(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || !('plist' in value)) {
-    throw new IOSGeneratedFilesError('Could not parse main app Info.plist for widget file generation.')
-  }
-
-  const plistValue = (value as { plist?: { dict?: unknown } }).plist
-
-  if (!plistValue || typeof plistValue !== 'object' || !('dict' in plistValue)) {
-    throw new IOSGeneratedFilesError('Main app Info.plist is missing its root dict.')
-  }
-
-  if (!plistValue.dict || typeof plistValue.dict !== 'object') {
-    throw new IOSGeneratedFilesError('Main app Info.plist dict could not be read.')
-  }
-
-  return convertPlistDict(plistValue.dict as ParsedPlistNode)
-}
-
 function readPlistString(dict: Record<string, unknown>, key: string): string | undefined {
   const value = dict[key]
   return typeof value === 'string' && value.trim() ? value : undefined
@@ -931,88 +904,6 @@ function readUrlTypes(dict: Record<string, unknown>): Array<{ CFBundleURLSchemes
     .filter((entry): entry is { CFBundleURLSchemes: string[] } => entry !== undefined)
 }
 
-function convertPlistDict(node: ParsedPlistNode): Record<string, unknown> {
-  const keys = toStringArray(node.key)
-  const values = collectPlistValues(node)
-
-  if (keys.length !== values.length) {
-    throw new IOSGeneratedFilesError('Main app Info.plist dict keys do not match their values.')
-  }
-
-  return Object.fromEntries(keys.map((key, index) => [key, values[index]]))
-}
-
-function collectPlistValues(node: ParsedPlistNode): unknown[] {
-  const values: unknown[] = []
-  const keyCount = toStringArray(node.key).length
-  const entries = Object.entries(node).filter(([entryKey]) => entryKey !== 'key')
-
-  for (const [entryKey, entryValue] of entries) {
-    if (entryValue === undefined) {
-      continue
-    }
-
-    const normalizedValues = Array.isArray(entryValue) ? entryValue : [entryValue]
-
-    for (const normalizedValue of normalizedValues) {
-      values.push(convertPlistValue(entryKey, normalizedValue))
-    }
-  }
-
-  if (keyCount > 0 && values.length > keyCount) {
-    throw new IOSGeneratedFilesError('Main app Info.plist dict contains more values than keys.')
-  }
-
-  return values
-}
-
-function convertPlistValue(entryKey: string, value: unknown): unknown {
-  switch (entryKey) {
-    case 'string':
-      return expectPlistScalar(value, 'string')
-    case 'integer':
-      return expectPlistScalar(value, 'integer')
-    case 'real':
-      return expectPlistScalar(value, 'real')
-    case 'true':
-      return true
-    case 'false':
-      return false
-    case 'dict':
-      if (!value || typeof value !== 'object') {
-        throw new IOSGeneratedFilesError('Main app Info.plist contains an invalid dict value.')
-      }
-      return convertPlistDict(value as ParsedPlistNode)
-    case 'array':
-      if (!value || typeof value !== 'object') {
-        throw new IOSGeneratedFilesError('Main app Info.plist contains an invalid array value.')
-      }
-      return convertPlistArray(value as ParsedPlistNode)
-    default:
-      throw new IOSGeneratedFilesError(`Unsupported plist node '${entryKey}' in main app Info.plist.`)
-  }
-}
-
-function convertPlistArray(node: ParsedPlistNode): unknown[] {
-  return collectPlistValues(node)
-}
-
-function expectPlistScalar(value: unknown, kind: string): string {
-  if (typeof value !== 'string') {
-    throw new IOSGeneratedFilesError(`Main app Info.plist contains a non-string ${kind} value.`)
-  }
-
-  return value
-}
-
-function toStringArray(value: string | string[] | undefined): string[] {
-  if (value === undefined) {
-    return []
-  }
-
-  return Array.isArray(value) ? value : [value]
-}
-
 function escapeSwiftString(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
 }
@@ -1025,57 +916,6 @@ function getSwiftRawStringDelimiter(value: string): string {
 
   const maxHashes = Math.max(...matches.map((match) => match.length - 1))
   return '#'.repeat(maxHashes + 1)
-}
-
-function buildPlistXml(value: unknown): string {
-  return [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
-    '<plist version="1.0">',
-    renderPlistValue(value, 0),
-    '</plist>',
-    '',
-  ].join('\n')
-}
-
-function renderPlistValue(value: unknown, indentLevel: number): string {
-  const indent = '  '.repeat(indentLevel)
-
-  if (Array.isArray(value)) {
-    const items = value.map((item) => renderPlistValue(item, indentLevel + 1)).join('\n')
-    return `${indent}<array>\n${items}\n${indent}</array>`
-  }
-
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)
-    const lines = entries.flatMap(([key, entryValue]) => [`${indent}  <key>${escapePlistText(key)}</key>`, renderPlistValue(entryValue, indentLevel + 1)])
-    return `${indent}<dict>\n${lines.join('\n')}\n${indent}</dict>`
-  }
-
-  if (typeof value === 'string') {
-    return `${indent}<string>${escapePlistText(value)}</string>`
-  }
-
-  if (typeof value === 'number') {
-    return Number.isInteger(value) ? `${indent}<integer>${value}</integer>` : `${indent}<real>${value}</real>`
-  }
-
-  if (typeof value === 'boolean') {
-    return `${indent}<${value ? 'true' : 'false'}/>`
-  }
-
-  if (value === null || value === undefined) {
-    throw new IOSGeneratedFilesError('Cannot encode null or undefined in generated plist output.')
-  }
-
-  throw new IOSGeneratedFilesError(`Unsupported plist value type: ${typeof value}`)
-}
-
-function escapePlistText(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
 }
 
 function mergeResult(
