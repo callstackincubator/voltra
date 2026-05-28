@@ -2,7 +2,8 @@ import { execFile } from 'node:child_process'
 import type { Readable, Writable } from 'node:stream'
 import { promisify } from 'node:util'
 
-import { formatDirtyWorktreeWarning, formatError, VoltraCliError } from '../reporting/summary'
+import { renderCancelled, renderWarning } from '../reporting/clack'
+import { formatDirtyWorktreeWarning, VoltraCliError } from '../reporting/summary'
 
 import type * as ClackPrompts from '@clack/prompts'
 
@@ -97,7 +98,7 @@ export async function ensureGitWorktreeIsReady(options: EnsureGitWorktreeOptions
     throw new VoltraCliError(`${warning} Re-run interactively to confirm before applying changes.`)
   }
 
-  const confirmed = await promptForDirtyWorktreeConfirmation(options, warning)
+  const confirmed = await promptForDirtyWorktreeConfirmation(options)
 
   if (!confirmed) {
     throw new VoltraCliError('Aborted because the git worktree has uncommitted changes.')
@@ -170,22 +171,23 @@ function isInteractiveSession(options: EnsureGitWorktreeOptions): boolean {
   return Boolean(stdin.isTTY && stdout.isTTY)
 }
 
-async function promptForDirtyWorktreeConfirmation(options: EnsureGitWorktreeOptions, warning: string): Promise<boolean> {
+async function promptForDirtyWorktreeConfirmation(options: EnsureGitWorktreeOptions): Promise<boolean> {
   const stdin = options.stdin ?? process.stdin
   const stdout = options.stdout ?? process.stdout
+  const promptMessage = 'You have uncommitted changes. Are you sure you want to continue?'
   const { confirm, isCancel } = await loadClackPrompts()
 
-  stdout.write(`${warning}\n`)
+  await renderWarning(promptMessage, { input: stdin, output: stdout })
 
   const response = await confirm({
-    message: 'Continue anyway?',
+    message: 'Continue?',
     initialValue: false,
     input: stdin,
     output: stdout,
   })
 
   if (isCancel(response)) {
-    stdout.write(`${formatError('Cancelled.')}\n`)
+    await renderCancelled({ input: stdin, output: stdout })
     return false
   }
 

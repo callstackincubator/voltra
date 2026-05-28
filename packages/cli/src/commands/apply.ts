@@ -1,10 +1,11 @@
 import { Command } from 'commander'
 
 import { applyVoltra } from '../apply'
-import { formatError } from '../reporting/summary'
+import { normalizeClackMessage, renderError } from '../reporting/clack'
 
 import type { ApplyOptions } from '../apply'
 import type { VoltraPlatform } from '../config/types'
+
 
 export const CLI_EXIT_CODE_SUCCESS = 0
 export const CLI_EXIT_CODE_FAILURE = 1
@@ -25,7 +26,7 @@ export async function runApplyCommand(argv: string[]): Promise<number> {
     await command.parseAsync(argv, { from: 'user' })
     return exitCode
   } catch (error) {
-    return handleCommanderError(error)
+    return await handleCommanderError(error)
   }
 }
 
@@ -49,7 +50,7 @@ export function createApplyCommand(onComplete?: (exitCode: number) => void): Com
       onComplete?.(result.exitCode)
 
       if (result.exitCode !== CLI_EXIT_CODE_SUCCESS && result.errorMessage) {
-        process.stderr.write(`${formatCliMessage(result.errorMessage)}\n`)
+        await renderError(result.errorMessage, { output: process.stderr })
       }
     })
 
@@ -76,12 +77,12 @@ function parsePlatform(value: string): VoltraPlatform {
   throw new Error(`Invalid platform '${value}'. Expected 'ios' or 'android'.`)
 }
 
-function handleCommanderError(error: unknown): number {
+async function handleCommanderError(error: unknown): Promise<number> {
   if (isCommanderError(error)) {
     return isCommanderDisplayError(error) ? CLI_EXIT_CODE_SUCCESS : CLI_EXIT_CODE_FAILURE
   }
 
-  process.stderr.write(`${formatCommandError(error)}\n`)
+  await renderError(formatCommandError(error), { output: process.stderr })
   return CLI_EXIT_CODE_FAILURE
 }
 
@@ -100,13 +101,9 @@ function isCommanderError(error: unknown): error is { code: string } {
 
 export function formatCommandError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
-  return formatCliMessage(message)
+  return normalizeClackMessage(message)
 }
 
 export function getApplyHelpText(): string {
   return createApplyCommand().helpInformation()
-}
-
-function formatCliMessage(message: string): string {
-  return message.startsWith('[voltra] ') ? message : formatError(message)
 }

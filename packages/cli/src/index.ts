@@ -1,6 +1,7 @@
 import { Command } from 'commander'
 
 import { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, createApplyCommand, formatCommandError } from './commands/apply'
+import { renderError } from './reporting/clack'
 
 function createProgram(): Command {
   const program = new Command()
@@ -47,7 +48,7 @@ export async function runCli(argv: string[]): Promise<number> {
       return isCommanderDisplayError(error) ? CLI_EXIT_CODE_SUCCESS : CLI_EXIT_CODE_FAILURE
     }
 
-    process.stderr.write(`${formatCommandError(error)}\n`)
+    await renderError(formatCommandError(error), { output: process.stderr })
     return CLI_EXIT_CODE_FAILURE
   }
 }
@@ -125,6 +126,7 @@ export type {
 export { diffVoltraState } from './state/diff'
 export { getVoltraStatePath, loadVoltraState } from './state/load'
 export { saveVoltraState } from './state/save'
+export { normalizeClackMessage, renderApplySummary, renderCancelled, renderError, renderWarning } from './reporting/clack'
 export type { VoltraStateDiff } from './state/diff'
 export type { SaveVoltraStateInput } from './state/save'
 export type { VoltraState } from './state/load'

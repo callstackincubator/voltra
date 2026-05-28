@@ -7,7 +7,8 @@ import { removePathIfExists } from '../fs/readWrite'
 import { ensureGitWorktreeIsReady } from '../git/status'
 import { applyAndroidPlatform, createAndroidPreflightRunner } from '../platforms/android/apply'
 import { applyIOSPlatform, createIOSPreflightRunner } from '../platforms/ios/apply'
-import { formatApplySummary, VoltraCliError } from '../reporting/summary'
+import { renderApplySummary, renderIntro } from '../reporting/clack'
+import { VoltraCliError } from '../reporting/summary'
 import { diffVoltraState } from '../state/diff'
 import { loadVoltraState } from '../state/load'
 import { saveVoltraState } from '../state/save'
@@ -50,14 +51,18 @@ export type PlatformApplyRunner = (context: PlatformApplyContext) => Promise<Pla
 export interface ApplyDependencies {
   applyRunners: Partial<Record<VoltraPlatform, PlatformApplyRunner>>
   preflightRunners: ApplyPreflightRunners
-  writeStdout(message: string): void
+  writeIntro(): Promise<void>
+  writeSummary(summary: { changes: ReportedChange[]; warnings?: string[] }): Promise<void>
 }
 
 const DEFAULT_DEPENDENCIES: ApplyDependencies = {
   applyRunners: {},
   preflightRunners: {},
-  writeStdout(message: string) {
-    process.stdout.write(message)
+  async writeIntro() {
+    await renderIntro()
+  },
+  async writeSummary(summary) {
+    await renderApplySummary(summary)
   },
 }
 
@@ -80,7 +85,8 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   const loadedConfig = await loadVoltraConfig({ configPath: options.configPath })
   const normalizedConfig = normalizeVoltraConfig(loadedConfig)
   const resolvedDependencies = resolveApplyDependencies(normalizedConfig, dependencies)
-  const gitStatus = await ensureGitWorktreeIsReady({
+  await resolvedDependencies.writeIntro()
+  await ensureGitWorktreeIsReady({
     cwd: normalizedConfig.projectRoot,
     allowDirty: options.allowDirty,
   })
@@ -92,10 +98,10 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   const deletedChanges = await removeStaleGeneratedFiles(normalizedConfig.projectRoot, stateDiff.staleFiles)
   await saveVoltraState(normalizedConfig.projectRoot, { files: stateDiff.nextFiles })
 
-  const summaryWarnings = [gitStatus.warning, ...platformResults.flatMap((result) => result.warnings ?? [])].filter(isDefined)
+  const summaryWarnings = platformResults.flatMap((result) => result.warnings ?? []).filter(isDefined)
   const summaryChanges = [...platformResults.flatMap((result) => result.changes), ...deletedChanges]
 
-  resolvedDependencies.writeStdout(`${formatApplySummary({ changes: summaryChanges, warnings: summaryWarnings })}\n`)
+  await resolvedDependencies.writeSummary({ changes: summaryChanges, warnings: summaryWarnings })
 }
 
 function resolveApplyDependencies(config: NormalizedVoltraConfig, dependencies: ApplyDependencies): ApplyDependencies {
@@ -108,7 +114,8 @@ function resolveApplyDependencies(config: NormalizedVoltraConfig, dependencies: 
       android: dependencies.preflightRunners.android ?? (config.android ? createAndroidPreflightRunner(config) : undefined),
       ios: dependencies.preflightRunners.ios ?? (config.ios ? createIOSPreflightRunner(config) : undefined),
     },
-    writeStdout: dependencies.writeStdout,
+    writeIntro: dependencies.writeIntro,
+    writeSummary: dependencies.writeSummary,
   }
 }
 
