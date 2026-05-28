@@ -71,6 +71,23 @@ export { IOSInfoPlistMutationError, ensureInfoPlist } from './platforms/ios/plis
 export type { EnsureInfoPlistOptions, EnsureInfoPlistResult } from './platforms/ios/plist'
 export { IOSPodfileMutationError, ensurePodfileBlock } from './platforms/ios/podfile'
 export type { EnsurePodfileBlockOptions, EnsurePodfileBlockResult } from './platforms/ios/podfile'
+export {
+  ensureFrameworksGroup,
+  ensureMainGroupChild,
+  ensureProductsGroup,
+  getApplicationTargets,
+  getTargetBuildConfigurations,
+  getTargetBuildPhases,
+  IOSXcodeProjectError,
+  openIOSXcodeProject,
+  saveIOSXcodeProject,
+} from './platforms/ios/xcode'
+export type {
+  IOSXcodeProjectContext,
+  IOSXcodeTargetBuildConfigurations,
+  IOSXcodeTargetBuildPhases,
+  IOSXcodeTargetContext,
+} from './platforms/ios/xcode'
 export { diffVoltraState } from './state/diff'
 export { getVoltraStatePath, loadVoltraState } from './state/load'
 export { saveVoltraState } from './state/save'

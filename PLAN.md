@@ -791,6 +791,9 @@ Can run in parallel with:
 
 **T21. Implement Xcode project parsing and target discovery helpers**
 
+Status:
+- completed
+
 Deliverables:
 - parse `project.pbxproj` via `@bacons/xcode`
 - identify main app target and required groups/build phases

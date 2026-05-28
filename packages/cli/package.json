@@ -34,7 +34,7 @@
     "cli",
     "widget"
   ],
-  "author": "Sa\u00fal Sharma (https://x.com/saul_sharma), Szymon Chmal (https://x.com/chmalszymon)",
+  "author": "Saúl Sharma (https://x.com/saul_sharma), Szymon Chmal (https://x.com/chmalszymon)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/callstackincubator/voltra.git",
@@ -47,10 +47,11 @@
   "homepage": "https://use-voltra.dev",
   "dependencies": {
     "@babel/core": "^7.27.4",
+    "@bacons/xcode": "^1.0.0-alpha.33",
     "@use-voltra/android": "1.4.1",
     "@use-voltra/ios": "1.4.1",
     "cosmiconfig": "^9.0.0",
-    "xml2js": "^0.6.2",
-    "vd-tool": "^4.0.2"
+    "vd-tool": "^4.0.2",
+    "xml2js": "^0.6.2"
   }
 }
