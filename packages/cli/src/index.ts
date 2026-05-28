@@ -34,6 +34,16 @@ export async function runCli(argv: string[]): Promise<number> {
 }
 
 export { applyVoltra } from './apply'
+export { getRequestedPlatforms, runApplyPreflight } from './apply/preflight'
+export type {
+  ApplyPreflightContext,
+  ApplyPreflightResult,
+  ApplyPreflightRunners,
+  PlatformPreflightFailure,
+  PlatformPreflightResult,
+  PlatformPreflightRunner,
+  PlatformPreflightSuccess,
+} from './apply/preflight'
 export { CLI_EXIT_CODE_FAILURE, CLI_EXIT_CODE_SUCCESS, getApplyHelpText, runApplyCommand } from './commands/apply'
 
 export { CLI_DEFAULTS } from './config/defaults'
