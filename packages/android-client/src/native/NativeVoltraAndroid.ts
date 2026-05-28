@@ -2,10 +2,13 @@ import { TurboModuleRegistry } from 'react-native'
 import type { TurboModule } from 'react-native'
 
 type PreloadImageOptions = Readonly<{
-  url: string
   key: string
+  url?: string
+  svg?: string
   method?: string
   headers?: Readonly<{ [key: string]: string }>
+  width?: number
+  height?: number
 }>
 
 type PreloadImageFailure = Readonly<{

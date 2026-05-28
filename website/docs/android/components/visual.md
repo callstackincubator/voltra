@@ -15,7 +15,7 @@ Displays text content.
 
 ### Image
 
-Displays bitmap images from the asset catalog or base64 encoded data.
+Displays bitmap images from the asset catalog, preloaded runtime cache, or base64 encoded data. SVGs should be rasterized through the image preloading API and referenced by `assetName`.
 
 **Parameters:**
 

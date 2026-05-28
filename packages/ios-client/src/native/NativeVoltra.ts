@@ -60,10 +60,13 @@ type UpdateWidgetOptions = Readonly<{
 }>
 
 type PreloadImageOptions = Readonly<{
-  url: string
   key: string
+  url?: string
+  svg?: string
   method?: string
   headers?: Readonly<{ [key: string]: string }>
+  width?: number
+  height?: number
 }>
 
 type PreloadImageFailure = Readonly<{

@@ -230,9 +230,12 @@ class VoltraModule(
                     .mapNotNull { i -> images.getMap(i) }
                     .map { img ->
                         async {
-                            val url = img.getString("url") ?: return@async Pair(null, "missing url")
                             val key = img.getString("key") ?: return@async Pair(null, "missing key")
+                            val url = if (img.hasKey("url")) img.getString("url") else null
+                            val svg = if (img.hasKey("svg")) img.getString("svg") else null
                             val method = if (img.hasKey("method")) img.getString("method") ?: "GET" else "GET"
+                            val width = if (img.hasKey("width")) img.getDouble("width").toInt() else null
+                            val height = if (img.hasKey("height")) img.getDouble("height").toInt() else null
 
                             @Suppress("UNCHECKED_CAST")
                             val headers =
@@ -242,8 +245,29 @@ class VoltraModule(
                                     null
                                 }
 
-                            val resultKey = imageManager.preloadImage(url, key, method, headers)
-                            if (resultKey != null) Pair(key, null) else Pair(key, "Failed to download image")
+                            try {
+                                if (!svg.isNullOrBlank()) {
+                                    imageManager.preloadSvgImage(
+                                        key = key,
+                                        svg = svg,
+                                        width = width,
+                                        height = height,
+                                    )
+                                } else {
+                                    imageManager.preloadUrlImage(
+                                        key = key,
+                                        url = url ?: throw IllegalArgumentException("Image '$key' must provide either url or svg"),
+                                        method = method,
+                                        headers = headers,
+                                        width = width,
+                                        height = height,
+                                    )
+                                }
+                                Pair(key, null)
+                            } catch (error: Exception) {
+                                Log.e(TAG, "Error preloading image: $key", error)
+                                Pair(key, error.message ?: "Failed to preload image")
+                            }
                         }
                     }.awaitAll()
             }

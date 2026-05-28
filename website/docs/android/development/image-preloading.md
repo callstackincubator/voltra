@@ -7,8 +7,9 @@ Android widgets have limitations when it comes to displaying remote images direc
 The image preloading system on Android works by:
 
 1. Downloading images from URLs to the internal app cache.
-2. Making these images available to Voltra widgets via the `assetName` property.
-3. Providing APIs to reload widgets when new images are ready.
+2. Rasterizing SVG inputs to PNG when needed.
+3. Making these images available to Voltra widgets via the `assetName` property.
+4. Providing APIs to reload widgets when new images are ready.
 
 ## API Reference
 
@@ -16,17 +17,35 @@ The image preloading system on Android works by:
 
 Downloads images to the Android cache for use in Widgets.
 
+Each item must be either a URL preload (`url`) or an SVG preload (`svg`). The TypeScript types express this as a union of two variants:
+
 ```typescript
-type PreloadImageOptions = {
-  url: string // The URL to download the image from
+type PreloadImageUrlOptions = {
   key: string // The assetName to use when referencing this image
+  url: string // URL to download the image from
   method?: 'GET' | 'POST' | 'PUT' // HTTP method (default: 'GET')
   headers?: Record<string, string> // Optional HTTP headers
+  width?: number
+  height?: number
+}
+
+type PreloadImageSvgOptions = {
+  key: string // The assetName to use when referencing this image
+  svg: string // Inline SVG markup to rasterize and cache as PNG
+  width?: number // Typically required for SVG rasterization (see native errors if omitted)
+  height?: number
+}
+
+type PreloadImageOptions = PreloadImageUrlOptions | PreloadImageSvgOptions
+
+type PreloadImageFailure = {
+  key: string
+  error: string
 }
 
 type PreloadImagesResult = {
   succeeded: string[] // Keys of successfully downloaded images
-  failed: { key: string; error: string }[] // Failed downloads with error messages
+  failed: PreloadImageFailure[] // Failed downloads with error messages
 }
 ```
 
@@ -41,9 +60,15 @@ const result = await preloadImages([
     key: 'current-album',
     headers: { Authorization: 'Bearer token' },
   },
+  {
+    key: 'status-icon-active',
+    svg: '<svg viewBox="0 0 24 24"><path fill="#34C759" d="..." /></svg>',
+    width: 24,
+    height: 24,
+  },
 ])
 
-if (result.succeeded.includes('current-album')) {
+if (result.succeeded.includes('status-icon-active')) {
   // Images are ready to be used in widgets
 }
 ```

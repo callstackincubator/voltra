@@ -51,6 +51,7 @@ android {
   }
 
   testOptions {
+    unitTests.includeAndroidResources = true
     unitTests.all {
       testLogging {
         events "passed", "failed", "skipped"
@@ -88,6 +89,9 @@ dependencies {
 
   // Kotlinx Serialization
   implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3"
+
+  // SVG rasterization for runtime image preloading
+  implementation "com.caverock:androidsvg-aar:1.4"
 
   // Unit tests
   testImplementation "junit:junit:4.13.2"
