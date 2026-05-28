@@ -853,6 +853,9 @@ Can run in parallel with:
 
 **T24. Write CLI docs and usage examples**
 
+Status:
+- completed
+
 Deliverables:
 - document config file locations
 - document `voltra apply`
