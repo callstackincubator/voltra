@@ -511,7 +511,7 @@ function generateAppIntentStruct(widget: WidgetConfig): string {
 
   return dedent`
     @available(iOS 17.0, *)
-    private struct ${intentName}: WidgetConfigurationIntent {
+    struct ${intentName}: WidgetConfigurationIntent {
       static var title: LocalizedStringResource = "${intentTitle}"
 
     ${paramDecls}

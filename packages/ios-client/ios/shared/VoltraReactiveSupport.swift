@@ -12,7 +12,16 @@ public enum VoltraReactiveRenderer {
     guard let data = resolvedJSON.data(using: .utf8),
           let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let familyContent = root[familyKey(family)] ?? root["systemSmall"],
-          let familyData = try? JSONSerialization.data(withJSONObject: familyContent),
+          var reconstructed = familyContent as? [String: Any]
+    else { return .empty }
+
+    // Mirror VoltraHomeWidget.reconstructWithSharedData: copy the shared stylesheet ("s")
+    // and shared elements ("e") into the family-specific object so VoltraNode.parse can
+    // resolve style index references and element deduplication.
+    if let stylesheet = root["s"] { reconstructed["s"] = stylesheet }
+    if let elements = root["e"] { reconstructed["e"] = elements }
+
+    guard let familyData = try? JSONSerialization.data(withJSONObject: reconstructed),
           let familyStr = String(data: familyData, encoding: .utf8),
           let jsonValue = try? JSONValue.parse(from: familyStr)
     else { return .empty }
