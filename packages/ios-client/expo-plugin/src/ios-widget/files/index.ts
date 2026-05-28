@@ -33,10 +33,12 @@ export interface GenerateWidgetExtensionFilesProps {
 function copyRendererBundle(targetPath: string, projectRoot: string): void {
   const dest = path.join(targetPath, 'ios-renderer.js')
   const candidates = [
-    // Standard npm install location
+    // Standard npm install in the project
     path.join(projectRoot, 'node_modules', '@use-voltra', 'ios-renderer', 'bundle', 'ios-renderer.js'),
-    // Monorepo workspace (packages/ sibling)
-    path.join(projectRoot, '..', '..', 'packages', 'ios-renderer', 'bundle', 'ios-renderer.js'),
+    // Monorepo: workspace root node_modules (one level above the app)
+    path.join(projectRoot, '..', 'node_modules', '@use-voltra', 'ios-renderer', 'bundle', 'ios-renderer.js'),
+    // Monorepo: packages/ built locally (bundle/ output)
+    path.join(projectRoot, '..', 'packages', 'ios-renderer', 'bundle', 'ios-renderer.js'),
   ]
 
   for (const src of candidates) {
