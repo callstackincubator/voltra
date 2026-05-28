@@ -511,6 +511,9 @@ Can run in parallel with:
 
 **T9. Implement Voltra state load/save/diff**
 
+Status:
+- completed
+
 Deliverables:
 - load `.voltra/state.json` if present
 - validate minimal schema
@@ -530,6 +533,9 @@ Can run in parallel with:
 - T11
 
 **T10. Implement apply preflight orchestration**
+
+Status:
+- completed
 
 Deliverables:
 - gather requested platforms

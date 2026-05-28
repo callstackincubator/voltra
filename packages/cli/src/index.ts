@@ -33,7 +33,8 @@ export async function runCli(argv: string[]): Promise<number> {
   }
 }
 
-export { applyVoltra } from './apply'
+export { applyVoltra, runApplyPipeline } from './apply'
+export type { ApplyDependencies, ApplyOptions, ApplyResult, PlatformApplyContext, PlatformApplyResult, PlatformApplyRunner } from './apply'
 export { getRequestedPlatforms, runApplyPreflight } from './apply/preflight'
 export type {
   ApplyPreflightContext,

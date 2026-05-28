@@ -27,7 +27,7 @@ export async function runApplyCommand(argv: string[]): Promise<number> {
   const result = await applyVoltra(parsed.options)
 
   if (result.exitCode !== CLI_EXIT_CODE_SUCCESS && result.errorMessage) {
-    process.stderr.write(`${formatError(result.errorMessage)}\n`)
+    process.stderr.write(`${formatCliMessage(result.errorMessage)}\n`)
   }
 
   return result.exitCode
@@ -109,9 +109,13 @@ function parsePlatform(value: string): VoltraPlatform {
 
 export function formatCommandError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error)
-  return formatError(message)
+  return formatCliMessage(message)
 }
 
 export function getApplyHelpText(): string {
   return APPLY_HELP_TEXT
+}
+
+function formatCliMessage(message: string): string {
+  return message.startsWith('[voltra] ') ? message : formatError(message)
 }
