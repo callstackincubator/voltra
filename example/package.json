@@ -5,8 +5,8 @@
   "scripts": {
     "clean": "rm -rf .expo ios",
     "start": "expo start --dev-client --clear",
-    "prebuild": "expo prebuild",
-    "prebuild:clean": "expo prebuild --clean",
+    "prebuild": "npm run build -w @use-voltra/expo-plugin && expo prebuild",
+    "prebuild:clean": "npm run build -w @use-voltra/expo-plugin && expo prebuild --clean",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
