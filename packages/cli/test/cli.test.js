@@ -11,6 +11,12 @@ function loadCliModule() {
   return require(path.join(packageRoot, 'build/cjs/index.js'))
 }
 
+function writeFakePackage(projectRoot, packageName) {
+  const packagePath = path.join(projectRoot, 'node_modules', ...packageName.split('/'), 'package.json')
+  fs.mkdirSync(path.dirname(packagePath), { recursive: true })
+  fs.writeFileSync(packagePath, `${JSON.stringify({ name: packageName, version: '0.0.0' }, null, 2)}\n`)
+}
+
 test('apply help documents the yes flag', () => {
   const { getApplyHelpText } = loadCliModule()
   const helpText = getApplyHelpText()
@@ -83,7 +89,8 @@ test('ios preflight reports missing optional platform package', async () => {
   })({ requestedPlatforms: ['ios'] })
 
   assert.equal(result.platform, 'ios')
-  assert.match(result.issues[0].message, /@use-voltra\/ios is not installed/)
+  assert.match(result.issues[0].message, /@use-voltra\/ios/)
+  assert.match(result.issues[0].message, /@use-voltra\/ios-client/)
   assert.match(result.issues[0].message, /ios config block/)
 })
 
@@ -100,6 +107,74 @@ test('android preflight reports missing optional platform package', async () => 
   })({ requestedPlatforms: ['android'] })
 
   assert.equal(result.platform, 'android')
-  assert.match(result.issues[0].message, /@use-voltra\/android is not installed/)
+  assert.match(result.issues[0].message, /@use-voltra\/android/)
+  assert.match(result.issues[0].message, /@use-voltra\/android-client/)
   assert.match(result.issues[0].message, /android config block/)
+})
+
+test('ios preflight reports missing client package when renderer is installed', async () => {
+  const { createIOSPreflightRunner } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  fs.writeFileSync(path.join(tempDir, 'package.json'), `${JSON.stringify({ private: true }, null, 2)}\n`)
+  writeFakePackage(tempDir, '@use-voltra/ios')
+
+  const result = await createIOSPreflightRunner({
+    projectRoot: tempDir,
+    ios: {
+      project: {},
+    },
+  })({ requestedPlatforms: ['ios'] })
+
+  assert.equal(result.platform, 'ios')
+  assert.match(result.issues[0].message, /@use-voltra\/ios-client/)
+  assert.doesNotMatch(result.issues[0].message, /@use-voltra\/ios and/)
+})
+
+test('android preflight reports missing client package when renderer is installed', async () => {
+  const { createAndroidPreflightRunner } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  fs.writeFileSync(path.join(tempDir, 'package.json'), `${JSON.stringify({ private: true }, null, 2)}\n`)
+  writeFakePackage(tempDir, '@use-voltra/android')
+
+  const result = await createAndroidPreflightRunner({
+    projectRoot: tempDir,
+    android: {
+      project: {},
+    },
+  })({ requestedPlatforms: ['android'] })
+
+  assert.equal(result.platform, 'android')
+  assert.match(result.issues[0].message, /@use-voltra\/android-client/)
+  assert.doesNotMatch(result.issues[0].message, /@use-voltra\/android and/)
+})
+
+test('android config normalization rejects missing widget dimensions', () => {
+  const { VoltraConfigNormalizationError, normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+
+  assert.throws(
+    () => {
+      normalizeVoltraConfig({
+        configDir: tempDir,
+        configPath: path.join(tempDir, 'voltra.config.json'),
+        config: {
+          android: {
+            widgets: [
+              {
+                id: 'portfolio',
+                displayName: 'Portfolio',
+                description: 'Track holdings',
+                targetCellHeight: 2,
+              },
+            ],
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.ok(error instanceof VoltraConfigNormalizationError)
+      assert.match(error.message, /android\.widgets\[portfolio\]\.targetCellWidth must be a positive integer/)
+      return true
+    }
+  )
 })

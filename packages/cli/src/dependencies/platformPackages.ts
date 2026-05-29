@@ -8,14 +8,50 @@ const PLATFORM_PACKAGE_NAMES: Record<VoltraPlatform, string> = {
   ios: '@use-voltra/ios',
 }
 
+const PLATFORM_CLIENT_PACKAGE_NAMES: Record<VoltraPlatform, string> = {
+  android: '@use-voltra/android-client',
+  ios: '@use-voltra/ios-client',
+}
+
 export function getPlatformPackageName(platform: VoltraPlatform): string {
   return PLATFORM_PACKAGE_NAMES[platform]
 }
 
-export function isPlatformPackageInstalled(projectRoot: string, platform: VoltraPlatform): boolean {
-  const projectRequire = createProjectRequire(projectRoot)
-  const packageName = getPlatformPackageName(platform)
+export function getPlatformClientPackageName(platform: VoltraPlatform): string {
+  return PLATFORM_CLIENT_PACKAGE_NAMES[platform]
+}
 
+export function isPlatformPackageInstalled(projectRoot: string, platform: VoltraPlatform): boolean {
+  return getMissingPlatformPackages(projectRoot, platform).length === 0
+}
+
+export function getMissingPlatformPackages(projectRoot: string, platform: VoltraPlatform): string[] {
+  const projectRequire = createProjectRequire(projectRoot)
+  const packageNames = getRequiredPlatformPackageNames(platform)
+
+  return packageNames.filter((packageName) => !canResolvePackage(projectRequire, packageName))
+}
+
+export function requirePlatformPackage<TPackage>(projectRoot: string, platform: VoltraPlatform): TPackage {
+  return createProjectRequire(projectRoot)(getPlatformPackageName(platform)) as TPackage
+}
+
+export function getMissingPlatformPackageMessage(
+  platform: VoltraPlatform,
+  packageNames = getRequiredPlatformPackageNames(platform)
+): string {
+  const packageLabel = packageNames.length === 1 ? 'package' : 'packages'
+  const verb = packageNames.length === 1 ? 'is' : 'are'
+  const pronoun = packageNames.length === 1 ? 'it' : 'them'
+
+  return `Required ${packageLabel} ${formatPackageList(packageNames)} ${verb} not installed in the app project. Install ${pronoun} because voltra.config includes a ${platform} config block.`
+}
+
+function getRequiredPlatformPackageNames(platform: VoltraPlatform): string[] {
+  return [getPlatformPackageName(platform), getPlatformClientPackageName(platform)]
+}
+
+function canResolvePackage(projectRequire: NodeRequire, packageName: string): boolean {
   try {
     projectRequire.resolve(`${packageName}/package.json`)
     return true
@@ -24,13 +60,12 @@ export function isPlatformPackageInstalled(projectRoot: string, platform: Voltra
   }
 }
 
-export function requirePlatformPackage<TPackage>(projectRoot: string, platform: VoltraPlatform): TPackage {
-  return createProjectRequire(projectRoot)(getPlatformPackageName(platform)) as TPackage
-}
+function formatPackageList(packageNames: string[]): string {
+  if (packageNames.length === 1) {
+    return packageNames[0]
+  }
 
-export function getMissingPlatformPackageMessage(platform: VoltraPlatform): string {
-  const packageName = getPlatformPackageName(platform)
-  return `Required package ${packageName} is not installed in the app project. Install ${packageName} because voltra.config includes a ${platform} config block.`
+  return `${packageNames.slice(0, -1).join(', ')} and ${packageNames[packageNames.length - 1]}`
 }
 
 function createProjectRequire(projectRoot: string): NodeRequire {

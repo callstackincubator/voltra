@@ -56,6 +56,18 @@ function assertOptionalBoolean(value: unknown, context: string): asserts value i
   }
 }
 
+function assertPositiveInteger(value: unknown, context: string): asserts value is number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    throw new VoltraConfigNormalizationError(`${context} must be a positive integer`)
+  }
+}
+
+function assertOptionalPositiveInteger(value: unknown, context: string): asserts value is number | undefined {
+  if (value !== undefined) {
+    assertPositiveInteger(value, context)
+  }
+}
+
 function assertNonEmptyString(value: unknown, context: string): asserts value is string {
   if (typeof value !== 'string' || !value.trim()) {
     throw new VoltraConfigNormalizationError(`${context} must be a non-empty string`)
@@ -192,6 +204,10 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
   assertObject(widget, 'android.widgets[]')
   assertNonEmptyString(widget.id, 'android.widgets[].id')
   assertValidWidgetId(widget.id, 'android.widgets[].id')
+  assertPositiveInteger(widget.targetCellWidth, `android.widgets[${widget.id}].targetCellWidth`)
+  assertPositiveInteger(widget.targetCellHeight, `android.widgets[${widget.id}].targetCellHeight`)
+  assertOptionalPositiveInteger(widget.minCellWidth, `android.widgets[${widget.id}].minCellWidth`)
+  assertOptionalPositiveInteger(widget.minCellHeight, `android.widgets[${widget.id}].minCellHeight`)
 
   return {
     ...widget,

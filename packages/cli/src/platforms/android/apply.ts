@@ -1,5 +1,5 @@
 import { discoverAndroidProject } from '../../discovery/android'
-import { getMissingPlatformPackageMessage, isPlatformPackageInstalled } from '../../dependencies/platformPackages'
+import { getMissingPlatformPackageMessage, getMissingPlatformPackages } from '../../dependencies/platformPackages'
 import { VoltraCliError } from '../../reporting/summary'
 
 import { ensureAndroidManifest } from './manifest'
@@ -23,10 +23,12 @@ export function createAndroidPreflightRunner(
       }
     }
 
-    if (!isPlatformPackageInstalled(config.projectRoot, 'android')) {
+    const missingPackages = getMissingPlatformPackages(config.projectRoot, 'android')
+
+    if (missingPackages.length > 0) {
       return {
         platform: 'android',
-        issues: [{ message: getMissingPlatformPackageMessage('android') }],
+        issues: [{ message: getMissingPlatformPackageMessage('android', missingPackages) }],
       }
     }
 

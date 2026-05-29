@@ -1,5 +1,5 @@
 import { discoverIOSProject } from '../../discovery/ios'
-import { getMissingPlatformPackageMessage, isPlatformPackageInstalled } from '../../dependencies/platformPackages'
+import { getMissingPlatformPackageMessage, getMissingPlatformPackages } from '../../dependencies/platformPackages'
 import { VoltraCliError } from '../../reporting/summary'
 
 import { ensureEntitlements } from './entitlements'
@@ -24,10 +24,12 @@ export function createIOSPreflightRunner(config: NormalizedVoltraConfig): Platfo
       }
     }
 
-    if (!isPlatformPackageInstalled(config.projectRoot, 'ios')) {
+    const missingPackages = getMissingPlatformPackages(config.projectRoot, 'ios')
+
+    if (missingPackages.length > 0) {
       return {
         platform: 'ios',
-        issues: [{ message: getMissingPlatformPackageMessage('ios') }],
+        issues: [{ message: getMissingPlatformPackageMessage('ios', missingPackages) }],
       }
     }
 

@@ -556,7 +556,7 @@ function createSwiftLabelExpression(
   }
 
   const key = `voltra_widget_${widgetId}_${field}`
-  const defaultEnglish = escapeSwiftString(widgetLabelEnglish(label))
+  const defaultEnglish = widgetLabelEnglish(label)
 
   return `Text(LocalizedStringResource(${JSON.stringify(key)}, defaultValue: String.LocalizationValue(${JSON.stringify(
     defaultEnglish
@@ -979,10 +979,6 @@ function readUrlTypes(dict: Record<string, unknown>): Array<{ CFBundleURLSchemes
       return schemes.length > 0 ? { CFBundleURLSchemes: schemes } : undefined
     })
     .filter((entry): entry is { CFBundleURLSchemes: string[] } => entry !== undefined)
-}
-
-function escapeSwiftString(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
 }
 
 function getSwiftRawStringDelimiter(value: string): string {
