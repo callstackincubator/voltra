@@ -44,7 +44,9 @@ export function getMissingPlatformPackageMessage(
   const verb = packageNames.length === 1 ? 'is' : 'are'
   const pronoun = packageNames.length === 1 ? 'it' : 'them'
 
-  return `Required ${packageLabel} ${formatPackageList(packageNames)} ${verb} not installed in the app project. Install ${pronoun} because voltra.config includes a ${platform} config block.`
+  return `Required ${packageLabel} ${formatPackageList(
+    packageNames
+  )} ${verb} not installed in the app project. Install ${pronoun} because voltra.config includes a ${platform} config block.`
 }
 
 function getRequiredPlatformPackageNames(platform: VoltraPlatform): string[] {
