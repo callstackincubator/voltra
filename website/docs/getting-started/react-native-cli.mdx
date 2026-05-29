@@ -1,0 +1,113 @@
+import { PackageManagerTabs } from '@rspress/core/theme'
+
+# React Native CLI Projects
+
+:::warning Experimental
+Voltra support for React Native CLI projects is experimental. Feedback is welcome in [GitHub issues](https://github.com/callstackincubator/voltra/issues).
+:::
+
+Voltra fully supports React Native CLI projects through the `voltra` CLI. Instead of relying on Expo config plugins, `voltra apply` updates the native project for you: it modifies the files Voltra needs, generates new Voltra-owned files, and cleans up outdated generated files from previous runs.
+
+## Installation
+
+Install the same native Voltra packages you would use in Expo for the platforms you support, then add `voltra` as a dev dependency.
+
+### iOS
+
+<PackageManagerTabs command="install @use-voltra/ios @use-voltra/ios-client" />
+
+### Android
+
+<PackageManagerTabs command="install @use-voltra/android @use-voltra/android-client" />
+
+### Voltra CLI
+
+<PackageManagerTabs command="install --save-dev voltra" />
+
+Then create a `voltra.config.ts` file. Most properties under `ios` and `android` are the same as the Expo config equivalents, so use the existing platform docs for the shared configuration:
+
+- [iOS Expo config options](/ios/api/plugin-configuration)
+- [Android Expo config options](/android/api/plugin-configuration)
+
+Minimal example:
+
+```ts
+import type { VoltraConfig } from 'voltra'
+
+const config: VoltraConfig = {
+  ios: {
+    // Commonly needed on iOS so the app and extension can share data.
+    groupIdentifier: 'group.com.example.app',
+    widgets: [
+      {
+        // Basic widget identity fields.
+        id: 'portfolio',
+        displayName: 'Portfolio',
+        description: 'Track holdings',
+        // Optional, but commonly used for build-time initial widget content.
+        initialStatePath: './widgets/portfolio.ios.tsx',
+      },
+    ],
+  },
+  android: {
+    widgets: [
+      {
+        id: 'portfolio',
+        displayName: 'Portfolio',
+        description: 'Track holdings',
+        // Required on Android.
+        targetCellWidth: 2,
+        targetCellHeight: 2,
+        initialStatePath: './widgets/portfolio.android.tsx',
+      },
+    ],
+  },
+}
+
+export default config
+```
+
+Once the config is in place, apply the native project changes:
+
+<PackageManagerTabs
+  command={{
+    npm: 'npx voltra apply',
+    yarn: 'yarn voltra apply',
+    pnpm: 'pnpm voltra apply',
+    bun: 'bunx voltra apply',
+  }}
+/>
+
+## Configuration
+
+Most properties under `ios` and `android` use the same names as the Expo config equivalents:
+
+- [iOS Expo config options](/ios/api/plugin-configuration)
+- [Android Expo config options](/android/api/plugin-configuration)
+
+The properties below are specific to the Voltra CLI:
+
+| Property | Purpose |
+| --- | --- |
+| `projectRoot` | Overrides the root directory Voltra should treat as the native project root. Useful when the config file does not live at the app root. |
+| `ios.userImagesPath` | Overrides the directory for user-provided iOS widget images. |
+| `ios.project` | Lets you override iOS project discovery when the app does not use the standard React Native layout. Supports fields such as `rootDir`, `xcodeprojPath`, `mainTargetName`, `infoPlistPath`, `entitlementsPath`, and `podfilePath`. |
+| `android.userImagesPath` | Overrides the directory for user-provided Android widget images. |
+| `android.project` | Lets you override Android project discovery when the app does not use the standard React Native layout. Supports fields such as `rootDir`, `appModuleName`, `manifestPath`, and `packageName`. |
+
+For the full config shape, see [`VoltraConfig` and related types in source](https://github.com/callstackincubator/voltra/blob/main/packages/cli/src/config/types.ts).
+
+## Using Voltra CLI
+
+Every time you change `voltra.config.ts`, reapply the native project changes:
+
+<PackageManagerTabs
+  command={{
+    npm: 'npx voltra apply',
+    yarn: 'yarn voltra apply',
+    pnpm: 'pnpm voltra apply',
+    bun: 'bunx voltra apply',
+  }}
+/>
+
+The JSX APIs and runtime APIs are the same as in the rest of the Voltra docs. Once `voltra apply` has set up your native project, continue with the platform guides for [iOS](/ios/introduction) and [Android](/android/introduction).

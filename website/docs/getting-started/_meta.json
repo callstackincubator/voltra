@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "react-native-cli",
+    "label": "React Native CLI"
+  },
+  {
+    "type": "file",
     "name": "migration-v2",
     "label": "Migration to v2"
   },
