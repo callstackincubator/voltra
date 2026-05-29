@@ -132,7 +132,6 @@ export function generateCodegenWidgetCode(widget: WidgetConfig, prerenderedPaylo
     ``,
     `struct VoltraCodegenView_${safeId}: View {`,
     `  let entry: VoltraCodegenEntry_${safeId}`,
-    `  @Environment(${kp('colorScheme')}) private var colorScheme`,
     `  @Environment(${kp('widgetFamily')}) private var widgetFamily`,
     ``,
     `  var body: some View {`,
@@ -328,14 +327,7 @@ function fontWeightSwift(fw: string): string {
 // ============================================================================
 
 function colorExpr(value: string): string {
-  const ld = parseLightDark(value)
-  if (ld) return `colorScheme == .dark ? ${hexColor(ld.dark)} : ${hexColor(ld.light)}`
   return hexColor(value)
-}
-
-function parseLightDark(value: string): { light: string; dark: string } | null {
-  const m = value.match(/^light-dark\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)$/)
-  return m ? { light: m[1]!, dark: m[2]! } : null
 }
 
 function hexColor(hex: string): string {
