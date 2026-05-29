@@ -69,3 +69,37 @@ test('unknown commands are reported once', () => {
     }
   )
 })
+
+test('ios preflight reports missing optional platform package', async () => {
+  const { createIOSPreflightRunner } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  fs.writeFileSync(path.join(tempDir, 'package.json'), `${JSON.stringify({ private: true }, null, 2)}\n`)
+
+  const result = await createIOSPreflightRunner({
+    projectRoot: tempDir,
+    ios: {
+      project: {},
+    },
+  })({ requestedPlatforms: ['ios'] })
+
+  assert.equal(result.platform, 'ios')
+  assert.match(result.issues[0].message, /@use-voltra\/ios is not installed/)
+  assert.match(result.issues[0].message, /ios config block/)
+})
+
+test('android preflight reports missing optional platform package', async () => {
+  const { createAndroidPreflightRunner } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  fs.writeFileSync(path.join(tempDir, 'package.json'), `${JSON.stringify({ private: true }, null, 2)}\n`)
+
+  const result = await createAndroidPreflightRunner({
+    projectRoot: tempDir,
+    android: {
+      project: {},
+    },
+  })({ requestedPlatforms: ['android'] })
+
+  assert.equal(result.platform, 'android')
+  assert.match(result.issues[0].message, /@use-voltra\/android is not installed/)
+  assert.match(result.issues[0].message, /android config block/)
+})

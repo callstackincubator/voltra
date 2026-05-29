@@ -5,9 +5,9 @@ import vm from 'node:vm'
 import { createRequire } from 'node:module'
 
 import * as babel from '@babel/core'
-import { renderAndroidWidgetToString } from '@use-voltra/android'
 import { vdConvert } from 'vd-tool'
 
+import { requirePlatformPackage } from '../../dependencies/platformPackages'
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
@@ -15,7 +15,6 @@ import { VoltraCliError } from '../../reporting/summary'
 import type { AndroidProjectDiscovery } from '../../discovery/android'
 import type { NormalizedAndroidWidgetConfig, NormalizedVoltraAndroidConfig, WidgetLabel } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
-import type { AndroidWidgetVariants } from '@use-voltra/android'
 
 const MODULE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '']
 const VALID_DRAWABLE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.xml', '.svg'])
@@ -49,7 +48,11 @@ export class AndroidGeneratedFilesError extends VoltraCliError {
   }
 }
 
-type AndroidWidgetRenderer = typeof renderAndroidWidgetToString
+type AndroidWidgetVariants = Record<string, unknown>
+type AndroidWidgetRenderer = (variants: AndroidWidgetVariants) => string
+interface AndroidPlatformPackage {
+  renderAndroidWidgetToString?: unknown
+}
 
 type PrerenderedWidgetStates = Map<string, Map<string, string>>
 
@@ -350,7 +353,7 @@ async function generateAndroidInitialStates(
       warnings: [],
     }
   }
-  const prerenderedStates = await prerenderWidgetStates(projectRoot, prerenderableWidgets, renderAndroidWidgetToString)
+  const prerenderedStates = await prerenderWidgetStates(projectRoot, prerenderableWidgets, loadAndroidWidgetRenderer(projectRoot))
 
   if (prerenderedStates.size === 0) {
     return {
@@ -458,6 +461,16 @@ function evaluateWidgetModule(projectRoot: string, filePath: string): AndroidWid
   }
 
   return widgetVariants as AndroidWidgetVariants
+}
+
+function loadAndroidWidgetRenderer(projectRoot: string): AndroidWidgetRenderer {
+  const androidPackage = requirePlatformPackage<AndroidPlatformPackage>(projectRoot, 'android')
+
+  if (typeof androidPackage.renderAndroidWidgetToString !== 'function') {
+    throw new AndroidGeneratedFilesError('Installed @use-voltra/android package does not export renderAndroidWidgetToString.')
+  }
+
+  return androidPackage.renderAndroidWidgetToString as AndroidWidgetRenderer
 }
 
 function transpileWidgetModule(projectRoot: string, filePath: string, projectRequire: NodeRequire): string {

@@ -1,4 +1,5 @@
 import { discoverAndroidProject } from '../../discovery/android'
+import { getMissingPlatformPackageMessage, isPlatformPackageInstalled } from '../../dependencies/platformPackages'
 import { VoltraCliError } from '../../reporting/summary'
 
 import { ensureAndroidManifest } from './manifest'
@@ -17,6 +18,13 @@ export function createAndroidPreflightRunner(config: NormalizedVoltraConfig): Pl
       return {
         platform: 'android',
         issues: [{ message: 'Android config is missing.' }],
+      }
+    }
+
+    if (!isPlatformPackageInstalled(config.projectRoot, 'android')) {
+      return {
+        platform: 'android',
+        issues: [{ message: getMissingPlatformPackageMessage('android') }],
       }
     }
 

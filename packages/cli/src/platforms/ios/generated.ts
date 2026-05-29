@@ -5,8 +5,8 @@ import vm from 'node:vm'
 import { createRequire } from 'node:module'
 
 import * as babel from '@babel/core'
-import { renderWidgetToString } from '@use-voltra/ios'
 
+import { requirePlatformPackage } from '../../dependencies/platformPackages'
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
@@ -16,7 +16,6 @@ import { resolveIOSWidgetTargetName } from './targetName'
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { IOSWidgetFamily, NormalizedIOSWidgetConfig, NormalizedVoltraIOSConfig, WidgetLabel } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
-import type { WidgetVariants } from '@use-voltra/ios'
 
 const MODULE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '']
 const VALID_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg'])
@@ -119,7 +118,11 @@ interface MainAppMetadata {
   urlTypes?: Array<{ CFBundleURLSchemes: string[] }>
 }
 
-type IOSWidgetRenderer = typeof renderWidgetToString
+type WidgetVariants = Record<string, unknown>
+type IOSWidgetRenderer = (variants: WidgetVariants) => string
+interface IOSPlatformPackage {
+  renderWidgetToString?: unknown
+}
 type PrerenderedWidgetStates = Map<string, Map<string, string>>
 
 export class IOSGeneratedFilesError extends VoltraCliError {
@@ -385,7 +388,7 @@ async function generateInitialStatesSwift(projectRoot: string, widgets: Normaliz
     ].join('\n')
   }
 
-  const prerenderedStates = await prerenderWidgetStates(projectRoot, prerenderableWidgets, renderWidgetToString)
+  const prerenderedStates = await prerenderWidgetStates(projectRoot, prerenderableWidgets, loadIOSWidgetRenderer(projectRoot))
   const widgetEntries = [...prerenderedStates.entries()]
     .map(([widgetId, localeMap]) => {
       const localeEntries = [...localeMap.entries()]
@@ -602,6 +605,16 @@ function evaluateWidgetModule(projectRoot: string, filePath: string): WidgetVari
   }
 
   return widgetVariants as WidgetVariants
+}
+
+function loadIOSWidgetRenderer(projectRoot: string): IOSWidgetRenderer {
+  const iosPackage = requirePlatformPackage<IOSPlatformPackage>(projectRoot, 'ios')
+
+  if (typeof iosPackage.renderWidgetToString !== 'function') {
+    throw new IOSGeneratedFilesError('Installed @use-voltra/ios package does not export renderWidgetToString.')
+  }
+
+  return iosPackage.renderWidgetToString as IOSWidgetRenderer
 }
 
 function transpileWidgetModule(projectRoot: string, filePath: string, projectRequire: NodeRequire): string {

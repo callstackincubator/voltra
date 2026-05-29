@@ -1,4 +1,5 @@
 import { discoverIOSProject } from '../../discovery/ios'
+import { getMissingPlatformPackageMessage, isPlatformPackageInstalled } from '../../dependencies/platformPackages'
 import { VoltraCliError } from '../../reporting/summary'
 
 import { ensureEntitlements } from './entitlements'
@@ -20,6 +21,13 @@ export function createIOSPreflightRunner(config: NormalizedVoltraConfig): Platfo
       return {
         platform: 'ios',
         issues: [{ message: 'iOS config is missing.' }],
+      }
+    }
+
+    if (!isPlatformPackageInstalled(config.projectRoot, 'ios')) {
+      return {
+        platform: 'ios',
+        issues: [{ message: getMissingPlatformPackageMessage('ios') }],
       }
     }
 

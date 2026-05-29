@@ -49,11 +49,21 @@
     "@babel/core": "^7.27.4",
     "@bacons/xcode": "^1.0.0-alpha.33",
     "@clack/prompts": "^1.0.0-alpha.5",
-    "@use-voltra/android": "1.4.1",
-    "@use-voltra/ios": "1.4.1",
     "commander": "^12.1.0",
     "cosmiconfig": "^9.0.0",
     "vd-tool": "^4.0.2",
     "xml2js": "^0.6.2"
+  },
+  "peerDependencies": {
+    "@use-voltra/android": "*",
+    "@use-voltra/ios": "*"
+  },
+  "peerDependenciesMeta": {
+    "@use-voltra/android": {
+      "optional": true
+    },
+    "@use-voltra/ios": {
+      "optional": true
+    }
   }
 }
