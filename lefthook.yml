@@ -1,0 +1,7 @@
+pre-commit:
+  jobs:
+    - name: format-js
+      glob:
+        - '*.{js,jsx,ts,tsx,json,md,mdx,yml,yaml}'
+      run: npm run format:js:fix:staged -- {staged_files}
+      stage_fixed: true
