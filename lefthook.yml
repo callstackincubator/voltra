@@ -17,3 +17,15 @@ pre-commit:
         - 'packages/ios-client/ios/**/*.swift'
       run: npm run format:swift:fix:staged -- {staged_files}
       stage_fixed: true
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: test-js
+      run: npm run test:js:pre-push
+
+    - name: test-kotlin
+      run: npm run test:kotlin:pre-push
+
+    - name: test-swift
+      run: npm run test:swift:pre-push

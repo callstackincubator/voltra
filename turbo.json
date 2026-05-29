@@ -9,6 +9,12 @@
       "dependsOn": ["^build", "build"],
       "cache": false
     },
+    "test:kotlin": {
+      "cache": false
+    },
+    "test:swift": {
+      "cache": false
+    },
     "lint": {},
     "lint:libOnly": {},
     "typecheck": {
