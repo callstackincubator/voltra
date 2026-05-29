@@ -74,13 +74,9 @@ public struct VoltraText: VoltraView {
       .kerning(textStyle.letterSpacing)
       .underline(textStyle.decoration == .underline || textStyle.decoration == .underlineLineThrough)
       .strikethrough(textStyle.decoration == .lineThrough || textStyle.decoration == .underlineLineThrough)
+      // These technically work on View, but good to keep close
       .font(font)
-      .foregroundStyle({
-        if let ld = textStyle.lightDarkColors {
-          return AnyShapeStyle(LightDarkForeground(light: ld.light, dark: ld.dark))
-        }
-        return AnyShapeStyle(resolvedColor)
-      }())
+      .foregroundColor(resolvedColor)
       .multilineTextAlignment(alignment)
       .lineSpacing(textStyle.lineSpacing)
       .voltraIfLet(params.numberOfLines) { view, numberOfLines in

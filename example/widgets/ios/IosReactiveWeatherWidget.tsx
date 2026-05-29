@@ -1,13 +1,12 @@
 import { Voltra, appIntentParam } from 'voltra'
 
-// Track 2 PoC — demonstrates reactive widget rendering:
+// Track 2 PoC — demonstrates AppIntent reactivity:
 //   - appIntentParam('city'): user-configurable city name via iOS widget settings
-//   - light-dark() colors: resolved to the device color scheme inside the extension
 //
 // The server renders this JSX to a compact JSON payload that includes the raw
 // template expressions. At render time inside the widget extension, VoltraJSRenderer
-// resolves them against the current device state — no server push required when
-// the user reconfigures the widget or switches dark/light mode.
+// resolves them against the current AppIntent parameters — no server push required
+// when the user reconfigures the widget.
 
 export const IosReactiveWeatherWidget = () => (
   <Voltra.VStack style={{ flex: 1, padding: 16, alignItems: 'flex-start' }}>
@@ -15,7 +14,7 @@ export const IosReactiveWeatherWidget = () => (
       style={{
         fontSize: 22,
         fontWeight: '700',
-        color: 'light-dark(#111111, #eeeeee)',
+        color: 'primary',
       }}
     >
       {appIntentParam('city')}
@@ -23,7 +22,7 @@ export const IosReactiveWeatherWidget = () => (
     <Voltra.Text
       style={{
         fontSize: 14,
-        color: 'light-dark(#666666, #999999)',
+        color: 'primary',
         marginTop: 6,
       }}
     >
@@ -32,7 +31,7 @@ export const IosReactiveWeatherWidget = () => (
     <Voltra.Text
       style={{
         fontSize: 11,
-        color: 'light-dark(#999999, #666666)',
+        color: 'primary',
         marginTop: 8,
       }}
     >

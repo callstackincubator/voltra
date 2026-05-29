@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 enum JSColorParser {
   /// Parses Hex, RGB, RGBA, HSL, HSLA, and named color strings into SwiftUI Color.
@@ -11,12 +10,7 @@ enum JSColorParser {
 
     if trimmed.isEmpty { return nil }
 
-    // 1. light-dark() — adaptive color, resolved natively by UIKit trait system
-    if trimmed.hasPrefix("light-dark(") {
-      return parseLightDark(trimmed)
-    }
-
-    // 2. Hex (with or without #)
+    // 1. Hex (with or without #)
     if trimmed.hasPrefix("#") {
       return parseHex(trimmed)
     }
@@ -191,58 +185,6 @@ enum JSColorParser {
     default:
       return nil
     }
-  }
-
-  // MARK: - light-dark() Parser
-
-  /// Splits a `light-dark(<light>, <dark>)` string into its two component strings.
-  private static func splitLightDark(_ trimmed: String) -> (lightStr: String, darkStr: String)? {
-    let prefix = "light-dark("
-    guard trimmed.hasPrefix(prefix) else { return nil }
-    let inner = String(trimmed.dropFirst(prefix.count))
-    guard inner.hasSuffix(")") else { return nil }
-    let body = String(inner.dropLast())
-
-    var depth = 0
-    var commaIndex: String.Index? = nil
-    for idx in body.indices {
-      switch body[idx] {
-      case "(": depth += 1
-      case ")": depth -= 1
-      case "," where depth == 0 && commaIndex == nil: commaIndex = idx
-      default: break
-      }
-    }
-
-    guard let comma = commaIndex else { return nil }
-    return (
-      lightStr: String(body[..<comma]).trimmingCharacters(in: .whitespacesAndNewlines),
-      darkStr: String(body[body.index(after: comma)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-    )
-  }
-
-  /// Returns both Color values for a `light-dark()` string so the caller can resolve
-  /// via `@Environment(\.colorScheme)` in a live SwiftUI ViewModifier.
-  static func parseLightDarkComponents(_ value: Any?) -> (light: Color, dark: Color)? {
-    guard let string = value as? String else { return nil }
-    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    guard let split = splitLightDark(trimmed) else { return nil }
-    guard let lightColor = parse(split.lightStr),
-          let darkColor = parse(split.darkStr) else { return nil }
-    return (light: lightColor, dark: darkColor)
-  }
-
-  /// Fallback used by `parse()` for non-text contexts (e.g. borders, backgrounds).
-  /// Uses UIColor dynamic provider — best-effort; prefer parseLightDarkComponents()
-  /// + @Environment(\.colorScheme) for text foreground colors.
-  private static func parseLightDark(_ string: String) -> Color? {
-    guard let split = splitLightDark(string),
-          let lightC = parseColorComponents(split.lightStr),
-          let darkC = parseColorComponents(split.darkStr) else { return nil }
-    return Color(uiColor: UIColor { traitCollection in
-      let c = traitCollection.userInterfaceStyle == .dark ? darkC : lightC
-      return UIColor(red: c.red, green: c.green, blue: c.blue, alpha: c.alpha)
-    })
   }
 
   // MARK: - Hex Parser

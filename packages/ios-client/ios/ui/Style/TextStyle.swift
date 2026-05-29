@@ -2,7 +2,6 @@ import SwiftUI
 
 struct TextStyle {
   var color: Color = .primary
-  var lightDarkColors: (light: Color, dark: Color)? = nil
   var usesPrimaryColorInReducedPresentation = false
   var fontSize: CGFloat = 17
   var fontWeight: Font.Weight = .regular
@@ -14,19 +13,6 @@ struct TextStyle {
   var letterSpacing: CGFloat = 0 // Kerning
   var lineHeight: CGFloat? // Used for calculating lineSpacing
   var fontVariant: Set<FontVariant> = []
-}
-
-/// A ShapeStyle whose resolve(in:) is called by SwiftUI's rendering engine at draw time,
-/// not during body evaluation. This is the correct hook for adaptive colors in WidgetKit
-/// because the rendering engine passes the correct dark/light environment to resolve(in:)
-/// even though @Environment(\.colorScheme) in body always reads as .light.
-struct LightDarkForeground: ShapeStyle {
-  let light: Color
-  let dark: Color
-
-  func resolve(in environment: EnvironmentValues) -> some ShapeStyle {
-    environment.colorScheme == .dark ? dark : light
-  }
 }
 
 struct TextStyleModifier: ViewModifier {
