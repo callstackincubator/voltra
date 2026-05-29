@@ -256,7 +256,11 @@ class VoltraModule(
                                 } else {
                                     imageManager.preloadUrlImage(
                                         key = key,
-                                        url = url ?: throw IllegalArgumentException("Image '$key' must provide either url or svg"),
+                                        url =
+                                            url
+                                                ?: throw IllegalArgumentException(
+                                                    "Image '$key' must provide either url or svg",
+                                                ),
                                         method = method,
                                         headers = headers,
                                         width = width,

@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": ["ANDROID_HOME"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
