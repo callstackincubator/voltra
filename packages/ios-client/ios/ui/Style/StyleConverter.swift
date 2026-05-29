@@ -153,9 +153,14 @@ enum StyleConverter {
   private static func parseText(_ js: [String: Any]) -> TextStyle {
     var style = TextStyle()
 
-    if let color = JSColorParser.parse(js["color"]) {
+    let colorValue = js["color"]
+    if let colorStr = colorValue as? String,
+       colorStr.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().hasPrefix("light-dark("),
+       let components = JSColorParser.parseLightDarkComponents(colorStr) {
+      style.lightDarkColors = components
+    } else if let color = JSColorParser.parse(colorValue) {
       style.color = color
-      style.usesPrimaryColorInReducedPresentation = JSColorParser.shouldUsePrimaryColorInReducedPresentation(js["color"])
+      style.usesPrimaryColorInReducedPresentation = JSColorParser.shouldUsePrimaryColorInReducedPresentation(colorValue)
     }
 
     if let size = JSStyleParser.number(js["fontSize"]) {

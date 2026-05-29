@@ -33,8 +33,8 @@ enum JSColorParser {
       return parseHSL(trimmed)
     }
 
-    // 4. light-dark() — CSS Color Level 4 adaptive color
-    if trimmed.hasPrefix("light-dark") {
+    // 4. light-dark() — adaptive color, resolved natively by UIKit trait system
+    if trimmed.hasPrefix("light-dark(") {
       return parseLightDark(trimmed)
     }
 
@@ -97,43 +97,58 @@ enum JSColorParser {
 
   // MARK: - light-dark() Parser
 
-  /// Parses `light-dark(<lightColor>, <darkColor>)` into an adaptive Color that
-  /// automatically responds to the system color scheme via UITraitCollection.
-  private static func parseLightDark(_ string: String) -> Color? {
-    guard let function = parseFunctionCall(string, allowedNames: ["light-dark"]) else { return nil }
+  /// Splits a `light-dark(<light>, <dark>)` string into its two component strings.
+  private static func splitLightDark(_ trimmed: String) -> (lightStr: String, darkStr: String)? {
+    let prefix = "light-dark("
+    guard trimmed.hasPrefix(prefix) else { return nil }
+    let inner = String(trimmed.dropFirst(prefix.count))
+    guard inner.hasSuffix(")") else { return nil }
+    let body = String(inner.dropLast())
 
-    // Split on the first top-level comma — arguments may themselves contain commas
-    // (e.g. rgb(255, 0, 0)), so we must count parenthesis depth.
-    guard let splitIndex = findTopLevelComma(in: function.arguments) else { return nil }
-
-    let lightString = String(function.arguments[..<splitIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-    let darkString = String(function.arguments[function.arguments.index(after: splitIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-
-    guard let lightColor = parse(lightString), let darkColor = parse(darkString) else { return nil }
-
-    #if canImport(UIKit)
-      return Color(uiColor: UIColor { traitCollection in
-        traitCollection.userInterfaceStyle == .dark
-          ? UIColor(darkColor)
-          : UIColor(lightColor)
-      })
-    #else
-      return lightColor
-    #endif
-  }
-
-  /// Returns the index of the first comma that is not nested inside parentheses.
-  private static func findTopLevelComma(in string: String) -> String.Index? {
     var depth = 0
-    for index in string.indices {
-      switch string[index] {
+    var commaIndex: String.Index? = nil
+    for idx in body.indices {
+      switch body[idx] {
       case "(": depth += 1
       case ")": depth -= 1
-      case "," where depth == 0: return index
+      case "," where depth == 0 && commaIndex == nil: commaIndex = idx
       default: break
       }
     }
-    return nil
+
+    guard let comma = commaIndex else { return nil }
+    return (
+      lightStr: String(body[..<comma]).trimmingCharacters(in: .whitespacesAndNewlines),
+      darkStr: String(body[body.index(after: comma)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+    )
+  }
+
+  /// Returns both Color values for a `light-dark()` string so the caller can resolve
+  /// via `LightDarkForeground: ShapeStyle` at draw time.
+  static func parseLightDarkComponents(_ value: Any?) -> (light: Color, dark: Color)? {
+    guard let string = value as? String else { return nil }
+    let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    guard let split = splitLightDark(trimmed) else { return nil }
+    guard let lightColor = parse(split.lightStr),
+          let darkColor = parse(split.darkStr) else { return nil }
+    return (light: lightColor, dark: darkColor)
+  }
+
+  /// Fallback used by `parse()` for non-text contexts (e.g. borders, backgrounds).
+  /// Uses UIColor dynamic provider — best-effort; prefer parseLightDarkComponents()
+  /// + LightDarkForeground: ShapeStyle for text foreground colors.
+  private static func parseLightDark(_ string: String) -> Color? {
+    guard let split = splitLightDark(string),
+          let lightC = parseColorComponents(split.lightStr),
+          let darkC = parseColorComponents(split.darkStr) else { return nil }
+    #if canImport(UIKit)
+      return Color(uiColor: UIColor { traitCollection in
+        let c = traitCollection.userInterfaceStyle == .dark ? darkC : lightC
+        return UIColor(red: c.red, green: c.green, blue: c.blue, alpha: c.alpha)
+      })
+    #else
+      return Color(.sRGB, red: lightC.red, green: lightC.green, blue: lightC.blue, opacity: lightC.alpha)
+    #endif
   }
 
   /// Parse named color strings
