@@ -1,260 +1,43 @@
-# voltra
+![voltra-banner](https://use-voltra.dev/voltra-baner.jpg)
 
-CLI for applying Voltra to standard native React Native projects.
+### Voltra CLI for native React Native projects
 
-`voltra` is the non-Expo path for wiring Voltra into an existing native app.
+[![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-V1 exposes one public command:
+`voltra` is the CLI package for applying Voltra to standard native React Native apps.
 
-```sh
-voltra apply
-```
+Use it when you are integrating Voltra into a project that owns its native iOS and Android folders directly, without relying on Expo config plugins to make those changes for you.
 
-It loads Voltra config, discovers the native project, generates Voltra-owned files, mutates required native project files, removes stale generated files from previous runs, and writes `.voltra/state.json` after a successful apply.
+For installation and setup instructions, see the Voltra documentation: [use-voltra.dev](https://use-voltra.dev).
 
-## Install
+## When to use this package
 
-```sh
-npm install --save-dev voltra
-npm install @use-voltra/ios-client
-```
+- Native React Native apps that manage `ios/` and `android/` directly.
+- Projects that need Voltra to wire platform-specific files and native project changes outside Expo prebuild.
 
-If you apply only Android, the iOS client package is not required.
+If you are using Expo config plugins, start with:
 
-## Command
+- [`@use-voltra/ios-client`](../ios-client)
+- [`@use-voltra/android-client`](../android-client)
 
-```sh
-voltra apply [options]
-```
+## For contributors
 
-Options:
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for a high-level overview of the CLI package and its internal structure.
 
-- `--platform ios|android`: limit apply to one platform.
-- `--config <path>`: load config from an explicit file path.
-- `-y`, `--yes`: skip the dirty git worktree confirmation prompt.
-- `-h`, `--help`: show command help.
+## Authors
 
-Examples:
+Voltra is an open source collaboration between [Saúl Sharma](https://github.com/saulsharma) and [Szymon Chmal](https://github.com/szymonchmal) at [Callstack][callstack-readme-with-love].
 
-```sh
-# Apply both configured platforms
-npx voltra apply
+If you think it's cool, please star it 🌟. This project will always remain free to use.
 
-# Apply only iOS
-npx voltra apply --platform ios
+[Callstack][callstack-readme-with-love] is a group of React and React Native geeks, contact us at [hello@callstack.com](mailto:hello@callstack.com) if you need any help with these or just want to say hi!
 
-# Apply using an explicit config file
-npx voltra apply --config ./config/voltra.config.ts
+Like the project? ⚛️ [Join the Callstack team](https://callstack.com/careers/?utm_campaign=Senior_RN&utm_source=github&utm_medium=readme) who does amazing stuff for clients and drives React Native Open Source! 🔥
 
-# Skip the dirty-worktree confirmation
-npx voltra apply --yes
-
-# Re-apply only Android without removing tracked iOS files
-npx voltra apply --platform android
-```
-
-## Config Files
-
-`voltra` uses `cosmiconfig` and searches these locations:
-
-- `package.json` under `voltra`
-- `.voltrarc`
-- `.voltrarc.json`
-- `.voltrarc.yaml`
-- `.voltrarc.yml`
-- `.voltrarc.js`
-- `.voltrarc.cjs`
-- `.voltrarc.mjs`
-- `.voltrarc.ts`
-- `voltra.config.json`
-- `voltra.config.yaml`
-- `voltra.config.yml`
-- `voltra.config.js`
-- `voltra.config.cjs`
-- `voltra.config.mjs`
-- `voltra.config.ts`
-
-When `--config` is provided, that file is loaded directly instead of searching.
-
-## Path Resolution
-
-- `configDir` is the directory containing the loaded config file.
-- `projectRoot` defaults to `configDir`.
-- `projectRoot` can be overridden in config.
-- Relative widget, preview, font, asset, and project-override paths resolve from `projectRoot`.
-
-## Config Shape
-
-The CLI config stays close to the existing Expo plugin config, with extra project-discovery overrides for native apps.
-
-```ts
-import type { VoltraConfig } from 'voltra'
-
-const config: VoltraConfig = {
-  projectRoot: '.',
-  android: {
-    enableNotifications: true,
-    fonts: ['./assets/fonts/Inter-Regular.ttf'],
-    userImagesPath: './assets/voltra-android',
-    project: {
-      rootDir: './android',
-      appModuleName: 'app',
-      manifestPath: './android/app/src/main/AndroidManifest.xml',
-      packageName: 'com.example.app',
-    },
-    widgets: [
-      {
-        id: 'scoreboard',
-        displayName: 'Scoreboard',
-        description: 'Live score widget',
-        targetCellWidth: 2,
-        targetCellHeight: 2,
-        previewImage: './assets/widgets/scoreboard-preview.png',
-        initialStatePath: './widgets/scoreboard.android.tsx',
-      },
-    ],
-  },
-  ios: {
-    enablePushNotifications: true,
-    groupIdentifier: 'group.com.example.app',
-    keychainGroup: '$(AppIdentifierPrefix)com.example.shared',
-    deploymentTarget: '16.0',
-    targetName: 'ExampleLiveActivity',
-    fonts: ['./assets/fonts/Inter-Regular.ttf'],
-    userImagesPath: './assets/voltra',
-    project: {
-      rootDir: './ios',
-      xcodeprojPath: './ios/Example.xcodeproj',
-      mainTargetName: 'Example',
-      infoPlistPath: './ios/Example/Info.plist',
-      entitlementsPath: './ios/Example/Example.entitlements',
-      podfilePath: './ios/Podfile',
-    },
-    widgets: [
-      {
-        id: 'portfolio',
-        displayName: {
-          en: 'Portfolio',
-          pl: 'Portfel',
-        },
-        description: 'Track holdings',
-        supportedFamilies: ['systemSmall', 'systemMedium'],
-        initialStatePath: {
-          en: './widgets/portfolio.ios.en.tsx',
-          pl: './widgets/portfolio.ios.pl.tsx',
-        },
-        serverUpdate: {
-          url: 'https://example.com/widgets/portfolio',
-          intervalMinutes: 30,
-          refresh: true,
-        },
-      },
-    ],
-  },
-}
-
-export default config
-```
-
-## Discovery Defaults
-
-`voltra apply` is convention-first and only needs overrides for non-standard layouts or ambiguous native projects.
-
-For generated assets, Android reads `android.userImagesPath` and iOS reads `ios.userImagesPath`. If `ios.userImagesPath` is omitted, it defaults to `./assets/voltra`.
-
-### Android
-
-Default discovery:
-
-- Android root: `android/`
-- app module: `app`
-- manifest: `android/app/src/main/AndroidManifest.xml`
-- package name: resolved from `android.project.packageName`, then app-module `namespace`, then `applicationId`, then manifest `package`
-
-Android override fields:
-
-- `android.project.rootDir`
-- `android.project.appModuleName`
-- `android.project.manifestPath`
-- `android.project.packageName`
-
-### iOS
-
-Default discovery:
-
-- iOS root: `ios/`
-- Podfile: `ios/Podfile`
-- Xcode project: the only `.xcodeproj` under `ios/`
-- main app target: the only application target in `project.pbxproj`
-- main app `Info.plist` and entitlements: resolved from the selected target build settings
-
-iOS override fields:
-
-- `ios.project.rootDir`
-- `ios.project.xcodeprojPath`
-- `ios.project.mainTargetName`
-- `ios.project.infoPlistPath`
-- `ios.project.entitlementsPath`
-- `ios.project.podfilePath`
-
-If discovery is missing or ambiguous, `voltra apply` fails during preflight before writing any files.
-
-## Dirty Git Worktree Behavior
-
-Before writing files, `voltra apply` checks the git worktree:
-
-- clean worktree: continue
-- dirty worktree in an interactive terminal: print a warning and ask for confirmation without listing modified paths
-- dirty worktree with `--yes`: continue without asking for confirmation
-- dirty worktree in a non-interactive environment: fail before applying changes
-- no git repository: continue without blocking apply
-
-## Generated Files And State Tracking
-
-Voltra tracks only fully generated, Voltra-owned files in:
-
-```text
-.voltra/state.json
-```
-
-Example state file:
-
-```json
-{
-  "schemaVersion": 1,
-  "files": [
-    "ios/ExampleLiveActivity/Info.plist",
-    "ios/ExampleLiveActivity/VoltraWidgetBundle.swift",
-    "android/app/src/main/res/xml/voltra_widget_scoreboard_info.xml"
-  ]
-}
-```
-
-Rules:
-
-- paths are stored relative to `projectRoot`
-- only generated Voltra-owned files are tracked
-- stale generated files from previous runs are removed after a successful apply
-- shared native files are not reverted from state history
-
-Shared files are always reconciled from current config instead of state history. That includes:
-
-- `AndroidManifest.xml`
-- main app `Info.plist`
-- entitlements
-- `Podfile`
-- `project.pbxproj`
-
-## Apply Summary
-
-After a successful run, `voltra apply` prints a summary of created, updated, and deleted files, followed by any warnings.
-
-## Scope Notes
-
-Current v1 scope is intentionally narrow:
-
-- one public command: `voltra apply`
-- standard native React Native project layouts first
-- no plan or diff mode
-- no rollback system
-- no broad mutation history beyond `.voltra/state.json`
+[callstack-readme-with-love]: https://callstack.com/?utm_source=github.com&utm_medium=referral&utm_campaign=voltra&utm_term=readme-with-love
+[license-badge]: https://img.shields.io/npm/l/voltra?style=for-the-badge
+[license]: https://github.com/callstackincubator/voltra/blob/main/LICENSE.txt
+[npm-downloads-badge]: https://img.shields.io/npm/dm/voltra?style=for-the-badge
+[npm-downloads]: https://www.npmjs.com/package/voltra
+[prs-welcome-badge]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge
+[prs-welcome]: ./CONTRIBUTING.md
