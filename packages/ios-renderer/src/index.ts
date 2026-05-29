@@ -8,8 +8,11 @@ export type DeviceState = {
 
 export type AppIntentParams = Record<string, string>;
 
-// Keys whose values are never traversed for resolution
-const PASSTHROUGH_KEYS = new Set(['v', 's', 'e']);
+// Keys whose values are never traversed for resolution.
+// 'v' (version) and 'e' (shared elements / $r refs) are structural — leave untouched.
+// 's' (shared stylesheet) is NOT a passthrough: it contains light-dark() color strings
+// that must be resolved against the current colorScheme.
+const PASSTHROUGH_KEYS = new Set(['v', 'e']);
 
 /**
  * Resolves the CSS light-dark(<light>, <dark>) function against the current color scheme.
@@ -55,7 +58,7 @@ function resolveTemplate(value: string, appIntentParams: AppIntentParams): strin
 }
 
 function resolveString(value: string, deviceState: DeviceState, appIntentParams: AppIntentParams): string {
-  return resolveTemplate(resolveLightDark(value, deviceState.colorScheme), appIntentParams);
+  return resolveTemplate(value, appIntentParams);
 }
 
 function resolveValue(value: unknown, deviceState: DeviceState, appIntentParams: AppIntentParams): unknown {
