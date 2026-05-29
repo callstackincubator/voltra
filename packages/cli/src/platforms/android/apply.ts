@@ -10,7 +10,9 @@ import type { AndroidProjectDiscovery } from '../../discovery/android'
 import type { PlatformApplyContext, PlatformApplyResult } from '../../apply'
 import type { ApplyPreflightContext, PlatformPreflightResult, PlatformPreflightRunner } from '../../apply/preflight'
 
-export function createAndroidPreflightRunner(config: NormalizedVoltraConfig): PlatformPreflightRunner<AndroidProjectDiscovery> {
+export function createAndroidPreflightRunner(
+  config: NormalizedVoltraConfig
+): PlatformPreflightRunner<AndroidProjectDiscovery> {
   return async (_context: ApplyPreflightContext): Promise<PlatformPreflightResult<AndroidProjectDiscovery>> => {
     const androidConfig = config.android
 

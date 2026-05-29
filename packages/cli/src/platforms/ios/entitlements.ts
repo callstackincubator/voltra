@@ -61,7 +61,11 @@ export async function ensureEntitlements(options: EnsureEntitlementsOptions): Pr
 
   if (ios.enablePushNotifications && entitlements['aps-environment'] === undefined) {
     entitlements['aps-environment'] = 'development'
-  } else if (!ios.enablePushNotifications && previousVoltraValues.pushNotificationsEnabled && entitlements['aps-environment'] === 'development') {
+  } else if (
+    !ios.enablePushNotifications &&
+    previousVoltraValues.pushNotificationsEnabled &&
+    entitlements['aps-environment'] === 'development'
+  ) {
     delete entitlements['aps-environment']
   }
 
@@ -81,9 +85,13 @@ function ensureStringArrayValue(
   nextValue: string | undefined,
   previousOwnedValue: string | undefined
 ): void {
-  const existingValues = Array.isArray(target[key]) ? target[key].filter((value): value is string => typeof value === 'string' && value.length > 0) : []
+  const existingValues = Array.isArray(target[key])
+    ? target[key].filter((value): value is string => typeof value === 'string' && value.length > 0)
+    : []
   const dedupedValues = Array.from(new Set(existingValues))
-  const filteredValues = previousOwnedValue ? dedupedValues.filter((value) => value !== previousOwnedValue) : dedupedValues
+  const filteredValues = previousOwnedValue
+    ? dedupedValues.filter((value) => value !== previousOwnedValue)
+    : dedupedValues
 
   if (nextValue === undefined) {
     if (filteredValues.length === 0) {

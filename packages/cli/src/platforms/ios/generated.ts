@@ -14,7 +14,12 @@ import { buildPlistXml, parsePlistFile } from './plist'
 import { resolveIOSWidgetTargetName } from './targetName'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { IOSWidgetFamily, NormalizedIOSWidgetConfig, NormalizedVoltraIOSConfig, WidgetLabel } from '../../config/types'
+import type {
+  IOSWidgetFamily,
+  NormalizedIOSWidgetConfig,
+  NormalizedVoltraIOSConfig,
+  WidgetLabel,
+} from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 
 const MODULE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '']
@@ -159,7 +164,11 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
 
   const initialStatesResult = await generateInitialStatesSwift(projectRoot, ios.widgets)
   mergeSingleResult(
-    await writeGeneratedTextFile(projectRoot, path.join(targetPath, 'VoltraWidgetInitialStates.swift'), initialStatesResult),
+    await writeGeneratedTextFile(
+      projectRoot,
+      path.join(targetPath, 'VoltraWidgetInitialStates.swift'),
+      initialStatesResult
+    ),
     changes,
     generatedFiles
   )
@@ -194,37 +203,44 @@ async function generateInfoPlistFile(
   const fontNames = ios.fonts.map((fontPath) => path.basename(fontPath)).sort()
   const serverWidgets = ios.widgets.filter((widget) => widget.serverUpdate)
   const serverUrls = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.url]))
-  const serverIntervals = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes]))
-  const serverRefresh = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.refresh ?? false]))
-  const infoPlist = buildPlistXml({
-    CFBundleDevelopmentRegion: '$(DEVELOPMENT_LANGUAGE)',
-    CFBundleDisplayName: targetName,
-    CFBundleExecutable: '$(EXECUTABLE_NAME)',
-    CFBundleIdentifier: '$(PRODUCT_BUNDLE_IDENTIFIER)',
-    CFBundleInfoDictionaryVersion: '6.0',
-    CFBundleName: '$(PRODUCT_NAME)',
-    CFBundlePackageType: '$(PRODUCT_BUNDLE_PACKAGE_TYPE)',
-    CFBundleShortVersionString: mainAppMetadata.shortVersionString,
-    CFBundleVersion: mainAppMetadata.buildNumber,
-    NSExtension: {
-      NSExtensionPointIdentifier: 'com.apple.widgetkit-extension',
+  const serverIntervals = Object.fromEntries(
+    serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes])
+  )
+  const serverRefresh = Object.fromEntries(
+    serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.refresh ?? false])
+  )
+  const infoPlist = buildPlistXml(
+    {
+      CFBundleDevelopmentRegion: '$(DEVELOPMENT_LANGUAGE)',
+      CFBundleDisplayName: targetName,
+      CFBundleExecutable: '$(EXECUTABLE_NAME)',
+      CFBundleIdentifier: '$(PRODUCT_BUNDLE_IDENTIFIER)',
+      CFBundleInfoDictionaryVersion: '6.0',
+      CFBundleName: '$(PRODUCT_NAME)',
+      CFBundlePackageType: '$(PRODUCT_BUNDLE_PACKAGE_TYPE)',
+      CFBundleShortVersionString: mainAppMetadata.shortVersionString,
+      CFBundleVersion: mainAppMetadata.buildNumber,
+      NSExtension: {
+        NSExtensionPointIdentifier: 'com.apple.widgetkit-extension',
+      },
+      RCTNewArchEnabled: true,
+      CFBundleURLTypes: mainAppMetadata.urlTypes,
+      UIAppFonts: fontNames.length > 0 ? fontNames : undefined,
+      Voltra_AppGroupIdentifier: ios.groupIdentifier,
+      Voltra_KeychainGroup: ios.keychainGroup,
+      Voltra_WidgetServerIntervals: Object.keys(serverIntervals).length > 0 ? serverIntervals : undefined,
+      Voltra_WidgetServerRefresh: Object.keys(serverRefresh).length > 0 ? serverRefresh : undefined,
+      NSAppTransportSecurity:
+        serverWidgets.length > 0
+          ? {
+              NSAllowsLocalNetworking: true,
+              NSAllowsArbitraryLoads: false,
+            }
+          : undefined,
+      Voltra_WidgetServerUrls: Object.keys(serverUrls).length > 0 ? serverUrls : undefined,
     },
-    RCTNewArchEnabled: true,
-    CFBundleURLTypes: mainAppMetadata.urlTypes,
-    UIAppFonts: fontNames.length > 0 ? fontNames : undefined,
-    Voltra_AppGroupIdentifier: ios.groupIdentifier,
-    Voltra_KeychainGroup: ios.keychainGroup,
-    Voltra_WidgetServerIntervals: Object.keys(serverIntervals).length > 0 ? serverIntervals : undefined,
-    Voltra_WidgetServerRefresh: Object.keys(serverRefresh).length > 0 ? serverRefresh : undefined,
-    NSAppTransportSecurity:
-      serverWidgets.length > 0
-        ? {
-            NSAllowsLocalNetworking: true,
-            NSAllowsArbitraryLoads: false,
-          }
-        : undefined,
-    Voltra_WidgetServerUrls: Object.keys(serverUrls).length > 0 ? serverUrls : undefined,
-  }, createGeneratedFilesError)
+    createGeneratedFilesError
+  )
 
   return writeGeneratedTextFile(projectRoot, plistPath, infoPlist)
 }
@@ -236,10 +252,13 @@ async function generateEntitlementsFile(
   ios: NormalizedVoltraIOSConfig
 ): Promise<GeneratedFileResult> {
   const entitlementsPath = path.join(targetPath, `${targetName}.entitlements`)
-  const entitlements = buildPlistXml({
-    'com.apple.security.application-groups': ios.groupIdentifier ? [ios.groupIdentifier] : undefined,
-    'keychain-access-groups': ios.keychainGroup ? [ios.keychainGroup] : undefined,
-  }, createGeneratedFilesError)
+  const entitlements = buildPlistXml(
+    {
+      'com.apple.security.application-groups': ios.groupIdentifier ? [ios.groupIdentifier] : undefined,
+      'keychain-access-groups': ios.keychainGroup ? [ios.keychainGroup] : undefined,
+    },
+    createGeneratedFilesError
+  )
 
   return writeGeneratedTextFile(projectRoot, entitlementsPath, entitlements)
 }
@@ -353,7 +372,11 @@ async function generateLocalizedWidgetStrings(
 }
 
 async function readMainAppMetadata(infoPlistPath: string): Promise<MainAppMetadata> {
-  const dict = await parsePlistFile(infoPlistPath, 'main app Info.plist', (message: string) => new IOSGeneratedFilesError(message))
+  const dict = await parsePlistFile(
+    infoPlistPath,
+    'main app Info.plist',
+    (message: string) => new IOSGeneratedFilesError(message)
+  )
   const shortVersionString = readPlistString(dict, 'CFBundleShortVersionString') ?? '1.0.0'
   const buildNumber = readPlistString(dict, 'CFBundleVersion') ?? '1'
   const urlTypes = readUrlTypes(dict)
@@ -388,7 +411,11 @@ async function generateInitialStatesSwift(projectRoot: string, widgets: Normaliz
     ].join('\n')
   }
 
-  const prerenderedStates = await prerenderWidgetStates(projectRoot, prerenderableWidgets, loadIOSWidgetRenderer(projectRoot))
+  const prerenderedStates = await prerenderWidgetStates(
+    projectRoot,
+    prerenderableWidgets,
+    loadIOSWidgetRenderer(projectRoot)
+  )
   const widgetEntries = [...prerenderedStates.entries()]
     .map(([widgetId, localeMap]) => {
       const localeEntries = [...localeMap.entries()]
@@ -432,8 +459,15 @@ async function generateInitialStatesSwift(projectRoot: string, widgets: Normaliz
 }
 
 function generateWidgetBundleSwift(widgets: NormalizedIOSWidgetConfig[]): string {
-  const needsFoundation = widgets.some((widget) => isWidgetLocalizedMap(widget.displayName) || isWidgetLocalizedMap(widget.description))
-  const imports = [needsFoundation ? 'import Foundation' : undefined, 'import SwiftUI', 'import WidgetKit', 'import VoltraWidget']
+  const needsFoundation = widgets.some(
+    (widget) => isWidgetLocalizedMap(widget.displayName) || isWidgetLocalizedMap(widget.description)
+  )
+  const imports = [
+    needsFoundation ? 'import Foundation' : undefined,
+    'import SwiftUI',
+    'import WidgetKit',
+    'import VoltraWidget',
+  ]
     .filter((value): value is string => value !== undefined)
     .join('\n')
 
@@ -512,7 +546,11 @@ function generateWidgetStruct(widget: NormalizedIOSWidgetConfig): string {
   ].join('\n')
 }
 
-function createSwiftLabelExpression(widgetId: string, field: 'displayName' | 'description', label: WidgetLabel): string {
+function createSwiftLabelExpression(
+  widgetId: string,
+  field: 'displayName' | 'description',
+  label: WidgetLabel
+): string {
   if (!isWidgetLocalizedMap(label)) {
     return `Text(${JSON.stringify(label)})`
   }
@@ -520,7 +558,9 @@ function createSwiftLabelExpression(widgetId: string, field: 'displayName' | 'de
   const key = `voltra_widget_${widgetId}_${field}`
   const defaultEnglish = escapeSwiftString(widgetLabelEnglish(label))
 
-  return `Text(LocalizedStringResource(${JSON.stringify(key)}, defaultValue: String.LocalizationValue(${JSON.stringify(defaultEnglish)}), table: ${JSON.stringify('VoltraWidgets')}))`
+  return `Text(LocalizedStringResource(${JSON.stringify(key)}, defaultValue: String.LocalizationValue(${JSON.stringify(
+    defaultEnglish
+  )}), table: ${JSON.stringify('VoltraWidgets')}))`
 }
 
 async function prerenderWidgetStates(
@@ -537,7 +577,8 @@ async function prerenderWidgetStates(
       continue
     }
 
-    const perLocalePaths = typeof initialStatePath === 'string' ? { [DEFAULT_INITIAL_STATE_LOCALE]: initialStatePath } : initialStatePath
+    const perLocalePaths =
+      typeof initialStatePath === 'string' ? { [DEFAULT_INITIAL_STATE_LOCALE]: initialStatePath } : initialStatePath
     const localeStates = new Map<string, string>()
 
     for (const [localeKey, modulePath] of Object.entries(perLocalePaths)) {
@@ -724,7 +765,11 @@ async function resolveFontPaths(projectRoot: string, fonts: string[]): Promise<s
   return [...resolvedFontPaths].sort()
 }
 
-async function resolveFontInput(projectRoot: string, input: string, projectRequire: NodeRequire): Promise<string | null> {
+async function resolveFontInput(
+  projectRoot: string,
+  input: string,
+  projectRequire: NodeRequire
+): Promise<string | null> {
   const resolvedPath = path.isAbsolute(input) ? input : path.resolve(projectRoot, input)
   if (await pathExists(resolvedPath)) {
     return resolvedPath
@@ -762,7 +807,11 @@ async function collectPathsRecursively(currentPath: string, collectedPaths: stri
   }
 }
 
-async function copyGeneratedFile(projectRoot: string, sourcePath: string, destinationPath: string): Promise<GeneratedFileResult> {
+async function copyGeneratedFile(
+  projectRoot: string,
+  sourcePath: string,
+  destinationPath: string
+): Promise<GeneratedFileResult> {
   await ensureDirectory(path.dirname(destinationPath))
   const sourceContent = await fsPromises.readFile(sourcePath)
   const existingContent = (await pathExists(destinationPath)) ? await fsPromises.readFile(destinationPath) : undefined
@@ -783,7 +832,11 @@ async function copyGeneratedFile(projectRoot: string, sourcePath: string, destin
   }
 }
 
-async function writeGeneratedTextFile(projectRoot: string, destinationPath: string, content: string): Promise<GeneratedFileResult> {
+async function writeGeneratedTextFile(
+  projectRoot: string,
+  destinationPath: string,
+  content: string
+): Promise<GeneratedFileResult> {
   const existingContent = (await pathExists(destinationPath)) ? await readTextFile(destinationPath) : undefined
   const relativePath = toRelativePath(projectRoot, destinationPath)
 
@@ -919,7 +972,9 @@ function readUrlTypes(dict: Record<string, unknown>): Array<{ CFBundleURLSchemes
         return undefined
       }
 
-      const schemes = schemesValue.filter((scheme): scheme is string => typeof scheme === 'string' && scheme.trim().length > 0)
+      const schemes = schemesValue.filter(
+        (scheme): scheme is string => typeof scheme === 'string' && scheme.trim().length > 0
+      )
 
       return schemes.length > 0 ? { CFBundleURLSchemes: schemes } : undefined
     })

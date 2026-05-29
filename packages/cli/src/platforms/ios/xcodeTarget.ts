@@ -52,7 +52,9 @@ export class IOSWidgetTargetMutationError extends VoltraCliError {
   }
 }
 
-export async function ensureIOSWidgetTarget(options: EnsureIOSWidgetTargetOptions): Promise<EnsureIOSWidgetTargetResult> {
+export async function ensureIOSWidgetTarget(
+  options: EnsureIOSWidgetTargetOptions
+): Promise<EnsureIOSWidgetTargetResult> {
   const { projectRoot, ios, discovery, generatedFiles, previousGeneratedFiles } = options
   const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const context = openIOSXcodeProject(discovery)
@@ -113,7 +115,13 @@ function ensureWidgetTarget(
     return existingTarget
   }
 
-  const buildConfigurationList = createBuildConfigurationList(context, targetName, bundleIdentifier, deploymentTarget, codeSigning)
+  const buildConfigurationList = createBuildConfigurationList(
+    context,
+    targetName,
+    bundleIdentifier,
+    deploymentTarget,
+    codeSigning
+  )
   const target = context.project.rootObject.createNativeTarget({
     buildConfigurationList,
     name: targetName,
@@ -137,7 +145,13 @@ function createBuildConfigurationList(
   const configs = context.mainAppTarget.buildConfigurations.all.map((config) => {
     return XCBuildConfiguration.create(context.project, {
       name: config.props.name,
-      buildSettings: buildWidgetBuildSettings(targetName, bundleIdentifier, deploymentTarget, codeSigning, config.props.name),
+      buildSettings: buildWidgetBuildSettings(
+        targetName,
+        bundleIdentifier,
+        deploymentTarget,
+        codeSigning,
+        config.props.name
+      ),
     })
   })
 
@@ -157,11 +171,16 @@ function ensureBuildConfigurations(
   const configurationList = target.props.buildConfigurationList
 
   if (!configurationList) {
-    throw new IOSWidgetTargetMutationError(`Widget target '${target.props.name}' is missing a build configuration list.`)
+    throw new IOSWidgetTargetMutationError(
+      `Widget target '${target.props.name}' is missing a build configuration list.`
+    )
   }
 
   for (const config of configurationList.props.buildConfigurations) {
-    Object.assign(config.props.buildSettings, buildWidgetBuildSettings(targetName, bundleIdentifier, deploymentTarget, codeSigning, config.props.name))
+    Object.assign(
+      config.props.buildSettings,
+      buildWidgetBuildSettings(targetName, bundleIdentifier, deploymentTarget, codeSigning, config.props.name)
+    )
   }
 }
 
@@ -204,7 +223,9 @@ function getWidgetTarget(context: IOSXcodeProjectContext, targetName: string): P
   const target = getWidgetTargetOptional(context, targetName)
 
   if (!target) {
-    throw new IOSWidgetTargetMutationError(`Xcode project does not contain widget target '${targetName}' after mutation.`)
+    throw new IOSWidgetTargetMutationError(
+      `Xcode project does not contain widget target '${targetName}' after mutation.`
+    )
   }
 
   return target
@@ -212,7 +233,11 @@ function getWidgetTarget(context: IOSXcodeProjectContext, targetName: string): P
 
 function getWidgetTargetOptional(context: IOSXcodeProjectContext, targetName: string): PBXNativeTarget | undefined {
   return context.project.rootObject.props.targets.find((target): target is PBXNativeTarget => {
-    return PBXNativeTarget.is(target) && target.props.name === targetName && target.props.productType === IOS_APP_EXTENSION_PRODUCT_TYPE
+    return (
+      PBXNativeTarget.is(target) &&
+      target.props.name === targetName &&
+      target.props.productType === IOS_APP_EXTENSION_PRODUCT_TYPE
+    )
   })
 }
 
@@ -228,7 +253,11 @@ function ensureWidgetGroup(context: IOSXcodeProjectContext, targetName: string):
 
 function ensureProductFile(context: IOSXcodeProjectContext, targetName: string, productPath: string): PBXFileReference {
   const existingProduct = [...context.project.values()].find((object): object is PBXFileReference => {
-    return PBXFileReference.is(object) && stripQuotes(object.props.path) === productPath && object.props.sourceTree === 'BUILT_PRODUCTS_DIR'
+    return (
+      PBXFileReference.is(object) &&
+      stripQuotes(object.props.path) === productPath &&
+      object.props.sourceTree === 'BUILT_PRODUCTS_DIR'
+    )
   })
 
   if (existingProduct) {
@@ -394,7 +423,11 @@ function removeEmptyWidgetGroups(context: IOSXcodeProjectContext, staleTargetNam
 }
 
 function removeFileReferenceFromTargetBuildPhases(target: PBXNativeTarget, reference: PBXFileReference): void {
-  for (const phase of [target.getSourcesBuildPhase(), target.getResourcesBuildPhase(), target.getFrameworksBuildPhase()]) {
+  for (const phase of [
+    target.getSourcesBuildPhase(),
+    target.getResourcesBuildPhase(),
+    target.getFrameworksBuildPhase(),
+  ]) {
     removeBuildPhaseReference(phase, reference)
   }
 }
@@ -506,8 +539,12 @@ function getBuildPhaseReferencePath(relativePath: string): string {
 }
 
 function getStaleReferencePaths(previousGeneratedFiles: string[], generatedFiles: string[]): Set<string> {
-  const currentReferencePaths = new Set(generatedFiles.flatMap((file) => [getBuildPhaseReferencePath(file), getGroupReferencePath(file)]))
-  const previousReferencePaths = new Set(previousGeneratedFiles.flatMap((file) => [getBuildPhaseReferencePath(file), getGroupReferencePath(file)]))
+  const currentReferencePaths = new Set(
+    generatedFiles.flatMap((file) => [getBuildPhaseReferencePath(file), getGroupReferencePath(file)])
+  )
+  const previousReferencePaths = new Set(
+    previousGeneratedFiles.flatMap((file) => [getBuildPhaseReferencePath(file), getGroupReferencePath(file)])
+  )
 
   return new Set([...previousReferencePaths].filter((referencePath) => !currentReferencePaths.has(referencePath)))
 }
@@ -569,7 +606,9 @@ function getGroupSpecificity(group: PBXGroup): number {
 
 function sanitizeWidgetGroupChildren(widgetGroup: PBXGroup): void {
   const staleChildren = widgetGroup.props.children.filter((child) => {
-    const identifier = stripQuotes('path' in child && typeof child.props.path === 'string' ? child.props.path : child.getDisplayName())
+    const identifier = stripQuotes(
+      'path' in child && typeof child.props.path === 'string' ? child.props.path : child.getDisplayName()
+    )
 
     if (identifier.endsWith('.imageset')) {
       return true
@@ -639,11 +678,17 @@ function getWidgetTargetNameFromGeneratedPath(relativePath: string): string | un
   return typeof targetName === 'string' && targetName.length > 0 ? targetName : undefined
 }
 
-function normalizeGeneratedFilePaths(generatedFiles: string[], projectRoot: string, discovery: IOSProjectDiscovery): string[] {
+function normalizeGeneratedFilePaths(
+  generatedFiles: string[],
+  projectRoot: string,
+  discovery: IOSProjectDiscovery
+): string[] {
   const iosRootRelativePath = normalizeRelativePath(path.relative(projectRoot, discovery.iosRoot))
   const iosRootRelativePrefix = iosRootRelativePath === '.' ? '' : `${iosRootRelativePath}/`
 
-  return [...new Set(generatedFiles.map((file) => toIOSProjectRelativePath(file, iosRootRelativePrefix)).filter(isDefined))].sort()
+  return [
+    ...new Set(generatedFiles.map((file) => toIOSProjectRelativePath(file, iosRootRelativePrefix)).filter(isDefined)),
+  ].sort()
 }
 
 function toIOSProjectRelativePath(relativeFilePath: string, iosRootRelativePrefix: string): string | undefined {
@@ -660,8 +705,13 @@ function toIOSProjectRelativePath(relativeFilePath: string, iosRootRelativePrefi
   return undefined
 }
 
-function resolveBundleIdentifier(context: IOSXcodeProjectContext, discovery: IOSProjectDiscovery, targetName: string): string {
-  const mainTargetBundleIdentifier = context.mainAppTarget.buildConfigurations.default.resolveBuildSetting('PRODUCT_BUNDLE_IDENTIFIER')
+function resolveBundleIdentifier(
+  context: IOSXcodeProjectContext,
+  discovery: IOSProjectDiscovery,
+  targetName: string
+): string {
+  const mainTargetBundleIdentifier =
+    context.mainAppTarget.buildConfigurations.default.resolveBuildSetting('PRODUCT_BUNDLE_IDENTIFIER')
 
   if (typeof mainTargetBundleIdentifier !== 'string' || mainTargetBundleIdentifier.length === 0) {
     throw new IOSWidgetTargetMutationError(
@@ -683,7 +733,9 @@ function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainApp
   return {
     codeSignStyle: readBuildSettingString(buildSettings.CODE_SIGN_STYLE),
     developmentTeam: readBuildSettingString(buildSettings.DEVELOPMENT_TEAM),
-    provisioningProfileSpecifier: readBuildSettingString((buildSettings as unknown as { PROVISIONING_PROFILE_SPECIFIER?: unknown }).PROVISIONING_PROFILE_SPECIFIER),
+    provisioningProfileSpecifier: readBuildSettingString(
+      (buildSettings as unknown as { PROVISIONING_PROFILE_SPECIFIER?: unknown }).PROVISIONING_PROFILE_SPECIFIER
+    ),
   }
 }
 

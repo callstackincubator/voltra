@@ -4,7 +4,14 @@ import { PBXNativeTarget, XcodeProject } from '@bacons/xcode'
 
 import { VoltraCliError } from '../../reporting/summary'
 
-import type { PBXCopyFilesBuildPhase, PBXFrameworksBuildPhase, PBXGroup, PBXResourcesBuildPhase, PBXSourcesBuildPhase, XCBuildConfiguration } from '@bacons/xcode'
+import type {
+  PBXCopyFilesBuildPhase,
+  PBXFrameworksBuildPhase,
+  PBXGroup,
+  PBXResourcesBuildPhase,
+  PBXSourcesBuildPhase,
+  XCBuildConfiguration,
+} from '@bacons/xcode'
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 
 const IOS_APP_PRODUCT_TYPE = 'com.apple.product-type.application'
@@ -128,7 +135,9 @@ function resolveMainAppTarget(project: XcodeProject, discovery: IOSProjectDiscov
 
   if (!target) {
     throw new IOSXcodeProjectError(
-      `Xcode project does not contain the discovered main app target '${discovery.mainTargetName}'. Available application targets: ${applicationTargets
+      `Xcode project does not contain the discovered main app target '${
+        discovery.mainTargetName
+      }'. Available application targets: ${applicationTargets
         .map((candidate) => candidate.props.name)
         .sort()
         .join(', ')}`
@@ -156,7 +165,9 @@ function getExistingProductGroup(project: XcodeProject, discovery: IOSProjectDis
 }
 
 function getExistingFrameworksGroup(project: XcodeProject, discovery: IOSProjectDiscovery): PBXGroup {
-  const frameworksGroup = project.rootObject.props.mainGroup?.getChildGroups().find((group) => group.getDisplayName() === 'Frameworks')
+  const frameworksGroup = project.rootObject.props.mainGroup
+    ?.getChildGroups()
+    .find((group) => group.getDisplayName() === 'Frameworks')
 
   if (!frameworksGroup) {
     throw new IOSXcodeProjectError(`Xcode project is missing the Frameworks group: ${discovery.pbxprojPath}`)

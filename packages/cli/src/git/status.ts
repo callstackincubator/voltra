@@ -50,13 +50,15 @@ class GitCommandError extends VoltraCliError {
 }
 
 export async function getGitWorktreeStatus(cwd: string): Promise<GitWorktreeStatus> {
-  const insideWorktree = await runGitCommand(['rev-parse', '--is-inside-work-tree'], { cwd }).catch((error: unknown) => {
-    if (isNotGitRepositoryError(error)) {
-      return undefined
-    }
+  const insideWorktree = await runGitCommand(['rev-parse', '--is-inside-work-tree'], { cwd }).catch(
+    (error: unknown) => {
+      if (isNotGitRepositoryError(error)) {
+        return undefined
+      }
 
-    throw error
-  })
+      throw error
+    }
+  )
 
   if (!insideWorktree || insideWorktree.trim() !== 'true') {
     return {

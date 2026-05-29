@@ -64,7 +64,9 @@ async function resolveAndroidRoot(projectRoot: string, config: NormalizedAndroid
 }
 
 async function resolveManifestPath(androidRoot: string, config: NormalizedAndroidProjectConfig): Promise<string> {
-  const manifestPath = config.manifestPath ?? path.join(androidRoot, config.appModuleName ?? 'app', 'src', 'main', ANDROID_MANIFEST_FILE_NAME)
+  const manifestPath =
+    config.manifestPath ??
+    path.join(androidRoot, config.appModuleName ?? 'app', 'src', 'main', ANDROID_MANIFEST_FILE_NAME)
 
   await ensureFile(
     manifestPath,
@@ -76,7 +78,11 @@ async function resolveManifestPath(androidRoot: string, config: NormalizedAndroi
   return manifestPath
 }
 
-function resolveAppModuleName(androidRoot: string, manifestPath: string, configuredAppModuleName: string | undefined): string {
+function resolveAppModuleName(
+  androidRoot: string,
+  manifestPath: string,
+  configuredAppModuleName: string | undefined
+): string {
   if (configuredAppModuleName) {
     return configuredAppModuleName
   }
@@ -91,7 +97,12 @@ function resolveAppModuleName(androidRoot: string, manifestPath: string, configu
 
   const segments = relativeManifestPath.split(path.sep)
 
-  if (segments.length >= 4 && segments[1] === 'src' && segments[2] === 'main' && segments[3] === ANDROID_MANIFEST_FILE_NAME) {
+  if (
+    segments.length >= 4 &&
+    segments[1] === 'src' &&
+    segments[2] === 'main' &&
+    segments[3] === ANDROID_MANIFEST_FILE_NAME
+  ) {
     return segments[0]
   }
 

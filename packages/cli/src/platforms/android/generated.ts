@@ -129,7 +129,11 @@ async function generateAndroidXmlFiles(
   }
 
   const defaultStringsPath = path.join(valuesDir, 'voltra_widgets.xml')
-  const defaultStringsResult = await writeGeneratedTextFile(projectRoot, defaultStringsPath, generateWidgetStringsXml(widgets, null))
+  const defaultStringsResult = await writeGeneratedTextFile(
+    projectRoot,
+    defaultStringsPath,
+    generateWidgetStringsXml(widgets, null)
+  )
   pushChange(changes, defaultStringsResult.change)
   generatedFiles.add(defaultStringsResult.relativePath)
 
@@ -141,17 +145,32 @@ async function generateAndroidXmlFiles(
     }
 
     const localizedValuesPath = path.join(resourceRoot, 'res', `values-${qualifier}`, 'voltra_widgets.xml')
-    const localizedValuesResult = await writeGeneratedTextFile(projectRoot, localizedValuesPath, generateWidgetStringsXml(widgets, localeKey))
+    const localizedValuesResult = await writeGeneratedTextFile(
+      projectRoot,
+      localizedValuesPath,
+      generateWidgetStringsXml(widgets, localeKey)
+    )
     pushChange(changes, localizedValuesResult.change)
     generatedFiles.add(localizedValuesResult.relativePath)
   }
 
   const placeholderLayoutPath = path.join(layoutDir, 'voltra_widget_placeholder.xml')
-  const placeholderLayoutResult = await writeGeneratedTextFile(projectRoot, placeholderLayoutPath, generatePlaceholderLayoutXml())
+  const placeholderLayoutResult = await writeGeneratedTextFile(
+    projectRoot,
+    placeholderLayoutPath,
+    generatePlaceholderLayoutXml()
+  )
   pushChange(changes, placeholderLayoutResult.change)
   generatedFiles.add(placeholderLayoutResult.relativePath)
 
-  const previewLayoutMap = await generatePreviewLayouts(projectRoot, layoutDir, widgets, warnings, changes, generatedFiles)
+  const previewLayoutMap = await generatePreviewLayouts(
+    projectRoot,
+    layoutDir,
+    widgets,
+    warnings,
+    changes,
+    generatedFiles
+  )
 
   for (const widget of widgets) {
     const widgetInfoPath = path.join(xmlDir, `voltra_widget_${widget.id}_info.xml`)
@@ -190,7 +209,9 @@ async function generatePreviewLayouts(
       const sourceExists = await pathExists(widget.previewLayout)
 
       if (!sourceExists) {
-        throw new AndroidGeneratedFilesError(`Preview layout not found for widget '${widget.id}' at ${widget.previewLayout}`)
+        throw new AndroidGeneratedFilesError(
+          `Preview layout not found for widget '${widget.id}' at ${widget.previewLayout}`
+        )
       }
 
       const content = await readTextFile(widget.previewLayout)
@@ -235,7 +256,9 @@ async function generateAndroidAssets(
 
     if (!VALID_DRAWABLE_EXTENSIONS.has(extension)) {
       throw new AndroidGeneratedFilesError(
-        `Unsupported Android drawable asset '${assetPath}'. Supported extensions: ${[...VALID_DRAWABLE_EXTENSIONS].sort().join(', ')}`
+        `Unsupported Android drawable asset '${assetPath}'. Supported extensions: ${[...VALID_DRAWABLE_EXTENSIONS]
+          .sort()
+          .join(', ')}`
       )
     }
 
@@ -251,7 +274,8 @@ async function generateAndroidAssets(
     }
 
     const destinationPath = path.join(drawableDir, `${resourceName}${extension}`)
-    const imageWarning = extension === '.xml' ? undefined : await getLargeImageWarning(assetPath, path.basename(assetPath))
+    const imageWarning =
+      extension === '.xml' ? undefined : await getLargeImageWarning(assetPath, path.basename(assetPath))
 
     if (imageWarning) {
       warnings.push(imageWarning)
@@ -268,7 +292,9 @@ async function generateAndroidAssets(
     }
 
     if (!(await pathExists(widget.previewImage))) {
-      throw new AndroidGeneratedFilesError(`Preview image not found for widget '${widget.id}' at ${widget.previewImage}`)
+      throw new AndroidGeneratedFilesError(
+        `Preview image not found for widget '${widget.id}' at ${widget.previewImage}`
+      )
     }
 
     const extension = path.extname(widget.previewImage).toLowerCase()
@@ -294,7 +320,10 @@ async function generateAndroidAssets(
     }
 
     const destinationPath = path.join(drawableDir, `${resourceName}${extension}`)
-    const imageWarning = extension === '.xml' ? undefined : await getLargeImageWarning(widget.previewImage, path.basename(widget.previewImage))
+    const imageWarning =
+      extension === '.xml'
+        ? undefined
+        : await getLargeImageWarning(widget.previewImage, path.basename(widget.previewImage))
 
     if (imageWarning) {
       warnings.push(imageWarning)
@@ -312,7 +341,11 @@ async function generateAndroidAssets(
   }
 }
 
-async function copyAndroidFonts(projectRoot: string, resourceRoot: string, fonts: string[]): Promise<GenerateAndroidFilesResult> {
+async function copyAndroidFonts(
+  projectRoot: string,
+  resourceRoot: string,
+  fonts: string[]
+): Promise<GenerateAndroidFilesResult> {
   const changes: ReportedChange[] = []
   const generatedFiles = new Set<string>()
   const warnings: string[] = []
@@ -353,7 +386,11 @@ async function generateAndroidInitialStates(
       warnings: [],
     }
   }
-  const prerenderedStates = await prerenderWidgetStates(projectRoot, prerenderableWidgets, loadAndroidWidgetRenderer(projectRoot))
+  const prerenderedStates = await prerenderWidgetStates(
+    projectRoot,
+    prerenderableWidgets,
+    loadAndroidWidgetRenderer(projectRoot)
+  )
 
   if (prerenderedStates.size === 0) {
     return {
@@ -467,7 +504,9 @@ function loadAndroidWidgetRenderer(projectRoot: string): AndroidWidgetRenderer {
   const androidPackage = requirePlatformPackage<AndroidPlatformPackage>(projectRoot, 'android')
 
   if (typeof androidPackage.renderAndroidWidgetToString !== 'function') {
-    throw new AndroidGeneratedFilesError('Installed @use-voltra/android package does not export renderAndroidWidgetToString.')
+    throw new AndroidGeneratedFilesError(
+      'Installed @use-voltra/android package does not export renderAndroidWidgetToString.'
+    )
   }
 
   return androidPackage.renderAndroidWidgetToString as AndroidWidgetRenderer
@@ -609,7 +648,11 @@ async function resolveFontPaths(projectRoot: string, fonts: string[]): Promise<s
   return [...resolvedFontPaths].sort()
 }
 
-async function resolveFontInput(projectRoot: string, input: string, projectRequire: NodeRequire): Promise<string | null> {
+async function resolveFontInput(
+  projectRoot: string,
+  input: string,
+  projectRequire: NodeRequire
+): Promise<string | null> {
   const resolvedPath = path.isAbsolute(input) ? input : path.resolve(projectRoot, input)
 
   if (await pathExists(resolvedPath)) {
@@ -624,7 +667,9 @@ async function resolveFontInput(projectRoot: string, input: string, projectRequi
 }
 
 async function collectUserAssetPaths(projectRoot: string, userImagesPath: string): Promise<string[]> {
-  const resolvedUserImagesPath = path.isAbsolute(userImagesPath) ? userImagesPath : path.resolve(projectRoot, userImagesPath)
+  const resolvedUserImagesPath = path.isAbsolute(userImagesPath)
+    ? userImagesPath
+    : path.resolve(projectRoot, userImagesPath)
 
   if (!(await pathExists(resolvedUserImagesPath))) {
     return []
@@ -651,12 +696,20 @@ async function collectPathsRecursively(currentPath: string, collectedPaths: stri
   }
 }
 
-async function convertSvgToVectorDrawable(projectRoot: string, sourcePath: string, destinationSvgPath: string): Promise<GeneratedFileResult> {
+async function convertSvgToVectorDrawable(
+  projectRoot: string,
+  sourcePath: string,
+  destinationSvgPath: string
+): Promise<GeneratedFileResult> {
   await ensureDirectory(path.dirname(destinationSvgPath))
   const sourceContent = await fsPromises.readFile(sourcePath)
-  const existingSvgContent = (await pathExists(destinationSvgPath)) ? await fsPromises.readFile(destinationSvgPath) : undefined
+  const existingSvgContent = (await pathExists(destinationSvgPath))
+    ? await fsPromises.readFile(destinationSvgPath)
+    : undefined
   const vectorDrawablePath = destinationSvgPath.replace(/\.svg$/i, '.xml')
-  const existingVectorDrawableContent = (await pathExists(vectorDrawablePath)) ? await fsPromises.readFile(vectorDrawablePath) : undefined
+  const existingVectorDrawableContent = (await pathExists(vectorDrawablePath))
+    ? await fsPromises.readFile(vectorDrawablePath)
+    : undefined
 
   try {
     await fsPromises.writeFile(destinationSvgPath, sourceContent)
@@ -694,7 +747,11 @@ async function convertSvgToVectorDrawable(projectRoot: string, sourcePath: strin
   }
 }
 
-async function copyGeneratedFile(projectRoot: string, sourcePath: string, destinationPath: string): Promise<GeneratedFileResult> {
+async function copyGeneratedFile(
+  projectRoot: string,
+  sourcePath: string,
+  destinationPath: string
+): Promise<GeneratedFileResult> {
   await ensureDirectory(path.dirname(destinationPath))
   const sourceContent = await fsPromises.readFile(sourcePath)
   const existingContent = (await pathExists(destinationPath)) ? await fsPromises.readFile(destinationPath) : undefined
@@ -717,7 +774,11 @@ async function copyGeneratedFile(projectRoot: string, sourcePath: string, destin
   }
 }
 
-async function writeGeneratedTextFile(projectRoot: string, destinationPath: string, content: string): Promise<GeneratedFileResult> {
+async function writeGeneratedTextFile(
+  projectRoot: string,
+  destinationPath: string,
+  content: string
+): Promise<GeneratedFileResult> {
   const existingContent = (await pathExists(destinationPath)) ? await readTextFile(destinationPath) : undefined
   const relativePath = toRelativePath(projectRoot, destinationPath)
 
@@ -826,19 +887,24 @@ function generateWidgetInfoXml(
   previewLayoutResourceName?: string
 ): string {
   const minWidth = widget.minWidth ?? (widget.minCellWidth !== undefined ? widget.minCellWidth * 70 - 30 : undefined)
-  const minHeight = widget.minHeight ?? (widget.minCellHeight !== undefined ? widget.minCellHeight * 70 - 30 : undefined)
+  const minHeight =
+    widget.minHeight ?? (widget.minCellHeight !== undefined ? widget.minCellHeight * 70 - 30 : undefined)
   const resizeMode = widget.resizeMode ?? 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory ?? 'home_screen'
   const lines = [
     '<?xml version="1.0" encoding="utf-8"?>',
-    `<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"${minWidth !== undefined ? ` android:minWidth="${minWidth}dp"` : ''}${minHeight !== undefined ? ` android:minHeight="${minHeight}dp"` : ''}`,
+    `<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"${
+      minWidth !== undefined ? ` android:minWidth="${minWidth}dp"` : ''
+    }${minHeight !== undefined ? ` android:minHeight="${minHeight}dp"` : ''}`,
     `    android:targetCellWidth="${widget.targetCellWidth}"`,
     `    android:targetCellHeight="${widget.targetCellHeight}"`,
     '    android:updatePeriodMillis="0"',
     '    android:initialLayout="@layout/voltra_widget_placeholder"',
     `    android:resizeMode="${resizeMode}"`,
     `    android:widgetCategory="${widgetCategory}"`,
-    `    android:description="@string/voltra_widget_${widget.id}_description"${previewImageResourceName ? ` android:previewImage="@drawable/${previewImageResourceName}"` : ''}${previewLayoutResourceName ? ` android:previewLayout="@layout/${previewLayoutResourceName}"` : ''}>`,
+    `    android:description="@string/voltra_widget_${widget.id}_description"${
+      previewImageResourceName ? ` android:previewImage="@drawable/${previewImageResourceName}"` : ''
+    }${previewLayoutResourceName ? ` android:previewLayout="@layout/${previewLayoutResourceName}"` : ''}>`,
     '</appwidget-provider>',
     '',
   ]
@@ -883,7 +949,9 @@ function generateAutoImagePreviewLayout(widgetId: string, drawableResourceName: 
 
 function generateWidgetStringsXml(widgets: NormalizedAndroidWidgetConfig[], localeKey: string | null): string {
   const localeComment =
-    localeKey === null ? 'default (values/)' : `locale ${localeKey} → values-${localeKeyToAndroidValuesQualifier(localeKey)}`
+    localeKey === null
+      ? 'default (values/)'
+      : `locale ${localeKey} → values-${localeKeyToAndroidValuesQualifier(localeKey)}`
   const entries = widgets
     .map((widget) => {
       const label = escapeAndroidString(resolveWidgetLabel(widget.displayName, localeKey))
@@ -892,7 +960,14 @@ function generateWidgetStringsXml(widgets: NormalizedAndroidWidgetConfig[], loca
     })
     .join('\n')
 
-  return ['<?xml version="1.0" encoding="utf-8"?>', '<resources>', `    <!-- Voltra widget picker strings (auto-generated). ${localeComment} -->`, entries, '</resources>', ''].join('\n')
+  return [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    '<resources>',
+    `    <!-- Voltra widget picker strings (auto-generated). ${localeComment} -->`,
+    entries,
+    '</resources>',
+    '',
+  ].join('\n')
 }
 
 function collectWidgetLocaleKeys(widgets: NormalizedAndroidWidgetConfig[]): Set<string> {
@@ -1014,13 +1089,18 @@ function sanitizeDrawableName(filePath: string): string {
     nameParts.push(
       ...directoryName
         .split(path.sep)
-        .filter((segment) => segment !== '.' && segment !== 'assets' && segment !== 'voltra' && segment !== 'voltra-android')
+        .filter(
+          (segment) => segment !== '.' && segment !== 'assets' && segment !== 'voltra' && segment !== 'voltra-android'
+        )
     )
   }
 
   nameParts.push(fileName)
 
-  let sanitizedName = nameParts.join('_').toLowerCase().replace(/[^a-z0-9_]/g, '_')
+  let sanitizedName = nameParts
+    .join('_')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
 
   if (!/^[a-z]/.test(sanitizedName)) {
     sanitizedName = `img_${sanitizedName}`

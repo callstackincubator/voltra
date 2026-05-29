@@ -92,8 +92,18 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   })
   const preflight = await runApplyPreflight(normalizedConfig, resolvedDependencies.preflightRunners, options.platform)
   const previousState = await loadVoltraState(normalizedConfig.projectRoot)
-  const platformResults = await runPlatformApply(normalizedConfig, preflight, previousState, resolvedDependencies.applyRunners)
-  const nextGeneratedFiles = mergeGeneratedFiles(normalizedConfig, previousState, preflight.requestedPlatforms, platformResults)
+  const platformResults = await runPlatformApply(
+    normalizedConfig,
+    preflight,
+    previousState,
+    resolvedDependencies.applyRunners
+  )
+  const nextGeneratedFiles = mergeGeneratedFiles(
+    normalizedConfig,
+    previousState,
+    preflight.requestedPlatforms,
+    platformResults
+  )
   const stateDiff = diffVoltraState(previousState, nextGeneratedFiles)
   const deletedChanges = await removeStaleGeneratedFiles(normalizedConfig.projectRoot, stateDiff.staleFiles)
   await saveVoltraState(normalizedConfig.projectRoot, { files: stateDiff.nextFiles })
@@ -111,7 +121,8 @@ function resolveApplyDependencies(config: NormalizedVoltraConfig, dependencies: 
       ios: dependencies.applyRunners.ios ?? applyIOSPlatform,
     },
     preflightRunners: {
-      android: dependencies.preflightRunners.android ?? (config.android ? createAndroidPreflightRunner(config) : undefined),
+      android:
+        dependencies.preflightRunners.android ?? (config.android ? createAndroidPreflightRunner(config) : undefined),
       ios: dependencies.preflightRunners.ios ?? (config.ios ? createIOSPreflightRunner(config) : undefined),
     },
     writeIntro: dependencies.writeIntro,
@@ -125,7 +136,9 @@ function mergeGeneratedFiles(
   requestedPlatforms: VoltraPlatform[],
   platformResults: PlatformApplyResult[]
 ): string[] {
-  const nextGeneratedFilesByPlatform = new Map(platformResults.map((result) => [result.platform, result.generatedFiles] as const))
+  const nextGeneratedFilesByPlatform = new Map(
+    platformResults.map((result) => [result.platform, result.generatedFiles] as const)
+  )
   const mergedFiles = new Set<string>()
   const platformRoots = getTrackedPlatformRoots(config)
   const configuredPlatforms = getConfiguredPlatforms(config)
@@ -160,8 +173,14 @@ function mergeGeneratedFiles(
 
 function getTrackedPlatformRoots(config: NormalizedVoltraConfig): Partial<Record<VoltraPlatform, string>> {
   const projectRoot = config.projectRoot
-  const androidRoot = config.android ? normalizeRelativePath(path.relative(projectRoot, config.android.project.rootDir ?? path.join(projectRoot, 'android'))) : undefined
-  const iosRoot = config.ios ? normalizeRelativePath(path.relative(projectRoot, config.ios.project.rootDir ?? path.join(projectRoot, 'ios'))) : undefined
+  const androidRoot = config.android
+    ? normalizeRelativePath(
+        path.relative(projectRoot, config.android.project.rootDir ?? path.join(projectRoot, 'android'))
+      )
+    : undefined
+  const iosRoot = config.ios
+    ? normalizeRelativePath(path.relative(projectRoot, config.ios.project.rootDir ?? path.join(projectRoot, 'ios')))
+    : undefined
 
   return {
     ...(androidRoot ? { android: androidRoot } : {}),
@@ -240,7 +259,9 @@ async function runPlatformApply(
     }
 
     if (result.platform !== platform) {
-      throw new VoltraCliError(`Apply runner returned a mismatched platform result: expected ${platform}, received ${result.platform}.`)
+      throw new VoltraCliError(
+        `Apply runner returned a mismatched platform result: expected ${platform}, received ${result.platform}.`
+      )
     }
 
     results.push(result)
@@ -259,7 +280,9 @@ async function removeStaleGeneratedFiles(projectRoot: string, staleFiles: string
     try {
       deleted = await removePathIfExists(staleFilePath)
     } catch (error: unknown) {
-      throw new VoltraCliError(`Failed to remove stale generated file ${staleFile}: ${getApplyRunnerErrorMessage(error)}`)
+      throw new VoltraCliError(
+        `Failed to remove stale generated file ${staleFile}: ${getApplyRunnerErrorMessage(error)}`
+      )
     }
 
     if (deleted) {

@@ -90,7 +90,11 @@ function resolveOptionalPathFromProjectRoot(projectRoot: string, filePath: strin
   return resolvePathFromProjectRoot(projectRoot, filePath)
 }
 
-function normalizeLocalizedPathMap(projectRoot: string, value: WidgetLocalizedValue, context: string): WidgetLocalizedValue {
+function normalizeLocalizedPathMap(
+  projectRoot: string,
+  value: WidgetLocalizedValue,
+  context: string
+): WidgetLocalizedValue {
   const entries = Object.entries(value)
 
   if (entries.length === 0) {
@@ -193,7 +197,11 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
     ...widget,
     displayName: normalizeLabel(widget.displayName, `android.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `android.widgets[${widget.id}].description`),
-    initialStatePath: normalizeInitialStatePath(projectRoot, widget.initialStatePath, `android.widgets[${widget.id}].initialStatePath`),
+    initialStatePath: normalizeInitialStatePath(
+      projectRoot,
+      widget.initialStatePath,
+      `android.widgets[${widget.id}].initialStatePath`
+    ),
     previewImage: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewImage),
     previewLayout: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewLayout),
     serverUpdate: widget.serverUpdate
@@ -220,7 +228,9 @@ function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): Norma
 
     for (const family of widget.supportedFamilies) {
       if (!VALID_IOS_WIDGET_FAMILIES.has(family)) {
-        throw new VoltraConfigNormalizationError(`ios.widgets[${widget.id}].supportedFamilies contains invalid family '${family}'`)
+        throw new VoltraConfigNormalizationError(
+          `ios.widgets[${widget.id}].supportedFamilies contains invalid family '${family}'`
+        )
       }
     }
   }
@@ -230,7 +240,11 @@ function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): Norma
     displayName: normalizeLabel(widget.displayName, `ios.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `ios.widgets[${widget.id}].description`),
     supportedFamilies: widget.supportedFamilies ?? [...CLI_DEFAULTS.ios.widgetFamilies],
-    initialStatePath: normalizeInitialStatePath(projectRoot, widget.initialStatePath, `ios.widgets[${widget.id}].initialStatePath`),
+    initialStatePath: normalizeInitialStatePath(
+      projectRoot,
+      widget.initialStatePath,
+      `ios.widgets[${widget.id}].initialStatePath`
+    ),
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(
           widget.serverUpdate,
@@ -271,7 +285,10 @@ function assertValidIOSTargetName(targetName: string, context: string): void {
   }
 }
 
-function normalizeAndroidConfig(projectRoot: string, config: LoadedVoltraConfig['config']['android']): NormalizedVoltraAndroidConfig | undefined {
+function normalizeAndroidConfig(
+  projectRoot: string,
+  config: LoadedVoltraConfig['config']['android']
+): NormalizedVoltraAndroidConfig | undefined {
   if (config === undefined) {
     return undefined
   }
@@ -303,7 +320,10 @@ function normalizeAndroidConfig(projectRoot: string, config: LoadedVoltraConfig[
     enableNotifications: config.enableNotifications ?? CLI_DEFAULTS.android.enableNotifications,
     widgets,
     fonts: (config.fonts ?? []).map((fontPath) => resolvePathFromProjectRoot(projectRoot, fontPath)),
-    userImagesPath: resolvePathFromProjectRoot(projectRoot, config.userImagesPath ?? CLI_DEFAULTS.android.userImagesPath),
+    userImagesPath: resolvePathFromProjectRoot(
+      projectRoot,
+      config.userImagesPath ?? CLI_DEFAULTS.android.userImagesPath
+    ),
     project: {
       rootDir: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.rootDir),
       appModuleName: config.project?.appModuleName,
@@ -313,7 +333,10 @@ function normalizeAndroidConfig(projectRoot: string, config: LoadedVoltraConfig[
   }
 }
 
-function normalizeIOSConfig(projectRoot: string, config: LoadedVoltraConfig['config']['ios']): NormalizedVoltraIOSConfig | undefined {
+function normalizeIOSConfig(
+  projectRoot: string,
+  config: LoadedVoltraConfig['config']['ios']
+): NormalizedVoltraIOSConfig | undefined {
   if (config === undefined) {
     return undefined
   }
@@ -375,7 +398,10 @@ export function normalizeVoltraConfig(loadedConfig: LoadedVoltraConfig): Normali
   assertObject(loadedConfig.config, 'config')
   assertOptionalString(loadedConfig.config.projectRoot, 'projectRoot')
 
-  const projectRoot = resolvePathFromProjectRoot(loadedConfig.configDir, loadedConfig.config.projectRoot ?? loadedConfig.configDir)
+  const projectRoot = resolvePathFromProjectRoot(
+    loadedConfig.configDir,
+    loadedConfig.config.projectRoot ?? loadedConfig.configDir
+  )
 
   return {
     configPath: loadedConfig.configPath,

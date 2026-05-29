@@ -49,7 +49,9 @@ function validateVoltraState(rawState: RawVoltraState, statePath: string): Voltr
 
   if (rawState.schemaVersion !== STATE_SCHEMA_VERSION) {
     throw new VoltraCliError(
-      `Unsupported Voltra state schema at ${statePath}: expected ${STATE_SCHEMA_VERSION}, received ${String(rawState.schemaVersion)}.`
+      `Unsupported Voltra state schema at ${statePath}: expected ${STATE_SCHEMA_VERSION}, received ${String(
+        rawState.schemaVersion
+      )}.`
     )
   }
 

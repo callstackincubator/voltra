@@ -40,11 +40,7 @@ export class IOSInfoPlistMutationError extends VoltraCliError {
 
 export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<EnsureInfoPlistResult> {
   const { projectRoot, ios, discovery } = options
-  const infoPlist = await parsePlistFile(
-    discovery.infoPlistPath,
-    'main app Info.plist',
-    createInfoPlistError
-  )
+  const infoPlist = await parsePlistFile(discovery.infoPlistPath, 'main app Info.plist', createInfoPlistError)
 
   infoPlist.NSSupportsLiveActivities = true
   infoPlist.NSSupportsLiveActivitiesFrequentUpdates = false
@@ -58,9 +54,15 @@ export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<
 
   const serverWidgets = ios.widgets.filter((widget) => widget.serverUpdate)
   const serverUrls = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.url]))
-  const serverIntervals = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes]))
+  const serverIntervals = Object.fromEntries(
+    serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes])
+  )
 
-  setOrDeleteVoltraKey(infoPlist, 'Voltra_WidgetServerUrls', Object.keys(serverUrls).length > 0 ? serverUrls : undefined)
+  setOrDeleteVoltraKey(
+    infoPlist,
+    'Voltra_WidgetServerUrls',
+    Object.keys(serverUrls).length > 0 ? serverUrls : undefined
+  )
   setOrDeleteVoltraKey(
     infoPlist,
     'Voltra_WidgetServerIntervals',
@@ -195,7 +197,9 @@ function parsePlistValue(
       const numericValue = Number(rawValue)
 
       if (!Number.isFinite(numericValue)) {
-        throw createError(`Parsed ${errorContext} at ${filePath} contains an invalid ${node['#name']} value '${rawValue}'.`)
+        throw createError(
+          `Parsed ${errorContext} at ${filePath} contains an invalid ${node['#name']} value '${rawValue}'.`
+        )
       }
 
       return numericValue
@@ -232,7 +236,9 @@ function renderPlistValue(value: unknown, indentLevel: number, createError: Plis
   }
 
   if (isTaggedPlistScalar(value)) {
-    return `${indent}<${value.__voltraPlistScalarType}>${escapePlistText(value.value)}</${value.__voltraPlistScalarType}>`
+    return `${indent}<${value.__voltraPlistScalarType}>${escapePlistText(value.value)}</${
+      value.__voltraPlistScalarType
+    }>`
   }
 
   if (value && typeof value === 'object') {
@@ -303,10 +309,7 @@ async function writePlistIfChanged(
 }
 
 function escapePlistText(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function getErrorMessage(error: unknown): string {

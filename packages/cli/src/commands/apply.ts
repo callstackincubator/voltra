@@ -6,7 +6,6 @@ import { normalizeClackMessage, renderError } from '../reporting/clack'
 import type { ApplyOptions } from '../apply'
 import type { VoltraPlatform } from '../config/types'
 
-
 export const CLI_EXIT_CODE_SUCCESS = 0
 export const CLI_EXIT_CODE_FAILURE = 1
 
@@ -96,7 +95,13 @@ function isCommanderDisplayError(error: unknown): error is { code: string } {
 }
 
 function isCommanderError(error: unknown): error is { code: string } {
-  return Boolean(error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error.code.startsWith('commander.'))
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof error.code === 'string' &&
+      error.code.startsWith('commander.')
+  )
 }
 
 export function formatCommandError(error: unknown): string {

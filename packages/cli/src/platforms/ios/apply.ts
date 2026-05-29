@@ -90,7 +90,12 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
     )
   }
 
-  const changes = [infoPlistResult.change, entitlementsResult.change, podfileResult.change, xcodeTargetResult.change].filter(isDefined)
+  const changes = [
+    infoPlistResult.change,
+    entitlementsResult.change,
+    podfileResult.change,
+    xcodeTargetResult.change,
+  ].filter(isDefined)
 
   return {
     platform: 'ios',
@@ -115,9 +120,16 @@ function isIOSProjectDiscovery(value: unknown): value is IOSProjectDiscovery {
 
   const candidate = value as Partial<IOSProjectDiscovery>
 
-  return [candidate.iosRoot, candidate.xcodeprojPath, candidate.pbxprojPath, candidate.podfilePath, candidate.mainTargetName, candidate.infoPlistPath].every(
-    (entry) => typeof entry === 'string' && entry.length > 0
-  ) && Array.isArray(candidate.mainTargetCandidates)
+  return (
+    [
+      candidate.iosRoot,
+      candidate.xcodeprojPath,
+      candidate.pbxprojPath,
+      candidate.podfilePath,
+      candidate.mainTargetName,
+      candidate.infoPlistPath,
+    ].every((entry) => typeof entry === 'string' && entry.length > 0) && Array.isArray(candidate.mainTargetCandidates)
+  )
 }
 
 function isDefined<TValue>(value: TValue | undefined): value is TValue {

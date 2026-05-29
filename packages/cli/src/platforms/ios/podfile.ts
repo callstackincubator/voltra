@@ -137,7 +137,10 @@ function escapeRegExp(value: string): string {
 }
 
 function hasUnmanagedTargetBlock(content: string, targetName: string): boolean {
-  const targetPattern = new RegExp(`(^|\\n)target '${escapeRegExp(escapeRubySingleQuotedString(targetName))}' do(\\n|$)`, 'm')
+  const targetPattern = new RegExp(
+    `(^|\\n)target '${escapeRegExp(escapeRubySingleQuotedString(targetName))}' do(\\n|$)`,
+    'm'
+  )
   return targetPattern.test(content)
 }
 

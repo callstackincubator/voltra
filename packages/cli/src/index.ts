@@ -63,11 +63,24 @@ function isCommanderDisplayError(error: unknown): error is { code: string } {
 }
 
 function isCommanderError(error: unknown): error is { code: string } {
-  return Boolean(error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && error.code.startsWith('commander.'))
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof error.code === 'string' &&
+      error.code.startsWith('commander.')
+  )
 }
 
 export { applyVoltra, runApplyPipeline } from './apply'
-export type { ApplyDependencies, ApplyOptions, ApplyResult, PlatformApplyContext, PlatformApplyResult, PlatformApplyRunner } from './apply'
+export type {
+  ApplyDependencies,
+  ApplyOptions,
+  ApplyResult,
+  PlatformApplyContext,
+  PlatformApplyResult,
+  PlatformApplyRunner,
+} from './apply'
 export { getRequestedPlatforms, runApplyPreflight } from './apply/preflight'
 export type {
   ApplyPreflightContext,
@@ -126,7 +139,13 @@ export type {
 export { diffVoltraState } from './state/diff'
 export { getVoltraStatePath, loadVoltraState } from './state/load'
 export { saveVoltraState } from './state/save'
-export { normalizeClackMessage, renderApplySummary, renderCancelled, renderError, renderWarning } from './reporting/clack'
+export {
+  normalizeClackMessage,
+  renderApplySummary,
+  renderCancelled,
+  renderError,
+  renderWarning,
+} from './reporting/clack'
 export type { VoltraStateDiff } from './state/diff'
 export type { SaveVoltraStateInput } from './state/save'
 export type { VoltraState } from './state/load'
@@ -167,4 +186,10 @@ export type {
   WidgetLabel,
   WidgetLocalizedValue,
 } from './config/types'
-export type { ApplySummary, PreflightFailureReport, PreflightIssue, ReportedChange, ReportedChangeKind } from './reporting/summary'
+export type {
+  ApplySummary,
+  PreflightFailureReport,
+  PreflightIssue,
+  ReportedChange,
+  ReportedChangeKind,
+} from './reporting/summary'

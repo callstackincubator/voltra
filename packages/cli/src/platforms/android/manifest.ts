@@ -81,7 +81,9 @@ export class AndroidManifestMutationError extends VoltraCliError {
   }
 }
 
-export async function ensureAndroidManifest(options: EnsureAndroidManifestOptions): Promise<EnsureAndroidManifestResult> {
+export async function ensureAndroidManifest(
+  options: EnsureAndroidManifestOptions
+): Promise<EnsureAndroidManifestResult> {
   const { projectRoot, android, discovery } = options
   const manifestPath = discovery.manifestPath
   const previousContent = await readTextFile(manifestPath)
@@ -102,7 +104,10 @@ export async function ensureAndroidManifest(options: EnsureAndroidManifestOption
   application.receiver = receivers
 
   reconcileNotificationReceiver(receivers, android.enableNotifications)
-  removeStaleWidgetReceivers(receivers, android.widgets.map((widget) => widget.id))
+  removeStaleWidgetReceivers(
+    receivers,
+    android.widgets.map((widget) => widget.id)
+  )
 
   if (android.enableNotifications) {
     ensureNotificationReceiver(receivers)
@@ -133,7 +138,9 @@ async function parseAndroidManifest(content: string, manifestPath: string): Prom
     return (await parseStringPromise(content)) as AndroidManifestDocument
   } catch (error: unknown) {
     throw new AndroidManifestMutationError(
-      `Failed to parse AndroidManifest.xml at ${manifestPath}: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to parse AndroidManifest.xml at ${manifestPath}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     )
   }
 }
@@ -142,7 +149,9 @@ function getMainApplication(manifest: AndroidManifestRoot, manifestPath: string)
   const applications = manifest.application ?? []
 
   if (applications.length === 0) {
-    throw new AndroidManifestMutationError(`Android manifest does not contain an <application> element: ${manifestPath}`)
+    throw new AndroidManifestMutationError(
+      `Android manifest does not contain an <application> element: ${manifestPath}`
+    )
   }
 
   if (applications.length > 1) {
@@ -232,7 +241,11 @@ function removeStaleWidgetReceivers(receivers: AndroidManifestReceiver[], widget
   removeEntries(receivers, (receiver) => {
     const receiverName = receiver.$?.['android:name']
 
-    if (!receiverName || !receiverName.startsWith(WIDGET_RECEIVER_NAME_PREFIX) || !receiverName.endsWith(WIDGET_RECEIVER_NAME_SUFFIX)) {
+    if (
+      !receiverName ||
+      !receiverName.startsWith(WIDGET_RECEIVER_NAME_PREFIX) ||
+      !receiverName.endsWith(WIDGET_RECEIVER_NAME_SUFFIX)
+    ) {
       return false
     }
 
@@ -278,7 +291,9 @@ function ensureReceiverMetadata(receiver: AndroidManifestReceiver, metadataResou
   const metadataEntries = receiver['meta-data'] ?? []
   receiver['meta-data'] = metadataEntries
 
-  const providerMetadata = metadataEntries.find((metadata) => metadata.$?.['android:name'] === APPWIDGET_PROVIDER_METADATA)
+  const providerMetadata = metadataEntries.find(
+    (metadata) => metadata.$?.['android:name'] === APPWIDGET_PROVIDER_METADATA
+  )
 
   if (providerMetadata) {
     providerMetadata.$ = {
@@ -298,12 +313,17 @@ function ensureReceiverMetadata(receiver: AndroidManifestReceiver, metadataResou
   })
 }
 
-function findReceiverByName(receivers: AndroidManifestReceiver[], receiverName: string): AndroidManifestReceiver | undefined {
+function findReceiverByName(
+  receivers: AndroidManifestReceiver[],
+  receiverName: string
+): AndroidManifestReceiver | undefined {
   return receivers.find((receiver) => receiver.$?.['android:name'] === receiverName)
 }
 
 function getReceiverMetadataResource(receiver: AndroidManifestReceiver): string | undefined {
-  return receiver['meta-data']?.find((metadata) => metadata.$?.['android:name'] === APPWIDGET_PROVIDER_METADATA)?.$?.['android:resource']
+  return receiver['meta-data']?.find((metadata) => metadata.$?.['android:name'] === APPWIDGET_PROVIDER_METADATA)?.$?.[
+    'android:resource'
+  ]
 }
 
 function isWidgetMetadataResource(resource: string): boolean {

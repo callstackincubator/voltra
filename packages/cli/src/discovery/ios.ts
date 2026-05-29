@@ -59,7 +59,10 @@ export class IOSProjectDiscoveryError extends VoltraCliError {
   }
 }
 
-export async function discoverIOSProject(projectRoot: string, config: NormalizedIOSProjectConfig): Promise<IOSProjectDiscovery> {
+export async function discoverIOSProject(
+  projectRoot: string,
+  config: NormalizedIOSProjectConfig
+): Promise<IOSProjectDiscovery> {
   const iosRoot = await resolveIOSRoot(projectRoot, config)
   const xcodeprojPath = await resolveXcodeprojPath(iosRoot, config)
   const pbxprojPath = await resolvePbxprojPath(xcodeprojPath)
@@ -127,7 +130,9 @@ async function resolveXcodeprojPath(iosRoot: string, config: NormalizedIOSProjec
   }
 
   throw new IOSProjectDiscoveryError(
-    `Multiple .xcodeproj directories were found in ${iosRoot}: ${xcodeprojCandidates.join(', ')}. Set ios.project.xcodeprojPath explicitly.`
+    `Multiple .xcodeproj directories were found in ${iosRoot}: ${xcodeprojCandidates.join(
+      ', '
+    )}. Set ios.project.xcodeprojPath explicitly.`
   )
 }
 
@@ -213,7 +218,8 @@ function parseConfigurationLists(section: string): Map<string, ParsedXCConfigura
     configurationLists.set(id, {
       id,
       buildConfigurationIds,
-      defaultConfigurationName: stripPbxprojValue(matchPbxprojAssignment(body, 'defaultConfigurationName') ?? '' ) || undefined,
+      defaultConfigurationName:
+        stripPbxprojValue(matchPbxprojAssignment(body, 'defaultConfigurationName') ?? '') || undefined,
     })
   }
 
@@ -306,7 +312,9 @@ function getTargetBuildConfigurations(
 
   if (missingConfigurationIds.length > 0) {
     throw new IOSProjectDiscoveryError(
-      `Build configurations ${missingConfigurationIds.join(', ')} for target '${target.name}' were not found in ${pbxprojPath}`
+      `Build configurations ${missingConfigurationIds.join(', ')} for target '${
+        target.name
+      }' were not found in ${pbxprojPath}`
     )
   }
 
@@ -315,7 +323,9 @@ function getTargetBuildConfigurations(
     .filter((configuration): configuration is ParsedXCBuildConfiguration => configuration !== undefined)
 
   if (buildConfigurations.length === 0) {
-    throw new IOSProjectDiscoveryError(`No build configurations were found for target '${target.name}' in ${pbxprojPath}`)
+    throw new IOSProjectDiscoveryError(
+      `No build configurations were found for target '${target.name}' in ${pbxprojPath}`
+    )
   }
 
   const defaultConfigurationName = configurationList.defaultConfigurationName
@@ -324,9 +334,13 @@ function getTargetBuildConfigurations(
     return buildConfigurations
   }
 
-  const defaultConfiguration = buildConfigurations.find((configuration) => configuration.name === defaultConfigurationName)
+  const defaultConfiguration = buildConfigurations.find(
+    (configuration) => configuration.name === defaultConfigurationName
+  )
 
-  return defaultConfiguration ? [defaultConfiguration, ...buildConfigurations.filter((configuration) => configuration !== defaultConfiguration)] : buildConfigurations
+  return defaultConfiguration
+    ? [defaultConfiguration, ...buildConfigurations.filter((configuration) => configuration !== defaultConfiguration)]
+    : buildConfigurations
 }
 
 async function resolveInfoPlistPath(
@@ -337,7 +351,13 @@ async function resolveInfoPlistPath(
 ): Promise<string> {
   const infoPlistPath =
     config.infoPlistPath ??
-    resolveConsistentBuildSettingPath(iosRoot, target, buildConfigurations, 'INFOPLIST_FILE', (configuration) => configuration.buildSettings.infoPlistFile)
+    resolveConsistentBuildSettingPath(
+      iosRoot,
+      target,
+      buildConfigurations,
+      'INFOPLIST_FILE',
+      (configuration) => configuration.buildSettings.infoPlistFile
+    )
 
   if (!infoPlistPath) {
     throw new IOSProjectDiscoveryError(
@@ -415,7 +435,9 @@ function resolveConsistentBuildSettingPath(
     throw new IOSProjectDiscoveryError(
       `Target '${target.name}' resolves ${settingName} to multiple paths: ${[...resolvedPaths.entries()]
         .map(([resolvedPath, configurationNames]) => `${resolvedPath} (${configurationNames.join(', ')})`)
-        .join('; ')}. Set ios.project.${settingName === 'INFOPLIST_FILE' ? 'infoPlistPath' : 'entitlementsPath'} explicitly.`
+        .join('; ')}. Set ios.project.${
+        settingName === 'INFOPLIST_FILE' ? 'infoPlistPath' : 'entitlementsPath'
+      } explicitly.`
     )
   }
 
@@ -492,7 +514,10 @@ function matchBuildSettingsBlock(body: string): string | undefined {
 }
 
 function matchBuildSetting(buildSettingsBlock: string, settingName: string): string | undefined {
-  return stripPbxprojValue(buildSettingsBlock.match(new RegExp(`\\b${settingName}\\s*=\\s*([^;]+);`))?.[1] ?? '') || undefined
+  return (
+    stripPbxprojValue(buildSettingsBlock.match(new RegExp(`\\b${settingName}\\s*=\\s*([^;]+);`))?.[1] ?? '') ||
+    undefined
+  )
 }
 
 function matchPbxprojReference(body: string, fieldName: string): string | undefined {

@@ -80,7 +80,9 @@ export async function loadVoltraConfig(options: LoadVoltraConfigOptions = {}): P
     const result = await explorer.search(options.cwd)
 
     if (!result) {
-      throw new VoltraConfigLoadError('No Voltra config found. Checked package.json, .voltrarc*, and voltra.config.* files.')
+      throw new VoltraConfigLoadError(
+        'No Voltra config found. Checked package.json, .voltrarc*, and voltra.config.* files.'
+      )
     }
 
     return toLoadedConfig(result)
@@ -90,6 +92,9 @@ export async function loadVoltraConfig(options: LoadVoltraConfigOptions = {}): P
     }
 
     const message = error instanceof Error ? error.message : String(error)
-    throw new VoltraConfigLoadError(`Failed to load Voltra config: ${message}`, error instanceof Error ? error : undefined)
+    throw new VoltraConfigLoadError(
+      `Failed to load Voltra config: ${message}`,
+      error instanceof Error ? error : undefined
+    )
   }
 }
