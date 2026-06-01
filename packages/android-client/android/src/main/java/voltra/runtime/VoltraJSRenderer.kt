@@ -1,7 +1,9 @@
 package voltra.runtime
 
+import android.content.Context
 import android.util.Log
 import org.json.JSONObject
+import java.io.IOException
 
 /**
  * Standalone Hermes runtime owned by Voltra (independent of React Native's
@@ -17,6 +19,7 @@ import org.json.JSONObject
  */
 object VoltraJSRenderer {
     private const val TAG = "VoltraJSRenderer"
+    private const val BUNDLE_ASSET_PATH = "voltra/android-renderer.js"
 
     init {
         System.loadLibrary("voltra_js_renderer")
@@ -49,6 +52,29 @@ object VoltraJSRenderer {
             }
             return initialized
         }
+    }
+
+    /**
+     * Initialize the resolver by loading the JS bundle from the Voltra assets
+     * directory (`assets/voltra/android-renderer.js`). The config plugin copies
+     * the bundle there on prebuild when any widget declares `appIntent`.
+     *
+     * Returns false if the asset is missing (in which case reactive resolution
+     * is skipped and the original payload renders unchanged).
+     */
+    fun ensureInitializedFromAssets(context: Context): Boolean {
+        if (initialized) return true
+        val source =
+            try {
+                context.assets
+                    .open(BUNDLE_ASSET_PATH)
+                    .bufferedReader()
+                    .use { it.readText() }
+            } catch (e: IOException) {
+                Log.w(TAG, "Bundle not found at assets/$BUNDLE_ASSET_PATH — reactive resolution disabled")
+                return false
+            }
+        return ensureInitialized(source)
     }
 
     /**

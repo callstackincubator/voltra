@@ -31,6 +31,8 @@ import androidx.glance.text.TextStyle
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraPayload
 import voltra.parsing.VoltraPayloadParser
+import voltra.runtime.AppIntentParamsStore
+import voltra.runtime.VoltraJSRenderer
 
 class VoltraGlanceWidget(
     private val widgetId: String = "default",
@@ -70,7 +72,12 @@ class VoltraGlanceWidget(
     ) {
         // Parse data outside of composition to avoid try/catch in composable
         val widgetManager = VoltraWidgetManager(context)
-        val jsonString = widgetManager.readWidgetJson(widgetId)
+        val rawJsonString = widgetManager.readWidgetJson(widgetId)
+
+        // Resolve `{{ appIntent.X }}` placeholders via Hermes if present (Track 4).
+        // Skip the engine entirely when the payload has no template — keeps existing
+        // (non-reactive) widgets on the original code path with zero overhead.
+        val jsonString = rawJsonString?.let { resolveAppIntentTemplates(context, it) }
 
         val payload: VoltraPayload? =
             if (jsonString != null) {
@@ -188,6 +195,33 @@ class VoltraGlanceWidget(
                 )
             }
         }
+    }
+
+    /**
+     * If [json] contains `{{ appIntent.X }}` placeholders, run it through the
+     * Hermes-backed resolver against the params stored for this widget.
+     *
+     * Returns the resolved JSON, the original on resolver failure, or the
+     * original when no template tokens are present (cheap fast-path).
+     */
+    private suspend fun resolveAppIntentTemplates(
+        context: Context,
+        json: String,
+    ): String {
+        if (!json.contains("{{ appIntent.")) return json
+
+        if (!VoltraJSRenderer.ensureInitializedFromAssets(context)) {
+            return json
+        }
+
+        val params = AppIntentParamsStore(context).getParams(widgetId)
+        val resolved = VoltraJSRenderer.resolve(json, params)
+        if (resolved == null) {
+            Log.w(TAG, "Hermes resolve returned null for widgetId=$widgetId; falling back to raw payload")
+            return json
+        }
+        Log.i(TAG, "Resolved AppIntent placeholders for widgetId=$widgetId (params=$params)")
+        return resolved
     }
 
     /**
