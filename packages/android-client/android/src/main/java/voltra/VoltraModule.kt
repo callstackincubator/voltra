@@ -15,7 +15,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import voltra.images.VoltraImageManager
-import voltra.runtime.VoltraSmokeTest
+import voltra.runtime.VoltraJSRenderer
 import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetManager
 
@@ -24,12 +24,63 @@ class VoltraModule(
 ) : NativeVoltraAndroidSpec(reactContext) {
     companion object {
         private const val TAG = "VoltraModule"
+
+        // Phase 1 — temporary self-test bundle. Defines a minimal VoltraRenderer
+        // matching the iOS Track 2 resolver's `{{ appIntent.X }}` substitution.
+        // Replaced in Phase 2 by the real @use-voltra/android-renderer bundle
+        // loaded from assets. Remove this self-test entirely in Phase 3.
+        private const val PHASE_1_TEST_BUNDLE = """
+            (function (g) {
+              var TPL = /\{\{\s*appIntent\.(\w+)\s*\}\}/g;
+              function resolveString(s, params) {
+                return s.replace(TPL, function (_, k) {
+                  return params[k] !== undefined ? params[k] : '';
+                });
+              }
+              function resolveValue(v, params) {
+                if (typeof v === 'string') return resolveString(v, params);
+                if (Array.isArray(v)) return v.map(function (x) { return resolveValue(x, params); });
+                if (v !== null && typeof v === 'object') {
+                  var out = {};
+                  for (var k in v) {
+                    if (Object.prototype.hasOwnProperty.call(v, k)) {
+                      out[k] = resolveValue(v[k], params);
+                    }
+                  }
+                  return out;
+                }
+                return v;
+              }
+              g.VoltraRenderer = {
+                resolve: function (payload, params) {
+                  var out = {};
+                  for (var k in payload) {
+                    if (k === 'v' || k === 'e') out[k] = payload[k];
+                    else out[k] = resolveValue(payload[k], params);
+                  }
+                  return out;
+                }
+              };
+            })(globalThis);
+        """
     }
 
     init {
-        // Phase 0 — Hermes-on-Android smoke test (Track 4 PoC).
-        // Logs to logcat under tag "VoltraSmokeTest". Throwaway — remove when Phase 1 lands.
-        VoltraSmokeTest.run()
+        // Phase 1 self-test — verifies Kotlin → JNI → Hermes → JS → back round-trip.
+        // Removed in Phase 3 when the real Glance render path wires the resolver in.
+        runPhase1SelfTest()
+    }
+
+    private fun runPhase1SelfTest() {
+        val ok = VoltraJSRenderer.ensureInitialized(PHASE_1_TEST_BUNDLE)
+        if (!ok) {
+            Log.e(TAG, "[Phase 1 self-test] ensureInitialized failed")
+            return
+        }
+        val payload =
+            """{"v":1,"systemSmall":{"t":0,"c":"{{ appIntent.city }} weather","p":{"fs":22}}}"""
+        val resolved = VoltraJSRenderer.resolve(payload, mapOf("city" to "Warsaw"))
+        Log.i(TAG, "[Phase 1 self-test] resolved = $resolved")
     }
 
     private val notificationManager by lazy {

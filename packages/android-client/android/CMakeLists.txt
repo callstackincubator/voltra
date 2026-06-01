@@ -11,19 +11,17 @@ find_package(hermes-engine REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 
 # ---------------------------------------------------------------------------
-# Phase 0 — smoke test
+# Voltra JS Renderer (Track 4 — Hermes-on-Android)
 # ---------------------------------------------------------------------------
-# Throwaway target that creates a standalone Hermes runtime, evaluates `1+1`,
-# and returns the result to Kotlin via JNI. Validates that:
-#   1. Voltra's android-client AAR can carry native code
-#   2. Hermes headers + libhermes.so are linkable from a Voltra-owned target
-#   3. `hermes::makeHermesRuntime()` works outside the React Native bridge
-# Delete this target and its sources before merging if the broader PoC fails.
-add_library(voltra_smoke SHARED
-  src/main/cpp/voltra_smoke.cpp
+# Standalone Hermes runtime owned by Voltra (independent of the React Native
+# bridge). Evaluates the @use-voltra/android-renderer bundle once per process,
+# then resolves `{{ appIntent.X }}` placeholders in widget payloads at render
+# time. JNI surface defined in voltra_js_renderer.cpp.
+add_library(voltra_js_renderer SHARED
+  src/main/cpp/voltra_js_renderer.cpp
 )
 
-target_link_libraries(voltra_smoke
+target_link_libraries(voltra_js_renderer
   android
   log
   ReactAndroid::jsi
