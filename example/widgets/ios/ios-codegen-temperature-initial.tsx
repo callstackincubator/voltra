@@ -1,4 +1,4 @@
-import type { WidgetVariants } from 'voltra'
+import type { WidgetVariants } from '@use-voltra/ios'
 
 import { IosCodegenTemperatureWidget } from './IosCodegenTemperatureWidget'
 

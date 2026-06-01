@@ -74,9 +74,7 @@
               "supportedFamilies": ["systemSmall", "systemMedium"],
               "initialStatePath": "./widgets/ios/ios-codegen-temperature-initial.tsx",
               "appIntent": {
-                "parameters": [
-                  { "name": "temperature", "title": "Temperature", "default": "22°C" }
-                ]
+                "parameters": [{ "name": "temperature", "title": "Temperature", "default": "22°C" }]
               }
             }
           ],

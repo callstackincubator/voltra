@@ -48,18 +48,15 @@ export function generateCodegenWidgetCode(widget: WidgetConfig, prerenderedPaylo
 
   // --- Intent ---
   const intentParamsCode = params
-    .map(
-      (p) =>
-        `  @Parameter(title: "${esc(p.title)}", default: "${esc(p.default)}")\n  var ${p.name}: String?`
-    )
+    .map((p) => `  @Parameter(title: "${esc(p.title)}", default: "${esc(p.default ?? '')}")\n  var ${p.name}: String?`)
     .join('\n\n')
 
   // --- Entry ---
   const entryFieldsCode = params.map((p) => `  let ${p.name}: String`).join('\n')
 
   // --- Provider ---
-  const placeholderArgs = params.map((p) => `${p.name}: "${esc(p.default)}"`).join(', ')
-  const intentArgs = params.map((p) => `${p.name}: intent.${p.name} ?? "${esc(p.default)}"`).join(', ')
+  const placeholderArgs = params.map((p) => `${p.name}: "${esc(p.default ?? '')}"`).join(', ')
+  const intentArgs = params.map((p) => `${p.name}: intent.${p.name} ?? "${esc(p.default ?? '')}"`).join(', ')
 
   // --- View: per-family view properties ---
   const familyViewProps = families
@@ -187,44 +184,23 @@ function translateNode(
     }
 
     case T_VSTACK: {
-      const children = (node.c as VoltraNode[]).map((child) =>
-        translateNode(child, stylesheet, paramNames, indent + 2)
-      )
+      const children = (node.c as VoltraNode[]).map((child) => translateNode(child, stylesheet, paramNames, indent + 2))
       const args = stackArgs(props, 'V')
       const mods = containerModifiers(props)
-      return [
-        `${pad}VStack${args} {`,
-        ...children,
-        `${pad}}`,
-        ...mods.map((m) => `${pad}${m}`),
-      ].join('\n')
+      return [`${pad}VStack${args} {`, ...children, `${pad}}`, ...mods.map((m) => `${pad}${m}`)].join('\n')
     }
 
     case T_HSTACK: {
-      const children = (node.c as VoltraNode[]).map((child) =>
-        translateNode(child, stylesheet, paramNames, indent + 2)
-      )
+      const children = (node.c as VoltraNode[]).map((child) => translateNode(child, stylesheet, paramNames, indent + 2))
       const args = stackArgs(props, 'H')
       const mods = containerModifiers(props)
-      return [
-        `${pad}HStack${args} {`,
-        ...children,
-        `${pad}}`,
-        ...mods.map((m) => `${pad}${m}`),
-      ].join('\n')
+      return [`${pad}HStack${args} {`, ...children, `${pad}}`, ...mods.map((m) => `${pad}${m}`)].join('\n')
     }
 
     case T_ZSTACK: {
-      const children = (node.c as VoltraNode[]).map((child) =>
-        translateNode(child, stylesheet, paramNames, indent + 2)
-      )
+      const children = (node.c as VoltraNode[]).map((child) => translateNode(child, stylesheet, paramNames, indent + 2))
       const mods = containerModifiers(props)
-      return [
-        `${pad}ZStack {`,
-        ...children,
-        `${pad}}`,
-        ...mods.map((m) => `${pad}${m}`),
-      ].join('\n')
+      return [`${pad}ZStack {`, ...children, `${pad}}`, ...mods.map((m) => `${pad}${m}`)].join('\n')
     }
 
     default:

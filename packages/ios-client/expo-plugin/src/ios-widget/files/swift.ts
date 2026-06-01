@@ -322,16 +322,13 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
  */
 function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
   const staticWidgets = widgets.filter((w) => !w.appIntent)
-  const codegenWidgets = widgets.filter((w) => w.appIntent)
 
   // Inline struct definitions only for non-codegen widgets
   const widgetStructs = staticWidgets.map(generateWidgetStruct).join('\n\n')
 
   // Bundle body: static widgets use VoltraWidget_<id>(), codegen widgets use VoltraCodegenWidget_<safeId>()
   const widgetInstances = widgets
-    .map((w) =>
-      w.appIntent ? `VoltraCodegenWidget_${sanitizeSwiftId(w.id)}()` : `VoltraWidget_${w.id}()`
-    )
+    .map((w) => (w.appIntent ? `VoltraCodegenWidget_${sanitizeSwiftId(w.id)}()` : `VoltraWidget_${w.id}()`))
     .join('\n    ')
 
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
