@@ -33,6 +33,7 @@ public enum ShortNames {
     "clip": "clipped",
     "c": "color",
     "cls": "colors",
+    "cols": "columns",
     "ca": "contentAlignment",
     "cc": "contentColor",
     "cdesc": "contentDescription",

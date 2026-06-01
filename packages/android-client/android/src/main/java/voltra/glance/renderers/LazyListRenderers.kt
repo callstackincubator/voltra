@@ -85,7 +85,7 @@ fun RenderLazyVerticalGrid(
     val gridCells =
         when (val columns = element.p?.get("columns")) {
             is Number -> {
-                GridCells.Fixed(columns.toInt())
+                GridCells.Fixed(columns.toInt().coerceIn(1, 5))
             }
 
             "adaptive" -> {
@@ -95,7 +95,7 @@ fun RenderLazyVerticalGrid(
 
             else -> {
                 GridCells.Fixed(2)
-            } // Default to 2 columns
+            }
         }
 
     val horizontalAlignment = extractHorizontalAlignment(element.p)
@@ -138,12 +138,4 @@ private fun extractHorizontalAlignment(props: Map<String, Any?>?): Alignment.Hor
         "center-horizontally" -> Alignment.Horizontal.CenterHorizontally
         "end" -> Alignment.Horizontal.End
         else -> Alignment.Horizontal.Start
-    }
-
-private fun extractVerticalAlignment(props: Map<String, Any?>?): Alignment.Vertical =
-    when (props?.get("verticalAlignment") as? String) {
-        "top" -> Alignment.Vertical.Top
-        "center" -> Alignment.Vertical.CenterVertically
-        "bottom" -> Alignment.Vertical.Bottom
-        else -> Alignment.Vertical.Top
     }

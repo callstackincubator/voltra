@@ -15,6 +15,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class AndroidLazyVerticalGridParameters(
-    /** Dummy parameter to satisfy data class requirements */
-    val _dummy: Unit = Unit,
+    /** Number of fixed grid columns */
+    val columns: Double? = null,
+    /** Horizontal alignment of children */
+    val horizontalAlignment: String? = null,
 )

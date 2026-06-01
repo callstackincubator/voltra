@@ -89,6 +89,39 @@ test('renders Android view payloads with metadata separate from variants', () =>
   )
 })
 
+test('renders LazyVerticalGrid children with fixed columns and horizontal alignment', () => {
+  const letters = ['A', 'B', 'C']
+
+  assert.deepEqual(
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.LazyVerticalGrid,
+        {
+          columns: 3,
+          horizontalAlignment: 'center-horizontally',
+        },
+        letters.map((letter) => React.createElement(VoltraAndroid.Text, { key: letter }, letter))
+      )
+    ),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidLazyVerticalGrid'),
+          c: letters.map((letter) => ({
+            t: getAndroidComponentId('AndroidText'),
+            c: letter,
+          })),
+          p: {
+            cols: 3,
+            halig: 'center-horizontally',
+          },
+        },
+      },
+    }
+  )
+})
+
 test('renders Android live update roots and metadata into the expected fields', () => {
   const liveUpdate = {
     collapsed: React.createElement(VoltraAndroid.Text, null, 'Collapsed'),

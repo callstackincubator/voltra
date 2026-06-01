@@ -50,6 +50,7 @@
     "maxLines": "mxl",
     "contentDescription": "cdesc",
     "horizontalAlignment": "halig",
+    "columns": "cols",
     "verticalAlignment": "valig",
     "contentAlignment": "ca",
     "icon": "ic",
@@ -1039,7 +1040,19 @@
       "androidAvailability": "Android 12+",
       "swiftAvailability": "Not available",
       "hasChildren": true,
-      "parameters": {}
+      "parameters": {
+        "columns": {
+          "type": "number",
+          "optional": true,
+          "description": "Number of fixed grid columns"
+        },
+        "horizontalAlignment": {
+          "type": "string",
+          "optional": true,
+          "enum": ["start", "center-horizontally", "end"],
+          "description": "Horizontal alignment of children"
+        }
+      }
     },
     {
       "name": "AndroidLinearProgressIndicator",

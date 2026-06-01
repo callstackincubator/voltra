@@ -4,4 +4,9 @@
 
 import type { VoltraBaseProps } from '../baseProps'
 
-export type AndroidLazyVerticalGridProps = VoltraBaseProps
+export type AndroidLazyVerticalGridProps = VoltraBaseProps & {
+  /** Number of fixed grid columns */
+  columns?: number
+  /** Horizontal alignment of children */
+  horizontalAlignment?: 'start' | 'center-horizontally' | 'end'
+}
