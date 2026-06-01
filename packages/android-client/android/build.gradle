@@ -39,11 +39,34 @@ android {
     versionCode 1
     versionName "0.1.0"
     buildConfigField "String", "VOLTRA_VERSION", "\"${voltraVersion}\""
+
+    externalNativeBuild {
+      cmake {
+        cppFlags "-std=c++17", "-fexceptions", "-frtti"
+        arguments "-DANDROID_STL=c++_shared"
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
   }
 
   buildFeatures {
     buildConfig true
     compose true
+    prefab true
+  }
+
+  packagingOptions {
+    excludes += [
+      "**/libreact_nativemodule_core.so",
+      "**/libfbjni.so",
+      "**/libjsi.so",
+      "**/libhermes.so",
+    ]
   }
 
   lintOptions {
@@ -67,6 +90,10 @@ android {
 dependencies {
   // React Native
   implementation "com.facebook.react:react-android"
+
+  // Hermes engine (provides libhermes.so + headers via prefab)
+  // Used by the Voltra widget JS resolver for AppIntent reactivity (Track 4 PoC)
+  implementation "com.facebook.react:hermes-android"
 
   // Jetpack Glance
   api "androidx.glance:glance:1.2.0-rc01"
