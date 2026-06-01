@@ -159,9 +159,7 @@ export const IosWeatherWidget = ({ weather = DEFAULT_WEATHER }: WeatherWidgetPro
               paddingVertical: 2,
             }}
           >
-            <Voltra.Text style={{ fontSize: 9, color: 'light-dark(#000000, #ffffff)' }}>
-              light-dark
-            </Voltra.Text>
+            <Voltra.Text style={{ fontSize: 9, color: 'light-dark(#000000, #ffffff)' }}>light-dark</Voltra.Text>
           </Voltra.View>
           <Voltra.View
             style={{

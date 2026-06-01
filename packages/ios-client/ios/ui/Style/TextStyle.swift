@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TextStyle {
   var color: Color = .primary
-  var lightDarkColors: (light: Color, dark: Color)? = nil
+  var lightDarkColors: (light: Color, dark: Color)?
   var usesPrimaryColorInReducedPresentation = false
   var fontSize: CGFloat = 17
   var fontWeight: Font.Weight = .regular

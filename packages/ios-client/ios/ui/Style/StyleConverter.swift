@@ -156,7 +156,8 @@ enum StyleConverter {
     let colorValue = js["color"]
     if let colorStr = colorValue as? String,
        colorStr.trimmingCharacters(in: .whitespacesAndNewlines).lowercased().hasPrefix("light-dark("),
-       let components = JSColorParser.parseLightDarkComponents(colorStr) {
+       let components = JSColorParser.parseLightDarkComponents(colorStr)
+    {
       style.lightDarkColors = components
     } else if let color = JSColorParser.parse(colorValue) {
       style.color = color
