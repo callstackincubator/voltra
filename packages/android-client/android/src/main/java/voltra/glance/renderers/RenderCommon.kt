@@ -13,6 +13,7 @@ import androidx.glance.action.Action
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.layout.ContentScale
 import voltra.glance.LocalVoltraRenderContext
+import voltra.glance.components.*
 import voltra.images.VoltraImageManager
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
@@ -156,8 +157,8 @@ private fun RenderElement(element: VoltraElement) {
         ComponentTypeID.SQUARE_ICON_BUTTON -> RenderSquareIconButton(element)
         ComponentTypeID.TITLE_BAR -> RenderTitleBar(element)
         ComponentTypeID.SCAFFOLD -> RenderScaffold(element)
-        ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element)
-        ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element)
+        ComponentTypeID.LAZY_COLUMN -> VoltraLazyColumn(element)
+        ComponentTypeID.LAZY_VERTICAL_GRID -> VoltraLazyVerticalGrid(element)
         ComponentTypeID.CHART -> RenderChart(element)
     }
 }
@@ -191,8 +192,8 @@ fun RenderElementWithModifier(
         ComponentTypeID.SQUARE_ICON_BUTTON -> RenderSquareIconButton(element, modifier)
         ComponentTypeID.TITLE_BAR -> RenderTitleBar(element, modifier)
         ComponentTypeID.SCAFFOLD -> RenderScaffold(element, modifier)
-        ComponentTypeID.LAZY_COLUMN -> RenderLazyColumn(element, modifier)
-        ComponentTypeID.LAZY_VERTICAL_GRID -> RenderLazyVerticalGrid(element, modifier)
+        ComponentTypeID.LAZY_COLUMN -> VoltraLazyColumn(element, modifier)
+        ComponentTypeID.LAZY_VERTICAL_GRID -> VoltraLazyVerticalGrid(element, modifier)
         ComponentTypeID.CHART -> RenderChart(element, modifier)
     }
 }

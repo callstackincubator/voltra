@@ -1,4 +1,4 @@
-package voltra.glance.renderers
+package voltra.glance.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -11,6 +11,8 @@ import androidx.glance.appwidget.components.TitleBar
 import androidx.glance.text.FontFamily
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
+import voltra.glance.renderers.RenderNode
+import voltra.glance.renderers.extractImageProvider
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode

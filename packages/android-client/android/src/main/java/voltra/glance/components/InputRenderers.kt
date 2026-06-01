@@ -1,4 +1,4 @@
-package voltra.glance.renderers
+package voltra.glance.components
 
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
@@ -11,6 +11,7 @@ import androidx.glance.appwidget.Switch
 import androidx.glance.appwidget.SwitchDefaults
 import androidx.glance.unit.ColorProvider
 import voltra.glance.LocalVoltraRenderContext
+import voltra.glance.renderers.getOnClickAction
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser

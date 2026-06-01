@@ -1,4 +1,4 @@
-package voltra.glance.renderers
+package voltra.glance.components
 
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier

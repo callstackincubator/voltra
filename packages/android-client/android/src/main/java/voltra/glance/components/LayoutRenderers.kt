@@ -1,4 +1,4 @@
-package voltra.glance.renderers
+package voltra.glance.components
 
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
@@ -7,6 +7,8 @@ import androidx.glance.text.Text
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.VoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
+import voltra.glance.renderers.RenderElementWithModifier
+import voltra.glance.renderers.RenderNode
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
