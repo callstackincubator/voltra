@@ -1,0 +1,47 @@
+{
+  "name": "@use-voltra/android-renderer",
+  "version": "1.4.1",
+  "description": "Voltra widget payload resolver — runs inside the standalone Hermes runtime on Android (Track 4 PoC)",
+  "main": "build/cjs/index.js",
+  "module": "build/esm/index.js",
+  "types": "build/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/types/index.d.ts",
+      "require": "./build/cjs/index.js",
+      "import": "./build/esm/index.js",
+      "default": "./build/esm/index.js"
+    },
+    "./bundle": "./bundle/android-renderer.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "build",
+    "bundle",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs packages/android-renderer && npm run build:bundle",
+    "build:bundle": "node scripts/build-bundle.mjs",
+    "clean": "rm -rf build bundle",
+    "lint": "oxlint src",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "esbuild": "*"
+  },
+  "keywords": [
+    "voltra",
+    "widget",
+    "hermes",
+    "android"
+  ],
+  "license": "MIT",
+  "homepage": "https://use-voltra.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/callstackincubator/voltra.git",
+    "directory": "packages/android-renderer"
+  }
+}
