@@ -82,21 +82,7 @@ fun RenderLazyVerticalGrid(
         )
 
     // Extract grid configuration from props
-    val gridCells =
-        when (val columns = element.p?.get("columns")) {
-            is Number -> {
-                GridCells.Fixed(columns.toInt().coerceIn(1, 5))
-            }
-
-            "adaptive" -> {
-                val minSize = (element.p?.get("minSize") as? Number)?.toInt() ?: 100
-                GridCells.Adaptive(minSize.dp)
-            }
-
-            else -> {
-                GridCells.Fixed(2)
-            }
-        }
+    val gridCells = extractGridCells(element.p)
 
     val horizontalAlignment = extractHorizontalAlignment(element.p)
 
@@ -138,4 +124,24 @@ private fun extractHorizontalAlignment(props: Map<String, Any?>?): Alignment.Hor
         "center-horizontally" -> Alignment.Horizontal.CenterHorizontally
         "end" -> Alignment.Horizontal.End
         else -> Alignment.Horizontal.Start
+    }
+
+private fun extractGridCells(props: Map<String, Any?>?): GridCells =
+    when (val columns = props?.get("columns")) {
+        is Number -> {
+            GridCells.Fixed(columns.toInt().coerceIn(1, 5))
+        }
+
+        is String -> {
+            val adaptiveMinSize = if (columns.startsWith("a:")) columns.substringAfter("a:").toIntOrNull() else null
+            if (adaptiveMinSize != null) {
+                GridCells.Adaptive(adaptiveMinSize.coerceAtLeast(1).dp)
+            } else {
+                GridCells.Fixed(2)
+            }
+        }
+
+        else -> {
+            GridCells.Fixed(2)
+        }
     }

@@ -122,6 +122,64 @@ test('renders LazyVerticalGrid children with fixed columns and horizontal alignm
   )
 })
 
+test('renders LazyVerticalGrid fixed column objects as fixed column counts', () => {
+  assert.deepEqual(
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.LazyVerticalGrid,
+        {
+          columns: { type: 'fixed', count: 4 },
+        },
+        React.createElement(VoltraAndroid.Text, null, 'A')
+      )
+    ),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidLazyVerticalGrid'),
+          c: {
+            t: getAndroidComponentId('AndroidText'),
+            c: 'A',
+          },
+          p: {
+            cols: 4,
+          },
+        },
+      },
+    }
+  )
+})
+
+test('renders LazyVerticalGrid adaptive columns as compact grid cell config', () => {
+  assert.deepEqual(
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.LazyVerticalGrid,
+        {
+          columns: { type: 'adaptive', minSize: 96 },
+        },
+        React.createElement(VoltraAndroid.Text, null, 'A')
+      )
+    ),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidLazyVerticalGrid'),
+          c: {
+            t: getAndroidComponentId('AndroidText'),
+            c: 'A',
+          },
+          p: {
+            cols: 'a:96',
+          },
+        },
+      },
+    }
+  )
+})
+
 test('renders Android live update roots and metadata into the expected fields', () => {
   const liveUpdate = {
     collapsed: React.createElement(VoltraAndroid.Text, null, 'Collapsed'),
