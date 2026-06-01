@@ -1,9 +1,9 @@
 import Foundation
 import JavaScriptCore
 
-/// Runs the ios-renderer bundle inside a JavaScriptCore context to resolve variant-aware
-/// values in a Voltra payload (light-dark() colors, AppIntent template expressions) against
-/// the current device state before the existing Swift interpreter renders the result.
+/// Runs the ios-renderer bundle inside a JavaScriptCore context to resolve AppIntent
+/// template expressions in a Voltra payload before the existing Swift interpreter renders
+/// the result.
 ///
 /// The JSContext is initialised lazily and cached for the process lifetime so the bundle
 /// is only evaluated once per extension process.
@@ -13,15 +13,13 @@ public enum VoltraJSRenderer {
 
   // MARK: - Public API
 
-  /// Resolves variant-aware values in a raw JSON payload string and returns the resolved
-  /// JSON string, or nil if the bundle is missing or the JS engine fails.
+  /// Resolves AppIntent template expressions in a raw JSON payload string and returns the
+  /// resolved JSON string, or nil if the bundle is missing or the JS engine fails.
   ///
   /// On nil the caller should fall back to the original payload — the existing interpreter
-  /// handles it correctly, it just won't be reactive to device state.
+  /// handles it correctly, it just won't substitute AppIntent values.
   public static func resolve(
     payloadJSON: String,
-    colorScheme: String,
-    widgetRenderingMode: String,
     appIntentParams: [String: String]
   ) -> String? {
     guard let ctx = context else { return nil }
@@ -41,12 +39,7 @@ public enum VoltraJSRenderer {
       return nil
     }
 
-    let deviceState: NSDictionary = [
-      "colorScheme": colorScheme,
-      "widgetRenderingMode": widgetRenderingMode,
-    ]
-
-    let result = resolveFn.call(withArguments: [payloadObj, deviceState, appIntentParams as NSDictionary])
+    let result = resolveFn.call(withArguments: [payloadObj, appIntentParams as NSDictionary])
 
     guard let result,
           !result.isNull,

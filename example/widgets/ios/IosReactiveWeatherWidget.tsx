@@ -1,4 +1,4 @@
-import { Voltra, appIntentParam } from 'voltra'
+import { Voltra, appIntentParam } from '@use-voltra/ios'
 
 // Track 2 PoC — demonstrates AppIntent reactivity:
 //   - appIntentParam('city'): user-configurable city name via iOS widget settings

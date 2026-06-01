@@ -38,14 +38,6 @@ public enum VoltraReactiveRenderer {
     }
   }
 
-  public static func jsRenderingMode(_ mode: WidgetRenderingMode) -> String {
-    switch mode {
-    case .accented: return "accented"
-    case .vibrant: return "vibrant"
-    default: return "fullColor"
-    }
-  }
-
   public static func voltraRenderingMode(_ mode: WidgetRenderingMode) -> VoltraWidgetRenderingMode {
     switch mode {
     case .accented: return .accented

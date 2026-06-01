@@ -12,7 +12,7 @@ import {
 } from '@use-voltra/expo-plugin'
 
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
-import type { AppIntentParameter, IOSWidgetConfig } from '../../types'
+import type { AppIntentParameter, IOSWidgetConfig, IOSWidgetFamily } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 
 export interface GenerateSwiftFilesOptions {
@@ -313,14 +313,15 @@ function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
 
   // Static widgets are instantiated directly; AppIntent widgets are wrapped in @available
   const staticInstances = staticWidgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
-  const appIntentInstances = appIntentWidgets.length > 0
-    ? dedent`
+  const appIntentInstances =
+    appIntentWidgets.length > 0
+      ? dedent`
       // AppIntent widgets (iOS 17+)
       if #available(iOS 17.0, *) {
         ${appIntentWidgets.map((w) => `VoltraWidget_${w.id}()`).join('\n        ')}
       }
     `
-    : ''
+      : ''
 
   const widgetInstances = [staticInstances, appIntentInstances].filter(Boolean).join('\n\n    ')
 
@@ -495,15 +496,18 @@ function swiftParamDefault(param: AppIntentParameter): string {
   return param.default !== undefined ? `"${escapeForSwiftStringLiteral(param.default)}"` : '""'
 }
 
-function generateAppIntentStruct(widget: WidgetConfig): string {
+function generateAppIntentStruct(widget: IOSWidgetConfig): string {
   const params = widget.appIntent!.parameters
   const intentName = `VoltraWidget_${widget.id}_Intent`
-  const intentTitle = escapeForSwiftStringLiteral(
-    `Configure ${widgetLabelEnglish(widget.displayName)}`
-  )
+  const intentTitle = escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)
 
   const paramDecls = params
-    .map((p) => `  @Parameter(title: "${escapeForSwiftStringLiteral(p.title)}", default: ${swiftParamDefault(p)})\n  var ${p.name}: String`)
+    .map(
+      (p) =>
+        `  @Parameter(title: "${escapeForSwiftStringLiteral(p.title)}", default: ${swiftParamDefault(p)})\n  var ${
+          p.name
+        }: String`
+    )
     .join('\n\n')
 
   const initParams = params.map((p) => `${p.name}: String`).join(', ')
@@ -524,7 +528,7 @@ function generateAppIntentStruct(widget: WidgetConfig): string {
   `
 }
 
-function generateAppIntentEntry(widget: WidgetConfig): string {
+function generateAppIntentEntry(widget: IOSWidgetConfig): string {
   return dedent`
     @available(iOS 17.0, *)
     private struct VoltraWidget_${widget.id}_Entry: TimelineEntry {
@@ -535,7 +539,7 @@ function generateAppIntentEntry(widget: WidgetConfig): string {
   `
 }
 
-function generateAppIntentProvider(widget: WidgetConfig): string {
+function generateAppIntentProvider(widget: IOSWidgetConfig): string {
   const params = widget.appIntent!.parameters
   const intentName = `VoltraWidget_${widget.id}_Intent`
   const entryName = `VoltraWidget_${widget.id}_Entry`
@@ -570,7 +574,7 @@ function generateAppIntentProvider(widget: WidgetConfig): string {
   `
 }
 
-function generateAppIntentView(widget: WidgetConfig): string {
+function generateAppIntentView(widget: IOSWidgetConfig): string {
   const entryName = `VoltraWidget_${widget.id}_Entry`
   // Use a variable so the backslash is a string value, not a raw template character.
   // dedent processes raw template strings, so `\\.` in source → `\\.` in output (double backslash).
@@ -581,7 +585,6 @@ function generateAppIntentView(widget: WidgetConfig): string {
     private struct VoltraWidget_${widget.id}_ReactiveView: View {
       let entry: ${entryName}
 
-      @Environment(${kp('colorScheme')}) private var colorScheme
       @Environment(${kp('widgetRenderingMode')}) private var widgetRenderingMode
       @Environment(${kp('widgetFamily')}) private var widgetFamily
       @Environment(${kp('showsWidgetContainerBackground')}) private var showsWidgetContainerBackground
@@ -589,8 +592,6 @@ function generateAppIntentView(widget: WidgetConfig): string {
       var body: some View {
         let resolvedJSON = VoltraJSRenderer.resolve(
           payloadJSON: entry.rawPayloadJSON,
-          colorScheme: colorScheme == .dark ? "dark" : "light",
-          widgetRenderingMode: VoltraReactiveRenderer.jsRenderingMode(widgetRenderingMode),
           appIntentParams: entry.appIntentParams
         ) ?? entry.rawPayloadJSON
 
@@ -612,8 +613,8 @@ function generateAppIntentView(widget: WidgetConfig): string {
   `
 }
 
-function generateAppIntentWidgetStruct(widget: WidgetConfig): string {
-  const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
+function generateAppIntentWidgetStruct(widget: IOSWidgetConfig): string {
+  const families: IOSWidgetFamily[] = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
@@ -644,7 +645,7 @@ function generateAppIntentWidgetStruct(widget: WidgetConfig): string {
  * Generates the full AppIntent widget Swift code for a widget with appIntent config:
  * Intent struct, timeline entry, provider, view, and widget struct.
  */
-function generateAppIntentWidgetCode(widget: WidgetConfig): string {
+function generateAppIntentWidgetCode(widget: IOSWidgetConfig): string {
   return [
     `// MARK: - AppIntent widget: ${widget.id}`,
     generateAppIntentStruct(widget),

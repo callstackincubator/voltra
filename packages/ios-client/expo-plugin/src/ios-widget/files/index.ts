@@ -2,8 +2,9 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 import * as fs from 'fs'
 import * as path from 'path'
 
+import { logger } from '@use-voltra/expo-plugin'
+
 import type { IOSWidgetConfig } from '../../types'
-import { logger } from '../../utils/logger'
 import { generateAssets } from './assets'
 import { generateEntitlements } from './entitlements'
 import { generateInfoPlist } from './infoPlist'
@@ -49,9 +50,7 @@ function copyRendererBundle(targetPath: string, projectRoot: string): void {
     }
   }
 
-  logger.warn(
-    'ios-renderer.js not found — run `npm run build:bundle -w @use-voltra/ios-renderer` then re-run prebuild'
-  )
+  logger.warn('ios-renderer.js not found — run `npm run build:bundle -w @use-voltra/ios-renderer` then re-run prebuild')
 }
 
 export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {

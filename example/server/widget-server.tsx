@@ -52,10 +52,9 @@ function generatePortfolioData() {
 const handler = createWidgetUpdateNodeHandler({
   renderIos: async (req: any) => {
     if (req.widgetId === 'reactive') {
-      // Track 2 PoC: server renders the widget with variant-aware values preserved.
-      // appIntentParam('city') → "{{ appIntent.city }}" in the payload.
-      // light-dark() colors pass through unchanged.
-      // The extension resolves both against live device state + AppIntent params.
+      // Track 2 PoC: server renders the widget with appIntentParam('city') →
+      // "{{ appIntent.city }}" preserved in the payload; the extension resolves
+      // it against the current AppIntent parameter values at render time.
       const content = <IosReactiveWeatherWidget />
       return { systemSmall: content, systemMedium: content }
     }

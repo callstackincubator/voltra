@@ -78,6 +78,8 @@ export interface IOSWidgetExtensionFiles {
   intentFiles: string[]
   /** Paths relative to the widget extension root (e.g. en.lproj/VoltraWidgets.strings) */
   localizedStringResources: string[]
+  /** JS bundles to embed in the extension (e.g. ios-renderer.js for AppIntent widgets) */
+  bundleResources: string[]
 }
 
 /**
