@@ -46,9 +46,13 @@ object VoltraJSRenderer {
         if (initialized) return true
         synchronized(lock) {
             if (initialized) return true
+            val t0 = System.nanoTime()
             initialized = nativeInit(bundleSource)
+            val ms = (System.nanoTime() - t0) / 1_000_000.0
             if (!initialized) {
-                Log.e(TAG, "Hermes init failed")
+                Log.e(TAG, "Hermes init failed after ${"%.2f".format(ms)} ms")
+            } else {
+                Log.i(TAG, "Hermes cold-start: ${"%.2f".format(ms)} ms (bundle eval, ${bundleSource.length} chars)")
             }
             return initialized
         }
@@ -64,6 +68,7 @@ object VoltraJSRenderer {
      */
     fun ensureInitializedFromAssets(context: Context): Boolean {
         if (initialized) return true
+        val t0 = System.nanoTime()
         val source =
             try {
                 context.assets
@@ -74,6 +79,8 @@ object VoltraJSRenderer {
                 Log.w(TAG, "Bundle not found at assets/$BUNDLE_ASSET_PATH — reactive resolution disabled")
                 return false
             }
+        val readMs = (System.nanoTime() - t0) / 1_000_000.0
+        Log.d(TAG, "Asset read: ${"%.2f".format(readMs)} ms (${source.length} chars)")
         return ensureInitialized(source)
     }
 
@@ -93,8 +100,16 @@ object VoltraJSRenderer {
         val paramsJson = JSONObject()
         appIntentParams.forEach { (k, v) -> paramsJson.put(k, v) }
         val paramsJSON = paramsJson.toString()
-        return synchronized(lock) {
-            nativeResolve(payloadJSON, paramsJSON)
-        }
+        val t0 = System.nanoTime()
+        val result =
+            synchronized(lock) {
+                nativeResolve(payloadJSON, paramsJSON)
+            }
+        val ms = (System.nanoTime() - t0) / 1_000_000.0
+        Log.i(
+            TAG,
+            "Hermes resolve: ${"%.2f".format(ms)} ms (payload=${payloadJSON.length}c, params=${appIntentParams.size})",
+        )
+        return result
     }
 }
