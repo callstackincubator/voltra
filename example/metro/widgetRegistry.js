@@ -54,6 +54,8 @@ function createWidgetRegistry({ projectRoot }) {
     fs.writeFileSync(
       generatedEntryPath,
       [
+        "import { createElement } from 'react'",
+        "import { renderVoltraVariantToJson } from '@use-voltra/ios'",
         `import * as WidgetModule from ${JSON.stringify(normalizedImportPath)}`,
         '',
         `const Widget = ${exportExpression}`,
@@ -62,7 +64,11 @@ function createWidgetRegistry({ projectRoot }) {
         `  throw new Error(${JSON.stringify(`Unable to find Voltra widget export "${widget.exportName}".`)})`,
         '}',
         '',
-        'export default Widget',
+        'export function render(props = {}) {',
+        '  return renderVoltraVariantToJson(createElement(Widget, props))',
+        '}',
+        '',
+        'export default render',
         'export { Widget }',
         '',
       ].join('\n')
