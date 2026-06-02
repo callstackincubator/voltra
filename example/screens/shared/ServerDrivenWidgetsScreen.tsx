@@ -1,77 +1,13 @@
-import React, { useState } from 'react'
-import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
-import {
-  clearWidgetServerCredentials as clearWidgetServerCredentialsAndroid,
-  reloadWidgets as reloadWidgetsAndroid,
-  setWidgetServerCredentials as setWidgetServerCredentialsAndroid,
-  VoltraWidgetPreview as VoltraWidgetPreviewAndroid,
-} from '@use-voltra/android-client'
-import {
-  clearWidgetServerCredentials,
-  reloadWidgets,
-  setWidgetServerCredentials,
-  VoltraWidgetPreview,
-} from '@use-voltra/ios-client'
+import React from 'react'
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native'
+import { reloadWidgets as reloadWidgetsAndroid } from '@use-voltra/android-client'
+import { reloadWidgets } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { ScreenLayout } from '~/components/ScreenLayout'
-import { AndroidPortfolioWidget } from '~/widgets/android/AndroidPortfolioWidget'
-import { IosPortfolioWidget } from '~/widgets/ios/IosPortfolioWidget'
 
 export default function ServerDrivenWidgetsScreen() {
-  const [serverUrl, setServerUrl] = useState('http://localhost:3333')
-  const [token, setToken] = useState('demo-token')
-  const [credentialsSet, setCredentialsSet] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleSetCredentials = async () => {
-    setIsLoading(true)
-    try {
-      if (Platform.OS === 'android') {
-        await setWidgetServerCredentialsAndroid({
-          token,
-          headers: {
-            'X-Widget-Source': 'voltra-example',
-          },
-        })
-      } else {
-        await setWidgetServerCredentials({
-          token,
-          headers: {
-            'X-Widget-Source': 'voltra-example',
-          },
-        })
-      }
-      setCredentialsSet(true)
-      Alert.alert(
-        'Success',
-        'Widget server credentials saved securely.\n\nOn iOS: stored in Shared Keychain\nOn Android: encrypted via Tink in DataStore'
-      )
-    } catch (error) {
-      Alert.alert('Error', `Failed to set credentials: ${error}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleClearCredentials = async () => {
-    setIsLoading(true)
-    try {
-      if (Platform.OS === 'android') {
-        await clearWidgetServerCredentialsAndroid()
-      } else {
-        await clearWidgetServerCredentials()
-      }
-      setCredentialsSet(false)
-      Alert.alert('Success', 'Widget server credentials cleared.')
-    } catch (error) {
-      Alert.alert('Error', `Failed to clear credentials: ${error}`)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const handleReloadWidgets = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -89,120 +25,9 @@ export default function ServerDrivenWidgetsScreen() {
   return (
     <ScreenLayout title="Server-Driven Widgets" contentContainerStyle={styles.content}>
       <Text style={styles.description}>
-        Widgets can fetch content from a remote server without the user opening the app. This is configured via the{' '}
-        <Text style={styles.code}>serverUpdate</Text> option in the plugin config.
+        Widgets can fetch content from a remote server without the user opening the app. This example sets the
+        `demo-token` credential on app startup, so there is no editable credentials form here.
       </Text>
-
-      <Card>
-        <Card.Title>How it works</Card.Title>
-        <Card.Text>
-          1. Configure <Text style={styles.code}>serverUpdate.url</Text> in your widget config{`\n\n`}
-          2. Call <Text style={styles.code}>setWidgetServerCredentials()</Text> after user login{`\n\n`}
-          3. iOS WidgetKit / Android WorkManager periodically fetches from your server URL{`\n\n`}
-          4. Your server renders JSX → JSON using <Text style={styles.code}>createWidgetUpdateHandler()</Text>
-          {`\n\n`}
-          5. The widget updates automatically — no app launch needed!
-        </Card.Text>
-        {Platform.OS === 'android' ? (
-          <View style={[styles.codeBlock, { backgroundColor: '#1a1a2e', marginTop: 8 }]}>
-            <Text style={[styles.codeText, { color: '#fbbf24' }]}>
-              ⚠️ Android emulator: use 10.0.2.2 instead of localhost to reach the host machine. Real devices need the
-              host`s LAN IP.
-            </Text>
-          </View>
-        ) : null}
-      </Card>
-
-      <Card>
-        <Card.Title>Plugin Configuration</Card.Title>
-        <Card.Text>
-          In <Text style={styles.code}>app.json</Text>, add <Text style={styles.code}>serverUpdate</Text> to your
-          widget:
-        </Card.Text>
-        <View style={styles.codeBlock}>
-          <Text style={styles.codeText}>
-            {Platform.OS === 'android'
-              ? `// android.widgets in app.json
-{
-  "android": {
-    "widgets": [{
-      "id": "portfolio",
-      "serverUpdate": {
-        "url": "${serverUrl}",
-        "intervalMinutes": 15
-      }
-    }]
-  }
-}`
-              : `// widgets in app.json (iOS)
-{
-  "widgets": [{
-    "id": "portfolio",
-    "serverUpdate": {
-      "url": "${serverUrl}",
-      "intervalMinutes": 15
-    }
-  }]
-}`}
-          </Text>
-        </View>
-      </Card>
-
-      <Card>
-        <Card.Title>Server Credentials</Card.Title>
-        <Card.Text>
-          Store auth tokens securely so the widget extension can authenticate with your server in the background.
-        </Card.Text>
-
-        <Text style={styles.label}>Server URL</Text>
-        <TextInput
-          style={styles.input}
-          value={serverUrl}
-          onChangeText={setServerUrl}
-          placeholder="http://localhost:3333"
-          placeholderTextColor="#64748B"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-
-        <Text style={styles.label}>Auth Token</Text>
-        <TextInput
-          style={styles.input}
-          value={token}
-          onChangeText={setToken}
-          placeholder="your-auth-token"
-          placeholderTextColor="#64748B"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-
-        <View style={styles.buttonRow}>
-          <Button
-            title={credentialsSet ? '✅ Credentials Set' : 'Set Credentials'}
-            variant={credentialsSet ? 'secondary' : 'primary'}
-            onPress={handleSetCredentials}
-            disabled={isLoading || !token}
-            style={styles.flex1}
-          />
-          <Button
-            title="Clear"
-            variant="ghost"
-            onPress={handleClearCredentials}
-            disabled={isLoading || !credentialsSet}
-          />
-        </View>
-      </Card>
-
-      <Card>
-        <Card.Title>Widget Actions</Card.Title>
-        <Card.Text>
-          Reload widget timelines to trigger an immediate server fetch. Normally the widget fetches at the configured
-          interval.
-        </Card.Text>
-        <View style={styles.buttonContainer}>
-          <Button title="Reload Portfolio Widgets" variant="primary" onPress={handleReloadWidgets} />
-        </View>
-      </Card>
 
       <Card>
         <Card.Title>Running the Server</Card.Title>
@@ -217,24 +42,24 @@ export default function ServerDrivenWidgetsScreen() {
           <Text style={styles.code}>VoltraAndroid.*</Text> components. The server handles both via separate{' '}
           <Text style={styles.code}>render</Text> and <Text style={styles.code}>renderAndroid</Text> callbacks.
         </Card.Text>
+        {Platform.OS === 'android' ? (
+          <View style={styles.noteBlock}>
+            <Text style={styles.noteText}>
+              Android emulators should use <Text style={styles.code}>10.0.2.2</Text>. Real devices need your host
+              machine`s LAN IP.
+            </Text>
+          </View>
+        ) : null}
       </Card>
 
       <Card>
-        <Card.Title>Widget Preview</Card.Title>
+        <Card.Title>Widget Actions</Card.Title>
         <Card.Text>
-          This is the portfolio widget`s initial state. When <Text style={styles.code}>serverUpdate</Text> is
-          configured, the widget extension will periodically replace this with fresh server-rendered content.
+          Reload widget timelines to trigger an immediate server fetch. Normally the widget fetches at the configured
+          interval.
         </Card.Text>
-        <View style={styles.previewContainer}>
-          {Platform.OS === 'android' ? (
-            <VoltraWidgetPreviewAndroid family="mediumWide" style={styles.widgetPreview}>
-              <AndroidPortfolioWidget />
-            </VoltraWidgetPreviewAndroid>
-          ) : (
-            <VoltraWidgetPreview family="systemMedium" style={styles.widgetPreview}>
-              <IosPortfolioWidget />
-            </VoltraWidgetPreview>
-          )}
+        <View style={styles.buttonContainer}>
+          <Button title="Reload Portfolio Widgets" variant="primary" onPress={handleReloadWidgets} />
         </View>
       </Card>
     </ScreenLayout>
@@ -272,39 +97,18 @@ const styles = StyleSheet.create({
     color: '#A78BFA',
     lineHeight: 18,
   },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#CBD5E1',
-    marginTop: 14,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#1E293B',
+  noteBlock: {
+    backgroundColor: '#1a1a2e',
     borderRadius: 10,
     padding: 12,
-    color: '#E2E8F0',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.15)',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 10,
     marginTop: 14,
   },
-  flex1: {
-    flex: 1,
+  noteText: {
+    color: '#FBBF24',
+    fontSize: 12,
+    lineHeight: 18,
   },
   buttonContainer: {
     marginTop: 14,
-  },
-  previewContainer: {
-    alignItems: 'center',
-    marginTop: 14,
-  },
-  widgetPreview: {
-    borderRadius: 16,
-    overflow: 'hidden',
   },
 })
