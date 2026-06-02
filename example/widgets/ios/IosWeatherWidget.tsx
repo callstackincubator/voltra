@@ -21,6 +21,8 @@ interface WeatherWidgetProps {
 }
 
 export const IosWeatherWidget = ({ weather = DEFAULT_WEATHER }: WeatherWidgetProps) => {
+  'use voltra'
+
   const gradient = WEATHER_GRADIENTS[weather.condition]
   const emoji = WEATHER_EMOJIS[weather.condition]
   const description = WEATHER_DESCRIPTIONS[weather.condition]
