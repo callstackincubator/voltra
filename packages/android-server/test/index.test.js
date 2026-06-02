@@ -9,7 +9,7 @@ const {
   createAndroidWidgetUpdateNodeHandler,
   renderAndroidWidgetToString,
 } = require('../build/cjs/index.js')
-const { VoltraAndroid } = require('../../android/build/cjs/index.js')
+const { VoltraAndroid } = require('../../android/build/commonjs/index.js')
 
 function createNodeResponseRecorder() {
   return {

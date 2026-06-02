@@ -27,6 +27,7 @@ const createFixtureData = () => ({
     style: 's',
     backgroundColor: 'bg',
     numberOfLines: 'nol',
+    maxLines: 'mxl',
     destination: 'dest',
     text: 'txt',
     contentAlignment: 'ca',
@@ -64,10 +65,10 @@ const createFixtureData = () => ({
       swiftAvailability: 'Not available',
       androidAvailability: 'Android 12+',
       parameters: {
-        text: {
-          type: 'string',
-          optional: false,
-          description: 'Text content',
+        maxLines: {
+          type: 'number',
+          optional: true,
+          description: 'Maximum lines',
         },
       },
     },
@@ -189,7 +190,8 @@ test('generates synchronized artifacts into the intended directories and cleans 
   assert.match(iosTextProps, /numberOfLines\?: number/)
   assert.match(iosLinkProps, /destination: string/)
   assert.match(androidTextProps, /export type AndroidTextProps = VoltraBaseProps & \{/)
-  assert.match(androidTextProps, /text: string/)
+  assert.match(androidTextProps, /maxLines\?: number/)
+  assert.doesNotMatch(androidTextProps, /text: string/)
   assert.match(androidBoxProps, /contentAlignment\?: 'center'/)
   assert.equal(fs.existsSync(path.join(paths.tsIosPropsOutputDir, 'AndroidText.ts')), false)
   assert.equal(fs.existsSync(path.join(paths.tsAndroidPropsOutputDir, 'Text.ts')), false)

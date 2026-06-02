@@ -32,6 +32,13 @@ export const ANDROID_WIDGET_SECTIONS: ExampleSection[] = [
 
 export const ANDROID_OTHER_SECTIONS: ExampleSection[] = [
   {
+    id: 'components',
+    title: 'Android Components',
+    description:
+      'Explore all supported VoltraAndroid components rendered through native Android Glance widget previews.',
+    route: '/android-widgets/components',
+  },
+  {
     id: 'image-preloading',
     title: 'Image Preloading',
     description:

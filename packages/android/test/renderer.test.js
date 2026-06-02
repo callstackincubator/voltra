@@ -2,8 +2,8 @@ const assert = require('node:assert/strict')
 const test = require('node:test')
 const React = require('react')
 
-const android = require('../build/cjs/index.js')
-const { createVoltraComponent } = require('../build/cjs/jsx/createVoltraComponent.js')
+const android = require('../build/commonjs/index.js')
+const { createVoltraComponent } = require('../build/commonjs/jsx/createVoltraComponent.js')
 
 const {
   ANDROID_COMPONENT_NAME_TO_ID,

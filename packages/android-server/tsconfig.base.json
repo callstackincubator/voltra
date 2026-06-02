@@ -3,10 +3,12 @@
     "target": "ES2020",
     "lib": ["ES2020", "DOM"],
     "rootDir": "./src",
+    "baseUrl": ".",
     "moduleResolution": "node",
     "paths": {
-      "@use-voltra/android/server": ["../android/build/types/server.d.ts"],
-      "@use-voltra/android/internal": ["../android/build/types/internal.d.ts"]
+      "@use-voltra/android": ["../android/build/typescript/commonjs/index.d.ts"],
+      "@use-voltra/android/server": ["../android/build/typescript/commonjs/server.d.ts"],
+      "@use-voltra/android/internal": ["../android/build/typescript/commonjs/internal.d.ts"]
     },
     "jsx": "react-jsx",
     "strict": true,

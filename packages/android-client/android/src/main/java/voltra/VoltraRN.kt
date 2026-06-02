@@ -85,13 +85,14 @@ class VoltraRN(
                     }
 
                     val composeSize = DpSize(widthDp.dp, heightDp.dp)
+                    val remoteViewsContext = context.applicationContext
 
                     val glanceRemoteViews = GlanceRemoteViews()
                     val factory = GlanceFactory(id, voltraPayload.e, voltraPayload.s, composeSize)
 
                     val result =
                         withContext(Dispatchers.Default) {
-                            glanceRemoteViews.compose(context, composeSize) {
+                            glanceRemoteViews.compose(remoteViewsContext, composeSize) {
                                 factory.Render(node)
                             }
                         }
@@ -119,7 +120,7 @@ class VoltraRN(
                             if (host.childCount > 0 && payloadStr == lastRenderedPayload) {
                                 try {
                                     val existingView = host.getChildAt(0)
-                                    remoteViews.reapply(context, existingView)
+                                    remoteViews.reapply(remoteViewsContext, existingView)
                                     applied = true
                                 } catch (e: Exception) {
                                 }
@@ -127,7 +128,7 @@ class VoltraRN(
 
                             if (!applied) {
                                 // Inflate with parent to ensure correct LayoutParams, but don't attach yet
-                                val inflatedView = remoteViews.apply(context, host)
+                                val inflatedView = remoteViews.apply(remoteViewsContext, host)
 
                                 // Add new view FIRST, then remove old ones to prevent flickering
                                 host.addView(inflatedView)

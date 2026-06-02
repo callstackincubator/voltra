@@ -5,8 +5,6 @@
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidTextProps = VoltraBaseProps & {
-  /** Text content */
-  text: string
   /** Text color */
   color?: string
   /** Font size */

@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
   },
   cardDescription: {
-    marginTop: 10,
+    marginTop: 4,
     color: '#94A3B8',
     fontSize: 13,
     lineHeight: 18,

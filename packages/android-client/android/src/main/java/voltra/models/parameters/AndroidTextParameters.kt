@@ -15,8 +15,6 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class AndroidTextParameters(
-    /** Text content */
-    val text: String,
     /** Text color */
     val color: String? = null,
     /** Font size */

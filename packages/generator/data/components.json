@@ -1195,11 +1195,6 @@
       "androidAvailability": "Android 12+",
       "swiftAvailability": "Not available",
       "parameters": {
-        "text": {
-          "type": "string",
-          "optional": false,
-          "description": "Text content"
-        },
         "color": {
           "type": "string",
           "optional": true,

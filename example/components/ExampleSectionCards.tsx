@@ -24,6 +24,7 @@ export type ExampleSection = {
     | '/testing-grounds/server-driven-widgets'
     | '/testing-grounds/channel-updates'
     | '/android-widgets/pin'
+    | '/android-widgets/components'
     | '/android-widgets/image-preloading'
     | '/android-widgets/image-fallback'
     | '/android-widgets/preview'
