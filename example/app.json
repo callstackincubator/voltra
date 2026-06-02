@@ -204,6 +204,19 @@
                 "intervalMinutes": 15,
                 "refresh": true
               }
+            },
+            {
+              "id": "android_reactive_weather",
+              "displayName": "Reactive Weather (Track 4)",
+              "description": "Hermes-resolved AppIntent parameter — change city from the in-app Reactive Widget screen",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-reactive-weather-initial.tsx",
+              "appIntent": {
+                "parameters": [{ "name": "city", "title": "City", "default": "New York" }]
+              }
             }
           ],
           "fonts": [

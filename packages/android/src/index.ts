@@ -1,5 +1,6 @@
 // Android component namespace
 export * as VoltraAndroid from './jsx/primitives.js'
+export { appIntentParam } from './app-intent.js'
 export { AndroidDynamicColors } from './dynamic-colors.js'
 export {
   getAndroidComponentId,

@@ -49,3 +49,14 @@ export const requestPinAndroidWidget = async (
 export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
   return getNativeVoltraAndroid().getActiveWidgets() as Promise<WidgetInfo[]>
 }
+
+/**
+ * Track 4 PoC: write an AppIntent parameter for a widget and trigger an
+ * immediate Glance update so the new value gets picked up at the next render.
+ *
+ * Stand-in for a future Glance configuration activity — the example app's
+ * Reactive Widget screen calls this directly.
+ */
+export const setAppIntentParam = async (widgetId: string, name: string, value: string): Promise<void> => {
+  return getNativeVoltraAndroid().setAppIntentParam(widgetId, name, value)
+}

@@ -15,6 +15,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import voltra.images.VoltraImageManager
+import voltra.runtime.AppIntentParamsStore
 import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetManager
 
@@ -388,5 +389,28 @@ class VoltraModule(
             }
         }
         promise.resolve(activeWidgets)
+    }
+
+    /**
+     * Track 4 PoC: store an AppIntent parameter value for a widget, then trigger
+     * a Glance update so the resolver picks it up on the next render. Stand-in
+     * for a future Glance configuration activity.
+     */
+    override fun setAppIntentParam(
+        widgetId: String,
+        name: String,
+        value: String,
+        promise: Promise,
+    ) {
+        runBlocking {
+            try {
+                AppIntentParamsStore(reactApplicationContext).setParam(widgetId, name, value)
+                VoltraGlanceWidget.triggerUpdate(reactApplicationContext, widgetId)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                Log.e(TAG, "setAppIntentParam failed", e)
+                promise.reject("VOLTRA_APPINTENT_PARAM_ERROR", e.message, e)
+            }
+        }
     }
 }

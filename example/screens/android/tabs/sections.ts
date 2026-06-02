@@ -28,6 +28,13 @@ export const ANDROID_WIDGET_SECTIONS: ExampleSection[] = [
       'Serve dynamic widget content from a remote server using Voltra SSR. This example includes a sample widget server implementation.',
     route: '/android-widgets/server-driven',
   },
+  {
+    id: 'reactive-widget',
+    title: 'Reactive Widget (Track 4)',
+    description:
+      'Change an AppIntent parameter (city) and watch the Reactive Weather widget re-render. Hermes resolves the placeholder on-device, no server push.',
+    route: '/android-widgets/reactive',
+  },
 ]
 
 export const ANDROID_OTHER_SECTIONS: ExampleSection[] = [

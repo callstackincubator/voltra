@@ -2,6 +2,7 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 
 import type { AndroidWidgetConfig } from '../../types'
 import { generateAndroidAssets } from './assets'
+import { copyAndroidRendererBundle } from './bundle'
 import { copyAndroidFonts } from './fonts'
 import { generateAndroidInitialStates } from './initialStates'
 import { generateWidgetReceivers } from './kotlin'
@@ -87,6 +88,14 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
 
       // Generate initial states (pre-rendered widgets)
       await generateAndroidInitialStates({
+        platformProjectRoot,
+        projectRoot: config.modRequest.projectRoot,
+        widgets,
+      })
+
+      // Copy @use-voltra/android-renderer JS bundle when any widget uses
+      // AppIntent reactivity (Track 4 PoC). Opt-in: no-op without `appIntent`.
+      await copyAndroidRendererBundle({
         platformProjectRoot,
         projectRoot: config.modRequest.projectRoot,
         widgets,

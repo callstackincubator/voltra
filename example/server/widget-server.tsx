@@ -15,6 +15,7 @@ import React from 'react'
 import { IosPortfolioWidget } from '../widgets/ios/IosPortfolioWidget'
 import { AndroidMaterialColorsServerWidget } from '../widgets/android/AndroidMaterialColorsWidget'
 import { AndroidPortfolioWidget } from '../widgets/android/AndroidPortfolioWidget'
+import { AndroidReactiveWeatherWidget } from '../widgets/android/AndroidReactiveWeatherWidget'
 
 const PORTFOLIO_TIMES = [
   '09:00',
@@ -73,6 +74,19 @@ const handler = createWidgetUpdateNodeHandler({
 
   renderAndroid: async (req: any) => {
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+    if (req.widgetId === 'android_reactive_weather') {
+      // Track 4 PoC: server emits the widget with appIntentParam('city') →
+      // "{{ appIntent.city }}" preserved in the payload. The Glance widget
+      // process resolves it via Hermes at render time against DataStore params.
+      console.log(`[${now}] [Android] Rendering reactive weather widget`)
+      const content = <AndroidReactiveWeatherWidget />
+      const variants = [
+        { size: { width: 200, height: 200 }, content },
+        { size: { width: 300, height: 200 }, content },
+      ]
+      return renderAndroidWidgetToString(variants)
+    }
 
     if (req.widgetId === 'material_colors') {
       console.log(`[${now}] [Android] Rendering material colors widget`)

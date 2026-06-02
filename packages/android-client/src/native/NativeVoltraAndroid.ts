@@ -101,6 +101,14 @@ export interface Spec extends TurboModule {
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
   getActiveWidgets(): Promise<ReadonlyArray<object>>
+  /**
+   * Store an AppIntent parameter value for a widget and trigger a Glance update
+   * so the new value is picked up at the next render (Track 4 PoC).
+   *
+   * Stand-in for a future Glance configuration activity — for now the example
+   * app's "Reactive widget" screen calls this directly.
+   */
+  setAppIntentParam(widgetId: string, name: string, value: string): Promise<void>
 }
 
 export function getNativeVoltraAndroid(): Spec {

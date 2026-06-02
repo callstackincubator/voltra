@@ -214,7 +214,7 @@ class VoltraGlanceWidget(
             return json
         }
 
-        val params = AppIntentParamsStore(context).getParams(widgetId)
+        val params = AppIntentParamsStore(context).getParamsWithDefaults(widgetId)
         val resolved = VoltraJSRenderer.resolve(json, params)
         if (resolved == null) {
             Log.w(TAG, "Hermes resolve returned null for widgetId=$widgetId; falling back to raw payload")
