@@ -2,6 +2,7 @@ import { Stack } from 'expo-router'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
+import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
 updateAndroidVoltraWidget({ width: 300, height: 200 })
@@ -17,6 +18,7 @@ export const unstable_settings = {
 
 export default function Layout() {
   useVoltraEvents()
+  useServerDrivenWidgetToken()
 
   return (
     <SafeAreaProvider>
