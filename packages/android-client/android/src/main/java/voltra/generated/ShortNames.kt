@@ -36,6 +36,7 @@ object ShortNames {
             "clip" to "clipped",
             "c" to "color",
             "cls" to "colors",
+            "cols" to "columns",
             "ca" to "contentAlignment",
             "cc" to "contentColor",
             "cdesc" to "contentDescription",

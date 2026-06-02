@@ -2,27 +2,45 @@
   "name": "@use-voltra/android",
   "version": "1.4.1",
   "description": "Voltra for Android",
-  "main": "build/cjs/index.js",
-  "module": "build/esm/index.js",
-  "types": "build/types/index.d.ts",
+  "main": "build/commonjs/index.js",
+  "module": "build/module/index.js",
+  "types": "build/typescript/commonjs/index.d.ts",
   "exports": {
     ".": {
-      "types": "./build/types/index.d.ts",
-      "require": "./build/cjs/index.js",
-      "import": "./build/esm/index.js",
-      "default": "./build/esm/index.js"
+      "source": "./src/index.ts",
+      "import": {
+        "types": "./build/typescript/module/index.d.ts",
+        "default": "./build/module/index.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/index.d.ts",
+        "default": "./build/commonjs/index.js"
+      },
+      "default": "./build/module/index.js"
     },
     "./server": {
-      "types": "./build/types/server.d.ts",
-      "require": "./build/cjs/server.js",
-      "import": "./build/esm/server.js",
-      "default": "./build/esm/server.js"
+      "source": "./src/server.ts",
+      "import": {
+        "types": "./build/typescript/module/server.d.ts",
+        "default": "./build/module/server.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/server.d.ts",
+        "default": "./build/commonjs/server.js"
+      },
+      "default": "./build/module/server.js"
     },
     "./internal": {
-      "types": "./build/types/internal.d.ts",
-      "require": "./build/cjs/internal.js",
-      "import": "./build/esm/internal.js",
-      "default": "./build/esm/internal.js"
+      "source": "./src/internal.ts",
+      "import": {
+        "types": "./build/typescript/module/internal.d.ts",
+        "default": "./build/module/internal.js"
+      },
+      "require": {
+        "types": "./build/typescript/commonjs/internal.d.ts",
+        "default": "./build/commonjs/internal.js"
+      },
+      "default": "./build/module/internal.js"
     },
     "./package.json": "./package.json"
   },
@@ -31,7 +49,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "node ../../scripts/build-package.mjs packages/android",
+    "build": "npm run clean && bob build",
     "clean": "rm -rf build",
     "lint": "oxlint src",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
@@ -60,5 +78,37 @@
   "homepage": "https://use-voltra.dev",
   "peerDependencies": {
     "react": "*"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "build",
+    "exclude": "**/{__tests__,__fixtures__,__mocks__,__rsc_tests__}/**",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true,
+          "sourceMaps": true
+        }
+      ],
+      [
+        "commonjs",
+        {
+          "esm": true,
+          "sourceMaps": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json",
+          "tsc": "../../node_modules/.bin/tsc"
+        }
+      ]
+    ]
+  },
+  "devDependencies": {
+    "react-native-builder-bob": "^0.41.0",
+    "typescript": "~5.9.2"
   }
 }

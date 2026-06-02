@@ -2,8 +2,8 @@ const assert = require('node:assert/strict')
 const test = require('node:test')
 const React = require('react')
 
-const android = require('../build/cjs/index.js')
-const { createVoltraComponent } = require('../build/cjs/jsx/createVoltraComponent.js')
+const android = require('../build/commonjs/index.js')
+const { createVoltraComponent } = require('../build/commonjs/jsx/createVoltraComponent.js')
 
 const {
   ANDROID_COMPONENT_NAME_TO_ID,
@@ -82,6 +82,97 @@ test('renders Android view payloads with metadata separate from variants', () =>
           c: {
             t: getAndroidComponentId('AndroidText'),
             c: 'View content',
+          },
+        },
+      },
+    }
+  )
+})
+
+test('renders LazyVerticalGrid children with fixed columns and horizontal alignment', () => {
+  const letters = ['A', 'B', 'C']
+
+  assert.deepEqual(
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.LazyVerticalGrid,
+        {
+          columns: 3,
+          horizontalAlignment: 'center-horizontally',
+        },
+        letters.map((letter) => React.createElement(VoltraAndroid.Text, { key: letter }, letter))
+      )
+    ),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidLazyVerticalGrid'),
+          c: letters.map((letter) => ({
+            t: getAndroidComponentId('AndroidText'),
+            c: letter,
+          })),
+          p: {
+            cols: 3,
+            halig: 'center-horizontally',
+          },
+        },
+      },
+    }
+  )
+})
+
+test('renders LazyVerticalGrid fixed column objects as fixed column counts', () => {
+  assert.deepEqual(
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.LazyVerticalGrid,
+        {
+          columns: { type: 'fixed', count: 4 },
+        },
+        React.createElement(VoltraAndroid.Text, null, 'A')
+      )
+    ),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidLazyVerticalGrid'),
+          c: {
+            t: getAndroidComponentId('AndroidText'),
+            c: 'A',
+          },
+          p: {
+            cols: 4,
+          },
+        },
+      },
+    }
+  )
+})
+
+test('renders LazyVerticalGrid adaptive columns as compact grid cell config', () => {
+  assert.deepEqual(
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.LazyVerticalGrid,
+        {
+          columns: { type: 'adaptive', minSize: 96 },
+        },
+        React.createElement(VoltraAndroid.Text, null, 'A')
+      )
+    ),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidLazyVerticalGrid'),
+          c: {
+            t: getAndroidComponentId('AndroidText'),
+            c: 'A',
+          },
+          p: {
+            cols: 'a:96',
           },
         },
       },

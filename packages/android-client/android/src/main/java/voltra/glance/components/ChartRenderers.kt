@@ -1,4 +1,4 @@
-package voltra.glance.renderers
+package voltra.glance.components
 
 import android.graphics.drawable.Icon
 import android.util.Log
@@ -16,6 +16,10 @@ import androidx.glance.layout.height
 import androidx.glance.layout.width
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
+import voltra.glance.renderers.WireMark
+import voltra.glance.renderers.parseForegroundStyleScaleEntries
+import voltra.glance.renderers.parseMarksJson
+import voltra.glance.renderers.renderChartBitmap
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser

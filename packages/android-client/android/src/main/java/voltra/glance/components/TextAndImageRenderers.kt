@@ -1,4 +1,4 @@
-package voltra.glance.renderers
+package voltra.glance.components
 
 import android.graphics.drawable.Icon
 import androidx.compose.runtime.Composable
@@ -15,6 +15,11 @@ import androidx.glance.text.Text
 import androidx.glance.unit.ColorProvider
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
+import voltra.glance.renderers.RenderNode
+import voltra.glance.renderers.extractImageProvider
+import voltra.glance.renderers.loadTypeface
+import voltra.glance.renderers.parseContentScale
+import voltra.glance.renderers.renderTextBitmap
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
