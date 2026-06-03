@@ -9,6 +9,12 @@ export type AndroidCheckBoxProps = VoltraBaseProps & {
   id: string
   /** Initial checked state */
   checked?: boolean
-  /** Whether the checkbox is enabled */
-  enabled?: boolean
+  /** Text label */
+  text?: string
+  /** Checked color */
+  checkedColor?: string
+  /** Unchecked color */
+  uncheckedColor?: string
+  /** Maximum lines for text */
+  maxLines?: number
 }

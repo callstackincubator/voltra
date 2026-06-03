@@ -49,6 +49,8 @@
     "weight": "wt",
     "maxLines": "mxl",
     "contentDescription": "cdesc",
+    "contentScale": "csc",
+    "alpha": "a",
     "horizontalAlignment": "halig",
     "columns": "cols",
     "verticalAlignment": "valig",
@@ -56,6 +58,9 @@
     "icon": "ic",
     "contentColor": "cc",
     "horizontalPadding": "hp",
+    "startIcon": "sic",
+    "textColor": "txc",
+    "iconColor": "icc",
     "assetName": "an",
     "base64": "b64",
     "checked": "chk",
@@ -63,6 +68,7 @@
     "id": "id",
     "deepLinkUrl": "dlu",
     "destination": "dest",
+    "progress": "prg",
     "padding": "pad",
     "text": "txt",
     "paddingVertical": "pv",
@@ -158,7 +164,14 @@
     "xAxisGridStyle": "xgs",
     "xAxisVisibility": "xav",
     "yAxisGridStyle": "ygs",
-    "yAxisVisibility": "yav"
+    "yAxisVisibility": "yav",
+    "colorFilter": "cf",
+    "thumbCheckedColor": "thc",
+    "thumbUncheckedColor": "thu",
+    "trackCheckedColor": "trkc",
+    "trackUncheckedColor": "trku",
+    "checkedColor": "chc",
+    "uncheckedColor": "uchc"
   },
   "styleProperties": [
     "padding",
@@ -345,15 +358,38 @@
         "source": {
           "type": "object",
           "optional": false,
-          "jsonEncoded": true,
-          "description": "Image source"
+          "description": "Image source",
+          "jsonEncoded": true
         },
         "resizeMode": {
           "type": "string",
           "optional": true,
+          "description": "Resizing mode",
           "enum": ["cover", "contain", "stretch", "repeat", "center"],
-          "default": "cover",
-          "description": "Resizing mode"
+          "default": "cover"
+        },
+        "contentDescription": {
+          "type": "string",
+          "optional": true,
+          "description": "Accessibility description"
+        },
+        "contentScale": {
+          "type": "string",
+          "optional": true,
+          "description": "How the image should scale within its bounds",
+          "enum": ["crop", "cover", "fit", "contain", "fill-bounds", "stretch"],
+          "default": "fit"
+        },
+        "alpha": {
+          "type": "number",
+          "optional": true,
+          "description": "Image opacity from 0 to 1",
+          "default": 1
+        },
+        "colorFilter": {
+          "type": "string",
+          "optional": true,
+          "description": "Tint color filter"
         },
         "fallback": {
           "type": "component",
@@ -451,14 +487,38 @@
         "checked": {
           "type": "boolean",
           "optional": true,
-          "default": false,
-          "description": "Initial checked state"
+          "description": "Initial checked state",
+          "default": false
         },
-        "enabled": {
-          "type": "boolean",
+        "text": {
+          "type": "string",
           "optional": true,
-          "default": true,
-          "description": "Whether the switch is enabled"
+          "description": "Text label"
+        },
+        "thumbCheckedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Checked thumb color"
+        },
+        "thumbUncheckedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Unchecked thumb color"
+        },
+        "trackCheckedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Checked track color"
+        },
+        "trackUncheckedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Unchecked track color"
+        },
+        "maxLines": {
+          "type": "number",
+          "optional": true,
+          "description": "Maximum lines for text"
         }
       }
     },
@@ -476,14 +536,28 @@
         "checked": {
           "type": "boolean",
           "optional": true,
-          "default": false,
-          "description": "Initial checked state"
+          "description": "Initial checked state",
+          "default": false
         },
-        "enabled": {
-          "type": "boolean",
+        "text": {
+          "type": "string",
           "optional": true,
-          "default": true,
-          "description": "Whether the checkbox is enabled"
+          "description": "Text label"
+        },
+        "checkedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Checked color"
+        },
+        "uncheckedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Unchecked color"
+        },
+        "maxLines": {
+          "type": "number",
+          "optional": true,
+          "description": "Maximum lines for text"
         }
       }
     },
@@ -501,14 +575,34 @@
         "checked": {
           "type": "boolean",
           "optional": true,
-          "default": false,
-          "description": "Initial checked state"
+          "description": "Initial checked state",
+          "default": false
         },
         "enabled": {
           "type": "boolean",
           "optional": true,
-          "default": true,
-          "description": "Whether the radio button is enabled"
+          "description": "Whether the radio button is enabled",
+          "default": true
+        },
+        "text": {
+          "type": "string",
+          "optional": true,
+          "description": "Text label"
+        },
+        "checkedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Checked color"
+        },
+        "uncheckedColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Unchecked color"
+        },
+        "maxLines": {
+          "type": "number",
+          "optional": true,
+          "description": "Maximum lines for text"
         }
       }
     },
@@ -1060,6 +1154,11 @@
       "androidAvailability": "Android 12+",
       "swiftAvailability": "Not available",
       "parameters": {
+        "progress": {
+          "type": "number",
+          "optional": true,
+          "description": "Progress value from 0 to 1"
+        },
         "color": {
           "type": "string",
           "optional": true,
@@ -1223,15 +1322,27 @@
           "optional": false,
           "description": "Title text"
         },
-        "backgroundColor": {
-          "type": "string",
+        "startIcon": {
+          "type": "object",
           "optional": true,
-          "description": "Background color"
+          "description": "Leading icon",
+          "jsonEncoded": true
         },
-        "contentColor": {
+        "iconColor": {
           "type": "string",
           "optional": true,
-          "description": "Text color"
+          "description": "Leading icon tint color"
+        },
+        "textColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Title text color"
+        },
+        "fontFamily": {
+          "type": "string",
+          "optional": true,
+          "description": "Title font family",
+          "enum": ["monospace", "serif", "sans-serif", "cursive"]
         }
       }
     },

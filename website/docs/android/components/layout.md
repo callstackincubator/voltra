@@ -52,10 +52,10 @@ A component that displays a title bar with an optional icon.
 **Parameters:**
 
 - `title` (string): Title text to display.
-- `startIcon` (object): `{ assetName: string }`.
+- `startIcon` (object, optional): `{ assetName: string }` or `{ base64: string }`.
 - `textColor` (string, optional).
 - `iconColor` (string, optional).
-- `fontFamily` (string, optional).
+- `fontFamily` (string, optional): `"monospace"`, `"serif"`, `"sans-serif"`, or `"cursive"`.
 
 ---
 

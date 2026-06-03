@@ -7,8 +7,12 @@ import type { VoltraBaseProps } from '../baseProps'
 export type AndroidTitleBarProps = VoltraBaseProps & {
   /** Title text */
   title: string
-  /** Background color */
-  backgroundColor?: string
-  /** Text color */
-  contentColor?: string
+  /** Leading icon */
+  startIcon?: Record<string, any>
+  /** Leading icon tint color */
+  iconColor?: string
+  /** Title text color */
+  textColor?: string
+  /** Title font family */
+  fontFamily?: 'monospace' | 'serif' | 'sans-serif' | 'cursive'
 }

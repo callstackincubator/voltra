@@ -19,6 +19,16 @@ data class AndroidSwitchParameters(
     val id: String,
     /** Initial checked state */
     val checked: Boolean? = null,
-    /** Whether the switch is enabled */
-    val enabled: Boolean? = null,
+    /** Text label */
+    val text: String? = null,
+    /** Checked thumb color */
+    val thumbCheckedColor: String? = null,
+    /** Unchecked thumb color */
+    val thumbUncheckedColor: String? = null,
+    /** Checked track color */
+    val trackCheckedColor: String? = null,
+    /** Unchecked track color */
+    val trackUncheckedColor: String? = null,
+    /** Maximum lines for text */
+    val maxLines: Double? = null,
 )

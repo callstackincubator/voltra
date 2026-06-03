@@ -19,4 +19,12 @@ data class AndroidImageParameters(
     val source: String,
     /** Resizing mode */
     val resizeMode: String? = null,
+    /** Accessibility description */
+    val contentDescription: String? = null,
+    /** How the image should scale within its bounds */
+    val contentScale: String? = null,
+    /** Image opacity from 0 to 1 */
+    val alpha: Double? = null,
+    /** Tint color filter */
+    val colorFilter: String? = null,
 )

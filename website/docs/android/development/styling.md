@@ -40,9 +40,10 @@ The following React Native style properties are supported on Android:
 
 In addition to general styles, `Image` components support:
 
-- `resizeMode` (or `contentScale`) - `"cover"`, `"contain"`, `"stretch"`, or `"center"`.
+- `resizeMode` - `"cover"`, `"contain"`, `"stretch"`, `"repeat"`, or `"center"`.
+- `contentScale` - `"crop"`, `"cover"`, `"fit"`, `"contain"`, `"fill-bounds"`, or `"stretch"`.
 - `alpha` - Opacity of the image (0.0 to 1.0).
-- `tintColor` - Applies a color filter to the image.
+- `colorFilter` - Applies a color filter to the image.
 
 ## Dynamic colors
 

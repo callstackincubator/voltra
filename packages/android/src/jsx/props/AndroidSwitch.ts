@@ -9,6 +9,16 @@ export type AndroidSwitchProps = VoltraBaseProps & {
   id: string
   /** Initial checked state */
   checked?: boolean
-  /** Whether the switch is enabled */
-  enabled?: boolean
+  /** Text label */
+  text?: string
+  /** Checked thumb color */
+  thumbCheckedColor?: string
+  /** Unchecked thumb color */
+  thumbUncheckedColor?: string
+  /** Checked track color */
+  trackCheckedColor?: string
+  /** Unchecked track color */
+  trackUncheckedColor?: string
+  /** Maximum lines for text */
+  maxLines?: number
 }
