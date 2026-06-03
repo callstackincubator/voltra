@@ -27,6 +27,7 @@ Displays bitmap images from the asset catalog, preloaded runtime cache, or base6
 - `contentScale` (string, optional): Glance-specific scaling mode: `"crop"`, `"cover"`, `"fit"`, `"contain"`, `"fill-bounds"`, or `"stretch"`.
 - `alpha` (number, optional): Opacity value from 0.0 to 1.0.
 - `colorFilter` (string, optional): Color tint filter for the image.
+- `tintColor` (string, optional): Legacy alias for `colorFilter`.
 - `fallback` (ReactNode, optional): Custom content rendered when the image is missing.
 
 **Styling the fallback:**

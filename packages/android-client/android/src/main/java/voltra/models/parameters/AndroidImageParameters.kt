@@ -27,4 +27,6 @@ data class AndroidImageParameters(
     val alpha: Double? = null,
     /** Tint color filter */
     val colorFilter: String? = null,
+    /** Legacy tint color alias for colorFilter */
+    val tintColor: String? = null,
 )

@@ -391,6 +391,11 @@
           "optional": true,
           "description": "Tint color filter"
         },
+        "tintColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Legacy tint color alias for colorFilter"
+        },
         "fallback": {
           "type": "component",
           "optional": true,

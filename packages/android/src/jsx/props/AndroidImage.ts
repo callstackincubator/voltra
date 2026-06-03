@@ -19,6 +19,8 @@ export type AndroidImageProps = VoltraBaseProps & {
   alpha?: number
   /** Tint color filter */
   colorFilter?: string
+  /** Legacy tint color alias for colorFilter */
+  tintColor?: string
   /** Custom fallback content rendered when the image is missing */
   fallback?: ReactNode
 }
