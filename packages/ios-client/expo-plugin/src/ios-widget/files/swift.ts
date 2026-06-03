@@ -15,6 +15,7 @@ import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
 import type { IOSWidgetConfig } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 import { detectClientRenderedWidgets, type DetectedIOSWidget } from '../clientRendered'
+import { prerenderClientRenderedWidgets } from '../clientRenderedPrerender'
 
 export interface GenerateSwiftFilesOptions {
   targetPath: string
@@ -53,8 +54,15 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
     logger.info(`Detected ${clientWidgetCount} client-rendered widget(s) — generating Track 5 Provider scaffolding`)
   }
 
-  // Prerender widget initial states if any widgets have initialStatePath configured
-  const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot, renderWidgetToString)
+  // Prerender widget initial states. Server-rendered widgets go through the existing
+  // multi-family WidgetVariants → JSON path; client-rendered widgets go through the
+  // Track 5 path (call the 'use voltra' function with default props + minimal env, run
+  // renderVoltraVariantToJson, stringify). Both produce entries in the same map shape so
+  // VoltraWidgetInitialStates.swift can read either via the same lookup at runtime.
+  const serverWidgets = detectedWidgets.filter((w) => !w.clientRendered)
+  const serverStates = await prerenderWidgetState(serverWidgets, projectRoot, renderWidgetToString)
+  const clientStates = await prerenderClientRenderedWidgets(detectedWidgets, projectRoot)
+  const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   syncVoltraWidgetGalleryStrings(targetPath, widgets)
 
