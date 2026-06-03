@@ -52,3 +52,8 @@ export {
 } from './widgets/widget-api.js'
 // Track 5 / Phase 3a — temporary smoke-test surface. Removed in Phase 3b.
 export { voltraWidgetEvalBundle, voltraWidgetRender } from './widgets/client-rendered-smoke.js'
+// Track 5 / Phase 3b-iii — dev hot reload for client-rendered widgets.
+export {
+  enableClientWidgetHotReload,
+  type EnableClientWidgetHotReloadOptions,
+} from './widgets/enableClientWidgetHotReload.js'
