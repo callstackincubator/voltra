@@ -203,6 +203,42 @@
   resolve(nil);
 }
 
+#pragma mark - Track 5 / Phase 3a — client-rendered widget runtime smoke test
+
+- (void)voltraWidgetEvalBundle:(NSString *)widgetId
+                  bundleSource:(NSString *)bundleSource
+                       resolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module voltraWidgetEvalBundle:widgetId
+                         bundleSource:bundleSource
+                           completion:^(NSError *error) {
+    if (error) {
+      reject(@"voltraWidgetEvalBundle", error.localizedDescription, error);
+    } else {
+      resolve(nil);
+    }
+  }];
+}
+
+- (void)voltraWidgetRender:(NSString *)widgetId
+                 propsJSON:(NSString *)propsJSON
+                   envJSON:(NSString *)envJSON
+                   resolve:(RCTPromiseResolveBlock)resolve
+                    reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module voltraWidgetRender:widgetId
+                        propsJSON:propsJSON
+                          envJSON:envJSON
+                       completion:^(NSString *result, NSError *error) {
+    if (error) {
+      reject(@"voltraWidgetRender", error.localizedDescription, error);
+    } else {
+      resolve(result ?: @"");
+    }
+  }];
+}
+
 - (void)dealloc
 {
   [self.module stopMonitoring];

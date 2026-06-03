@@ -23,6 +23,13 @@ export const IOS_WIDGET_SECTIONS: ExampleSection[] = [
     route: '/testing-grounds/image-fallback',
   },
   {
+    id: 'client-rendered-smoke',
+    title: 'Client-Rendered Widget (Track 5, Phase 3a smoke test)',
+    description:
+      'Fetch the IosWeatherWidget bundle from Metro, evaluate it in the shared JSContext, and call render(props, env) — verifies the runtime end-to-end without WidgetKit.',
+    route: '/testing-grounds/client-rendered-smoke',
+  },
+  {
     id: 'widget-scheduling',
     title: 'Widget Scheduling',
     description:
