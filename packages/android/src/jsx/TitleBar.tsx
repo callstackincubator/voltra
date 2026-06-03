@@ -3,7 +3,7 @@ import { createVoltraComponent } from './createVoltraComponent.js'
 import type { AndroidTitleBarProps } from './props/AndroidTitleBar.js'
 
 export type TitleBarProps = Omit<AndroidTitleBarProps, 'startIcon'> & {
-  startIcon?: ImageSource
+  startIcon: ImageSource
 }
 
 export const TitleBar = createVoltraComponent<TitleBarProps>('AndroidTitleBar', {
@@ -12,7 +12,7 @@ export const TitleBar = createVoltraComponent<TitleBarProps>('AndroidTitleBar', 
 
     return {
       ...rest,
-      ...(startIcon ? { startIcon: JSON.stringify(startIcon) } : {}),
+      startIcon: JSON.stringify(startIcon),
     }
   },
 })

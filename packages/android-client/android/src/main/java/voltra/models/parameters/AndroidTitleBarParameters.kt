@@ -18,7 +18,7 @@ data class AndroidTitleBarParameters(
     /** Title text */
     val title: String,
     /** Leading icon */
-    val startIcon: String? = null,
+    val startIcon: String,
     /** Leading icon tint color */
     val iconColor: String? = null,
     /** Title text color */

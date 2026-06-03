@@ -1324,7 +1324,7 @@
         },
         "startIcon": {
           "type": "object",
-          "optional": true,
+          "optional": false,
           "description": "Leading icon",
           "jsonEncoded": true
         },

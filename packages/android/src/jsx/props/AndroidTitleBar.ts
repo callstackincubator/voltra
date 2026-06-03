@@ -8,7 +8,7 @@ export type AndroidTitleBarProps = VoltraBaseProps & {
   /** Title text */
   title: string
   /** Leading icon */
-  startIcon?: Record<string, any>
+  startIcon: Record<string, any>
   /** Leading icon tint color */
   iconColor?: string
   /** Title text color */

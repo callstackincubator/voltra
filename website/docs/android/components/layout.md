@@ -47,12 +47,12 @@ A top-level container that provides a standard layout structure for widgets.
 
 ### TitleBar
 
-A component that displays a title bar with an optional icon.
+A component that displays a title bar with a required leading icon.
 
 **Parameters:**
 
 - `title` (string): Title text to display.
-- `startIcon` (object, optional): `{ assetName: string }` or `{ base64: string }`.
+- `startIcon` (object, required): `{ assetName: string }` or `{ base64: string }`.
 - `textColor` (string, optional).
 - `iconColor` (string, optional).
 - `fontFamily` (string, optional): `"monospace"`, `"serif"`, `"sans-serif"`, or `"cursive"`.
