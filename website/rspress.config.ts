@@ -23,8 +23,8 @@ export default withCallstackPreset(
   },
   defineConfig({
     multiVersion: {
-      default: 'latest',
-      versions: ['latest', 'v2'],
+      default: 'v1',
+      versions: ['v1', 'v2'],
     },
     themeConfig: {
       enableScrollToTop: true,
