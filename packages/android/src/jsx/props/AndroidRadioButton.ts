@@ -11,4 +11,12 @@ export type AndroidRadioButtonProps = VoltraBaseProps & {
   checked?: boolean
   /** Whether the radio button is enabled */
   enabled?: boolean
+  /** Text label */
+  text?: string
+  /** Checked color */
+  checkedColor?: string
+  /** Unchecked color */
+  uncheckedColor?: string
+  /** Maximum lines for text */
+  maxLines?: number
 }

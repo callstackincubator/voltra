@@ -11,6 +11,16 @@ export type AndroidImageProps = VoltraBaseProps & {
   source: Record<string, any>
   /** Resizing mode */
   resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center'
+  /** Accessibility description */
+  contentDescription?: string
+  /** How the image should scale within its bounds */
+  contentScale?: 'crop' | 'cover' | 'fit' | 'contain' | 'fill-bounds' | 'stretch'
+  /** Image opacity from 0 to 1 */
+  alpha?: number
+  /** Tint color filter */
+  colorFilter?: string
+  /** Legacy tint color alias for colorFilter */
+  tintColor?: string
   /** Custom fallback content rendered when the image is missing */
   fallback?: ReactNode
 }

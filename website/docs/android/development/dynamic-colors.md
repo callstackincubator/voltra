@@ -83,7 +83,7 @@ You can use `AndroidDynamicColors.*` anywhere Android accepts a color value, inc
 
 - `style.backgroundColor`
 - `style.color`
-- `Image.tintColor`
+- `Image.colorFilter`
 - button `backgroundColor` and `contentColor`
 - `TitleBar.textColor` and `TitleBar.iconColor`
 - switch, checkbox, and radio button colors

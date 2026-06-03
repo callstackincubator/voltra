@@ -15,6 +15,8 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class AndroidLinearProgressIndicatorParameters(
+    /** Progress value from 0 to 1 */
+    val progress: Double? = null,
     /** Progress color */
     val color: String? = null,
     /** Track background color */

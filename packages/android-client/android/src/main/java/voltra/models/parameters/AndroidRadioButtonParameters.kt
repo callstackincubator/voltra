@@ -21,4 +21,12 @@ data class AndroidRadioButtonParameters(
     val checked: Boolean? = null,
     /** Whether the radio button is enabled */
     val enabled: Boolean? = null,
+    /** Text label */
+    val text: String? = null,
+    /** Checked color */
+    val checkedColor: String? = null,
+    /** Unchecked color */
+    val uncheckedColor: String? = null,
+    /** Maximum lines for text */
+    val maxLines: Double? = null,
 )

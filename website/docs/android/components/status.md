@@ -23,5 +23,5 @@ A circular progress indicator.
 - `color` (string, optional): Color for the progress indicator.
 
 :::warning Indeterminate Only
-Due to Jetpack Compose Glance limitations, the `CircularProgressIndicator` on Android only supports **indeterminate** mode. The `progress` property is ignored.
+Due to Jetpack Compose Glance limitations, the `CircularProgressIndicator` on Android renders in **indeterminate** mode.
 :::

@@ -23,10 +23,11 @@ Displays bitmap images from the asset catalog, preloaded runtime cache, or base6
   - `assetName` (string): Reference to a pre-bundled image (drawable resource) or a [preloaded image](../development/image-preloading).
   - `base64` (string): Base64 encoded image data.
 - `resizeMode` (string, optional): `"cover"`, `"contain"`, `"stretch"`, `"repeat"`, or `"center"`.
-- `contentScale` (string, optional): Glance-specific terminology for resize mode: `"crop"`, `"fit"`, `"fill-bounds"`.
 - `contentDescription` (string, optional): Accessibility description for the image.
+- `contentScale` (string, optional): Glance-specific scaling mode: `"crop"`, `"cover"`, `"fit"`, `"contain"`, `"fill-bounds"`, or `"stretch"`.
 - `alpha` (number, optional): Opacity value from 0.0 to 1.0.
-- `tintColor` (string, optional): Color to tint the image with.
+- `colorFilter` (string, optional): Color tint filter for the image.
+- `tintColor` (string, optional): Legacy alias for `colorFilter`.
 - `fallback` (ReactNode, optional): Custom content rendered when the image is missing.
 
 **Styling the fallback:**
