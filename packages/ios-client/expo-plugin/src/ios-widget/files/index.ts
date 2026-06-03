@@ -15,6 +15,8 @@ export interface GenerateWidgetExtensionFilesProps {
   keychainGroup?: string
   version: string
   buildNumber: string
+  /** Track 5 client-rendered widget dev hot-reload. See IOSConfigPluginProps.clientWidgetHotReload. */
+  clientWidgetHotReload?: boolean
 }
 
 /**
@@ -30,7 +32,7 @@ export interface GenerateWidgetExtensionFilesProps {
  * This should run before configureXcodeProject so the files exist when Xcode project is configured.
  */
 export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
-  const { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber } = props
+  const { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber, clientWidgetHotReload } = props
 
   return withDangerousMod(config, [
     'ios',
@@ -58,6 +60,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         targetPath,
         projectRoot,
         widgets,
+        clientWidgetHotReload,
       })
 
       // Generate entitlements file (may be empty if no groupIdentifier or keychainGroup)

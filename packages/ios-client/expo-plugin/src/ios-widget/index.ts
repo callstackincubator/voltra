@@ -18,6 +18,8 @@ export interface WithIOSProps {
   fonts?: string[]
   version: string
   buildNumber: string
+  /** Track 5 client-rendered widget dev hot-reload. See IOSConfigPluginProps.clientWidgetHotReload. */
+  clientWidgetHotReload?: boolean
 }
 
 /**
@@ -47,6 +49,7 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     fonts,
     version,
     buildNumber,
+    clientWidgetHotReload,
   } = props
 
   const plugins: [ConfigPlugin<any>, any][] = [
@@ -60,13 +63,16 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     [configurePodfile, { targetName }],
 
     // 4. Configure main app Info.plist (URL schemes, widget extension plist)
-    [configureWidgetExtensionPlist, { targetName, groupIdentifier, widgets, keychainGroup }],
+    [configureWidgetExtensionPlist, { targetName, groupIdentifier, widgets, keychainGroup, clientWidgetHotReload }],
 
     // 5. Configure EAS build settings
     [configureEasBuild, { targetName, bundleIdentifier, groupIdentifier }],
 
     // 6. Generate widget extension files (dangerous mod should run before plist patchers)
-    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber }],
+    [
+      generateWidgetExtensionFiles,
+      { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber, clientWidgetHotReload },
+    ],
   ]
 
   return withPlugins(config, plugins)

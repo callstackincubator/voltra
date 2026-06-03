@@ -46,6 +46,7 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
     widgets: props.widgets,
     version,
     buildNumber,
+    clientWidgetHotReload: props.clientWidgetHotReload ?? false,
     ...(props.groupIdentifier ? { groupIdentifier: props.groupIdentifier } : {}),
     ...(keychainGroup ? { keychainGroup } : {}),
     ...(props.fonts ? { fonts: props.fonts } : {}),

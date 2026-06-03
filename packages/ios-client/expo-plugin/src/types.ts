@@ -65,6 +65,23 @@ export interface IOSConfigPluginProps {
   targetName?: string
   fonts?: string[]
   keychainGroup?: string
+  /**
+   * Track 5 — opt-in to dev-mode hot-reload for client-rendered widgets (widgets declared
+   * with a `'use voltra'` directive). Default: `false`.
+   *
+   * When `true` AND the build configuration is DEBUG:
+   *   - The widget extension's Provider fetches the latest JSX bundle from Metro
+   *     (`http://localhost:8081/voltra/widgets/<id>.bundle`) every time `getTimeline` runs.
+   *   - `NSAppTransportSecurity` with a localhost exception is added to the widget
+   *     extension's Info.plist so the fetch succeeds.
+   *   - The consumer should call `enableClientWidgetHotReload()` from
+   *     `@use-voltra/ios-client` at app startup so Metro HMR triggers
+   *     `WidgetCenter.shared.reloadAllTimelines()` automatically when widget JSX changes.
+   *
+   * When `false` or in release builds: the widget always shows the prerendered placeholder
+   * (Phase 5 will bake bundles into the .app for release).
+   */
+  clientWidgetHotReload?: boolean
 }
 
 export type VoltraIosConfigPlugin = ConfigPlugin<IOSConfigPluginProps | undefined>
@@ -86,4 +103,6 @@ export interface IOSWidgetExtensionPluginProps {
   fonts?: string[]
   version: string
   buildNumber: string
+  /** See [IOSConfigPluginProps.clientWidgetHotReload] — threaded through to file generators. */
+  clientWidgetHotReload?: boolean
 }

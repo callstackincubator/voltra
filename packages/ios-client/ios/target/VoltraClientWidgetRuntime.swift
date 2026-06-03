@@ -43,19 +43,41 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
 
 // MARK: - Provider
 
+//
+// Refresh model (Track 5 / Phase 3b-iii):
+//
+//   - We DO NOT schedule automatic timeline refreshes. The policy is always `.never`.
+//     Polling-based refresh (e.g. `.after(60s)`) burns battery and produces stale UI
+//     with multi-second lag on every JSX edit. The right model is push-driven.
+//
+//   - When `devHotReloadEnabled = true`:
+//        - The Provider fetches `<id>.bundle` from Metro on every `getTimeline`/`getSnapshot`.
+//        - `getTimeline` is invoked by WidgetKit ONLY when something explicitly calls
+//          `WidgetCenter.shared.reloadAllTimelines()` (or `reloadTimelines(ofKind:)`).
+//        - The host app's `enableClientWidgetHotReload()` JS helper subscribes to
+//          Metro HMR and calls the reload API when a widget JSX file updates, so saves
+//          propagate to the widget within seconds.
+//
+//   - When `devHotReloadEnabled = false` (the default):
+//        - The Provider skips the Metro fetch entirely and emits `bundleReady = false`.
+//          The `VoltraClientWidgetContentView` will then render the prerendered initial
+//          state (Q6 grilling) so the widget shows real UI without any network access.
+
 public struct VoltraClientWidgetProvider: TimelineProvider {
   public let widgetId: String
   /// Prerendered initial state JSON from `VoltraWidgetInitialStates.getInitialState(for:)`.
-  /// Used as a placeholder while the bundle is fetching and as a fallback if fetch fails.
+  /// Used as the placeholder, the Loading fallback, and the steady-state view when hot
+  /// reload is off.
   public let initialState: Data?
-  /// Seconds between timeline refreshes. Default 60 — short enough for the dev hot-reload
-  /// loop, long enough that WidgetKit doesn't throttle the extension.
-  public let refreshIntervalSeconds: TimeInterval
+  /// Track 5 dev-mode hot reload. Threaded in by the plugin from
+  /// `voltra.ios.clientWidgetHotReload` in app.json. Has no effect in release builds
+  /// (Phase 5 will replace the dev Metro fetch with a baked-asset read).
+  public let devHotReloadEnabled: Bool
 
-  public init(widgetId: String, initialState: Data? = nil, refreshIntervalSeconds: TimeInterval = 60) {
+  public init(widgetId: String, initialState: Data? = nil, devHotReloadEnabled: Bool = false) {
     self.widgetId = widgetId
     self.initialState = initialState
-    self.refreshIntervalSeconds = refreshIntervalSeconds
+    self.devHotReloadEnabled = devHotReloadEnabled
   }
 
   public func placeholder(in _: Context) -> VoltraClientWidgetEntry {
@@ -69,13 +91,22 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
   public func getTimeline(in _: Context, completion: @escaping (Timeline<VoltraClientWidgetEntry>) -> Void) {
     Task {
       let entry = await loadBundleEntry()
-      let next = Date().addingTimeInterval(refreshIntervalSeconds)
-      completion(Timeline(entries: [entry], policy: .after(next)))
+      // .never — we wait for WidgetCenter.reloadAllTimelines() from the host app
+      // (driven by Metro HMR via enableClientWidgetHotReload).
+      completion(Timeline(entries: [entry], policy: .never))
     }
   }
 
   private func loadBundleEntry() async -> VoltraClientWidgetEntry {
     let date = Date()
+
+    // Hot reload off → no fetch, no JSContext eval. The content view will render the
+    // prerendered initial state. This keeps default behaviour identical to the
+    // Phase 5 release path (baked asset → eval → render).
+    if !devHotReloadEnabled {
+      return VoltraClientWidgetEntry(date: date, widgetId: widgetId, bundleReady: false)
+    }
+
     let source: String
     do {
       source = try await VoltraClientWidgetBundleSource.load(widgetId: widgetId)
