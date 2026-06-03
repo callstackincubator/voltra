@@ -89,3 +89,5 @@ export type { LinearProgressIndicatorProps } from './jsx/LinearProgressIndicator
 export type { RowProps } from './jsx/Row.js'
 export type { SpacerProps } from './jsx/Spacer.js'
 export type { TextProps } from './jsx/Text.js'
+export { isAndroidEnv, isIosEnv } from '@use-voltra/core'
+export type { MaterialColorScheme, WidgetBuildEnvironment, WidgetEnvironment } from '@use-voltra/core'
