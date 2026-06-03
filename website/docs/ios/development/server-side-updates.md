@@ -282,20 +282,25 @@ When Live Activity tokens change or need to be refreshed, iOS may wake your app 
 
 ### Detecting background execution
 
-Use the `isHeadless()` function to determine if your app is running in the background:
+Use the `useIsHeadless()` hook in React components to determine if your app is running in the background. The hook re-checks the native headless state when the app becomes active, which prevents the UI from staying hidden if the user opens the app after it was initially launched in the background.
 
-```typescript
-import { isHeadless } from '@use-voltra/ios-client'
+```tsx
+import { useIsHeadless } from '@use-voltra/ios-client'
 
-// In your app's entry point or root component
-if (isHeadless()) {
-  // App is running in background/headless mode
-  console.log('App launched in headless mode for token refresh')
-} else {
-  // App is running in foreground
-  console.log('App launched in foreground')
+function App() {
+  const isHeadless = useIsHeadless()
+
+  if (isHeadless) {
+    // App is running in background/headless mode
+    console.log('App launched in headless mode for token refresh')
+  } else {
+    // App is running in foreground
+    console.log('App launched in foreground')
+  }
 }
 ```
+
+The `isHeadless()` function is also available for synchronous checks outside React components, but prefer `useIsHeadless()` when deciding whether to render UI.
 
 ### Optimizing for background execution
 
@@ -303,9 +308,12 @@ When the app is launched in headless mode for token handling, **do not mount you
 
 ```typescript
 // In your app's entry point (e.g., App.tsx, index.js)
-import { isHeadless, addVoltraListener } from '@use-voltra/ios-client'
+import { useEffect } from 'react'
+import { addVoltraListener, useIsHeadless } from '@use-voltra/ios-client'
 
 function App() {
+  const isHeadless = useIsHeadless()
+
   // Handle token events even in headless mode
   useEffect(() => {
     const subscription = addVoltraListener('activityTokenReceived', (event) => {
@@ -317,7 +325,7 @@ function App() {
   }, [])
 
   // Only render the UI if not in headless mode
-  if (isHeadless()) {
+  if (isHeadless) {
     return null // Don't mount the app component tree
   }
 

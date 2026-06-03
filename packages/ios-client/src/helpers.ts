@@ -1,4 +1,5 @@
-import { Platform } from 'react-native'
+import { useEffect, useState } from 'react'
+import { AppState, Platform } from 'react-native'
 
 import { getNativeVoltra } from './VoltraModule.js'
 
@@ -18,4 +19,32 @@ export function isGlassSupported(): boolean {
 export function isHeadless(): boolean {
   if (Platform.OS !== 'ios') return false
   return getNativeVoltra().isHeadless?.() ?? false
+}
+
+export function useIsHeadless(): boolean {
+  const [headless, setHeadless] = useState(isHeadless)
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return
+
+    const updateIfActive = () => {
+      if (AppState.currentState === 'active') {
+        setHeadless(isHeadless())
+      }
+    }
+
+    updateIfActive()
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        setHeadless(isHeadless())
+      }
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [])
+
+  return headless
 }

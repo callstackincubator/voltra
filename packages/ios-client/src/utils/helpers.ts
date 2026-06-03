@@ -1,1 +1,1 @@
-export { isGlassSupported, isHeadless } from '../helpers.js'
+export { isGlassSupported, isHeadless, useIsHeadless } from '../helpers.js'
