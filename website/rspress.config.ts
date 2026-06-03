@@ -22,8 +22,15 @@ export default withCallstackPreset(
     vercelAnalytics: true,
   },
   defineConfig({
+    multiVersion: {
+      default: 'latest',
+      versions: ['latest', 'v2'],
+    },
     themeConfig: {
       enableScrollToTop: true,
+    },
+    search: {
+      versioned: true,
     },
   })
 )

@@ -1,0 +1,45 @@
+# Visual Elements & Typography (Android)
+
+Static or decorative elements used to display content on Android widgets. See [Styling](../development/styling) for details on supported style properties.
+
+### Text
+
+Displays text content.
+
+**Parameters:**
+
+- `maxLines` (number, optional): Maximum number of lines to display.
+- `renderAsBitmap` (boolean, optional): Renders text as a bitmap image to enable [custom fonts](../development/custom-fonts). Requires `fontFamily` in the style prop.
+
+---
+
+### Image
+
+Displays bitmap images from the asset catalog or base64 encoded data.
+
+**Parameters:**
+
+- `source` (object, optional): Image source object.
+  - `assetName` (string): Reference to a pre-bundled image (drawable resource) or a [preloaded image](../development/image-preloading).
+  - `base64` (string): Base64 encoded image data.
+- `resizeMode` (string, optional): `"cover"`, `"contain"`, `"stretch"`, `"repeat"`, or `"center"`.
+- `contentScale` (string, optional): Glance-specific terminology for resize mode: `"crop"`, `"fit"`, `"fill-bounds"`.
+- `contentDescription` (string, optional): Accessibility description for the image.
+- `alpha` (number, optional): Opacity value from 0.0 to 1.0.
+- `tintColor` (string, optional): Color to tint the image with.
+- `fallback` (ReactNode, optional): Custom content rendered when the image is missing.
+
+**Styling the fallback:**
+
+To add a background color when an image is missing, use `backgroundColor` in the `style` prop:
+
+```jsx
+<Image
+  source={{ assetName: 'photo' }}
+  style={{ backgroundColor: '#E0E0E0', borderRadius: 12 }}
+/>
+```
+
+:::tip Image Preloading
+For dynamic images from remote URLs, use the [Image Preloading](../development/image-preloading) API to cache them locally for use in widgets.
+:::

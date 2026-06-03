@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "overview",
+    "label": "Overview"
+  },
+  {
+    "type": "file",
+    "name": "layout",
+    "label": "Layout & Containers"
+  },
+  {
+    "type": "file",
+    "name": "visual",
+    "label": "Visual Elements"
+  },
+  {
+    "type": "file",
+    "name": "status",
+    "label": "Status & Progress"
+  },
+  {
+    "type": "file",
+    "name": "interactive",
+    "label": "Interactivity"
+  }
+]
