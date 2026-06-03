@@ -90,9 +90,8 @@ function ProfileWidget({ user }) {
         source={{ assetName: 'user_avatar_123' }}
         style={{ width: 40, height: 40, borderRadius: 20 }}
       />
-      <VoltraAndroid.Text style={{ marginLeft: 8 }}>
-        {user.name}
-      </VoltraAndroid.Text>
+      <VoltraAndroid.Spacer style={{ width: 8 }} />
+      <VoltraAndroid.Text>{user.name}</VoltraAndroid.Text>
     </VoltraAndroid.Row>
   )
 }

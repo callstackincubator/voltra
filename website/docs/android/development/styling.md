@@ -77,7 +77,7 @@ This is the preferred approach when you want widgets to follow Android's dynamic
 
 The following properties are **NOT supported** on Android due to Glance limitations:
 
-- **Margins:** `margin`, `marginTop`, etc. are currently ignored. Use `padding` on parent containers or `Spacer` components instead.
+- **Margins:** `margin`, `marginTop`, etc. are not part of Android style types. If you need margin-like outside spacing, use `VoltraAndroid.Spacer` between elements.
 - **Borders:** `borderWidth` and `borderColor` are not yet implemented.
 - **Shadows:** `shadowColor`, `shadowOffset`, `shadowOpacity`, and `shadowRadius` are not supported.
 - **Positioning:** Absolute positioning (`top`, `left`, `zIndex`) is not supported. Use stack alignments and spacers.
