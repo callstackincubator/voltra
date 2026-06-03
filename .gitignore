@@ -49,4 +49,5 @@ npm-debug.log
 
 ## Build
 /build
-/packages/ios-client/ios/.build/
+# SPM build caches under any iOS package (ios-client, voltra, etc.)
+/packages/*/ios/.build/
