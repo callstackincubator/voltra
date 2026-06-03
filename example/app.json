@@ -32,6 +32,7 @@
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "keychainGroup": "$(AppIdentifierPrefix)group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
+          "clientWidgetHotReload": true,
           "widgets": [
             {
               "id": "weather",
@@ -48,6 +49,19 @@
                 "en": "./widgets/ios/ios-weather-initial.tsx",
                 "pl": "./widgets/ios/ios-weather-initial.tsx"
               }
+            },
+            {
+              "id": "IosWeatherWidget",
+              "displayName": {
+                "en": "Client Weather (Track 5)",
+                "pl": "Pogoda — klient (Track 5)"
+              },
+              "description": {
+                "en": "Track 5 client-rendered widget — JSX downloaded from Metro, evaluated in JSC.",
+                "pl": "Widget renderowany po stronie klienta (Track 5)."
+              },
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "initialStatePath": "./widgets/ios/IosWeatherWidget.tsx"
             },
             {
               "id": "portfolio",
