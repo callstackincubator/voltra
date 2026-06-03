@@ -14,6 +14,7 @@ import {
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
 import type { IOSWidgetConfig } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
+import { detectClientRenderedWidgets, type DetectedIOSWidget } from '../clientRendered'
 
 export interface GenerateSwiftFilesOptions {
   targetPath: string
@@ -43,6 +44,15 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
     renderWidgetToString: RenderWidgetToString
   }
 
+  // Tag each widget with its rendering mode (server vs client) by inspecting the
+  // initialStatePath JSX for a 'use voltra' directive. See ../clientRendered.ts.
+  // Throws on widget id / component name mismatch.
+  const detectedWidgets = detectClientRenderedWidgets(widgets || [], projectRoot)
+  const clientWidgetCount = detectedWidgets.filter((w) => w.clientRendered).length
+  if (clientWidgetCount > 0) {
+    logger.info(`Detected ${clientWidgetCount} client-rendered widget(s) — generating Track 5 Provider scaffolding`)
+  }
+
   // Prerender widget initial states if any widgets have initialStatePath configured
   const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot, renderWidgetToString)
 
@@ -59,7 +69,7 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
 
   // Generate the widget bundle Swift file
   const widgetBundleContent =
-    widgets && widgets.length > 0 ? generateWidgetBundleSwift(widgets) : generateDefaultWidgetBundleSwift()
+    detectedWidgets.length > 0 ? generateWidgetBundleSwift(detectedWidgets) : generateDefaultWidgetBundleSwift()
 
   const widgetBundlePath = path.join(targetPath, 'VoltraWidgetBundle.swift')
   fs.writeFileSync(widgetBundlePath, widgetBundleContent)
@@ -263,9 +273,13 @@ function iosWidgetGalleryLabelSwiftExpr(
 }
 
 /**
- * Generates Swift code for a single widget struct
+ * Generates Swift code for a single widget struct. Dispatches on rendering mode:
+ *  - server-rendered → `VoltraHomeWidgetProvider` + `VoltraHomeWidgetView` (existing path)
+ *  - client-rendered → `VoltraClientWidgetProvider` + `VoltraClientWidgetContentView`
+ *    (Track 5 runtime; the content view internally renders via VoltraHomeWidgetView so
+ *    the UI layer is identical to server-rendered widgets — see VoltraClientWidgetRuntime.swift)
  */
-function generateWidgetStruct(widget: IOSWidgetConfig): string {
+function generateWidgetStruct(widget: DetectedIOSWidget): string {
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
 
@@ -274,6 +288,27 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
 
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
+
+  const providerAndContent = widget.clientRendered
+    ? dedent`
+        provider: VoltraClientWidgetProvider(
+          widgetId: widgetId,
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+        )
+      ) { entry in
+        VoltraClientWidgetContentView(
+          entry: entry,
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+        )
+      }`
+    : dedent`
+        provider: VoltraHomeWidgetProvider(
+          widgetId: widgetId,
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+        )
+      ) { entry in
+        VoltraHomeWidgetView(entry: entry)
+      }`
 
   return dedent`
     public struct ${structName}: Widget {
@@ -284,13 +319,7 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
       public var body: some WidgetConfiguration {
         StaticConfiguration(
           kind: "Voltra_Widget_${widget.id}",
-          provider: VoltraHomeWidgetProvider(
-            widgetId: widgetId,
-            initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
-          )
-        ) { entry in
-          VoltraHomeWidgetView(entry: entry)
-        }
+          ${providerAndContent}
         .configurationDisplayName(${displayNameExpr})
         .description(${descriptionExpr})
         .supportedFamilies([${familiesSwift}])
@@ -303,7 +332,7 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
 /**
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
-function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
+function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
   // Generate widget structs
   const widgetStructs = widgets.map(generateWidgetStruct).join('\n\n')
 
@@ -473,4 +502,5 @@ function getSwiftRawStringDelimiter(str: string): string {
 
 export const __test__ = {
   generateInitialStatesSwift,
+  generateWidgetBundleSwift,
 }
