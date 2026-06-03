@@ -64,14 +64,19 @@ function createWidgetRegistry({ projectRoot }) {
         `  throw new Error(${JSON.stringify(`Unable to find Voltra widget export "${widget.exportName}".`)})`,
         '}',
         '',
-        'export function render(props = {}) {',
-        '  return renderVoltraVariantToJson(createElement(Widget, props))',
+        '// Voltra client-rendered widget entry — invoked by the native JS runtime on every render.',
+        '// `env` is captured at draw time by Swift / Kotlin and passed across the JSC / Hermes',
+        '// boundary; closure-passed into the widget function because createElement does not',
+        '// accept extra positional args.',
+        'export function render(props = {}, env = {}) {',
+        '  const WidgetWithEnv = (forwardedProps) => Widget(forwardedProps, env)',
+        '  return renderVoltraVariantToJson(createElement(WidgetWithEnv, props))',
         '}',
         '',
         'export default render',
         'export { Widget }',
         '',
-      ].join('\n')
+      ].join('\n'),
     )
 
     return {
