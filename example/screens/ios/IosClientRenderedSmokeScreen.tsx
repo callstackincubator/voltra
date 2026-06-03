@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { voltraWidgetEvalBundle, voltraWidgetRender } from '@use-voltra/ios-client'
+import { reloadWidgets, voltraWidgetEvalBundle, voltraWidgetRender } from '@use-voltra/ios-client'
 
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
@@ -28,6 +28,7 @@ export default function IosClientRenderedSmokeScreen() {
   const [bundleSize, setBundleSize] = useState<number | null>(null)
   const [resolved, setResolved] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reloadStatus, setReloadStatus] = useState<string | null>(null)
 
   const runSmokeTest = async () => {
     if (Platform.OS !== 'ios') {
@@ -81,6 +82,16 @@ export default function IosClientRenderedSmokeScreen() {
     }
   }
 
+  const reloadAllWidgets = async () => {
+    setReloadStatus('Reloading…')
+    try {
+      await reloadWidgets()
+      setReloadStatus(`Reloaded at ${new Date().toLocaleTimeString()}`)
+    } catch (e) {
+      setReloadStatus(`Reload failed: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
   return (
     <ScreenLayout
       title="Client-Rendered Widget Smoke Test"
@@ -94,6 +105,15 @@ export default function IosClientRenderedSmokeScreen() {
           disabled={busy}
         />
         <Text style={styles.hint}>Make sure Metro is running on {METRO_BASE_URL}.</Text>
+      </View>
+
+      <View style={styles.section}>
+        <Button title="Reload all widgets (force timeline tick)" variant="secondary" onPress={reloadAllWidgets} />
+        <Text style={styles.hint}>
+          Phase 3b-ii dev-loop helper — taps WidgetCenter.shared.reloadAllTimelines() so widget-extension Providers
+          re-run getTimeline immediately. Use after editing JSX to see the change without waiting.
+        </Text>
+        {reloadStatus && <Text style={styles.value}>{reloadStatus}</Text>}
       </View>
 
       {bundleSize != null && (

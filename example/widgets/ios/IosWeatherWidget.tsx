@@ -29,9 +29,10 @@ export const IosWeatherWidget = (
   const gradient = WEATHER_GRADIENTS[weather.condition]
   const emoji = WEATHER_EMOJIS[weather.condition]
   const baseDescription = WEATHER_DESCRIPTIONS[weather.condition]
-  // Phase 2 verification — append the current color scheme so it's visible the env
-  // arg is actually reaching the widget. Replace with real env-driven styling later.
-  const description = env.colorScheme ? `${baseDescription} · ${env.colorScheme}` : baseDescription
+  // Phase 3b-ii verification — append captured env values so it's visible they reach
+  // the widget. Replace with real env-driven styling later.
+  const envSuffix = [env.colorScheme, env.widgetFamily].filter(Boolean).join(' · ')
+  const description = envSuffix ? `${baseDescription} · ${envSuffix}` : baseDescription
 
   return (
     <Voltra.LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={{ flex: 1 }}>
