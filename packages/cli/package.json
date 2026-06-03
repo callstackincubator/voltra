@@ -54,6 +54,9 @@
     "vd-tool": "^4.0.2",
     "xml2js": "^0.6.2"
   },
+  "devDependencies": {
+    "@types/babel__core": "^7.20.5"
+  },
   "peerDependencies": {
     "@use-voltra/android": "*",
     "@use-voltra/ios": "*"

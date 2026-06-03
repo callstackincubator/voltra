@@ -117,7 +117,7 @@ export default function AndroidMaterialColorsScreen() {
       setPreviewTimestamp('server timestamp')
       Alert.alert(
         'Server render requested',
-        'The widget will fetch fresh JSON from the example server. Make sure `npm run widget:server --workspace voltra-example` is running on your host machine.'
+        'The widget will fetch fresh JSON from the example server. Make sure `pnpm --filter voltra-example run widget:server` is running on your host machine.'
       )
     } catch (error: any) {
       const message = error?.message || String(error)
@@ -188,7 +188,7 @@ export default function AndroidMaterialColorsScreen() {
         <Card.Title>Server Setup</Card.Title>
         <Card.Text>Run the example widget server before using the server render button:</Card.Text>
         <View style={styles.codeBlock}>
-          <Text style={styles.codeText}>npm run widget:server --workspace voltra-example</Text>
+          <Text style={styles.codeText}>pnpm --filter voltra-example run widget:server</Text>
         </View>
         <Card.Text>
           Android emulators use <Text style={styles.code}>10.0.2.2</Text> in the widget config, so the built-in
