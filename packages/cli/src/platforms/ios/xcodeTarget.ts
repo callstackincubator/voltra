@@ -17,6 +17,7 @@ import { VoltraCliError } from '../../reporting/summary'
 import { resolveIOSWidgetTargetName } from './targetName'
 import { ensureMainGroupChild, openIOSXcodeProject, saveIOSXcodeProject } from './xcode'
 import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
+import { needsEntitlementsMutation } from './entitlements'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { NormalizedVoltraIOSConfig } from '../../config/types'
@@ -67,7 +68,7 @@ export async function ensureIOSWidgetTarget(
   const staleTargetNames = getStaleWidgetTargetNames(previousWidgetFiles, targetName)
   const bundleIdentifier = resolveBundleIdentifier(context, discovery, targetName)
   const codeSigning = getMainAppCodeSigningSettings(context)
-  const mainAppEntitlementsPath = await getMainAppEntitlementsBuildSetting(discovery)
+  const mainAppEntitlementsPath = await getMainAppEntitlementsBuildSetting(discovery, ios)
 
   removeStaleWidgetTargets(context, staleTargetNames)
   ensureMainAppEntitlementsBuildSetting(context, mainAppEntitlementsPath)
@@ -741,9 +742,16 @@ function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainApp
   }
 }
 
-async function getMainAppEntitlementsBuildSetting(discovery: IOSProjectDiscovery): Promise<string | undefined> {
+async function getMainAppEntitlementsBuildSetting(
+  discovery: IOSProjectDiscovery,
+  ios: NormalizedVoltraIOSConfig
+): Promise<string | undefined> {
   if (discovery.entitlementsPath) {
     return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
+  }
+
+  if (!needsEntitlementsMutation(ios)) {
+    return undefined
   }
 
   const entitlementsPath = resolveMainAppEntitlementsPath(discovery)

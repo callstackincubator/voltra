@@ -71,7 +71,7 @@ export async function ensureEntitlements(options: EnsureEntitlementsOptions): Pr
   return { change }
 }
 
-function needsEntitlementsMutation(ios: NormalizedVoltraIOSConfig): boolean {
+export function needsEntitlementsMutation(ios: NormalizedVoltraIOSConfig): boolean {
   return ios.enablePushNotifications || ios.groupIdentifier !== undefined || ios.keychainGroup !== undefined
 }
 
@@ -125,7 +125,7 @@ async function writeEntitlementsIfChanged(
   await writeTextFile(entitlementsPath, nextContent)
 
   return {
-    kind: 'updated',
+    kind: previousContent === undefined ? 'created' : 'updated',
     path: toRelativePath(projectRoot, entitlementsPath),
   }
 }

@@ -188,6 +188,7 @@ test('ensureEntitlements creates the main app entitlements file when it is missi
   })
 
   assert.ok(result.change)
+  assert.equal(result.change.kind, 'created')
   assert.equal(fs.existsSync(entitlementsPath), true)
   const entitlements = fs.readFileSync(entitlementsPath, 'utf8')
   assert.match(entitlements, /com\.apple\.security\.application-groups/)
