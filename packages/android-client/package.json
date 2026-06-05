@@ -27,6 +27,7 @@
     "android",
     "build",
     "expo-plugin",
+    "src",
     "README.md"
   ],
   "scripts": {

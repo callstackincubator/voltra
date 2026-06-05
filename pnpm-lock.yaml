@@ -7,9 +7,6 @@ settings:
 importers:
   .:
     devDependencies:
-      '@babel/plugin-transform-export-namespace-from':
-        specifier: ^7.25.9
-        version: 7.27.1(@babel/core@7.29.0)
       '@changesets/cli':
         specifier: ^2.29.8
         version: 2.31.0(@types/node@20.19.41)
