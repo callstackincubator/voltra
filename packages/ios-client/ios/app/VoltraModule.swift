@@ -13,6 +13,13 @@ public enum VoltraErrors: Error {
   @objc override public init() {
     impl = VoltraModuleImpl()
     super.init()
+    // Track 5 / Phase 3b-iii — silent-push handler that triggers WidgetCenter reload
+    // when Voltra's Metro middleware fires `xcrun simctl push` on widget file changes.
+    // Registered here (TurboModule init time) rather than via expo-modules-autolinking
+    // because exposing the subscriber through the public Swift→ObjC bridge of this pod
+    // hits a header-visibility issue with EXBaseAppDelegateSubscriber. See
+    // VoltraDevReloadHandler.swift for the full reasoning.
+    VoltraDevReloadHandler.registerIfNeeded()
   }
 
   @objc public func startMonitoringWithEventHandler(

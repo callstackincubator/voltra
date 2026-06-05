@@ -17,6 +17,7 @@ Pod::Spec.new do |s|
   s.source         = { git: 'https://github.com/callstackincubator/voltra' }
   s.static_framework = true
   install_modules_dependencies(s)
+  s.dependency 'ExpoModulesCore'
   s.frameworks = 'WebKit'
 
   s.source_files = [
