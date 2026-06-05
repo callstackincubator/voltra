@@ -44,11 +44,19 @@ public enum VoltraJSRenderer {
     }
 
     let escapedId = jsStringLiteral(widgetId)
+    // Metro emits the bundle's entry invocation as `__r(<entryModuleId>);` near the
+    // end of the file (before the sourcemap/sourceURL comments). The entry id is NOT
+    // always 0 — when Metro serves multiple widget bundles from the same process, it
+    // shares its module-id registry across bundles so the second/third widget's entry
+    // gets a higher id (e.g. `__r(74);`). We extract whatever id Metro produced and
+    // re-invoke it; Metro's `__r` caches module exports, so the second invocation
+    // returns the same exports the bundle already evaluated.
+    let entryModuleId = extractEntryModuleId(from: source) ?? 0
     let wrapped = """
     \(source)
     ;(function () {
       if (!globalThis.__voltraWidgets) { globalThis.__voltraWidgets = {}; }
-      globalThis.__voltraWidgets[\(escapedId)] = __r(0);
+      globalThis.__voltraWidgets[\(escapedId)] = __r(\(entryModuleId));
     })();
     """
 
@@ -155,5 +163,20 @@ public enum VoltraJSRenderer {
       .replacingOccurrences(of: "\n", with: "\\n")
       .replacingOccurrences(of: "\r", with: "\\r")
     return "\"\(escaped)\""
+  }
+
+  /// Find the entry module id Metro emitted in the bundle's trailing `__r(<id>);`.
+  /// Scans the LAST occurrence of `__r(<digits>);` in the source — every `__d(...)`
+  /// module declaration also contains internal `__r(...)` calls, so taking the last
+  /// match (the entrypoint invocation Metro appends at bundle's end) is what we want.
+  private static func extractEntryModuleId(from source: String) -> Int? {
+    guard let regex = try? NSRegularExpression(pattern: #"__r\((\d+)\);"#) else { return nil }
+    let nsRange = NSRange(source.startIndex ..< source.endIndex, in: source)
+    let matches = regex.matches(in: source, range: nsRange)
+    guard let last = matches.last,
+          let range = Range(last.range(at: 1), in: source),
+          let id = Int(source[range])
+    else { return nil }
+    return id
   }
 }

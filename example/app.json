@@ -64,6 +64,19 @@
               "initialStatePath": "./widgets/ios/IosWeatherWidget.tsx"
             },
             {
+              "id": "Track5DemoWidget",
+              "displayName": {
+                "en": "Track 5 Demo",
+                "pl": "Track 5 Demo"
+              },
+              "description": {
+                "en": "Plain widget showing env values — for verifying client-rendered hot reload.",
+                "pl": "Prosty widget pokazujący wartości env — do weryfikacji hot reload."
+              },
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "initialStatePath": "./widgets/ios/Track5DemoWidget.tsx"
+            },
+            {
               "id": "portfolio",
               "displayName": {
                 "pl": "Widget portfela",

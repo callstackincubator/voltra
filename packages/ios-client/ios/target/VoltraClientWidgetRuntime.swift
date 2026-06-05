@@ -46,22 +46,23 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
 //
 // Refresh model (Track 5 / Phase 3b-iii):
 //
-//   - We DO NOT schedule automatic timeline refreshes. The policy is always `.never`.
-//     Polling-based refresh (e.g. `.after(60s)`) burns battery and produces stale UI
-//     with multi-second lag on every JSX edit. The right model is push-driven.
+//   - When `devHotReloadEnabled = false` (the default + release builds):
+//        Provider skips the Metro fetch entirely, emits `bundleReady = false`, and
+//        the ContentView renders the prerendered initial state (Q6 grilling).
 //
-//   - When `devHotReloadEnabled = true`:
-//        - The Provider fetches `<id>.bundle` from Metro on every `getTimeline`/`getSnapshot`.
-//        - `getTimeline` is invoked by WidgetKit ONLY when something explicitly calls
-//          `WidgetCenter.shared.reloadAllTimelines()` (or `reloadTimelines(ofKind:)`).
-//        - The host app's `enableClientWidgetHotReload()` JS helper subscribes to
-//          Metro HMR and calls the reload API when a widget JSX file updates, so saves
-//          propagate to the widget within seconds.
+//   - When `devHotReloadEnabled = true` (dev opt-in via `voltra.ios.clientWidgetHotReload`):
+//        Provider fetches `<id>.bundle` from Metro on every `getTimeline`/`getSnapshot`,
+//        evaluates it in the shared JSContext, and emits `bundleReady = true`. The
+//        ContentView then runs the freshly evaluated `render(props, env)` and feeds
+//        the result to `VoltraHomeWidgetView`.
 //
-//   - When `devHotReloadEnabled = false` (the default):
-//        - The Provider skips the Metro fetch entirely and emits `bundleReady = false`.
-//          The `VoltraClientWidgetContentView` will then render the prerendered initial
-//          state (Q6 grilling) so the widget shows real UI without any network access.
+//   - Timeline policy is ALWAYS `.never`. The widget refreshes only when something
+//        explicitly calls `WidgetCenter.shared.reloadAllTimelines()`. iOS rate-limits
+//        timeline-policy-driven refresh aggressively (treats `.after(<short>)` as a
+//        hint and throttles to ~5-minute intervals even in the simulator), so
+//        push-driven reloads are the only mechanism that delivers near-instant updates.
+//        The Metro middleware + silent-push setup wakes the host app on widget file
+//        changes and calls `reloadAllTimelines()` from there.
 
 public struct VoltraClientWidgetProvider: TimelineProvider {
   public let widgetId: String
@@ -91,8 +92,6 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
   public func getTimeline(in _: Context, completion: @escaping (Timeline<VoltraClientWidgetEntry>) -> Void) {
     Task {
       let entry = await loadBundleEntry()
-      // .never — we wait for WidgetCenter.reloadAllTimelines() from the host app
-      // (driven by Metro HMR via enableClientWidgetHotReload).
       completion(Timeline(entries: [entry], policy: .never))
     }
   }
@@ -317,16 +316,18 @@ public struct VoltraClientWidgetContentView: View {
       ), let node = parseResolvedNode(jsonString: resolved) {
         return VoltraHomeWidgetEntry(date: entry.date, rootNode: node, widgetId: entry.widgetId)
       }
+      // render() or VoltraNode.parse failed — fall through to the prerendered initial state
+      // so the widget still shows real UI instead of a blank tile.
     }
-    // Fallback path — show the prerendered initial state if available so the placeholder
-    // and any render failure both produce a real UI instead of a blank tile.
     let fallbackNode = initialState.flatMap(parseResolvedNode(jsonData:))
     return VoltraHomeWidgetEntry(date: entry.date, rootNode: fallbackNode, widgetId: entry.widgetId)
   }
 
   private func parseResolvedNode(jsonString: String) -> VoltraNode? {
     guard let json = try? JSONValue.parse(from: jsonString) else { return nil }
-    return VoltraNode.parse(from: json)
+    let node = VoltraNode.parse(from: json)
+    if case .empty = node { return nil }
+    return node
   }
 
   private func parseResolvedNode(jsonData: Data) -> VoltraNode? {

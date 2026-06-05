@@ -1,20 +1,18 @@
 import { Stack } from 'expo-router'
-import { Platform } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { enableClientWidgetHotReload } from '@use-voltra/ios-client'
 
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
-updateAndroidVoltraWidget({ width: 300, height: 200 })
+// Track 5 — side-effect imports so the maintainer's Metro widget registry can see
+// every 'use voltra' file in its dep graph. Without an import path reachable from
+// the main bundle entry, Metro returns 404 for /voltra/widgets/<id>.bundle and the
+// widget extension can't fetch the bundle. (IosWeatherWidget is already reachable
+// via WeatherTestingScreen.tsx so it doesn't need to be listed here.)
+import '~/widgets/ios/Track5DemoWidget'
 
-// Track 5 — when the corresponding `clientWidgetHotReload` flag in app.json is on,
-// subscribe to Metro HMR and call WidgetCenter.reloadAllTimelines() on every save so
-// client-rendered widget JSX changes reach the home-screen widget within seconds.
-if (__DEV__ && Platform.OS === 'ios') {
-  enableClientWidgetHotReload()
-}
+updateAndroidVoltraWidget({ width: 300, height: 200 })
 
 const STACK_SCREEN_OPTIONS = {
   headerShown: false,
