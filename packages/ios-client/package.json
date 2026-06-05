@@ -27,6 +27,7 @@
     "build",
     "expo-plugin",
     "ios",
+    "src",
     "Voltra.podspec",
     "README.md"
   ],
