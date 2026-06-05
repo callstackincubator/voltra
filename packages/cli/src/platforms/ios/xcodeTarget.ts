@@ -12,9 +12,11 @@ import {
 } from '@bacons/xcode'
 
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
+import { pathExists } from '../../fs/readWrite'
 import { VoltraCliError } from '../../reporting/summary'
 import { resolveIOSWidgetTargetName } from './targetName'
 import { ensureMainGroupChild, openIOSXcodeProject, saveIOSXcodeProject } from './xcode'
+import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { NormalizedVoltraIOSConfig } from '../../config/types'
@@ -65,7 +67,7 @@ export async function ensureIOSWidgetTarget(
   const staleTargetNames = getStaleWidgetTargetNames(previousWidgetFiles, targetName)
   const bundleIdentifier = resolveBundleIdentifier(context, discovery, targetName)
   const codeSigning = getMainAppCodeSigningSettings(context)
-  const mainAppEntitlementsPath = getMainAppEntitlementsBuildSetting(projectRoot, discovery)
+  const mainAppEntitlementsPath = await getMainAppEntitlementsBuildSetting(discovery)
 
   removeStaleWidgetTargets(context, staleTargetNames)
   ensureMainAppEntitlementsBuildSetting(context, mainAppEntitlementsPath)
@@ -739,12 +741,18 @@ function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainApp
   }
 }
 
-function getMainAppEntitlementsBuildSetting(projectRoot: string, discovery: IOSProjectDiscovery): string | undefined {
-  if (!discovery.entitlementsPath) {
+async function getMainAppEntitlementsBuildSetting(discovery: IOSProjectDiscovery): Promise<string | undefined> {
+  if (discovery.entitlementsPath) {
+    return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
+  }
+
+  const entitlementsPath = resolveMainAppEntitlementsPath(discovery)
+
+  if (!(await pathExists(entitlementsPath))) {
     return undefined
   }
 
-  return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
+  return normalizeRelativePath(path.relative(discovery.iosRoot, entitlementsPath))
 }
 
 function ensureMainAppEntitlementsBuildSetting(

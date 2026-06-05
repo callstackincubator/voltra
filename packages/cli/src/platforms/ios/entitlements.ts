@@ -1,8 +1,9 @@
-import { readTextFile, writeTextFile } from '../../fs/readWrite'
+import { pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 
 import { buildPlistXml, parsePlistFile } from './plist'
+import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { NormalizedVoltraIOSConfig } from '../../config/types'
@@ -33,22 +34,17 @@ export class IOSEntitlementsMutationError extends VoltraCliError {
 
 export async function ensureEntitlements(options: EnsureEntitlementsOptions): Promise<EnsureEntitlementsResult> {
   const { projectRoot, ios, discovery } = options
+  const entitlementsPath = resolveMainAppEntitlementsPath(discovery)
 
   if (!discovery.entitlementsPath) {
     if (!needsEntitlementsMutation(ios)) {
       return {}
     }
-
-    throw new IOSEntitlementsMutationError(
-      `Could not determine the main app entitlements file. Set ios.project.entitlementsPath to update entitlements for target '${discovery.mainTargetName}'.`
-    )
   }
 
-  const entitlements = await parsePlistFile(
-    discovery.entitlementsPath,
-    'main app entitlements',
-    createEntitlementsError
-  )
+  const entitlements: Record<string, unknown> = (await pathExists(entitlementsPath))
+    ? await parsePlistFile(entitlementsPath, 'main app entitlements', createEntitlementsError)
+    : {}
   const previousVoltraValues = await readPreviousVoltraEntitlementValues(discovery.infoPlistPath)
 
   ensureStringArrayValue(
@@ -70,7 +66,7 @@ export async function ensureEntitlements(options: EnsureEntitlementsOptions): Pr
   }
 
   const nextContent = buildPlistXml(entitlements, createEntitlementsError)
-  const change = await writeEntitlementsIfChanged(projectRoot, discovery.entitlementsPath, nextContent)
+  const change = await writeEntitlementsIfChanged(projectRoot, entitlementsPath, nextContent)
 
   return { change }
 }
@@ -120,7 +116,7 @@ async function writeEntitlementsIfChanged(
   entitlementsPath: string,
   nextContent: string
 ): Promise<ReportedChange | undefined> {
-  const previousContent = await readTextFile(entitlementsPath)
+  const previousContent = (await pathExists(entitlementsPath)) ? await readTextFile(entitlementsPath) : undefined
 
   if (previousContent === nextContent) {
     return undefined
