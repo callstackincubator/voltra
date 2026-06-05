@@ -11,6 +11,10 @@ function loadCliModule() {
   return require(path.join(packageRoot, 'build/cjs/index.js'))
 }
 
+function loadIosMainAppEntitlementsModule() {
+  return require(path.join(packageRoot, 'build/cjs/platforms/ios/mainAppEntitlements.js'))
+}
+
 function writeFakePackage(projectRoot, packageName) {
   const packagePath = path.join(projectRoot, 'node_modules', ...packageName.split('/'), 'package.json')
   fs.mkdirSync(path.dirname(packagePath), { recursive: true })
@@ -128,6 +132,68 @@ test('ios preflight reports missing client package when renderer is installed', 
   assert.equal(result.platform, 'ios')
   assert.match(result.issues[0].message, /@use-voltra\/ios-client/)
   assert.doesNotMatch(result.issues[0].message, /@use-voltra\/ios and/)
+})
+
+test('resolves the standard main app entitlements path when discovery is missing one', () => {
+  const { resolveMainAppEntitlementsPath } = loadIosMainAppEntitlementsModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+
+  const discovery = {
+    iosRoot: path.join(tempDir, 'ios'),
+    xcodeprojPath: path.join(tempDir, 'ios', 'TestApp.xcodeproj'),
+    pbxprojPath: path.join(tempDir, 'ios', 'TestApp.xcodeproj', 'project.pbxproj'),
+    podfilePath: path.join(tempDir, 'ios', 'Podfile'),
+    mainTargetName: 'TestApp',
+    mainTargetCandidates: ['TestApp'],
+    infoPlistPath: path.join(tempDir, 'ios', 'TestApp', 'Info.plist'),
+  }
+
+  assert.equal(resolveMainAppEntitlementsPath(discovery), path.join(tempDir, 'ios', 'TestApp', 'TestApp.entitlements'))
+})
+
+test('ensureEntitlements creates the main app entitlements file when it is missing', async () => {
+  const { ensureEntitlements } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const iosRoot = path.join(tempDir, 'ios')
+  const infoPlistPath = path.join(iosRoot, 'TestApp', 'Info.plist')
+  const entitlementsPath = path.join(iosRoot, 'TestApp', 'TestApp.entitlements')
+
+  fs.mkdirSync(path.dirname(infoPlistPath), { recursive: true })
+  fs.writeFileSync(
+    infoPlistPath,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict></dict>
+</plist>
+`
+  )
+
+  const result = await ensureEntitlements({
+    projectRoot: tempDir,
+    ios: {
+      enablePushNotifications: true,
+      groupIdentifier: 'group.com.example.app',
+      project: {},
+    },
+    discovery: {
+      iosRoot,
+      xcodeprojPath: path.join(iosRoot, 'TestApp.xcodeproj'),
+      pbxprojPath: path.join(iosRoot, 'TestApp.xcodeproj', 'project.pbxproj'),
+      podfilePath: path.join(iosRoot, 'Podfile'),
+      mainTargetName: 'TestApp',
+      mainTargetCandidates: ['TestApp'],
+      infoPlistPath,
+    },
+  })
+
+  assert.ok(result.change)
+  assert.equal(result.change.kind, 'created')
+  assert.equal(fs.existsSync(entitlementsPath), true)
+  const entitlements = fs.readFileSync(entitlementsPath, 'utf8')
+  assert.match(entitlements, /com\.apple\.security\.application-groups/)
+  assert.match(entitlements, /group\.com\.example\.app/)
+  assert.match(entitlements, /aps-environment/)
 })
 
 test('android preflight reports missing client package when renderer is installed', async () => {
