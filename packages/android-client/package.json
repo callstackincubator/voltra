@@ -31,12 +31,12 @@
     "README.md"
   ],
   "scripts": {
-    "build": "npm run clean && npm run build:expo-plugin && bob build",
+    "build": "pnpm run clean && pnpm run build:expo-plugin && bob build",
     "build:expo-plugin": "node ../../scripts/build-package.mjs packages/android-client/expo-plugin",
-    "clean": "rm -rf build && npm run clean:expo-plugin",
+    "clean": "rm -rf build && pnpm run clean:expo-plugin",
     "clean:expo-plugin": "rm -rf expo-plugin/build",
-    "format:check": "npm run format:kotlin:check",
-    "format:fix": "npm run format:kotlin:fix",
+    "format:check": "pnpm run format:kotlin:check",
+    "format:fix": "pnpm run format:kotlin:fix",
     "format:kotlin:check": "ktlint \"android/**/*.kt\"",
     "format:kotlin:fix": "ktlint -F \"android/**/*.kt\"",
     "lint": "oxlint src expo-plugin/src",
@@ -47,8 +47,9 @@
   "dependencies": {
     "@babel/core": "^7.27.4",
     "@expo/config-plugins": "~10.1.2",
-    "@use-voltra/android": "1.4.1",
-    "@use-voltra/expo-plugin": "1.4.1",
+    "@use-voltra/android": "workspace:^",
+    "@use-voltra/expo-plugin": "workspace:^",
+    "dedent": "^1.7.1",
     "vd-tool": "^4.0.2"
   },
   "peerDependencies": {

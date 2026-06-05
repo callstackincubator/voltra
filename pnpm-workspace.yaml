@@ -1,0 +1,13 @@
+packages:
+  - packages/*
+  - example
+  - website
+
+allowBuilds:
+  core-js: true
+  esbuild: true
+  lefthook: true
+  vd-tool: true
+
+minimumReleaseAge: 20160
+strictDepBuilds: true

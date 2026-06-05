@@ -21,25 +21,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24.14.0'
-          cache: 'npm'
-          cache-dependency-path: website/package-lock.json
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: website
-        run: npm ci
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        run: pnpm install --frozen-lockfile
 
       - name: Pull Vercel environment information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm --filter voltra-website exec vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build project artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm --filter voltra-website exec vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy prebuilt artifacts to production
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm --filter voltra-website exec vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

@@ -119,14 +119,14 @@ export const cleanKotlinParametersDirectory = (outputDir: string) => {
 }
 
 export const runFormatScript = (scriptName: string, stepLabel: string, logger: Logger, paths: GenerationPaths) => {
-  logger.log(`Step ${stepLabel}: Running npm run ${scriptName}...`)
+  logger.log(`Step ${stepLabel}: Running pnpm run ${scriptName}...`)
   try {
-    const result = execSync(`npm run ${scriptName}`, { encoding: 'utf-8', cwd: paths.rootDir })
+    const result = execSync(`pnpm run ${scriptName}`, { encoding: 'utf-8', cwd: paths.rootDir })
     if (result.trim()) {
       logger.log(result.trim())
     }
   } catch (error: any) {
-    logger.warn(`   Warning: npm run ${scriptName} exited with code ${error.status ?? 'unknown'}`)
+    logger.warn(`   Warning: pnpm run ${scriptName} exited with code ${error.status ?? 'unknown'}`)
     if (error.stdout) logger.log(`   stdout: ${String(error.stdout).trim()}`)
     if (error.stderr) logger.log(`   stderr: ${String(error.stderr).trim()}`)
   }
@@ -140,16 +140,16 @@ export const runWorkspaceFormatScript = (
   logger: Logger,
   paths: GenerationPaths
 ) => {
-  logger.log(`Step ${stepLabel}: Running npm run ${scriptName} --workspace ${workspace}...`)
+  logger.log(`Step ${stepLabel}: Running pnpm --filter ${workspace} run ${scriptName}...`)
   try {
-    execSync(`npm run ${scriptName} --workspace ${workspace}`, {
+    execSync(`pnpm --filter ${workspace} run ${scriptName}`, {
       encoding: 'utf-8',
       cwd: paths.repoRoot,
       stdio: 'inherit',
     })
   } catch (error: any) {
     logger.warn(
-      `   Warning: npm run ${scriptName} --workspace ${workspace} exited with code ${error.status ?? 'unknown'}`
+      `   Warning: pnpm --filter ${workspace} run ${scriptName} exited with code ${error.status ?? 'unknown'}`
     )
     if (error.stdout) logger.log(`   stdout: ${String(error.stdout).trim()}`)
     if (error.stderr) logger.log(`   stderr: ${String(error.stderr).trim()}`)
