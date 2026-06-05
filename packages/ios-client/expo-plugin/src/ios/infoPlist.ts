@@ -7,6 +7,9 @@ export interface ConfigureInfoPlistProps {
   widgetIds?: string[]
   widgets?: IOSWidgetConfig[]
   keychainGroup?: string
+  /** Track 5 — when true, plugin adds `remote-notification` to UIBackgroundModes so
+   *  iOS can wake the host app for silent-push-driven widget reload. */
+  clientWidgetHotReload?: boolean
 }
 
 /**
@@ -56,6 +59,19 @@ export const configureInfoPlist: ConfigPlugin<ConfigureInfoPlistProps> = (config
     // Store Keychain group identifier for shared credential access
     if (props.keychainGroup) {
       mod.modResults.Voltra_KeychainGroup = props.keychainGroup
+    }
+
+    // Track 5 — silent-push hot reload requires the host app to be wake-able by silent
+    // push delivery, which iOS only allows when the app declares `remote-notification`
+    // in UIBackgroundModes. We append rather than replace so any existing modes set by
+    // other plugins (e.g., expo-task-manager's `fetch`) are preserved.
+    if (props.clientWidgetHotReload) {
+      const existing = Array.isArray(mod.modResults.UIBackgroundModes)
+        ? (mod.modResults.UIBackgroundModes as string[])
+        : []
+      if (!existing.includes('remote-notification')) {
+        mod.modResults.UIBackgroundModes = [...existing, 'remote-notification']
+      }
     }
 
     return mod
