@@ -21,6 +21,52 @@ function writeFakePackage(projectRoot, packageName) {
   fs.writeFileSync(packagePath, `${JSON.stringify({ name: packageName, version: '0.0.0' }, null, 2)}\n`)
 }
 
+function writeFakeReactNativeMinIOSVersion(projectRoot, version) {
+  writeFakePackage(projectRoot, 'react-native')
+  const helpersPath = path.join(projectRoot, 'node_modules', 'react-native', 'scripts', 'cocoapods', 'helpers.rb')
+  fs.mkdirSync(path.dirname(helpersPath), { recursive: true })
+  fs.writeFileSync(
+    helpersPath,
+    `module Helpers
+  class Constants
+    def self.min_ios_version_supported
+      return '${version}'
+    end
+  end
+end
+`
+  )
+}
+
+function createIOSPodfileTestOptions(projectRoot, podfileContent) {
+  const iosRoot = path.join(projectRoot, 'ios')
+  const podfilePath = path.join(iosRoot, 'Podfile')
+
+  fs.mkdirSync(iosRoot, { recursive: true })
+  fs.writeFileSync(podfilePath, podfileContent)
+
+  return {
+    projectRoot,
+    ios: {
+      deploymentTarget: '17.0',
+      enablePushNotifications: false,
+      fonts: [],
+      project: {},
+      userImagesPath: path.join(projectRoot, 'assets', 'voltra'),
+      widgets: [],
+    },
+    discovery: {
+      iosRoot,
+      xcodeprojPath: path.join(iosRoot, 'TestApp.xcodeproj'),
+      pbxprojPath: path.join(iosRoot, 'TestApp.xcodeproj', 'project.pbxproj'),
+      podfilePath,
+      mainTargetName: 'TestApp',
+      mainTargetCandidates: ['TestApp'],
+      infoPlistPath: path.join(iosRoot, 'TestApp', 'Info.plist'),
+    },
+  }
+}
+
 test('apply help documents the yes flag', () => {
   const { getApplyHelpText } = loadCliModule()
   const helpText = getApplyHelpText()
@@ -194,6 +240,83 @@ test('ensureEntitlements creates the main app entitlements file when it is missi
   assert.match(entitlements, /com\.apple\.security\.application-groups/)
   assert.match(entitlements, /group\.com\.example\.app/)
   assert.match(entitlements, /aps-environment/)
+})
+
+test('ensurePodfileBlock bumps literal iOS platform below Voltra minimum', async () => {
+  const { ensurePodfileBlock } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const options = createIOSPodfileTestOptions(tempDir, "platform :ios, '15.1'\n")
+
+  const result = await ensurePodfileBlock(options)
+  const podfile = fs.readFileSync(options.discovery.podfilePath, 'utf8')
+
+  assert.equal(result.warnings, undefined)
+  assert.match(podfile, /^platform :ios, '16\.4'$/m)
+  assert.match(podfile, /VOLTRA MANAGED BLOCK/)
+})
+
+test('ensurePodfileBlock leaves compatible literal iOS platform untouched', async () => {
+  const { ensurePodfileBlock } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const options = createIOSPodfileTestOptions(tempDir, 'platform :ios, "17.2" # custom floor\n')
+
+  const result = await ensurePodfileBlock(options)
+  const podfile = fs.readFileSync(options.discovery.podfilePath, 'utf8')
+
+  assert.equal(result.warnings, undefined)
+  assert.match(podfile, /^platform :ios, "17\.2" # custom floor$/m)
+})
+
+test('ensurePodfileBlock compares iOS platform versions numerically', async () => {
+  const { ensurePodfileBlock } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const options = createIOSPodfileTestOptions(tempDir, "platform :ios, '16.10'\n")
+
+  const result = await ensurePodfileBlock(options)
+  const podfile = fs.readFileSync(options.discovery.podfilePath, 'utf8')
+
+  assert.equal(result.warnings, undefined)
+  assert.match(podfile, /^platform :ios, '16\.10'$/m)
+})
+
+test('ensurePodfileBlock bumps React Native min_ios_version_supported when it is below Voltra minimum', async () => {
+  const { ensurePodfileBlock } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  writeFakeReactNativeMinIOSVersion(tempDir, '15.1')
+  const options = createIOSPodfileTestOptions(tempDir, 'platform :ios, min_ios_version_supported\n')
+
+  const result = await ensurePodfileBlock(options)
+  const podfile = fs.readFileSync(options.discovery.podfilePath, 'utf8')
+
+  assert.equal(result.warnings, undefined)
+  assert.match(podfile, /^platform :ios, '16\.4'$/m)
+})
+
+test('ensurePodfileBlock leaves React Native min_ios_version_supported when it is already compatible', async () => {
+  const { ensurePodfileBlock } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  writeFakeReactNativeMinIOSVersion(tempDir, '17.0')
+  const options = createIOSPodfileTestOptions(tempDir, 'platform :ios, min_ios_version_supported\n')
+
+  const result = await ensurePodfileBlock(options)
+  const podfile = fs.readFileSync(options.discovery.podfilePath, 'utf8')
+
+  assert.equal(result.warnings, undefined)
+  assert.match(podfile, /^platform :ios, min_ios_version_supported$/m)
+})
+
+test('ensurePodfileBlock warns for unknown iOS platform expressions', async () => {
+  const { ensurePodfileBlock } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const options = createIOSPodfileTestOptions(tempDir, 'platform :ios, ENV.fetch("IOS_DEPLOYMENT_TARGET")\n')
+
+  const result = await ensurePodfileBlock(options)
+  const podfile = fs.readFileSync(options.discovery.podfilePath, 'utf8')
+
+  assert.deepEqual(result.warnings, [
+    'Could not verify the Podfile iOS platform declaration. Ensure it resolves to iOS 16.4 or newer.',
+  ])
+  assert.match(podfile, /^platform :ios, ENV\.fetch\("IOS_DEPLOYMENT_TARGET"\)$/m)
 })
 
 test('android preflight reports missing client package when renderer is installed', async () => {

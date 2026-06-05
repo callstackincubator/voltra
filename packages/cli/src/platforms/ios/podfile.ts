@@ -1,7 +1,11 @@
+import path from 'node:path'
+import { createRequire } from 'node:module'
+
 import { readTextFile, writeTextFile } from '../../fs/readWrite'
 import { toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 import { resolveIOSWidgetTargetName } from './targetName'
+import { VOLTRA_MIN_IOS_DEPLOYMENT_TARGET, isIOSDeploymentTargetAtLeast } from './deploymentTarget'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { NormalizedVoltraIOSConfig } from '../../config/types'
@@ -21,6 +25,7 @@ export interface EnsurePodfileBlockOptions {
 export interface EnsurePodfileBlockResult {
   change?: ReportedChange
   targetName: string
+  warnings?: string[]
 }
 
 export class IOSPodfileMutationError extends VoltraCliError {
@@ -35,10 +40,11 @@ export async function ensurePodfileBlock(options: EnsurePodfileBlockOptions): Pr
   const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const currentContent = await readPodfile(discovery.podfilePath)
   const nextBlock = buildManagedPodfileBlock(targetName)
-  const nextContent = reconcilePodfile(currentContent, nextBlock, targetName)
+  const platformResult = await ensurePodfileDeploymentTarget(currentContent, projectRoot)
+  const nextContent = reconcilePodfile(platformResult.content, nextBlock, targetName)
 
   if (currentContent === nextContent) {
-    return { targetName }
+    return { targetName, warnings: platformResult.warnings }
   }
 
   await writeTextFile(discovery.podfilePath, nextContent)
@@ -49,7 +55,107 @@ export async function ensurePodfileBlock(options: EnsurePodfileBlockOptions): Pr
       path: toRelativePath(projectRoot, discovery.podfilePath),
     },
     targetName,
+    warnings: platformResult.warnings,
   }
+}
+
+interface EnsurePodfileDeploymentTargetResult {
+  content: string
+  warnings?: string[]
+}
+
+async function ensurePodfileDeploymentTarget(
+  content: string,
+  projectRoot: string
+): Promise<EnsurePodfileDeploymentTargetResult> {
+  const lines = content.split('\n')
+  const platformLineIndex = lines.findIndex((line) => /^\s*platform\s+:ios\s*,/.test(line))
+
+  if (platformLineIndex === -1) {
+    return {
+      content,
+      warnings: [
+        `Could not find an iOS platform declaration in the Podfile. Ensure it resolves to iOS ${VOLTRA_MIN_IOS_DEPLOYMENT_TARGET} or newer.`,
+      ],
+    }
+  }
+
+  const line = lines[platformLineIndex]
+  const match = line.match(/^(\s*platform\s+:ios\s*,\s*)(.*?)(\s*(?:#.*)?)$/)
+
+  if (!match) {
+    return {
+      content,
+      warnings: [getUnknownPodfilePlatformWarning()],
+    }
+  }
+
+  const [, prefix, rawValue, suffix] = match
+  const platformValue = rawValue.trim()
+  const nextValue = await resolveNextPodfilePlatformValue(platformValue, projectRoot)
+
+  if (nextValue === undefined) {
+    return {
+      content,
+      warnings: [getUnknownPodfilePlatformWarning()],
+    }
+  }
+
+  if (nextValue === platformValue) {
+    return { content }
+  }
+
+  lines[platformLineIndex] = `${prefix}${nextValue}${suffix}`
+  return { content: lines.join('\n') }
+}
+
+async function resolveNextPodfilePlatformValue(
+  platformValue: string,
+  projectRoot: string
+): Promise<string | undefined> {
+  const literalVersion = parseRubyStringLiteral(platformValue)
+
+  if (literalVersion) {
+    return isIOSDeploymentTargetAtLeast(literalVersion, VOLTRA_MIN_IOS_DEPLOYMENT_TARGET)
+      ? platformValue
+      : `'${VOLTRA_MIN_IOS_DEPLOYMENT_TARGET}'`
+  }
+
+  if (platformValue === 'min_ios_version_supported') {
+    const reactNativeMinVersion = await resolveReactNativeMinIOSVersion(projectRoot)
+
+    if (
+      reactNativeMinVersion &&
+      isIOSDeploymentTargetAtLeast(reactNativeMinVersion, VOLTRA_MIN_IOS_DEPLOYMENT_TARGET)
+    ) {
+      return platformValue
+    }
+
+    return `'${VOLTRA_MIN_IOS_DEPLOYMENT_TARGET}'`
+  }
+
+  return undefined
+}
+
+function parseRubyStringLiteral(value: string): string | undefined {
+  const match = value.match(/^(['"])(\d+(?:\.\d+){0,2})\1$/)
+  return match?.[2]
+}
+
+async function resolveReactNativeMinIOSVersion(projectRoot: string): Promise<string | undefined> {
+  try {
+    const requireFromProject = createRequire(path.join(projectRoot, 'package.json'))
+    const reactNativePackagePath = requireFromProject.resolve('react-native/package.json')
+    const helpersPath = path.join(path.dirname(reactNativePackagePath), 'scripts', 'cocoapods', 'helpers.rb')
+    const helpersContent = await readTextFile(helpersPath)
+    return helpersContent.match(/def self\.min_ios_version_supported[\s\S]*?return ['"]([^'"]+)['"]/)?.[1]
+  } catch {
+    return undefined
+  }
+}
+
+function getUnknownPodfilePlatformWarning(): string {
+  return `Could not verify the Podfile iOS platform declaration. Ensure it resolves to iOS ${VOLTRA_MIN_IOS_DEPLOYMENT_TARGET} or newer.`
 }
 
 function buildManagedPodfileBlock(targetName: string): string {
