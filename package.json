@@ -45,7 +45,6 @@
     "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@babel/plugin-transform-export-namespace-from": "^7.25.9",
     "@changesets/cli": "^2.29.8",
     "@react-native/babel-preset": "0.83.2",
     "@types/node": "^20.19.25",
