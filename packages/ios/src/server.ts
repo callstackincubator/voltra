@@ -6,8 +6,9 @@ import { brotliCompress, constants } from 'node:zlib'
 import { renderLiveActivityToString as render } from './live-activity/renderer.js'
 import type { LiveActivityVariants } from './live-activity/types.js'
 import { ensurePayloadWithinBudget } from './payload.js'
+import * as Voltra from './jsx/primitives.js'
 
-export * as Voltra from './jsx/primitives.js'
+export { Voltra }
 export { renderWidgetToString } from './widgets/renderer.js'
 export type { WidgetVariants } from './widgets/types.js'
 
