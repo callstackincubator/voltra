@@ -108,6 +108,8 @@ const element = (
 
 Supported gradient functions are `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`. Repeating gradients, malformed gradients, unsupported color tokens, and invalid stop positions are ignored. If `backgroundColor` is also provided, Android paints it behind transparent gradient pixels and uses it as a fallback when a gradient cannot be rendered.
 
+Gradient stops can use Android dynamic color tokens from `AndroidDynamicColors`, but those colors are resolved into the generated bitmap when the widget renders or updates. Existing gradient bitmaps do not recolor until the widget is rendered again.
+
 Use `backgroundImage`, not `background-image`. Gradient bitmaps are generated natively during widget rendering and capped before being passed to Glance, so the bitmap does not control layout size.
 
 ## Limitations
