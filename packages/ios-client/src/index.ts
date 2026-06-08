@@ -50,5 +50,5 @@ export {
   updateWidget,
   type UpdateWidgetOptions,
 } from './widgets/widget-api.js'
-// Track 5 / Phase 3a — temporary smoke-test surface. Removed in Phase 3b.
+// Temporary smoke-test surface. Removed once widget-extension wiring is fully covered.
 export { voltraWidgetEvalBundle, voltraWidgetRender } from './widgets/client-rendered-smoke.js'

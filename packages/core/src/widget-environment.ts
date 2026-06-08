@@ -1,5 +1,5 @@
 /**
- * Track 5 — env shape consumed by client-rendered widgets.
+ * Env shape consumed by client-rendered widgets.
  *
  * Client-rendered widgets are functions of `(props, env) => JSX`, evaluated inside the
  * Voltra JS runtime (JSC on iOS, Hermes on Android) at every render. The `env` second

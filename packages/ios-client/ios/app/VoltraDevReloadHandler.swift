@@ -2,14 +2,13 @@ import ExpoModulesCore
 import Foundation
 import WidgetKit
 
-/// Track 5 / Phase 3b-iii — dev-mode silent-push handler that triggers a widget refresh.
+/// Dev-mode silent-push handler that triggers a widget refresh.
 ///
 /// Background
 /// ----------
 /// Client-rendered home-screen widgets need an external trigger to re-fetch fresh Metro
-/// bundles when JSX files change while the host app is backgrounded. Two earlier attempts
-/// were tried and ruled out (see VOLTRA_CLIENT_RENDERED_WIDGETS.md "Hot reload exploration
-/// log"):
+/// bundles when JSX files change while the host app is backgrounded. Two earlier
+/// approaches don't work for this case:
 ///
 ///   - Timeline-policy polling (`.after(1s)`): iOS rate-limits to ~5 min even in simulator.
 ///   - JS-side WebSocket to Metro's `/hot` endpoint: RN's JS runtime suspends in background.
@@ -55,8 +54,8 @@ import WidgetKit
 /// Scope
 /// -----
 /// Simulator-only. Real-device dev would need an APNs setup (push certificate, push
-/// token registration). For PoC scope, simulator + `xcrun simctl push` is enough — that's
-/// where widget development happens day-to-day anyway.
+/// token registration). For dev-mode hot reload, simulator + `xcrun simctl push` is
+/// enough — that's where widget development happens day-to-day anyway.
 @objc(VoltraDevReloadHandler)
 final class VoltraDevReloadHandler: ExpoAppDelegateSubscriber {
   /// Discriminator key in the silent-push payload. Pushes lacking this key are treated as

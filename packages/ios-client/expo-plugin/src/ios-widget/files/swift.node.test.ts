@@ -23,7 +23,7 @@ describe('generateInitialStatesSwift', () => {
   })
 })
 
-describe('generateWidgetBundleSwift — client-rendered dispatch (Phase 3b-iii)', () => {
+describe('generateWidgetBundleSwift — client-rendered dispatch', () => {
   const serverWidget: DetectedIOSWidget = {
     id: 'weather',
     displayName: 'Weather',

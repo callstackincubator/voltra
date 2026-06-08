@@ -21,7 +21,7 @@ export interface GenerateSwiftFilesOptions {
   targetPath: string
   projectRoot: string
   widgets?: IOSWidgetConfig[]
-  /** Track 5 — when true (DEBUG only), generated client-rendered Providers fetch from Metro. */
+  /** When true (DEBUG only), generated client-rendered Providers fetch from Metro. */
   clientWidgetHotReload?: boolean
 }
 
@@ -53,14 +53,14 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   const detectedWidgets = detectClientRenderedWidgets(widgets || [], projectRoot)
   const clientWidgetCount = detectedWidgets.filter((w) => w.clientRendered).length
   if (clientWidgetCount > 0) {
-    logger.info(`Detected ${clientWidgetCount} client-rendered widget(s) — generating Track 5 Provider scaffolding`)
+    logger.info(`Detected ${clientWidgetCount} client-rendered widget(s) — generating Provider scaffolding`)
   }
 
   // Prerender widget initial states. Server-rendered widgets go through the existing
   // multi-family WidgetVariants → JSON path; client-rendered widgets go through the
-  // Track 5 path (call the 'use voltra' function with default props + minimal env, run
-  // renderVoltraVariantToJson, stringify). Both produce entries in the same map shape so
-  // VoltraWidgetInitialStates.swift can read either via the same lookup at runtime.
+  // client-rendered path (call the 'use voltra' function with default props + minimal env,
+  // run renderVoltraVariantToJson, stringify). Both produce entries in the same map shape
+  // so VoltraWidgetInitialStates.swift can read either via the same lookup at runtime.
   const serverWidgets = detectedWidgets.filter((w) => !w.clientRendered)
   const serverStates = await prerenderWidgetState(serverWidgets, projectRoot, renderWidgetToString)
   const clientStates = await prerenderClientRenderedWidgets(detectedWidgets, projectRoot)
@@ -288,8 +288,8 @@ function iosWidgetGalleryLabelSwiftExpr(
  * Generates Swift code for a single widget struct. Dispatches on rendering mode:
  *  - server-rendered → `VoltraHomeWidgetProvider` + `VoltraHomeWidgetView` (existing path)
  *  - client-rendered → `VoltraClientWidgetProvider` + `VoltraClientWidgetContentView`
- *    (Track 5 runtime; the content view internally renders via VoltraHomeWidgetView so
- *    the UI layer is identical to server-rendered widgets — see VoltraClientWidgetRuntime.swift)
+ *    (the content view internally renders via VoltraHomeWidgetView so the UI layer is
+ *    identical to server-rendered widgets — see VoltraClientWidgetRuntime.swift)
  *
  * `clientWidgetHotReload` is the value from app.json; it becomes the
  * `devHotReloadEnabled:` argument to the generated VoltraClientWidgetProvider so the

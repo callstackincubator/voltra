@@ -217,12 +217,12 @@ public enum VoltraErrors: Error {
     impl.clearWidgetServerCredentials()
   }
 
-  // MARK: - Track 5 / Phase 3a — client-rendered widget runtime smoke test
+  // MARK: - Client-rendered widget runtime smoke test
 
   //
   // Temporary debug surface that exposes the VoltraJSRenderer evaluate/render pair to
   // JS so an in-app button can fetch a Metro bundle and verify the runtime end-to-end
-  // without WidgetKit involvement. Replaced by widget-extension wiring in Phase 3b.
+  // without WidgetKit involvement.
 
   @objc public func voltraWidgetEvalBundle(
     _ widgetId: String,

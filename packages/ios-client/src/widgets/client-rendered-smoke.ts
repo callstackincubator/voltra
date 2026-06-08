@@ -1,15 +1,15 @@
 import { getNativeVoltra } from '../VoltraModule.js'
 
 /**
- * Track 5 / Phase 3a — temporary smoke-test API.
+ * Temporary smoke-test API for client-rendered widget runtime.
  *
  * Loads a Voltra widget bundle into the shared JSContext on iOS and lets the caller invoke
  * the bundle's `render(props, env)` function. Exists so an in-app screen can verify the
- * JSC runtime end-to-end without depending on WidgetKit (Phase 3b).
+ * JSC runtime end-to-end without depending on WidgetKit.
  *
  * @remarks
- * Replaced by widget-extension wiring in Phase 3b. Do not depend on this API surface — it
- * will be removed.
+ * Do not depend on this API surface — it will be removed once widget-extension wiring is
+ * fully covered.
  */
 
 export const voltraWidgetEvalBundle = async (widgetId: string, bundleSource: string): Promise<void> => {

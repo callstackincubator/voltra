@@ -10,17 +10,17 @@ const WIDGET_ID = 'Track5DemoWidget'
 const METRO_BASE_URL = 'http://localhost:8081'
 
 /**
- * Track 5 / Phase 3a — runtime smoke test.
+ * Client-rendered widget runtime smoke test.
  *
  * Tap the button:
- *  1. Fetch the widget bundle from Metro (the maintainer's /voltra/widgets/<id>.bundle endpoint)
+ *  1. Fetch the widget bundle from Metro's /voltra/widgets/<id>.bundle endpoint
  *  2. Hand the raw source to native, which evals it in the shared JSContext
  *  3. Call render(props, env) with hardcoded values
  *  4. Display the resolved JSON string returned by the bundle
  *
  * Verifies the JSC runtime, the bundle's render export, the props/env round-trip, and that
  * the renderer's compact-JSON output matches Voltra's wire format — all without involving
- * WidgetKit. WidgetKit hook-up arrives in Phase 3b.
+ * WidgetKit.
  */
 export default function IosClientRenderedSmokeScreen() {
   const router = useRouter()
@@ -48,7 +48,7 @@ export default function IosClientRenderedSmokeScreen() {
 
       await voltraWidgetEvalBundle(WIDGET_ID, source)
 
-      // Track5DemoWidget ignores props (hot-reload marker is hardcoded inside the JSX,
+      // The demo widget ignores props (hot-reload marker is hardcoded inside the JSX,
       // env values come from the runtime); passing {} is enough to exercise the
       // bundle → eval → render round-trip.
       const props = {}
@@ -79,7 +79,7 @@ export default function IosClientRenderedSmokeScreen() {
   return (
     <ScreenLayout
       title="Client-Rendered Widget Smoke Test"
-      description="Phase 3a — verify the JSC runtime can fetch a Metro bundle, evaluate it, and invoke render(props, env) end-to-end. WidgetKit comes in Phase 3b."
+      description="Verify the JSC runtime can fetch a Metro bundle, evaluate it, and invoke render(props, env) end-to-end without WidgetKit."
     >
       <View style={styles.section}>
         <Button

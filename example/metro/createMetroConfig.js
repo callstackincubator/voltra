@@ -11,8 +11,8 @@ const { createWidgetMetroConfig } = require('./createWidgetMetroConfig')
 const { createWidgetRegistry } = require('./widgetRegistry')
 
 /**
- * Track 5 — read the host app's bundle identifier and the `clientWidgetHotReload` flag
- * from `app.json`. Returns nulls (and the caller skips push wiring) if either is missing.
+ * Read the host app's bundle identifier and the `clientWidgetHotReload` flag from
+ * `app.json`. Returns nulls (and the caller skips push wiring) if either is missing.
  */
 function readVoltraDevConfig(projectRoot) {
   const appJsonPath = path.join(projectRoot, 'app.json')
@@ -40,8 +40,8 @@ async function createMetroConfig(projectRoot) {
     '~': projectRoot,
   }
 
-  // Track 5 — dev-mode push reload wiring. When clientWidgetHotReload is on in
-  // app.json's @use-voltra/ios-client plugin config, fire `xcrun simctl push` whenever a
+  // Dev-mode push reload wiring. When clientWidgetHotReload is on in app.json's
+  // @use-voltra/ios-client plugin config, fire `xcrun simctl push` whenever a
   // 'use voltra' file gets modified so the host app's VoltraDevReloadHandler calls
   // WidgetCenter.shared.reloadAllTimelines(). The pusher silently no-ops if Metro is
   // running outside the simulator dev loop.

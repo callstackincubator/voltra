@@ -37,8 +37,8 @@
 
 @implementation NativeVoltra
 
-/// Track 5 / Phase 3b-iii — register VoltraDevReloadHandler with Expo's app delegate
-/// subscriber repository at framework load time (before main(), before any JS runs).
+/// Register VoltraDevReloadHandler with Expo's app delegate subscriber repository at
+/// framework load time (before main(), before any JS runs).
 ///
 /// Why here, not in VoltraModule.init: VoltraModule is a lazy TurboModule — instantiated
 /// only when JS first accesses it. If no app startup code path touches a Voltra JS API,
@@ -356,7 +356,7 @@
   resolve(nil);
 }
 
-#pragma mark - Track 5 / Phase 3a — client-rendered widget runtime smoke test
+#pragma mark - Client-rendered widget runtime smoke test
 
 - (void)voltraWidgetEvalBundle:(NSString *)widgetId
                   bundleSource:(NSString *)bundleSource

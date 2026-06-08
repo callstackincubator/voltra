@@ -1,6 +1,6 @@
 import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 
-// Track 5 / Phase 3b-iii — minimal client-rendered widget for verifying the dev loop.
+// Minimal client-rendered widget for verifying the dev loop.
 //
 // Plain black tile with the env values the runtime captured per render, plus a single
 // editable literal (`hotReloadMarker` below) for proving hot reload end-to-end.

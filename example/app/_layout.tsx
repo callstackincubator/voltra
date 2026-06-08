@@ -5,11 +5,10 @@ import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
-// Track 5 — side-effect imports so the maintainer's Metro widget registry can see
-// every 'use voltra' file in its dep graph. Without an import path reachable from
-// the main bundle entry, Metro returns 404 for /voltra/widgets/<id>.bundle and the
-// widget extension can't fetch the bundle. (IosWeatherWidget is already reachable
-// via WeatherTestingScreen.tsx so it doesn't need to be listed here.)
+// Side-effect imports so Metro's widget registry can see every 'use voltra' file
+// in its dep graph. Without an import path reachable from the main bundle entry,
+// Metro returns 404 for /voltra/widgets/<id>.bundle and the widget extension
+// can't fetch the bundle.
 import '~/widgets/ios/Track5DemoWidget'
 
 updateAndroidVoltraWidget({ width: 300, height: 200 })

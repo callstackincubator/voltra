@@ -4,18 +4,17 @@ const os = require('node:os')
 const path = require('node:path')
 
 /**
- * Track 5 / Phase 3b-iii — Metro middleware helper that delivers a silent push to the
- * iOS Simulator's booted device, asking the host app's VoltraDevReloadHandler to call
+ * Metro middleware helper that delivers a silent push to the iOS Simulator's booted
+ * device, asking the host app's VoltraDevReloadHandler to call
  * WidgetCenter.shared.reloadAllTimelines() (see VoltraDevReloadHandler.swift).
  *
  * Why a push instead of a host-app WebSocket: when the user is editing widget JSX, the
  * host app is typically backgrounded (they're looking at the home screen). iOS suspends
  * the host app's JS runtime within ~5 seconds of backgrounding, so any HMR-driven
  * trigger from the host app dies. Silent push is the one channel iOS reliably wakes
- * the app on regardless of background state. See the "Hot reload exploration log" in
- * DOCS/VOLTRA_CLIENT_RENDERED_WIDGETS.md for the failed attempts that led here.
+ * the app on regardless of background state.
  *
- * Simulator-only. Real-device dev would need an APNs setup — out of scope for PoC.
+ * Simulator-only. Real-device dev would need an APNs setup.
  *
  * Public API: `createDevPusher({ bundleId, debounceMs? })` returns:
  *   { fire(): void, dispose(): void }

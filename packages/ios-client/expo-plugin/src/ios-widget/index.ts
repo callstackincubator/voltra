@@ -18,7 +18,7 @@ export interface WithIOSProps {
   fonts?: string[]
   version: string
   buildNumber: string
-  /** Track 5 client-rendered widget dev hot-reload. See IOSConfigPluginProps.clientWidgetHotReload. */
+  /** Client-rendered widget dev hot-reload. See IOSConfigPluginProps.clientWidgetHotReload. */
   clientWidgetHotReload?: boolean
 }
 

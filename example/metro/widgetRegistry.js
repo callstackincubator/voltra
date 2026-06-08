@@ -39,11 +39,11 @@ function createWidgetRegistry({ projectRoot, onWidgetSourceChanged } = {}) {
   const generatedEntryRoot = path.join(generatedRoot, 'entries')
   const widgetsById = new Map()
   const widgetIdsBySourcePath = new Map()
-  // Track 5 — fs.watch handles keyed by absolute source path. We watch widget JSX files
+  // fs.watch handles keyed by absolute source path. Widget JSX files are watched
   // directly because Metro's serializer hook only fires on full bundle serialization,
-  // not on individual file saves (Fast Refresh patches in-place). Without this we'd
-  // only push reloads when the widget extension happens to request a fresh bundle —
-  // which is rate-limited to ~5 min by WidgetKit. fs.watch fires on every save,
+  // not on individual file saves (Fast Refresh patches in-place). Without this,
+  // reload pushes would only fire when the widget extension requests a fresh bundle
+  // — which is rate-limited to ~5 min by WidgetKit. fs.watch fires on every save,
   // independent of Metro's bundle pipeline.
   const fsWatchers = new Map()
   let ready = false

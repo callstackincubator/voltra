@@ -1,23 +1,18 @@
 import Foundation
 import JavaScriptCore
 
-/// JavaScriptCore-backed runtime for Voltra **client-rendered widgets** (Track 5).
+/// JavaScriptCore-backed runtime for Voltra **client-rendered widgets**.
 ///
 /// Each widget ships its own Metro bundle that defines `module.exports.render(props, env)`
 /// (see `example/metro/widgetRegistry.js`). When evaluated, the bundle ends with `__r(0)`
-/// which executes its entry module; we wrap the bundle source with a small bootstrap that
-/// captures those exports into `globalThis.__voltraWidgets[<widgetId>]` so we can call
-/// `render` from native at any later moment.
+/// which executes its entry module; the source is wrapped with a small bootstrap that
+/// captures those exports into `globalThis.__voltraWidgets[<widgetId>]` so `render` can be
+/// called from native at any later moment.
 ///
-/// One shared `JSContext` per process — per Q9 in the design grilling. Each subsequent
-/// bundle evaluation overwrites Metro's `__r`/`__d` globals (they're closure-scoped per
-/// bundle's IIFE), but the captured `globalThis.__voltraWidgets[<widgetId>]` reference
-/// retains each widget's render function indefinitely.
-///
-/// **Phase 3a** scope: this is the runtime smoke test surface. Bundles are loaded as
-/// strings via [evaluateBundle] (called from JS via the TurboModule for now). Phase 3b
-/// adds Swift-side bundle loading from Metro URL / assets, env capture, and the
-/// WidgetKit hook-up.
+/// One shared `JSContext` per process. Each subsequent bundle evaluation overwrites Metro's
+/// `__r`/`__d` globals (they're closure-scoped per bundle's IIFE), but the captured
+/// `globalThis.__voltraWidgets[<widgetId>]` reference retains each widget's render function
+/// indefinitely.
 public enum VoltraJSRenderer {
   private static var _context: JSContext?
   private static let lock = NSLock()

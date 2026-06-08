@@ -6,38 +6,37 @@ import { isWidgetLocalizedMap, type WidgetInitialStatePath } from '@use-voltra/e
 import type { IOSWidgetConfig } from '../types'
 
 /**
- * Track 5 / Phase 3b-iii — client-rendered widget detection.
+ * Client-rendered widget detection.
  *
  * Voltra supports two widget rendering paths:
  *
  *  - **Server-rendered** (the original path): the host app pushes JSON state to the widget
  *    extension over IPC; the widget extension renders Voltra primitives from that JSON.
- *  - **Client-rendered** (Track 5): the widget extension downloads a JS bundle from Metro
- *    (dev) or reads a baked bundle (prod), evaluates it in JSC, and calls a `(props, env) => JSX`
- *    function on every render. Q1 of the design grilling kept the app.json schema unified
- *    between the two — we **implicitly** detect client-rendered widgets by inspecting the
- *    JSX file referenced by `initialStatePath` for a `'use voltra'` directive (Babel's "use
- *    strict"-style directive prologue) inside an exported function whose identifier matches
- *    the widget's `id`.
+ *  - **Client-rendered**: the widget extension downloads a JS bundle from Metro (dev) or
+ *    reads a baked bundle (prod), evaluates it in JSC, and calls a `(props, env) => JSX`
+ *    function on every render. The app.json schema is unified between the two — client-rendered
+ *    widgets are detected **implicitly** by inspecting the JSX file referenced by
+ *    `initialStatePath` for a `'use voltra'` directive (Babel's "use strict"-style directive
+ *    prologue) inside an exported function whose identifier matches the widget's `id`.
  *
- * Q2 grilling decision: the widget `id` in app.json **must** equal the JSX component name.
- * If `'use voltra'` is present but no exported function with that exact name exists, the
- * plugin fails loudly at prebuild — a silent fallback would let drift between the Metro
- * bundle URL (uses the component name) and Swift's `kind` string (uses the app.json id).
+ * The widget `id` in app.json **must** equal the JSX component name. If `'use voltra'` is
+ * present but no exported function with that exact name exists, the plugin fails loudly at
+ * prebuild — a silent fallback would let drift between the Metro bundle URL (uses the
+ * component name) and Swift's `kind` string (uses the app.json id).
  *
- * Footgun (documented in the design doc): removing `'use voltra'` from the JSX silently
- * switches the widget back to server-rendered mode. PoC accepts this; production should
- * move to an explicit `renderMode: 'server' | 'client'` flag (Q1 option (b)).
+ * Footgun: removing `'use voltra'` from the JSX silently switches the widget back to
+ * server-rendered mode. A future improvement would be an explicit
+ * `renderMode: 'server' | 'client'` flag.
  */
 
 /**
  * Widget config augmented with the prebuild-time derived rendering mode.
  *
  * `clientRendered: false` is exactly the existing path (no behavior change for server widgets).
- * `clientRendered: true` adds `clientComponentName` (always equal to `id` per Q2 validation)
- * and `clientSourcePath` (absolute path to the JSX file, used by the prerender step in
- * Phase 3b-iii step 4 and by the generated Swift Provider's Metro URL — its `<id>.bundle`
- * suffix is the same as the component name).
+ * `clientRendered: true` adds `clientComponentName` (always equal to `id` per id-matching
+ * validation) and `clientSourcePath` (absolute path to the JSX file, used by the prerender
+ * step and by the generated Swift Provider's Metro URL — its `<id>.bundle` suffix is the
+ * same as the component name).
  */
 export type DetectedIOSWidget =
   | (IOSWidgetConfig & { clientRendered: false })
@@ -69,7 +68,7 @@ function detectSingleWidget(widget: IOSWidgetConfig, projectRoot: string): Detec
   const source = fs.readFileSync(sourcePath, 'utf8')
 
   // Cheap pre-check — Babel parsing is not free, and the directive's literal string is
-  // tiny and unambiguous. Same shortcut the maintainer's Metro scanner uses
+  // tiny and unambiguous. Same shortcut the Metro scanner uses
   // (example/metro/scanVoltraDirectives.js).
   if (!source.includes("'use voltra'") && !source.includes('"use voltra"')) {
     return { ...widget, clientRendered: false }

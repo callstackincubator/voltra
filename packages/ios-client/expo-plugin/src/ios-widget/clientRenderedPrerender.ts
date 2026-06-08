@@ -3,7 +3,7 @@ import { evaluateWidgetModule, logger, type PrerenderedWidgetStates } from '@use
 import type { DetectedIOSWidget } from './clientRendered'
 
 /**
- * Track 5 / Phase 3b-iii step 4 — initial-state prerender for client-rendered widgets.
+ * Initial-state prerender for client-rendered widgets.
  *
  * For server-rendered widgets, the existing `prerenderWidgetState` in @use-voltra/expo-plugin
  * loads the file at `initialStatePath`, reads `exports.default` (a `WidgetVariants` object),
@@ -13,10 +13,10 @@ import type { DetectedIOSWidget } from './clientRendered'
  * Client-rendered widgets work differently: the file exports a function
  * `(props, env) => JSX` (tagged with `'use voltra'`), and the runtime calls it per-render
  * with real env values. For the WidgetKit placeholder (`Provider.placeholder` and the
- * widget gallery preview) we need ONE pre-rendered JSON entry to display before any
- * Metro fetch completes. Per Q6 of the grilling, we generate that by calling the same
- * function at prebuild with empty props + a minimal env, and storing the compact
- * `{t, c, p}` JSON in the existing `voltra_initial_states.json`.
+ * widget gallery preview) ONE pre-rendered JSON entry is needed to display before any
+ * Metro fetch completes. That's generated here by calling the same function at prebuild
+ * with empty props + a minimal env, storing the compact `{t, c, p}` JSON in the existing
+ * `voltra_initial_states.json`.
  *
  * The placeholder's env values are fixed (`widgetFamily: 'systemMedium'`,
  * `colorScheme: 'light'`, etc.) and may not match what the user actually sees the moment
@@ -69,8 +69,8 @@ export async function prerenderClientRenderedWidgets(
   }
 
   // Lazy-loaded so server-only projects never pull in @use-voltra/ios. The renderer
-  // is iOS-specific by design — Track 5's Android counterpart will use the same shape
-  // via @use-voltra/android in a future phase.
+  // is iOS-specific by design — the Android counterpart will use the same shape via
+  // @use-voltra/android in a future phase.
   const iosModuleId = '@use-voltra/ios'
   const { renderVoltraVariantToJson } = (await import(iosModuleId)) as {
     renderVoltraVariantToJson: (element: unknown) => unknown
