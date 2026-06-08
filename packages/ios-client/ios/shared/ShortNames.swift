@@ -21,6 +21,7 @@ public enum ShortNames {
     "an": "assetName",
     "bkg": "background",
     "bg": "backgroundColor",
+    "bgi": "backgroundImage",
     "bgs": "backgroundStyle",
     "b64": "base64",
     "bd": "border",

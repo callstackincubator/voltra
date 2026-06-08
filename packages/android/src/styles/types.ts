@@ -55,6 +55,8 @@ export type VoltraAndroidViewStyle = {
 
   /** Background color of the component */
   backgroundColor?: AndroidColorValue
+  /** CSS gradient background image, e.g. linear-gradient(to right, red, blue) */
+  backgroundImage?: string
   /** Corner radius for the component (requires Android 12+) */
   borderRadius?: number
   /** Border width (Note: Not yet implemented in Glance) */

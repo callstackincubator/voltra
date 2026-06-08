@@ -24,6 +24,7 @@ object ShortNames {
             "an" to "assetName",
             "bkg" to "background",
             "bg" to "backgroundColor",
+            "bgi" to "backgroundImage",
             "bgs" to "backgroundStyle",
             "b64" to "base64",
             "bd" to "border",
