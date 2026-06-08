@@ -12,9 +12,13 @@ import {
 } from '@bacons/xcode'
 
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
+import { pathExists } from '../../fs/readWrite'
 import { VoltraCliError } from '../../reporting/summary'
 import { resolveIOSWidgetTargetName } from './targetName'
 import { ensureMainGroupChild, openIOSXcodeProject, saveIOSXcodeProject } from './xcode'
+import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
+import { needsEntitlementsMutation } from './entitlements'
+import { VOLTRA_MIN_IOS_DEPLOYMENT_TARGET, maxIOSDeploymentTarget } from './deploymentTarget'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type { NormalizedVoltraIOSConfig } from '../../config/types'
@@ -65,10 +69,11 @@ export async function ensureIOSWidgetTarget(
   const staleTargetNames = getStaleWidgetTargetNames(previousWidgetFiles, targetName)
   const bundleIdentifier = resolveBundleIdentifier(context, discovery, targetName)
   const codeSigning = getMainAppCodeSigningSettings(context)
-  const mainAppEntitlementsPath = getMainAppEntitlementsBuildSetting(projectRoot, discovery)
+  const mainAppEntitlementsPath = await getMainAppEntitlementsBuildSetting(discovery, ios)
 
   removeStaleWidgetTargets(context, staleTargetNames)
   ensureMainAppEntitlementsBuildSetting(context, mainAppEntitlementsPath)
+  ensureMainAppDeploymentTarget(context)
   ensureWidgetTarget(context, targetName, bundleIdentifier, ios.deploymentTarget, codeSigning)
 
   const widgetTarget = getWidgetTarget(context, targetName)
@@ -165,7 +170,7 @@ function ensureBuildConfigurations(
   target: PBXNativeTarget,
   targetName: string,
   bundleIdentifier: string,
-  deploymentTarget: string,
+  minimumDeploymentTarget: string,
   codeSigning: MainAppCodeSigningSettings
 ): void {
   const configurationList = target.props.buildConfigurationList
@@ -177,6 +182,8 @@ function ensureBuildConfigurations(
   }
 
   for (const config of configurationList.props.buildConfigurations) {
+    const deploymentTarget = resolveBuildConfigurationDeploymentTarget(config, minimumDeploymentTarget)
+
     Object.assign(
       config.props.buildSettings,
       buildWidgetBuildSettings(targetName, bundleIdentifier, deploymentTarget, codeSigning, config.props.name)
@@ -739,12 +746,25 @@ function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainApp
   }
 }
 
-function getMainAppEntitlementsBuildSetting(projectRoot: string, discovery: IOSProjectDiscovery): string | undefined {
-  if (!discovery.entitlementsPath) {
+async function getMainAppEntitlementsBuildSetting(
+  discovery: IOSProjectDiscovery,
+  ios: NormalizedVoltraIOSConfig
+): Promise<string | undefined> {
+  if (discovery.entitlementsPath) {
+    return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
+  }
+
+  if (!needsEntitlementsMutation(ios)) {
     return undefined
   }
 
-  return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
+  const entitlementsPath = resolveMainAppEntitlementsPath(discovery)
+
+  if (!(await pathExists(entitlementsPath))) {
+    return undefined
+  }
+
+  return normalizeRelativePath(path.relative(discovery.iosRoot, entitlementsPath))
 }
 
 function ensureMainAppEntitlementsBuildSetting(
@@ -759,6 +779,25 @@ function ensureMainAppEntitlementsBuildSetting(
 
     delete config.props.buildSettings.CODE_SIGN_ENTITLEMENTS
   }
+}
+
+function ensureMainAppDeploymentTarget(context: IOSXcodeProjectContext): void {
+  for (const config of context.mainAppTarget.buildConfigurations.all) {
+    config.props.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = resolveBuildConfigurationDeploymentTarget(
+      config,
+      VOLTRA_MIN_IOS_DEPLOYMENT_TARGET
+    )
+  }
+}
+
+function resolveBuildConfigurationDeploymentTarget(
+  config: XCBuildConfiguration,
+  minimumDeploymentTarget: string
+): string {
+  const currentDeploymentTarget = readBuildSettingString(config.props.buildSettings.IPHONEOS_DEPLOYMENT_TARGET)
+  return currentDeploymentTarget
+    ? maxIOSDeploymentTarget(currentDeploymentTarget, minimumDeploymentTarget)
+    : minimumDeploymentTarget
 }
 
 interface MainAppCodeSigningSettings {

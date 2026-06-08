@@ -40,9 +40,10 @@ The following React Native style properties are supported on Android:
 
 In addition to general styles, `Image` components support:
 
-- `resizeMode` (or `contentScale`) - `"cover"`, `"contain"`, `"stretch"`, or `"center"`.
+- `resizeMode` - `"cover"`, `"contain"`, `"stretch"`, `"repeat"`, or `"center"`.
+- `contentScale` - `"crop"`, `"cover"`, `"fit"`, `"contain"`, `"fill-bounds"`, or `"stretch"`.
 - `alpha` - Opacity of the image (0.0 to 1.0).
-- `tintColor` - Applies a color filter to the image.
+- `colorFilter` - Applies a color filter to the image.
 
 ## Dynamic colors
 
@@ -77,7 +78,7 @@ This is the preferred approach when you want widgets to follow Android's dynamic
 
 The following properties are **NOT supported** on Android due to Glance limitations:
 
-- **Margins:** `margin`, `marginTop`, etc. are currently ignored. Use `padding` on parent containers or `Spacer` components instead.
+- **Margins:** `margin`, `marginTop`, etc. are not part of Android style types. If you need margin-like outside spacing, use `VoltraAndroid.Spacer` between elements.
 - **Borders:** `borderWidth` and `borderColor` are not yet implemented.
 - **Shadows:** `shadowColor`, `shadowOffset`, `shadowOpacity`, and `shadowRadius` are not supported.
 - **Positioning:** Absolute positioning (`top`, `left`, `zIndex`) is not supported. Use stack alignments and spacers.

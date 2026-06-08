@@ -5,6 +5,8 @@
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidLinearProgressIndicatorProps = VoltraBaseProps & {
+  /** Progress value from 0 to 1 */
+  progress?: number
   /** Progress color */
   color?: string
   /** Track background color */

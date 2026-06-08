@@ -1,12 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
+  "buildCommand": "pnpm run build",
   "cleanUrls": true,
   "framework": null,
   "git": {
     "deploymentEnabled": false
   },
-  "installCommand": "npm install",
+  "installCommand": "pnpm install --frozen-lockfile",
   "redirects": [
     {
       "source": "/getting-started",

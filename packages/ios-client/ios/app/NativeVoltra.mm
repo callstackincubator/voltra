@@ -1,4 +1,5 @@
 #import "NativeVoltra.h"
+#import <UIKit/UIKit.h>
 
 #import <objc/message.h>
 
@@ -7,6 +8,27 @@
 #else
 #import "Voltra-Swift.h"
 #endif
+
+@interface VoltraLaunchObserver : NSObject
+@end
+
+@implementation VoltraLaunchObserver
+
++ (void)load
+{
+  [[NSNotificationCenter defaultCenter]
+      addObserverForName:UIApplicationDidFinishLaunchingNotification
+                  object:nil
+                   queue:nil
+              usingBlock:^(NSNotification *notification) {
+                UIApplication *application = [notification.object isKindOfClass:[UIApplication class]]
+                    ? notification.object
+                    : [UIApplication sharedApplication];
+                [VoltraHeadlessState captureLaunchState:application.applicationState == UIApplicationStateBackground];
+              }];
+}
+
+@end
 
 @interface NativeVoltra () {
   VoltraModule *_module;
@@ -45,6 +67,18 @@
   });
 }
 
+- (instancetype)init
+{
+  self = [super init];
+  if (self) {
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationWillEnterForeground)
+                                                 name:UIApplicationWillEnterForegroundNotification
+                                               object:nil];
+  }
+  return self;
+}
+
 - (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *_Nonnull)eventEmitterCallbackWrapper
 {
   [super setEventEmitterCallback:eventEmitterCallbackWrapper];
@@ -68,6 +102,91 @@
     _module = [VoltraModule new];
   }
   return _module;
+}
+
+- (void)applicationWillEnterForeground
+{
+  [self.module clearHeadless];
+  [self updateRootAppPropertiesHeadless:NO];
+}
+
+- (UIView *)reactRootViewInView:(UIView *)view
+{
+  if ([view respondsToSelector:NSSelectorFromString(@"appProperties")] &&
+      [view respondsToSelector:NSSelectorFromString(@"setAppProperties:")]) {
+    return view;
+  }
+
+  for (UIView *subview in view.subviews) {
+    UIView *rootView = [self reactRootViewInView:subview];
+    if (rootView != nil) {
+      return rootView;
+    }
+  }
+
+  return nil;
+}
+
+- (UIView *)reactRootView
+{
+  id<UIApplicationDelegate> appDelegate = [UIApplication sharedApplication].delegate;
+  UIWindow *window = nil;
+
+  if ([appDelegate respondsToSelector:@selector(window)]) {
+    window = [appDelegate window];
+  }
+
+  if (window == nil) {
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+      if (![scene isKindOfClass:[UIWindowScene class]]) {
+        continue;
+      }
+
+      for (UIWindow *sceneWindow in ((UIWindowScene *)scene).windows) {
+        if (sceneWindow.isKeyWindow) {
+          window = sceneWindow;
+          break;
+        }
+      }
+
+      if (window != nil) {
+        break;
+      }
+    }
+  }
+
+  UIView *rootView = window.rootViewController.view;
+  return rootView != nil ? [self reactRootViewInView:rootView] : nil;
+}
+
+- (void)updateRootAppPropertiesHeadless:(BOOL)isHeadless
+{
+  dispatch_block_t update = ^{
+    UIView *rootView = [self reactRootView];
+    if (rootView == nil) {
+      return;
+    }
+
+    id currentAppProperties = [rootView valueForKey:@"appProperties"];
+    NSDictionary *appProperties =
+        [currentAppProperties isKindOfClass:[NSDictionary class]] ? currentAppProperties : nil;
+    NSMutableDictionary *nextProperties =
+        appProperties != nil ? [appProperties mutableCopy] : [NSMutableDictionary dictionary];
+    NSNumber *nextValue = @(isHeadless);
+
+    if ([nextProperties[@"isHeadless"] isEqual:nextValue]) {
+      return;
+    }
+
+    nextProperties[@"isHeadless"] = nextValue;
+    [rootView setValue:nextProperties forKey:@"appProperties"];
+  };
+
+  if ([NSThread isMainThread]) {
+    update();
+  } else {
+    dispatch_async(dispatch_get_main_queue(), update);
+  }
 }
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
@@ -154,7 +273,9 @@
 
 - (NSNumber *)isHeadless
 {
-  return @([self.module isHeadless]);
+  BOOL isHeadless = [self.module isHeadless];
+  [self updateRootAppPropertiesHeadless:isHeadless];
+  return @(isHeadless);
 }
 
 - (void)preloadImages:(NSArray *)images resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
@@ -273,6 +394,7 @@
 
 - (void)dealloc
 {
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
   [self.module stopMonitoring];
 }
 

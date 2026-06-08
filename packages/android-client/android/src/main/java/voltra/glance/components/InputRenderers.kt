@@ -9,7 +9,6 @@ import androidx.glance.appwidget.RadioButton
 import androidx.glance.appwidget.RadioButtonDefaults
 import androidx.glance.appwidget.Switch
 import androidx.glance.appwidget.SwitchDefaults
-import androidx.glance.unit.ColorProvider
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.renderers.getOnClickAction
 import voltra.glance.resolveAndApplyStyle

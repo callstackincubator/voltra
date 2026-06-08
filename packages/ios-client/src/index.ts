@@ -6,7 +6,7 @@ export {
 export { VoltraView, type VoltraViewProps } from './components/VoltraView.js'
 export { VoltraWidgetPreview, type VoltraWidgetPreviewProps } from './components/VoltraWidgetPreview.js'
 export * from './events.js'
-export { isGlassSupported, isHeadless } from './helpers.js'
+export { isGlassSupported, isHeadless, useIsHeadless } from './helpers.js'
 export { logger, type VoltraLogLevel } from './logger.js'
 export {
   endAllLiveActivities,

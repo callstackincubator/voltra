@@ -19,6 +19,12 @@ data class AndroidCheckBoxParameters(
     val id: String,
     /** Initial checked state */
     val checked: Boolean? = null,
-    /** Whether the checkbox is enabled */
-    val enabled: Boolean? = null,
+    /** Text label */
+    val text: String? = null,
+    /** Checked color */
+    val checkedColor: String? = null,
+    /** Unchecked color */
+    val uncheckedColor: String? = null,
+    /** Maximum lines for text */
+    val maxLines: Double? = null,
 )

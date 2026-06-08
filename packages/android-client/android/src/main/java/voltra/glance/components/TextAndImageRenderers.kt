@@ -132,7 +132,7 @@ fun RenderImage(
         )
     val alpha = (element.p?.get("alpha") as? Number)?.toFloat() ?: 1.0f
 
-    val tintColorString = element.p?.get("tintColor") as? String
+    val tintColorString = (element.p?.get("colorFilter") ?: element.p?.get("tintColor")) as? String
     val colorFilter =
         if (tintColorString != null) {
             voltra.styling.JSColorParser.parse(tintColorString)?.let {

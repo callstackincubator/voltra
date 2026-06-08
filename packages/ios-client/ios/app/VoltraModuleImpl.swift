@@ -4,6 +4,54 @@ import Foundation
 import os
 import UIKit
 
+@objc(VoltraHeadlessState)
+public final class VoltraHeadlessState: NSObject {
+  static let shared = VoltraHeadlessState()
+
+  private let lock = NSLock()
+  private var launchedHeadless: Bool?
+
+  @objc(captureLaunchState:)
+  public static func captureLaunchState(_ launchedHeadless: Bool) {
+    shared.capture(launchedHeadless)
+  }
+
+  override private init() {
+    super.init()
+  }
+
+  func isHeadless() -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+
+    return launchedHeadless ?? VoltraHeadlessState.isApplicationInBackground()
+  }
+
+  func clear() {
+    lock.lock()
+    launchedHeadless = false
+    lock.unlock()
+  }
+
+  private func capture(_ launchedHeadless: Bool) {
+    lock.lock()
+    self.launchedHeadless = launchedHeadless
+    lock.unlock()
+  }
+
+  private static func isApplicationInBackground() -> Bool {
+    let readState = {
+      UIApplication.shared.applicationState == .background
+    }
+
+    if Thread.isMainThread {
+      return readState()
+    }
+
+    return DispatchQueue.main.sync(execute: readState)
+  }
+}
+
 /// Implementation details for VoltraModule to keep the main module file clean
 public class VoltraModuleImpl {
   private let liveActivityService = VoltraLiveActivityService()
@@ -14,12 +62,11 @@ public class VoltraModuleImpl {
   }
 
   func isHeadless() -> Bool {
-    if Thread.isMainThread {
-      return UIApplication.shared.applicationState == .background
-    }
-    return DispatchQueue.main.sync {
-      UIApplication.shared.applicationState == .background
-    }
+    VoltraHeadlessState.shared.isHeadless()
+  }
+
+  func clearHeadless() {
+    VoltraHeadlessState.shared.clear()
   }
 
   var pushNotificationsEnabled: Bool {

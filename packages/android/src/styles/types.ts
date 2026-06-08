@@ -38,15 +38,6 @@ export type VoltraAndroidViewStyle = {
   paddingVertical?: number
   paddingHorizontal?: number
 
-  /** Outer margin for the component (Note: Often implemented as padding in Glance) */
-  margin?: number
-  marginTop?: number
-  marginBottom?: number
-  marginLeft?: number
-  marginRight?: number
-  marginVertical?: number
-  marginHorizontal?: number
-
   /** Gap between children (Note: Supported by specific layouts like LazyColumn/Row) */
   gap?: number
 

@@ -1,5 +1,7 @@
 // Android component namespace
-export * as VoltraAndroid from './jsx/primitives.js'
+import * as VoltraAndroid from './jsx/primitives.js'
+
+export { VoltraAndroid }
 export { AndroidDynamicColors } from './dynamic-colors.js'
 export {
   getAndroidComponentId,

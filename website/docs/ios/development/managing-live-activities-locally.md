@@ -146,17 +146,21 @@ if (isLiveActivityActive('order-123')) {
 #### Platform detection
 
 ```typescript
-import { isGlassSupported, isHeadless } from '@use-voltra/ios-client'
+import { isGlassSupported, useIsHeadless } from '@use-voltra/ios-client'
 
-// Check if the device supports Liquid Glass (iOS 26+)
-if (isGlassSupported()) {
-  // Use Liquid Glass features
-}
+function App() {
+  const isHeadless = useIsHeadless()
 
-// Check if app was launched in background
-if (isHeadless()) {
-  // App was launched in background (e.g., from Live Activity interaction)
-  // Perform background tasks without UI
+  // Check if the device supports Liquid Glass (iOS 26+)
+  if (isGlassSupported()) {
+    // Use Liquid Glass features
+  }
+
+  // Check if app was launched in background
+  if (isHeadless) {
+    // App was launched in background (e.g., from Live Activity interaction)
+    // Perform background tasks without UI
+  }
 }
 ```
 

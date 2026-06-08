@@ -101,6 +101,10 @@ public enum VoltraErrors: Error {
     impl.isHeadless()
   }
 
+  @objc public func clearHeadless() {
+    impl.clearHeadless()
+  }
+
   // MARK: - Images
 
   @objc public func preloadImages(

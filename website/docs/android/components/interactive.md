@@ -56,6 +56,7 @@ A toggle switch component. On Android, toggles always open the application when 
 
 **Parameters:**
 
+- `id` (string): Unique identifier for interaction events.
 - `checked` (boolean, optional): Current state of the switch.
 - `deepLinkUrl` (string, optional): URL to open when clicked.
 - `text` (string, optional): Label displayed next to the switch.
@@ -73,6 +74,7 @@ Standard checkbox component. On Android, checkboxes always open the application 
 
 **Parameters:**
 
+- `id` (string): Unique identifier for interaction events.
 - `checked` (boolean, optional).
 - `deepLinkUrl` (string, optional).
 - `text` (string, optional).
@@ -88,6 +90,7 @@ Standard radio button component. On Android, radio buttons always open the appli
 
 **Parameters:**
 
+- `id` (string): Unique identifier for interaction events.
 - `checked` (boolean, optional).
 - `enabled` (boolean, optional).
 - `deepLinkUrl` (string, optional).
