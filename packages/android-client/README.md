@@ -16,8 +16,6 @@
 
 - **Image preloading**: Download remote images for widgets with `preloadImages` and `reloadWidgets`.
 
-- **Gradient backgrounds**: Use `style.backgroundImage` with CSS `linear-gradient(...)`, `radial-gradient(...)`, or `conic-gradient(...)` strings for Android widget backgrounds.
-
 - **Server-driven widgets**: Store credentials for background widget fetches with `setWidgetServerCredentials`.
 
 - **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to register widgets, optional notifications, and build-time initial states.
@@ -83,7 +81,6 @@ const WeatherWidget = ({ temperature, condition }: { temperature: number; condit
     style={{
       padding: 16,
       backgroundColor: '#f0f0f0',
-      backgroundImage: 'linear-gradient(to bottom right, #E0F2FE 0%, #C7D2FE 100%)',
       borderRadius: 12,
       width: '100%',
       height: '100%',
@@ -100,8 +97,6 @@ export async function refreshWeatherWidget() {
   await updateAndroidWidget('my_widget', <WeatherWidget temperature={22} condition="Sunny" />)
 }
 ```
-
-`backgroundImage` is the supported Android style key for gradients. The CSS key `background-image` is ignored, and `backgroundColor` remains the fallback if a gradient is invalid or cannot be rendered.
 
 ## Platform compatibility
 
