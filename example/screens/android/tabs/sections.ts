@@ -22,13 +22,6 @@ export const ANDROID_WIDGET_SECTIONS: ExampleSection[] = [
     route: '/android-widgets/charts',
   },
   {
-    id: 'gradient-backgrounds',
-    title: 'Gradient Backgrounds',
-    description:
-      'Preview Android widget backgrounds rendered from style.backgroundImage CSS gradients through native Glance.',
-    route: '/android-widgets/gradient-playground',
-  },
-  {
     id: 'server-driven-widgets',
     title: 'Server-Driven Widgets',
     description:
@@ -58,6 +51,13 @@ export const ANDROID_OTHER_SECTIONS: ExampleSection[] = [
     description:
       'Test the image fallback behavior using backgroundColor from styles. See how missing images render with different style properties.',
     route: '/android-widgets/image-fallback',
+  },
+  {
+    id: 'gradient-backgrounds',
+    title: 'Gradient Backgrounds',
+    description:
+      'Preview Android widget backgrounds rendered from style.backgroundImage CSS gradients through native Glance.',
+    route: '/android-widgets/gradient-playground',
   },
   {
     id: 'material-colors',

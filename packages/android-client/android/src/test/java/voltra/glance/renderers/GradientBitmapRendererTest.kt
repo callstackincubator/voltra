@@ -154,9 +154,9 @@ class GradientBitmapRendererTest {
                 positions = positions(0f, 1f),
             )
 
-        assertTrue(bitmap.width <= 768)
-        assertTrue(bitmap.height <= 768)
-        assertTrue(bitmap.width * bitmap.height <= 512 * 512)
+        assertTrue(bitmap.width <= 512)
+        assertTrue(bitmap.height <= 512)
+        assertTrue(bitmap.allocationByteCount <= 256 * 1024)
     }
 
     private fun fixedLayout(

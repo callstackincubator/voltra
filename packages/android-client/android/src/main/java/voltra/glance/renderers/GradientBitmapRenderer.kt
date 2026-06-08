@@ -23,8 +23,10 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 private const val DEFAULT_BITMAP_SIZE_PX = 256
-private const val MAX_BITMAP_EDGE_PX = 768
-private const val MAX_BITMAP_PIXELS = 512 * 512
+private const val MAX_BITMAP_EDGE_PX = 512
+private const val MAX_BITMAP_BYTES = 256 * 1024
+private const val ARGB_8888_BYTES_PER_PIXEL = 4
+private const val MAX_BITMAP_PIXELS = MAX_BITMAP_BYTES / ARGB_8888_BYTES_PER_PIXEL
 
 private val gradientBitmapCache =
     object : LruCache<String, Bitmap>(4 * 1024 * 1024) {
