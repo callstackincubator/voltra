@@ -24,6 +24,7 @@ The following React Native style properties are supported on Android:
 ### Visual Style
 
 - `backgroundColor` - Background color (hex strings, color names, or `AndroidDynamicColors.*` tokens).
+- `backgroundImage` - CSS gradient background. Supports `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`.
 - `borderRadius` - Corner radius value. **Note:** Requires Android 12+ (API 31). On older versions, this property is ignored.
 
 ### Text
@@ -73,6 +74,41 @@ const element = (
 ```
 
 This is the preferred approach when you want widgets to follow Android's dynamic palette even when the app is not running. See [Dynamic Colors](./dynamic-colors) for the full role list and server-rendering behavior.
+
+## Gradient Backgrounds
+
+Android widgets support gradient backgrounds through the camel-case `style.backgroundImage` property.
+
+```tsx
+import { VoltraAndroid } from '@use-voltra/android'
+
+const element = (
+  <VoltraAndroid.Box
+    style={{
+      width: '100%',
+      height: '100%',
+      padding: 16,
+      borderRadius: 16,
+      backgroundColor: '#0F172A',
+      backgroundImage: 'linear-gradient(to right, #22D3EE 0%, #6366F1 100%)',
+    }}
+  >
+    <VoltraAndroid.Text
+      style={{
+        color: '#F8FAFC',
+        fontSize: 18,
+        fontWeight: 'bold',
+      }}
+    >
+      Gradient Widget
+    </VoltraAndroid.Text>
+  </VoltraAndroid.Box>
+)
+```
+
+Supported gradient functions are `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`. Repeating gradients, malformed gradients, unsupported color tokens, and invalid stop positions are ignored. If `backgroundColor` is also provided, Android paints it behind transparent gradient pixels and uses it as a fallback when a gradient cannot be rendered.
+
+Use `backgroundImage`, not `background-image`. Gradient bitmaps are generated natively during widget rendering and capped before being passed to Glance, so the bitmap does not control layout size.
 
 ## Limitations
 

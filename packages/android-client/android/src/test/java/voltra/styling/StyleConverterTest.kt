@@ -35,4 +35,21 @@ class StyleConverterTest {
         assertTrue(style.decoration.backgroundColor is VoltraColorValue.Static)
         assertNull(style.decoration.backgroundImage)
     }
+
+    @Test
+    fun convertsLegacyStylePayloadWithoutBackgroundImage() {
+        val style =
+            StyleConverter.convert(
+                mapOf(
+                    "backgroundColor" to "#112233",
+                    "width" to 120,
+                    "height" to "100%",
+                ),
+            )
+
+        assertTrue(style.decoration.backgroundColor is VoltraColorValue.Static)
+        assertNull(style.decoration.backgroundImage)
+        assertTrue(style.layout.width is SizeValue.Fixed)
+        assertTrue(style.layout.height is SizeValue.Fill)
+    }
 }
