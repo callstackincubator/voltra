@@ -38,8 +38,15 @@ import WidgetKit
 /// references `EXBaseAppDelegateSubscriber` from ExpoModulesCore's Swift→ObjC bridge,
 /// which isn't visible to consumers of `@import ExpoModulesCore`.
 ///
-/// Instead of relying on expo-modules-autolinking, the handler is registered manually at
-/// `VoltraModule` init time via `ExpoAppDelegateSubscriberRepository.registerSubscriber`.
+/// Explicit `@objc(VoltraDevReloadHandler)` so `NSClassFromString("VoltraDevReloadHandler")`
+/// from NativeVoltra.mm resolves to this Swift class without name mangling — that ObjC
+/// `+load` in NativeVoltra.mm is what triggers `registerIfNeeded()` at framework load
+/// time, so we don't depend on the lazy TurboModule (`VoltraModule.init`) ever being
+/// instantiated by JS code paths. Before this change, the registration only happened
+/// when JS imported a Voltra API; with the cleanup that removed the `enableClientWidgetHotReload`
+/// call from `_layout.tsx`, nothing in app startup touched VoltraModule so the handler
+/// silently never registered.
+///
 /// `ExpoAppDelegate` dispatches `application(_:didReceiveRemoteNotification:fetchCompletionHandler:)`
 /// to every registered subscriber, aggregating the `UIBackgroundFetchResult` results, so
 /// pushes without our discriminator key are passed through (`.noData`) to let other
@@ -50,33 +57,11 @@ import WidgetKit
 /// Simulator-only. Real-device dev would need an APNs setup (push certificate, push
 /// token registration). For PoC scope, simulator + `xcrun simctl push` is enough — that's
 /// where widget development happens day-to-day anyway.
+@objc(VoltraDevReloadHandler)
 final class VoltraDevReloadHandler: ExpoAppDelegateSubscriber {
   /// Discriminator key in the silent-push payload. Pushes lacking this key are treated as
   /// belonging to other subscribers and silently passed through.
   static let voltraDevReloadKey = "voltra-dev-reload"
-
-  /// Registers a fresh handler instance with `ExpoAppDelegateSubscriberRepository`.
-  /// Safe to call multiple times: the repository skips re-registration; we guard with a
-  /// sentinel so we never enqueue more than one main-queue hop.
-  ///
-  /// The registration is dispatched to the main queue because
-  /// `BaseExpoAppDelegateSubscriber.init()` (the superclass) is `@MainActor`-isolated.
-  /// VoltraModule.init() is called by React Native's module-loading machinery on a
-  /// background queue; calling the handler's initializer directly from there crashes
-  /// with `EXC_BREAKPOINT` in `_checkExpectedExecutor` (Swift 6 main-actor assertion).
-  static func registerIfNeeded() {
-    guard !didRegister else { return }
-    didRegister = true
-    DispatchQueue.main.async {
-      let handler = VoltraDevReloadHandler()
-      ExpoAppDelegateSubscriberRepository.registerSubscriber(handler)
-      VoltraLogger.widget.info(
-        "[VoltraDevReloadHandler] registered, total subscribers=\(ExpoAppDelegateSubscriberRepository.subscribers.count), responds to didReceiveRemoteNotification=\(handler.responds(to: #selector(UIApplicationDelegate.application(_:didReceiveRemoteNotification:fetchCompletionHandler:))))"
-      )
-    }
-  }
-
-  private static var didRegister = false
 
   /// `@objc` here is necessary because the protocol declares this method as
   /// `@objc optional` — without explicit `@objc`, Swift's implicit conformance
