@@ -56,22 +56,41 @@ final class VoltraDevReloadHandler: ExpoAppDelegateSubscriber {
   static let voltraDevReloadKey = "voltra-dev-reload"
 
   /// Registers a fresh handler instance with `ExpoAppDelegateSubscriberRepository`.
-  /// Safe to call multiple times: the repository skips re-registration of the same
-  /// instance (it asserts on duplicate instances, so we always create a new one and
-  /// guard with a sentinel).
+  /// Safe to call multiple times: the repository skips re-registration; we guard with a
+  /// sentinel so we never enqueue more than one main-queue hop.
+  ///
+  /// The registration is dispatched to the main queue because
+  /// `BaseExpoAppDelegateSubscriber.init()` (the superclass) is `@MainActor`-isolated.
+  /// VoltraModule.init() is called by React Native's module-loading machinery on a
+  /// background queue; calling the handler's initializer directly from there crashes
+  /// with `EXC_BREAKPOINT` in `_checkExpectedExecutor` (Swift 6 main-actor assertion).
   static func registerIfNeeded() {
     guard !didRegister else { return }
     didRegister = true
-    ExpoAppDelegateSubscriberRepository.registerSubscriber(VoltraDevReloadHandler())
+    DispatchQueue.main.async {
+      let handler = VoltraDevReloadHandler()
+      ExpoAppDelegateSubscriberRepository.registerSubscriber(handler)
+      VoltraLogger.widget.info(
+        "[VoltraDevReloadHandler] registered, total subscribers=\(ExpoAppDelegateSubscriberRepository.subscribers.count), responds to didReceiveRemoteNotification=\(handler.responds(to: #selector(UIApplicationDelegate.application(_:didReceiveRemoteNotification:fetchCompletionHandler:))))"
+      )
+    }
   }
 
   private static var didRegister = false
 
+  /// `@objc` here is necessary because the protocol declares this method as
+  /// `@objc optional` — without explicit `@objc`, Swift's implicit conformance
+  /// generation can skip exposing the method to the Objective-C dispatch chain that
+  /// ExpoAppDelegateSubscriberManager uses (`responds(to:selector:)` would return false,
+  /// and the manager skips us). Symptom is the method silently never being called even
+  /// though the push is delivered to the app.
+  @objc
   func application(
     _: UIApplication,
     didReceiveRemoteNotification userInfo: [AnyHashable: Any],
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
+    VoltraLogger.widget.info("[VoltraDevReloadHandler] push received, voltra-dev-reload present=\(userInfo[Self.voltraDevReloadKey] != nil)")
     guard userInfo[Self.voltraDevReloadKey] != nil else {
       // Not our push — contribute `.noData` to the aggregate so other subscribers (e.g.
       // expo-notifications) can still process their own pushes.
@@ -81,6 +100,7 @@ final class VoltraDevReloadHandler: ExpoAppDelegateSubscriber {
 
     if #available(iOS 14.0, *) {
       WidgetCenter.shared.reloadAllTimelines()
+      VoltraLogger.widget.info("[VoltraDevReloadHandler] reloadAllTimelines() called")
     }
     completionHandler(.newData)
   }

@@ -34,12 +34,55 @@ class DuplicateVoltraWidgetError extends Error {
   }
 }
 
-function createWidgetRegistry({ projectRoot }) {
+function createWidgetRegistry({ projectRoot, onWidgetSourceChanged } = {}) {
   const generatedRoot = path.join(projectRoot, '.voltra', 'metro')
   const generatedEntryRoot = path.join(generatedRoot, 'entries')
   const widgetsById = new Map()
   const widgetIdsBySourcePath = new Map()
+  // Track 5 — fs.watch handles keyed by absolute source path. We watch widget JSX files
+  // directly because Metro's serializer hook only fires on full bundle serialization,
+  // not on individual file saves (Fast Refresh patches in-place). Without this we'd
+  // only push reloads when the widget extension happens to request a fresh bundle —
+  // which is rate-limited to ~5 min by WidgetKit. fs.watch fires on every save,
+  // independent of Metro's bundle pipeline.
+  const fsWatchers = new Map()
   let ready = false
+
+  function startWatching(sourcePath) {
+    if (fsWatchers.has(sourcePath) || !onWidgetSourceChanged) {
+      return
+    }
+    try {
+      // `persistent: false` so the watcher doesn't keep the process alive on its own;
+      // Metro's main loop holds the process. On editor saves, fs.watch fires once or
+      // twice depending on how the editor writes — debounce in the pusher handles it.
+      const watcher = fs.watch(sourcePath, { persistent: false }, (eventType) => {
+        // eslint-disable-next-line no-console
+        console.log(`[voltra-dev-push] fs.watch ${eventType} on ${path.basename(sourcePath)}`)
+        onWidgetSourceChanged(sourcePath)
+      })
+      watcher.on('error', () => {
+        // Editors sometimes rename the file during save, which can break the watcher.
+        // Silently drop the entry so it gets re-attached on the next registry scan.
+        watcher.close()
+        fsWatchers.delete(sourcePath)
+      })
+      fsWatchers.set(sourcePath, watcher)
+      // eslint-disable-next-line no-console
+      console.log(`[voltra-dev-push] watching ${path.basename(sourcePath)}`)
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(`[voltra-dev-push] fs.watch failed for ${sourcePath}: ${err.message}`)
+    }
+  }
+
+  function stopWatching(sourcePath) {
+    const watcher = fsWatchers.get(sourcePath)
+    if (watcher) {
+      watcher.close()
+      fsWatchers.delete(sourcePath)
+    }
+  }
 
   function createGeneratedEntry(widget) {
     ensureDirectory(generatedEntryRoot)
@@ -99,6 +142,7 @@ function createWidgetRegistry({ projectRoot }) {
     }
 
     widgetIdsBySourcePath.delete(sourcePath)
+    stopWatching(sourcePath)
   }
 
   function registerWidgets(sourcePath, widgets) {
@@ -150,6 +194,7 @@ function createWidgetRegistry({ projectRoot }) {
       sourcePath,
       registered.map((widget) => widget.id)
     )
+    startWatching(sourcePath)
 
     return registered
   }
@@ -201,6 +246,13 @@ function createWidgetRegistry({ projectRoot }) {
 
       scanModuleMap(delta.added)
       scanModuleMap(delta.modified)
+      // NOTE on dev-reload firing: we do NOT trigger `onWidgetSourceChanged` from here.
+      // `experimentalSerializerHook` (the caller of applyMetroDelta) only fires on full
+      // bundle serializations — Fast Refresh applies module patches in-place without
+      // re-serializing, so saves don't reach this code path. Instead, registerWidgets
+      // attaches an `fs.watch` to each widget JSX file's absolute path (`startWatching`),
+      // and the watcher fires `onWidgetSourceChanged` directly on every save —
+      // independent of Metro's bundle pipeline.
       ready = true
     },
     getWidget(widgetId) {
