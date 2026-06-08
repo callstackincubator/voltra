@@ -51,17 +51,17 @@
               }
             },
             {
-              "id": "Track5DemoWidget",
+              "id": "ClientRenderedDemoWidget",
               "displayName": {
-                "en": "Track 5 Demo",
-                "pl": "Track 5 Demo"
+                "en": "Client-Rendered Demo",
+                "pl": "Client-Rendered Demo"
               },
               "description": {
                 "en": "Plain widget showing env values — for verifying client-rendered hot reload.",
                 "pl": "Prosty widget pokazujący wartości env — do weryfikacji hot reload."
               },
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-              "initialStatePath": "./widgets/ios/Track5DemoWidget.tsx"
+              "initialStatePath": "./widgets/ios/ClientRenderedDemoWidget.tsx"
             },
             {
               "id": "portfolio",

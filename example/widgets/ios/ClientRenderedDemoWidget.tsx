@@ -6,7 +6,7 @@ import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 // editable literal (`hotReloadMarker` below) for proving hot reload end-to-end.
 // Edit the literal, save, watch the home-screen widget update within ~1 second.
 
-export const Track5DemoWidget = (_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) => {
+export const ClientRenderedDemoWidget = (_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) => {
   'use voltra'
 
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
@@ -25,7 +25,7 @@ export const Track5DemoWidget = (_props: object, env: WidgetEnvironment = {} as 
 
   return (
     <Voltra.VStack alignment="leading" spacing={4} style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}>
-      <Voltra.Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Track 5 demo</Voltra.Text>
+      <Voltra.Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Client-rendered demo</Voltra.Text>
 
       <Voltra.Text style={{ fontSize: 14, fontWeight: '600', color: '#34D399' }}>{hotReloadMarker}</Voltra.Text>
 

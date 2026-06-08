@@ -6,7 +6,7 @@ import { voltraWidgetEvalBundle, voltraWidgetRender } from '@use-voltra/ios-clie
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
-const WIDGET_ID = 'Track5DemoWidget'
+const WIDGET_ID = 'ClientRenderedDemoWidget'
 const METRO_BASE_URL = 'http://localhost:8081'
 
 /**

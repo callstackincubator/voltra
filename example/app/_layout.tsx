@@ -9,7 +9,7 @@ import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltra
 // in its dep graph. Without an import path reachable from the main bundle entry,
 // Metro returns 404 for /voltra/widgets/<id>.bundle and the widget extension
 // can't fetch the bundle.
-import '~/widgets/ios/Track5DemoWidget'
+import '~/widgets/ios/ClientRenderedDemoWidget'
 
 updateAndroidVoltraWidget({ width: 300, height: 200 })
 
