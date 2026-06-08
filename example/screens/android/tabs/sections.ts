@@ -22,6 +22,13 @@ export const ANDROID_WIDGET_SECTIONS: ExampleSection[] = [
     route: '/android-widgets/charts',
   },
   {
+    id: 'gradient-backgrounds',
+    title: 'Gradient Backgrounds',
+    description:
+      'Preview Android widget backgrounds rendered from style.backgroundImage CSS gradients through native Glance.',
+    route: '/android-widgets/gradient-playground',
+  },
+  {
     id: 'server-driven-widgets',
     title: 'Server-Driven Widgets',
     description:
