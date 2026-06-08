@@ -244,27 +244,6 @@ export default function AndroidGradientPlaygroundScreen() {
         </WidgetPreview>
       </Card>
 
-      <Card>
-        <Card.Title>Solid Color (Unchanged)</Card.Title>
-        <Text style={styles.previewSubtext}>backgroundColor: "#3B82F6" - plain colors still work</Text>
-
-        <WidgetPreview>
-          <VoltraAndroid.Box style={styles.sampleRoot}>
-            <VoltraAndroid.Box
-              style={{
-                width: '100%',
-                height: 72,
-                backgroundColor: '#3B82F6',
-                borderRadius: 8,
-              }}
-              contentAlignment="center"
-            >
-              <VoltraAndroid.Text style={{ color: '#FFFFFF', fontSize: 12 }}>Solid #3B82F6</VoltraAndroid.Text>
-            </VoltraAndroid.Box>
-          </VoltraAndroid.Box>
-        </WidgetPreview>
-      </Card>
-
       <View style={styles.footer}>
         <Button title="Back to Android Home" variant="ghost" onPress={() => router.back()} />
       </View>
