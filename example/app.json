@@ -51,19 +51,6 @@
               }
             },
             {
-              "id": "IosWeatherWidget",
-              "displayName": {
-                "en": "Client Weather (Track 5)",
-                "pl": "Pogoda — klient (Track 5)"
-              },
-              "description": {
-                "en": "Track 5 client-rendered widget — JSX downloaded from Metro, evaluated in JSC.",
-                "pl": "Widget renderowany po stronie klienta (Track 5)."
-              },
-              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-              "initialStatePath": "./widgets/ios/IosWeatherWidget.tsx"
-            },
-            {
               "id": "Track5DemoWidget",
               "displayName": {
                 "en": "Track 5 Demo",

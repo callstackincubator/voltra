@@ -6,7 +6,7 @@ import { voltraWidgetEvalBundle, voltraWidgetRender } from '@use-voltra/ios-clie
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
-const WIDGET_ID = 'IosWeatherWidget'
+const WIDGET_ID = 'Track5DemoWidget'
 const METRO_BASE_URL = 'http://localhost:8081'
 
 /**
@@ -48,15 +48,10 @@ export default function IosClientRenderedSmokeScreen() {
 
       await voltraWidgetEvalBundle(WIDGET_ID, source)
 
-      const props = {
-        weather: {
-          condition: 'sunny',
-          temperature: 22,
-          location: 'Warsaw',
-          highTemp: 24,
-          lowTemp: 15,
-        },
-      }
+      // Track5DemoWidget ignores props (hot-reload marker is hardcoded inside the JSX,
+      // env values come from the runtime); passing {} is enough to exercise the
+      // bundle → eval → render round-trip.
+      const props = {}
       const env = {
         date: Date.now(),
         widgetFamily: 'systemMedium',

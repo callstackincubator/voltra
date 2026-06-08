@@ -1,4 +1,4 @@
-import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
+import { Voltra } from '@use-voltra/ios'
 
 import {
   DEFAULT_WEATHER,
@@ -20,19 +20,10 @@ interface WeatherWidgetProps {
   weather?: WeatherData
 }
 
-export const IosWeatherWidget = (
-  { weather = DEFAULT_WEATHER }: WeatherWidgetProps,
-  env: WidgetEnvironment = {} as WidgetEnvironment
-) => {
-  'use voltra'
-
+export const IosWeatherWidget = ({ weather = DEFAULT_WEATHER }: WeatherWidgetProps) => {
   const gradient = WEATHER_GRADIENTS[weather.condition]
   const emoji = WEATHER_EMOJIS[weather.condition]
-  const baseDescription = WEATHER_DESCRIPTIONS[weather.condition]
-  // Phase 3b-ii verification — append captured env values so it's visible they reach
-  // the widget. Replace with real env-driven styling later.
-  const envSuffix = [env.colorScheme, env.widgetFamily].filter(Boolean).join(' · ')
-  const description = envSuffix ? `${baseDescription} · ${envSuffix}` : baseDescription
+  const description = WEATHER_DESCRIPTIONS[weather.condition]
 
   return (
     <Voltra.LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={{ flex: 1 }}>
