@@ -23,7 +23,7 @@ export default withCallstackPreset(
   },
   defineConfig({
     multiVersion: {
-      default: 'v1',
+      default: 'v2',
       versions: ['v1', 'v2'],
     },
     themeConfig: {
