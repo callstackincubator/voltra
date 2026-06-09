@@ -115,31 +115,25 @@ object JSColorParser {
     }
 
     /**
-     * Parse RGB/RGBA: rgb(255, 0, 0) or rgba(255, 0, 0, 0.5)
+     * Parse RGB/RGBA:
+     * - rgb(255, 0, 0), rgba(255, 0, 0, 0.5)
+     * - rgb(255 0 0 / 80%), rgba(255 0 0 / 0.8)
      */
     private fun parseRGB(string: String): Color? {
         return try {
-            val cleaned =
-                string
-                    .replace("rgba", "")
-                    .replace("rgb", "")
-                    .replace("(", "")
-                    .replace(")", "")
-                    .replace(" ", "")
-
-            val components = cleaned.split(",")
-            if (components.size < 3) return null
-
-            val r = components[0].toDouble()
-            val g = components[1].toDouble()
-            val b = components[2].toDouble()
-            val a = if (components.size >= 4) components[3].toDouble() else 1.0
+            val function = parseFunctionCall(string, setOf("rgb", "rgba")) ?: return null
+            val parsed =
+                if (function.arguments.contains(",")) {
+                    parseRGBCommaSyntax(function.arguments)
+                } else {
+                    parseRGBSpaceSyntax(function.arguments)
+                } ?: return null
 
             Color(
-                red = (r / 255.0).toFloat(),
-                green = (g / 255.0).toFloat(),
-                blue = (b / 255.0).toFloat(),
-                alpha = a.toFloat(),
+                red = (parsed.r / 255.0).toFloat(),
+                green = (parsed.g / 255.0).toFloat(),
+                blue = (parsed.b / 255.0).toFloat(),
+                alpha = parsed.a.toFloat(),
             )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to parse RGB color: $string", e)
@@ -148,34 +142,27 @@ object JSColorParser {
     }
 
     /**
-     * Parse HSL/HSLA: hsl(120, 100%, 50%) or hsla(...)
+     * Parse HSL/HSLA:
+     * - hsl(120, 100%, 50%), hsla(120, 100%, 50%, 0.5)
+     * - hsl(120 100% 50% / 30%), hsla(120 100% 50% / 0.3)
      */
     private fun parseHSL(string: String): Color? {
         return try {
-            val cleaned =
-                string
-                    .replace("hsla", "")
-                    .replace("hsl", "")
-                    .replace("(", "")
-                    .replace(")", "")
-                    .replace(" ", "")
-                    .replace("%", "")
+            val function = parseFunctionCall(string, setOf("hsl", "hsla")) ?: return null
+            val parsed =
+                if (function.arguments.contains(",")) {
+                    parseHSLCommaSyntax(function.arguments)
+                } else {
+                    parseHSLSpaceSyntax(function.arguments)
+                } ?: return null
 
-            val components = cleaned.split(",")
-            if (components.size < 3) return null
-
-            val h = (components[0].toDouble()) / 360.0
-            val s = (components[1].toDouble()) / 100.0
-            val l = (components[2].toDouble()) / 100.0
-            val a = if (components.size >= 4) components[3].toDouble() else 1.0
-
-            val (r, g, b) = hslToRgb(h, s, l)
+            val (r, g, b) = hslToRgb(parsed.h / 360.0, parsed.s / 100.0, parsed.l / 100.0)
 
             Color(
                 red = r.toFloat(),
                 green = g.toFloat(),
                 blue = b.toFloat(),
-                alpha = a.toFloat(),
+                alpha = parsed.a.toFloat(),
             )
         } catch (e: Exception) {
             Log.w(TAG, "Failed to parse HSL color: $string", e)
@@ -227,6 +214,116 @@ object JSColorParser {
             t < 1.0 / 2.0 -> q
             t < 2.0 / 3.0 -> p + (q - p) * (2.0 / 3.0 - t) * 6
             else -> p
+        }
+    }
+
+    private data class FunctionCall(
+        val name: String,
+        val arguments: String,
+    )
+
+    private data class RgbaComponents(
+        val r: Double,
+        val g: Double,
+        val b: Double,
+        val a: Double,
+    )
+
+    private data class HslaComponents(
+        val h: Double,
+        val s: Double,
+        val l: Double,
+        val a: Double,
+    )
+
+    private fun parseFunctionCall(
+        string: String,
+        allowedNames: Set<String>,
+    ): FunctionCall? {
+        val open = string.indexOf('(')
+        if (open <= 0 || !string.endsWith(")")) return null
+        val name = string.substring(0, open).trim().lowercase()
+        if (name !in allowedNames) return null
+        return FunctionCall(name, string.substring(open + 1, string.length - 1).trim())
+    }
+
+    private fun parseRGBCommaSyntax(arguments: String): RgbaComponents? {
+        val parts = arguments.split(",").map { it.trim() }
+        if (parts.size !in 3..4) return null
+        return RgbaComponents(
+            r = parseRgbChannel(parts[0]) ?: return null,
+            g = parseRgbChannel(parts[1]) ?: return null,
+            b = parseRgbChannel(parts[2]) ?: return null,
+            a = parts.getOrNull(3)?.let { parseAlpha(it) } ?: 1.0,
+        )
+    }
+
+    private fun parseRGBSpaceSyntax(arguments: String): RgbaComponents? {
+        val sections = arguments.split("/", limit = 2).map { it.trim() }
+        val channels = sections[0].split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (channels.size != 3) return null
+        return RgbaComponents(
+            r = parseRgbChannel(channels[0]) ?: return null,
+            g = parseRgbChannel(channels[1]) ?: return null,
+            b = parseRgbChannel(channels[2]) ?: return null,
+            a = sections.getOrNull(1)?.let { parseAlpha(it) } ?: 1.0,
+        )
+    }
+
+    private fun parseHSLCommaSyntax(arguments: String): HslaComponents? {
+        val parts = arguments.split(",").map { it.trim() }
+        if (parts.size !in 3..4) return null
+        return HslaComponents(
+            h = parseHue(parts[0]) ?: return null,
+            s = parsePercentage(parts[1]) ?: return null,
+            l = parsePercentage(parts[2]) ?: return null,
+            a = parts.getOrNull(3)?.let { parseAlpha(it) } ?: 1.0,
+        )
+    }
+
+    private fun parseHSLSpaceSyntax(arguments: String): HslaComponents? {
+        val sections = arguments.split("/", limit = 2).map { it.trim() }
+        val channels = sections[0].split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (channels.size != 3) return null
+        return HslaComponents(
+            h = parseHue(channels[0]) ?: return null,
+            s = parsePercentage(channels[1]) ?: return null,
+            l = parsePercentage(channels[2]) ?: return null,
+            a = sections.getOrNull(1)?.let { parseAlpha(it) } ?: 1.0,
+        )
+    }
+
+    private fun parseRgbChannel(token: String): Double? {
+        val trimmed = token.trim()
+        return if (trimmed.endsWith("%")) {
+            parsePercentage(trimmed)?.let { it * 255.0 / 100.0 }
+        } else {
+            trimmed.toDoubleOrNull()
+        }
+    }
+
+    private fun parseHue(token: String): Double? {
+        val trimmed = token.trim()
+        return when {
+            trimmed.endsWith("deg") -> trimmed.dropLast(3).toDoubleOrNull()
+            trimmed.endsWith("rad") -> trimmed.dropLast(3).toDoubleOrNull()?.let { it * 180.0 / Math.PI }
+            trimmed.endsWith("turn") -> trimmed.dropLast(4).toDoubleOrNull()?.let { it * 360.0 }
+            else -> trimmed.toDoubleOrNull()
+        }
+    }
+
+    private fun parsePercentage(token: String): Double? {
+        val trimmed = token.trim()
+        if (!trimmed.endsWith("%")) return null
+        return trimmed.dropLast(1).toDoubleOrNull()
+    }
+
+    private fun parseAlpha(token: String): Double? {
+        val trimmed = token.trim()
+        return if (trimmed.endsWith("%")) {
+            trimmed.dropLast(1).toDoubleOrNull()?.let { it / 100.0 }
+        } else {
+            trimmed.toDoubleOrNull()
         }
     }
 

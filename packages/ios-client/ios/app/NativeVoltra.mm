@@ -30,6 +30,7 @@
 
 @interface NativeVoltra () {
   VoltraModule *_module;
+  BOOL _invalidated;
 }
 @end
 
@@ -51,15 +52,25 @@
 {
   [super setEventEmitterCallback:eventEmitterCallbackWrapper];
 
+  if (_invalidated) {
+    return;
+  }
+
+  __weak NativeVoltra *weakSelf = self;
   [self.module startMonitoringWithEventHandler:^(NSString *eventName, NSDictionary *eventData) {
+    __strong NativeVoltra *strongSelf = weakSelf;
+    if (strongSelf == nil || strongSelf->_invalidated) {
+      return;
+    }
+
     if ([eventName isEqualToString:@"interaction"]) {
-      [self emitOnInteraction:eventData];
+      [strongSelf emitOnInteraction:eventData];
     } else if ([eventName isEqualToString:@"stateChange"]) {
-      [self emitOnStateChanged:eventData];
+      [strongSelf emitOnStateChanged:eventData];
     } else if ([eventName isEqualToString:@"activityTokenReceived"]) {
-      [self emitOnActivityTokenReceived:eventData];
+      [strongSelf emitOnActivityTokenReceived:eventData];
     } else if ([eventName isEqualToString:@"activityPushToStartTokenReceived"]) {
-      [self emitOnActivityPushToStartTokenReceived:eventData];
+      [strongSelf emitOnActivityPushToStartTokenReceived:eventData];
     }
   }];
 }
@@ -360,10 +371,16 @@
   }];
 }
 
-- (void)dealloc
+- (void)invalidate
 {
+  if (_invalidated) {
+    return;
+  }
+
+  _invalidated = YES;
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-  [self.module stopMonitoring];
+  [_module stopMonitoring];
+  _module = nil;
 }
 
 @end

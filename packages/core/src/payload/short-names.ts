@@ -9,6 +9,7 @@
  */
 export const NAME_TO_SHORT: Record<string, string> = {
   absolutePosition: 'ap',
+  accentedRenderingMode: 'arm',
   alignItems: 'ai',
   alignment: 'al',
   alignSelf: 'as',
@@ -17,6 +18,7 @@ export const NAME_TO_SHORT: Record<string, string> = {
   assetName: 'an',
   background: 'bkg',
   backgroundColor: 'bg',
+  backgroundImage: 'bgi',
   backgroundStyle: 'bgs',
   base64: 'b64',
   border: 'bd',
@@ -186,6 +188,7 @@ export const NAME_TO_SHORT: Record<string, string> = {
  */
 export const SHORT_TO_NAME: Record<string, string> = {
   ap: 'absolutePosition',
+  arm: 'accentedRenderingMode',
   ai: 'alignItems',
   al: 'alignment',
   as: 'alignSelf',
@@ -194,6 +197,7 @@ export const SHORT_TO_NAME: Record<string, string> = {
   an: 'assetName',
   bkg: 'background',
   bg: 'backgroundColor',
+  bgi: 'backgroundImage',
   bgs: 'backgroundStyle',
   b64: 'base64',
   bd: 'border',

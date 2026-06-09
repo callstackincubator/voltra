@@ -5,4 +5,4 @@ Generated from: data/components.json
 Schema version: 1.0.0
 
 To regenerate these files, run:
-  npm run generate
+  pnpm run generate
