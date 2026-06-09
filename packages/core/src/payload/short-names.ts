@@ -9,6 +9,7 @@
  */
 export const NAME_TO_SHORT: Record<string, string> = {
   absolutePosition: 'ap',
+  accentedRenderingMode: 'arm',
   alignItems: 'ai',
   alignment: 'al',
   alignSelf: 'as',
@@ -187,6 +188,7 @@ export const NAME_TO_SHORT: Record<string, string> = {
  */
 export const SHORT_TO_NAME: Record<string, string> = {
   ap: 'absolutePosition',
+  arm: 'accentedRenderingMode',
   ai: 'alignItems',
   al: 'alignment',
   as: 'alignSelf',

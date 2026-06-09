@@ -13,6 +13,7 @@ public enum ShortNames {
   /// Mapping from short names to full names
   private static let shortToName: [String: String] = [
     "ap": "absolutePosition",
+    "arm": "accentedRenderingMode",
     "ai": "alignItems",
     "al": "alignment",
     "as": "alignSelf",
