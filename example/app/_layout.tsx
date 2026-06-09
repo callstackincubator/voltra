@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { enableWidgetHotReload } from '@use-voltra/ios-client'
 
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
@@ -11,6 +12,7 @@ import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltra
 // can't fetch the bundle.
 import '~/widgets/ios/ClientRenderedDemoWidget'
 
+enableWidgetHotReload()
 updateAndroidVoltraWidget({ width: 300, height: 200 })
 
 const STACK_SCREEN_OPTIONS = {
