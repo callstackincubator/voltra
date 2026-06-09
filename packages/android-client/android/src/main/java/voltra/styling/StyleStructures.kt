@@ -54,6 +54,7 @@ data class LayoutStyle(
  */
 data class DecorationStyle(
     val backgroundColor: VoltraColorValue? = null,
+    val backgroundImage: BackgroundImageValue? = null,
     val cornerRadius: Dp? = null,
     val clipToOutline: Boolean = false,
     val border: BorderStyle? = null,

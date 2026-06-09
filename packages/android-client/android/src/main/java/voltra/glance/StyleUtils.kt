@@ -20,6 +20,7 @@ fun resolveAndApplyStyle(
     props: Map<String, Any?>?,
     sharedStyles: List<Map<String, Any?>>?,
 ): ResolvedStyle {
+    val renderContext = LocalVoltraRenderContext.current
     val resolvedStyle = resolveStyle(props, sharedStyles)
     val compositeStyle =
         if (resolvedStyle != null) {
@@ -29,7 +30,7 @@ fun resolveAndApplyStyle(
         }
     val modifier =
         if (compositeStyle != null) {
-            GlanceModifier.applyStyle(compositeStyle)
+            GlanceModifier.applyStyle(compositeStyle, renderContext.widgetSize)
         } else {
             GlanceModifier
         }

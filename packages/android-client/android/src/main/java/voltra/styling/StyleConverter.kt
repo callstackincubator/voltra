@@ -165,6 +165,7 @@ object StyleConverter {
 
         return DecorationStyle(
             backgroundColor = JSStyleParser.color(js["backgroundColor"]),
+            backgroundImage = (js["backgroundImage"] as? String)?.let { JSGradientParser.parse(it) },
             cornerRadius = JSStyleParser.dp(js["borderRadius"]),
             clipToOutline = clipToOutline,
             border = border,
