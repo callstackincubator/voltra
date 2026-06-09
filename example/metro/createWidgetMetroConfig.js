@@ -20,12 +20,31 @@ function unique(items) {
   return Array.from(new Set(items.filter(Boolean)))
 }
 
+function resolvePnpmTransitive(name, repoRoot) {
+  // pnpm's strict node_modules layout doesn't expose transitive dependencies to the
+  // widget entry file in `.voltra/metro/entries/` because that path isn't inside any
+  // package's pnpm-managed `node_modules`. Resolve them explicitly so Babel-emitted
+  // runtime helpers and Metro's async-require shim bundle cleanly.
+  try {
+    return path.dirname(require.resolve(`${name}/package.json`, { paths: [repoRoot] }))
+  } catch {
+    return null
+  }
+}
+
 async function createWidgetMetroConfig({ projectRoot, appConfig }) {
   const repoRoot = path.resolve(projectRoot, '..')
   const appNodeModules = path.join(projectRoot, 'node_modules')
   const linkedPackages = createLinkedPackages(repoRoot)
   const config = await getDefaultConfig(projectRoot)
   const sourceExts = unique([...config.resolver.sourceExts, ...appConfig.resolver.sourceExts])
+  const pnpmTransitives = {
+    '@babel/runtime': resolvePnpmTransitive('@babel/runtime', repoRoot),
+    'metro-runtime': resolvePnpmTransitive('metro-runtime', repoRoot),
+  }
+  const pnpmTransitiveModules = Object.fromEntries(
+    Object.entries(pnpmTransitives).filter(([, value]) => value !== null)
+  )
 
   return {
     ...config,
@@ -36,11 +55,17 @@ async function createWidgetMetroConfig({ projectRoot, appConfig }) {
       sourceExts,
       extraNodeModules: {
         ...config.resolver.extraNodeModules,
+        ...appConfig.resolver.extraNodeModules,
+        ...pnpmTransitiveModules,
         ...linkedPackages,
         '~': projectRoot,
         react: path.join(appNodeModules, 'react'),
       },
-      nodeModulesPaths: unique([appNodeModules, ...config.resolver.nodeModulesPaths]),
+      nodeModulesPaths: unique([
+        appNodeModules,
+        ...config.resolver.nodeModulesPaths,
+        ...appConfig.resolver.nodeModulesPaths,
+      ]),
       resolveRequest(context, moduleName, platform) {
         if (blockedModules.has(moduleName) || moduleName.startsWith('react-native/')) {
           throw new Error(`Voltra widget bundles cannot import "${moduleName}"`)

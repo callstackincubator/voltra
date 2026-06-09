@@ -385,6 +385,12 @@ importers:
       '@babel/core':
         specifier: ^7.27.4
         version: 7.29.0
+      '@babel/parser':
+        specifier: ^7.27.4
+        version: 7.29.3
+      '@babel/types':
+        specifier: ^7.27.4
+        version: 7.29.0
       '@expo/config-plugins':
         specifier: ~10.1.2
         version: 10.1.2
