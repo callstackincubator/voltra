@@ -51,5 +51,3 @@ export {
   updateWidget,
   type UpdateWidgetOptions,
 } from './widgets/widget-api.js'
-// Temporary smoke-test surface. Removed once widget-extension wiring is fully covered.
-export { voltraWidgetEvalBundle, voltraWidgetRender } from './widgets/client-rendered-smoke.js'

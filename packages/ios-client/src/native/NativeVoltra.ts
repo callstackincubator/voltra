@@ -108,25 +108,6 @@ export interface Spec extends TurboModule {
   getActiveWidgets<T = unknown>(): Promise<T[]>
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
-  /**
-   * Client-rendered widget runtime smoke test surface.
-   *
-   * Evaluate a Metro-built widget bundle in the shared JSContext, capturing the bundle's
-   * `render(props, env)` export under `globalThis.__voltraWidgets[<widgetId>]`. Bundle
-   * source is the raw string returned by Metro's `/voltra/widgets/<id>.bundle` endpoint.
-   *
-   * Temporary debug surface intended to be removed once widget-extension wiring is fully
-   * covered by automated tests.
-   */
-  voltraWidgetEvalBundle(widgetId: string, bundleSource: string): Promise<void>
-  /**
-   * Invoke a previously-evaluated widget's `render(props, env)` function. Returns the
-   * resolved JSON string the bundle produced.
-   *
-   * Temporary debug surface intended to be removed once widget-extension wiring is fully
-   * covered by automated tests.
-   */
-  voltraWidgetRender(widgetId: string, propsJSON: string, envJSON: string): Promise<string>
 }
 
 export function getNativeVoltra(): Spec {
