@@ -41,6 +41,11 @@ public class VoltraEventBus {
     lock.lock()
     defer { lock.unlock() }
 
+    if let observer {
+      NotificationCenter.default.removeObserver(observer)
+      self.observer = nil
+    }
+
     // 1. Replay persisted events from UserDefaults (interactions from widget)
     let persistedEvents = VoltraPersistentEventQueue.popAll()
     for event in persistedEvents {
