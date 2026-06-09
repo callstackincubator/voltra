@@ -262,6 +262,8 @@ public class VoltraLiveActivityService {
 
   /// Start monitoring all Live Activities, push tokens, and lifecycle state changes.
   public func startMonitoring(enablePush: Bool) {
+    stopMonitoring()
+
     let onTokenUpdated: (@Sendable (String, String) -> Void)?
     let onPushToStartUpdated: (@Sendable (String) -> Void)?
 
