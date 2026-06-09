@@ -32,7 +32,6 @@
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "keychainGroup": "$(AppIdentifierPrefix)group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
-          "clientWidgetHotReload": true,
           "widgets": [
             {
               "id": "weather",

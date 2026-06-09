@@ -12,10 +12,6 @@ export interface ConfigureMainAppPlistProps {
   groupIdentifier?: string
   widgets?: IOSWidgetConfig[]
   keychainGroup?: string
-  /** When true AND at least one widget is client-rendered, the plugin adds
-   * NSAppTransportSecurity with a localhost exception so the widget extension's Provider
-   * can HTTP-fetch from Metro. Default `false` keeps the plist minimal. */
-  clientWidgetHotReload?: boolean
 }
 
 /**
@@ -30,7 +26,7 @@ export interface ConfigureMainAppPlistProps {
  */
 export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistProps> = (
   expoConfig,
-  { targetName, groupIdentifier, widgets, keychainGroup, clientWidgetHotReload }
+  { targetName, groupIdentifier, widgets, keychainGroup }
 ) =>
   withDangerousMod(expoConfig, [
     'ios',
@@ -51,11 +47,12 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
 
         const content = plist.parse(readFileSync(filePath, 'utf8')) as InfoPlist
 
-        // When client-rendered widget hot-reload is on, the widget extension fetches the
-        // JS bundle from Metro at http://localhost:8081. iOS requires an ATS exception for
-        // plaintext HTTP, scoped to localhost. The keys are only added when a client-rendered
-        // widget actually exists, so server-only configurations keep their plist minimal.
-        if (clientWidgetHotReload && widgets && widgets.length > 0) {
+        // Client-rendered widgets fetch their JS bundle from Metro at
+        // http://localhost:8081 in DEBUG builds. iOS requires an ATS exception for
+        // plaintext HTTP, scoped to localhost. The keys are only added when a
+        // client-rendered widget actually exists, so server-only configurations
+        // keep their plist minimal.
+        if (widgets && widgets.length > 0) {
           const detected = detectClientRenderedWidgets(widgets, config.modRequest.projectRoot)
           const hasClientWidget = detected.some((w) => w.clientRendered)
           if (hasClientWidget) {

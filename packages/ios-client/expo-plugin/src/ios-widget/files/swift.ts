@@ -21,8 +21,6 @@ export interface GenerateSwiftFilesOptions {
   targetPath: string
   projectRoot: string
   widgets?: IOSWidgetConfig[]
-  /** When true (DEBUG only), generated client-rendered Providers fetch from Metro. */
-  clientWidgetHotReload?: boolean
 }
 
 type RenderWidgetToString = (variants: unknown) => string
@@ -39,7 +37,7 @@ type RenderWidgetToString = (variants: unknown) => string
  * - VoltraWidgetBundle.swift (widget bundle definition)
  */
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
-  const { targetPath, projectRoot, widgets, clientWidgetHotReload = false } = options
+  const { targetPath, projectRoot, widgets } = options
 
   // Dynamic import keeps the plugin CommonJS-compatible while resolving the current package entry.
   const serverModuleId = '@use-voltra/ios/server'
@@ -79,9 +77,7 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
 
   // Generate the widget bundle Swift file
   const widgetBundleContent =
-    detectedWidgets.length > 0
-      ? generateWidgetBundleSwift(detectedWidgets, { clientWidgetHotReload })
-      : generateDefaultWidgetBundleSwift()
+    detectedWidgets.length > 0 ? generateWidgetBundleSwift(detectedWidgets) : generateDefaultWidgetBundleSwift()
 
   const widgetBundlePath = path.join(targetPath, 'VoltraWidgetBundle.swift')
   fs.writeFileSync(widgetBundlePath, widgetBundleContent)
@@ -290,12 +286,8 @@ function iosWidgetGalleryLabelSwiftExpr(
  *  - client-rendered → `VoltraClientWidgetProvider` + `VoltraClientWidgetContentView`
  *    (the content view internally renders via VoltraHomeWidgetView so the UI layer is
  *    identical to server-rendered widgets — see VoltraClientWidgetRuntime.swift)
- *
- * `clientWidgetHotReload` is the value from app.json; it becomes the
- * `devHotReloadEnabled:` argument to the generated VoltraClientWidgetProvider so the
- * runtime knows whether to attempt Metro fetches.
  */
-function generateWidgetStruct(widget: DetectedIOSWidget, options: { clientWidgetHotReload: boolean }): string {
+function generateWidgetStruct(widget: DetectedIOSWidget): string {
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
 
@@ -309,8 +301,7 @@ function generateWidgetStruct(widget: DetectedIOSWidget, options: { clientWidget
     ? dedent`
         provider: VoltraClientWidgetProvider(
           widgetId: widgetId,
-          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId),
-          devHotReloadEnabled: ${options.clientWidgetHotReload}
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
         )
       ) { entry in
         VoltraClientWidgetContentView(
@@ -349,12 +340,9 @@ function generateWidgetStruct(widget: DetectedIOSWidget, options: { clientWidget
 /**
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
-function generateWidgetBundleSwift(
-  widgets: DetectedIOSWidget[],
-  options: { clientWidgetHotReload: boolean } = { clientWidgetHotReload: false }
-): string {
+function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
   // Generate widget structs
-  const widgetStructs = widgets.map((w) => generateWidgetStruct(w, options)).join('\n\n')
+  const widgetStructs = widgets.map((w) => generateWidgetStruct(w)).join('\n\n')
 
   // Generate widget bundle body entries
   const widgetInstances = widgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')

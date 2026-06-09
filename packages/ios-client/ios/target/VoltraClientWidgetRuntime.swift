@@ -46,38 +46,31 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
 //
 // Refresh model:
 //
-//   - When `devHotReloadEnabled = false` (the default + release builds):
-//        Provider skips the Metro fetch entirely, emits `bundleReady = false`, and
-//        the ContentView renders the prerendered initial state.
+//   - DEBUG builds: Provider fetches `<id>.bundle` from Metro on every
+//        `getTimeline`/`getSnapshot`, evaluates it in the shared JSContext, and emits
+//        `bundleReady = true`. The ContentView then runs the freshly evaluated
+//        `render(props, env)` and feeds the result to `VoltraHomeWidgetView`.
 //
-//   - When `devHotReloadEnabled = true` (dev opt-in via `voltra.ios.clientWidgetHotReload`):
-//        Provider fetches `<id>.bundle` from Metro on every `getTimeline`/`getSnapshot`,
-//        evaluates it in the shared JSContext, and emits `bundleReady = true`. The
-//        ContentView then runs the freshly evaluated `render(props, env)` and feeds
-//        the result to `VoltraHomeWidgetView`.
+//   - Release builds: Provider attempts to load a baked-in bundle (release-path loader is
+//        a future addition); on failure the ContentView renders the prerendered initial state.
 //
 //   - Timeline policy is ALWAYS `.never`. The widget refreshes only when something
-//        explicitly calls `WidgetCenter.shared.reloadAllTimelines()`. iOS rate-limits
-//        timeline-policy-driven refresh aggressively (treats `.after(<short>)` as a
-//        hint and throttles to ~5-minute intervals even in the simulator), so
-//        push-driven reloads are the only mechanism that delivers near-instant updates.
-//        The Metro middleware + silent-push setup wakes the host app on widget file
-//        changes and calls `reloadAllTimelines()` from there.
+//        explicitly calls `WidgetCenter.shared.reloadAllTimelines()` or when WidgetKit
+//        naturally re-invokes the Provider on its own lifecycle events (e.g., host app
+//        foregrounding). iOS rate-limits timeline-policy-driven refresh aggressively
+//        (~5-minute floor even in the simulator), so explicit reloads or natural
+//        lifecycle re-invocations are the only mechanisms that deliver fresh content.
 
 public struct VoltraClientWidgetProvider: TimelineProvider {
   public let widgetId: String
   /// Prerendered initial state JSON from `VoltraWidgetInitialStates.getInitialState(for:)`.
-  /// Used as the placeholder, the Loading fallback, and the steady-state view when hot
-  /// reload is off.
+  /// Used as the placeholder, the Loading fallback, and the steady-state view if a bundle
+  /// load fails.
   public let initialState: Data?
-  /// Dev-mode hot reload. Threaded in by the plugin from
-  /// `voltra.ios.clientWidgetHotReload` in app.json. Has no effect in release builds.
-  public let devHotReloadEnabled: Bool
 
-  public init(widgetId: String, initialState: Data? = nil, devHotReloadEnabled: Bool = false) {
+  public init(widgetId: String, initialState: Data? = nil) {
     self.widgetId = widgetId
     self.initialState = initialState
-    self.devHotReloadEnabled = devHotReloadEnabled
   }
 
   public func placeholder(in _: Context) -> VoltraClientWidgetEntry {
@@ -97,13 +90,6 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
 
   private func loadBundleEntry() async -> VoltraClientWidgetEntry {
     let date = Date()
-
-    // Hot reload off → no fetch, no JSContext eval. The content view will render the
-    // prerendered initial state. This keeps default behaviour identical to the
-    // release path (baked asset → eval → render).
-    if !devHotReloadEnabled {
-      return VoltraClientWidgetEntry(date: date, widgetId: widgetId, bundleReady: false)
-    }
 
     let source: String
     do {

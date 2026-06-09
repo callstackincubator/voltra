@@ -9,9 +9,6 @@ export interface IOSConfigProps {
   widgetIds?: string[]
   widgets?: import('../types').IOSWidgetConfig[]
   keychainGroup?: string
-  /** When true, plugin adds `remote-notification` to the main app's UIBackgroundModes
-   *  so iOS can wake the host app for silent push reloads. */
-  clientWidgetHotReload?: boolean
 }
 
 /**
@@ -30,7 +27,6 @@ export function withIOS(config: ExpoConfig, props: IOSConfigProps): ExpoConfig {
     widgetIds: props.widgetIds,
     widgets: props.widgets,
     keychainGroup: props.keychainGroup,
-    clientWidgetHotReload: props.clientWidgetHotReload,
   })
 
   // Configure entitlements

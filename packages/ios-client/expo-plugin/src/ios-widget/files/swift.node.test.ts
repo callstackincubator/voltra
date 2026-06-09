@@ -54,17 +54,6 @@ describe('generateWidgetBundleSwift — client-rendered dispatch', () => {
     expect(swift).not.toContain('VoltraHomeWidgetProvider(')
   })
 
-  it('defaults devHotReloadEnabled to false when no options are passed', () => {
-    const swift = __test__.generateWidgetBundleSwift([clientWidget])
-    expect(swift).toContain('devHotReloadEnabled: false')
-  })
-
-  it('emits devHotReloadEnabled: true when clientWidgetHotReload option is on', () => {
-    const swift = __test__.generateWidgetBundleSwift([clientWidget], { clientWidgetHotReload: true })
-    expect(swift).toContain('devHotReloadEnabled: true')
-    expect(swift).not.toContain('devHotReloadEnabled: false')
-  })
-
   it('handles mixed server + client widgets in one bundle', () => {
     const swift = __test__.generateWidgetBundleSwift([serverWidget, clientWidget])
     expect(swift).toContain('VoltraWidget_weather()')

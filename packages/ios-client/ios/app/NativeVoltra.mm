@@ -1,8 +1,6 @@
 #import "NativeVoltra.h"
 #import <UIKit/UIKit.h>
 
-#import <objc/message.h>
-
 #if __has_include("Voltra/Voltra-Swift.h")
 #import "Voltra/Voltra-Swift.h"
 #else
@@ -36,36 +34,6 @@
 @end
 
 @implementation NativeVoltra
-
-/// Register VoltraDevReloadHandler with Expo's app delegate subscriber repository at
-/// framework load time (before main(), before any JS runs).
-///
-/// Why here, not in VoltraModule.init: VoltraModule is a lazy TurboModule — instantiated
-/// only when JS first accesses it. If no app startup code path touches a Voltra JS API,
-/// the TurboModule never initializes and the silent-push handler never registers, even
-/// though the binary contains it. `+load` runs at framework load time regardless.
-///
-/// Dynamic ObjC dispatch (NSClassFromString + objc_msgSend) keeps the ExpoModulesCore
-/// ObjC headers out of this translation unit. Importing them would re-trigger the
-/// Voltra-Swift.h bridging visibility problem documented on VoltraDevReloadHandler. The
-/// downside is no compile-time check that the symbols exist — but if they're missing
-/// the worst case is the handler silently doesn't register, which is the same failure
-/// mode we had before this change.
-+ (void)load {
-  dispatch_async(dispatch_get_main_queue(), ^{
-    Class handlerClass = NSClassFromString(@"VoltraDevReloadHandler");
-    Class repoClass = NSClassFromString(@"ExpoAppDelegateSubscriberRepository");
-    if (handlerClass == nil || repoClass == nil) {
-      return;
-    }
-    SEL registerSel = NSSelectorFromString(@"registerSubscriber:");
-    if (![repoClass respondsToSelector:registerSel]) {
-      return;
-    }
-    id handler = [[handlerClass alloc] init];
-    ((void (*)(Class, SEL, id))objc_msgSend)(repoClass, registerSel, handler);
-  });
-}
 
 - (instancetype)init
 {
