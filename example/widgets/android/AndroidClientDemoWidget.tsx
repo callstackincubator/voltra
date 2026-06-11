@@ -2,7 +2,8 @@ import { VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
 
 // Client-rendered Android widget: its JSX runs on-device in Hermes on every render, receiving
 // the live `env`. Edit the marker literal below and save — the home-screen widget updates via
-// Fast Refresh (dev). Mirrors the iOS ClientRenderedDemoWidget.
+// Fast Refresh (dev). Mirrors the iOS ClientRenderedDemoWidget. Themes itself from the live
+// Material You tokens in env.materialColors.
 
 export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) => {
   'use voltra'
@@ -21,8 +22,15 @@ export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment =
   const config = env.configuration as Record<string, unknown> | undefined
   const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
 
-  const label = { fontSize: 10, color: '#94A3B8' } as const
-  const value = { fontSize: 10, color: '#E2E8F0' } as const
+  // Material You tokens (fall back to static colors if env.materialColors is absent).
+  const mc = env.materialColors
+  const bg = mc?.surface ?? '#0B1120'
+  const fg = mc?.onSurface ?? '#E2E8F0'
+  const muted = mc?.onSurfaceVariant ?? '#94A3B8'
+  const accent = mc?.primary ?? '#34D399'
+
+  const label = { fontSize: 10, color: muted } as const
+  const value = { fontSize: 10, color: fg } as const
 
   const row = (k: string, v: string) => (
     <VoltraAndroid.Row>
@@ -31,20 +39,33 @@ export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment =
     </VoltraAndroid.Row>
   )
 
+  const swatch = (color?: string) => (
+    <VoltraAndroid.Box style={{ width: 16, height: 16, backgroundColor: color ?? '#000000', cornerRadius: 4 }} />
+  )
+
   return (
     <VoltraAndroid.Column
-      style={{ backgroundColor: '#0B1120', width: '100%', height: '100%', padding: 12 }}
+      style={{ backgroundColor: bg, width: '100%', height: '100%', padding: 12 }}
       verticalAlignment="center-vertically"
     >
-      <VoltraAndroid.Text style={{ fontSize: 12, color: '#FFFFFF' }}>Client-rendered demo</VoltraAndroid.Text>
-      <VoltraAndroid.Text style={{ fontSize: 14, color: '#34D399' }}>{hotReloadMarker}</VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ fontSize: 12, color: fg }}>Client-rendered demo</VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ fontSize: 14, color: accent }}>{hotReloadMarker}</VoltraAndroid.Text>
       <VoltraAndroid.Spacer style={{ height: 6 }} />
       {row('size:', env.widgetFamily ?? '?')}
       {row('scheme:', env.colorScheme ?? '?')}
       {row('locale:', env.locale ?? '?')}
       {row('config:', configLabel)}
-      {row('dev:', String(env.build?.isDev ?? '?'))}
       {row('time:', renderedAt)}
+      <VoltraAndroid.Spacer style={{ height: 8 }} />
+      <VoltraAndroid.Row>
+        {swatch(mc?.primary)}
+        <VoltraAndroid.Spacer style={{ width: 6 }} />
+        {swatch(mc?.secondary)}
+        <VoltraAndroid.Spacer style={{ width: 6 }} />
+        {swatch(mc?.tertiary)}
+        <VoltraAndroid.Spacer style={{ width: 6 }} />
+        {swatch(mc?.error)}
+      </VoltraAndroid.Row>
     </VoltraAndroid.Column>
   )
 }

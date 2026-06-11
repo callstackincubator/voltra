@@ -103,6 +103,10 @@ dependencies {
   // Compose runtime (required for Glance)
   api "androidx.compose.runtime:runtime:1.6.8"
 
+  // Material3 — used to read Material You dynamic color tokens for client widgets'
+  // env.materialColors (dynamicLightColorScheme / dynamicDarkColorScheme).
+  implementation "androidx.compose.material3:material3:1.3.2"
+
   // WorkManager (for periodic server-driven widget updates)
   api "androidx.work:work-runtime-ktx:2.9.1"
 
