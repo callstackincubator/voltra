@@ -20,6 +20,31 @@ function safeFileName(value) {
   return value.replace(/[^a-zA-Z0-9_.-]+/g, '-')
 }
 
+// Basename of the platform-resolved render shim. Each generated widget entry imports a
+// normalized `renderVariantToJson` from this module; Metro picks the `.ios` or `.android`
+// file based on the bundle request's `platform` param, so a single entry serves both
+// platforms without baking in a platform-specific renderer import.
+const RENDER_SHIM_BASENAME = 'voltra-render-shim'
+
+const RENDER_SHIM_FILES = {
+  [`${RENDER_SHIM_BASENAME}.ios.js`]: "export { renderVoltraVariantToJson as renderVariantToJson } from '@use-voltra/ios'\n",
+  [`${RENDER_SHIM_BASENAME}.android.js`]:
+    "export { renderAndroidVariantToJson as renderVariantToJson } from '@use-voltra/android'\n",
+}
+
+// Write the per-platform render shims once (idempotent). Skips unchanged files so Metro's
+// watcher doesn't reprocess them on every entry regeneration.
+function ensureRenderShim(generatedRoot) {
+  ensureDirectory(generatedRoot)
+
+  for (const [fileName, content] of Object.entries(RENDER_SHIM_FILES)) {
+    const filePath = path.join(generatedRoot, fileName)
+    if (!fs.existsSync(filePath) || fs.readFileSync(filePath, 'utf8') !== content) {
+      fs.writeFileSync(filePath, content)
+    }
+  }
+}
+
 class DuplicateVoltraWidgetError extends Error {
   constructor({ widgetId, firstPath, secondPath, projectRoot }) {
     const firstRelativePath = toPosixPath(path.relative(projectRoot, firstPath))
@@ -43,11 +68,14 @@ function createWidgetRegistry({ projectRoot } = {}) {
 
   function createGeneratedEntry(widget) {
     ensureDirectory(generatedEntryRoot)
+    ensureRenderShim(generatedRoot)
 
     const entryFileName = `${safeFileName(widget.id)}-${hash(`${widget.sourcePath}:${widget.exportName}`)}.js`
     const generatedEntryPath = path.join(generatedEntryRoot, entryFileName)
     const importPath = toPosixPath(path.relative(generatedEntryRoot, widget.sourcePath)).replace(/\.[cm]?[jt]sx?$/, '')
     const normalizedImportPath = importPath.startsWith('.') ? importPath : `./${importPath}`
+    const shimRelative = toPosixPath(path.relative(generatedEntryRoot, path.join(generatedRoot, RENDER_SHIM_BASENAME)))
+    const shimImportPath = shimRelative.startsWith('.') ? shimRelative : `./${shimRelative}`
     const exportExpression =
       widget.exportName === 'default' ? 'WidgetModule.default' : `WidgetModule[${JSON.stringify(widget.exportName)}]`
 
@@ -55,7 +83,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
       generatedEntryPath,
       [
         "import { createElement } from 'react'",
-        "import { renderVoltraVariantToJson } from '@use-voltra/ios'",
+        `import { renderVariantToJson } from ${JSON.stringify(shimImportPath)}`,
         `import * as WidgetModule from ${JSON.stringify(normalizedImportPath)}`,
         '',
         `const Widget = ${exportExpression}`,
@@ -70,12 +98,13 @@ function createWidgetRegistry({ projectRoot } = {}) {
         '// so the entry parses them before calling the widget. Env is closure-passed because',
         '// createElement does not accept extra positional args. The resolved Voltra node tree',
         "// is stringified before returning so the native side gets a plain String it can hand",
-        '// to the existing payload parser.',
+        '// to the existing payload parser. `renderVariantToJson` resolves per-platform via the',
+        '// render shim (see RENDER_SHIM_BASENAME).',
         'export function render(propsJSON, envJSON) {',
         "  const props = typeof propsJSON === 'string' ? (propsJSON ? JSON.parse(propsJSON) : {}) : (propsJSON || {})",
         "  const env = typeof envJSON === 'string' ? (envJSON ? JSON.parse(envJSON) : {}) : (envJSON || {})",
         '  const WidgetWithEnv = (forwardedProps) => Widget(forwardedProps, env)',
-        '  const resolved = renderVoltraVariantToJson(createElement(WidgetWithEnv, props))',
+        '  const resolved = renderVariantToJson(createElement(WidgetWithEnv, props))',
         '  return JSON.stringify(resolved)',
         '}',
         '',
