@@ -16,6 +16,7 @@
 #include <hermes/hermes.h>
 #include <jsi/jsi.h>
 
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -24,9 +25,22 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+// Perf timing logs — debug builds only (release CMake defines NDEBUG).
+#ifndef NDEBUG
+#define LOGPERF(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#else
+#define LOGPERF(...) ((void)0)
+#endif
+
 namespace jsi = facebook::jsi;
 
 namespace {
+
+using Clock = std::chrono::steady_clock;
+
+double millisSince(Clock::time_point start) {
+  return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
+}
 
 std::mutex g_mutex;
 std::unique_ptr<jsi::Runtime> g_runtime;
@@ -64,9 +78,17 @@ Java_voltra_runtime_VoltraJSRenderer_nativeEvaluateBundle(
     const std::string sourceURL = jstringToStd(env, jSourceURL);
     const std::string widgetId = jstringToStd(env, jWidgetId);
 
+    const bool firstRuntime = (g_runtime == nullptr);
+    auto tRuntime = Clock::now();
     auto &rt = runtime();
+    if (firstRuntime) {
+      LOGPERF("[perf] runtime init: %.2f ms", millisSince(tRuntime));
+    }
+
+    auto tEval = Clock::now();
     rt.evaluateJavaScript(
         std::make_unique<jsi::StringBuffer>(source), sourceURL);
+    LOGPERF("[perf] bundle eval: %.2f ms (%zu chars)", millisSince(tEval), source.size());
 
     auto registry = rt.global().getProperty(rt, "__voltraWidgets");
     if (!registry.isObject()) {
@@ -139,9 +161,11 @@ Java_voltra_runtime_VoltraJSRenderer_nativeRender(
     }
     auto renderFn = renderProp.asObject(rt).asFunction(rt);
 
+    auto tRender = Clock::now();
     jsi::Value result = renderFn.call(
         rt, jsi::String::createFromUtf8(rt, propsJSON),
         jsi::String::createFromUtf8(rt, envJSON));
+    LOGPERF("[perf] render: %.2f ms (widgetId=%s)", millisSince(tRender), widgetId.c_str());
 
     if (!result.isString()) {
       LOGE("render: did not return a string for widgetId=%s", widgetId.c_str());

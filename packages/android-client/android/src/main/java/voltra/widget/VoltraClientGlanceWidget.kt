@@ -76,6 +76,7 @@ class VoltraClientGlanceWidget(
                 // RCTBundleURLProvider.
                 val host = AndroidInfoHelpers.getServerHost(context)
                 val urlString = "http://$host/voltra/widgets/$widgetId.bundle?platform=android&dev=true"
+                val t0 = System.nanoTime()
                 try {
                     val connection = URL(urlString).openConnection() as HttpURLConnection
                     connection.connectTimeout = 5_000
@@ -87,7 +88,16 @@ class VoltraClientGlanceWidget(
                             Log.e(TAG, "Metro HTTP $code for $urlString")
                             return@withContext null
                         }
-                        connection.inputStream.bufferedReader().use { it.readText() }
+                        val body = connection.inputStream.bufferedReader().use { it.readText() }
+                        if (BuildConfig.DEBUG) {
+                            Log.i(
+                                TAG,
+                                "[perf] metro fetch: ${"%.2f".format(
+                                    (System.nanoTime() - t0) / 1_000_000.0,
+                                )} ms (${body.length} chars)",
+                            )
+                        }
+                        body
                     } finally {
                         connection.disconnect()
                     }
@@ -256,7 +266,17 @@ class VoltraClientGlanceWidget(
 
     private fun parseNode(jsonString: String): VoltraNode? =
         try {
-            VoltraDecompressor.decompressNode(json.decodeFromString<VoltraNode>(jsonString))
+            val t0 = System.nanoTime()
+            val node = VoltraDecompressor.decompressNode(json.decodeFromString<VoltraNode>(jsonString))
+            if (BuildConfig.DEBUG) {
+                Log.i(
+                    TAG,
+                    "[perf] decode+decompress: ${"%.2f".format(
+                        (System.nanoTime() - t0) / 1_000_000.0,
+                    )} ms (${jsonString.length} chars)",
+                )
+            }
+            node
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse node for widgetId=$widgetId: ${e.message}")
             null
