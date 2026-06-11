@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DecorationStyle {
   var backgroundColor: BackgroundValue?
+  var backgroundImage: BackgroundValue?
   var cornerRadius: CGFloat?
   var border: (width: CGFloat, color: Color)?
   var shadow: (radius: CGFloat, color: Color, opacity: Double, offset: CGSize)?
@@ -133,6 +134,14 @@ struct DecorationModifier: ViewModifier {
     return nil
   }
 
+  private var resolvedBackgroundImage: BackgroundValue? {
+    guard suppressesDecorativeContainerEffects, isFullBleedBackgroundCandidate else {
+      return style.backgroundImage
+    }
+
+    return nil
+  }
+
   private var resolvedGlassEffect: GlassEffect? {
     guard suppressesDecorativeContainerEffects else {
       return style.glassEffect
@@ -143,18 +152,14 @@ struct DecorationModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .voltraIfLet(resolvedBackgroundColor) { content, bg in
-        switch bg {
-        case let .color(color):
-          content.background(color)
-        case let .linearGradient(gradient, start, end):
-          content.background(LinearGradient(gradient: gradient, startPoint: start, endPoint: end))
-        case let .radialGradient(spec):
-          content.background {
-            radialGradientBackground(spec)
+      .background {
+        ZStack {
+          if let bg = resolvedBackgroundColor {
+            backgroundView(for: bg)
           }
-        case let .angularGradient(gradient, center, angle):
-          content.background(AngularGradient(gradient: gradient, center: center, angle: angle))
+          if let bg = resolvedBackgroundImage {
+            backgroundView(for: bg)
+          }
         }
       }
       // If we have a corner radius, we must handle the border specifically here
@@ -203,5 +208,19 @@ struct DecorationModifier: ViewModifier {
           content
         }
       }
+  }
+
+  @ViewBuilder
+  private func backgroundView(for background: BackgroundValue) -> some View {
+    switch background {
+    case let .color(color):
+      color
+    case let .linearGradient(gradient, start, end):
+      LinearGradient(gradient: gradient, startPoint: start, endPoint: end)
+    case let .radialGradient(spec):
+      radialGradientBackground(spec)
+    case let .angularGradient(gradient, center, angle):
+      AngularGradient(gradient: gradient, center: center, angle: angle)
+    }
   }
 }

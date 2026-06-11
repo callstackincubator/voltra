@@ -44,6 +44,7 @@ export type VoltraViewStyle = {
   marginHorizontal?: number | string
   marginVertical?: number | string
   backgroundColor?: string
+  backgroundImage?: string
   opacity?: number
   borderRadius?: number | string
   borderWidth?: number

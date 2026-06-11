@@ -91,7 +91,7 @@ public struct VoltraLinearGradient: VoltraView {
     let (layout, baseDecoration, rendering, text) = StyleConverter.convert(anyStyle)
 
     var decoration = baseDecoration
-    decoration.backgroundColor = .linearGradient(gradient: gradient, startPoint: start, endPoint: end)
+    decoration.backgroundImage = .linearGradient(gradient: gradient, startPoint: start, endPoint: end)
 
     if let widget = voltraEnvironment.widget,
        widget.isHomeScreenWidget,
