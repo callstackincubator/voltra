@@ -6,8 +6,14 @@ import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
-// Widget discovery is filesystem-based (Metro registry scans for 'use voltra' files), so widgets
-// no longer need a side-effect import here to be reachable from the dependency graph.
+// Dev hot reload: the Voltra widget registry generates a per-platform barrel (see
+// metro/widgetRegistry.js) that side-effect-imports every 'use voltra' widget. Importing it keeps
+// those widgets in the host app's Metro graph, so Fast Refresh detects edits and refreshes the
+// home-screen widgets. Dev-only, so production bundles don't pull the widget sources into the app.
+if (__DEV__) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('../.voltra/metro/widgets-dev-barrel')
+}
 
 enableWidgetHotReload()
 updateAndroidVoltraWidget({ width: 300, height: 200 })

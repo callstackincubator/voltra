@@ -10,7 +10,7 @@ export const ClientRenderedDemoWidget = (_props: object, env: WidgetEnvironment 
   'use voltra'
 
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
-  const hotReloadMarker = 'edit me 123'
+  const hotReloadMarker = 'edit me'
 
   const date = env.date ? new Date(env.date) : new Date()
   const renderedAt = date.toLocaleTimeString('en-US', {

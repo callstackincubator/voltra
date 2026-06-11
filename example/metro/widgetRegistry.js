@@ -12,6 +12,17 @@ function ensureDirectory(directory) {
   fs.mkdirSync(directory, { recursive: true })
 }
 
+function writeFileIfChanged(filePath, content) {
+  try {
+    if (fs.readFileSync(filePath, 'utf8') === content) {
+      return
+    }
+  } catch {
+    // File does not exist yet (or is unreadable) — fall through and write it.
+  }
+  fs.writeFileSync(filePath, content)
+}
+
 function hash(value) {
   return crypto.createHash('sha1').update(value).digest('hex').slice(0, 10)
 }
@@ -31,6 +42,11 @@ const IGNORED_ANYWHERE = new Set(['node_modules'])
 const IGNORED_ROOT = new Set(['ios', 'android', 'Pods', 'build', 'dist', 'coverage'])
 const SOURCE_EXT = /\.[cm]?[jt]sx?$/
 const USE_VOLTRA_LITERAL = 'use voltra'
+
+// Platforms that get a generated dev barrel. Widgets are routed to a barrel by the platform
+// segment of their source path (widgets/ios/*, widgets/android/*); platform-agnostic widgets go
+// into every barrel.
+const DEV_BARREL_PLATFORMS = ['ios', 'android']
 
 class DuplicateVoltraWidgetError extends Error {
   constructor({ widgetId, firstPath, secondPath, projectRoot }) {
@@ -101,6 +117,50 @@ function createWidgetRegistry({ projectRoot } = {}) {
     return {
       generatedEntryPath,
       generatedEntryRelativePath: toPosixPath(path.relative(projectRoot, generatedEntryPath)),
+    }
+  }
+
+  // Platform a widget belongs to, inferred from its source path. `widgets/android/*` → android,
+  // `widgets/ios/*` → ios, anything else → null (platform-agnostic, emitted into every barrel).
+  function widgetPlatform(widget) {
+    const segments = toPosixPath(path.relative(projectRoot, widget.sourcePath)).split('/')
+    if (segments.includes('android')) {
+      return 'android'
+    }
+    if (segments.includes('ios')) {
+      return 'ios'
+    }
+    return null
+  }
+
+  // Generate one barrel per platform that side-effect-imports every discovered widget. The host app
+  // imports the platform barrel (dev only), which puts widget modules in its Metro dependency graph
+  // so Fast Refresh detects edits and drives widget hot reload. Empty barrels are still written so
+  // the host-app import resolves on every platform. Regenerated whenever the widget set changes;
+  // the content-equality guard avoids spurious writes (and spurious app HMR) on plain edits.
+  function writeDevBarrels() {
+    ensureDirectory(generatedRoot)
+
+    for (const platform of DEV_BARREL_PLATFORMS) {
+      const imports = Array.from(widgetsById.values())
+        .filter((widget) => {
+          const platformForWidget = widgetPlatform(widget)
+          return platformForWidget === null || platformForWidget === platform
+        })
+        .map((widget) => {
+          const importPath = toPosixPath(path.relative(generatedRoot, widget.sourcePath)).replace(SOURCE_EXT, '')
+          const normalizedImportPath = importPath.startsWith('.') ? importPath : `./${importPath}`
+          return `import ${JSON.stringify(normalizedImportPath)}`
+        })
+
+      const content = [
+        '// AUTO-GENERATED — do not edit. Side-effect imports that place every Voltra widget in the',
+        '// host app dependency graph so Metro Fast Refresh drives dev hot reload of widgets.',
+        ...imports,
+        '',
+      ].join('\n')
+
+      writeFileIfChanged(path.join(generatedRoot, `widgets-dev-barrel.${platform}.js`), content)
     }
   }
 
@@ -263,6 +323,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
       }
       try {
         scanFile(filePath)
+        writeDevBarrels()
       } catch (error) {
         console.error(`[voltra:metro] ${error.message}`)
       }
@@ -270,10 +331,14 @@ function createWidgetRegistry({ projectRoot } = {}) {
 
     watcher.on('add', onUpsert)
     watcher.on('change', onUpsert)
-    watcher.on('unlink', (filePath) => removeSourcePath(filePath))
+    watcher.on('unlink', (filePath) => {
+      removeSourcePath(filePath)
+      writeDevBarrels()
+    })
   }
 
   scanProject()
+  writeDevBarrels()
   ready = true
   startWatcher()
 
