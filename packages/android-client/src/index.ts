@@ -73,3 +73,4 @@ export {
   VoltraWidgetPreview,
   type VoltraWidgetPreviewProps,
 } from './components/VoltraWidgetPreview.js'
+export { enableWidgetHotReload } from './utils/enableWidgetHotReload.js'
