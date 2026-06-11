@@ -40,7 +40,7 @@ android {
     versionName "0.1.0"
     buildConfigField "String", "VOLTRA_VERSION", "\"${voltraVersion}\""
 
-    // Track 5 (client-rendered widgets) — standalone Hermes runtime via custom JNI.
+    // Standalone Hermes runtime for client-rendered widgets, via custom JNI.
     // See CMakeLists.txt / src/main/cpp/voltra_js_renderer.cpp.
     externalNativeBuild {
       cmake {

@@ -1,4 +1,4 @@
-// Voltra JS Renderer — Hermes-on-Android JNI wrapper (Track 5, client-rendered widgets).
+// Voltra JS Renderer — Hermes-on-Android JNI wrapper for client-rendered widgets.
 //
 // Owns a single standalone Hermes runtime per process, independent of the React
 // Native bridge. Each per-widget Metro bundle is evaluated once; the evaluation
@@ -7,8 +7,8 @@
 // the Kotlin side, mirroring iOS `VoltraJSRenderer.swift`). `nativeRender` then
 // invokes that function on every Glance render.
 //
-// Architectural mirror of iOS Track 5's VoltraJSRenderer.swift (JSC), one layer
-// lower at the JNI boundary because Android has no Kotlin/Java Hermes API.
+// Architectural mirror of iOS's VoltraJSRenderer.swift (JSC), one layer lower at
+// the JNI boundary because Android has no Kotlin/Java Hermes API.
 
 #include <jni.h>
 #include <android/log.h>

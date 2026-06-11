@@ -15,7 +15,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import voltra.images.VoltraImageManager
-import voltra.runtime.VoltraClientSmokeTest
 import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetManager
 
@@ -24,12 +23,6 @@ class VoltraModule(
 ) : NativeVoltraAndroidSpec(reactContext) {
     companion object {
         private const val TAG = "VoltraModule"
-    }
-
-    init {
-        // Phase 0 — Track 5 client-rendered widgets: standalone-Hermes full-bundle smoke test.
-        // Logs under tag "VoltraClientSmoke". Throwaway — remove when Phase 3 lands.
-        VoltraClientSmokeTest.run(reactContext)
     }
 
     private val notificationManager by lazy {

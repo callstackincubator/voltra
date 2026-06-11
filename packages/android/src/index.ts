@@ -14,8 +14,8 @@ export { AndroidOngoingNotification } from './ongoing-notification/components.js
 export { renderAndroidOngoingNotificationPayload } from './ongoing-notification/renderer.js'
 export { renderAndroidViewToJson, renderAndroidWidgetToJson, renderAndroidWidgetToString } from './widgets/renderer.js'
 // Single-node renderer used by client-rendered widgets (on-device Hermes render). Analog of
-// iOS `renderVoltraVariantToJson`. Consumed by the Metro platform render-shim and the
-// client-render entry that the widget runtime invokes with `(props, env)` per render.
+// iOS `renderVoltraVariantToJson`. Invoked with `(props, env)` per render via the generated
+// widget entry.
 export { renderAndroidVariantToJson } from './renderer/index.js'
 
 // Android types
