@@ -32,6 +32,7 @@ The following React Native style properties are supported:
 **Style:**
 
 - `backgroundColor` - Background color (hex strings, color names, or CSS gradient strings — see [Gradients](#gradients))
+- `backgroundImage` - Gradient layer rendered above `backgroundColor` when both are present
 - `opacity` - Opacity value between 0 and 1
 - `borderRadius` - Corner radius value
 - `borderWidth` - Border width
@@ -135,7 +136,9 @@ const element = (
 
 ## Gradients
 
-The `backgroundColor` style property accepts CSS gradient strings in addition to solid colors. Gradients are rendered natively using SwiftUI gradient modifiers and are automatically clipped by `borderRadius`.
+The `backgroundImage` style property is the preferred way to render CSS gradients. It is painted above `backgroundColor`, so you can combine a solid or semi-transparent base color with a gradient overlay.
+
+For backward compatibility, `backgroundColor` still accepts CSS gradient strings in addition to solid colors. Gradients are rendered natively using SwiftUI gradient modifiers and are automatically clipped by `borderRadius`.
 
 Invalid or unsupported gradient syntax is parsed in **strict mode** and results in **no gradient background** (instead of silent best-effort fallback).
 
@@ -231,7 +234,7 @@ Passing a plain color string to `backgroundColor` continues to work exactly as b
 
 ### Comparison with `<LinearGradient>` component
 
-| Feature | `backgroundColor` gradient | `<LinearGradient>` component |
+| Feature | `backgroundImage` / `backgroundColor` gradient | `<LinearGradient>` component |
 |---|---|---|
 | CSS string syntax | ✓ | — |
 | Named directions (`to right`) | ✓ (physical direction) | ✓ |
@@ -245,7 +248,7 @@ Passing a plain color string to `backgroundColor` continues to work exactly as b
 | Dithering | — | ✓ |
 | Children layered on top | ✓ (as background) | ✓ (as container) |
 
-Use `backgroundColor` gradient strings for convenience and web-style syntax. Use `<LinearGradient>` when you need precise `{x, y}` coordinate control or dithering.
+Use `backgroundImage` for web-style gradient layering. Keep `backgroundColor` gradients if you need backward compatibility, and use `<LinearGradient>` when you need precise `{x, y}` coordinate control or dithering.
 
 ### Scope and exclusions
 
