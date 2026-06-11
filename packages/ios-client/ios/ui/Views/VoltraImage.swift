@@ -1,14 +1,54 @@
 import Foundation
 import SwiftUI
 import UIKit
+#if canImport(WidgetKit)
+  import WidgetKit
+#endif
 
 public struct VoltraImage: VoltraView {
   public typealias Parameters = ImageParameters
 
   public let element: VoltraElement
 
+  @Environment(\.voltraEnvironment) private var voltraEnvironment
+
   public init(_ element: VoltraElement) {
     self.element = element
+  }
+
+  /// Applies `.widgetAccentedRenderingMode(...)` on iOS 18+ when the widget is in an
+  /// accented or vibrant rendering mode and the consumer has opted in via the
+  /// `accentedRenderingMode` prop. Outside of accented/vibrant mode this is a no-op.
+  ///
+  /// `widgetAccentedRenderingMode` is declared on `Image` (not `View`) in WidgetKit, so
+  /// this helper must take an `Image` and be called before any modifier that erases the
+  /// `Image` type (e.g. `.scaledToFit()`, `.clipped()`).
+  @ViewBuilder
+  private func applyAccentedRenderingMode(_ image: Image) -> some View {
+    #if canImport(WidgetKit)
+      if #available(iOSApplicationExtension 18.0, iOS 18.0, *),
+         let mode = params.accentedRenderingMode,
+         let widget = voltraEnvironment.widget,
+         widget.renderingMode == .accented || widget.renderingMode == .vibrant
+      {
+        switch mode {
+        case "fullColor":
+          image.widgetAccentedRenderingMode(.fullColor)
+        case "accented":
+          image.widgetAccentedRenderingMode(.accented)
+        case "accentedDesaturated":
+          image.widgetAccentedRenderingMode(.accentedDesaturated)
+        case "desaturated":
+          image.widgetAccentedRenderingMode(.desaturated)
+        default:
+          image
+        }
+      } else {
+        image
+      }
+    #else
+      image
+    #endif
   }
 
   /// Creates an Image from the source parameter, returning nil if invalid or not found
@@ -56,40 +96,35 @@ public struct VoltraImage: VoltraView {
       switch resizeMode {
       case "cover":
         // Fill container, may crop
-        baseImage
-          .resizable()
+        applyAccentedRenderingMode(baseImage.resizable())
           .scaledToFill()
           .clipped()
           .applyStyle(element.style)
 
       case "contain":
         // Fit within container, may leave space
-        baseImage
-          .resizable()
+        applyAccentedRenderingMode(baseImage.resizable())
           .scaledToFit()
           .applyStyle(element.style)
 
       case "stretch":
         // Stretch to fill, may distort
-        baseImage
-          .resizable()
+        applyAccentedRenderingMode(baseImage.resizable())
           .applyStyle(element.style)
 
       case "repeat":
         // Tile the image
-        baseImage
-          .resizable(resizingMode: .tile)
+        applyAccentedRenderingMode(baseImage.resizable(resizingMode: .tile))
           .applyStyle(element.style)
 
       case "center":
         // Center without scaling
-        baseImage
+        applyAccentedRenderingMode(baseImage)
           .applyStyle(element.style)
 
       default:
         // Default to cover
-        baseImage
-          .resizable()
+        applyAccentedRenderingMode(baseImage.resizable())
           .scaledToFill()
           .clipped()
           .applyStyle(element.style)

@@ -88,7 +88,7 @@ Generated from: data/components.json
 Schema version: ${data.version}
 
 To regenerate these files, run:
-  npm run generate
+  pnpm run generate
 
 Users should create component files manually using createVoltraComponent with these types.
 Example:

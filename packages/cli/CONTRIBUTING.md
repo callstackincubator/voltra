@@ -38,10 +38,10 @@ This separation keeps the apply pipeline straightforward to reason about and mak
 Useful package-local commands:
 
 ```sh
-npm run build --workspace packages/cli
-npm run lint --workspace packages/cli
-npm run typecheck --workspace packages/cli
-npm run test --workspace packages/cli
+pnpm --filter voltra run build
+pnpm --filter voltra run lint
+pnpm --filter voltra run typecheck
+pnpm --filter voltra run test
 ```
 
 When changing behavior, prefer keeping orchestration in `src/apply/` and pushing platform-specific details into the relevant platform directory instead of adding cross-platform branching in many places.

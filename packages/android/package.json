@@ -49,14 +49,14 @@
     "README.md"
   ],
   "scripts": {
-    "build": "npm run clean && bob build",
+    "build": "pnpm run clean && bob build",
     "clean": "rm -rf build",
     "lint": "oxlint src",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "test": "node --test"
   },
   "dependencies": {
-    "@use-voltra/core": "1.4.1"
+    "@use-voltra/core": "workspace:^"
   },
   "keywords": [
     "react-native",

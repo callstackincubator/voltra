@@ -1,4 +1,6 @@
-export * as Voltra from './jsx/primitives.js'
+import * as Voltra from './jsx/primitives.js'
+
+export { Voltra }
 export {
   getComponentId,
   getComponentName,

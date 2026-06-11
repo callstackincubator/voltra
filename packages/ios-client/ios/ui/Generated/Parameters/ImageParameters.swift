@@ -16,14 +16,19 @@ public struct ImageParameters: ComponentParameters {
   /// How the image should be resized to fit its container
   public let resizeMode: String
 
+  /// iOS 18+ Home Screen widgets only. Controls how the image is rendered when the widget is in an accented (tinted) or vibrant rendering mode. Use 'fullColor' to opt the image out of the system's desaturation so it keeps its original colors on top of the tinted backdrop. No-op outside of accented/vibrant rendering modes.
+  public let accentedRenderingMode: String?
+
   enum CodingKeys: String, CodingKey {
     case source
     case resizeMode
+    case accentedRenderingMode
   }
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     source = try container.decodeIfPresent(String.self, forKey: .source)
     resizeMode = try container.decodeIfPresent(String.self, forKey: .resizeMode) ?? "cover"
+    accentedRenderingMode = try container.decodeIfPresent(String.self, forKey: .accentedRenderingMode)
   }
 }

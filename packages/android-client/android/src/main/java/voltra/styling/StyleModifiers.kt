@@ -3,13 +3,18 @@ package voltra.styling
 import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.DpSize
 import androidx.glance.GlanceModifier
+import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
 import androidx.glance.layout.*
 import androidx.glance.text.FontFamily
 import androidx.glance.unit.ColorProvider
 import androidx.glance.visibility
+import voltra.glance.renderers.renderGradientBitmap
 import androidx.glance.text.TextDecoration as GlanceTextDecoration
 import androidx.glance.text.TextStyle as GlanceTextStyle
 
@@ -29,14 +34,17 @@ import androidx.glance.text.TextStyle as GlanceTextStyle
  *   GlanceModifier.applyStyle(style)
  */
 @Composable
-fun GlanceModifier.applyStyle(style: CompositeStyle): GlanceModifier {
+fun GlanceModifier.applyStyle(
+    style: CompositeStyle,
+    widgetSize: DpSize? = null,
+): GlanceModifier {
     var modifier = this
 
     // 1. Apply Layout (dimensions, flex, inner padding)
     modifier = modifier.applyLayout(style.layout)
 
     // 2. Apply Decoration (background, border)
-    modifier = modifier.applyDecoration(style.decoration)
+    modifier = modifier.applyDecoration(style.decoration, style.layout, widgetSize)
 
     // 3. Apply Rendering (opacity - limited in Glance)
     modifier = modifier.applyRendering(style.rendering)
@@ -158,11 +166,44 @@ private fun GlanceModifier.applyLayout(layout: LayoutStyle): GlanceModifier {
  * Handles background color, corner radius, and borders.
  */
 @Composable
-private fun GlanceModifier.applyDecoration(decoration: DecorationStyle): GlanceModifier {
+private fun GlanceModifier.applyDecoration(
+    decoration: DecorationStyle,
+    layout: LayoutStyle,
+    widgetSize: DpSize?,
+): GlanceModifier {
     var modifier = this
 
-    // A. Background color
-    if (decoration.backgroundColor != null) {
+    // A. Background image or color
+    if (decoration.backgroundImage != null) {
+        val context = LocalContext.current
+        val backgroundArgb = decoration.backgroundColor?.resolveColor(context)?.toArgb() ?: 0x00000000
+        val colors =
+            decoration.backgroundImage.stops
+                .map { it.color.resolveColor(context).toArgb() }
+                .toIntArray()
+        val positions =
+            decoration.backgroundImage.stops
+                .map { it.location.coerceIn(0f, 1f) }
+                .toFloatArray()
+        try {
+            val bitmap =
+                renderGradientBitmap(
+                    context = context,
+                    gradient = decoration.backgroundImage,
+                    layout = layout,
+                    widgetSize = widgetSize,
+                    backgroundArgb = backgroundArgb,
+                    colors = colors,
+                    positions = positions,
+                )
+            modifier = modifier.background(ImageProvider(bitmap), ContentScale.FillBounds)
+        } catch (e: Exception) {
+            Log.w("StyleModifier", "Failed to render backgroundImage gradient", e)
+            if (decoration.backgroundColor != null) {
+                modifier = modifier.background(decoration.backgroundColor.toColorProvider())
+            }
+        }
+    } else if (decoration.backgroundColor != null) {
         modifier = modifier.background(decoration.backgroundColor.toColorProvider())
     }
 

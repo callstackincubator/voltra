@@ -103,7 +103,7 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
     platform: 'ios',
     changes: [...changes, ...generatedResult.changes],
     generatedFiles: generatedResult.files,
-    warnings: generatedResult.warnings,
+    warnings: [...(generatedResult.warnings ?? []), ...(podfileResult.warnings ?? [])],
   }
 }
 

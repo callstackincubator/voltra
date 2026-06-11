@@ -16,6 +16,7 @@ object ShortNames {
     private val shortToName: Map<String, String> =
         mapOf(
             "ap" to "absolutePosition",
+            "arm" to "accentedRenderingMode",
             "ai" to "alignItems",
             "al" to "alignment",
             "as" to "alignSelf",
@@ -24,6 +25,7 @@ object ShortNames {
             "an" to "assetName",
             "bkg" to "background",
             "bg" to "backgroundColor",
+            "bgi" to "backgroundImage",
             "bgs" to "backgroundStyle",
             "b64" to "base64",
             "bd" to "border",

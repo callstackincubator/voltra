@@ -53,6 +53,13 @@ export const ANDROID_OTHER_SECTIONS: ExampleSection[] = [
     route: '/android-widgets/image-fallback',
   },
   {
+    id: 'gradient-backgrounds',
+    title: 'Gradient Backgrounds',
+    description:
+      'Preview Android widget backgrounds rendered from style.backgroundImage CSS gradients through native Glance.',
+    route: '/android-widgets/gradient-playground',
+  },
+  {
     id: 'material-colors',
     title: 'Material Colors',
     description:

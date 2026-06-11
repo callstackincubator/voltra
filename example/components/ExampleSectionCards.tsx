@@ -29,6 +29,7 @@ export type ExampleSection = {
     | '/android-widgets/image-fallback'
     | '/android-widgets/preview'
     | '/android-widgets/charts'
+    | '/android-widgets/gradient-playground'
     | '/android-widgets/server-driven'
     | '/android-widgets/material-colors'
     | '/android-widgets/custom-fonts'
