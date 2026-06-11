@@ -162,7 +162,9 @@ class VoltraClientGlanceWidget(
         val context = LocalContext.current
         val size = LocalSize.current
 
-        val node = if (bundleReady) renderNode(context, size) else null
+        // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
+        // placeholder node (first paint / offline / Metro down).
+        val node = (if (bundleReady) renderNode(context, size) else null) ?: placeholderNode(context)
         if (node != null) {
             GlanceFactory(widgetId, null, null, size).Render(node)
         } else {
@@ -176,13 +178,22 @@ class VoltraClientGlanceWidget(
     ): VoltraNode? {
         val envJson = buildEnvJson(context, size)
         val resolved = VoltraJSRenderer.render(widgetId, "{}", envJson) ?: return null
-        return try {
-            VoltraDecompressor.decompressNode(json.decodeFromString<VoltraNode>(resolved))
+        return parseNode(resolved)
+    }
+
+    /** Decode the plugin-prerendered single-node placeholder from the initial-states asset. */
+    private fun placeholderNode(context: Context): VoltraNode? {
+        val raw = VoltraWidgetManager(context).readWidgetJson(widgetId) ?: return null
+        return parseNode(raw)
+    }
+
+    private fun parseNode(jsonString: String): VoltraNode? =
+        try {
+            VoltraDecompressor.decompressNode(json.decodeFromString<VoltraNode>(jsonString))
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse resolved node for widgetId=$widgetId: ${e.message}")
+            Log.e(TAG, "Failed to parse node for widgetId=$widgetId: ${e.message}")
             null
         }
-    }
 
     @Composable
     private fun Fallback() {

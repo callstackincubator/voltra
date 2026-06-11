@@ -28,6 +28,13 @@ const AVAILABLE_WIDGETS = [
     defaultPreviewWidth: 250,
     defaultPreviewHeight: 150,
   },
+  {
+    id: 'AndroidClientDemoWidget',
+    name: 'Client-Rendered Demo',
+    description: 'On-device JSX render (Hermes) with live env',
+    defaultPreviewWidth: 250,
+    defaultPreviewHeight: 150,
+  },
 ]
 
 export default function AndroidWidgetPinScreen() {

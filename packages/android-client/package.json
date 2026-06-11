@@ -46,6 +46,8 @@
   },
   "dependencies": {
     "@babel/core": "^7.27.4",
+    "@babel/parser": "^7.27.4",
+    "@babel/types": "^7.27.4",
     "@expo/config-plugins": "~10.1.2",
     "@use-voltra/android": "workspace:^",
     "@use-voltra/expo-plugin": "workspace:^",

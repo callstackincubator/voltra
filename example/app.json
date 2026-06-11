@@ -217,6 +217,22 @@
                 "intervalMinutes": 15,
                 "refresh": true
               }
+            },
+            {
+              "id": "AndroidClientDemoWidget",
+              "displayName": {
+                "en": "Client Demo"
+              },
+              "description": {
+                "en": "Client-rendered Voltra widget (on-device Hermes)"
+              },
+              "minCellWidth": 2,
+              "minCellHeight": 2,
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/AndroidClientDemoWidget.tsx"
             }
           ],
           "fonts": [

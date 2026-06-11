@@ -11,6 +11,7 @@ import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltra
 // Metro returns 404 for /voltra/widgets/<id>.bundle and the widget extension
 // can't fetch the bundle.
 import '~/widgets/ios/ClientRenderedDemoWidget'
+import '~/widgets/android/AndroidClientDemoWidget'
 
 enableWidgetHotReload()
 updateAndroidVoltraWidget({ width: 300, height: 200 })
