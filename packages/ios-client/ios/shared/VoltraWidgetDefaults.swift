@@ -37,6 +37,12 @@ public enum VoltraWidgetDefaults {
     try? resolvedDefaults().string(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
   }
 
+  /// Metro dev-server base URL relayed from the app (DEBUG). Read by the client-widget runtime;
+  /// nil falls back to localhost.
+  public static func devServerURL() -> String? {
+    try? resolvedDefaults().string(forKey: VoltraStorageKeys.devServerURL)
+  }
+
   // MARK: - Write
 
   public static func setWidgetJson(_ json: String, for widgetId: String, deepLinkUrl: String?) throws {
@@ -67,6 +73,14 @@ public enum VoltraWidgetDefaults {
     }
 
     defaults.set(timeline, forKey: VoltraStorageKeys.widgetTimeline(widgetId))
+    defaults.synchronize()
+  }
+
+  /// Relay the Metro dev-server base URL to the widget extension (DEBUG). Best-effort: a missing
+  /// app group just leaves the extension on its localhost fallback.
+  public static func setDevServerURL(_ url: String) {
+    guard let defaults = try? resolvedDefaults() else { return }
+    defaults.set(url, forKey: VoltraStorageKeys.devServerURL)
     defaults.synchronize()
   }
 

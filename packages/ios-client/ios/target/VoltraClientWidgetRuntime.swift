@@ -152,7 +152,12 @@ public enum VoltraClientWidgetBundleSource {
   private static func loadFromMetro(widgetId: String) async throws -> String {
     // Dev mode = always-refetch. URLSession default cache policy is fine —
     // Metro's bundle responses are not cacheable, so each request hits the server.
-    let urlString = "http://localhost:8081/voltra/widgets/\(widgetId).bundle?platform=ios&dev=true"
+    //
+    // The base URL is relayed from the app via the app group (the app resolves it with
+    // RCTBundleURLProvider; this extension is React-free). Falls back to localhost:8081 when the
+    // app hasn't written it yet (e.g. first render before the host app has run).
+    let base = VoltraWidgetDefaults.devServerURL() ?? "http://localhost:8081"
+    let urlString = "\(base)/voltra/widgets/\(widgetId).bundle?platform=ios&dev=true"
     guard let url = URL(string: urlString) else {
       throw LoadError.metroHTTP(-1)
     }
@@ -202,7 +207,7 @@ public enum VoltraClientWidgetEnvBuilder {
 
     #if DEBUG
       let isDev = true
-      let metroUrl: String? = "http://localhost:8081"
+      let metroUrl: String? = VoltraWidgetDefaults.devServerURL() ?? "http://localhost:8081"
     #else
       let isDev = false
       let metroUrl: String? = nil

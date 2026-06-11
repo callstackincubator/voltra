@@ -2,6 +2,7 @@ import ActivityKit
 import Compression
 import Foundation
 import os
+import React
 import UIKit
 
 @objc(VoltraHeadlessState)
@@ -59,7 +60,26 @@ public class VoltraModuleImpl {
   public init() {
     // Clean up data for widgets that are no longer installed
     VoltraWidgetService.cleanupOrphanedData()
+    #if DEBUG
+      syncDevServerURL()
+    #endif
   }
+
+  #if DEBUG
+    /// Resolve the Metro dev-server base URL via React Native's own provider and relay it to the
+    /// widget extension through the app group. The extension is React-free (can't call
+    /// RCTBundleURLProvider itself), so the app resolves it and the extension reads it — fixing the
+    /// case where Metro isn't on localhost:8081 (custom port, LAN dev server, physical device).
+    private func syncDevServerURL() {
+      guard
+        let url = RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index"),
+        let scheme = url.scheme,
+        let host = url.host
+      else { return }
+      let port = url.port.map { ":\($0)" } ?? ""
+      VoltraWidgetDefaults.setDevServerURL("\(scheme)://\(host)\(port)")
+    }
+  #endif
 
   func isHeadless() -> Bool {
     VoltraHeadlessState.shared.isHeadless()
@@ -255,6 +275,11 @@ public class VoltraModuleImpl {
   }
 
   func reloadWidgets(widgetIds: [String]?) async {
+    #if DEBUG
+      // Refresh the relayed dev-server URL before reloading (hot-reload path) so the extension
+      // fetches from the current Metro host.
+      syncDevServerURL()
+    #endif
     if let ids = widgetIds, !ids.isEmpty {
       for widgetId in ids {
         VoltraWidgetService.reloadTimeline(for: widgetId)
