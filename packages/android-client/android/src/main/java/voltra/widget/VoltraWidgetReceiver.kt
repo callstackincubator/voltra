@@ -102,9 +102,17 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
      */
     abstract val widgetId: String
 
+    /**
+     * The GlanceAppWidget this receiver hosts. Defaults to the server-rendered
+     * [VoltraGlanceWidget]; client-rendered receivers override this to return a
+     * [voltra.widget.VoltraClientGlanceWidget]. Kept as a factory (not a direct property) so
+     * the shared registry registration in [glanceAppWidget] stays in one place.
+     */
+    protected open fun createGlanceAppWidget(): GlanceAppWidget = VoltraGlanceWidget(widgetId)
+
     override val glanceAppWidget: GlanceAppWidget by lazy {
-        Log.d(TAG, "Creating VoltraGlanceWidget for widgetId=$widgetId")
-        val widget = VoltraGlanceWidget(widgetId)
+        Log.d(TAG, "Creating GlanceAppWidget for widgetId=$widgetId")
+        val widget = createGlanceAppWidget()
         widgetRegistry[widgetId] = widget
         widget
     }
