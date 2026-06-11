@@ -793,6 +793,7 @@ private extension View {
       let decorationForLayout: DecorationStyle = hasClipping
         ? DecorationStyle(
           backgroundColor: decoration.backgroundColor,
+          backgroundImage: decoration.backgroundImage,
           cornerRadius: nil,
           border: decoration.border,
           shadow: decoration.shadow,
