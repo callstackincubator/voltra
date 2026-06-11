@@ -49,3 +49,12 @@ export const requestPinAndroidWidget = async (
 export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
   return getNativeVoltraAndroid().getActiveWidgets() as Promise<WidgetInfo[]>
 }
+
+/**
+ * Set a configuration value for a client-rendered widget and re-render it. The value is
+ * surfaced as `env.configuration[key]` in the widget's `(props, env) => JSX` render. Stand-in
+ * for a Glance configuration activity.
+ */
+export const setWidgetConfiguration = async (widgetId: string, key: string, value: string): Promise<void> => {
+  return getNativeVoltraAndroid().setWidgetConfiguration(widgetId, key, value)
+}

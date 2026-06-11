@@ -50,6 +50,7 @@ export {
   getActiveWidgets,
   reloadAndroidWidgets,
   requestPinAndroidWidget,
+  setWidgetConfiguration,
   updateAndroidWidget,
 } from './widgets/api.js'
 export type {

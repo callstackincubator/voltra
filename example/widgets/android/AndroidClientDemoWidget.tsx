@@ -18,6 +18,9 @@ export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment =
     hour12: false,
   })
 
+  const config = env.configuration as Record<string, unknown> | undefined
+  const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
+
   const label = { fontSize: 10, color: '#94A3B8' } as const
   const value = { fontSize: 10, color: '#E2E8F0' } as const
 
@@ -39,6 +42,7 @@ export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment =
       {row('size:', env.widgetFamily ?? '?')}
       {row('scheme:', env.colorScheme ?? '?')}
       {row('locale:', env.locale ?? '?')}
+      {row('config:', configLabel)}
       {row('dev:', String(env.build?.isDev ?? '?'))}
       {row('time:', renderedAt)}
     </VoltraAndroid.Column>

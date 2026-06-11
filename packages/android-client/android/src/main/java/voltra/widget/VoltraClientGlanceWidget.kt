@@ -30,6 +30,7 @@ import voltra.BuildConfig
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
+import voltra.runtime.VoltraConfigurationStore
 import voltra.runtime.VoltraJSRenderer
 import java.net.HttpURLConnection
 import java.net.URL
@@ -98,11 +99,12 @@ class VoltraClientGlanceWidget(
 
         /**
          * Build the WidgetEnvironment JSON (see packages/core/src/widget-environment.ts) for the
-         * current render. `materialColors` and `configuration` are not yet populated.
+         * current render. `materialColors` is not yet populated.
          */
         private fun buildEnvJson(
             context: Context,
             size: DpSize,
+            configuration: Map<String, String>,
         ): String {
             val family = "${size.width.value.toInt()}x${size.height.value.toInt()}"
             val nightMode =
@@ -128,11 +130,15 @@ class VoltraClientGlanceWidget(
                     ).put("appVersion", appVersion)
                     .put("voltraVersion", BuildConfig.VOLTRA_VERSION)
 
+            val configObject = JSONObject()
+            configuration.forEach { (key, value) -> configObject.put(key, value) }
+
             return JSONObject()
                 .put("date", System.currentTimeMillis())
                 .put("widgetFamily", family)
                 .put("colorScheme", colorScheme)
                 .put("locale", locale)
+                .put("configuration", configObject)
                 .put("build", build)
                 .toString()
         }
@@ -152,19 +158,26 @@ class VoltraClientGlanceWidget(
             Log.w(TAG, "Bundle not ready for widgetId=$widgetId (dev=${isDev(context)})")
         }
 
+        // Read user-configured params (DataStore) off the composition so env.configuration is
+        // available synchronously during render.
+        val configuration = VoltraConfigurationStore(context).get(widgetId)
+
         provideContent {
-            Content(bundleReady)
+            Content(bundleReady, configuration)
         }
     }
 
     @Composable
-    private fun Content(bundleReady: Boolean) {
+    private fun Content(
+        bundleReady: Boolean,
+        configuration: Map<String, String>,
+    ) {
         val context = LocalContext.current
         val size = LocalSize.current
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
         // placeholder node (first paint / offline / Metro down).
-        val node = (if (bundleReady) renderNode(context, size) else null) ?: placeholderNode(context)
+        val node = (if (bundleReady) renderNode(context, size, configuration) else null) ?: placeholderNode(context)
         if (node != null) {
             GlanceFactory(widgetId, null, null, size).Render(node)
         } else {
@@ -175,8 +188,9 @@ class VoltraClientGlanceWidget(
     private fun renderNode(
         context: Context,
         size: DpSize,
+        configuration: Map<String, String>,
     ): VoltraNode? {
-        val envJson = buildEnvJson(context, size)
+        val envJson = buildEnvJson(context, size, configuration)
         val resolved = VoltraJSRenderer.render(widgetId, "{}", envJson) ?: return null
         return parseNode(resolved)
     }

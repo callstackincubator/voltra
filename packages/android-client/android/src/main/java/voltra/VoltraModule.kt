@@ -15,8 +15,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import voltra.images.VoltraImageManager
+import voltra.runtime.VoltraConfigurationStore
 import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetManager
+import voltra.widget.VoltraWidgetReceiver
 
 class VoltraModule(
     reactContext: ReactApplicationContext,
@@ -151,6 +153,26 @@ class VoltraModule(
         runBlocking { widgetManager.reloadWidgets(ids) }
         Log.d(TAG, "reloadAndroidWidgets completed")
         promise.resolve(null)
+    }
+
+    override fun setWidgetConfiguration(
+        widgetId: String,
+        key: String,
+        value: String,
+        promise: Promise,
+    ) {
+        // Stand-in for a Glance configuration activity: persist a config value and re-render the
+        // widget so its client render picks it up via env.configuration.
+        runBlocking {
+            try {
+                VoltraConfigurationStore(reactApplicationContext).set(widgetId, key, value)
+                VoltraWidgetReceiver.triggerGlanceUpdate(reactApplicationContext, widgetId)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                Log.e(TAG, "setWidgetConfiguration failed", e)
+                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+            }
+        }
     }
 
     override fun clearAndroidWidget(
