@@ -6,11 +6,8 @@ import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
-// Side-effect imports so Metro's widget registry can see every 'use voltra' file
-// in its dep graph. Without an import path reachable from the main bundle entry,
-// Metro returns 404 for /voltra/widgets/<id>.bundle and the widget extension
-// can't fetch the bundle.
-import '~/widgets/ios/ClientRenderedDemoWidget'
+// Widget discovery is filesystem-based (Metro registry scans for 'use voltra' files), so widgets
+// no longer need a side-effect import here to be reachable from the dependency graph.
 
 enableWidgetHotReload()
 updateAndroidVoltraWidget({ width: 300, height: 200 })

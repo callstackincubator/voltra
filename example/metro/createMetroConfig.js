@@ -28,14 +28,8 @@ async function createMetroConfig(projectRoot) {
     widgetMetro,
   })
 
-  const previousHook = appConfig.serializer.experimentalSerializerHook
-  appConfig.serializer.experimentalSerializerHook = (graph, delta) => {
-    if (previousHook) {
-      previousHook(graph, delta)
-    }
-
-    registry.applyMetroDelta(delta)
-  }
+  // Widget discovery is driven by widgetRegistry's own filesystem scan + watcher (see
+  // widgetRegistry.js), so no serializer hook / dependency-graph coupling is needed here.
 
   const previousEnhanceMiddleware = appConfig.server.enhanceMiddleware || ((middleware) => middleware)
   appConfig.server.enhanceMiddleware = (metroMiddleware, metroServer) => {
