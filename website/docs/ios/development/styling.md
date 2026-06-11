@@ -233,11 +233,7 @@ Passing a plain color string to `backgroundColor` continues to work exactly as b
 <Voltra.View style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} />
 ```
 
-For backward compatibility, `backgroundColor` can still receive gradient strings:
-
-```tsx
-<Voltra.View style={{ backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)' }} />
-```
+For backward compatibility, `backgroundColor` can still receive gradient strings, but new code should use `backgroundImage`.
 
 ### Comparison with `<LinearGradient>` component
 
