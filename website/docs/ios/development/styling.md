@@ -136,7 +136,7 @@ const element = (
 
 ## Gradients
 
-The `backgroundImage` style property is the preferred way to render CSS gradients. It is painted above `backgroundColor`, so you can combine a solid or semi-transparent base color with a gradient overlay.
+The `backgroundImage` style property is the preferred way to render CSS gradients. It is painted above `backgroundColor`, so you can combine a solid base color with a semi-transparent gradient overlay.
 
 For backward compatibility, `backgroundColor` still accepts CSS gradient strings in addition to solid colors. Gradients are rendered natively using SwiftUI gradient modifiers and are automatically clipped by `borderRadius`.
 
@@ -146,14 +146,14 @@ Invalid or unsupported gradient syntax is parsed in **strict mode** and results 
 
 ```tsx
 // Named direction
-<Voltra.View style={{ backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)' }} />
+<Voltra.View style={{ backgroundImage: 'linear-gradient(to right, #6366F1, #EC4899)' }} />
 
 // Diagonal
-<Voltra.View style={{ backgroundColor: 'linear-gradient(to bottom right, #0EA5E9, #8B5CF6)' }} />
+<Voltra.View style={{ backgroundImage: 'linear-gradient(to bottom right, #0EA5E9, #8B5CF6)' }} />
 
 // Angle in degrees/radians/turns
-<Voltra.View style={{ backgroundColor: 'linear-gradient(45deg, #FF6B6B, #FFD93D)' }} />
-<Voltra.View style={{ backgroundColor: 'linear-gradient(0.25turn, #FF6B6B, #FFD93D)' }} />
+<Voltra.View style={{ backgroundImage: 'linear-gradient(45deg, #FF6B6B, #FFD93D)' }} />
+<Voltra.View style={{ backgroundImage: 'linear-gradient(0.25turn, #FF6B6B, #FFD93D)' }} />
 ```
 
 Supported directions: `to right`, `to left`, `to top`, `to bottom`, `to top right`, `to top left`, `to bottom right`, `to bottom left`.
@@ -165,7 +165,7 @@ Explicit percentage positions are supported:
 ```tsx
 <Voltra.View
   style={{
-    backgroundColor: 'linear-gradient(to right, red 0%, yellow 50%, blue 100%)',
+    backgroundImage: 'linear-gradient(to right, red 0%, yellow 50%, blue 100%)',
   }}
 />
 ```
@@ -180,7 +180,8 @@ When positions are omitted, Voltra applies CSS-like stop fix-up:
 ```tsx
 <Voltra.View
   style={{
-    backgroundColor: 'linear-gradient(to right, rgba(255,0,0,0.8), rgba(0,0,255,0.3))',
+    backgroundColor: '#101828',
+    backgroundImage: 'linear-gradient(to right, rgba(255,0,0,0.8), rgba(0,0,255,0.3))',
   }}
 />
 ```
@@ -188,9 +189,9 @@ When positions are omitted, Voltra applies CSS-like stop fix-up:
 ### Radial gradients
 
 ```tsx
-<Voltra.View style={{ backgroundColor: 'radial-gradient(#FF6B6B, #6366F1)' }} />
-<Voltra.View style={{ backgroundColor: 'radial-gradient(circle at top right, #FF6B6B, #6366F1)' }} />
-<Voltra.View style={{ backgroundColor: 'radial-gradient(closest-side at left bottom, #FF6B6B, #6366F1)' }} />
+<Voltra.View style={{ backgroundImage: 'radial-gradient(#FF6B6B, #6366F1)' }} />
+<Voltra.View style={{ backgroundImage: 'radial-gradient(circle at top right, #FF6B6B, #6366F1)' }} />
+<Voltra.View style={{ backgroundImage: 'radial-gradient(closest-side at left bottom, #FF6B6B, #6366F1)' }} />
 ```
 
 :::note
@@ -202,8 +203,8 @@ For `ellipse`, SwiftUI does not provide native elliptical radial gradients. Volt
 ### Conic gradients
 
 ```tsx
-<Voltra.View style={{ backgroundColor: 'conic-gradient(from 45deg, red, blue)' }} />
-<Voltra.View style={{ backgroundColor: 'conic-gradient(from 45deg at top right, red 0%, blue 75%)' }} />
+<Voltra.View style={{ backgroundImage: 'conic-gradient(from 45deg, red, blue)' }} />
+<Voltra.View style={{ backgroundImage: 'conic-gradient(from 45deg at top right, red 0%, blue 75%)' }} />
 ```
 
 ### With border radius
@@ -213,7 +214,7 @@ Gradients are clipped by `borderRadius` automatically — no extra configuration
 ```tsx
 <Voltra.View
   style={{
-    backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)',
+    backgroundImage: 'linear-gradient(to right, #6366F1, #EC4899)',
     borderRadius: 16,
     padding: 16,
   }}
@@ -230,6 +231,12 @@ Passing a plain color string to `backgroundColor` continues to work exactly as b
 <Voltra.View style={{ backgroundColor: '#3B82F6' }} />
 <Voltra.View style={{ backgroundColor: 'red' }} />
 <Voltra.View style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} />
+```
+
+For backward compatibility, `backgroundColor` can still receive gradient strings:
+
+```tsx
+<Voltra.View style={{ backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)' }} />
 ```
 
 ### Comparison with `<LinearGradient>` component
