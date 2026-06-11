@@ -32,12 +32,23 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
   public let widgetId: String
   public let bundleReady: Bool
   public let errorMessage: String?
+  /// User-configured AppIntent parameters → `env.configuration`. Empty for widgets without an
+  /// AppIntent configuration; populated by the generated AppIntentTimelineProvider from the
+  /// configured intent.
+  public let configuration: [String: String]
 
-  public init(date: Date, widgetId: String, bundleReady: Bool, errorMessage: String? = nil) {
+  public init(
+    date: Date,
+    widgetId: String,
+    bundleReady: Bool,
+    errorMessage: String? = nil,
+    configuration: [String: String] = [:]
+  ) {
     self.date = date
     self.widgetId = widgetId
     self.bundleReady = bundleReady
     self.errorMessage = errorMessage
+    self.configuration = configuration
   }
 }
 
@@ -89,6 +100,13 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
   }
 
   private func loadBundleEntry() async -> VoltraClientWidgetEntry {
+    await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: [:])
+  }
+
+  /// Fetch + evaluate the widget bundle and build an entry. Shared by this `TimelineProvider` and
+  /// the plugin-generated `AppIntentTimelineProvider`s (which pass the user-configured params as
+  /// `configuration`).
+  public static func loadEntry(widgetId: String, configuration: [String: String]) async -> VoltraClientWidgetEntry {
     let date = Date()
 
     let source: String
@@ -99,7 +117,8 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
         date: date,
         widgetId: widgetId,
         bundleReady: false,
-        errorMessage: error.localizedDescription
+        errorMessage: error.localizedDescription,
+        configuration: configuration
       )
     }
 
@@ -109,10 +128,11 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
         date: date,
         widgetId: widgetId,
         bundleReady: false,
-        errorMessage: "Bundle eval failed (see logs)"
+        errorMessage: "Bundle eval failed (see logs)",
+        configuration: configuration
       )
     }
-    return VoltraClientWidgetEntry(date: date, widgetId: widgetId, bundleReady: true)
+    return VoltraClientWidgetEntry(date: date, widgetId: widgetId, bundleReady: true, configuration: configuration)
   }
 }
 
@@ -200,7 +220,8 @@ public enum VoltraClientWidgetEnvBuilder {
     colorScheme: ColorScheme?,
     widgetRenderingMode: WidgetRenderingMode,
     showsWidgetContainerBackground: Bool,
-    locale: Locale
+    locale: Locale,
+    configuration: [String: String]
   ) -> String {
     let timestampMs = Int(date.timeIntervalSince1970 * 1000)
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
@@ -223,6 +244,16 @@ public enum VoltraClientWidgetEnvBuilder {
     }
     """
 
+    let configurationJSON: String
+    if configuration.isEmpty {
+      configurationJSON = "{}"
+    } else {
+      let entries = configuration
+        .map { "\(jsonString($0.key)): \(jsonString($0.value))" }
+        .joined(separator: ", ")
+      configurationJSON = "{ \(entries) }"
+    }
+
     return """
     {
       "date": \(timestampMs),
@@ -231,6 +262,7 @@ public enum VoltraClientWidgetEnvBuilder {
       "locale": \(jsonString(locale.identifier)),
       "widgetRenderingMode": \(jsonString(renderingModeString(widgetRenderingMode))),
       "showsWidgetContainerBackground": \(showsWidgetContainerBackground),
+      "configuration": \(configurationJSON),
       "build": \(buildJSON)
     }
     """
@@ -297,7 +329,8 @@ public struct VoltraClientWidgetContentView: View {
         colorScheme: colorScheme,
         widgetRenderingMode: widgetRenderingMode,
         showsWidgetContainerBackground: showsWidgetContainerBackground,
-        locale: locale
+        locale: locale,
+        configuration: entry.configuration
       )
       if let resolved = VoltraJSRenderer.render(
         widgetId: entry.widgetId,

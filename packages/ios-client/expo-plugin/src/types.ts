@@ -15,6 +15,26 @@ export type IOSWidgetFamily =
   | 'accessoryInline'
 
 /**
+ * A single user-configurable parameter exposed via AppIntent (the native "Edit Widget" sheet).
+ */
+export interface AppIntentParameter {
+  /** Swift property name + the key under `env.configuration`. */
+  name: string
+  /** Label shown in the widget configuration sheet. */
+  title: string
+  /** Default value used before the user configures the widget (the "from code" default). */
+  default?: string
+}
+
+/**
+ * AppIntent configuration for a user-configurable widget (iOS 17+).
+ */
+export interface IOSWidgetAppIntentConfig {
+  /** Parameters the user can edit via "Edit Widget"; surfaced as `env.configuration`. */
+  parameters: AppIntentParameter[]
+}
+
+/**
  * Configuration for a single iOS home screen widget.
  */
 export interface IOSWidgetConfig {
@@ -28,6 +48,13 @@ export interface IOSWidgetConfig {
   supportedFamilies?: IOSWidgetFamily[]
   initialStatePath?: WidgetInitialStatePath
   serverUpdate?: IOSWidgetServerUpdateConfig
+  /**
+   * AppIntent configuration (iOS 17+). When set on a client-rendered widget, the plugin generates
+   * an `AppIntentConfiguration` so users configure parameters via the native "Edit Widget" sheet;
+   * defaults come from `parameters[].default`, and the configured values are passed into the
+   * widget's `env.configuration` on each render.
+   */
+  appIntent?: IOSWidgetAppIntentConfig
 }
 
 /**

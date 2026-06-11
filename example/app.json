@@ -60,7 +60,16 @@
                 "pl": "Prosty widget pokazujący wartości env — do weryfikacji hot reload."
               },
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-              "initialStatePath": "./widgets/ios/ClientRenderedDemoWidget.tsx"
+              "initialStatePath": "./widgets/ios/ClientRenderedDemoWidget.tsx",
+              "appIntent": {
+                "parameters": [
+                  {
+                    "name": "label",
+                    "title": "Label",
+                    "default": "Hello"
+                  }
+                ]
+              }
             },
             {
               "id": "portfolio",

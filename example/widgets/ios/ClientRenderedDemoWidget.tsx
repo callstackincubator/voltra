@@ -20,6 +20,9 @@ export const ClientRenderedDemoWidget = (_props: object, env: WidgetEnvironment 
     hour12: false,
   })
 
+  const config = env.configuration as Record<string, unknown> | undefined
+  const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
+
   const labelStyle = { fontSize: 9, color: '#FFFFFF' } as const
   const valueStyle = { fontSize: 9, color: '#94A3B8' } as const
 
@@ -44,6 +47,10 @@ export const ClientRenderedDemoWidget = (_props: object, env: WidgetEnvironment 
       <Voltra.HStack spacing={4}>
         <Voltra.Text style={labelStyle}>locale:</Voltra.Text>
         <Voltra.Text style={valueStyle}>{env.locale ?? '?'}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>config:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{configLabel}</Voltra.Text>
       </Voltra.HStack>
       <Voltra.HStack spacing={4}>
         <Voltra.Text style={labelStyle}>dev:</Voltra.Text>
