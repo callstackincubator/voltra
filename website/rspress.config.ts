@@ -41,7 +41,7 @@ function buildVersionSidebar(docsDir: string, version: string, urlPrefix: string
 }
 
 const docsDir = path.join(__dirname, 'docs')
-const defaultVersion = 'v2'
+const defaultVersion = 'v1'
 const versions = ['v1', 'v2']
 
 // Build these manually so each docs version can mirror the folder metadata
