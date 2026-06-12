@@ -1,6 +1,6 @@
 const path = require('node:path')
 
-const { getDefaultConfig } = require('metro-config')
+const { requireProjectModule, resolveProjectModulePath } = require('./resolveProjectModule')
 
 const blockedModules = new Set(['react-native'])
 
@@ -20,13 +20,14 @@ function unique(items) {
   return Array.from(new Set(items.filter(Boolean)))
 }
 
-function resolvePnpmTransitive(name, repoRoot) {
+function resolvePnpmTransitive(name, projectRoot) {
   // pnpm's strict node_modules layout doesn't expose transitive dependencies to the
   // widget entry file in `.voltra/metro/entries/` because that path isn't inside any
   // package's pnpm-managed `node_modules`. Resolve them explicitly so Babel-emitted
-  // runtime helpers and Metro's async-require shim bundle cleanly.
+  // runtime helpers and Metro's async-require shim bundle cleanly. resolveProjectModulePath
+  // works both inside the Expo/Metro CLI (dev) and in the standalone release bundler.
   try {
-    return path.dirname(require.resolve(`${name}/package.json`, { paths: [repoRoot] }))
+    return path.dirname(resolveProjectModulePath(`${name}/package.json`, projectRoot))
   } catch {
     return null
   }
@@ -36,11 +37,12 @@ async function createWidgetMetroConfig({ projectRoot, appConfig }) {
   const repoRoot = path.resolve(projectRoot, '..')
   const appNodeModules = path.join(projectRoot, 'node_modules')
   const linkedPackages = createLinkedPackages(repoRoot)
+  const { getDefaultConfig } = requireProjectModule('metro-config', projectRoot)
   const config = await getDefaultConfig(projectRoot)
   const sourceExts = unique([...config.resolver.sourceExts, ...appConfig.resolver.sourceExts])
   const pnpmTransitives = {
-    '@babel/runtime': resolvePnpmTransitive('@babel/runtime', repoRoot),
-    'metro-runtime': resolvePnpmTransitive('metro-runtime', repoRoot),
+    '@babel/runtime': resolvePnpmTransitive('@babel/runtime', projectRoot),
+    'metro-runtime': resolvePnpmTransitive('metro-runtime', projectRoot),
   }
   const pnpmTransitiveModules = Object.fromEntries(
     Object.entries(pnpmTransitives).filter(([, value]) => value !== null)

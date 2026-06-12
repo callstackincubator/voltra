@@ -1,4 +1,6 @@
-const parser = require('@babel/parser')
+const { requireProjectModule } = require('./resolveProjectModule')
+
+const parser = requireProjectModule('@babel/parser')
 
 const supportedExtensions = new Set(['.cjs', '.js', '.jsx', '.mjs', '.ts', '.tsx'])
 
