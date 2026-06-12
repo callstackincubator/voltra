@@ -107,6 +107,25 @@ class VoltraClientGlanceWidget(
                 }
             }
 
+        /**
+         * Read the release bundle baked into the app's assets by the Gradle bundling task
+         * (assets/voltra/voltra-widget-<id>.bundle). The release counterpart of [fetchDevBundle];
+         * returns null (→ prerendered fallback) when the asset is missing.
+         */
+        private fun loadBakedBundle(
+            context: Context,
+            widgetId: String,
+        ): String? =
+            try {
+                context.assets
+                    .open("voltra/voltra-widget-$widgetId.bundle")
+                    .bufferedReader()
+                    .use { it.readText() }
+            } catch (e: java.io.IOException) {
+                Log.w(TAG, "No baked bundle for widgetId=$widgetId (assets/voltra/voltra-widget-$widgetId.bundle)")
+                null
+            }
+
         private fun isDev(context: Context): Boolean =
             (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
@@ -215,7 +234,7 @@ class VoltraClientGlanceWidget(
         context: Context,
         id: GlanceId,
     ) {
-        val source = if (isDev(context)) fetchDevBundle(context, widgetId) else null
+        val source = if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
         val bundleReady = source != null && VoltraJSRenderer.evaluateBundle(source, widgetId)
         if (!bundleReady) {
             Log.w(TAG, "Bundle not ready for widgetId=$widgetId (dev=${isDev(context)})")
