@@ -38,10 +38,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Pull Vercel environment information
-        run: pnpm --filter voltra-website exec vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build project artifacts
-        run: pnpm --filter voltra-website exec vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy prebuilt artifacts to production
-        run: pnpm --filter voltra-website exec vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
