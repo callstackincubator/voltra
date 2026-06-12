@@ -32,12 +32,30 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
   public let widgetId: String
   public let bundleReady: Bool
   public let errorMessage: String?
+  /// User-configured AppIntent parameters → `env.configuration`. Empty for widgets without an
+  /// AppIntent configuration; populated by the generated AppIntentTimelineProvider from the
+  /// configured intent.
+  public let configuration: [String: String]
+  /// The evaluated widget's JS bundle. Carried on the entry (not just left in the provider's
+  /// JSContext) because WidgetKit archives entries and re-renders the View in a *fresh* extension
+  /// process, where the provider's process-static JSContext is empty. The View re-evaluates from
+  /// this source so `render()` always has the widget's function available in its own process.
+  public let bundleSource: String?
 
-  public init(date: Date, widgetId: String, bundleReady: Bool, errorMessage: String? = nil) {
+  public init(
+    date: Date,
+    widgetId: String,
+    bundleReady: Bool,
+    errorMessage: String? = nil,
+    configuration: [String: String] = [:],
+    bundleSource: String? = nil
+  ) {
     self.date = date
     self.widgetId = widgetId
     self.bundleReady = bundleReady
     self.errorMessage = errorMessage
+    self.configuration = configuration
+    self.bundleSource = bundleSource
   }
 }
 
@@ -89,6 +107,13 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
   }
 
   private func loadBundleEntry() async -> VoltraClientWidgetEntry {
+    await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: [:])
+  }
+
+  /// Fetch + evaluate the widget bundle and build an entry. Shared by this `TimelineProvider` and
+  /// the plugin-generated `AppIntentTimelineProvider`s (which pass the user-configured params as
+  /// `configuration`).
+  public static func loadEntry(widgetId: String, configuration: [String: String]) async -> VoltraClientWidgetEntry {
     let date = Date()
 
     let source: String
@@ -99,7 +124,8 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
         date: date,
         widgetId: widgetId,
         bundleReady: false,
-        errorMessage: error.localizedDescription
+        errorMessage: error.localizedDescription,
+        configuration: configuration
       )
     }
 
@@ -109,10 +135,17 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
         date: date,
         widgetId: widgetId,
         bundleReady: false,
-        errorMessage: "Bundle eval failed (see logs)"
+        errorMessage: "Bundle eval failed (see logs)",
+        configuration: configuration
       )
     }
-    return VoltraClientWidgetEntry(date: date, widgetId: widgetId, bundleReady: true)
+    return VoltraClientWidgetEntry(
+      date: date,
+      widgetId: widgetId,
+      bundleReady: true,
+      configuration: configuration,
+      bundleSource: source
+    )
   }
 }
 
@@ -152,7 +185,12 @@ public enum VoltraClientWidgetBundleSource {
   private static func loadFromMetro(widgetId: String) async throws -> String {
     // Dev mode = always-refetch. URLSession default cache policy is fine —
     // Metro's bundle responses are not cacheable, so each request hits the server.
-    let urlString = "http://localhost:8081/voltra/widgets/\(widgetId).bundle?platform=ios&dev=true"
+    //
+    // The base URL is relayed from the app via the app group (the app resolves it with
+    // RCTBundleURLProvider; this extension is React-free). Falls back to localhost:8081 when the
+    // app hasn't written it yet (e.g. first render before the host app has run).
+    let base = VoltraWidgetDefaults.devServerURL() ?? "http://localhost:8081"
+    let urlString = "\(base)/voltra/widgets/\(widgetId).bundle?platform=ios&dev=true"
     guard let url = URL(string: urlString) else {
       throw LoadError.metroHTTP(-1)
     }
@@ -195,14 +233,15 @@ public enum VoltraClientWidgetEnvBuilder {
     colorScheme: ColorScheme?,
     widgetRenderingMode: WidgetRenderingMode,
     showsWidgetContainerBackground: Bool,
-    locale: Locale
+    locale: Locale,
+    configuration: [String: String]
   ) -> String {
     let timestampMs = Int(date.timeIntervalSince1970 * 1000)
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
 
     #if DEBUG
       let isDev = true
-      let metroUrl: String? = "http://localhost:8081"
+      let metroUrl: String? = VoltraWidgetDefaults.devServerURL() ?? "http://localhost:8081"
     #else
       let isDev = false
       let metroUrl: String? = nil
@@ -218,6 +257,16 @@ public enum VoltraClientWidgetEnvBuilder {
     }
     """
 
+    let configurationJSON: String
+    if configuration.isEmpty {
+      configurationJSON = "{}"
+    } else {
+      let entries = configuration
+        .map { "\(jsonString($0.key)): \(jsonString($0.value))" }
+        .joined(separator: ", ")
+      configurationJSON = "{ \(entries) }"
+    }
+
     return """
     {
       "date": \(timestampMs),
@@ -226,6 +275,7 @@ public enum VoltraClientWidgetEnvBuilder {
       "locale": \(jsonString(locale.identifier)),
       "widgetRenderingMode": \(jsonString(renderingModeString(widgetRenderingMode))),
       "showsWidgetContainerBackground": \(showsWidgetContainerBackground),
+      "configuration": \(configurationJSON),
       "build": \(buildJSON)
     }
     """
@@ -286,13 +336,20 @@ public struct VoltraClientWidgetContentView: View {
 
   private func makeHomeEntry() -> VoltraHomeWidgetEntry {
     if entry.bundleReady {
+      // WidgetKit may render this archived entry in a fresh extension process where the provider's
+      // bundle evaluation didn't happen. Re-evaluate from the entry's carried source (no-op if this
+      // process already has it) so render() finds the widget's function.
+      if let source = entry.bundleSource {
+        _ = VoltraJSRenderer.ensureEvaluated(widgetId: entry.widgetId, source: source)
+      }
       let envJSON = VoltraClientWidgetEnvBuilder.build(
         date: entry.date,
         widgetFamily: widgetFamily,
         colorScheme: colorScheme,
         widgetRenderingMode: widgetRenderingMode,
         showsWidgetContainerBackground: showsWidgetContainerBackground,
-        locale: locale
+        locale: locale,
+        configuration: entry.configuration
       )
       if let resolved = VoltraJSRenderer.render(
         widgetId: entry.widgetId,

@@ -46,13 +46,31 @@ export type DetectedIOSWidget =
       clientSourcePath: string
     })
 
+// Emit the experimental notice at most once per prebuild process (detection runs from several
+// plugin steps).
+let hasWarnedExperimental = false
+
 /**
  * Inspect every widget's `initialStatePath` source file once and tag each entry as either
  * server- or client-rendered. Throws on mismatch between `'use voltra'`-tagged component
  * name and widget `id`.
  */
 export function detectClientRenderedWidgets(widgets: IOSWidgetConfig[], projectRoot: string): DetectedIOSWidget[] {
-  return widgets.map((widget) => detectSingleWidget(widget, projectRoot))
+  const detected = widgets.map((widget) => detectSingleWidget(widget, projectRoot))
+
+  if (!hasWarnedExperimental) {
+    const clientWidgetIds = detected.filter((widget) => widget.clientRendered).map((widget) => widget.id)
+    if (clientWidgetIds.length > 0) {
+      hasWarnedExperimental = true
+      console.warn(
+        `[voltra] Client-rendered widgets are EXPERIMENTAL (${clientWidgetIds.join(', ')}). ` +
+          'The widget JSX runs on-device in a separate JS engine; the API and build output may change, ' +
+          'and production rendering should be verified on a real device. Use at your own risk.'
+      )
+    }
+  }
+
+  return detected
 }
 
 function detectSingleWidget(widget: IOSWidgetConfig, projectRoot: string): DetectedIOSWidget {

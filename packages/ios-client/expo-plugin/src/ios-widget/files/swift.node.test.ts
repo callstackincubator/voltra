@@ -72,3 +72,51 @@ describe('generateWidgetBundleSwift — client-rendered dispatch', () => {
     }
   })
 })
+
+describe('generateWidgetBundleSwift — AppIntent configuration', () => {
+  const configurableWidget: DetectedIOSWidget = {
+    id: 'IosWeatherWidget',
+    displayName: 'Client Weather',
+    description: 'Client-rendered weather',
+    clientRendered: true,
+    clientComponentName: 'IosWeatherWidget',
+    clientSourcePath: '/tmp/IosWeatherWidget.tsx',
+    appIntent: {
+      parameters: [{ name: 'label', title: 'Label', default: 'Hello' }],
+    },
+  }
+  const plainClientWidget: DetectedIOSWidget = {
+    id: 'PlainClient',
+    displayName: 'Plain Client',
+    description: 'Client-rendered, no config',
+    clientRendered: true,
+    clientComponentName: 'PlainClient',
+    clientSourcePath: '/tmp/PlainClient.tsx',
+  }
+
+  it('generates an AppIntentConfiguration with a code-default @Parameter for a configurable widget', () => {
+    const swift = __test__.generateWidgetBundleSwift([configurableWidget])
+    expect(swift).toContain('import AppIntents')
+    expect(swift).toContain('struct VoltraWidget_IosWeatherWidget_Intent: WidgetConfigurationIntent')
+    expect(swift).toContain('@Parameter(title: "Label", default: "Hello")')
+    expect(swift).toContain('AppIntentConfiguration(')
+    expect(swift).toContain('VoltraWidget_IosWeatherWidget_ClientProvider')
+    // iOS 17+ gating, since AppIntentConfiguration is unavailable below 17
+    expect(swift).toContain('if #available(iOS 17.0, *)')
+    expect(swift).toContain('@available(iOS 17.0, *)')
+  })
+
+  it('passes the configured parameter into the entry (env.configuration)', () => {
+    const swift = __test__.generateWidgetBundleSwift([configurableWidget])
+    expect(swift).toContain('VoltraClientWidgetProvider.loadEntry(widgetId:')
+    expect(swift).toContain('["label": configuration.label]')
+  })
+
+  it('does NOT emit AppIntent code for a client widget without appIntent', () => {
+    const swift = __test__.generateWidgetBundleSwift([plainClientWidget])
+    expect(swift).toContain('VoltraClientWidgetProvider(')
+    expect(swift).not.toContain('AppIntentConfiguration(')
+    expect(swift).not.toContain('WidgetConfigurationIntent')
+    expect(swift).not.toContain('import AppIntents')
+  })
+})

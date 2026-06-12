@@ -8,12 +8,15 @@ import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
 
-// Side-effect imports so Metro's widget registry can see every 'use voltra' file
-// in its dep graph. Without an import path reachable from the main bundle entry,
-// Metro returns 404 for /voltra/widgets/<id>.bundle and the widget extension
-// can't fetch the bundle.
-import '~/widgets/ios/ClientRenderedDemoWidget'
-import '~/widgets/android/AndroidClientDemoWidget'
+// Dev hot reload: the Voltra widget registry generates a per-platform barrel (see
+// metro/widgetRegistry.js) that side-effect-imports every 'use voltra' widget (iOS and Android).
+// Importing it keeps those widgets in the host app's Metro graph, so Fast Refresh detects edits
+// and refreshes the home-screen widgets. Dev-only, so production bundles don't pull the widget
+// sources into the app.
+if (__DEV__) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('../.voltra/metro/widgets-dev-barrel')
+}
 
 if (Platform.OS === 'android') {
   enableAndroidWidgetHotReload()

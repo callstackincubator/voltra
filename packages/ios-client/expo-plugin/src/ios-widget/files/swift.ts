@@ -287,7 +287,17 @@ function iosWidgetGalleryLabelSwiftExpr(
  *    (the content view internally renders via VoltraHomeWidgetView so the UI layer is
  *    identical to server-rendered widgets — see VoltraClientWidgetRuntime.swift)
  */
+function widgetUsesAppIntent(widget: DetectedIOSWidget): boolean {
+  return widget.clientRendered && !!widget.appIntent && widget.appIntent.parameters.length > 0
+}
+
 function generateWidgetStruct(widget: DetectedIOSWidget): string {
+  // Client-rendered widgets with an appIntent config get a native "Edit Widget" sheet via
+  // AppIntentConfiguration; the configured params flow into env.configuration.
+  if (widgetUsesAppIntent(widget)) {
+    return generateClientAppIntentWidgetCode(widget)
+  }
+
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
 
@@ -338,17 +348,121 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
 }
 
 /**
+ * Generates a client-rendered widget backed by AppIntentConfiguration (iOS 17+): a
+ * WidgetConfigurationIntent (params + code defaults), an AppIntentTimelineProvider that loads the
+ * bundle via the shared client runtime, and an AppIntentConfiguration widget. The configured
+ * params are passed into the render as env.configuration; the native "Edit Widget" sheet edits them.
+ */
+function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
+  const params = widget.appIntent!.parameters
+  const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
+  const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
+  const intentName = `VoltraWidget_${widget.id}_Intent`
+  const providerName = `VoltraWidget_${widget.id}_ClientProvider`
+  const intentTitle = escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)
+  const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
+  const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
+
+  const swiftDefault = (p: { default?: string }) => `"${escapeForSwiftStringLiteral(p.default ?? '')}"`
+  const dictLiteral = (entries: string[]) => (entries.length > 0 ? `[${entries.join(', ')}]` : '[:]')
+
+  const paramDecls = params
+    .map(
+      (p) =>
+        `  @Parameter(title: "${escapeForSwiftStringLiteral(p.title)}", default: ${swiftDefault(p)})\n  var ${
+          p.name
+        }: String`
+    )
+    .join('\n\n')
+  const initParams = params.map((p) => `${p.name}: String`).join(', ')
+  const initBody = params.map((p) => `    self.${p.name} = ${p.name}`).join('\n')
+  const configuredDict = dictLiteral(params.map((p) => `"${p.name}": configuration.${p.name}`))
+  const defaultDict = dictLiteral(params.map((p) => `"${p.name}": ${swiftDefault(p)}`))
+
+  return dedent`
+    // MARK: - Client-rendered AppIntent widget: ${widget.id}
+
+    @available(iOS 17.0, *)
+    struct ${intentName}: WidgetConfigurationIntent {
+      static var title: LocalizedStringResource = "${intentTitle}"
+
+    ${paramDecls}
+
+      init() {}
+      init(${initParams}) {
+    ${initBody}
+      }
+    }
+
+    @available(iOS 17.0, *)
+    private struct ${providerName}: AppIntentTimelineProvider {
+      typealias Intent = ${intentName}
+      typealias Entry = VoltraClientWidgetEntry
+
+      private let widgetId = "${widget.id}"
+
+      func placeholder(in _: Context) -> VoltraClientWidgetEntry {
+        VoltraClientWidgetEntry(date: Date(), widgetId: widgetId, bundleReady: false, configuration: ${defaultDict})
+      }
+
+      func snapshot(for configuration: ${intentName}, in _: Context) async -> VoltraClientWidgetEntry {
+        await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
+      }
+
+      func timeline(for configuration: ${intentName}, in _: Context) async -> Timeline<VoltraClientWidgetEntry> {
+        let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
+        return Timeline(entries: [entry], policy: .never)
+      }
+    }
+
+    @available(iOS 17.0, *)
+    public struct VoltraWidget_${widget.id}: Widget {
+      private let widgetId = "${widget.id}"
+
+      public init() {}
+
+      public var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+          kind: "Voltra_Widget_${widget.id}",
+          intent: ${intentName}.self,
+          provider: ${providerName}()
+        ) { entry in
+          VoltraClientWidgetContentView(
+            entry: entry,
+            initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+          )
+        }
+        .configurationDisplayName(${displayNameExpr})
+        .description(${descriptionExpr})
+        .supportedFamilies([${familiesSwift}])
+        .contentMarginsDisabled()
+      }
+    }
+  `
+}
+
+/**
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
 function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
   // Generate widget structs
   const widgetStructs = widgets.map((w) => generateWidgetStruct(w)).join('\n\n')
 
-  // Generate widget bundle body entries
-  const widgetInstances = widgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
+  // AppIntent widgets are iOS 17+, so their bundle entries are gated behind #available.
+  const appIntentWidgets = widgets.filter(widgetUsesAppIntent)
+  const plainWidgets = widgets.filter((w) => !widgetUsesAppIntent(w))
+  const plainInstances = plainWidgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
+  const appIntentInstances =
+    appIntentWidgets.length > 0
+      ? `if #available(iOS 17.0, *) {\n      ${appIntentWidgets
+          .map((w) => `VoltraWidget_${w.id}()`)
+          .join('\n      ')}\n    }`
+      : ''
+  const widgetInstances = [plainInstances, appIntentInstances].filter(Boolean).join('\n    ')
 
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
   const foundationImport = needsFoundation ? 'import Foundation\n' : ''
+  const appIntentsImport = appIntentWidgets.length > 0 ? 'import AppIntents\n' : ''
 
   return dedent`
     //
@@ -358,7 +472,7 @@ function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
     //  This file defines which Voltra widgets are available in your app.
     //
 
-    ${foundationImport}import SwiftUI
+    ${foundationImport}${appIntentsImport}import SwiftUI
     import WidgetKit
     import VoltraWidget
 

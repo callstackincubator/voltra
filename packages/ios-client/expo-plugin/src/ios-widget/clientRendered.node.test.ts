@@ -28,6 +28,15 @@ function asWidget(partial: Partial<IOSWidgetConfig>): IOSWidgetConfig {
   }
 }
 
+// Detection emits a one-time EXPERIMENTAL console.warn; keep it out of test output (the dedicated
+// suite below asserts on it explicitly).
+beforeEach(() => {
+  jest.spyOn(console, 'warn').mockImplementation(() => {})
+})
+afterEach(() => {
+  jest.restoreAllMocks()
+})
+
 describe('detectClientRenderedWidgets', () => {
   it('flags an arrow-function export with use voltra directive as client-rendered when id matches', () => {
     const { projectRoot, cleanup } = makeTempProject({
@@ -141,6 +150,55 @@ describe('detectClientRenderedWidgets', () => {
         projectRoot
       )
       expect(detected.clientRendered).toBe(true)
+    } finally {
+      cleanup()
+    }
+  })
+})
+
+describe('detectClientRenderedWidgets — experimental warning', () => {
+  // The warning fires at most once per module instance, so re-require a fresh module per test.
+  function freshDetect(): typeof detectClientRenderedWidgets {
+    let fn: typeof detectClientRenderedWidgets = detectClientRenderedWidgets
+    jest.isolateModules(() => {
+      fn = require('./clientRendered').detectClientRenderedWidgets
+    })
+    return fn
+  }
+
+  it('warns once (with EXPERIMENTAL + the widget id) when a client-rendered widget is detected', () => {
+    const detect = freshDetect()
+    const warn = console.warn as jest.Mock
+    const { projectRoot, cleanup } = makeTempProject({
+      'widgets/Foo.tsx': `
+        export const Foo = (props, env) => {
+          'use voltra'
+          return null
+        }
+      `,
+    })
+    try {
+      const widgets = [asWidget({ id: 'Foo', initialStatePath: './widgets/Foo.tsx' })]
+      detect(widgets, projectRoot)
+      detect(widgets, projectRoot) // second detection in the same process must not re-warn
+
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn.mock.calls[0][0]).toContain('EXPERIMENTAL')
+      expect(warn.mock.calls[0][0]).toContain('Foo')
+    } finally {
+      cleanup()
+    }
+  })
+
+  it('does not warn when all widgets are server-rendered', () => {
+    const detect = freshDetect()
+    const warn = console.warn as jest.Mock
+    const { projectRoot, cleanup } = makeTempProject({
+      'widgets/Bar.tsx': 'export const Bar = () => null\n',
+    })
+    try {
+      detect([asWidget({ id: 'Bar', initialStatePath: './widgets/Bar.tsx' })], projectRoot)
+      expect(warn).not.toHaveBeenCalled()
     } finally {
       cleanup()
     }
