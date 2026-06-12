@@ -92,7 +92,7 @@ export const IOS_OTHER_SECTIONS: ExampleSection[] = [
     id: 'gradient-playground',
     title: 'Gradient Playground',
     description:
-      'Test CSS gradient strings as backgroundColor. Experiment with linear, radial, and conic gradients, direction and angle controls, color presets, stop positions, and borderRadius clipping.',
+      'Test CSS gradient strings as backgroundImage. Experiment with linear, radial, and conic gradients, composed backgrounds, stop positions, and borderRadius clipping.',
     route: '/testing-grounds/gradient-playground',
   },
   {
