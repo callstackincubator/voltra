@@ -87,7 +87,7 @@ export class DuplicateVoltraWidgetError extends Error {
 
 export function ensureEmptyDevBarrel(projectRoot: string): string {
   const generatedRoot = path.join(projectRoot, '.voltra', 'metro')
-  const emptyBarrelPath = path.join(generatedRoot, 'widgets-dev-barrel.empty.js')
+  const emptyBarrelPath = path.join(generatedRoot, 'widget-hot-reload.empty.js')
   ensureDirectory(generatedRoot)
   writeFileIfChanged(emptyBarrelPath, '// AUTO-GENERATED - empty Voltra widget hot-reload barrel.\n')
   return emptyBarrelPath
@@ -95,7 +95,7 @@ export function ensureEmptyDevBarrel(projectRoot: string): string {
 
 export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectRoot?: string } = {}): WidgetRegistry {
   const generatedRoot = path.join(projectRoot, '.voltra', 'metro')
-  const generatedEntryRoot = path.join(generatedRoot, 'entries')
+  const generatedEntryRoot = path.join(generatedRoot, 'widgets')
   const widgetsById = new Map<string, RegisteredVoltraWidget>()
   const widgetIdsBySourcePath = new Map<string, string[]>()
   let ready = false
@@ -181,7 +181,7 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
         '',
       ].join('\n')
 
-      writeFileIfChanged(path.join(generatedRoot, `widgets-dev-barrel.${platform}.js`), content)
+      writeFileIfChanged(path.join(generatedRoot, `widget-hot-reload.${platform}.js`), content)
     }
   }
 

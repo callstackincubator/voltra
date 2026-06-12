@@ -23,7 +23,7 @@ function resolveHotReloadAlias(projectRoot: string, context: any, platform: stri
     return { type: 'sourceFile', filePath: ensureEmptyDevBarrel(projectRoot) }
   }
 
-  const platformBarrel = path.join(projectRoot, '.voltra', 'metro', `widgets-dev-barrel.${platform}.js`)
+  const platformBarrel = path.join(projectRoot, '.voltra', 'metro', `widget-hot-reload.${platform}.js`)
   if (!fs.existsSync(platformBarrel)) {
     return { type: 'sourceFile', filePath: ensureEmptyDevBarrel(projectRoot) }
   }
