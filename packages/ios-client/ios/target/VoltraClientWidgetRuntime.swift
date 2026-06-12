@@ -36,19 +36,26 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
   /// AppIntent configuration; populated by the generated AppIntentTimelineProvider from the
   /// configured intent.
   public let configuration: [String: String]
+  /// The evaluated widget's JS bundle. Carried on the entry (not just left in the provider's
+  /// JSContext) because WidgetKit archives entries and re-renders the View in a *fresh* extension
+  /// process, where the provider's process-static JSContext is empty. The View re-evaluates from
+  /// this source so `render()` always has the widget's function available in its own process.
+  public let bundleSource: String?
 
   public init(
     date: Date,
     widgetId: String,
     bundleReady: Bool,
     errorMessage: String? = nil,
-    configuration: [String: String] = [:]
+    configuration: [String: String] = [:],
+    bundleSource: String? = nil
   ) {
     self.date = date
     self.widgetId = widgetId
     self.bundleReady = bundleReady
     self.errorMessage = errorMessage
     self.configuration = configuration
+    self.bundleSource = bundleSource
   }
 }
 
@@ -132,7 +139,13 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
         configuration: configuration
       )
     }
-    return VoltraClientWidgetEntry(date: date, widgetId: widgetId, bundleReady: true, configuration: configuration)
+    return VoltraClientWidgetEntry(
+      date: date,
+      widgetId: widgetId,
+      bundleReady: true,
+      configuration: configuration,
+      bundleSource: source
+    )
   }
 }
 
@@ -323,6 +336,12 @@ public struct VoltraClientWidgetContentView: View {
 
   private func makeHomeEntry() -> VoltraHomeWidgetEntry {
     if entry.bundleReady {
+      // WidgetKit may render this archived entry in a fresh extension process where the provider's
+      // bundle evaluation didn't happen. Re-evaluate from the entry's carried source (no-op if this
+      // process already has it) so render() finds the widget's function.
+      if let source = entry.bundleSource {
+        _ = VoltraJSRenderer.ensureEvaluated(widgetId: entry.widgetId, source: source)
+      }
       let envJSON = VoltraClientWidgetEnvBuilder.build(
         date: entry.date,
         widgetFamily: widgetFamily,

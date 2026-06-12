@@ -62,6 +62,19 @@ export function ensureWidgetBundleScriptPhase(xcodeProject: XcodeProject, target
     shellPath: '/bin/sh',
     shellScript: WIDGET_BUNDLE_SHELL_SCRIPT,
   })
+
+  // The phase intentionally re-bakes on every release build (it can't statically enumerate every
+  // widget source as an input). Mark it always-out-of-date so Xcode doesn't warn about the missing
+  // input/output dependencies.
+  const shellPhasesAfter = xcodeProject.hash.project.objects.PBXShellScriptBuildPhase || {}
+  for (const key of Object.keys(shellPhasesAfter)) {
+    if (/_comment$/.test(key)) {
+      continue
+    }
+    if (shellPhasesAfter[key]?.name === quotedName) {
+      shellPhasesAfter[key].alwaysOutOfDate = 1
+    }
+  }
 }
 
 export interface AddBuildPhasesOptions {

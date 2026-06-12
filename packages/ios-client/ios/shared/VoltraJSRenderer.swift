@@ -81,6 +81,30 @@ public enum VoltraJSRenderer {
     return true
   }
 
+  /// Ensure the widget's bundle is evaluated in *this process's* JSContext, returning true if its
+  /// `render()` is available afterward.
+  ///
+  /// Cheap no-op when the widget is already captured in this process (the warm case: the provider
+  /// just evaluated it). Evaluates from `source` when the context is fresh — which is what happens
+  /// when WidgetKit re-renders an archived entry in a new extension process, where the provider's
+  /// evaluation never ran. The View calls this before `render()` so rendering never depends on
+  /// which process evaluated the bundle.
+  public static func ensureEvaluated(widgetId: String, source: String) -> Bool {
+    lock.lock()
+    let alreadyEvaluated =
+      _context?
+        .objectForKeyedSubscript("__voltraWidgets")?
+        .objectForKeyedSubscript(widgetId)?
+        .objectForKeyedSubscript("render")?
+        .isObject ?? false
+    lock.unlock()
+
+    if alreadyEvaluated {
+      return true
+    }
+    return evaluateBundle(source: source, widgetId: widgetId)
+  }
+
   /// Invoke the previously-evaluated widget's `render(propsJSON, envJSON)` function and
   /// return its resolved JSON string output.
   ///
