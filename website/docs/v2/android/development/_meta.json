@@ -1,0 +1,52 @@
+[
+  {
+    "type": "file",
+    "name": "developing-widgets",
+    "label": "Developing Widgets"
+  },
+  {
+    "type": "file",
+    "name": "managing-ongoing-notifications",
+    "label": "Managing Ongoing Notifications"
+  },
+  {
+    "type": "file",
+    "name": "querying-active-widgets",
+    "label": "Querying Active Widgets"
+  },
+  {
+    "type": "file",
+    "name": "styling",
+    "label": "Styling"
+  },
+  {
+    "type": "file",
+    "name": "dynamic-colors",
+    "label": "Dynamic Colors"
+  },
+  {
+    "type": "file",
+    "name": "images",
+    "label": "Images"
+  },
+  {
+    "type": "file",
+    "name": "image-preloading",
+    "label": "Image Preloading"
+  },
+  {
+    "type": "file",
+    "name": "widget-pre-rendering",
+    "label": "Widget Pre-rendering"
+  },
+  {
+    "type": "file",
+    "name": "server-driven-widgets",
+    "label": "Server-driven widgets"
+  },
+  {
+    "type": "file",
+    "name": "custom-fonts",
+    "label": "Custom Fonts"
+  }
+]
