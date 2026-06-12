@@ -10,6 +10,8 @@
 
 - **Home Screen widgets**: Update, reload, pin, and query widgets with `updateAndroidWidget`, `reloadAndroidWidgets`, `getActiveWidgets`, and more.
 
+- **Client-rendered widgets** _(experimental)_: Write a widget as a `'use voltra'` JSX component and have it render on-device (standalone Hermes) from its own JS bundle, with live env (size, color scheme, Material You colors, locale, configuration). See the note below.
+
 - **Ongoing notifications**: Start and update promoted ongoing notifications with `useAndroidOngoingNotification` and related APIs.
 
 - **Fast Refresh**: Previews integrate with your React Native dev workflow via `VoltraWidgetPreview` and `VoltraView`.
@@ -19,6 +21,28 @@
 - **Server-driven widgets**: Store credentials for background widget fetches with `setWidgetServerCredentials`.
 
 - **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to register widgets, optional notifications, and build-time initial states.
+
+## Client-rendered widgets (experimental)
+
+> [!WARNING]
+> Client-rendered widgets are **experimental** — usable in production at your own risk. The API
+> and generated build output may change between releases.
+
+A widget whose component carries the `'use voltra'` directive is rendered **on-device**: its JS
+bundle is evaluated in a standalone Hermes runtime on each render and called as `(props, env) => JSX`,
+so the widget reacts to live environment values (size, color scheme, Material You `materialColors`,
+locale, and `configuration`). In development the bundle is served by Metro (editing the JSX
+hot-reloads the pinned widget); in release builds it is baked into the app's assets at build time.
+
+Configuration parameters declared in `app.json` (`appIntent.parameters`, with code-defined
+defaults) surface as `env.configuration`. Android has no system-managed widget configuration UI
+(unlike iOS's Edit Widget), so runtime values are set in-app via `setWidgetConfiguration` and
+override the declared defaults.
+
+Notes:
+
+- The dev loop and release baking rely on Metro scaffolding in your project (see `example/metro`).
+- Verify release rendering on a **real device** — emulators are unreliable for widget rendering.
 
 ## Documentation
 

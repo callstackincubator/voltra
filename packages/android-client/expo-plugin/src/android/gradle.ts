@@ -51,11 +51,18 @@ export const withWidgetBundleGradle: ConfigPlugin<{ widgets: AndroidWidgetConfig
       return cfg
     }
 
-    if (cfg.modResults.contents.includes(MARKER)) {
-      return cfg
-    }
-
-    cfg.modResults.contents = `${cfg.modResults.contents.trimEnd()}\n${GRADLE_SNIPPET}\n`
+    cfg.modResults.contents = addWidgetBundleGradle(cfg.modResults.contents)
     return cfg
   })
 }
+
+/** Append the widget-bundling snippet to build.gradle contents, idempotently (returns unchanged
+ *  contents if already present). */
+export function addWidgetBundleGradle(contents: string): string {
+  if (contents.includes(MARKER)) {
+    return contents
+  }
+  return `${contents.trimEnd()}\n${GRADLE_SNIPPET}\n`
+}
+
+export const __test__ = { MARKER, addWidgetBundleGradle }
