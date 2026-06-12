@@ -54,7 +54,7 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     ...(fonts && fonts.length > 0 ? [[withFonts, { fonts, targetName }] as [ConfigPlugin<any>, any]] : []),
 
     // 2. Configure Xcode project (creates the target - must run before fonts mod executes)
-    [configureXcodeProject, { targetName, bundleIdentifier, deploymentTarget }],
+    [configureXcodeProject, { targetName, bundleIdentifier, deploymentTarget, widgets }],
 
     // 3. Configure Podfile for widget extension target
     [configurePodfile, { targetName }],
