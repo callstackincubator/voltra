@@ -241,7 +241,16 @@
               "targetCellHeight": 2,
               "resizeMode": "horizontal|vertical",
               "widgetCategory": "home_screen",
-              "initialStatePath": "./widgets/android/AndroidClientDemoWidget.tsx"
+              "initialStatePath": "./widgets/android/AndroidClientDemoWidget.tsx",
+              "appIntent": {
+                "parameters": [
+                  {
+                    "name": "label",
+                    "title": "Label",
+                    "default": "Hello"
+                  }
+                ]
+              }
             }
           ],
           "fonts": [

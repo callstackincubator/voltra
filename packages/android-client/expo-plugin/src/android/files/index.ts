@@ -3,6 +3,7 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 import type { AndroidWidgetConfig } from '../../types'
 import { detectClientRenderedWidgets } from '../clientRendered'
 import { generateAndroidAssets } from './assets'
+import { generateAndroidConfigDefaults } from './configDefaults'
 import { copyAndroidFonts } from './fonts'
 import { generateAndroidInitialStates } from './initialStates'
 import { generateWidgetReceivers } from './kotlin'
@@ -95,6 +96,12 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
         platformProjectRoot,
         projectRoot: config.modRequest.projectRoot,
         widgets: detectedWidgets,
+      })
+
+      // Emit code-declared client widget configuration defaults (env.configuration).
+      await generateAndroidConfigDefaults({
+        platformProjectRoot,
+        widgets,
       })
 
       return config
