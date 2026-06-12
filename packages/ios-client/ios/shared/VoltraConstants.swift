@@ -32,6 +32,10 @@ public enum VoltraStorageKeys {
 
   public static let widgetKindPrefix = "Voltra_Widget_"
 
+  /// Metro dev-server base URL, relayed app → widget extension (DEBUG only). The extension is
+  /// React-free, so it can't resolve the URL itself; the app writes it via RCTBundleURLProvider.
+  public static let devServerURL = "Voltra_DevServerURL"
+
   // MARK: - Info.plist keys
 
   public static let widgetIds = "Voltra_WidgetIds"

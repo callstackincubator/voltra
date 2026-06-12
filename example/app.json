@@ -50,6 +50,28 @@
               }
             },
             {
+              "id": "ClientRenderedDemoWidget",
+              "displayName": {
+                "en": "Client-Rendered Demo",
+                "pl": "Client-Rendered Demo"
+              },
+              "description": {
+                "en": "Plain widget showing env values — for verifying client-rendered hot reload.",
+                "pl": "Prosty widget pokazujący wartości env — do weryfikacji hot reload."
+              },
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "initialStatePath": "./widgets/ios/ClientRenderedDemoWidget.tsx",
+              "appIntent": {
+                "parameters": [
+                  {
+                    "name": "label",
+                    "title": "Label",
+                    "default": "Hello"
+                  }
+                ]
+              }
+            },
+            {
               "id": "portfolio",
               "displayName": {
                 "pl": "Widget portfela",

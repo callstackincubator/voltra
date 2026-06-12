@@ -100,6 +100,9 @@ importers:
       '@use-voltra/ios-server':
         specifier: workspace:*
         version: link:../packages/ios-server
+      '@use-voltra/metro':
+        specifier: workspace:*
+        version: link:../packages/metro
       '@use-voltra/server':
         specifier: workspace:*
         version: link:../packages/server
@@ -318,6 +321,15 @@ importers:
         specifier: ^7.20.5
         version: 7.20.5
 
+  packages/compiler:
+    dependencies:
+      '@babel/parser':
+        specifier: ^7.27.4
+        version: 7.29.3
+      '@babel/types':
+        specifier: ^7.27.4
+        version: 7.29.0
+
   packages/core:
     dependencies:
       react:
@@ -394,6 +406,9 @@ importers:
       '@expo/plist':
         specifier: ^0.3.5
         version: 0.3.5
+      '@use-voltra/compiler':
+        specifier: workspace:^
+        version: link:../compiler
       '@use-voltra/expo-plugin':
         specifier: workspace:^
         version: link:../expo-plugin
@@ -443,6 +458,27 @@ importers:
       react:
         specifier: '*'
         version: 19.2.4
+
+  packages/metro:
+    dependencies:
+      '@use-voltra/compiler':
+        specifier: workspace:^
+        version: link:../compiler
+      expo:
+        specifier: '*'
+        version: 55.0.25(@babel/core@7.29.0)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.11)(expo-router@55.0.15)(react-dom@19.2.4(react@19.2.4))(react-native-webview@13.16.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4))(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+      metro:
+        specifier: '*'
+        version: 0.83.7
+      metro-config-transformers:
+        specifier: ^1.0.0
+        version: 1.0.0(metro-config@0.83.7)
+      react:
+        specifier: '*'
+        version: 19.2.4
+      react-native:
+        specifier: '*'
+        version: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4)
 
   packages/server: {}
 
@@ -8049,6 +8085,12 @@ packages:
     resolution:
       { integrity: sha512-E9SRePXQ1Zvlj79VcOk57q7VC7rMHMFQ+jhmPHBiq+dJ0bJB5BL87lWZF6oh5X76Cci5tpDuQNaDwwuSCToEeg== }
     engines: { node: '>=20.19.4' }
+
+  metro-config-transformers@1.0.0:
+    resolution:
+      { integrity: sha512-aF8bEBf9ocxWHpIbh95PGRTgk2C4gNM2scq/2uA87xl4vRoPr78AFz/bSh666FN3ak1LW3K5qkO5e6uolQeYYg== }
+    peerDependencies:
+      metro-config: '*'
 
   metro-config@0.83.7:
     resolution:
@@ -18884,6 +18926,10 @@ snapshots:
       metro-core: 0.83.7
     transitivePeerDependencies:
       - supports-color
+
+  metro-config-transformers@1.0.0(metro-config@0.83.7):
+    dependencies:
+      metro-config: 0.83.7
 
   metro-config@0.83.7:
     dependencies:

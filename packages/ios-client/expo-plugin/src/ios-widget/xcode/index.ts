@@ -1,8 +1,10 @@
 import { ConfigPlugin, withXcodeProject } from '@expo/config-plugins'
 import * as path from 'path'
 
+import type { IOSWidgetConfig } from '../../types'
 import { getIOSWidgetExtensionFiles } from '../../utils/fileDiscovery'
-import { addBuildPhases, ensureBuildPhases } from './buildPhases'
+import { detectClientRenderedWidgets } from '../clientRendered'
+import { addBuildPhases, ensureBuildPhases, ensureWidgetBundleScriptPhase } from './buildPhases'
 import { addXCConfigurationList, ensureXCConfigurationList } from './configurationList'
 import { addPbxGroup, ensurePbxGroup } from './groups'
 import { getMainAppTargetSettings } from './mainAppSettings'
@@ -13,6 +15,7 @@ export interface ConfigureXcodeProjectProps {
   targetName: string
   bundleIdentifier: string
   deploymentTarget: string
+  widgets?: IOSWidgetConfig[]
 }
 
 /**
@@ -28,7 +31,7 @@ export interface ConfigureXcodeProjectProps {
  * This should run after generateWidgetExtensionFiles so the files exist.
  */
 export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (config, props) => {
-  const { targetName, bundleIdentifier, deploymentTarget } = props
+  const { targetName, bundleIdentifier, deploymentTarget, widgets } = props
 
   return withXcodeProject(config, (config) => {
     if (config.modRequest.introspect) {
@@ -37,6 +40,12 @@ export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (
 
     const xcodeProject = config.modResults
     const groupName = 'Embed Foundation Extensions'
+
+    // The release widget-bundling phase is only needed when a widget is client-rendered (server
+    // widgets carry no JS bundle). Detect once so both the create and update paths agree.
+    const hasClientRenderedWidgets =
+      !!widgets &&
+      detectClientRenderedWidgets(widgets, config.modRequest.projectRoot).some((widget) => widget.clientRendered)
 
     // Check if target already exists
     const nativeTargets = xcodeProject.pbxNativeTargetSection()
@@ -93,6 +102,10 @@ export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (
         mainTargetUuid: xcodeProject.getFirstTarget().uuid,
       })
 
+      if (hasClientRenderedWidgets) {
+        ensureWidgetBundleScriptPhase(xcodeProject, existingTargetKey)
+      }
+
       ensurePbxGroup(xcodeProject, {
         targetName,
         widgetFiles,
@@ -137,6 +150,10 @@ export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (
       productFile,
       widgetFiles,
     })
+
+    if (hasClientRenderedWidgets) {
+      ensureWidgetBundleScriptPhase(xcodeProject, targetUuid)
+    }
 
     // Add PBX group
     addPbxGroup(xcodeProject, {

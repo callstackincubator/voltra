@@ -5,6 +5,97 @@ import type { IOSWidgetExtensionFiles } from '../../types'
 
 const pbxFile = require('xcode/lib/pbxFile')
 
+const WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra client widgets'
+
+// Release-only build phase that bakes each client-rendered widget's production JS bundle into the
+// extension's resources. Debug builds fetch from Metro (and hot-reload), so this no-ops there. Runs
+// the project's widget bundler with the extension's resources dir as the output, so each
+// voltra-widget-<id>.bundle lands in the .appex (Bundle.main) where the runtime's release loader
+// reads it. SRCROOT is the ios/ dir; the project root is one level up, matching how Expo's main
+// "Bundle React Native code and images" phase resolves things.
+const WIDGET_BUNDLE_SHELL_SCRIPT = `if [[ "$CONFIGURATION" == *Debug* ]]; then
+  echo "Voltra: Debug build — client-rendered widgets load from Metro, skipping bundling"
+  exit 0
+fi
+
+if [[ -f "$SRCROOT/.xcode.env" ]]; then
+  source "$SRCROOT/.xcode.env"
+fi
+if [[ -f "$SRCROOT/.xcode.env.local" ]]; then
+  source "$SRCROOT/.xcode.env.local"
+fi
+
+export PROJECT_ROOT="\${PROJECT_ROOT:-$SRCROOT/..}"
+NODE_BINARY="\${NODE_BINARY:-node}"
+
+BUNDLER="$("$NODE_BINARY" - "$PROJECT_ROOT" <<'NODE'
+const { createRequire } = require('node:module')
+const path = require('node:path')
+
+const projectRoot = process.argv[2]
+
+try {
+  const requireFromProject = createRequire(path.join(projectRoot, 'package.json'))
+  process.stdout.write(requireFromProject.resolve('@use-voltra/metro/bundle-widgets'))
+} catch (error) {
+  console.error(
+    'error: Voltra widget bundler could not resolve @use-voltra/metro from ' +
+      projectRoot +
+      '. Install @use-voltra/metro in the app project so release widgets can be baked.\\n' +
+      (error && error.message ? error.message : String(error))
+  )
+  process.exit(1)
+}
+NODE
+)"
+if [[ -z "$BUNDLER" ]]; then
+  echo "error: Voltra widget bundler resolution returned an empty path." >&2
+  exit 1
+fi
+
+"$NODE_BINARY" "$BUNDLER" --out-dir "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH" --platform ios --project-root "$PROJECT_ROOT"
+`
+
+/**
+ * Adds (idempotently) the release-only shell-script phase that bakes client-rendered widget
+ * bundles into the extension. Safe to call on every prebuild; only added when absent.
+ */
+export function ensureWidgetBundleScriptPhase(xcodeProject: XcodeProject, targetUuid: string): void {
+  const nativeTargets = xcodeProject.pbxNativeTargetSection()
+  const target = nativeTargets[targetUuid]
+  if (!target) {
+    return
+  }
+  if (!target.buildPhases) {
+    target.buildPhases = []
+  }
+
+  const shellPhases = xcodeProject.hash.project.objects.PBXShellScriptBuildPhase || {}
+  const quotedName = `"${WIDGET_BUNDLE_PHASE_NAME}"`
+  const alreadyPresent = target.buildPhases.some((entry: any) => shellPhases[entry.value]?.name === quotedName)
+  if (alreadyPresent) {
+    return
+  }
+
+  xcodeProject.addBuildPhase([], 'PBXShellScriptBuildPhase', WIDGET_BUNDLE_PHASE_NAME, targetUuid, {
+    shellPath: '/bin/sh',
+    shellScript: WIDGET_BUNDLE_SHELL_SCRIPT,
+  })
+
+  // The phase intentionally re-bakes on every release build (it can't statically enumerate every
+  // widget source as an input). Mark it always-out-of-date so Xcode doesn't warn about the missing
+  // input/output dependencies.
+  const shellPhasesAfter = xcodeProject.hash.project.objects.PBXShellScriptBuildPhase || {}
+  for (const key of Object.keys(shellPhasesAfter)) {
+    if (/_comment$/.test(key)) {
+      continue
+    }
+    if (shellPhasesAfter[key]?.name === quotedName) {
+      shellPhasesAfter[key].alwaysOutOfDate = 1
+    }
+  }
+}
+
 export interface AddBuildPhasesOptions {
   targetUuid: string
   groupName: string
