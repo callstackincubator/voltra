@@ -95,6 +95,11 @@ android {
 dependencies {
   // React Native
   implementation "com.facebook.react:react-android"
+  // Provides the `hermes-engine` prefab (libhermesvm) that CMakeLists.txt's
+  // find_package(hermes-engine) consumes for the standalone Hermes JS runtime. Without it the
+  // native build fails to configure in release variants (react-android alone does not publish the
+  // Hermes prefab). Version is substituted by the React Native Gradle Plugin (applied above).
+  implementation "com.facebook.react:hermes-android"
 
   // Jetpack Glance
   api "androidx.glance:glance:1.2.0-rc01"
