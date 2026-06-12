@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ES2020",
+    "rootDir": "../..",
+    "baseUrl": "../..",
+    "paths": {
+      "@use-voltra/android": ["packages/android/src/index.ts"],
+      "@use-voltra/android-client": ["packages/android-client/src/index.ts"],
+      "@use-voltra/android/client": ["packages/android-client/src/index.ts"],
+      "@use-voltra/android/server": ["packages/android/src/server.ts"],
+      "@use-voltra/android-server": ["packages/android-server/src/index.ts"],
+      "@use-voltra/compiler": ["packages/compiler/src/index.ts"],
+      "@use-voltra/core": ["packages/core/src/index.ts"],
+      "@use-voltra/ios": ["packages/ios/src/index.ts"],
+      "@use-voltra/ios-client": ["packages/ios-client/src/index.ts"],
+      "@use-voltra/ios/client": ["packages/ios-client/src/index.ts"],
+      "@use-voltra/ios/server": ["packages/ios/src/server.ts"],
+      "@use-voltra/ios-server": ["packages/ios-server/src/index.ts"],
+      "@use-voltra/server": ["packages/server/src/index.ts"]
+    }
+  }
+}

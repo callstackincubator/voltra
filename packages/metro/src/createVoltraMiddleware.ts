@@ -1,11 +1,18 @@
-function sendJson(res, status, value) {
+import type { WidgetRegistry } from './widgetRegistry'
+
+type Middleware = (req: any, res: any, next: () => void) => void
+
+function sendJson(res: any, status: number, value: unknown): void {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
   })
   res.end(JSON.stringify(value, null, 2))
 }
 
-function createBundleRequest(widget, originalSearchParams) {
+function createBundleRequest(
+  widget: { generatedEntryRelativePath: string },
+  originalSearchParams: URLSearchParams
+): string {
   const query = new URLSearchParams(originalSearchParams)
   query.set('bundleEntry', widget.generatedEntryRelativePath)
 
@@ -16,7 +23,13 @@ function createBundleRequest(widget, originalSearchParams) {
   return `/voltra-widget.bundle?${query.toString()}`
 }
 
-function createVoltraMiddleware({ registry, widgetMetro }) {
+export function createVoltraMiddleware({
+  registry,
+  widgetMetro,
+}: {
+  registry: WidgetRegistry
+  widgetMetro: { middleware: Middleware }
+}): Middleware {
   return (req, res, next) => {
     const requestUrl = new URL(req.url, 'http://localhost')
     const pathname = requestUrl.pathname || '/'
@@ -53,5 +66,3 @@ function createVoltraMiddleware({ registry, widgetMetro }) {
     })
   }
 }
-
-module.exports = { createVoltraMiddleware }

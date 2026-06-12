@@ -1,55 +1,78 @@
-const crypto = require('node:crypto')
-const fs = require('node:fs')
-const path = require('node:path')
+import crypto from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 
-const { scanVoltraDirectives } = require('./scanVoltraDirectives')
+import { scanVoltraDirectives, type VoltraDirectiveWidget } from './scanner'
 
-function toPosixPath(value) {
+const IGNORED_ANYWHERE = new Set(['node_modules'])
+const IGNORED_ROOT = new Set(['ios', 'android', 'Pods', 'build', 'dist', 'coverage'])
+const SOURCE_EXT = /\.[cm]?[jt]sx?$/
+const USE_VOLTRA_LITERAL = 'use voltra'
+const DEV_BARREL_PLATFORMS = ['ios', 'android']
+
+export type RegisteredVoltraWidget = VoltraDirectiveWidget & {
+  generatedEntryPath: string
+  generatedEntryRelativePath: string
+}
+
+type FileWatcher = {
+  on(event: string, callback: (filePath: string) => void): void
+  close(): void
+}
+
+export type WidgetRegistry = {
+  projectRoot: string
+  getWidget(widgetId: string): RegisteredVoltraWidget | null
+  isReady(): boolean
+  listWidgets(): Array<{
+    id: string
+    componentName: string
+    exportName: string
+    sourcePath: string
+    generatedEntryRelativePath: string
+  }>
+  close(): void
+}
+
+function toPosixPath(value: string): string {
   return value.split(path.sep).join('/')
 }
 
-function ensureDirectory(directory) {
+function ensureDirectory(directory: string): void {
   fs.mkdirSync(directory, { recursive: true })
 }
 
-function writeFileIfChanged(filePath, content) {
+function writeFileIfChanged(filePath: string, content: string): void {
   try {
     if (fs.readFileSync(filePath, 'utf8') === content) {
       return
     }
   } catch {
-    // File does not exist yet (or is unreadable) — fall through and write it.
+    // File does not exist yet or is unreadable.
   }
   fs.writeFileSync(filePath, content)
 }
 
-function hash(value) {
+function hash(value: string): string {
   return crypto.createHash('sha1').update(value).digest('hex').slice(0, 10)
 }
 
-function safeFileName(value) {
+function safeFileName(value: string): string {
   return value.replace(/[^a-zA-Z0-9_.-]+/g, '-')
 }
 
-// Widget discovery scans the project filesystem (not Metro's dependency graph), so a 'use voltra'
-// file is found whether or not anything imports it — no side-effect imports required. Directories
-// that never contain widget source are skipped for speed.
-//
-// `node_modules` and dotdirs are skipped at any depth. The native/build dirs are skipped only at
-// the project root — `ios`/`android` are *also* the names of widget source dirs (`widgets/ios`,
-// `widgets/android`), which must NOT be skipped.
-const IGNORED_ANYWHERE = new Set(['node_modules'])
-const IGNORED_ROOT = new Set(['ios', 'android', 'Pods', 'build', 'dist', 'coverage'])
-const SOURCE_EXT = /\.[cm]?[jt]sx?$/
-const USE_VOLTRA_LITERAL = 'use voltra'
-
-// Platforms that get a generated dev barrel. Widgets are routed to a barrel by the platform
-// segment of their source path (widgets/ios/*, widgets/android/*); platform-agnostic widgets go
-// into every barrel.
-const DEV_BARREL_PLATFORMS = ['ios', 'android']
-
-class DuplicateVoltraWidgetError extends Error {
-  constructor({ widgetId, firstPath, secondPath, projectRoot }) {
+export class DuplicateVoltraWidgetError extends Error {
+  constructor({
+    widgetId,
+    firstPath,
+    secondPath,
+    projectRoot,
+  }: {
+    widgetId: string
+    firstPath: string
+    secondPath: string
+    projectRoot: string
+  }) {
     const firstRelativePath = toPosixPath(path.relative(projectRoot, firstPath))
     const secondRelativePath = toPosixPath(path.relative(projectRoot, secondPath))
 
@@ -62,15 +85,25 @@ class DuplicateVoltraWidgetError extends Error {
   }
 }
 
-function createWidgetRegistry({ projectRoot } = {}) {
+export function ensureEmptyDevBarrel(projectRoot: string): string {
+  const generatedRoot = path.join(projectRoot, '.voltra', 'metro')
+  const emptyBarrelPath = path.join(generatedRoot, 'widgets-dev-barrel.empty.js')
+  ensureDirectory(generatedRoot)
+  writeFileIfChanged(emptyBarrelPath, '// AUTO-GENERATED - empty Voltra widget hot-reload barrel.\n')
+  return emptyBarrelPath
+}
+
+export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectRoot?: string } = {}): WidgetRegistry {
   const generatedRoot = path.join(projectRoot, '.voltra', 'metro')
   const generatedEntryRoot = path.join(generatedRoot, 'entries')
-  const widgetsById = new Map()
-  const widgetIdsBySourcePath = new Map()
+  const widgetsById = new Map<string, RegisteredVoltraWidget>()
+  const widgetIdsBySourcePath = new Map<string, string[]>()
   let ready = false
-  let watcher = null
+  let watcher: FileWatcher | null = null
 
-  function createGeneratedEntry(widget) {
+  function createGeneratedEntry(
+    widget: VoltraDirectiveWidget
+  ): Pick<RegisteredVoltraWidget, 'generatedEntryPath' | 'generatedEntryRelativePath'> {
     ensureDirectory(generatedEntryRoot)
 
     const entryFileName = `${safeFileName(widget.id)}-${hash(`${widget.sourcePath}:${widget.exportName}`)}.js`
@@ -93,13 +126,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
         `  throw new Error(${JSON.stringify(`Unable to find Voltra widget export "${widget.exportName}".`)})`,
         '}',
         '',
-        '// Voltra client-rendered widget entry — invoked by the native JS runtime on every render.',
-        '//',
-        '// Props / env cross the JSC / Hermes boundary as JSON strings (cheapest marshaling),',
-        '// so the entry parses them before calling the widget. Env is closure-passed because',
-        '// createElement does not accept extra positional args. The resolved Voltra node tree',
-        "// is stringified before returning so the native side gets a plain String it can hand",
-        '// to the existing payload parser.',
+        '// Voltra client-rendered widget entry - invoked by the native JS runtime on every render.',
         'export function render(propsJSON, envJSON) {',
         "  const props = typeof propsJSON === 'string' ? (propsJSON ? JSON.parse(propsJSON) : {}) : (propsJSON || {})",
         "  const env = typeof envJSON === 'string' ? (envJSON ? JSON.parse(envJSON) : {}) : (envJSON || {})",
@@ -111,7 +138,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
         'export default render',
         'export { Widget }',
         '',
-      ].join('\n'),
+      ].join('\n')
     )
 
     return {
@@ -120,9 +147,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
     }
   }
 
-  // Platform a widget belongs to, inferred from its source path. `widgets/android/*` → android,
-  // `widgets/ios/*` → ios, anything else → null (platform-agnostic, emitted into every barrel).
-  function widgetPlatform(widget) {
+  function widgetPlatform(widget: VoltraDirectiveWidget): string | null {
     const segments = toPosixPath(path.relative(projectRoot, widget.sourcePath)).split('/')
     if (segments.includes('android')) {
       return 'android'
@@ -133,13 +158,9 @@ function createWidgetRegistry({ projectRoot } = {}) {
     return null
   }
 
-  // Generate one barrel per platform that side-effect-imports every discovered widget. The host app
-  // imports the platform barrel (dev only), which puts widget modules in its Metro dependency graph
-  // so Fast Refresh detects edits and drives widget hot reload. Empty barrels are still written so
-  // the host-app import resolves on every platform. Regenerated whenever the widget set changes;
-  // the content-equality guard avoids spurious writes (and spurious app HMR) on plain edits.
-  function writeDevBarrels() {
+  function writeDevBarrels(): void {
     ensureDirectory(generatedRoot)
+    ensureEmptyDevBarrel(projectRoot)
 
     for (const platform of DEV_BARREL_PLATFORMS) {
       const imports = Array.from(widgetsById.values())
@@ -154,7 +175,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
         })
 
       const content = [
-        '// AUTO-GENERATED — do not edit. Side-effect imports that place every Voltra widget in the',
+        '// AUTO-GENERATED - do not edit. Side-effect imports that place every Voltra widget in the',
         '// host app dependency graph so Metro Fast Refresh drives dev hot reload of widgets.',
         ...imports,
         '',
@@ -164,7 +185,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
     }
   }
 
-  function removeSourcePath(sourcePath) {
+  function removeSourcePath(sourcePath: string): void {
     const widgetIds = widgetIdsBySourcePath.get(sourcePath) || []
 
     for (const widgetId of widgetIds) {
@@ -174,14 +195,14 @@ function createWidgetRegistry({ projectRoot } = {}) {
     widgetIdsBySourcePath.delete(sourcePath)
   }
 
-  function registerWidgets(sourcePath, widgets) {
+  function registerWidgets(sourcePath: string, widgets: VoltraDirectiveWidget[]): RegisteredVoltraWidget[] {
     removeSourcePath(sourcePath)
 
     if (widgets.length === 0) {
       return []
     }
 
-    const newWidgetsById = new Map()
+    const newWidgetsById = new Map<string, VoltraDirectiveWidget>()
     for (const widget of widgets) {
       const duplicateInSource = newWidgetsById.get(widget.id)
 
@@ -227,11 +248,8 @@ function createWidgetRegistry({ projectRoot } = {}) {
     return registered
   }
 
-  // Scan a single file: cheap 'use voltra' substring check (Babel parsing is not free) before the
-  // real directive scan. Rethrows DuplicateVoltraWidgetError (a real config error); other errors
-  // (e.g. a transient parse error mid-edit) are logged and the file's widgets dropped.
-  function scanFile(filePath) {
-    let source
+  function scanFile(filePath: string): RegisteredVoltraWidget[] {
+    let source: string
     try {
       source = fs.readFileSync(filePath, 'utf8')
     } catch {
@@ -251,19 +269,23 @@ function createWidgetRegistry({ projectRoot } = {}) {
       if (error instanceof DuplicateVoltraWidgetError) {
         throw error
       }
-      console.warn(`[voltra:metro] Failed to scan ${filePath}: ${error.message}`)
+      console.warn(
+        `[voltra:metro] Failed to scan ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+      )
       removeSourcePath(filePath)
       return []
     }
   }
 
-  // Synchronous recursive walk of the project for 'use voltra' widget files. Runs once at startup
-  // so the registry is populated before the first bundle request.
-  function scanProject() {
+  function scanProject(): void {
     const stack = [projectRoot]
     while (stack.length > 0) {
       const dir = stack.pop()
-      let entries
+      if (!dir) {
+        continue
+      }
+
+      let entries: fs.Dirent[]
       try {
         entries = fs.readdirSync(dir, { withFileTypes: true })
       } catch {
@@ -285,10 +307,10 @@ function createWidgetRegistry({ projectRoot } = {}) {
     }
   }
 
-  function isIgnoredPath(candidate) {
+  function isIgnoredPath(candidate: string): boolean {
     const segments = toPosixPath(path.relative(projectRoot, candidate)).split('/')
     if (segments[0] === '..') {
-      return true // outside the project
+      return true
     }
     if (IGNORED_ROOT.has(segments[0])) {
       return true
@@ -296,28 +318,28 @@ function createWidgetRegistry({ projectRoot } = {}) {
     return segments.some((segment) => IGNORED_ANYWHERE.has(segment) || segment.startsWith('.'))
   }
 
-  // Live updates: re-scan created/modified widget files, drop deleted ones. Best-effort — if
-  // chokidar can't be resolved (pnpm), discovery still works from the startup scan, just not live.
-  function startWatcher() {
-    let chokidar
+  function startWatcher(): void {
+    let chokidar: { watch(root: string, options: unknown): FileWatcher }
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       chokidar = require('chokidar')
     } catch {
       try {
         const metroDir = path.dirname(require.resolve('metro/package.json', { paths: [projectRoot] }))
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         chokidar = require(require.resolve('chokidar', { paths: [metroDir] }))
       } catch {
-        console.warn('[voltra:metro] chokidar unavailable — widget discovery is startup-scan only (no live updates)')
+        console.warn('[voltra:metro] chokidar unavailable - widget discovery is startup-scan only (no live updates)')
         return
       }
     }
 
     watcher = chokidar.watch(projectRoot, {
       ignoreInitial: true,
-      ignored: (candidate) => isIgnoredPath(candidate),
+      ignored: (candidate: string) => isIgnoredPath(candidate),
     })
 
-    const onUpsert = (filePath) => {
+    const onUpsert = (filePath: string) => {
       if (!SOURCE_EXT.test(filePath)) {
         return
       }
@@ -325,13 +347,13 @@ function createWidgetRegistry({ projectRoot } = {}) {
         scanFile(filePath)
         writeDevBarrels()
       } catch (error) {
-        console.error(`[voltra:metro] ${error.message}`)
+        console.error(`[voltra:metro] ${error instanceof Error ? error.message : String(error)}`)
       }
     }
 
     watcher.on('add', onUpsert)
     watcher.on('change', onUpsert)
-    watcher.on('unlink', (filePath) => {
+    watcher.on('unlink', (filePath: string) => {
       removeSourcePath(filePath)
       writeDevBarrels()
     })
@@ -344,7 +366,7 @@ function createWidgetRegistry({ projectRoot } = {}) {
 
   return {
     projectRoot,
-    getWidget(widgetId) {
+    getWidget(widgetId: string) {
       return widgetsById.get(widgetId) || null
     },
     isReady() {
@@ -367,5 +389,3 @@ function createWidgetRegistry({ projectRoot } = {}) {
     },
   }
 }
-
-module.exports = { DuplicateVoltraWidgetError, createWidgetRegistry }

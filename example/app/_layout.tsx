@@ -1,19 +1,11 @@
 import { Stack } from 'expo-router'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { enableWidgetHotReload } from '@use-voltra/ios-client'
+import '@use-voltra/widget-hot-reload'
 
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
-
-// Dev hot reload: the Voltra widget registry generates a per-platform barrel (see
-// metro/widgetRegistry.js) that side-effect-imports every 'use voltra' widget. Importing it keeps
-// those widgets in the host app's Metro graph, so Fast Refresh detects edits and refreshes the
-// home-screen widgets. Dev-only, so production bundles don't pull the widget sources into the app.
-if (__DEV__) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require('../.voltra/metro/widgets-dev-barrel')
-}
 
 enableWidgetHotReload()
 updateAndroidVoltraWidget({ width: 300, height: 200 })

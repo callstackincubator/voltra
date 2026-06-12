@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import { isWidgetLocalizedMap, type WidgetInitialStatePath } from '@use-voltra/expo-plugin'
+import { scanVoltraDirectives } from '@use-voltra/compiler'
 
 import type { IOSWidgetConfig } from '../types'
 
@@ -92,15 +93,17 @@ function detectSingleWidget(widget: IOSWidgetConfig, projectRoot: string): Detec
     return { ...widget, clientRendered: false }
   }
 
-  const componentName = findVoltraDirectiveComponentName(source, sourcePath)
-  if (!componentName) {
+  const directiveWidgets = scanVoltraDirectives({ filePath: sourcePath, source })
+  if (directiveWidgets.length === 0) {
     // Directive string is present somewhere (comment, embedded literal), but no exported
     // function carries it as a directive. Treat as server-rendered; if the user meant
     // client-rendered they'll notice when the widget keeps using server payloads.
     return { ...widget, clientRendered: false }
   }
 
-  if (componentName !== widget.id) {
+  const directiveWidget = directiveWidgets.find((candidate) => candidate.id === widget.id)
+  if (!directiveWidget) {
+    const componentName = directiveWidgets[0].componentName
     throw new Error(
       `[voltra] Widget id mismatch: widget "${widget.id}" in app.json has initialStatePath ` +
         `pointing at ${path.relative(projectRoot, sourcePath)} but that file's 'use voltra' ` +
@@ -113,7 +116,7 @@ function detectSingleWidget(widget: IOSWidgetConfig, projectRoot: string): Detec
   return {
     ...widget,
     clientRendered: true,
-    clientComponentName: componentName,
+    clientComponentName: directiveWidget.componentName,
     clientSourcePath: sourcePath,
   }
 }
@@ -127,105 +130,6 @@ function resolveAnyInitialStatePath(spec: WidgetInitialStatePath, projectRoot: s
       (value): value is string => typeof value === 'string' && value.length > 0
     )
     return firstPath ? path.resolve(projectRoot, firstPath) : null
-  }
-  return null
-}
-
-/**
- * Babel-parse the JSX file and walk top-level exports looking for a function (declared or
- * assigned to a `const`, including arrow functions) whose first statement is the
- * `'use voltra'` directive. Returns the function's identifier name, or null if no match.
- *
- * Mirrors example/metro/scanVoltraDirectives.js so dev (Metro) and build (plugin) agree on
- * what counts as a Voltra widget. A future refactor could hoist this scanner into
- * @use-voltra/expo-plugin so all of iOS, Android, and Metro share a single implementation.
- */
-function findVoltraDirectiveComponentName(source: string, filePath: string): string | null {
-  // Lazy require so the parser is only loaded when at least one widget might be
-  // client-rendered. @babel/parser ships with @babel/core which is already a plugin dep.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const parser = require('@babel/parser') as typeof import('@babel/parser')
-
-  let ast: ReturnType<typeof parser.parse>
-  try {
-    ast = parser.parse(source, {
-      sourceFilename: filePath,
-      sourceType: 'unambiguous',
-      plugins: [
-        'classProperties',
-        'decorators-legacy',
-        'dynamicImport',
-        'exportDefaultFrom',
-        'importMeta',
-        'jsx',
-        'topLevelAwait',
-        'typescript',
-      ],
-    })
-  } catch {
-    return null
-  }
-
-  for (const statement of ast.program.body) {
-    const found = scanStatementForDirective(statement)
-    if (found) {
-      return found
-    }
-  }
-  return null
-}
-
-function scanStatementForDirective(
-  statement: import('@babel/types').Statement | import('@babel/types').ModuleDeclaration
-): string | null {
-  if (statement.type === 'ExportNamedDeclaration' && statement.declaration) {
-    return scanStatementForDirective(statement.declaration)
-  }
-  if (statement.type === 'ExportDefaultDeclaration') {
-    if (functionHasVoltraDirective(statement.declaration)) {
-      return getFunctionName(statement.declaration)
-    }
-    return null
-  }
-  if (statement.type === 'FunctionDeclaration' && functionHasVoltraDirective(statement)) {
-    return statement.id?.name ?? null
-  }
-  if (statement.type === 'VariableDeclaration') {
-    for (const declarator of statement.declarations) {
-      if (declarator.init && functionHasVoltraDirective(declarator.init) && declarator.id.type === 'Identifier') {
-        return declarator.id.name
-      }
-    }
-  }
-  return null
-}
-
-function functionHasVoltraDirective(node: import('@babel/types').Node | null | undefined): boolean {
-  if (!node) {
-    return false
-  }
-  if (
-    node.type !== 'FunctionDeclaration' &&
-    node.type !== 'FunctionExpression' &&
-    node.type !== 'ArrowFunctionExpression'
-  ) {
-    return false
-  }
-  const body = node.body
-  if (body.type !== 'BlockStatement') {
-    return false
-  }
-  return body.directives.some((directive) => directive.value && directive.value.value === 'use voltra')
-}
-
-function getFunctionName(
-  node:
-    | import('@babel/types').FunctionDeclaration
-    | import('@babel/types').FunctionExpression
-    | import('@babel/types').Node
-): string | null {
-  if ((node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') && node.id) {
-    return node.id.name
   }
   return null
 }

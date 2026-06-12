@@ -39,7 +39,7 @@ describe('ensureWidgetBundleScriptPhase', () => {
 
     const phase = phases[0]
     expect(phase.name).toContain('Bundle Voltra client widgets')
-    expect(phase.shellScript).toContain('bundleWidgets.js')
+    expect(phase.shellScript).toContain('@use-voltra/metro/bundle-widgets')
     // Debug builds use Metro, so the script must skip them...
     expect(phase.shellScript).toContain('Debug')
     // ...and bake into the extension's resources dir in release.
