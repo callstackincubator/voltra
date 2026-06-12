@@ -152,14 +152,14 @@ struct DecorationModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .background {
-        ZStack {
-          if let bg = resolvedBackgroundColor {
-            backgroundView(for: bg)
-          }
-          if let bg = resolvedBackgroundImage {
-            backgroundView(for: bg)
-          }
+      .voltraIfLet(resolvedBackgroundImage) { content, bg in
+        content.background {
+          backgroundView(for: bg)
+        }
+      }
+      .voltraIfLet(resolvedBackgroundColor) { content, bg in
+        content.background {
+          backgroundView(for: bg)
         }
       }
       // If we have a corner radius, we must handle the border specifically here
