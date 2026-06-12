@@ -85,7 +85,7 @@ export default function GradientPlaygroundScreen() {
   return (
     <ScreenLayout
       title="Gradient Playground"
-      description="Test CSS gradient strings as backgroundColor on Voltra views."
+      description="Test CSS gradient strings as backgroundImage on Voltra views."
     >
       <Text style={styles.warningText}>
         Playground uses parser-compatible CSS syntax only. If a preview is blank, this indicates a gradient parser bug
@@ -159,7 +159,7 @@ export default function GradientPlaygroundScreen() {
           <Voltra.View
             style={{
               height: '100%',
-              backgroundColor: gradient,
+              backgroundImage: gradient,
               borderRadius,
               width: '100%',
               alignItems: 'center',
@@ -181,7 +181,7 @@ export default function GradientPlaygroundScreen() {
           <Voltra.View
             style={{
               height: '100%',
-              backgroundColor: 'linear-gradient(to right, red 10%, yellow 50%, blue 90%)',
+              backgroundImage: 'linear-gradient(to right, red 10%, yellow 50%, blue 90%)',
               borderRadius: 8,
               width: '100%',
             }}
@@ -200,11 +200,41 @@ export default function GradientPlaygroundScreen() {
           <Voltra.View
             style={{
               height: '100%',
-              backgroundColor: 'linear-gradient(to right, rgba(255,0,0,0.8) 0%, rgba(0,0,255,0.3) 100%)',
+              backgroundImage: 'linear-gradient(to right, rgba(255,0,0,0.8) 0%, rgba(0,0,255,0.3) 100%)',
               borderRadius: 8,
               width: '100%',
             }}
           />
+        </VoltraView>
+      </Card>
+
+      {/* backgroundColor + backgroundImage composition */}
+      <Card>
+        <Card.Title>Composed Background</Card.Title>
+        <Text style={styles.previewSubtext}>
+          backgroundColor: "#101828" with backgroundImage: "linear-gradient(... transparent ...)"
+        </Text>
+
+        <VoltraView style={{ width: '100%', height: 120, backgroundColor: '#0F172A', padding: 16, marginTop: 12 }}>
+          <Voltra.View
+            style={{
+              height: '100%',
+              backgroundColor: '#101828',
+              backgroundImage:
+                'linear-gradient(to bottom right, rgba(34,211,238,0.86) 0%, rgba(236,72,153,0.42) 52%, transparent 100%)',
+              borderRadius: 14,
+              width: '100%',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Voltra.Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+              Solid base + image layer
+            </Voltra.Text>
+            <Voltra.Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 11 }}>
+              Transparent pixels reveal the backgroundColor
+            </Voltra.Text>
+          </Voltra.View>
         </VoltraView>
       </Card>
 
