@@ -37,7 +37,7 @@ After preloading, reference the image with the same `key` via `assetName`.
 ## Platform Rules
 
 - iOS Live Activities and iOS widgets use `Voltra.Image`.
-- Android widgets and Android live updates use `VoltraAndroid.Image`.
+- Android widgets and Android ongoing notifications use `VoltraAndroid.Image`.
 - iOS image preloading depends on App Group-backed shared storage, so config tasks may also need `groupIdentifier`.
 - Android image preloading uses app cache plus Voltra's local delivery path; do not invent a native image pipeline.
 

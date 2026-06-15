@@ -7,7 +7,7 @@ Use this reference for Voltra widgets that fetch content from your server on a s
 - This flow is for Home Screen widgets, not APNS Live Activity updates.
 - Configure `serverUpdate` in the Voltra plugin config before writing widget server code.
 - Rebuild native apps after adding or changing `serverUpdate`, `keychainGroup`, or widget registration.
-- iOS: `createIOSWidgetUpdateNodeHandler` from `@use-voltra/ios-server`. Android: `createAndroidWidgetUpdateNodeHandler` from `@use-voltra/android-server`. Cross-platform HTTP: `@use-voltra/server`.
+- iOS: `createIOSWidgetUpdateHandler`, `createIOSWidgetUpdateNodeHandler`, or `createIOSWidgetUpdateExpressHandler` from `@use-voltra/ios-server`. Android: `createAndroidWidgetUpdateHandler`, `createAndroidWidgetUpdateNodeHandler`, or `createAndroidWidgetUpdateExpressHandler` from `@use-voltra/android-server`. Cross-platform HTTP: `@use-voltra/server`.
 - Use `setWidgetServerCredentials` after login and `clearWidgetServerCredentials` on logout when the endpoint requires auth.
 - If the endpoint is public, skip credential storage entirely.
 - Keep render paths platform-specific: `renderIos` returns iOS `WidgetVariants`; `renderAndroid` returns Android size variants.
@@ -17,7 +17,8 @@ Use this reference for Voltra widgets that fetch content from your server on a s
 
 - Voltra appends `widgetId` and `platform` to every request.
 - iOS requests also include `family`.
-- `WidgetRenderRequest` includes `widgetId`, `platform`, `family`, `token`, and `headers`.
+- Both platforms include `theme`.
+- `WidgetRenderRequest` includes `widgetId`, `platform`, `family`, `theme`, `token`, and `headers`.
 - If `validateToken` is provided, missing or invalid bearer tokens should reject with `401`.
 - Return `null` from the platform render function to produce `404` for unsupported widget IDs or unavailable content.
 
@@ -30,6 +31,12 @@ Use this reference for Voltra widgets that fetch content from your server on a s
 
 ## Preferred APIs
 
+- `createIOSWidgetUpdateHandler`
+- `createIOSWidgetUpdateNodeHandler`
+- `createIOSWidgetUpdateExpressHandler`
+- `createAndroidWidgetUpdateHandler`
+- `createAndroidWidgetUpdateNodeHandler`
+- `createAndroidWidgetUpdateExpressHandler`
 - `createWidgetUpdateHandler`
 - `createWidgetUpdateNodeHandler`
 - `createWidgetUpdateExpressHandler`
