@@ -5,7 +5,9 @@
     "rootDir": "../../..",
     "baseUrl": "../../..",
     "paths": {
-      "@use-voltra/expo-plugin": ["packages/expo-plugin/src/index.ts"]
+      "@use-voltra/compiler": ["packages/compiler/src/index.ts"],
+      "@use-voltra/expo-plugin": ["packages/expo-plugin/src/index.ts"],
+      "@use-voltra/metro/scanner": ["packages/metro/src/scanner.ts"]
     }
   },
   "include": ["./src"]

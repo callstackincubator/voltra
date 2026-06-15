@@ -1,0 +1,79 @@
+import { PackageManagerTabs } from '@rspress/core/theme'
+
+# iOS Setup
+
+Once you have [installed Voltra](../getting-started/installation), you need to configure the Expo plugin for iOS.
+
+:::info Minimum iOS Version
+Voltra requires **iOS 16.2 or later**. Make sure your app's deployment target is set to iOS 16.2 or higher. See the [expo-build-properties](https://docs.expo.dev/build-reference/variables/) documentation for details on configuring your iOS deployment target.
+:::
+
+## 1. Configure the Expo Plugin
+
+Add the Voltra plugin to your `app.json` or `app.config.js`. For iOS, you typically need to specify a `groupIdentifier` to enable data sharing between your main app and the Live Activity extension.
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "voltra",
+        {
+          "groupIdentifier": "group.your.bundle.identifier",
+          "enablePushNotifications": true
+        }
+      ]
+    ]
+  }
+}
+```
+
+For a complete list of plugin configuration options, see the [Plugin Configuration](./api/plugin-configuration) documentation.
+
+## 2. Regenerate your native project with Expo Prebuild
+
+It's time to update your native project. Run the following command to regenerate it and install native dependencies for Voltra.
+
+<PackageManagerTabs
+  command={{
+    npm: 'npx expo prebuild --platform ios',
+    yarn: 'yarn dlx expo prebuild --platform ios',
+    pnpm: 'pnpm dlx expo prebuild --platform ios',
+    bun: 'bunx expo prebuild --platform ios',
+  }}
+/>
+
+## 3. Create your first Live Activity
+
+Now let's create a simple "Hello World" live activity. Create a new component:
+
+```tsx
+import React from 'react'
+import { startLiveActivity } from 'voltra/client'
+import { Voltra } from 'voltra'
+
+function HelloWorldActivity() {
+  const activityUI = (
+    <Voltra.VStack style={{ padding: 20, borderRadius: 18, backgroundColor: '#007AFF' }}>
+      <Voltra.Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>Hello World from Voltra!</Voltra.Text>
+      <Voltra.Text style={{ color: 'white', fontSize: 16, marginTop: 8 }}>Your first live activity</Voltra.Text>
+    </Voltra.VStack>
+  )
+
+  const startActivity = async () => {
+    await startLiveActivity({
+      lockScreen: activityUI,
+    })
+  }
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <TouchableOpacity onPress={startActivity} style={{ padding: 20, backgroundColor: '#007AFF', borderRadius: 10 }}>
+        <Text style={{ color: 'white', fontSize: 18 }}>Start Live Activity</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+```
+
+You've created your first live activity with Voltra. The JSX you write gets automatically converted to SwiftUI and displayed natively on iOS.
