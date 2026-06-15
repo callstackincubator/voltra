@@ -2,18 +2,18 @@
 
 Voltra plugin config lives under `expo.plugins`.
 
-## Common Top-Level Keys
+## iOS Plugin Schema
+
+Use `@use-voltra/ios-client` for iOS config.
 
 - `groupIdentifier`
 - `enablePushNotifications`
-- `liveActivity`
 - `widgets`
 - `fonts`
-- `android`
 - `deploymentTarget`
 - `targetName`
 
-## iOS Widget Schema
+### iOS Widget Schema
 
 Use top-level `widgets` for iOS widget gallery registration.
 
@@ -22,8 +22,9 @@ Use top-level `widgets` for iOS widget gallery registration.
 - `description` (string or per-locale map)
 - `supportedFamilies`: array of iOS families such as `systemSmall`, `systemMedium`, `systemLarge`
 - `initialStatePath` (string or per-locale map of paths for localized pre-render)
-- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId`, `platform=ios`, and `family`
+- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId`, `platform=ios`, `family`, and `theme`
 - `serverUpdate.intervalMinutes`: polling interval, default `15`, subject to WidgetKit throttling
+- `serverUpdate.refresh`: native refresh button, default `false`
 
 Other important Apple-side keys:
 
@@ -33,9 +34,15 @@ Other important Apple-side keys:
 - `targetName`: custom Apple widget extension target name
 - `keychainGroup`: shared credential group for authenticated server-driven widgets; auto-derived when omitted and iOS widgets use `serverUpdate`
 
-## Android Widget Schema
+## Android Plugin Schema
 
-Use `android.widgets` for Android widget registration.
+Use `@use-voltra/android-client` for Android config.
+
+- `enableNotifications`
+- `widgets`
+- `fonts`
+
+### Android Widget Schema
 
 - `id`: unique identifier, use alphanumeric and underscores only
 - `displayName` (string or per-locale map)
@@ -49,8 +56,9 @@ Use `android.widgets` for Android widget registration.
 - `resizeMode`
 - `widgetCategory`
 - `initialStatePath` (string or per-locale map of paths)
-- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId` and `platform=android`
+- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId`, `platform=android`, and `theme`
 - `serverUpdate.intervalMinutes`: polling interval; use at least 15 minutes
+- `serverUpdate.refresh`: native refresh button, default `false`
 - `previewImage`
 - `previewLayout`
 

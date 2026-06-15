@@ -4,7 +4,7 @@ Use this reference for iOS Live Activity UI or lifecycle APIs.
 
 ## Domain Rules
 
-- Use `Voltra` and runtime APIs such as `useLiveActivity`, `startLiveActivity`, `updateLiveActivity`, `stopLiveActivity`, and `addVoltraListener` from `@use-voltra/ios-client`.
+- Use `Voltra` from `@use-voltra/ios` and runtime APIs such as `useLiveActivity`, `startLiveActivity`, `updateLiveActivity`, `stopLiveActivity`, and `addVoltraListener` from `@use-voltra/ios-client`.
 - Do not use `VoltraAndroid` or Android widget primitives in iOS Live Activity code.
 - Use valid iOS variant keys: `lockScreen`, `island`, and `supplementalActivityFamilies`.
 - For images, use `Voltra.Image` with either a bundled `assetName` or a preloaded image key. Use `preloadImages` and `reloadLiveActivities` from `@use-voltra/ios-client` for runtime images.
@@ -19,7 +19,6 @@ Use this reference for iOS Live Activity UI or lifecycle APIs.
 - `endAllLiveActivities`
 - `addVoltraListener`
 - `VoltraView`
-- `VoltraLiveActivityPreview`
 
 ## Sources
 
