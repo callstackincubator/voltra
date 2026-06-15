@@ -1,5 +1,26 @@
 # @use-voltra/ios-client
 
+## 2.0.0
+
+### Major Changes
+
+- 3833dfe: **Breaking change.** Voltra’s iOS native code now requires a **minimum deployment target of iOS 16.4** (bumped from the previous minimum). Raise it everywhere it matters (Xcode targets, `expo-build-properties`, CocoaPods, and CI), so you are not still building for 16.3 or lower.
+
+  This release also brings **Expo SDK 56** compatibility; you can upgrade Expo on your own timeline and you **do not** need to be on SDK 56 before adopting this Voltra version.
+
+### Minor Changes
+
+- 9a0857d: Add an `accentedRenderingMode` prop to the iOS `Image` component for iOS 18+ Home Screen widgets. When the widget renders in `accented` or `vibrant` mode, the prop maps to SwiftUI's `widgetAccentedRenderingMode(_:)` so consumers can opt individual images out of the system's default desaturation (e.g. pass `"fullColor"` to keep an image's original colors over the tinted backdrop). It is a no-op on iOS &lt; 18, in Live Activities, and in `fullColor` widget mode.
+
+### Patch Changes
+
+- ef9f1da: Add a reactive `useIsHeadless()` helper for iOS headless launches and update iOS headless launch handling so apps can render again when users open them from a background launch.
+- Updated dependencies [3833dfe]
+- Updated dependencies [9a0857d]
+- Updated dependencies [948eb15]
+  - @use-voltra/expo-plugin@2.0.0
+  - @use-voltra/ios@2.0.0
+
 ## 1.4.1
 
 ### Patch Changes
