@@ -1,5 +1,15 @@
 # @use-voltra/android-client
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [3833dfe]
+- Updated dependencies [948eb15]
+- Updated dependencies [1e014f1]
+  - @use-voltra/expo-plugin@2.0.0
+  - @use-voltra/android@2.0.0
+
 ## 1.4.1
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @use-voltra/android
 
+## 2.0.0
+
+### Minor Changes
+
+- 948eb15: Add SVG support to image preloading on iOS and Android.
+
+### Patch Changes
+
+- 1e014f1: Remove unsupported margin properties from Android widget style types.
+
 ## 1.4.1
 
 ### Patch Changes
