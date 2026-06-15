@@ -61,6 +61,26 @@ function safeFileName(value: string): string {
   return value.replace(/[^a-zA-Z0-9_.-]+/g, '-')
 }
 
+// Per-platform render shim. Each generated entry imports `renderVariantToJson` from this module;
+// Metro resolves the `.ios`/`.android` file by the bundle request's `platform`, so one entry serves
+// both platforms (iOS → renderVoltraVariantToJson, Android → renderAndroidVariantToJson) without
+// baking a platform-specific renderer import into the entry.
+const RENDER_SHIM_BASENAME = 'voltra-render-shim'
+
+const RENDER_SHIM_FILES: Record<string, string> = {
+  [`${RENDER_SHIM_BASENAME}.ios.js`]:
+    "export { renderVoltraVariantToJson as renderVariantToJson } from '@use-voltra/ios'\n",
+  [`${RENDER_SHIM_BASENAME}.android.js`]:
+    "export { renderAndroidVariantToJson as renderVariantToJson } from '@use-voltra/android'\n",
+}
+
+function ensureRenderShim(generatedRoot: string): void {
+  ensureDirectory(generatedRoot)
+  for (const [fileName, content] of Object.entries(RENDER_SHIM_FILES)) {
+    writeFileIfChanged(path.join(generatedRoot, fileName), content)
+  }
+}
+
 export class DuplicateVoltraWidgetError extends Error {
   constructor({
     widgetId,
@@ -105,11 +125,14 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
     widget: VoltraDirectiveWidget
   ): Pick<RegisteredVoltraWidget, 'generatedEntryPath' | 'generatedEntryRelativePath'> {
     ensureDirectory(generatedEntryRoot)
+    ensureRenderShim(generatedRoot)
 
     const entryFileName = `${safeFileName(widget.id)}-${hash(`${widget.sourcePath}:${widget.exportName}`)}.js`
     const generatedEntryPath = path.join(generatedEntryRoot, entryFileName)
     const importPath = toPosixPath(path.relative(generatedEntryRoot, widget.sourcePath)).replace(/\.[cm]?[jt]sx?$/, '')
     const normalizedImportPath = importPath.startsWith('.') ? importPath : `./${importPath}`
+    const shimRelative = toPosixPath(path.relative(generatedEntryRoot, path.join(generatedRoot, RENDER_SHIM_BASENAME)))
+    const shimImportPath = shimRelative.startsWith('.') ? shimRelative : `./${shimRelative}`
     const exportExpression =
       widget.exportName === 'default' ? 'WidgetModule.default' : `WidgetModule[${JSON.stringify(widget.exportName)}]`
 
@@ -117,7 +140,7 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
       generatedEntryPath,
       [
         "import { createElement } from 'react'",
-        "import { renderVoltraVariantToJson } from '@use-voltra/ios'",
+        `import { renderVariantToJson } from ${JSON.stringify(shimImportPath)}`,
         `import * as WidgetModule from ${JSON.stringify(normalizedImportPath)}`,
         '',
         `const Widget = ${exportExpression}`,
@@ -127,11 +150,12 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
         '}',
         '',
         '// Voltra client-rendered widget entry - invoked by the native JS runtime on every render.',
+        '// `renderVariantToJson` resolves per-platform via the render shim (see RENDER_SHIM_BASENAME).',
         'export function render(propsJSON, envJSON) {',
         "  const props = typeof propsJSON === 'string' ? (propsJSON ? JSON.parse(propsJSON) : {}) : (propsJSON || {})",
         "  const env = typeof envJSON === 'string' ? (envJSON ? JSON.parse(envJSON) : {}) : (envJSON || {})",
         '  const WidgetWithEnv = (forwardedProps) => Widget(forwardedProps, env)',
-        '  const resolved = renderVoltraVariantToJson(createElement(WidgetWithEnv, props))',
+        '  const resolved = renderVariantToJson(createElement(WidgetWithEnv, props))',
         '  return JSON.stringify(resolved)',
         '}',
         '',
