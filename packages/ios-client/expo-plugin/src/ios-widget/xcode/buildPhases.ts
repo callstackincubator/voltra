@@ -33,26 +33,28 @@ const { createRequire } = require('node:module')
 const path = require('node:path')
 
 const projectRoot = process.argv[2]
+const requireFromProject = createRequire(path.join(projectRoot, 'package.json'))
 
 try {
-  const requireFromProject = createRequire(path.join(projectRoot, 'package.json'))
-  process.stdout.write(requireFromProject.resolve('@use-voltra/metro/bundle-widgets'))
+  const resolved = requireFromProject.resolve('@use-voltra/metro/bundle-widgets')
+  process.stdout.write(resolved)
 } catch (error) {
   console.error(
     'error: Voltra widget bundler could not resolve @use-voltra/metro from ' +
       projectRoot +
-      '. Install @use-voltra/metro in the app project so release widgets can be baked.\\n' +
-      (error && error.message ? error.message : String(error))
+      '. Install @use-voltra/metro in the app project so release widgets can be baked.'
   )
+  console.error(error && error.message ? error.message : String(error))
   process.exit(1)
 }
 NODE
 )"
 if [[ -z "$BUNDLER" ]]; then
-  echo "error: Voltra widget bundler resolution returned an empty path." >&2
+  echo "Voltra: resolver returned an empty string for @use-voltra/metro/bundle-widgets" >&2
   exit 1
 fi
 
+echo "Voltra: widget bundler resolved to $BUNDLER"
 "$NODE_BINARY" "$BUNDLER" --out-dir "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH" --platform ios --project-root "$PROJECT_ROOT"
 `
 
