@@ -14,5 +14,5 @@ defaults) surface as `env.configuration`; runtime values set via `setWidgetConfi
 the defaults (Android has no system widget-configuration UI, so this is an in-app stand-in).
 
 This feature is **experimental** — usable in production at your own risk; the API and generated
-build output may change. Verify release rendering on a real device (emulators are unreliable for
-widget rendering).
+build output may change. Release rendering has been verified on the Android emulator (the baked
+bundle renders on-device with Metro stopped); confirming on a physical device is still recommended.
