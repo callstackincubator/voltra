@@ -22,7 +22,10 @@ android.sourceSets.getByName("main").assets.srcDir(voltraWidgetAssetsDir)
 def voltraBundleWidgets = tasks.register("voltraBundleWidgets", Exec) {
     description = "Bake client-rendered Voltra widget bundles into assets (release)."
     workingDir voltraProjectRoot
-    commandLine "node", "metro/bundleWidgets.js", "--platform", "android", "--out-dir", new File(voltraWidgetAssetsDir, "voltra").absolutePath, "--project-root", voltraProjectRoot.absolutePath
+    environment "VOLTRA_PROJECT_ROOT", voltraProjectRoot.absolutePath
+    environment "VOLTRA_OUT_DIR", new File(voltraWidgetAssetsDir, "voltra").absolutePath
+    environment "VOLTRA_BUNDLER_RESOLVER", "const m=require('module'),p=require('path');process.stdout.write(m.createRequire(p.join(process.argv[1],'package.json')).resolve('@use-voltra/metro/bundle-widgets'))"
+    commandLine "bash", "-c", 'BUNDLER="$(node -e "$VOLTRA_BUNDLER_RESOLVER" "$VOLTRA_PROJECT_ROOT")"; if [ -z "$BUNDLER" ]; then echo "error: Voltra could not resolve @use-voltra/metro/bundle-widgets from $VOLTRA_PROJECT_ROOT — install @use-voltra/metro so release widgets can be baked." >&2; exit 1; fi; node "$BUNDLER" --platform android --out-dir "$VOLTRA_OUT_DIR" --project-root "$VOLTRA_PROJECT_ROOT"'
     outputs.upToDateWhen { false }
 }
 

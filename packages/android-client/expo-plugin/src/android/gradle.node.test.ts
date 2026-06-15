@@ -14,8 +14,8 @@ describe('addWidgetBundleGradle', () => {
     const result = addWidgetBundleGradle(BASE_GRADLE)
     expect(result).toContain(MARKER)
     expect(result).toContain('tasks.register("voltraBundleWidgets", Exec)')
-    expect(result).toContain('metro/bundleWidgets.js')
-    expect(result).toContain('"--platform", "android"')
+    expect(result).toContain("resolve('@use-voltra/metro/bundle-widgets')")
+    expect(result).toContain('--platform android')
     // release-gated + wired into the asset merge
     expect(result).toContain('variant.buildType.name == "release"')
     expect(result).toContain('merge${variant.name.capitalize()}Assets')
