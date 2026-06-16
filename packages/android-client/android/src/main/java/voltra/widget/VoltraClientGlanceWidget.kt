@@ -173,8 +173,9 @@ class VoltraClientGlanceWidget(
     }
 
     // One node is rendered for the actual on-screen size (env carries the size); no multi-variant
-    // selection on the client path.
-    override val sizeMode = SizeMode.Single
+    // selection on the client path. SizeMode.Exact re-composes provideGlance with the real
+    // LocalSize on every resize, so env.widgetFamily and the node track the new size.
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(
         context: Context,

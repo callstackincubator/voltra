@@ -1,5 +1,6 @@
 package voltra.widget
 
+import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
 
 /**
@@ -11,4 +12,8 @@ import androidx.glance.appwidget.GlanceAppWidget
  */
 abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     override fun createGlanceAppWidget(): GlanceAppWidget = VoltraClientGlanceWidget(widgetId)
+
+    // Client widgets use SizeMode.Exact, so Glance re-composes provideGlance for the new size on
+    // resize. The server-cache re-render path doesn't apply (there is no cached payload).
+    override fun onWidgetResized(context: Context) = Unit
 }
