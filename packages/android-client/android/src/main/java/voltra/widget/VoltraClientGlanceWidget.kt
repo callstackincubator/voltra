@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId

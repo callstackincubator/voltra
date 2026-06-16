@@ -1,6 +1,8 @@
 package voltra
 
 import android.appwidget.AppWidgetManager
+import android.content.ComponentCallbacks
+import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -11,8 +13,11 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableNativeMap
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import voltra.images.VoltraImageManager
 import voltra.runtime.VoltraConfigurationStore
@@ -37,6 +42,48 @@ class VoltraModule(
 
     private val imageManager by lazy {
         VoltraImageManager(reactApplicationContext)
+    }
+
+    // Last-seen night-mode bit. ACTION_CONFIGURATION_CHANGED also fires for rotation, font scale,
+    // locale, etc., so we re-render only when the light/dark bit actually changes.
+    private var lastNightMode: Int =
+        reactContext.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+
+    // Re-renders client widgets when the system color scheme (light/dark) flips. Client widgets read
+    // env.colorScheme on-device, so a flip must re-run their render. Uses ComponentCallbacks rather
+    // than an ACTION_CONFIGURATION_CHANGED BroadcastReceiver: onConfigurationChanged delivers the
+    // authoritative new Configuration (a receiver's context.resources lags the change), and it isn't
+    // subject to the cached-process broadcast restrictions. Active while the host process is alive.
+    private val configurationCallbacks =
+        object : ComponentCallbacks {
+            override fun onConfigurationChanged(newConfig: Configuration) {
+                val nightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                if (nightMode == lastNightMode) return
+                lastNightMode = nightMode
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        widgetManager.reloadClientWidgets()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Color-scheme reload failed: ${e.message}")
+                    }
+                }
+            }
+
+            override fun onLowMemory() = Unit
+        }
+
+    override fun initialize() {
+        super.initialize()
+        reactApplicationContext.registerComponentCallbacks(configurationCallbacks)
+    }
+
+    override fun invalidate() {
+        try {
+            reactApplicationContext.unregisterComponentCallbacks(configurationCallbacks)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to unregister configuration callbacks: ${e.message}")
+        }
+        super.invalidate()
     }
 
     override fun startAndroidOngoingNotification(

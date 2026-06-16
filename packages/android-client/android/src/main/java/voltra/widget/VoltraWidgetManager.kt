@@ -430,6 +430,31 @@ class VoltraWidgetManager(
         }
 
     /**
+     * Re-render only client-rendered widgets (pinned widgets with neither cached data nor a server
+     * URL — they render on-device from `provideGlance`). Used to react to environment changes that
+     * affect `env` but not server payloads, e.g. a light/dark (color scheme) toggle.
+     */
+    suspend fun reloadClientWidgets() =
+        withContext(Dispatchers.Main) {
+            val cachedIds =
+                prefs.all.keys
+                    .filter { it.startsWith(KEY_JSON_PREFIX) }
+                    .map { it.removePrefix(KEY_JSON_PREFIX) }
+                    .toSet()
+            val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
+            val clientIds = pinnedVoltraWidgetIds() - cachedIds - serverDrivenIds
+
+            Log.d(TAG, "reloadClientWidgets: ${clientIds.size} client widget(s)")
+            for (widgetId in clientIds) {
+                try {
+                    VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to reload client widget $widgetId: ${e.message}")
+                }
+            }
+        }
+
+    /**
      * Widget ids of all currently-pinned Voltra widgets, derived from bound AppWidget providers
      * named `<pkg>.widget.VoltraWidget_<id>Receiver`. Covers client-rendered widgets, which keep no
      * cached prefs data, so reloadAllWidgets reaches them too.
