@@ -6,8 +6,8 @@
  * argument is populated by the native runtime at draw time and carries:
  *
  * - **Runtime device state** (`colorScheme`, `widgetFamily`, etc.) captured per render
- * - **Platform-specific runtime state** (`widgetRenderingMode` on iOS, `materialColors` on
- *   Android), present only on the platform that has the concept
+ * - **Platform-specific runtime state** (`widgetRenderingMode` on iOS), present only on the
+ *   platform that has the concept
  * - **AppIntent / user-configured params** under `env.configuration` (TypeScript-typed per
  *   widget via the generic parameter)
  * - **Build env** under `env.build.*` — values that don't change between renders inside a
@@ -51,16 +51,6 @@ export type WidgetEnvironment<TConfig extends Record<string, unknown> | undefine
   showsWidgetContainerBackground?: boolean
 
   // ---------------------------------------------------------------------------
-  // Android-only runtime values
-  // Present only when rendering on Android; `undefined` on iOS.
-  // ---------------------------------------------------------------------------
-
-  /** Android — Material You dynamic color tokens captured from
-   * `MaterialTheme.colorScheme`. Field-for-field maps onto Compose `ColorScheme`
-   * (primary, onPrimary, surface, onSurface, etc.). */
-  materialColors?: MaterialColorScheme
-
-  // ---------------------------------------------------------------------------
   // System-managed configuration
   // ---------------------------------------------------------------------------
 
@@ -99,38 +89,6 @@ export type WidgetBuildEnvironment = {
 }
 
 /**
- * Material You dynamic color tokens captured from Android `MaterialTheme.colorScheme`.
- * Field names map 1:1 onto Compose's `ColorScheme` properties. Each value is an RGBA
- * hex string (`#RRGGBBAA` or `#RRGGBB`). Available on Android only.
- */
-export type MaterialColorScheme = {
-  primary: string
-  onPrimary: string
-  primaryContainer: string
-  onPrimaryContainer: string
-  secondary: string
-  onSecondary: string
-  secondaryContainer: string
-  onSecondaryContainer: string
-  tertiary: string
-  onTertiary: string
-  tertiaryContainer: string
-  onTertiaryContainer: string
-  background: string
-  onBackground: string
-  surface: string
-  onSurface: string
-  surfaceVariant: string
-  onSurfaceVariant: string
-  outline: string
-  outlineVariant: string
-  error: string
-  onError: string
-  errorContainer: string
-  onErrorContainer: string
-}
-
-/**
  * Type guard — returns true when the runtime env is an iOS-platform env.
  *
  * @example
@@ -146,9 +104,11 @@ export function isIosEnv(
 
 /**
  * Type guard — returns true when the runtime env is an Android-platform env.
+ *
+ * Android carries no platform-only runtime field (Material You colors are consumed via
+ * `AndroidDynamicColors` tokens resolved by the native renderer, not through `env`), so this is
+ * the complement of {@link isIosEnv}.
  */
-export function isAndroidEnv(
-  env: WidgetEnvironment
-): env is WidgetEnvironment & { materialColors: NonNullable<WidgetEnvironment['materialColors']> } {
-  return env.materialColors !== undefined
+export function isAndroidEnv(env: WidgetEnvironment): boolean {
+  return !isIosEnv(env)
 }

@@ -4,11 +4,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.util.Log
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
@@ -129,55 +125,6 @@ class VoltraClientGlanceWidget(
         private fun isDev(context: Context): Boolean =
             (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
-        private fun hexRgba(color: Color): String {
-            val argb = color.toArgb()
-            // MaterialColorScheme expects #RRGGBBAA (see JSColorParser): R first, alpha last.
-            return String.format(
-                "#%02X%02X%02X%02X",
-                (argb shr 16) and 0xFF,
-                (argb shr 8) and 0xFF,
-                argb and 0xFF,
-                (argb ushr 24) and 0xFF,
-            )
-        }
-
-        /**
-         * The 24 Material You tokens for `env.materialColors`, read from the system dynamic color
-         * scheme (API 31+, our minSdk). Field names map 1:1 onto MaterialColorScheme in
-         * packages/core/src/widget-environment.ts.
-         */
-        private fun materialColorsJson(
-            context: Context,
-            dark: Boolean,
-        ): JSONObject {
-            val s = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            return JSONObject()
-                .put("primary", hexRgba(s.primary))
-                .put("onPrimary", hexRgba(s.onPrimary))
-                .put("primaryContainer", hexRgba(s.primaryContainer))
-                .put("onPrimaryContainer", hexRgba(s.onPrimaryContainer))
-                .put("secondary", hexRgba(s.secondary))
-                .put("onSecondary", hexRgba(s.onSecondary))
-                .put("secondaryContainer", hexRgba(s.secondaryContainer))
-                .put("onSecondaryContainer", hexRgba(s.onSecondaryContainer))
-                .put("tertiary", hexRgba(s.tertiary))
-                .put("onTertiary", hexRgba(s.onTertiary))
-                .put("tertiaryContainer", hexRgba(s.tertiaryContainer))
-                .put("onTertiaryContainer", hexRgba(s.onTertiaryContainer))
-                .put("background", hexRgba(s.background))
-                .put("onBackground", hexRgba(s.onBackground))
-                .put("surface", hexRgba(s.surface))
-                .put("onSurface", hexRgba(s.onSurface))
-                .put("surfaceVariant", hexRgba(s.surfaceVariant))
-                .put("onSurfaceVariant", hexRgba(s.onSurfaceVariant))
-                .put("outline", hexRgba(s.outline))
-                .put("outlineVariant", hexRgba(s.outlineVariant))
-                .put("error", hexRgba(s.error))
-                .put("onError", hexRgba(s.onError))
-                .put("errorContainer", hexRgba(s.errorContainer))
-                .put("onErrorContainer", hexRgba(s.onErrorContainer))
-        }
-
         /**
          * Build the WidgetEnvironment JSON (see packages/core/src/widget-environment.ts) for the
          * current render.
@@ -219,7 +166,6 @@ class VoltraClientGlanceWidget(
                 .put("widgetFamily", family)
                 .put("colorScheme", colorScheme)
                 .put("locale", locale)
-                .put("materialColors", materialColorsJson(context, colorScheme == "dark"))
                 .put("configuration", configObject)
                 .put("build", build)
                 .toString()

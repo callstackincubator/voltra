@@ -5,9 +5,11 @@
 **Experimental: client-rendered widgets (Android).** A widget component marked with the
 `'use voltra'` directive now renders on-device in a standalone Hermes runtime, called as
 `(props, env) => JSX` on every render, so it reacts to live environment values (widget size, color
-scheme, Material You colors, locale, and configuration). In development the bundle is served by
-Metro and editing the JSX hot-reloads the pinned widget; in release builds the bundle is baked into
-the app's assets at build time.
+scheme, locale, and configuration). Material You dynamic colors are consumed via
+`AndroidDynamicColors` tokens that the native renderer resolves to the system color scheme (and that
+follow light/dark automatically). In development the bundle is served by Metro and editing the JSX
+hot-reloads the pinned widget; in release builds the bundle is baked into the app's assets at build
+time.
 
 Configuration parameters declared in `app.json` (`appIntent.parameters`, with code-defined
 defaults) surface as `env.configuration`; runtime values set via `setWidgetConfiguration` override

@@ -1,9 +1,10 @@
-import { VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
+import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
 
 // Client-rendered Android widget: its JSX runs on-device in Hermes on every render, receiving
 // the live `env`. Edit the marker literal below and save — the home-screen widget updates via
-// Fast Refresh (dev). Mirrors the iOS ClientRenderedDemoWidget. Themes itself from the live
-// Material You tokens in env.materialColors.
+// Fast Refresh (dev). Mirrors the iOS ClientRenderedDemoWidget. Themes itself from Material You
+// via AndroidDynamicColors tokens, which the native renderer resolves to the system dynamic
+// color scheme (and which follow light/dark automatically).
 
 export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) => {
   'use voltra'
@@ -22,12 +23,11 @@ export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment =
   const config = env.configuration as Record<string, unknown> | undefined
   const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
 
-  // Material You tokens (fall back to static colors if env.materialColors is absent).
-  const mc = env.materialColors
-  const bg = mc?.surface ?? '#0B1120'
-  const fg = mc?.onSurface ?? '#E2E8F0'
-  const muted = mc?.onSurfaceVariant ?? '#94A3B8'
-  const accent = mc?.primary ?? '#34D399'
+  // Material You tokens — resolved natively from the system dynamic color scheme.
+  const bg = AndroidDynamicColors.surface
+  const fg = AndroidDynamicColors.onSurface
+  const muted = AndroidDynamicColors.onSurfaceVariant
+  const accent = AndroidDynamicColors.primary
 
   const label = { fontSize: 10, color: muted } as const
   const value = { fontSize: 10, color: fg } as const
@@ -39,8 +39,8 @@ export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment =
     </VoltraAndroid.Row>
   )
 
-  const swatch = (color?: string) => (
-    <VoltraAndroid.Box style={{ width: 16, height: 16, backgroundColor: color ?? '#000000', cornerRadius: 4 }} />
+  const swatch = (color: string) => (
+    <VoltraAndroid.Box style={{ width: 16, height: 16, backgroundColor: color, cornerRadius: 4 }} />
   )
 
   return (
@@ -58,13 +58,13 @@ export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment =
       {row('time:', renderedAt)}
       <VoltraAndroid.Spacer style={{ height: 8 }} />
       <VoltraAndroid.Row>
-        {swatch(mc?.primary)}
+        {swatch(AndroidDynamicColors.primary)}
         <VoltraAndroid.Spacer style={{ width: 6 }} />
-        {swatch(mc?.secondary)}
+        {swatch(AndroidDynamicColors.secondary)}
         <VoltraAndroid.Spacer style={{ width: 6 }} />
-        {swatch(mc?.tertiary)}
+        {swatch(AndroidDynamicColors.tertiary)}
         <VoltraAndroid.Spacer style={{ width: 6 }} />
-        {swatch(mc?.error)}
+        {swatch(AndroidDynamicColors.error)}
       </VoltraAndroid.Row>
     </VoltraAndroid.Column>
   )
