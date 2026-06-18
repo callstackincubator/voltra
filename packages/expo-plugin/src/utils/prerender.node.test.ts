@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 
 import { logger } from './logger'
@@ -26,7 +27,7 @@ describe('prerenderWidgetState', () => {
     ['@use-voltra/ios-client', '@use-voltra/ios', 'ios'],
     ['@use-voltra/android-client', '@use-voltra/android', 'android'],
   ] as const)('redirects %s to %s and warns once', async (clientPackage, targetPackage, targetLabel) => {
-    const tempRoot = await fs.mkdtemp(path.join(process.cwd(), '.tmp-prerender-'))
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'voltra-prerender-'))
     const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => undefined)
 
     try {
