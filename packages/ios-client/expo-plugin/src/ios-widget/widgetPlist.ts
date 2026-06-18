@@ -4,6 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join as joinPath } from 'path'
 
 import type { IOSWidgetConfig } from '../types'
+import { detectClientRenderedWidgets } from './clientRendered'
 import { logger } from '@use-voltra/expo-plugin'
 
 export interface ConfigureMainAppPlistProps {
@@ -45,6 +46,27 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
         }
 
         const content = plist.parse(readFileSync(filePath, 'utf8')) as InfoPlist
+
+        // Client-rendered widgets fetch their JS bundle from Metro at
+        // http://localhost:8081 in DEBUG builds. iOS requires an ATS exception for
+        // plaintext HTTP, scoped to localhost. The keys are only added when a
+        // client-rendered widget actually exists, so server-only configurations
+        // keep their plist minimal.
+        if (widgets && widgets.length > 0) {
+          const detected = detectClientRenderedWidgets(widgets, config.modRequest.projectRoot)
+          const hasClientWidget = detected.some((w) => w.clientRendered)
+          if (hasClientWidget) {
+            ;(content as any)['NSAppTransportSecurity'] = {
+              NSAllowsLocalNetworking: true,
+              NSExceptionDomains: {
+                localhost: {
+                  NSExceptionAllowsInsecureHTTPLoads: true,
+                  NSIncludesSubdomains: true,
+                },
+              },
+            }
+          }
+        }
 
         // WidgetKit extensions must NOT declare NSExtensionPrincipalClass/MainStoryboard.
         // The @main WidgetBundle in Swift is the entry point.

@@ -12,6 +12,8 @@
 
 - **iOS Widgets**: Update, schedule, reload, and query widgets with `updateWidget`, `scheduleWidget`, `getActiveWidgets`, and more.
 
+- **Client-rendered widgets** _(experimental)_: Write a widget as a `'use voltra'` JSX component and have it render on-device from its own JS bundle, with live env (family, color scheme, locale, configuration). See the note below.
+
 - **Fast Refresh**: Hooks and previews integrate with your React Native dev workflow.
 
 - **Push & events**: Capture ActivityKit push tokens and component interactions via `addVoltraListener`.
@@ -19,6 +21,25 @@
 - **Image preloading**: Download remote images for use in activities and widgets with `preloadImages` and `reloadLiveActivities`.
 
 - **Expo config plugin**: Add `"@use-voltra/ios-client"` to `app.json` to generate the Live Activity extension, widget targets, and entitlements.
+
+## Client-rendered widgets (experimental)
+
+> [!WARNING]
+> Client-rendered widgets are **experimental** — usable in production at your own risk. The API
+> and generated build output may change between releases.
+
+A widget whose component carries the `'use voltra'` directive is rendered **on-device**: its JS
+bundle is evaluated in a separate engine on each render and called as `(props, env) => JSX`, so the
+widget reacts to live environment values (widget family, color scheme, locale, and user
+`configuration` from the native Edit Widget sheet). In development the bundle is served by Metro
+(editing the JSX hot-reloads the home-screen widget); in release builds it is baked into the widget
+extension at build time.
+
+Notes:
+
+- The dev loop and release baking rely on Metro scaffolding in your project (see `example/metro`).
+- Verify release rendering on a **real device** — the iOS Simulator is unreliable for widget
+  rendering.
 
 ## Documentation
 

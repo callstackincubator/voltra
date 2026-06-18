@@ -1,0 +1,83 @@
+{
+  "name": "@use-voltra/metro",
+  "version": "1.4.1",
+  "description": "Metro integration for Voltra client-rendered widgets",
+  "main": "build/cjs/index.js",
+  "module": "build/esm/index.js",
+  "types": "build/types/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "scanner": [
+        "build/types/scanner.d.ts"
+      ],
+      "bundle-widgets": [
+        "build/types/bin/bundle-widgets.d.ts"
+      ],
+      "*": [
+        "build/types/*"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./build/types/index.d.ts",
+      "require": "./build/cjs/index.js",
+      "import": "./build/esm/index.js",
+      "default": "./build/esm/index.js"
+    },
+    "./scanner": {
+      "types": "./build/types/scanner.d.ts",
+      "require": "./build/cjs/scanner.js",
+      "import": "./build/esm/scanner.js",
+      "default": "./build/esm/scanner.js"
+    },
+    "./bundle-widgets": {
+      "types": "./build/types/bin/bundle-widgets.d.ts",
+      "require": "./build/cjs/bin/bundle-widgets.js",
+      "import": "./build/esm/bin/bundle-widgets.js",
+      "default": "./build/cjs/bin/bundle-widgets.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "bundle-widgets": "./build/cjs/bin/bundle-widgets.js"
+  },
+  "files": [
+    "build",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/build-package.mjs packages/metro",
+    "clean": "rm -rf build",
+    "lint": "oxlint src",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@use-voltra/compiler": "workspace:^",
+    "metro-config-transformers": "^1.0.0"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "metro": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "metro",
+    "voltra"
+  ],
+  "author": "Saúl Sharma (https://x.com/saul_sharma), Szymon Chmal (https://x.com/chmalszymon)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/callstackincubator/voltra.git",
+    "directory": "packages/metro"
+  },
+  "bugs": {
+    "url": "https://github.com/callstackincubator/voltra/issues"
+  },
+  "license": "MIT",
+  "homepage": "https://use-voltra.dev"
+}
