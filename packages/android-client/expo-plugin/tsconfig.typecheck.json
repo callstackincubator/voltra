@@ -5,6 +5,7 @@
     "rootDir": "../../..",
     "baseUrl": "../../..",
     "paths": {
+      "@use-voltra/compiler": ["packages/compiler/src/index.ts"],
       "@use-voltra/expo-plugin": ["packages/expo-plugin/src/index.ts"]
     }
   },

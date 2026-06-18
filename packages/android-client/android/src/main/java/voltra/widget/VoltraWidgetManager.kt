@@ -399,19 +399,83 @@ class VoltraWidgetManager(
 
             // Also include server-driven widgets that may not have cached data yet
             val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
-            val allWidgetIds = widgetIds + serverDrivenIds
+            val cachedAndServerIds = widgetIds + serverDrivenIds
+
+            // Pinned widgets that have neither cached data nor a server URL are client-rendered
+            // (they render from Metro). reloadSingleWidget's cache path can't refresh them, so
+            // trigger their Glance update directly to re-run provideGlance.
+            val pinnedIds = pinnedVoltraWidgetIds()
+            val clientIds = pinnedIds - cachedAndServerIds
 
             Log.d(
                 TAG,
-                "Found ${allWidgetIds.size} widgets to reload (${widgetIds.size} cached, ${serverDrivenIds.size} server-driven)",
+                "Found ${cachedAndServerIds.size + clientIds.size} widgets to reload " +
+                    "(${widgetIds.size} cached, ${serverDrivenIds.size} server-driven, ${clientIds.size} client-rendered)",
             )
 
-            for (widgetId in allWidgetIds) {
+            for (widgetId in cachedAndServerIds) {
                 try {
                     reloadSingleWidget(widgetId)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to update widget $widgetId: ${e.message}")
                 }
             }
+            for (widgetId in clientIds) {
+                try {
+                    VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update client widget $widgetId: ${e.message}")
+                }
+            }
         }
+
+    /**
+     * Re-render only client-rendered widgets (pinned widgets with neither cached data nor a server
+     * URL — they render on-device from `provideGlance`). Used to react to environment changes that
+     * affect `env` but not server payloads, e.g. a light/dark (color scheme) toggle.
+     */
+    suspend fun reloadClientWidgets() =
+        withContext(Dispatchers.Main) {
+            val cachedIds =
+                prefs.all.keys
+                    .filter { it.startsWith(KEY_JSON_PREFIX) }
+                    .map { it.removePrefix(KEY_JSON_PREFIX) }
+                    .toSet()
+            val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
+            val clientIds = pinnedVoltraWidgetIds() - cachedIds - serverDrivenIds
+
+            Log.d(TAG, "reloadClientWidgets: ${clientIds.size} client widget(s)")
+            for (widgetId in clientIds) {
+                try {
+                    VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to reload client widget $widgetId: ${e.message}")
+                }
+            }
+        }
+
+    /**
+     * Widget ids of all currently-pinned Voltra widgets, derived from bound AppWidget providers
+     * named `<pkg>.widget.VoltraWidget_<id>Receiver`. Covers client-rendered widgets, which keep no
+     * cached prefs data, so reloadAllWidgets reaches them too.
+     */
+    private fun pinnedVoltraWidgetIds(): Set<String> {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val prefix = "VoltraWidget_"
+        val suffix = "Receiver"
+        val ids = mutableSetOf<String>()
+        try {
+            for (provider in appWidgetManager.installedProviders) {
+                val componentName = provider.provider
+                if (componentName.packageName != context.packageName) continue
+                val simpleName = componentName.className.substringAfterLast('.')
+                if (!simpleName.startsWith(prefix) || !simpleName.endsWith(suffix)) continue
+                if (appWidgetManager.getAppWidgetIds(componentName).isEmpty()) continue // not pinned
+                ids.add(simpleName.removePrefix(prefix).removeSuffix(suffix))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "pinnedVoltraWidgetIds failed: ${e.message}")
+        }
+        return ids
+    }
 }

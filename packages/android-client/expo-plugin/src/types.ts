@@ -3,6 +3,22 @@ import type { ConfigPlugin } from '@expo/config-plugins'
 import type { WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
 
 /**
+ * A single user-configurable parameter for a client-rendered widget. Android has no system-managed
+ * widget configuration UI (unlike iOS's WidgetConfigurationIntent), so the value is set at runtime
+ * via `setWidgetConfiguration`; `default` is the code-declared value shown before any runtime edit.
+ * The same `appIntent` key is used as on iOS for a single cross-platform `app.json` schema.
+ */
+export interface AppIntentParameter {
+  name: string
+  title?: string
+  default?: string
+}
+
+export interface AndroidWidgetAppIntentConfig {
+  parameters: AppIntentParameter[]
+}
+
+/**
  * Configuration for a single Android home screen widget.
  */
 export interface AndroidWidgetConfig {
@@ -21,6 +37,12 @@ export interface AndroidWidgetConfig {
   serverUpdate?: AndroidWidgetServerUpdateConfig
   previewImage?: string
   previewLayout?: string
+  /**
+   * Code-declared configuration parameters surfaced to a client-rendered widget as
+   * `env.configuration`. `parameters[].default` is emitted to the app's assets so the widget shows
+   * it before any runtime configuration; runtime values (set via `setWidgetConfiguration`) override.
+   */
+  appIntent?: AndroidWidgetAppIntentConfig
 }
 
 /**

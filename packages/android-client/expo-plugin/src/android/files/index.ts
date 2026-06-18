@@ -1,7 +1,9 @@
 import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 
 import type { AndroidWidgetConfig } from '../../types'
+import { detectClientRenderedWidgets } from '../clientRendered'
 import { generateAndroidAssets } from './assets'
+import { generateAndroidConfigDefaults } from './configDefaults'
 import { copyAndroidFonts } from './fonts'
 import { generateAndroidInitialStates } from './initialStates'
 import { generateWidgetReceivers } from './kotlin'
@@ -44,6 +46,10 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
         )
       }
 
+      // Tag each widget server- vs client-rendered once; receivers and initial-state prerender
+      // both branch on it. Other generators ignore the extra fields.
+      const detectedWidgets = detectClientRenderedWidgets(widgets, projectRoot)
+
       // Generate assets (drawable images and preview images)
       const previewImageMap = await generateAndroidAssets({
         platformProjectRoot,
@@ -56,7 +62,7 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
       await generateWidgetReceivers({
         platformProjectRoot,
         packageName,
-        widgets,
+        widgets: detectedWidgets,
       })
 
       // Generate XML files (widget info, layouts, strings)
@@ -89,6 +95,12 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
       await generateAndroidInitialStates({
         platformProjectRoot,
         projectRoot: config.modRequest.projectRoot,
+        widgets: detectedWidgets,
+      })
+
+      // Emit code-declared client widget configuration defaults (env.configuration).
+      await generateAndroidConfigDefaults({
+        platformProjectRoot,
         widgets,
       })
 

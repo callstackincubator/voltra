@@ -102,18 +102,23 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
      */
     abstract val widgetId: String
 
+    /**
+     * The GlanceAppWidget this receiver hosts. Defaults to the server-rendered
+     * [VoltraGlanceWidget]; client-rendered receivers override this to return a
+     * [voltra.widget.VoltraClientGlanceWidget]. Kept as a factory (not a direct property) so
+     * the shared registry registration in [glanceAppWidget] stays in one place.
+     */
+    protected open fun createGlanceAppWidget(): GlanceAppWidget = VoltraGlanceWidget(widgetId)
+
     override val glanceAppWidget: GlanceAppWidget by lazy {
-        Log.d(TAG, "Creating VoltraGlanceWidget for widgetId=$widgetId")
-        val widget = VoltraGlanceWidget(widgetId)
+        Log.d(TAG, "Creating GlanceAppWidget for widgetId=$widgetId")
+        val widget = createGlanceAppWidget()
         widgetRegistry[widgetId] = widget
         widget
     }
 
     /**
      * Called when the user resizes a widget on the home screen.
-     * The server returns all size variants in every response, so we just
-     * re-render from cached data — RemoteViews(sizeMapping) picks the closest match.
-     * No network request needed.
      */
     override fun onAppWidgetOptionsChanged(
         context: Context,
@@ -125,8 +130,19 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
 
         val w = newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
         val h = newOptions.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-        Log.d(TAG, "Widget '$widgetId' resized to ${w}x$h, re-rendering from cache")
+        Log.d(TAG, "Widget '$widgetId' resized to ${w}x$h")
 
+        onWidgetResized(context)
+    }
+
+    /**
+     * Re-render after a resize. Server-rendered widgets re-render from cached data — the payload
+     * carries all size variants, so RemoteViews(sizeMapping) picks the closest match; no network
+     * request needed. Client-rendered widgets override this to no-op: they use
+     * `SizeMode.Exact`, so Glance already re-composes `provideGlance` for the new size (and there
+     * is no cached payload to re-render from).
+     */
+    protected open fun onWidgetResized(context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             val widgetManager = VoltraWidgetManager(context.applicationContext)
             widgetManager.updateWidgetDirect(widgetId)

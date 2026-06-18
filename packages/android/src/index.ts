@@ -13,6 +13,10 @@ export { renderAndroidLiveUpdateToJson, renderAndroidLiveUpdateToString } from '
 export { AndroidOngoingNotification } from './ongoing-notification/components.js'
 export { renderAndroidOngoingNotificationPayload } from './ongoing-notification/renderer.js'
 export { renderAndroidViewToJson, renderAndroidWidgetToJson, renderAndroidWidgetToString } from './widgets/renderer.js'
+// Single-node renderer used by client-rendered widgets (on-device Hermes render). Analog of
+// iOS `renderVoltraVariantToJson`. Invoked with `(props, env)` per render via the generated
+// widget entry.
+export { renderAndroidVariantToJson } from './renderer/index.js'
 
 // Android types
 export type { VoltraAndroidBaseProps } from './jsx/baseProps.js'
@@ -92,4 +96,4 @@ export type { RowProps } from './jsx/Row.js'
 export type { SpacerProps } from './jsx/Spacer.js'
 export type { TextProps } from './jsx/Text.js'
 export { isAndroidEnv, isIosEnv } from '@use-voltra/core'
-export type { MaterialColorScheme, WidgetBuildEnvironment, WidgetEnvironment } from '@use-voltra/core'
+export type { WidgetBuildEnvironment, WidgetEnvironment } from '@use-voltra/core'

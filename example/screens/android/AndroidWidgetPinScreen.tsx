@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
-import { requestPinAndroidWidget } from '@use-voltra/android-client'
+import { requestPinAndroidWidget, setWidgetConfiguration } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
@@ -28,6 +28,13 @@ const AVAILABLE_WIDGETS = [
     defaultPreviewWidth: 250,
     defaultPreviewHeight: 150,
   },
+  {
+    id: 'AndroidClientDemoWidget',
+    name: 'Client-Rendered Demo',
+    description: 'On-device JSX render (Hermes) with live env',
+    defaultPreviewWidth: 250,
+    defaultPreviewHeight: 150,
+  },
 ]
 
 export default function AndroidWidgetPinScreen() {
@@ -36,6 +43,19 @@ export default function AndroidWidgetPinScreen() {
   const [previewWidth, setPreviewWidth] = useState<string>('250')
   const [previewHeight, setPreviewHeight] = useState<string>('150')
   const [isPinning, setIsPinning] = useState(false)
+  const [configLabel, setConfigLabel] = useState<string>('')
+
+  const handleSetConfig = async () => {
+    if (Platform.OS !== 'android') {
+      return
+    }
+    try {
+      await setWidgetConfiguration(selectedWidgetId, 'label', configLabel)
+      Alert.alert('Saved', `Set config "label" = "${configLabel}" for ${selectedWidgetId}. The widget re-renders.`)
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || String(error))
+    }
+  }
 
   const selectedWidget = AVAILABLE_WIDGETS.find((w) => w.id === selectedWidgetId) || AVAILABLE_WIDGETS[0]
 
@@ -108,6 +128,22 @@ export default function AndroidWidgetPinScreen() {
             <Text style={styles.widgetDescription}>{widget.description}</Text>
           </View>
         ))}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Configuration (client-rendered)</Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>env.configuration.label</Text>
+          <TextInput
+            style={styles.input}
+            value={configLabel}
+            onChangeText={setConfigLabel}
+            placeholder="label value"
+            placeholderTextColor="#64748B"
+            autoCapitalize="none"
+          />
+        </View>
+        <Button title="Set configuration" onPress={handleSetConfig} style={styles.resetButton} />
       </View>
 
       <View style={styles.section}>

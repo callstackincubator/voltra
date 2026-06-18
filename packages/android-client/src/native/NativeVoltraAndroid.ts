@@ -93,6 +93,7 @@ export interface Spec extends TurboModule {
   openAndroidNotificationSettings(): Promise<void>
   updateAndroidWidget(widgetId: string, jsonString: string, options?: Readonly<{ deepLinkUrl?: string }>): Promise<void>
   reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
+  setWidgetConfiguration(widgetId: string, key: string, value: string): Promise<void>
   clearAndroidWidget(widgetId: string): Promise<void>
   clearAllAndroidWidgets(): Promise<void>
   requestPinGlanceAppWidget(widgetId: string, options?: RequestPinGlanceAppWidgetOptionsSpec): Promise<boolean>

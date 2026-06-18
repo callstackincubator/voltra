@@ -48,6 +48,7 @@
     "@babel/core": "^7.27.4",
     "@expo/config-plugins": "~10.1.2",
     "@use-voltra/android": "workspace:^",
+    "@use-voltra/compiler": "workspace:^",
     "@use-voltra/expo-plugin": "workspace:^",
     "dedent": "^1.7.1",
     "vd-tool": "^4.0.2"
