@@ -24,9 +24,12 @@
   },
   "files": [
     "app.plugin.js",
-    "android",
+    "android/build.gradle",
+    "android/src/main",
     "build",
-    "expo-plugin",
+    "expo-plugin/app.plugin.js",
+    "expo-plugin/build",
+    "expo-plugin/src",
     "src",
     "README.md"
   ],

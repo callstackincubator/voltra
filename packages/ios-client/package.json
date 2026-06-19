@@ -25,10 +25,12 @@
   "files": [
     "app.plugin.js",
     "build",
-    "expo-plugin",
+    "expo-plugin/app.plugin.js",
+    "expo-plugin/build",
+    "expo-plugin/src",
     "ios",
     "src",
-    "Voltra.podspec",
+    "*.podspec",
     "README.md"
   ],
   "scripts": {
