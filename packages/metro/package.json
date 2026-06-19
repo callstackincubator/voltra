@@ -53,6 +53,9 @@
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "test": "node --import tsx --test"
   },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  },
   "dependencies": {
     "@use-voltra/expo-plugin": "workspace:^",
     "@use-voltra/compiler": "workspace:^",
