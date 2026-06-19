@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import Module from 'node:module'
 import { fileURLToPath } from 'node:url'
-import { afterEach, describe, test } from 'node:test'
+import { afterEach, describe, mock, test } from 'node:test'
 
 import { bundleWidgets } from './bundleWidgets.ts'
 import { createVoltraMiddleware } from './createVoltraMiddleware.ts'
@@ -50,6 +51,7 @@ describe('@use-voltra/metro manifest registry', () => {
     while (cleanups.length > 0) {
       cleanups.pop()?.()
     }
+    mock.restoreAll()
   })
 
   test('loads platform manifests independently and generates default-export adapters', () => {
@@ -157,6 +159,7 @@ describe('@use-voltra/metro middleware and bundling', () => {
     while (cleanups.length > 0) {
       cleanups.pop()?.()
     }
+    mock.restoreAll()
   })
 
   test('routes bundle requests by platform and widget id', () => {
@@ -253,5 +256,60 @@ describe('@use-voltra/metro middleware and bundling', () => {
     })
 
     assert.equal(fs.existsSync(outDir), false)
+  })
+
+  test('keeps release bundle filenames aligned with native loaders', async () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.json': JSON.stringify(
+        {
+          version: 1,
+          platform: 'ios',
+          widgets: [{ id: 'home', entry: 'widgets/home.js' }],
+        },
+        null,
+        2
+      ),
+      'widgets/home.js': 'export default function HomeWidget() { return null }\n',
+    })
+    cleanups.push(cleanup)
+
+    const originalLoad = (Module as any)._load
+    mock.method(Module as any, '_load', function (request: string, parent: unknown, isMain: boolean) {
+      if (request === 'metro') {
+        return {
+          runBuild: async () => ({ code: 'bundle' }),
+        }
+      }
+
+      if (request === 'metro-config') {
+        return {
+          loadConfig: async () => ({
+            resolver: { sourceExts: [] },
+            watchFolders: [],
+            serializer: {},
+            transformer: {},
+            server: {},
+          }),
+          getDefaultConfig: async () => ({
+            resolver: { sourceExts: [] },
+            watchFolders: [],
+            serializer: {},
+            transformer: {},
+            server: {},
+          }),
+        }
+      }
+
+      return originalLoad.call(this, request, parent, isMain)
+    })
+
+    const outDir = path.join(projectRoot, 'dist', 'widgets')
+    await bundleWidgets({
+      projectRoot,
+      outDir,
+      platform: 'ios',
+    })
+
+    assert.deepEqual(fs.readdirSync(outDir), ['voltra-widget-home.bundle'])
   })
 })

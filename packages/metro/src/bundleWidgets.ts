@@ -88,7 +88,7 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
         minify: true,
       })
 
-      const outPath = path.join(outDir, `voltra-widget-${widget.platform}-${widget.id}.bundle`)
+      const outPath = path.join(outDir, `voltra-widget-${widget.id}.bundle`)
       fs.writeFileSync(outPath, code)
       console.log(`[voltra] baked ${path.basename(outPath)} (${code.length} bytes)`)
     }
