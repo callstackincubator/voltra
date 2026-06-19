@@ -1,12 +1,18 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { validateHomeScreenWidgetId, validateInitialStatePath, validateWidgetLabel } from '@use-voltra/expo-plugin'
+import {
+  validateHomeScreenWidgetId,
+  validateInitialStatePath,
+  validateWidgetEntry,
+  validateWidgetLabel,
+} from '@use-voltra/expo-plugin'
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
 
-export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): void {
+export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): string {
   validateHomeScreenWidgetId(widget.id)
+  const normalizedEntry = validateWidgetEntry(widget.entry, widget.id, projectRoot)
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
   validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
@@ -77,6 +83,8 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
       }
     }
   }
+
+  return normalizedEntry
 }
 
 export function validateAndroidConfigPluginProps(props: AndroidConfigPluginProps, projectRoot?: string): void {

@@ -23,6 +23,7 @@ export interface AndroidWidgetAppIntentConfig {
  */
 export interface AndroidWidgetConfig {
   id: string
+  entry: string
   displayName: WidgetLabel
   description: WidgetLabel
   minWidth?: number

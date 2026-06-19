@@ -21,6 +21,7 @@ function makeTempProject(files: Record<string, string>): { projectRoot: string; 
 function asWidget(partial: Partial<AndroidWidgetConfig>): AndroidWidgetConfig {
   return {
     id: 'placeholder',
+    entry: './widgets/placeholder.tsx',
     displayName: 'Placeholder',
     description: 'Placeholder',
     targetCellWidth: 2,
