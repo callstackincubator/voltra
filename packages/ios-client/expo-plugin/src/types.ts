@@ -1,6 +1,6 @@
 import type { ConfigPlugin } from '@expo/config-plugins'
 
-import type { WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
+import type { DynamicWidgetEntryConfig, WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
 
 /**
  * Supported iOS Home Screen widget size families.
@@ -36,16 +36,19 @@ export interface IOSWidgetAppIntentConfig {
 
 /**
  * Configuration for a single iOS home screen widget.
+ *
+ * `entry` is required only for Dynamic Widgets. Widgets without `entry` remain server-rendered /
+ * server-updated legacy widgets and are excluded from the Dynamic Widgets manifest.
  */
-export interface IOSWidgetConfig {
+export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
   /**
    * Unique identifier for the widget (used as the widget kind and in JS API)
    */
   id: string
   /**
-   * Project-relative entry module for the widget. This module must export a default widget component.
+   * Project-relative entry module for a Dynamic Widget. This module must default-export a widget
+   * component or function.
    */
-  entry: string
   displayName: WidgetLabel
   description: WidgetLabel
   /** @default ['systemSmall', 'systemMedium', 'systemLarge'] */

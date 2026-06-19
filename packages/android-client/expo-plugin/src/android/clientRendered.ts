@@ -9,6 +9,7 @@ import type { AndroidWidgetConfig } from '../types'
  * Dynamic Widget detection for Android — the counterpart of the iOS plugin's
  * clientRendered.ts.
  *
+ * Widgets without `entry` remain server-rendered/server-updated legacy widgets.
  * A widget is client-rendered when the module referenced by `entry` default-exports a function
  * or component. Such widgets download a JS bundle and render on-device (Hermes) instead of
  * consuming server JSON.
@@ -44,6 +45,13 @@ export function detectClientRenderedWidgets(
 }
 
 function detectSingleWidget(widget: AndroidWidgetConfig, projectRoot: string): DetectedAndroidWidget {
+  if (widget.entry === undefined) {
+    return {
+      ...widget,
+      clientRendered: false,
+    }
+  }
+
   const sourcePath = resolveWidgetEntryPath(widget.entry, projectRoot)
   if (!sourcePath || !fs.existsSync(sourcePath)) {
     throw new Error(

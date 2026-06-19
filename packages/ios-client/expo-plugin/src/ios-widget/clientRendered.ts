@@ -28,7 +28,7 @@ export type DetectedIOSWidget =
 // plugin steps).
 let hasWarnedExperimental = false
 
-/** Inspect every widget's `entry` module once and tag each entry as server- or client-rendered. */
+/** Inspect every widget once and tag entry-backed widgets as Dynamic Widgets. */
 export function detectClientRenderedWidgets(widgets: IOSWidgetConfig[], projectRoot: string): DetectedIOSWidget[] {
   const detected = widgets.map((widget) => detectSingleWidget(widget, projectRoot))
 
@@ -48,6 +48,13 @@ export function detectClientRenderedWidgets(widgets: IOSWidgetConfig[], projectR
 }
 
 function detectSingleWidget(widget: IOSWidgetConfig, projectRoot: string): DetectedIOSWidget {
+  if (widget.entry === undefined) {
+    return {
+      ...widget,
+      clientRendered: false,
+    }
+  }
+
   const sourcePath = resolveWidgetEntryPath(widget.entry, projectRoot)
   if (!sourcePath || !fs.existsSync(sourcePath)) {
     throw new Error(

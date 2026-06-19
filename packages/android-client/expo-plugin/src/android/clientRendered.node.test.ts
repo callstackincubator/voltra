@@ -40,6 +40,29 @@ afterEach(() => {
 })
 
 describe('detectClientRenderedWidgets (android)', () => {
+  it('keeps widgets without an entry on the server-rendered path', () => {
+    const { projectRoot, cleanup } = makeTempProject({})
+    try {
+      const [detected] = detectClientRenderedWidgets(
+        [
+          {
+            id: 'legacy',
+            displayName: 'Legacy',
+            description: 'Server-rendered widget',
+            targetCellWidth: 2,
+            targetCellHeight: 2,
+          },
+        ],
+        projectRoot
+      )
+
+      expect(detected.clientRendered).toBe(false)
+      expect(detected).not.toHaveProperty('clientSourcePath')
+    } finally {
+      cleanup()
+    }
+  })
+
   it('flags a default-exported entry module as a Dynamic Widget even when the export name differs', () => {
     const { projectRoot, cleanup } = makeTempProject({
       'widgets/Foo.tsx': `

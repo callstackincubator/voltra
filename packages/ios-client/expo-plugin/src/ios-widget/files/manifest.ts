@@ -16,13 +16,23 @@ export function createIOSDynamicWidgetsManifest(
   projectRoot: string,
   widgets: IOSWidgetConfig[]
 ): DynamicWidgetManifest {
+  const manifestWidgets: DynamicWidgetManifest['widgets'] = []
+
+  for (const widget of widgets) {
+    if (widget.entry === undefined) {
+      continue
+    }
+
+    manifestWidgets.push({
+      id: widget.id,
+      entry: validateWidgetEntry(widget.entry, widget.id, projectRoot),
+    })
+  }
+
   return {
     version: 1,
     platform: 'ios',
-    widgets: widgets.map((widget) => ({
-      id: widget.id,
-      entry: validateWidgetEntry(widget.entry, widget.id, projectRoot),
-    })),
+    widgets: manifestWidgets,
   }
 }
 

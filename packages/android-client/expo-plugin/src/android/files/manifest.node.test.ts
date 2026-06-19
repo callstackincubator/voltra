@@ -46,6 +46,40 @@ describe('createAndroidDynamicWidgetsManifest', () => {
       cleanup()
     }
   })
+
+  it('omits legacy widgets without entries', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      'widgets/home.tsx': 'export default function HomeWidget() {}',
+    })
+
+    try {
+      const manifest = createAndroidDynamicWidgetsManifest(projectRoot, [
+        {
+          id: 'legacy',
+          displayName: 'Legacy',
+          description: 'Server-rendered widget',
+          targetCellWidth: 2,
+          targetCellHeight: 2,
+        },
+        {
+          id: 'home',
+          entry: './widgets/home.tsx',
+          displayName: 'Home',
+          description: 'Dynamic widget',
+          targetCellWidth: 2,
+          targetCellHeight: 2,
+        },
+      ])
+
+      expect(manifest).toEqual({
+        version: 1,
+        platform: 'android',
+        widgets: [{ id: 'home', entry: 'widgets/home.tsx' }],
+      })
+    } finally {
+      cleanup()
+    }
+  })
 })
 
 describe('writeAndroidDynamicWidgetsManifest', () => {

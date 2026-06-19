@@ -33,7 +33,21 @@ describe('validateIOSConfigPluginProps', () => {
     ).toThrow(/must start with 'group.'/)
   })
 
-  it('requires a valid widget entry and resolves it against the project root', () => {
+  it('accepts legacy widgets without an entry', () => {
+    expect(() =>
+      validateIOSConfigPluginProps({
+        widgets: [
+          {
+            id: 'home',
+            displayName: 'Home',
+            description: 'Home widget',
+          },
+        ],
+      })
+    ).not.toThrow()
+  })
+
+  it('requires a valid widget entry when present and resolves it against the project root', () => {
     const projectRoot = createProjectRoot({
       'widgets/home.tsx': 'export default function HomeWidget() {}',
     })
@@ -59,18 +73,27 @@ describe('validateIOSConfigPluginProps', () => {
     }
   })
 
-  it('rejects widgets without an entry', () => {
-    expect(() =>
-      validateIOSConfigPluginProps({
-        widgets: [
+  it('rejects invalid widget entries when present', () => {
+    const projectRoot = createProjectRoot({})
+
+    try {
+      expect(() =>
+        validateIOSConfigPluginProps(
           {
-            id: 'home',
-            entry: undefined as unknown as string,
-            displayName: 'Home',
-            description: 'Home widget',
+            widgets: [
+              {
+                id: 'home',
+                entry: './widgets/missing.tsx',
+                displayName: 'Home',
+                description: 'Home widget',
+              },
+            ],
           },
-        ],
-      })
-    ).toThrow(/Widget 'home': entry is required/)
+          projectRoot
+        )
+      ).toThrow(/Widget 'home': entry file not found at widgets\/missing\.tsx/)
+    } finally {
+      fs.rmSync(projectRoot, { recursive: true, force: true })
+    }
   })
 })

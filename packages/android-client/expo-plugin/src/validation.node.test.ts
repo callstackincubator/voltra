@@ -62,7 +62,23 @@ describe('validateAndroidConfigPluginProps', () => {
     ).toThrow(/Duplicate Android widget ID/)
   })
 
-  it('requires an entry and normalizes it against the project root', () => {
+  it('accepts legacy widgets without an entry', () => {
+    expect(() =>
+      validateAndroidConfigPluginProps({
+        widgets: [
+          {
+            id: 'demo',
+            displayName: 'Demo',
+            description: 'Demo widget',
+            targetCellWidth: 2,
+            targetCellHeight: 2,
+          },
+        ],
+      })
+    ).not.toThrow()
+  })
+
+  it('requires a valid entry when present and normalizes it against the project root', () => {
     const { projectRoot, cleanup } = makeTempProject({
       'widgets/demo.tsx': 'export default () => null\n',
     })
@@ -90,20 +106,29 @@ describe('validateAndroidConfigPluginProps', () => {
     }
   })
 
-  it('rejects widgets without an entry', () => {
-    expect(() =>
-      validateAndroidConfigPluginProps({
-        widgets: [
+  it('rejects invalid widget entries when present', () => {
+    const projectRoot = makeTempProject({}).projectRoot
+
+    try {
+      expect(() =>
+        validateAndroidConfigPluginProps(
           {
-            id: 'demo',
-            entry: undefined as unknown as string,
-            displayName: 'Demo',
-            description: 'Demo widget',
-            targetCellWidth: 2,
-            targetCellHeight: 2,
+            widgets: [
+              {
+                id: 'demo',
+                entry: './widgets/missing.tsx',
+                displayName: 'Demo',
+                description: 'Demo widget',
+                targetCellWidth: 2,
+                targetCellHeight: 2,
+              },
+            ],
           },
-        ],
-      })
-    ).toThrow(/Widget 'demo': entry is required/)
+          projectRoot
+        )
+      ).toThrow(/Widget 'demo': entry file not found at widgets\/missing\.tsx/)
+    } finally {
+      fs.rmSync(projectRoot, { recursive: true, force: true })
+    }
   })
 })

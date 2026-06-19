@@ -10,12 +10,15 @@ import {
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
 
-export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): string {
+export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): void {
   validateHomeScreenWidgetId(widget.id)
-  const normalizedEntry = validateWidgetEntry(widget.entry, widget.id, projectRoot)
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
   validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
+
+  if (widget.entry !== undefined) {
+    validateWidgetEntry(widget.entry, widget.id, projectRoot)
+  }
 
   if (typeof widget.targetCellWidth !== 'number') {
     throw new Error(`Widget '${widget.id}': targetCellWidth is required and must be a number`)
@@ -83,8 +86,6 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
       }
     }
   }
-
-  return normalizedEntry
 }
 
 export function validateAndroidConfigPluginProps(props: AndroidConfigPluginProps, projectRoot?: string): void {

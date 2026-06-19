@@ -2,10 +2,9 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { type DynamicWidgetManifest, logger } from '@use-voltra/expo-plugin'
+import { type DynamicWidgetManifest, logger, validateWidgetEntry } from '@use-voltra/expo-plugin'
 
 import type { AndroidWidgetConfig } from '../../types'
-import { validateAndroidWidgetConfig } from '../../validation'
 
 const MANIFEST_PATH = path.join('.voltra', 'manifest.android.json')
 
@@ -17,13 +16,23 @@ export function createAndroidDynamicWidgetsManifest(
   projectRoot: string,
   widgets: AndroidWidgetConfig[]
 ): DynamicWidgetManifest {
+  const manifestWidgets: DynamicWidgetManifest['widgets'] = []
+
+  for (const widget of widgets) {
+    if (widget.entry === undefined) {
+      continue
+    }
+
+    manifestWidgets.push({
+      id: widget.id,
+      entry: validateWidgetEntry(widget.entry, widget.id, projectRoot),
+    })
+  }
+
   return {
     version: 1,
     platform: 'android',
-    widgets: widgets.map((widget) => ({
-      id: widget.id,
-      entry: validateAndroidWidgetConfig(widget, projectRoot),
-    })),
+    widgets: manifestWidgets,
   }
 }
 

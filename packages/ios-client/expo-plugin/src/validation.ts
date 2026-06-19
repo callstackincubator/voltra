@@ -17,12 +17,15 @@ const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
   'accessoryInline',
 ])
 
-export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: string): string {
+export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: string): void {
   validateHomeScreenWidgetId(widget.id)
-  const normalizedEntry = validateWidgetEntry(widget.entry, widget.id, projectRoot)
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
   validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
+
+  if (widget.entry !== undefined) {
+    validateWidgetEntry(widget.entry, widget.id, projectRoot)
+  }
 
   if (widget.supportedFamilies) {
     if (!Array.isArray(widget.supportedFamilies)) {
@@ -38,8 +41,6 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: s
       }
     }
   }
-
-  return normalizedEntry
 }
 
 export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projectRoot?: string): void {

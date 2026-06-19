@@ -44,6 +44,36 @@ describe('createIOSDynamicWidgetsManifest', () => {
       cleanup()
     }
   })
+
+  it('omits legacy widgets without entries', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      'widgets/home.tsx': 'export default function HomeWidget() {}',
+    })
+
+    try {
+      const manifest = createIOSDynamicWidgetsManifest(projectRoot, [
+        {
+          id: 'legacy',
+          displayName: 'Legacy',
+          description: 'Server-rendered widget',
+        },
+        {
+          id: 'home',
+          entry: './widgets/home.tsx',
+          displayName: 'Home',
+          description: 'Dynamic widget',
+        },
+      ])
+
+      expect(manifest).toEqual({
+        version: 1,
+        platform: 'ios',
+        widgets: [{ id: 'home', entry: 'widgets/home.tsx' }],
+      })
+    } finally {
+      cleanup()
+    }
+  })
 })
 
 describe('generateIOSDynamicWidgetsManifest', () => {
