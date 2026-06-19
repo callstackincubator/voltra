@@ -7,7 +7,7 @@ import { detectClientRenderedWidgets } from './clientRendered'
 
 const MARKER = '// @voltra-widget-bundling'
 
-// Release-only Gradle wiring that bakes each client-rendered widget's production JS bundle into the
+// Release-only Gradle wiring that bakes each Dynamic Widget's production JS bundle into the
 // app's assets — the Android analog of iOS's release "Bundle Voltra client widgets" build phase.
 // Debug keeps fetching from Metro (and hot-reloading); only release variants depend on the task,
 // and the generated dir is empty otherwise. Re-bakes every build (it can't enumerate widget-source
@@ -38,7 +38,7 @@ android.applicationVariants.all { variant ->
 
 /**
  * Appends the release widget-bundling Gradle wiring to `app/build.gradle`, idempotently, and only
- * when at least one widget is client-rendered (server-rendered apps need no JS bundle baked).
+ * when at least one Dynamic Widget is present (server-rendered apps need no JS bundle baked).
  */
 export const withWidgetBundleGradle: ConfigPlugin<{ widgets: AndroidWidgetConfig[] }> = (config, { widgets }) => {
   return withAppBuildGradle(config, (cfg) => {

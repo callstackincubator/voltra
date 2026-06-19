@@ -40,21 +40,34 @@ afterEach(() => {
 })
 
 describe('detectClientRenderedWidgets (android)', () => {
-  it('flags a use voltra component as client-rendered when the id matches', () => {
+  it('flags a default-exported entry module as a Dynamic Widget even when the export name differs', () => {
     const { projectRoot, cleanup } = makeTempProject({
       'widgets/Foo.tsx': `
-        export const Foo = (props, env) => {
-          'use voltra'
+        export default function NotTheWidgetId(props, env) {
           return null
         }
       `,
     })
     try {
-      const [detected] = detectClientRenderedWidgets(
-        [asWidget({ id: 'Foo', initialStatePath: './widgets/Foo.tsx' })],
-        projectRoot
-      )
+      const [detected] = detectClientRenderedWidgets([asWidget({ id: 'Foo', entry: './widgets/Foo.tsx' })], projectRoot)
       expect(detected.clientRendered).toBe(true)
+      if (detected.clientRendered) {
+        expect(detected.clientSourcePath).toBe(path.join(projectRoot, 'widgets/Foo.tsx'))
+      }
+    } finally {
+      cleanup()
+    }
+  })
+
+  it('returns server-rendered when the entry default export is not a function', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      'widgets/Bar.tsx': `
+        export default { kind: 'widget-state' }
+      `,
+    })
+    try {
+      const [detected] = detectClientRenderedWidgets([asWidget({ id: 'Bar', entry: './widgets/Bar.tsx' })], projectRoot)
+      expect(detected.clientRendered).toBe(false)
     } finally {
       cleanup()
     }
@@ -76,14 +89,13 @@ describe('detectClientRenderedWidgets (android) — experimental warning', () =>
     const warn = console.warn as jest.Mock
     const { projectRoot, cleanup } = makeTempProject({
       'widgets/Foo.tsx': `
-        export const Foo = (props, env) => {
-          'use voltra'
+        export default function Foo(props, env) {
           return null
         }
       `,
     })
     try {
-      const widgets = [asWidget({ id: 'Foo', initialStatePath: './widgets/Foo.tsx' })]
+      const widgets = [asWidget({ id: 'Foo', entry: './widgets/Foo.tsx' })]
       detect(widgets, projectRoot)
       detect(widgets, projectRoot)
 
@@ -99,10 +111,10 @@ describe('detectClientRenderedWidgets (android) — experimental warning', () =>
     const detect = freshDetect()
     const warn = console.warn as jest.Mock
     const { projectRoot, cleanup } = makeTempProject({
-      'widgets/Bar.tsx': 'export default () => null\n',
+      'widgets/Bar.tsx': "export default { kind: 'fallback' }\n",
     })
     try {
-      detect([asWidget({ id: 'Bar', initialStatePath: './widgets/Bar.tsx' })], projectRoot)
+      detect([asWidget({ id: 'Bar', entry: './widgets/Bar.tsx' })], projectRoot)
       expect(warn).not.toHaveBeenCalled()
     } finally {
       cleanup()

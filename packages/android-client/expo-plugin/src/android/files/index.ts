@@ -46,8 +46,8 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
         )
       }
 
-      // Tag each widget server- vs client-rendered once; receivers and initial-state prerender
-      // both branch on it. Other generators ignore the extra fields.
+      // Tag each widget once; Dynamic Widget detection drives receiver wiring and placeholder
+      // prerendering. Other generators ignore the extra fields.
       const detectedWidgets = detectClientRenderedWidgets(widgets, projectRoot)
 
       // Generate assets (drawable images and preview images)

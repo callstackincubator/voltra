@@ -45,20 +45,19 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
     renderWidgetToString: RenderWidgetToString
   }
 
-  // Tag each widget with its rendering mode (server vs client) by inspecting the
-  // initialStatePath JSX for a 'use voltra' directive. See ../clientRendered.ts.
-  // Throws on widget id / component name mismatch.
+  // Tag each widget with its rendering mode (server vs Dynamic Widget) by inspecting the
+  // app.json entry module. See ../clientRendered.ts.
   const detectedWidgets = detectClientRenderedWidgets(widgets || [], projectRoot)
   const clientWidgetCount = detectedWidgets.filter((w) => w.clientRendered).length
   if (clientWidgetCount > 0) {
-    logger.info(`Detected ${clientWidgetCount} client-rendered widget(s) — generating Provider scaffolding`)
+    logger.info(`Detected ${clientWidgetCount} Dynamic Widget(s) — generating Provider scaffolding`)
   }
 
-  // Prerender widget initial states. Server-rendered widgets go through the existing
-  // multi-family WidgetVariants → JSON path; client-rendered widgets go through the
-  // client-rendered path (call the 'use voltra' function with default props + minimal env,
-  // run renderVoltraVariantToJson, stringify). Both produce entries in the same map shape
-  // so VoltraWidgetInitialStates.swift can read either via the same lookup at runtime.
+  // Prerender widget initial states. Widgets with `initialStatePath` go through the existing
+  // multi-family WidgetVariants → JSON path; Dynamic Widgets go through the entry-module path
+  // (call the default export with default props + minimal env, run renderVoltraVariantToJson,
+  // stringify). Both produce entries in the same map shape so
+  // VoltraWidgetInitialStates.swift can read either via the same lookup at runtime.
   const serverWidgets = detectedWidgets.filter((w) => !w.clientRendered)
   const serverStates = await prerenderWidgetState(serverWidgets, projectRoot, renderWidgetToString)
   const clientStates = await prerenderClientRenderedWidgets(detectedWidgets, projectRoot)
@@ -283,9 +282,9 @@ function iosWidgetGalleryLabelSwiftExpr(
 /**
  * Generates Swift code for a single widget struct. Dispatches on rendering mode:
  *  - server-rendered → `VoltraHomeWidgetProvider` + `VoltraHomeWidgetView` (existing path)
- *  - client-rendered → `VoltraClientWidgetProvider` + `VoltraClientWidgetContentView`
+ *  - Dynamic Widget → `VoltraClientWidgetProvider` + `VoltraClientWidgetContentView`
  *    (the content view internally renders via VoltraHomeWidgetView so the UI layer is
- *    identical to server-rendered widgets — see VoltraClientWidgetRuntime.swift)
+ *    identical to the fallback state path — see VoltraClientWidgetRuntime.swift)
  */
 function widgetUsesAppIntent(widget: DetectedIOSWidget): boolean {
   return widget.clientRendered && !!widget.appIntent && widget.appIntent.parameters.length > 0
@@ -348,7 +347,7 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
 }
 
 /**
- * Generates a client-rendered widget backed by AppIntentConfiguration (iOS 17+): a
+ * Generates a Dynamic Widget backed by AppIntentConfiguration (iOS 17+): a
  * WidgetConfigurationIntent (params + code defaults), an AppIntentTimelineProvider that loads the
  * bundle via the shared client runtime, and an AppIntentConfiguration widget. The configured
  * params are passed into the render as env.configuration; the native "Edit Widget" sheet edits them.

@@ -23,7 +23,7 @@ describe('generateInitialStatesSwift', () => {
   })
 })
 
-describe('generateWidgetBundleSwift — client-rendered dispatch', () => {
+describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
   const serverWidget: DetectedIOSWidget = {
     id: 'weather',
     entry: './widgets/weather.tsx',
@@ -37,7 +37,6 @@ describe('generateWidgetBundleSwift — client-rendered dispatch', () => {
     displayName: 'Client Weather',
     description: 'Client-rendered weather',
     clientRendered: true,
-    clientComponentName: 'IosWeatherWidget',
     clientSourcePath: '/tmp/IosWeatherWidget.tsx',
   }
 
@@ -82,7 +81,6 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     displayName: 'Client Weather',
     description: 'Client-rendered weather',
     clientRendered: true,
-    clientComponentName: 'IosWeatherWidget',
     clientSourcePath: '/tmp/IosWeatherWidget.tsx',
     appIntent: {
       parameters: [{ name: 'label', title: 'Label', default: 'Hello' }],
@@ -94,7 +92,6 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     displayName: 'Plain Client',
     description: 'Client-rendered, no config',
     clientRendered: true,
-    clientComponentName: 'PlainClient',
     clientSourcePath: '/tmp/PlainClient.tsx',
   }
 
