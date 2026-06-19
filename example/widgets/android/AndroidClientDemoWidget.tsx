@@ -1,14 +1,12 @@
 import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
 
-// Client-rendered Android widget: its JSX runs on-device in Hermes on every render, receiving
-// the live `env`. Edit the marker literal below and save — the home-screen widget updates via
-// Fast Refresh (dev). Mirrors the iOS ClientRenderedDemoWidget. Themes itself from Material You
-// via AndroidDynamicColors tokens, which the native renderer resolves to the system dynamic
-// color scheme (and which follow light/dark automatically).
+// Minimal Dynamic Widget example for Android: its JSX runs on-device in Hermes on every render,
+// receiving the live `env`. Edit the marker literal below and save — the home-screen widget
+// updates via Fast Refresh (dev). Mirrors the iOS ClientRenderedDemoWidget. Themes itself from
+// Material You via AndroidDynamicColors tokens, which the native renderer resolves to the system
+// dynamic color scheme (and which follow light/dark automatically).
 
 export default function AndroidClientDemoWidget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
-  'use voltra'
-
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
   const hotReloadMarker = 'edit me'
 
