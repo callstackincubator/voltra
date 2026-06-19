@@ -1,9 +1,19 @@
 export { MAX_IMAGE_SIZE_BYTES, MODULE_EXTENSIONS } from './constants'
-export type { WidgetInitialStatePath, WidgetLabel, WidgetLocalizedCopy } from './types'
+export type {
+  DynamicWidgetEntryConfig,
+  DynamicWidgetManifest,
+  DynamicWidgetManifestWidget,
+  DynamicWidgetPlatform,
+  WidgetInitialStatePath,
+  WidgetLabel,
+  WidgetLocalizedCopy,
+} from './types'
 export {
   assertValidLocaleKey,
+  normalizeWidgetEntryPath,
   validateHomeScreenWidgetId,
   validateInitialStatePath,
+  validateWidgetEntry,
   validateWidgetLabel,
 } from './validation'
 export { addApplicationGroupsEntitlement } from './utils/entitlements'
