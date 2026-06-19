@@ -2,17 +2,23 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { scanVoltraDirectives, type VoltraDirectiveWidget } from './scanner'
+import {
+  type DynamicWidgetManifest,
+  type DynamicWidgetManifestWidget,
+  type DynamicWidgetPlatform,
+  validateHomeScreenWidgetId,
+  validateWidgetEntry,
+} from '@use-voltra/expo-plugin'
 
-const IGNORED_ANYWHERE = new Set(['node_modules'])
-const IGNORED_ROOT = new Set(['ios', 'android', 'Pods', 'build', 'dist', 'coverage'])
-const SOURCE_EXT = /\.[cm]?[jt]sx?$/
-const USE_VOLTRA_LITERAL = 'use voltra'
-const DEV_BARREL_PLATFORMS = ['ios', 'android']
+const MANIFEST_PLATFORMS = ['ios', 'android'] as const
+const DEV_BARREL_PLATFORMS = MANIFEST_PLATFORMS
 
-export type RegisteredVoltraWidget = VoltraDirectiveWidget & {
-  generatedEntryPath: string
-  generatedEntryRelativePath: string
+const RENDER_SHIM_BASENAME = 'voltra-render-shim'
+const RENDER_SHIM_FILES: Record<string, string> = {
+  [`${RENDER_SHIM_BASENAME}.ios.js`]:
+    "export { renderVoltraVariantToJson as renderVariantToJson } from '@use-voltra/ios'\n",
+  [`${RENDER_SHIM_BASENAME}.android.js`]:
+    "export { renderAndroidVariantToJson as renderVariantToJson } from '@use-voltra/android'\n",
 }
 
 type FileWatcher = {
@@ -20,17 +26,24 @@ type FileWatcher = {
   close(): void
 }
 
+type PlatformState = {
+  error: Error | null
+  widgetsById: Map<string, RegisteredVoltraWidget>
+  widgets: RegisteredVoltraWidget[]
+}
+
+export type RegisteredVoltraWidget = DynamicWidgetManifestWidget & {
+  platform: DynamicWidgetPlatform
+  manifestPath: string
+  generatedEntryPath: string
+  generatedEntryRelativePath: string
+}
+
 export type WidgetRegistry = {
   projectRoot: string
-  getWidget(widgetId: string): RegisteredVoltraWidget | null
+  getWidget(platform: DynamicWidgetPlatform, widgetId: string): RegisteredVoltraWidget | null
   isReady(): boolean
-  listWidgets(): Array<{
-    id: string
-    componentName: string
-    exportName: string
-    sourcePath: string
-    generatedEntryRelativePath: string
-  }>
+  listWidgets(platform?: DynamicWidgetPlatform): RegisteredVoltraWidget[]
   close(): void
 }
 
@@ -50,6 +63,7 @@ function writeFileIfChanged(filePath: string, content: string): void {
   } catch {
     // File does not exist yet or is unreadable.
   }
+
   fs.writeFileSync(filePath, content)
 }
 
@@ -61,44 +75,70 @@ function safeFileName(value: string): string {
   return value.replace(/[^a-zA-Z0-9_.-]+/g, '-')
 }
 
-// Per-platform render shim. Each generated entry imports `renderVariantToJson` from this module;
-// Metro resolves the `.ios`/`.android` file by the bundle request's `platform`, so one entry serves
-// both platforms (iOS → renderVoltraVariantToJson, Android → renderAndroidVariantToJson) without
-// baking a platform-specific renderer import into the entry.
-const RENDER_SHIM_BASENAME = 'voltra-render-shim'
-
-const RENDER_SHIM_FILES: Record<string, string> = {
-  [`${RENDER_SHIM_BASENAME}.ios.js`]:
-    "export { renderVoltraVariantToJson as renderVariantToJson } from '@use-voltra/ios'\n",
-  [`${RENDER_SHIM_BASENAME}.android.js`]:
-    "export { renderAndroidVariantToJson as renderVariantToJson } from '@use-voltra/android'\n",
+function getManifestPath(projectRoot: string, platform: DynamicWidgetPlatform): string {
+  return path.join(projectRoot, '.voltra', `manifest.${platform}.json`)
 }
 
-function ensureRenderShim(generatedRoot: string): void {
-  ensureDirectory(generatedRoot)
-  for (const [fileName, content] of Object.entries(RENDER_SHIM_FILES)) {
-    writeFileIfChanged(path.join(generatedRoot, fileName), content)
+function createManifestErrorPrefix(projectRoot: string, manifestPath: string, platform: DynamicWidgetPlatform): string {
+  return `Voltra dynamic widgets manifest at ${toPosixPath(path.relative(projectRoot, manifestPath))} for ${platform}`
+}
+
+export class MissingVoltraManifestError extends Error {
+  constructor({
+    projectRoot,
+    manifestPath,
+    platform,
+  }: {
+    projectRoot: string
+    manifestPath: string
+    platform: DynamicWidgetPlatform
+  }) {
+    super(
+      `Missing Voltra dynamic widgets manifest for ${platform} at ${toPosixPath(
+        path.relative(projectRoot, manifestPath)
+      )}. Run Expo prebuild for ${platform} to generate it.`
+    )
+
+    this.name = 'MissingVoltraManifestError'
+  }
+}
+
+export class InvalidVoltraManifestError extends Error {
+  constructor({
+    projectRoot,
+    manifestPath,
+    platform,
+    reason,
+  }: {
+    projectRoot: string
+    manifestPath: string
+    platform: DynamicWidgetPlatform
+    reason: string
+  }) {
+    super(`${createManifestErrorPrefix(projectRoot, manifestPath, platform)} is invalid: ${reason}`)
+
+    this.name = 'InvalidVoltraManifestError'
   }
 }
 
 export class DuplicateVoltraWidgetError extends Error {
   constructor({
-    widgetId,
-    firstPath,
-    secondPath,
     projectRoot,
+    manifestPath,
+    platform,
+    widgetId,
   }: {
-    widgetId: string
-    firstPath: string
-    secondPath: string
     projectRoot: string
+    manifestPath: string
+    platform: DynamicWidgetPlatform
+    widgetId: string
   }) {
-    const firstRelativePath = toPosixPath(path.relative(projectRoot, firstPath))
-    const secondRelativePath = toPosixPath(path.relative(projectRoot, secondPath))
-
     super(
-      `Duplicate Voltra widget component "${widgetId}" found in both "${firstRelativePath}" and "${secondRelativePath}". ` +
-        'Widget IDs are inherited from component names and must be unique.'
+      `${createManifestErrorPrefix(
+        projectRoot,
+        manifestPath,
+        platform
+      )} contains duplicate widget id "${widgetId}". Widget ids must be unique within a single platform manifest.`
     )
 
     this.name = 'DuplicateVoltraWidgetError'
@@ -113,237 +153,329 @@ export function ensureEmptyDevBarrel(projectRoot: string): string {
   return emptyBarrelPath
 }
 
+function ensureRenderShim(generatedRoot: string): void {
+  ensureDirectory(generatedRoot)
+
+  for (const [fileName, content] of Object.entries(RENDER_SHIM_FILES)) {
+    writeFileIfChanged(path.join(generatedRoot, fileName), content)
+  }
+}
+
+function normalizeImportPath(filePath: string): string {
+  const normalized = toPosixPath(filePath)
+  return normalized.startsWith('.') ? normalized : `./${normalized}`
+}
+
+function readJsonFile(filePath: string): unknown {
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'))
+}
+
+function validateManifest(
+  projectRoot: string,
+  platform: DynamicWidgetPlatform,
+  manifestPath: string,
+  rawManifest: unknown
+): DynamicWidgetManifest {
+  if (!rawManifest || typeof rawManifest !== 'object' || Array.isArray(rawManifest)) {
+    throw new InvalidVoltraManifestError({
+      projectRoot,
+      manifestPath,
+      platform,
+      reason: 'manifest root must be a JSON object',
+    })
+  }
+
+  const manifest = rawManifest as Record<string, unknown>
+
+  if (manifest.version !== 1) {
+    throw new InvalidVoltraManifestError({
+      projectRoot,
+      manifestPath,
+      platform,
+      reason: `expected version 1, received ${JSON.stringify(manifest.version)}`,
+    })
+  }
+
+  if (manifest.platform !== platform) {
+    throw new InvalidVoltraManifestError({
+      projectRoot,
+      manifestPath,
+      platform,
+      reason: `expected platform "${platform}", received ${JSON.stringify(manifest.platform)}`,
+    })
+  }
+
+  if (!Array.isArray(manifest.widgets)) {
+    throw new InvalidVoltraManifestError({
+      projectRoot,
+      manifestPath,
+      platform,
+      reason: 'widgets must be an array',
+    })
+  }
+
+  const widgetIds = new Set<string>()
+  const widgets: DynamicWidgetManifestWidget[] = []
+
+  for (const [index, value] of manifest.widgets.entries()) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      throw new InvalidVoltraManifestError({
+        projectRoot,
+        manifestPath,
+        platform,
+        reason: `widgets[${index}] must be an object with id and entry`,
+      })
+    }
+
+    const widget = value as Record<string, unknown>
+
+    if (typeof widget.id !== 'string' || !widget.id.trim()) {
+      throw new InvalidVoltraManifestError({
+        projectRoot,
+        manifestPath,
+        platform,
+        reason: `widgets[${index}].id must be a non-empty string`,
+      })
+    }
+
+    try {
+      validateHomeScreenWidgetId(widget.id)
+    } catch (error) {
+      throw new InvalidVoltraManifestError({
+        projectRoot,
+        manifestPath,
+        platform,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    }
+
+    if (widgetIds.has(widget.id)) {
+      throw new DuplicateVoltraWidgetError({
+        projectRoot,
+        manifestPath,
+        platform,
+        widgetId: widget.id,
+      })
+    }
+
+    widgetIds.add(widget.id)
+
+    let entry: string
+    try {
+      entry = validateWidgetEntry(widget.entry, widget.id, projectRoot)
+    } catch (error) {
+      throw new InvalidVoltraManifestError({
+        projectRoot,
+        manifestPath,
+        platform,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    }
+
+    widgets.push({
+      id: widget.id,
+      entry,
+    })
+  }
+
+  return {
+    version: 1,
+    platform,
+    widgets,
+  }
+}
+
+function loadManifest(projectRoot: string, platform: DynamicWidgetPlatform): DynamicWidgetManifest {
+  const manifestPath = getManifestPath(projectRoot, platform)
+
+  if (!fs.existsSync(manifestPath)) {
+    throw new MissingVoltraManifestError({ projectRoot, manifestPath, platform })
+  }
+
+  let rawManifest: unknown
+  try {
+    rawManifest = readJsonFile(manifestPath)
+  } catch (error) {
+    throw new InvalidVoltraManifestError({
+      projectRoot,
+      manifestPath,
+      platform,
+      reason: error instanceof Error ? error.message : String(error),
+    })
+  }
+
+  try {
+    return validateManifest(projectRoot, platform, manifestPath, rawManifest)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new InvalidVoltraManifestError({
+      projectRoot,
+      manifestPath,
+      platform,
+      reason: String(error),
+    })
+  }
+}
+
+function createGeneratedEntry(
+  projectRoot: string,
+  generatedRoot: string,
+  widget: RegisteredVoltraWidget
+): Pick<RegisteredVoltraWidget, 'generatedEntryPath' | 'generatedEntryRelativePath'> {
+  const generatedEntryRoot = path.join(generatedRoot, 'widgets')
+  ensureDirectory(generatedEntryRoot)
+  ensureRenderShim(generatedRoot)
+
+  const entryFileName = `${widget.platform}-${safeFileName(widget.id)}-${hash(widget.entry)}.js`
+  const generatedEntryPath = path.join(generatedEntryRoot, entryFileName)
+  const entryImportPath = normalizeImportPath(path.relative(generatedEntryRoot, path.join(projectRoot, widget.entry)))
+  const renderShimImportPath = normalizeImportPath(
+    path.relative(generatedEntryRoot, path.join(generatedRoot, RENDER_SHIM_BASENAME))
+  )
+
+  const content = [
+    "import { createElement } from 'react'",
+    `import { renderVariantToJson } from ${JSON.stringify(renderShimImportPath)}`,
+    `import Widget from ${JSON.stringify(entryImportPath)}`,
+    '',
+    `if (typeof Widget === 'undefined') {`,
+    `  throw new Error(${JSON.stringify(
+      `Voltra widget "${widget.id}" at "${widget.entry}" is missing a default export.`
+    )})`,
+    '}',
+    '',
+    'function parseJSONInput(input, label) {',
+    '  if (typeof input !== "string") {',
+    '    return input || {}',
+    '  }',
+    '  if (!input) {',
+    '    return {}',
+    '  }',
+    '  try {',
+    '    return JSON.parse(input)',
+    '  } catch (error) {',
+    `    throw new Error(\`Voltra widget "${widget.id}" failed to parse \${label}: \${error instanceof Error ? error.message : String(error)}\`)`,
+    '  }',
+    '}',
+    '',
+    'export function render(propsJSON, envJSON) {',
+    '  const props = parseJSONInput(propsJSON, "propsJSON")',
+    '  const env = parseJSONInput(envJSON, "envJSON")',
+    '  const WidgetWithEnv = (forwardedProps) => Widget(forwardedProps, env)',
+    '  const resolved = renderVariantToJson(createElement(WidgetWithEnv, props))',
+    '  return JSON.stringify(resolved)',
+    '}',
+    '',
+    'export default render',
+    '',
+  ].join('\n')
+
+  writeFileIfChanged(generatedEntryPath, content)
+
+  return {
+    generatedEntryPath,
+    generatedEntryRelativePath: toPosixPath(path.relative(projectRoot, generatedEntryPath)),
+  }
+}
+
+function createPlatformBarrel(
+  generatedRoot: string,
+  platform: DynamicWidgetPlatform,
+  widgets: RegisteredVoltraWidget[]
+): void {
+  const barrelPath = path.join(generatedRoot, `widget-hot-reload.${platform}.js`)
+  const imports = widgets.map(
+    (widget) => `import ${JSON.stringify(normalizeImportPath(path.relative(generatedRoot, widget.generatedEntryPath)))}`
+  )
+
+  const content = [
+    '// AUTO-GENERATED - do not edit. Side-effect imports that place manifest-declared Voltra widgets in',
+    '// the host app dependency graph so Metro Fast Refresh drives dev hot reload of widgets.',
+    ...imports,
+    '',
+  ].join('\n')
+
+  writeFileIfChanged(barrelPath, content)
+}
+
+function createEmptyPlatformState(): PlatformState {
+  return {
+    error: null,
+    widgetsById: new Map(),
+    widgets: [],
+  }
+}
+
 export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectRoot?: string } = {}): WidgetRegistry {
   const generatedRoot = path.join(projectRoot, '.voltra', 'metro')
-  const generatedEntryRoot = path.join(generatedRoot, 'widgets')
-  const widgetsById = new Map<string, RegisteredVoltraWidget>()
-  const widgetIdsBySourcePath = new Map<string, string[]>()
+  const platformStates: Record<DynamicWidgetPlatform, PlatformState> = {
+    ios: createEmptyPlatformState(),
+    android: createEmptyPlatformState(),
+  }
   let ready = false
   let watcher: FileWatcher | null = null
 
-  function createGeneratedEntry(
-    widget: VoltraDirectiveWidget
-  ): Pick<RegisteredVoltraWidget, 'generatedEntryPath' | 'generatedEntryRelativePath'> {
-    ensureDirectory(generatedEntryRoot)
-    ensureRenderShim(generatedRoot)
-
-    const entryFileName = `${safeFileName(widget.id)}-${hash(`${widget.sourcePath}:${widget.exportName}`)}.js`
-    const generatedEntryPath = path.join(generatedEntryRoot, entryFileName)
-    const importPath = toPosixPath(path.relative(generatedEntryRoot, widget.sourcePath)).replace(/\.[cm]?[jt]sx?$/, '')
-    const normalizedImportPath = importPath.startsWith('.') ? importPath : `./${importPath}`
-    const shimRelative = toPosixPath(path.relative(generatedEntryRoot, path.join(generatedRoot, RENDER_SHIM_BASENAME)))
-    const shimImportPath = shimRelative.startsWith('.') ? shimRelative : `./${shimRelative}`
-    const exportExpression =
-      widget.exportName === 'default' ? 'WidgetModule.default' : `WidgetModule[${JSON.stringify(widget.exportName)}]`
-
-    fs.writeFileSync(
-      generatedEntryPath,
-      [
-        "import { createElement } from 'react'",
-        `import { renderVariantToJson } from ${JSON.stringify(shimImportPath)}`,
-        `import * as WidgetModule from ${JSON.stringify(normalizedImportPath)}`,
-        '',
-        `const Widget = ${exportExpression}`,
-        '',
-        'if (!Widget) {',
-        `  throw new Error(${JSON.stringify(`Unable to find Voltra widget export "${widget.exportName}".`)})`,
-        '}',
-        '',
-        '// Voltra client-rendered widget entry - invoked by the native JS runtime on every render.',
-        '// `renderVariantToJson` resolves per-platform via the render shim (see RENDER_SHIM_BASENAME).',
-        'export function render(propsJSON, envJSON) {',
-        "  const props = typeof propsJSON === 'string' ? (propsJSON ? JSON.parse(propsJSON) : {}) : (propsJSON || {})",
-        "  const env = typeof envJSON === 'string' ? (envJSON ? JSON.parse(envJSON) : {}) : (envJSON || {})",
-        '  const WidgetWithEnv = (forwardedProps) => Widget(forwardedProps, env)',
-        '  const resolved = renderVariantToJson(createElement(WidgetWithEnv, props))',
-        '  return JSON.stringify(resolved)',
-        '}',
-        '',
-        'export default render',
-        'export { Widget }',
-        '',
-      ].join('\n')
-    )
-
-    return {
-      generatedEntryPath,
-      generatedEntryRelativePath: toPosixPath(path.relative(projectRoot, generatedEntryPath)),
-    }
+  function recordPlatformWidgets(platform: DynamicWidgetPlatform, widgets: RegisteredVoltraWidget[]): void {
+    const state = platformStates[platform]
+    state.error = null
+    state.widgets = widgets
+    state.widgetsById = new Map(widgets.map((widget) => [widget.id, widget]))
+    createPlatformBarrel(generatedRoot, platform, widgets)
   }
 
-  function widgetPlatform(widget: VoltraDirectiveWidget): string | null {
-    const segments = toPosixPath(path.relative(projectRoot, widget.sourcePath)).split('/')
-    if (segments.includes('android')) {
-      return 'android'
-    }
-    if (segments.includes('ios')) {
-      return 'ios'
-    }
-    return null
+  function recordPlatformError(platform: DynamicWidgetPlatform, error: Error): void {
+    const state = platformStates[platform]
+    state.error = error
+    state.widgets = []
+    state.widgetsById = new Map()
+    createPlatformBarrel(generatedRoot, platform, [])
   }
 
-  function writeDevBarrels(): void {
-    ensureDirectory(generatedRoot)
-    ensureEmptyDevBarrel(projectRoot)
-
-    for (const platform of DEV_BARREL_PLATFORMS) {
-      const imports = Array.from(widgetsById.values())
-        .filter((widget) => {
-          const platformForWidget = widgetPlatform(widget)
-          return platformForWidget === null || platformForWidget === platform
-        })
-        .map((widget) => {
-          const importPath = toPosixPath(path.relative(generatedRoot, widget.sourcePath)).replace(SOURCE_EXT, '')
-          const normalizedImportPath = importPath.startsWith('.') ? importPath : `./${importPath}`
-          return `import ${JSON.stringify(normalizedImportPath)}`
-        })
-
-      const content = [
-        '// AUTO-GENERATED - do not edit. Side-effect imports that place every Voltra widget in the',
-        '// host app dependency graph so Metro Fast Refresh drives dev hot reload of widgets.',
-        ...imports,
-        '',
-      ].join('\n')
-
-      writeFileIfChanged(path.join(generatedRoot, `widget-hot-reload.${platform}.js`), content)
-    }
-  }
-
-  function removeSourcePath(sourcePath: string): void {
-    const widgetIds = widgetIdsBySourcePath.get(sourcePath) || []
-
-    for (const widgetId of widgetIds) {
-      widgetsById.delete(widgetId)
-    }
-
-    widgetIdsBySourcePath.delete(sourcePath)
-  }
-
-  function registerWidgets(sourcePath: string, widgets: VoltraDirectiveWidget[]): RegisteredVoltraWidget[] {
-    removeSourcePath(sourcePath)
-
-    if (widgets.length === 0) {
-      return []
-    }
-
-    const newWidgetsById = new Map<string, VoltraDirectiveWidget>()
-    for (const widget of widgets) {
-      const duplicateInSource = newWidgetsById.get(widget.id)
-
-      if (duplicateInSource) {
-        throw new DuplicateVoltraWidgetError({
-          widgetId: widget.id,
-          firstPath: duplicateInSource.sourcePath,
-          secondPath: widget.sourcePath,
-          projectRoot,
-        })
-      }
-
-      newWidgetsById.set(widget.id, widget)
-
-      const existingWidget = widgetsById.get(widget.id)
-
-      if (existingWidget) {
-        throw new DuplicateVoltraWidgetError({
-          widgetId: widget.id,
-          firstPath: existingWidget.sourcePath,
-          secondPath: widget.sourcePath,
-          projectRoot,
-        })
-      }
-    }
-
-    const registered = widgets.map((widget) => {
-      const entry = createGeneratedEntry(widget)
-      const registeredWidget = {
-        ...widget,
-        ...entry,
-      }
-
-      widgetsById.set(widget.id, registeredWidget)
-      return registeredWidget
-    })
-
-    widgetIdsBySourcePath.set(
-      sourcePath,
-      registered.map((widget) => widget.id)
-    )
-
-    return registered
-  }
-
-  function scanFile(filePath: string): RegisteredVoltraWidget[] {
-    let source: string
+  function refreshPlatform(platform: DynamicWidgetPlatform): void {
     try {
-      source = fs.readFileSync(filePath, 'utf8')
-    } catch {
-      removeSourcePath(filePath)
-      return []
-    }
-
-    if (!source.includes(USE_VOLTRA_LITERAL)) {
-      removeSourcePath(filePath)
-      return []
-    }
-
-    try {
-      const widgets = scanVoltraDirectives({ filePath, source })
-      return registerWidgets(filePath, widgets)
-    } catch (error) {
-      if (error instanceof DuplicateVoltraWidgetError) {
-        throw error
-      }
-      console.warn(
-        `[voltra:metro] Failed to scan ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+      const manifest = loadManifest(projectRoot, platform)
+      const previousGeneratedPaths = new Set(
+        platformStates[platform].widgets.map((widget) => widget.generatedEntryPath)
       )
-      removeSourcePath(filePath)
-      return []
-    }
-  }
 
-  function scanProject(): void {
-    const stack = [projectRoot]
-    while (stack.length > 0) {
-      const dir = stack.pop()
-      if (!dir) {
-        continue
-      }
+      const widgets = manifest.widgets.map((widget) => {
+        const baseWidget: RegisteredVoltraWidget = {
+          platform,
+          manifestPath: getManifestPath(projectRoot, platform),
+          ...widget,
+          generatedEntryPath: '',
+          generatedEntryRelativePath: '',
+        }
 
-      let entries: fs.Dirent[]
-      try {
-        entries = fs.readdirSync(dir, { withFileTypes: true })
-      } catch {
-        continue
-      }
-      for (const entry of entries) {
-        if (entry.isDirectory()) {
-          const skip =
-            IGNORED_ANYWHERE.has(entry.name) ||
-            entry.name.startsWith('.') ||
-            (dir === projectRoot && IGNORED_ROOT.has(entry.name))
-          if (!skip) {
-            stack.push(path.join(dir, entry.name))
+        return {
+          ...baseWidget,
+          ...createGeneratedEntry(projectRoot, generatedRoot, baseWidget),
+        }
+      })
+
+      recordPlatformWidgets(platform, widgets)
+
+      for (const stalePath of previousGeneratedPaths) {
+        if (!widgets.some((widget) => widget.generatedEntryPath === stalePath)) {
+          try {
+            fs.rmSync(stalePath, { force: true })
+          } catch {
+            // Ignore stale cleanup failures.
           }
-        } else if (entry.isFile() && SOURCE_EXT.test(entry.name)) {
-          scanFile(path.join(dir, entry.name))
         }
       }
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error(String(error))
+      recordPlatformError(platform, normalizedError)
     }
   }
 
-  function isIgnoredPath(candidate: string): boolean {
-    const segments = toPosixPath(path.relative(projectRoot, candidate)).split('/')
-    if (segments[0] === '..') {
-      return true
-    }
-    if (IGNORED_ROOT.has(segments[0])) {
-      return true
-    }
-    return segments.some((segment) => IGNORED_ANYWHERE.has(segment) || segment.startsWith('.'))
-  }
+  function watchManifestFiles(): void {
+    let chokidar: { watch(paths: string[], options: unknown): FileWatcher }
 
-  function startWatcher(): void {
-    let chokidar: { watch(root: string, options: unknown): FileWatcher }
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       chokidar = require('chokidar')
@@ -353,57 +485,68 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         chokidar = require(require.resolve('chokidar', { paths: [metroDir] }))
       } catch {
-        console.warn('[voltra:metro] chokidar unavailable - widget discovery is startup-scan only (no live updates)')
+        console.warn('[voltra:metro] chokidar unavailable - manifest updates are startup-scan only (no live updates)')
         return
       }
     }
 
-    watcher = chokidar.watch(projectRoot, {
+    const manifestPaths = DEV_BARREL_PLATFORMS.map((platform) => getManifestPath(projectRoot, platform))
+    watcher = chokidar.watch(manifestPaths, {
       ignoreInitial: true,
-      ignored: (candidate: string) => isIgnoredPath(candidate),
     })
 
-    const onUpsert = (filePath: string) => {
-      if (!SOURCE_EXT.test(filePath)) {
-        return
-      }
-      try {
-        scanFile(filePath)
-        writeDevBarrels()
-      } catch (error) {
-        console.error(`[voltra:metro] ${error instanceof Error ? error.message : String(error)}`)
+    const handleManifestChange = (filePath: string) => {
+      const normalizedFilePath = path.resolve(filePath)
+      for (const platform of DEV_BARREL_PLATFORMS) {
+        if (path.resolve(getManifestPath(projectRoot, platform)) === normalizedFilePath) {
+          refreshPlatform(platform)
+          break
+        }
       }
     }
 
-    watcher.on('add', onUpsert)
-    watcher.on('change', onUpsert)
-    watcher.on('unlink', (filePath: string) => {
-      removeSourcePath(filePath)
-      writeDevBarrels()
-    })
+    watcher.on('add', handleManifestChange)
+    watcher.on('change', handleManifestChange)
+    watcher.on('unlink', handleManifestChange)
   }
 
-  scanProject()
-  writeDevBarrels()
+  ensureDirectory(generatedRoot)
+  ensureEmptyDevBarrel(projectRoot)
+  for (const platform of DEV_BARREL_PLATFORMS) {
+    refreshPlatform(platform)
+  }
   ready = true
-  startWatcher()
+  watchManifestFiles()
 
   return {
     projectRoot,
-    getWidget(widgetId: string) {
-      return widgetsById.get(widgetId) || null
+    getWidget(platform: DynamicWidgetPlatform, widgetId: string) {
+      const state = platformStates[platform]
+
+      if (state.error) {
+        throw state.error
+      }
+
+      return state.widgetsById.get(widgetId) || null
     },
     isReady() {
       return ready
     },
-    listWidgets() {
-      return Array.from(widgetsById.values()).map((widget) => ({
-        id: widget.id,
-        componentName: widget.componentName,
-        exportName: widget.exportName,
-        sourcePath: toPosixPath(path.relative(projectRoot, widget.sourcePath)),
-        generatedEntryRelativePath: widget.generatedEntryRelativePath,
-      }))
+    listWidgets(platform?: DynamicWidgetPlatform) {
+      if (platform) {
+        const state = platformStates[platform]
+
+        if (state.error) {
+          throw state.error
+        }
+
+        return [...state.widgets]
+      }
+
+      return DEV_BARREL_PLATFORMS.flatMap((currentPlatform) => {
+        const state = platformStates[currentPlatform]
+        return state.error ? [] : state.widgets
+      })
     },
     close() {
       if (watcher) {

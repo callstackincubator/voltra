@@ -19,5 +19,6 @@
       "@use-voltra/ios-server": ["packages/ios-server/src/index.ts"],
       "@use-voltra/server": ["packages/server/src/index.ts"]
     }
-  }
+  },
+  "exclude": ["**/*.node.test.ts"]
 }
