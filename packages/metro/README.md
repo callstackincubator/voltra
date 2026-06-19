@@ -1,30 +1,26 @@
 ![voltra-banner](https://use-voltra.dev/voltra-baner.jpg)
 
-### Metro integration for Voltra client-rendered widgets
+### Metro integration for Voltra Dynamic Widgets
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/metro` adds the Metro-side plumbing for Voltra's client-rendered widgets. It scans `'use voltra'` components, wires the dev server middleware, resolves the hot-reload alias, and bundles widget code for release builds.
+`@use-voltra/metro` helps Voltra Dynamic Widgets work in Metro-based React Native apps.
 
 ## Features
 
 - **Metro config transformer**: Wrap your app's Metro config with `withVoltra()` to enable Voltra's widget pipeline.
 
-- **Client-rendered widget scanning**: Discover exported components marked with `'use voltra'` and turn them into widget entries.
-
-- **Dev server middleware**: Serve widget bundles from `/voltra` during development and keep the hot-reload path working.
-
-- **Release bundling**: Build standalone widget bundles with the `bundle-widgets` CLI for production shipping.
+- **Widget registry**: Work with widgets declared in app.json and keep the widget pipeline organized per platform.
 
 - **Project-aware module resolution**: Resolve app dependencies from the consuming project's install layout, including pnpm setups.
 
 ## Documentation
 
-This package powers the client-rendered widget workflow in Voltra. Relevant topics:
+This package supports the Dynamic Widgets workflow in Voltra. Relevant topics:
 
 - [Getting Started](https://use-voltra.dev/getting-started/installation)
-- [iOS Widgets](https://use-voltra.dev/ios/development/developing-widgets)
-- [Android Widgets](https://use-voltra.dev/android/development/developing-widgets)
+- [iOS Dynamic Widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
+- [Android Dynamic Widgets](https://use-voltra.dev/android/development/dynamic-widgets)
 - [iOS API Reference](https://use-voltra.dev/ios/api/configuration)
 - [Android API Reference](https://use-voltra.dev/android/api/plugin-configuration)
 
@@ -49,24 +45,16 @@ export default withVoltra({
 })
 ```
 
-If you are using client-rendered widgets, make sure your widget component includes the `'use voltra'` directive and follows the setup from the Voltra docs.
+Declare Dynamic Widgets in app.json with a stable `id` and an explicit `entry` path, then default-export the widget module.
 
 ## Quick example
 
 ```ts
-import { bundleWidgets, scanVoltraDirectives } from '@use-voltra/metro'
+import { bundleWidgets, createWidgetRegistry } from '@use-voltra/metro'
 
-const widgets = scanVoltraDirectives({
-  filePath: '/app/widgets/WeatherWidget.tsx',
-  source: `
-    export function WeatherWidget() {
-      'use voltra'
-      return null
-    }
-  `,
-})
-
-console.log(widgets)
+const registry = createWidgetRegistry({ projectRoot: process.cwd() })
+console.log(registry.listWidgets('ios'))
+registry.close()
 
 await bundleWidgets({
   projectRoot: process.cwd(),
@@ -77,7 +65,7 @@ await bundleWidgets({
 
 ## Platform compatibility
 
-This package works with Metro-based React Native apps on **iOS** and **Android** when you are using Voltra client-rendered widgets.
+This package works with Metro-based React Native apps on **iOS** and **Android** when you are using Voltra Dynamic Widgets.
 
 ## Authors
 

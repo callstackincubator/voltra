@@ -97,12 +97,11 @@ function transpileFile(filePath: string, projectRoot: string): string {
  * This allows executing widget code that uses JSX and React components.
  * Local module dependencies are also transpiled with the same Babel settings.
  *
- * Exported so platform-specific prerender flows (e.g. the client-rendered widget prerender
- * in @use-voltra/ios-client) can reuse the same module loader rather than duplicating the
- * Babel + VM scaffolding. The returned value is the module's exports object — callers
- * decide whether to read `.default`, a named export, etc.
+ * Exported so platform-specific prerender flows can reuse the same module loader rather
+ * than duplicating the Babel + VM scaffolding. The returned value is the module's exports
+ * object — callers decide whether to read `.default`, a named export, etc.
  */
-export function evaluateWidgetModule(projectRoot: string, filePath: string): any {
+export function evaluateWidgetModuleExports(projectRoot: string, filePath: string): any {
   // Cache for already-evaluated modules to handle circular dependencies
   const moduleCache = new Map<string, any>()
 
@@ -157,8 +156,14 @@ export function evaluateWidgetModule(projectRoot: string, filePath: string): any
     return mockModule.exports
   }
 
-  // Evaluate the entry module
-  const exports = customRequire(filePath, path.dirname(filePath))
+  return customRequire(filePath, path.dirname(filePath))
+}
+
+/**
+ * Evaluate a widget file as a server-style WidgetVariants module and return its object export.
+ */
+export function evaluateWidgetModule(projectRoot: string, filePath: string): any {
+  const exports = evaluateWidgetModuleExports(projectRoot, filePath)
   const widgetVariants: any = exports.default || exports
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {

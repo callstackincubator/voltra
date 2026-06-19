@@ -4,7 +4,7 @@
 Dynamic widgets are experimental. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
 :::
 
-Dynamic widgets run your widget JSX on device from its own JS bundle. Instead of shipping only pre-rendered state, the widget render function gets live environment values every time the system draws it.
+Dynamic Widgets let your widget react to the current device state on iOS. Declare them in `app.json` with a stable `id` and an explicit `entry`, then default-export the widget from that file.
 
 That means your widget can react to:
 
@@ -15,21 +15,20 @@ That means your widget can react to:
 - `env.showsWidgetContainerBackground`
 - `env.configuration` when you also add widget parameters
 
-In development, Metro serves the bundle and Fast Refresh updates the widget while you edit. In release builds, Voltra bakes the bundle into the widget extension.
+When you change `app.json`, run Expo Prebuild or Voltra Apply so the updated widget configuration is available on device. If you change only the widget JS, reopen the app in development and the widget updates automatically.
 
 ## How to use it
 
-1. Create a widget file that exports a named function.
-2. Add the `'use voltra'` directive inside that function.
-3. Make the exported function name match the widget `id` in `app.json`.
-4. Point `initialStatePath` at that file in the iOS plugin config.
-5. Rebuild the app after `expo prebuild`.
+1. Add an iOS widget declaration to `app.json` with an `id`, an `entry`, and any widget metadata you need.
+2. Default-export the widget function or component from the module named by `entry`.
+3. Use `initialStatePath` if you want a pre-rendered first view.
+4. Re-run Expo Prebuild or Voltra Apply after updating `app.json`.
+5. Keep iOS and Android widget declarations separate; the same `id` can exist on both platforms because each platform is configured separately.
 
 ```tsx
 import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 
-export function weather_widget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
-  'use voltra'
+export default function WeatherWidget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
 
   const renderedAt = env.date.toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -67,10 +66,11 @@ Example plugin config:
           "widgets": [
             {
               "id": "weather_widget",
+              "entry": "./widgets/ios/weather-widget.tsx",
               "displayName": "Weather Widget",
-              "description": "A Dynamic Widget widget that reacts to live device state",
+              "description": "A Dynamic Widget that reacts to live device state",
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
-              "initialStatePath": "./widgets/weather_widget.tsx"
+              "initialStatePath": "./widgets/ios/weather-widget.tsx"
             }
           ]
         }
@@ -84,6 +84,7 @@ If you want user-editable values, add `appIntent` too. See [Configurable Widgets
 
 ## Notes
 
-- Keep widget `id` and exported function name identical.
+- There is no `export` field in app.json for Dynamic Widgets.
+- The default-exported function or component name does not need to match the widget `id`.
 - Use a real device to verify release rendering.
-- The file referenced by `initialStatePath` still provides first paint while the JS bundle loads.
+- `initialStatePath` gives the widget a pre-rendered first view.

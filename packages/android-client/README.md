@@ -10,7 +10,7 @@
 
 - **Home Screen widgets**: Update, reload, pin, and query widgets with `updateAndroidWidget`, `reloadAndroidWidgets`, `getActiveWidgets`, and more.
 
-- **Client-rendered widgets** _(experimental)_: Write a widget as a `'use voltra'` JSX component and have it render on-device (standalone Hermes) from its own JS bundle, with live env (size, color scheme, Material You colors, locale, configuration). See the note below.
+- **Dynamic Widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (size, color scheme, Material You colors, locale, configuration).
 
 - **Ongoing notifications**: Start and update promoted ongoing notifications with `useAndroidOngoingNotification` and related APIs.
 
@@ -20,19 +20,18 @@
 
 - **Server-driven widgets**: Store credentials for background widget fetches with `setWidgetServerCredentials`.
 
-- **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to register widgets, optional notifications, and build-time initial states.
+- **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to declare widgets, optional notifications, and build-time initial states.
 
-## Client-rendered widgets (experimental)
+## Dynamic Widgets (experimental)
 
 > [!WARNING]
-> Client-rendered widgets are **experimental** — usable in production at your own risk. The API
-> and generated build output may change between releases.
+> Dynamic Widgets are **experimental** — usable in production at your own risk. The API may
+> change between releases.
 
-A widget whose component carries the `'use voltra'` directive is rendered **on-device**: its JS
-bundle is evaluated in a standalone Hermes runtime on each render and called as `(props, env) => JSX`,
-so the widget reacts to live environment values (size, color scheme, Material You `materialColors`,
-locale, and `configuration`). In development the bundle is served by Metro (editing the JSX
-hot-reloads the pinned widget); in release builds it is baked into the app's assets at build time.
+Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
+module must default-export the widget function or component; the exported name does not need to
+match the widget id. The widget renders on-device, so it can react to live environment values
+(size, color scheme, Material You `materialColors`, locale, and `configuration`).
 
 Configuration parameters declared in `app.json` (`appIntent.parameters`, with code-defined
 defaults) surface as `env.configuration`. Android has no system-managed widget configuration UI
@@ -41,7 +40,7 @@ override the declared defaults.
 
 Notes:
 
-- The dev loop and release baking rely on Metro scaffolding in your project (see `example/metro`).
+- iOS and Android widget declarations stay separate, and the same widget id can exist on both platforms as separate entries.
 - Verify release rendering on a **real device** — emulators are unreliable for widget rendering.
 
 ## Documentation
@@ -50,7 +49,7 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). Rele
 
 - [Installation](https://use-voltra.dev/getting-started/installation)
 - [Android Setup](https://use-voltra.dev/android/setup)
-- [Developing Widgets](https://use-voltra.dev/android/development/developing-widgets)
+- [Developing Dynamic Widgets](https://use-voltra.dev/android/development/dynamic-widgets)
 - [Managing Ongoing Notifications](https://use-voltra.dev/android/development/managing-ongoing-notifications)
 - [Plugin Configuration](https://use-voltra.dev/android/api/plugin-configuration)
 

@@ -1,6 +1,6 @@
 import type { ConfigPlugin } from '@expo/config-plugins'
 
-import type { WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
+import type { DynamicWidgetEntryConfig, WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
 
 /**
  * A single user-configurable parameter for a client-rendered widget. Android has no system-managed
@@ -20,8 +20,11 @@ export interface AndroidWidgetAppIntentConfig {
 
 /**
  * Configuration for a single Android home screen widget.
+ *
+ * `entry` is required only for Dynamic Widgets. Widgets without `entry` remain server-rendered /
+ * server-updated legacy widgets and are excluded from the Dynamic Widgets manifest.
  */
-export interface AndroidWidgetConfig {
+export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
   id: string
   displayName: WidgetLabel
   description: WidgetLabel

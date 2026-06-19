@@ -1,20 +1,30 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import type { DynamicWidgetPlatform } from '@use-voltra/expo-plugin'
+
 import { createWidgetMetroConfig } from './createWidgetMetroConfig'
 import { requireProjectModule } from './resolveProjectModule'
-import { createWidgetRegistry, type RegisteredVoltraWidget } from './widgetRegistry'
+import { createWidgetRegistry } from './widgetRegistry'
 
 export type BundleWidgetsOptions = {
   projectRoot: string
   outDir: string
-  platform: string
+  platform: DynamicWidgetPlatform
 }
 
 type ParsedArgs = {
   outDir: string | null
-  platform: string
+  platform: DynamicWidgetPlatform
   projectRoot: string
+}
+
+function parsePlatform(value: string | undefined): DynamicWidgetPlatform {
+  if (value === 'ios' || value === 'android') {
+    return value
+  }
+
+  throw new Error(`Invalid platform '${value}'. Expected 'ios' or 'android'.`)
 }
 
 export function parseBundleWidgetsArgs(argv: string[]): ParsedArgs {
@@ -27,7 +37,7 @@ export function parseBundleWidgetsArgs(argv: string[]): ParsedArgs {
         i += 1
         break
       case '--platform':
-        args.platform = value
+        args.platform = parsePlatform(value)
         i += 1
         break
       case '--project-root':
@@ -46,17 +56,6 @@ async function loadAppMetroConfig(projectRoot: string): Promise<any> {
   return loadConfig({ cwd: projectRoot })
 }
 
-function widgetMatchesPlatform(widget: RegisteredVoltraWidget, projectRoot: string, platform: string): boolean {
-  const segments = path.relative(projectRoot, widget.sourcePath).split(path.sep)
-  if (segments.includes('android')) {
-    return platform === 'android'
-  }
-  if (segments.includes('ios')) {
-    return platform === 'ios'
-  }
-  return true
-}
-
 export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWidgetsOptions): Promise<void> {
   if (!outDir) {
     throw new Error('bundleWidgets: --out-dir is required')
@@ -71,10 +70,7 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
   const registry = createWidgetRegistry({ projectRoot })
 
   try {
-    const widgets = Array.from(registry.listWidgets())
-      .map((widget) => registry.getWidget(widget.id))
-      .filter((widget): widget is RegisteredVoltraWidget => widget !== null)
-      .filter((widget) => widgetMatchesPlatform(widget, projectRoot, platform))
+    const widgets = registry.listWidgets(platform)
 
     if (widgets.length === 0) {
       console.log(`[voltra] no client-rendered widgets to bundle for platform "${platform}"`)

@@ -16,6 +16,7 @@ function makeTempProjectRoot(): { platformProjectRoot: string; cleanup: () => vo
 function widget(partial: Partial<AndroidWidgetConfig>): AndroidWidgetConfig {
   return {
     id: 'W',
+    entry: './widgets/W.tsx',
     displayName: 'W',
     description: 'W',
     targetCellWidth: 2,

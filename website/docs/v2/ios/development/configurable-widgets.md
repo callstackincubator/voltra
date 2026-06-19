@@ -4,17 +4,15 @@
 Configurable widgets are experimental. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
 :::
 
-Configurable widgets let users edit widget parameters in the native iOS Edit Widget sheet. Voltra maps those parameters into `env.configuration`, so your JSX can switch on user choices at render time.
-
-This feature is for Dynamic Widgets. Use it when the widget should stay dynamic, but the user still needs a few knobs such as a label, unit, theme, or source.
+Configurable widgets let users edit widget parameters in the native iOS Edit Widget sheet. Use them when a Dynamic Widget needs a few user-editable knobs, such as a label, unit, theme, or source.
 
 It requires iOS 17+, because Voltra wires it through `AppIntentConfiguration`.
 
 ## How it works
 
-1. Define a Dynamic Widget with `'use voltra'`.
-2. Add `appIntent.parameters` to the widget config in `app.json`.
-3. Read `env.configuration` inside the widget.
+1. Define a Dynamic Widget module with a default export.
+2. Add `entry` and `appIntent.parameters` to the widget config in `app.json`.
+3. Read the selected values in your widget.
 4. Let the user edit the widget from the iOS widget sheet.
 
 Each parameter has:
@@ -30,8 +28,10 @@ import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 
 type GreetingConfig = { label?: string }
 
-export function greeting_widget(_props: object, env: WidgetEnvironment<GreetingConfig> = {} as WidgetEnvironment<GreetingConfig>) {
-  'use voltra'
+export default function GreetingWidget(
+  _props: object,
+  env: WidgetEnvironment<GreetingConfig> = {} as WidgetEnvironment<GreetingConfig>
+) {
 
   const label = env.configuration?.label ?? 'Hello'
 
@@ -60,10 +60,11 @@ Plugin config:
           "widgets": [
             {
               "id": "greeting_widget",
+              "entry": "./widgets/ios/greeting-widget.tsx",
               "displayName": "Greeting Widget",
               "description": "A Dynamic Widget with user-editable parameters",
               "supportedFamilies": ["systemSmall", "systemMedium"],
-              "initialStatePath": "./widgets/greeting_widget.tsx",
+              "initialStatePath": "./widgets/ios/greeting-widget.tsx",
               "appIntent": {
                 "parameters": [
                   {
@@ -96,4 +97,5 @@ If you need more than one value, add more entries to `appIntent.parameters` and 
 
 - `appIntent` only wires up for Dynamic Widgets.
 - Defaults come from code, not from the native sheet.
+- There is no `export` field in app.json for Dynamic Widgets.
 - Use a real device to verify the Edit Widget flow.

@@ -23,19 +23,20 @@ describe('generateInitialStatesSwift', () => {
   })
 })
 
-describe('generateWidgetBundleSwift — client-rendered dispatch', () => {
+describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
   const serverWidget: DetectedIOSWidget = {
     id: 'weather',
+    entry: './widgets/weather.tsx',
     displayName: 'Weather',
     description: 'Shows weather',
     clientRendered: false,
   }
   const clientWidget: DetectedIOSWidget = {
     id: 'IosWeatherWidget',
+    entry: './widgets/IosWeatherWidget.tsx',
     displayName: 'Client Weather',
     description: 'Client-rendered weather',
     clientRendered: true,
-    clientComponentName: 'IosWeatherWidget',
     clientSourcePath: '/tmp/IosWeatherWidget.tsx',
   }
 
@@ -76,10 +77,10 @@ describe('generateWidgetBundleSwift — client-rendered dispatch', () => {
 describe('generateWidgetBundleSwift — AppIntent configuration', () => {
   const configurableWidget: DetectedIOSWidget = {
     id: 'IosWeatherWidget',
+    entry: './widgets/IosWeatherWidget.tsx',
     displayName: 'Client Weather',
     description: 'Client-rendered weather',
     clientRendered: true,
-    clientComponentName: 'IosWeatherWidget',
     clientSourcePath: '/tmp/IosWeatherWidget.tsx',
     appIntent: {
       parameters: [{ name: 'label', title: 'Label', default: 'Hello' }],
@@ -87,10 +88,10 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
   }
   const plainClientWidget: DetectedIOSWidget = {
     id: 'PlainClient',
+    entry: './widgets/PlainClient.tsx',
     displayName: 'Plain Client',
     description: 'Client-rendered, no config',
     clientRendered: true,
-    clientComponentName: 'PlainClient',
     clientSourcePath: '/tmp/PlainClient.tsx',
   }
 

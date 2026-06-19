@@ -1,22 +1,21 @@
-import { evaluateWidgetModule, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
+import { evaluateWidgetModuleExports, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
 
 import type { DetectedIOSWidget } from './clientRendered'
 
 /**
- * Initial-state prerender for client-rendered widgets.
+ * Initial-state prerender for Dynamic Widgets.
  *
- * For server-rendered widgets, the existing `prerenderWidgetState` in @use-voltra/expo-plugin
- * loads the file at `initialStatePath`, reads `exports.default` (a `WidgetVariants` object),
- * and runs it through the multi-family `renderWidgetToString` to produce a per-family JSON
- * payload that the runtime's `selectContentForFamily` will pick from.
+ * For widgets with `initialStatePath`, the existing `prerenderWidgetState` in
+ * @use-voltra/expo-plugin loads the file and reads `exports.default` (a `WidgetVariants`
+ * object), then runs it through the multi-family `renderWidgetToString` to produce a
+ * per-family JSON payload that the runtime's `selectContentForFamily` will pick from.
  *
- * Client-rendered widgets work differently: the file exports a function
- * `(props, env) => JSX` (tagged with `'use voltra'`), and the runtime calls it per-render
- * with real env values. For the WidgetKit placeholder (`Provider.placeholder` and the
- * widget gallery preview) ONE pre-rendered JSON entry is needed to display before any
- * Metro fetch completes. That's generated here by calling the same function at prebuild
- * with empty props + a minimal env, storing the compact `{t, c, p}` JSON in the existing
- * `voltra_initial_states.json`.
+ * Dynamic Widgets work differently: the module referenced by `entry` default-exports a
+ * function or component, and the runtime calls it per-render with real env values. For the
+ * WidgetKit placeholder (`Provider.placeholder` and the widget gallery preview) ONE
+ * pre-rendered JSON entry is needed to display before any Metro fetch completes. That's
+ * generated here by calling the entry default export at prebuild with empty props + a
+ * minimal env, storing the compact `{t, c, p}` JSON in the existing `voltra_initial_states.json`.
  *
  * The placeholder's env values are fixed (`widgetFamily: 'systemMedium'`,
  * `colorScheme: 'light'`, etc.) and may not match what the user actually sees the moment
@@ -28,7 +27,7 @@ import type { DetectedIOSWidget } from './clientRendered'
 const SINGLE_LOCALE_KEY = '__default'
 
 /**
- * Default env passed to client widgets at prebuild for the placeholder render. Fields
+ * Default env passed to Dynamic Widgets at prebuild for the placeholder render. Fields
  * mirror `WidgetEnvironment` from packages/core/src/widget-environment.ts so the widget
  * function sees the same shape it gets at runtime.
  */
@@ -51,7 +50,7 @@ function buildPlaceholderEnv(): Record<string, unknown> {
 }
 
 /**
- * Prerender placeholder JSON for every client-rendered widget. Returns a map shaped
+ * Prerender placeholder JSON for every Dynamic Widget. Returns a map shaped
  * identically to `prerenderWidgetState`'s output so the two can be merged before
  * generating `VoltraWidgetInitialStates.swift`.
  */
@@ -80,12 +79,11 @@ export async function prerenderClientRenderedWidgets(
 
   for (const widget of clientWidgets) {
     try {
-      const exports = evaluateWidgetModule(projectRoot, widget.clientSourcePath)
-      const widgetFn = exports[widget.clientComponentName]
+      const widgetModule = evaluateWidgetModuleExports(projectRoot, widget.clientSourcePath)
+      const widgetFn = widgetModule?.default ?? widgetModule
       if (typeof widgetFn !== 'function') {
         throw new Error(
-          `Expected the file to export a function named "${widget.clientComponentName}" ` +
-            `(the widget id from app.json). Found: ${Object.keys(exports).join(', ') || '(no named exports)'}`
+          `Expected the entry module at ${widget.clientSourcePath} to default-export a function or component.`
         )
       }
 
@@ -95,13 +93,11 @@ export async function prerenderClientRenderedWidgets(
       results.set(widget.id, new Map([[SINGLE_LOCALE_KEY, jsonString]]))
     } catch (error) {
       throw new Error(
-        `Failed to prerender client-rendered widget "${widget.id}": ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Failed to prerender Dynamic Widget "${widget.id}": ${error instanceof Error ? error.message : String(error)}`
       )
     }
   }
 
-  logger.info(`Prerendered ${clientWidgets.length} client-rendered widget placeholder(s)`)
+  logger.info(`Prerendered ${clientWidgets.length} Dynamic Widget placeholder(s)`)
   return results
 }

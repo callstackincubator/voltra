@@ -32,9 +32,9 @@ export async function generateAndroidInitialStates(options: GenerateInitialState
     renderAndroidWidgetToString: RenderAndroidWidgetToString
   }
 
-  // Server-rendered widgets prerender from `exports.default`. Client-rendered widgets have no
-  // default export (just a `(props, env) => JSX` function), so they're excluded here and
-  // prerendered separately below — feeding a client file to the server prerender would throw.
+  // Widgets with `initialStatePath` prerender from `exports.default`. Dynamic Widgets instead
+  // default-export a `(props, env) => JSX` function, so they're excluded here and prerendered
+  // separately below — feeding a client file to the initial-state prerender would throw.
   const serverWidgets = widgets.filter((w) => !w.clientRendered)
   const prerenderedStates: PrerenderedWidgetStates = await prerenderWidgetState(
     serverWidgets,
@@ -42,7 +42,7 @@ export async function generateAndroidInitialStates(options: GenerateInitialState
     renderAndroidWidgetToString
   )
 
-  // Single-node placeholders for client-rendered widgets (first paint / offline fallback).
+  // Single-node placeholders for Dynamic Widgets (first paint / offline fallback).
   const clientStates = await prerenderClientRenderedAndroidWidgets(widgets, projectRoot)
   for (const [id, perLocale] of clientStates.entries()) {
     prerenderedStates.set(id, perLocale)

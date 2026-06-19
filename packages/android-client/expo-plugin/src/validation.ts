@@ -1,7 +1,12 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { validateHomeScreenWidgetId, validateInitialStatePath, validateWidgetLabel } from '@use-voltra/expo-plugin'
+import {
+  validateHomeScreenWidgetId,
+  validateInitialStatePath,
+  validateWidgetEntry,
+  validateWidgetLabel,
+} from '@use-voltra/expo-plugin'
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
 
@@ -10,6 +15,10 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
   validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
+
+  if (widget.entry !== undefined) {
+    validateWidgetEntry(widget.entry, widget.id, projectRoot)
+  }
 
   if (typeof widget.targetCellWidth !== 'number') {
     throw new Error(`Widget '${widget.id}': targetCellWidth is required and must be a number`)

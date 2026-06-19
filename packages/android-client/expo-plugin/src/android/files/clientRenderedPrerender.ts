@@ -1,17 +1,18 @@
-import { evaluateWidgetModule, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
+import { evaluateWidgetModuleExports, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
 
 import type { DetectedAndroidWidget } from '../clientRendered'
 
 /**
- * Placeholder prerender for client-rendered Android widgets — the counterpart of the iOS
+ * Placeholder prerender for Dynamic Android Widgets — the counterpart of the iOS
  * plugin's clientRenderedPrerender.ts.
  *
- * Server-rendered widgets prerender from `exports.default` (a variants object). Client widgets
- * instead export a `(props, env) => JSX` function, so there is no default state to prerender.
- * To still show something before the first Metro fetch (and when offline), we call that function
- * once at prebuild with empty props + a minimal env, render the single node via
- * `renderAndroidVariantToJson`, and store it in the same `voltra_initial_states.json` the runtime
- * already reads. `VoltraClientGlanceWidget` decodes that node for its fallback.
+ * Widgets with `initialStatePath` prerender from `exports.default` (a variants object).
+ * Dynamic Widgets instead default-export a `(props, env) => JSX` function, so there is no
+ * default state to prerender. To still show something before the first Metro fetch (and when
+ * offline), we call that function once at prebuild with empty props + a minimal env, render the
+ * single node via `renderAndroidVariantToJson`, and store it in the same
+ * `voltra_initial_states.json` the runtime already reads. `VoltraClientGlanceWidget` decodes that
+ * node for its fallback.
  */
 
 const SINGLE_LOCALE_KEY = '__default'
@@ -55,12 +56,11 @@ export async function prerenderClientRenderedAndroidWidgets(
 
   for (const widget of clientWidgets) {
     try {
-      const exports = evaluateWidgetModule(projectRoot, widget.clientSourcePath)
-      const widgetFn = exports[widget.clientComponentName]
+      const widgetModule = evaluateWidgetModuleExports(projectRoot, widget.clientSourcePath)
+      const widgetFn = widgetModule?.default ?? widgetModule
       if (typeof widgetFn !== 'function') {
         throw new Error(
-          `Expected the file to export a function named "${widget.clientComponentName}" ` +
-            `(the widget id from app.json). Found: ${Object.keys(exports).join(', ') || '(no named exports)'}`
+          `Expected the entry module at ${widget.clientSourcePath} to default-export a function or component.`
         )
       }
 
@@ -69,13 +69,11 @@ export async function prerenderClientRenderedAndroidWidgets(
       results.set(widget.id, new Map([[SINGLE_LOCALE_KEY, JSON.stringify(json)]]))
     } catch (error) {
       throw new Error(
-        `Failed to prerender client-rendered widget "${widget.id}": ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Failed to prerender Dynamic Widget "${widget.id}": ${error instanceof Error ? error.message : String(error)}`
       )
     }
   }
 
-  logger.info(`Prerendered ${clientWidgets.length} client-rendered Android widget placeholder(s)`)
+  logger.info(`Prerendered ${clientWidgets.length} Dynamic Android Widget placeholder(s)`)
   return results
 }
