@@ -6,6 +6,7 @@ import type { IOSWidgetConfig } from '../../types'
 import { generateAssets } from './assets'
 import { generateEntitlements } from './entitlements'
 import { generateInfoPlist } from './infoPlist'
+import { generateIOSDynamicWidgetsManifest } from './manifest'
 import { generateSwiftFiles } from './swift'
 
 export interface GenerateWidgetExtensionFilesProps {
@@ -56,6 +57,12 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
       // Generate Swift files (widget bundle, initial states)
       await generateSwiftFiles({
         targetPath,
+        projectRoot,
+        widgets,
+      })
+
+      // Write the iOS-owned Dynamic Widgets manifest for Metro to consume later.
+      generateIOSDynamicWidgetsManifest({
         projectRoot,
         widgets,
       })

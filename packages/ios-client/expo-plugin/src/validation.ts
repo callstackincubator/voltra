@@ -1,4 +1,9 @@
-import { validateHomeScreenWidgetId, validateInitialStatePath, validateWidgetLabel } from '@use-voltra/expo-plugin'
+import {
+  validateHomeScreenWidgetId,
+  validateInitialStatePath,
+  validateWidgetEntry,
+  validateWidgetLabel,
+} from '@use-voltra/expo-plugin'
 
 import type { IOSConfigPluginProps, IOSWidgetConfig, IOSWidgetFamily } from './types'
 
@@ -12,11 +17,12 @@ const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
   'accessoryInline',
 ])
 
-export function validateIOSWidgetConfig(widget: IOSWidgetConfig): void {
+export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: string): string {
   validateHomeScreenWidgetId(widget.id)
+  const normalizedEntry = validateWidgetEntry(widget.entry, widget.id, projectRoot)
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
-  validateInitialStatePath(widget.initialStatePath, widget.id)
+  validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
 
   if (widget.supportedFamilies) {
     if (!Array.isArray(widget.supportedFamilies)) {
@@ -32,9 +38,11 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig): void {
       }
     }
   }
+
+  return normalizedEntry
 }
 
-export function validateIOSConfigPluginProps(props: IOSConfigPluginProps): void {
+export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projectRoot?: string): void {
   if (props.groupIdentifier !== undefined) {
     if (typeof props.groupIdentifier !== 'string') {
       throw new Error('groupIdentifier must be a string')
@@ -52,7 +60,7 @@ export function validateIOSConfigPluginProps(props: IOSConfigPluginProps): void 
 
     const seenIds = new Set<string>()
     for (const widget of props.widgets) {
-      validateIOSWidgetConfig(widget)
+      validateIOSWidgetConfig(widget, projectRoot)
 
       if (seenIds.has(widget.id)) {
         throw new Error(`Duplicate widget ID: '${widget.id}'`)

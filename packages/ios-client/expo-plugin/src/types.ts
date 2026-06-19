@@ -42,6 +42,10 @@ export interface IOSWidgetConfig {
    * Unique identifier for the widget (used as the widget kind and in JS API)
    */
   id: string
+  /**
+   * Project-relative entry module for the widget. This module must export a default widget component.
+   */
+  entry: string
   displayName: WidgetLabel
   description: WidgetLabel
   /** @default ['systemSmall', 'systemMedium', 'systemLarge'] */

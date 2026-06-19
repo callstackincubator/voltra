@@ -22,6 +22,7 @@ function makeTempProject(files: Record<string, string>): { projectRoot: string; 
 function asWidget(partial: Partial<IOSWidgetConfig>): IOSWidgetConfig {
   return {
     id: 'placeholder',
+    entry: './widgets/placeholder.tsx',
     displayName: 'Placeholder',
     description: 'Placeholder',
     ...partial,
