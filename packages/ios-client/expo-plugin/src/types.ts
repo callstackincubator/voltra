@@ -45,10 +45,6 @@ export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
    * Unique identifier for the widget (used as the widget kind and in JS API)
    */
   id: string
-  /**
-   * Project-relative entry module for a Dynamic Widget. This module must default-export a widget
-   * component or function.
-   */
   displayName: WidgetLabel
   description: WidgetLabel
   /** @default ['systemSmall', 'systemMedium', 'systemLarge'] */
