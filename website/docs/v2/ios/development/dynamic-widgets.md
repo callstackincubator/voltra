@@ -4,7 +4,7 @@
 Dynamic widgets are experimental. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
 :::
 
-Dynamic Widgets run your widget JSX on device from its own JS bundle. You declare them in `app.json` with a stable `id` and an explicit `entry`, Expo prebuild writes `.voltra/manifest.ios.json`, and Metro reads that manifest to bundle only the widgets you declared.
+Dynamic Widgets let your widget react to the current device state on iOS. Declare them in `app.json` with a stable `id` and an explicit `entry`, then default-export the widget from that file.
 
 That means your widget can react to:
 
@@ -15,15 +15,15 @@ That means your widget can react to:
 - `env.showsWidgetContainerBackground`
 - `env.configuration` when you also add widget parameters
 
-In development, Metro serves the bundle and Fast Refresh updates the widget while you edit. In release builds, Voltra bakes the bundle into the widget extension.
+When you change a widget, rebuild the app so the updated version is available on device.
 
 ## How to use it
 
 1. Add an iOS widget declaration to `app.json` with an `id`, an `entry`, and any widget metadata you need.
 2. Default-export the widget function or component from the module named by `entry`.
-3. Use `initialStatePath` if you want a pre-rendered first paint while the JS bundle loads.
-4. Rebuild the app after `expo prebuild`.
-5. Keep iOS and Android widget declarations separate; the same `id` can exist on both platforms because each platform writes its own manifest.
+3. Use `initialStatePath` if you want a pre-rendered first view.
+4. Rebuild the app after updating the widget config.
+5. Keep iOS and Android widget declarations separate; the same `id` can exist on both platforms because each platform is configured separately.
 
 ```tsx
 import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
@@ -87,4 +87,4 @@ If you want user-editable values, add `appIntent` too. See [Configurable Widgets
 - There is no `export` field in app.json for Dynamic Widgets.
 - The default-exported function or component name does not need to match the widget `id`.
 - Use a real device to verify release rendering.
-- The file referenced by `initialStatePath` still provides first paint while the JS bundle loads.
+- `initialStatePath` gives the widget a pre-rendered first view.

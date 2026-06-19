@@ -4,23 +4,19 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/metro` adds the Metro-side plumbing for Voltra Dynamic Widgets. It reads the platform manifest written during Expo prebuild, wires the dev server middleware, resolves the hot-reload alias, and bundles only the widgets declared in app.json for release builds.
+`@use-voltra/metro` helps Voltra Dynamic Widgets work in Metro-based React Native apps.
 
 ## Features
 
 - **Metro config transformer**: Wrap your app's Metro config with `withVoltra()` to enable Voltra's widget pipeline.
 
-- **Manifest-driven widget registry**: Load `.voltra/manifest.ios.json` or `.voltra/manifest.android.json` and turn declared widgets into Metro entrypoints.
-
-- **Dev server middleware**: Serve widget bundles from `/voltra` during development and keep the hot-reload path working.
-
-- **Release bundling**: Build standalone widget bundles with the `bundle-widgets` CLI for production shipping.
+- **Widget registry**: Work with widgets declared in app.json and keep the widget pipeline organized per platform.
 
 - **Project-aware module resolution**: Resolve app dependencies from the consuming project's install layout, including pnpm setups.
 
 ## Documentation
 
-This package powers the manifest-driven Dynamic Widgets workflow in Voltra. Relevant topics:
+This package supports the Dynamic Widgets workflow in Voltra. Relevant topics:
 
 - [Getting Started](https://use-voltra.dev/getting-started/installation)
 - [iOS Dynamic Widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
@@ -49,7 +45,7 @@ export default withVoltra({
 })
 ```
 
-Declare Dynamic Widgets in app.json with a stable `id` and an explicit `entry` path, then default-export the widget module. Expo prebuild writes the platform manifest, and Metro reads that manifest instead of discovering widgets from source files.
+Declare Dynamic Widgets in app.json with a stable `id` and an explicit `entry` path, then default-export the widget module.
 
 ## Quick example
 

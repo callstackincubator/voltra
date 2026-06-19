@@ -4,9 +4,7 @@
 Configurable widgets are experimental. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
 :::
 
-Configurable widgets let users edit widget parameters in the native iOS Edit Widget sheet. Voltra maps those parameters into `env.configuration`, so your JSX can switch on user choices at render time.
-
-This feature is for Dynamic Widgets. Use it when the widget should stay dynamic, but the user still needs a few knobs such as a label, unit, theme, or source.
+Configurable widgets let users edit widget parameters in the native iOS Edit Widget sheet. Use them when a Dynamic Widget needs a few user-editable knobs, such as a label, unit, theme, or source.
 
 It requires iOS 17+, because Voltra wires it through `AppIntentConfiguration`.
 
@@ -14,7 +12,7 @@ It requires iOS 17+, because Voltra wires it through `AppIntentConfiguration`.
 
 1. Define a Dynamic Widget module with a default export.
 2. Add `entry` and `appIntent.parameters` to the widget config in `app.json`.
-3. Read `env.configuration` inside the widget.
+3. Read the selected values in your widget.
 4. Let the user edit the widget from the iOS widget sheet.
 
 Each parameter has:

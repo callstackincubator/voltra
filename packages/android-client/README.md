@@ -10,7 +10,7 @@
 
 - **Home Screen widgets**: Update, reload, pin, and query widgets with `updateAndroidWidget`, `reloadAndroidWidgets`, `getActiveWidgets`, and more.
 
-- **Dynamic Widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device (standalone Hermes) from its own JS bundle with live env (size, color scheme, Material You colors, locale, configuration).
+- **Dynamic Widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (size, color scheme, Material You colors, locale, configuration).
 
 - **Ongoing notifications**: Start and update promoted ongoing notifications with `useAndroidOngoingNotification` and related APIs.
 
@@ -25,17 +25,13 @@
 ## Dynamic Widgets (experimental)
 
 > [!WARNING]
-> Dynamic Widgets are **experimental** — usable in production at your own risk. The API
-> and generated build output may change between releases.
+> Dynamic Widgets are **experimental** — usable in production at your own risk. The API may
+> change between releases.
 
 Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
 module must default-export the widget function or component; the exported name does not need to
-match the widget id. Expo prebuild writes `.voltra/manifest.android.json`, and Metro reads that
-manifest to bundle only the declared widgets. The widget renders on-device from its own JS bundle
-in a standalone Hermes runtime, so it reacts to live environment values (size, color scheme,
-Material You `materialColors`, locale, and `configuration`). In development the bundle is served by
-Metro (editing the JSX hot-reloads the pinned widget); in release builds it is baked into the app's
-assets at build time.
+match the widget id. The widget renders on-device, so it can react to live environment values
+(size, color scheme, Material You `materialColors`, locale, and `configuration`).
 
 Configuration parameters declared in `app.json` (`appIntent.parameters`, with code-defined
 defaults) surface as `env.configuration`. Android has no system-managed widget configuration UI
@@ -44,7 +40,6 @@ override the declared defaults.
 
 Notes:
 
-- The dev loop and release baking rely on Metro scaffolding in your project (see `example/metro`).
 - iOS and Android widget declarations stay separate, and the same widget id can exist on both platforms as separate entries.
 - Verify release rendering on a **real device** — emulators are unreliable for widget rendering.
 
