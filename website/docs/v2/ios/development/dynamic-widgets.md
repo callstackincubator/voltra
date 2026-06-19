@@ -15,14 +15,14 @@ That means your widget can react to:
 - `env.showsWidgetContainerBackground`
 - `env.configuration` when you also add widget parameters
 
-When you change a widget, rebuild the app so the updated version is available on device.
+When you change `app.json`, run Expo Prebuild or Voltra Apply so the updated widget configuration is available on device. If you change only the widget JS, reopen the app in development and the widget updates automatically.
 
 ## How to use it
 
 1. Add an iOS widget declaration to `app.json` with an `id`, an `entry`, and any widget metadata you need.
 2. Default-export the widget function or component from the module named by `entry`.
 3. Use `initialStatePath` if you want a pre-rendered first view.
-4. Rebuild the app after updating the widget config.
+4. Re-run Expo Prebuild or Voltra Apply after updating `app.json`.
 5. Keep iOS and Android widget declarations separate; the same `id` can exist on both platforms because each platform is configured separately.
 
 ```tsx
