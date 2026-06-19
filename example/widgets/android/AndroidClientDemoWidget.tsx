@@ -6,7 +6,7 @@ import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@us
 // via AndroidDynamicColors tokens, which the native renderer resolves to the system dynamic
 // color scheme (and which follow light/dark automatically).
 
-export const AndroidClientDemoWidget = (_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) => {
+export default function AndroidClientDemoWidget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
   'use voltra'
 
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼

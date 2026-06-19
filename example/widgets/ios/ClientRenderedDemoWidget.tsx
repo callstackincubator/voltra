@@ -6,7 +6,7 @@ import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 // editable literal (`hotReloadMarker` below) for proving hot reload end-to-end.
 // Edit the literal, save, watch the home-screen widget update within ~1 second.
 
-export const ClientRenderedDemoWidget = (_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) => {
+export default function ClientRenderedDemoWidget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
   'use voltra'
 
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼

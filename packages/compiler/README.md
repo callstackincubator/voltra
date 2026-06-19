@@ -4,11 +4,11 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/compiler` contains the source analysis helpers that power Voltra's client-rendered widget workflow. It parses JavaScript and TypeScript files, finds `'use voltra'` directives, and returns the widget records that Metro and related tooling consume.
+`@use-voltra/compiler` contains the source analysis helpers that power Voltra's widget toolchain. It can still parse JavaScript and TypeScript files, find `'use voltra'` metadata, and return widget records for legacy or future tooling, but registration now comes from app.json and the platform manifests written during prebuild.
 
 ## Features
 
-- **Directive scanning**: Detect `'use voltra'` in function declarations, function expressions, and arrow functions.
+- **Optional directive scanning**: Detect `'use voltra'` in function declarations, function expressions, and arrow functions when tooling needs source metadata or validation.
 
 - **Export-aware analysis**: Match directives to named and default exports so only real widget entry points are returned.
 
@@ -32,7 +32,7 @@ This package is an internal building block for Voltra's widget toolchain. Releva
 npm install @use-voltra/compiler
 ```
 
-Use `scanVoltraDirectives()` to inspect a file:
+Use `scanVoltraDirectives()` to inspect a file for optional source metadata:
 
 ```ts
 import { scanVoltraDirectives } from '@use-voltra/compiler'

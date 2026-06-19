@@ -12,8 +12,8 @@ It requires iOS 17+, because Voltra wires it through `AppIntentConfiguration`.
 
 ## How it works
 
-1. Define a Dynamic Widget with `'use voltra'`.
-2. Add `appIntent.parameters` to the widget config in `app.json`.
+1. Define a Dynamic Widget module with a default export.
+2. Add `entry` and `appIntent.parameters` to the widget config in `app.json`.
 3. Read `env.configuration` inside the widget.
 4. Let the user edit the widget from the iOS widget sheet.
 
@@ -30,8 +30,10 @@ import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 
 type GreetingConfig = { label?: string }
 
-export function greeting_widget(_props: object, env: WidgetEnvironment<GreetingConfig> = {} as WidgetEnvironment<GreetingConfig>) {
-  'use voltra'
+export default function GreetingWidget(
+  _props: object,
+  env: WidgetEnvironment<GreetingConfig> = {} as WidgetEnvironment<GreetingConfig>
+) {
 
   const label = env.configuration?.label ?? 'Hello'
 
@@ -60,10 +62,11 @@ Plugin config:
           "widgets": [
             {
               "id": "greeting_widget",
+              "entry": "./widgets/ios/greeting-widget.tsx",
               "displayName": "Greeting Widget",
               "description": "A Dynamic Widget with user-editable parameters",
               "supportedFamilies": ["systemSmall", "systemMedium"],
-              "initialStatePath": "./widgets/greeting_widget.tsx",
+              "initialStatePath": "./widgets/ios/greeting-widget.tsx",
               "appIntent": {
                 "parameters": [
                   {
@@ -96,4 +99,5 @@ If you need more than one value, add more entries to `appIntent.parameters` and 
 
 - `appIntent` only wires up for Dynamic Widgets.
 - Defaults come from code, not from the native sheet.
+- There is no `export` field in app.json for Dynamic Widgets.
 - Use a real device to verify the Edit Widget flow.
