@@ -46,13 +46,23 @@ export function detectClientRenderedWidgets(
 function detectSingleWidget(widget: AndroidWidgetConfig, projectRoot: string): DetectedAndroidWidget {
   const sourcePath = resolveWidgetEntryPath(widget.entry, projectRoot)
   if (!sourcePath || !fs.existsSync(sourcePath)) {
-    return { ...widget, clientRendered: false }
+    throw new Error(
+      `[voltra] Dynamic Widget "${widget.id}" entry not found at ${path.relative(
+        projectRoot,
+        sourcePath ?? widget.entry
+      )}`
+    )
   }
 
   const widgetModule = evaluateWidgetModuleExports(projectRoot, sourcePath)
   const widgetFn = widgetModule?.default ?? widgetModule
   if (typeof widgetFn !== 'function') {
-    return { ...widget, clientRendered: false }
+    throw new Error(
+      `[voltra] Dynamic Widget "${widget.id}" at ${path.relative(
+        projectRoot,
+        sourcePath
+      )} must default-export a function or component.`
+    )
   }
 
   return {

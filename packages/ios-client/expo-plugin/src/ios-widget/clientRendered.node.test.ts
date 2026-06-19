@@ -58,15 +58,16 @@ describe('detectClientRenderedWidgets', () => {
     }
   })
 
-  it('returns server-rendered when the entry default export is not a function', () => {
+  it('throws when the entry default export is not a function', () => {
     const { projectRoot, cleanup } = makeTempProject({
       'widgets/Bar.tsx': `
-        export default { kind: 'widget-state' }
+        export const Bar = () => null
       `,
     })
     try {
-      const [detected] = detectClientRenderedWidgets([asWidget({ id: 'Bar', entry: './widgets/Bar.tsx' })], projectRoot)
-      expect(detected.clientRendered).toBe(false)
+      expect(() =>
+        detectClientRenderedWidgets([asWidget({ id: 'Bar', entry: './widgets/Bar.tsx' })], projectRoot)
+      ).toThrow(/Dynamic Widget "Bar" at widgets\/Bar\.tsx must default-export a function or component\./)
     } finally {
       cleanup()
     }
@@ -106,14 +107,12 @@ describe('detectClientRenderedWidgets — experimental warning', () => {
     }
   })
 
-  it('does not warn when all widgets are server-rendered', () => {
+  it('does not warn when no Dynamic Widgets are detected', () => {
     const detect = freshDetect()
     const warn = console.warn as jest.Mock
-    const { projectRoot, cleanup } = makeTempProject({
-      'widgets/Bar.tsx': "export default { kind: 'fallback' }\n",
-    })
+    const { projectRoot, cleanup } = makeTempProject({})
     try {
-      detect([asWidget({ id: 'Bar', entry: './widgets/Bar.tsx' })], projectRoot)
+      detect([], projectRoot)
       expect(warn).not.toHaveBeenCalled()
     } finally {
       cleanup()
