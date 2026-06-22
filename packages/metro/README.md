@@ -1,10 +1,10 @@
 ![voltra-banner](https://use-voltra.dev/voltra-baner.jpg)
 
-### Metro integration for Voltra Dynamic Widgets
+### Metro integration for Voltra client-rendered widgets
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/metro` helps Voltra Dynamic Widgets work in Metro-based React Native apps.
+`@use-voltra/metro` helps Voltra client-rendered widgets work in Metro-based React Native apps.
 
 ## Features
 
@@ -16,11 +16,11 @@
 
 ## Documentation
 
-This package supports the Dynamic Widgets workflow in Voltra. Relevant topics:
+This package supports the client-rendered widget workflow in Voltra. Relevant topics:
 
 - [Getting Started](https://use-voltra.dev/getting-started/installation)
-- [iOS Dynamic Widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
-- [Android Dynamic Widgets](https://use-voltra.dev/android/development/dynamic-widgets)
+- [iOS client-rendered widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
+- [Android client-rendered widgets](https://use-voltra.dev/android/development/dynamic-widgets)
 - [iOS API Reference](https://use-voltra.dev/ios/api/configuration)
 - [Android API Reference](https://use-voltra.dev/android/api/plugin-configuration)
 
@@ -45,7 +45,7 @@ export default withVoltra({
 })
 ```
 
-Declare Dynamic Widgets in app.json with a stable `id` and an explicit `entry` path, then default-export the widget module.
+Declare client-rendered widgets in app.json with a stable `id` and an explicit `entry` path, then default-export the widget module.
 
 ## Quick example
 
@@ -65,7 +65,7 @@ await bundleWidgets({
 
 ## Platform compatibility
 
-This package works with Metro-based React Native apps on **iOS** and **Android** when you are using Voltra Dynamic Widgets.
+This package works with Metro-based React Native apps on **iOS** and **Android** when you are using Voltra client-rendered widgets.
 
 ## Authors
 

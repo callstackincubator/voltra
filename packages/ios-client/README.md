@@ -12,7 +12,7 @@
 
 - **iOS Widgets**: Update, schedule, reload, and query widgets with `updateWidget`, `scheduleWidget`, `getActiveWidgets`, and more.
 
-- **Dynamic Widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (family, color scheme, locale, configuration).
+- **Client-rendered widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (family, color scheme, locale, configuration).
 
 - **Fast Refresh**: Hooks and previews integrate with your React Native dev workflow.
 
@@ -22,10 +22,10 @@
 
 - **Expo config plugin**: Add `"@use-voltra/ios-client"` to `app.json` to generate the Live Activity extension, widget targets, and entitlements.
 
-## Dynamic Widgets (experimental)
+## Client-rendered widgets (experimental)
 
 > [!WARNING]
-> Dynamic Widgets are **experimental** — usable in production at your own risk. The API may
+> Client-rendered widgets are **experimental** — usable in production at your own risk. The API may
 > change between releases.
 
 Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
@@ -46,7 +46,7 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). Rele
 - [Installation](https://use-voltra.dev/getting-started/installation)
 - [iOS Setup](https://use-voltra.dev/ios/setup)
 - [Developing Live Activities](https://use-voltra.dev/ios/development/developing-live-activities)
-- [Developing Dynamic Widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
+- [Developing client-rendered widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
 - [Plugin Configuration](https://use-voltra.dev/ios/api/plugin-configuration)
 - [API Reference](https://use-voltra.dev/ios/api/configuration)
 

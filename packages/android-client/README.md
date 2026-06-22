@@ -10,7 +10,7 @@
 
 - **Home Screen widgets**: Update, reload, pin, and query widgets with `updateAndroidWidget`, `reloadAndroidWidgets`, `getActiveWidgets`, and more.
 
-- **Dynamic Widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (size, color scheme, Material You colors, locale, configuration).
+- **Client-rendered widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (size, color scheme, Material You colors, locale, configuration).
 
 - **Ongoing notifications**: Start and update promoted ongoing notifications with `useAndroidOngoingNotification` and related APIs.
 
@@ -22,10 +22,10 @@
 
 - **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to declare widgets, optional notifications, and build-time initial states.
 
-## Dynamic Widgets (experimental)
+## Client-rendered widgets (experimental)
 
 > [!WARNING]
-> Dynamic Widgets are **experimental** — usable in production at your own risk. The API may
+> Client-rendered widgets are **experimental** — usable in production at your own risk. The API may
 > change between releases.
 
 Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
@@ -49,7 +49,7 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). Rele
 
 - [Installation](https://use-voltra.dev/getting-started/installation)
 - [Android Setup](https://use-voltra.dev/android/setup)
-- [Developing Dynamic Widgets](https://use-voltra.dev/android/development/dynamic-widgets)
+- [Developing client-rendered widgets](https://use-voltra.dev/android/development/dynamic-widgets)
 - [Managing Ongoing Notifications](https://use-voltra.dev/android/development/managing-ongoing-notifications)
 - [Plugin Configuration](https://use-voltra.dev/android/api/plugin-configuration)
 

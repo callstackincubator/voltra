@@ -2,7 +2,7 @@
 '@use-voltra/ios-client': minor
 ---
 
-**Experimental: Dynamic Widgets (iOS).** A widget component declared in `app.json` with a stable
+**Experimental: client-rendered widgets (iOS).** A widget component declared in `app.json` with a stable
 `id` and a project-relative `entry` path now renders on-device from its own JS bundle, called as
 `(props, env) => JSX` on every render, so it reacts to live environment values (widget family,
 color scheme, locale, and user-editable `configuration` via a native AppIntent "Edit Widget"
