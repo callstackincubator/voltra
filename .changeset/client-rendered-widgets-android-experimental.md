@@ -2,7 +2,7 @@
 '@use-voltra/android-client': minor
 ---
 
-**Experimental: client-rendered widgets (Android).** A widget component declared in `app.json` with a
+**Experimental: Dynamic Widgets (Android).** A widget component declared in `app.json` with a
 stable `id` and a project-relative `entry` path now renders on-device in a standalone Hermes
 runtime, called as `(props, env) => JSX` on every render, so it reacts to live environment values
 (widget size, color scheme, locale, and configuration). Material You dynamic colors are consumed via
