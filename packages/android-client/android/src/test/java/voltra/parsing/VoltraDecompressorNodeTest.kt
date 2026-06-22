@@ -10,7 +10,7 @@ import voltra.models.VoltraNode
 
 /**
  * Verifies [VoltraDecompressor.decompressNode] expands short keys in a standalone node tree —
- * the client-rendered path decodes the on-device renderer's output as a bare [VoltraNode]
+ * the Dynamic Widget path decodes the on-device renderer's output as a bare [VoltraNode]
  * (no `{v, variants, s, e}` envelope) and must decompress it before handing it to the Glance
  * renderer, which expects expanded keys.
  */

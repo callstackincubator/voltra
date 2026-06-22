@@ -53,7 +53,7 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
   const className = `VoltraWidget_${widget.id}Receiver`
   const labelForComment = widgetLabelEnglish(widget.displayName)
 
-  // Client-rendered widgets host VoltraClientGlanceWidget (on-device JS render) and have no
+  // Dynamic Widgets host VoltraClientGlanceWidget (on-device JS render) and have no
   // server payload, so they never schedule WorkManager server updates.
   if (widget.clientRendered) {
     return dedent`
@@ -62,7 +62,7 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
       import voltra.widget.VoltraClientWidgetReceiver
 
       /**
-       * Auto-generated client-rendered widget receiver for ${labelForComment}
+       * Auto-generated Dynamic Widget receiver for ${labelForComment}
        * Widget ID: ${widget.id}
        */
       class ${className} : VoltraClientWidgetReceiver() {

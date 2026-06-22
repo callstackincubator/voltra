@@ -7,7 +7,7 @@ import type { IOSWidgetConfig } from '../types'
 import { detectClientRenderedWidgets } from './clientRendered'
 
 function makeTempProject(files: Record<string, string>): { projectRoot: string; cleanup: () => void } {
-  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-client-rendered-test-'))
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-dynamic-widget-test-'))
   for (const [rel, content] of Object.entries(files)) {
     const abs = path.join(projectRoot, rel)
     fs.mkdirSync(path.dirname(abs), { recursive: true })
@@ -105,7 +105,7 @@ describe('detectClientRenderedWidgets — experimental warning', () => {
     return fn
   }
 
-  it('warns once (with EXPERIMENTAL + the widget id) when a client-rendered widget is detected', () => {
+  it('warns once (with EXPERIMENTAL + the widget id) when a Dynamic Widget is detected', () => {
     const detect = freshDetect()
     const warn = console.warn as jest.Mock
     const { projectRoot, cleanup } = makeTempProject({

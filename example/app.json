@@ -57,7 +57,7 @@
                 "pl": "Client-Rendered Demo"
               },
               "description": {
-                "en": "Plain widget showing env values — for verifying client-rendered hot reload.",
+                "en": "Plain widget showing env values — for verifying Dynamic Widget hot reload.",
                 "pl": "Prosty widget pokazujący wartości env — do weryfikacji hot reload."
               },
               "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],

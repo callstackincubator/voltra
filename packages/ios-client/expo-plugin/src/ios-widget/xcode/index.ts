@@ -41,7 +41,7 @@ export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (
     const xcodeProject = config.modResults
     const groupName = 'Embed Foundation Extensions'
 
-    // The release widget-bundling phase is only needed when a widget is client-rendered (server
+    // The release widget-bundling phase is only needed when a widget is a Dynamic Widget (server
     // widgets carry no JS bundle). Detect once so both the create and update paths agree.
     const hasClientRenderedWidgets =
       !!widgets &&

@@ -73,7 +73,7 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
     const widgets = registry.listWidgets(platform)
 
     if (widgets.length === 0) {
-      console.log(`[voltra] no client-rendered widgets to bundle for platform "${platform}"`)
+      console.log(`[voltra] no Dynamic Widgets to bundle for platform "${platform}"`)
       return
     }
 

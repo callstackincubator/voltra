@@ -27,7 +27,7 @@ object VoltraDecompressor {
 
     /**
      * Expand short keys in a standalone node tree (no surrounding payload). Used by the
-     * client-rendered path, where the on-device renderer emits a single node with the same
+     * Dynamic Widget path, where the on-device renderer emits a single node with the same
      * short-key format as server payloads but without the `{v, variants, s, e}` envelope.
      */
     fun decompressNode(node: VoltraNode): VoltraNode =

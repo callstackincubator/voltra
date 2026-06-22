@@ -131,7 +131,7 @@ export default function AndroidWidgetPinScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Configuration (client-rendered)</Text>
+        <Text style={styles.sectionTitle}>Configuration (Dynamic Widget)</Text>
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>env.configuration.label</Text>
           <TextInput

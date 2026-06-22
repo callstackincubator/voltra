@@ -3,7 +3,7 @@ package voltra.runtime
 import android.util.Log
 
 /**
- * Standalone Hermes runtime for Voltra **client-rendered widgets**.
+ * Standalone Hermes runtime for Voltra **Dynamic Widgets**.
  *
  * Architectural mirror of iOS `VoltraJSRenderer.swift` (JSC). Each per-widget Metro bundle
  * exposes `render(props, env)`; [evaluateBundle] evaluates it once in a single process-wide

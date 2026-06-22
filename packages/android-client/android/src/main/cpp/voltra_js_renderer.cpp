@@ -1,4 +1,4 @@
-// Voltra JS Renderer — Hermes-on-Android JNI wrapper for client-rendered widgets.
+// Voltra JS Renderer — Hermes-on-Android JNI wrapper for Dynamic Widgets.
 //
 // Owns a single standalone Hermes runtime per process, independent of the React
 // Native bridge. Each per-widget Metro bundle is evaluated once; the evaluation

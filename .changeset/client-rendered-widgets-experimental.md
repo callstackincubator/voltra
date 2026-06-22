@@ -2,7 +2,7 @@
 '@use-voltra/ios-client': minor
 ---
 
-**Experimental: client-rendered widgets (iOS).** A widget component marked with the `'use voltra'`
+**Experimental: Dynamic Widgets (iOS).** A widget component marked with the `'use voltra'`
 directive now renders on-device from its own JS bundle, called as `(props, env) => JSX` on every
 render, so it reacts to live environment values (widget family, color scheme, locale, and
 user-editable `configuration` via a native AppIntent "Edit Widget" sheet). In development the

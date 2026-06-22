@@ -20,7 +20,7 @@ def voltraWidgetAssetsDir = file("\${buildDir}/generated/voltra/assets")
 android.sourceSets.getByName("main").assets.srcDir(voltraWidgetAssetsDir)
 
 def voltraBundleWidgets = tasks.register("voltraBundleWidgets", Exec) {
-    description = "Bake client-rendered Voltra widget bundles into assets (release)."
+    description = "Bake Dynamic Widget Voltra bundles into assets (release)."
     workingDir voltraProjectRoot
     environment "VOLTRA_PROJECT_ROOT", voltraProjectRoot.absolutePath
     environment "VOLTRA_OUT_DIR", new File(voltraWidgetAssetsDir, "voltra").absolutePath
@@ -50,7 +50,7 @@ export const withWidgetBundleGradle: ConfigPlugin<{ widgets: AndroidWidgetConfig
     }
 
     if (cfg.modResults.language !== 'groovy') {
-      logger.warn('Voltra: app/build.gradle is not Groovy — skipping client widget release bundling wiring.')
+      logger.warn('Voltra: app/build.gradle is not Groovy — skipping Dynamic Widget release bundling wiring.')
       return cfg
     }
 

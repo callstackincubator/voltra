@@ -47,10 +47,10 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
 
         const content = plist.parse(readFileSync(filePath, 'utf8')) as InfoPlist
 
-        // Client-rendered widgets fetch their JS bundle from Metro at
+        // Dynamic Widgets fetch their JS bundle from Metro at
         // http://localhost:8081 in DEBUG builds. iOS requires an ATS exception for
         // plaintext HTTP, scoped to localhost. The keys are only added when a
-        // client-rendered widget actually exists, so server-only configurations
+        // Dynamic Widget actually exists, so server-only configurations
         // keep their plist minimal.
         if (widgets && widgets.length > 0) {
           const detected = detectClientRenderedWidgets(widgets, config.modRequest.projectRoot)

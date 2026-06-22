@@ -401,7 +401,7 @@ class VoltraWidgetManager(
             val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
             val cachedAndServerIds = widgetIds + serverDrivenIds
 
-            // Pinned widgets that have neither cached data nor a server URL are client-rendered
+            // Pinned widgets that have neither cached data nor a server URL are Dynamic Widgets
             // (they render from Metro). reloadSingleWidget's cache path can't refresh them, so
             // trigger their Glance update directly to re-run provideGlance.
             val pinnedIds = pinnedVoltraWidgetIds()
@@ -410,7 +410,7 @@ class VoltraWidgetManager(
             Log.d(
                 TAG,
                 "Found ${cachedAndServerIds.size + clientIds.size} widgets to reload " +
-                    "(${widgetIds.size} cached, ${serverDrivenIds.size} server-driven, ${clientIds.size} client-rendered)",
+                    "(${widgetIds.size} cached, ${serverDrivenIds.size} server-driven, ${clientIds.size} Dynamic Widgets)",
             )
 
             for (widgetId in cachedAndServerIds) {
@@ -430,7 +430,7 @@ class VoltraWidgetManager(
         }
 
     /**
-     * Re-render only client-rendered widgets (pinned widgets with neither cached data nor a server
+     * Re-render only Dynamic Widgets (pinned widgets with neither cached data nor a server
      * URL — they render on-device from `provideGlance`). Used to react to environment changes that
      * affect `env` but not server payloads, e.g. a light/dark (color scheme) toggle.
      */
@@ -456,7 +456,7 @@ class VoltraWidgetManager(
 
     /**
      * Widget ids of all currently-pinned Voltra widgets, derived from bound AppWidget providers
-     * named `<pkg>.widget.VoltraWidget_<id>Receiver`. Covers client-rendered widgets, which keep no
+     * named `<pkg>.widget.VoltraWidget_<id>Receiver`. Covers Dynamic Widgets, which keep no
      * cached prefs data, so reloadAllWidgets reaches them too.
      */
     private fun pinnedVoltraWidgetIds(): Set<String> {

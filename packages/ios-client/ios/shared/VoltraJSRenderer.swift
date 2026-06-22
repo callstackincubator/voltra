@@ -1,7 +1,7 @@
 import Foundation
 import JavaScriptCore
 
-/// JavaScriptCore-backed runtime for Voltra **client-rendered widgets**.
+/// JavaScriptCore-backed runtime for Voltra **Dynamic Widgets**.
 ///
 /// Each widget ships its own Metro bundle that defines `module.exports.render(props, env)`
 /// (see `example/metro/widgetRegistry.js`). When evaluated, the bundle ends with `__r(0)`

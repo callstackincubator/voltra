@@ -13,7 +13,7 @@ export { renderAndroidLiveUpdateToJson, renderAndroidLiveUpdateToString } from '
 export { AndroidOngoingNotification } from './ongoing-notification/components.js'
 export { renderAndroidOngoingNotificationPayload } from './ongoing-notification/renderer.js'
 export { renderAndroidViewToJson, renderAndroidWidgetToJson, renderAndroidWidgetToString } from './widgets/renderer.js'
-// Single-node renderer used by client-rendered widgets (on-device Hermes render). Analog of
+// Single-node renderer used by Dynamic Widgets (on-device Hermes render). Analog of
 // iOS `renderVoltraVariantToJson`. Invoked with `(props, env)` per render via the generated
 // widget entry.
 export { renderAndroidVariantToJson } from './renderer/index.js'

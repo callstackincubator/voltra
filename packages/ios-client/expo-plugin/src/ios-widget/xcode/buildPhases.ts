@@ -5,16 +5,16 @@ import type { IOSWidgetExtensionFiles } from '../../types'
 
 const pbxFile = require('xcode/lib/pbxFile')
 
-const WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra client widgets'
+const WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra Dynamic Widgets'
 
-// Release-only build phase that bakes each client-rendered widget's production JS bundle into the
+// Release-only build phase that bakes each Dynamic Widget's production JS bundle into the
 // extension's resources. Debug builds fetch from Metro (and hot-reload), so this no-ops there. Runs
 // the project's widget bundler with the extension's resources dir as the output, so each
 // voltra-widget-<id>.bundle lands in the .appex (Bundle.main) where the runtime's release loader
 // reads it. SRCROOT is the ios/ dir; the project root is one level up, matching how Expo's main
 // "Bundle React Native code and images" phase resolves things.
 const WIDGET_BUNDLE_SHELL_SCRIPT = `if [[ "$CONFIGURATION" == *Debug* ]]; then
-  echo "Voltra: Debug build — client-rendered widgets load from Metro, skipping bundling"
+  echo "Voltra: Debug build — Dynamic Widgets load from Metro, skipping bundling"
   exit 0
 fi
 
@@ -59,7 +59,7 @@ echo "Voltra: widget bundler resolved to $BUNDLER"
 `
 
 /**
- * Adds (idempotently) the release-only shell-script phase that bakes client-rendered widget
+ * Adds (idempotently) the release-only shell-script phase that bakes Dynamic Widget
  * bundles into the extension. Safe to call on every prebuild; only added when absent.
  */
 export function ensureWidgetBundleScriptPhase(xcodeProject: XcodeProject, targetUuid: string): void {

@@ -10,7 +10,7 @@ import type { AndroidWidgetConfig } from '../types'
  * clientRendered.ts.
  *
  * Widgets without `entry` remain server-rendered/server-updated legacy widgets.
- * A widget is client-rendered when the module referenced by `entry` default-exports a function
+ * A widget is a Dynamic Widget when the module referenced by `entry` default-exports a function
  * or component. Such widgets download a JS bundle and render on-device (Hermes) instead of
  * consuming server JSON.
  */

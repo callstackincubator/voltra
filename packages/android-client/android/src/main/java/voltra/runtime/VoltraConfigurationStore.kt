@@ -10,7 +10,7 @@ import org.json.JSONObject
 import java.io.IOException
 
 /**
- * DataStore-backed per-widget configuration for client-rendered widgets — the values surfaced as
+ * DataStore-backed per-widget configuration for Dynamic Widgets — the values surfaced as
  * `env.configuration` in the widget's `(props, env) => JSX` render.
  *
  * Two layers, merged at read time:
@@ -63,7 +63,7 @@ internal class VoltraConfigurationStore(
                     .bufferedReader()
                     .use { it.readText() }
             } catch (e: IOException) {
-                Log.d(TAG, "No $DEFAULTS_ASSET_PATH — client widget configuration starts empty")
+                Log.d(TAG, "No $DEFAULTS_ASSET_PATH — Dynamic Widget configuration starts empty")
                 defaultsCache = emptyMap()
                 return emptyMap()
             }

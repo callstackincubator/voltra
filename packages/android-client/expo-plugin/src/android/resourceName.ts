@@ -1,6 +1,6 @@
 /**
  * Android resource names (XML filenames, string names, etc.) must contain only lowercase a-z,
- * 0-9, or underscore. Widget ids may be PascalCase — client-rendered widgets use their component
+ * 0-9, or underscore. Widget ids may be PascalCase — Dynamic Widgets use their component
  * name as the id (it is also the Metro bundle URL key and the receiver class-name segment), which
  * is invalid as a resource name. Derive a valid resource-name segment from the id.
  *

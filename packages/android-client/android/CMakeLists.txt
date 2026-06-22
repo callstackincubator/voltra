@@ -15,7 +15,7 @@ find_package(hermes-engine REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 
 # ---------------------------------------------------------------------------
-# Voltra JS Renderer (client-rendered widgets on Android)
+# Voltra JS Renderer (Dynamic Widgets on Android)
 # ---------------------------------------------------------------------------
 # Standalone Hermes runtime owned by Voltra, independent of the React Native
 # bridge. Evaluates a per-widget Metro bundle that exposes `render(props, env)`

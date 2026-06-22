@@ -35,7 +35,7 @@ describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
     id: 'IosWeatherWidget',
     entry: './widgets/IosWeatherWidget.tsx',
     displayName: 'Client Weather',
-    description: 'Client-rendered weather',
+    description: 'Dynamic Widget weather',
     clientRendered: true,
     clientSourcePath: '/tmp/IosWeatherWidget.tsx',
   }
@@ -47,7 +47,7 @@ describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
     expect(swift).not.toContain('VoltraClientWidgetProvider')
   })
 
-  it('emits VoltraClientWidgetProvider + VoltraClientWidgetContentView for client-rendered widgets', () => {
+  it('emits VoltraClientWidgetProvider + VoltraClientWidgetContentView for Dynamic Widgets', () => {
     const swift = __test__.generateWidgetBundleSwift([clientWidget])
     expect(swift).toContain('VoltraClientWidgetProvider(')
     expect(swift).toContain('VoltraClientWidgetContentView(')
@@ -79,7 +79,7 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     id: 'IosWeatherWidget',
     entry: './widgets/IosWeatherWidget.tsx',
     displayName: 'Client Weather',
-    description: 'Client-rendered weather',
+    description: 'Dynamic Widget weather',
     clientRendered: true,
     clientSourcePath: '/tmp/IosWeatherWidget.tsx',
     appIntent: {
@@ -90,7 +90,7 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     id: 'PlainClient',
     entry: './widgets/PlainClient.tsx',
     displayName: 'Plain Client',
-    description: 'Client-rendered, no config',
+    description: 'Dynamic Widget, no config',
     clientRendered: true,
     clientSourcePath: '/tmp/PlainClient.tsx',
   }

@@ -104,7 +104,7 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
 
     /**
      * The GlanceAppWidget this receiver hosts. Defaults to the server-rendered
-     * [VoltraGlanceWidget]; client-rendered receivers override this to return a
+     * [VoltraGlanceWidget]; Dynamic Widget receivers override this to return a
      * [voltra.widget.VoltraClientGlanceWidget]. Kept as a factory (not a direct property) so
      * the shared registry registration in [glanceAppWidget] stays in one place.
      */

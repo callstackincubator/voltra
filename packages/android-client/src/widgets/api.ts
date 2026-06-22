@@ -51,7 +51,7 @@ export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
 }
 
 /**
- * Set a configuration value for a client-rendered widget and re-render it. The value is
+ * Set a configuration value for a Dynamic Widget and re-render it. The value is
  * surfaced as `env.configuration[key]` in the widget's `(props, env) => JSX` render. Stand-in
  * for a Glance configuration activity.
  */

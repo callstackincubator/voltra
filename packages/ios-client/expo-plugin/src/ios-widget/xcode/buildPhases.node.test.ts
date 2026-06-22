@@ -38,7 +38,7 @@ describe('ensureWidgetBundleScriptPhase', () => {
     expect(phases).toHaveLength(1)
 
     const phase = phases[0]
-    expect(phase.name).toContain('Bundle Voltra client widgets')
+    expect(phase.name).toContain('Bundle Voltra Dynamic Widgets')
     expect(phase.shellScript).toContain('@use-voltra/metro/bundle-widgets')
     // Debug builds use Metro, so the script must skip them...
     expect(phase.shellScript).toContain('Debug')

@@ -1,7 +1,7 @@
 /**
- * Env shape consumed by client-rendered widgets.
+ * Env shape consumed by Dynamic Widgets.
  *
- * Client-rendered widgets are functions of `(props, env) => JSX`, evaluated inside the
+ * Dynamic Widgets are functions of `(props, env) => JSX`, evaluated inside the
  * Voltra JS runtime (JSC on iOS, Hermes on Android) at every render. The `env` second
  * argument is populated by the native runtime at draw time and carries:
  *

@@ -52,7 +52,7 @@ export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
   initialStatePath?: WidgetInitialStatePath
   serverUpdate?: IOSWidgetServerUpdateConfig
   /**
-   * AppIntent configuration (iOS 17+). When set on a client-rendered widget, the plugin generates
+   * AppIntent configuration (iOS 17+). When set on a Dynamic Widget, the plugin generates
    * an `AppIntentConfiguration` so users configure parameters via the native "Edit Widget" sheet;
    * defaults come from `parameters[].default`, and the configured values are passed into the
    * widget's `env.configuration` on each render.

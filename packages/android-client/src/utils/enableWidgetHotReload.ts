@@ -8,7 +8,7 @@ declare global {
  * Trigger a widget reload on every Metro Fast Refresh patch (DEV only).
  *
  * Hooks the global `__accept` callback Metro fires when a Fast Refresh patch lands in the host
- * app's JS runtime. When fired, reloads all widgets — for client-rendered widgets this re-runs
+ * app's JS runtime. When fired, reloads all widgets — for Dynamic Widgets this re-runs
  * `provideGlance`, which re-fetches the freshest bundle from Metro and re-renders. Counterpart of
  * iOS's `enableWidgetHotReload`.
  *
