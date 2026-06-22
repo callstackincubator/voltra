@@ -4,13 +4,13 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/compiler` contains the source analysis helpers that power Voltra's widget toolchain. It can still parse JavaScript and TypeScript files, find `'use voltra'` metadata, and return widget records for legacy or future tooling, but registration now comes from app.json and the platform manifests written during prebuild.
+`@use-voltra/compiler` contains the source analysis helpers that power Voltra's widget toolchain. It parses JavaScript and TypeScript files and returns widget records for build-time tooling. Widget registration now comes from `app.json` and the platform manifests written during prebuild.
 
 ## Features
 
-- **Optional directive scanning**: Detect `'use voltra'` in function declarations, function expressions, and arrow functions when tooling needs source metadata or validation.
+- **Source analysis**: Inspect function declarations, function expressions, and arrow functions when build tooling needs source metadata or validation.
 
-- **Export-aware analysis**: Match directives to named and default exports so only real widget entry points are returned.
+- **Export-aware analysis**: Match widget entry points to named and default exports so only real widget entry points are returned.
 
 - **TypeScript and JSX support**: Parse common React and React Native source formats, including `.ts`, `.tsx`, `.js`, and `.jsx` files.
 
@@ -32,43 +32,7 @@ This package is an internal building block for Voltra's widget toolchain. Releva
 npm install @use-voltra/compiler
 ```
 
-Use `scanVoltraDirectives()` to inspect a file for optional source metadata:
-
-```ts
-import { scanVoltraDirectives } from '@use-voltra/compiler'
-
-const widgets = scanVoltraDirectives({
-  filePath: '/app/widgets/OrderTracker.tsx',
-  source: `
-    export function OrderTracker() {
-      'use voltra'
-      return null
-    }
-  `,
-})
-
-console.log(widgets)
-```
-
-## Quick example
-
-```ts
-import { scanVoltraDirectives } from '@use-voltra/compiler'
-
-const widgets = scanVoltraDirectives({
-  filePath: 'src/widgets/WeatherWidget.tsx',
-  source: `
-    export const WeatherWidget = () => {
-      'use voltra'
-      return null
-    }
-  `,
-})
-
-for (const widget of widgets) {
-  console.log(widget.id, widget.exportName, widget.sourcePath)
-}
-```
+The compiler package is intended for build-time tooling that needs to analyze widget source files alongside the `app.json` widget manifest. Consult the package API for the available analysis helpers.
 
 ## Platform compatibility
 

@@ -2,10 +2,10 @@
 '@use-voltra/android-client': minor
 ---
 
-**Experimental: Dynamic Widgets (Android).** A widget component marked with the
-`'use voltra'` directive now renders on-device in a standalone Hermes runtime, called as
-`(props, env) => JSX` on every render, so it reacts to live environment values (widget size, color
-scheme, locale, and configuration). Material You dynamic colors are consumed via
+**Experimental: Dynamic Widgets (Android).** A widget component declared in `app.json` with a
+stable `id` and a project-relative `entry` path now renders on-device in a standalone Hermes
+runtime, called as `(props, env) => JSX` on every render, so it reacts to live environment values
+(widget size, color scheme, locale, and configuration). Material You dynamic colors are consumed via
 `AndroidDynamicColors` tokens that the native renderer resolves to the system color scheme (and that
 follow light/dark automatically). In development the bundle is served by Metro and editing the JSX
 hot-reloads the pinned widget; in release builds the bundle is baked into the app's assets at build
