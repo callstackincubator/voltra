@@ -61,12 +61,6 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
     throw new Error('bundleWidgets: --out-dir is required')
   }
 
-  const Metro = requireProjectModule<{ runBuild(config: any, options: any): Promise<{ code: string }> }>(
-    'metro',
-    projectRoot
-  )
-  const appConfig = await loadAppMetroConfig(projectRoot)
-  const widgetConfig = await createWidgetMetroConfig({ projectRoot, appConfig })
   const registry = createWidgetRegistry({ projectRoot })
 
   try {
@@ -76,6 +70,13 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
       console.log(`[voltra] no Dynamic Widgets to bundle for platform "${platform}"`)
       return
     }
+
+    const Metro = requireProjectModule<{ runBuild(config: any, options: any): Promise<{ code: string }> }>(
+      'metro',
+      projectRoot
+    )
+    const appConfig = await loadAppMetroConfig(projectRoot)
+    const widgetConfig = await createWidgetMetroConfig({ projectRoot, appConfig })
 
     fs.mkdirSync(outDir, { recursive: true })
 
