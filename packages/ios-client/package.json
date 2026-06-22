@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/ios-client",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "description": "Client-only Voltra APIs for iOS",
   "main": "./build/commonjs/index.js",
   "module": "./build/module/index.js",
@@ -25,10 +25,12 @@
   "files": [
     "app.plugin.js",
     "build",
-    "expo-plugin",
+    "expo-plugin/app.plugin.js",
+    "expo-plugin/build",
+    "expo-plugin/src",
     "ios",
     "src",
-    "Voltra.podspec",
+    "*.podspec",
     "README.md"
   ],
   "scripts": {

@@ -1,11 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import vm from 'node:vm'
 
 import * as babel from '@babel/core'
 
 import { MODULE_EXTENSIONS } from '../constants'
 import type { WidgetInitialStatePath, WidgetLabel } from '../types'
+import { logger } from './logger'
 import { isWidgetLocalizedMap } from './widgetLabel'
 
 /**
@@ -23,6 +25,11 @@ export interface PrerenderableWidget {
 
 /** widgetId -> locale key -> prerendered JSON string (single-file widgets use `__default`) */
 export type PrerenderedWidgetStates = Map<string, Map<string, string>>
+
+const PRERENDER_PACKAGE_REDIRECTS: Record<string, string> = {
+  '@use-voltra/ios-client': '@use-voltra/ios',
+  '@use-voltra/android-client': '@use-voltra/android',
+}
 
 /**
  * Check if a module specifier is a relative or absolute path (local file)
@@ -101,9 +108,14 @@ function transpileFile(filePath: string, projectRoot: string): string {
  * than duplicating the Babel + VM scaffolding. The returned value is the module's exports
  * object — callers decide whether to read `.default`, a named export, etc.
  */
-export function evaluateWidgetModuleExports(projectRoot: string, filePath: string): any {
+export function evaluateWidgetModuleExports(
+  projectRoot: string,
+  filePath: string,
+  warnedRedirects = new Set<string>()
+): any {
   // Cache for already-evaluated modules to handle circular dependencies
   const moduleCache = new Map<string, any>()
+  const projectRequire = createRequire(path.join(projectRoot, 'package.json'))
 
   /**
    * Custom require that transpiles local modules with Babel
@@ -111,7 +123,20 @@ export function evaluateWidgetModuleExports(projectRoot: string, filePath: strin
   function customRequire(moduleSpecifier: string, currentDir: string): any {
     // For non-local modules (npm packages), use native require
     if (!isLocalModule(moduleSpecifier)) {
-      return require(moduleSpecifier)
+      const redirectedSpecifier = PRERENDER_PACKAGE_REDIRECTS[moduleSpecifier]
+
+      if (redirectedSpecifier) {
+        if (!warnedRedirects.has(moduleSpecifier)) {
+          warnedRedirects.add(moduleSpecifier)
+          logger.warn(
+            `Prerendering initial state imported '${moduleSpecifier}'. Using '${redirectedSpecifier}' instead.`
+          )
+        }
+
+        return projectRequire(redirectedSpecifier)
+      }
+
+      return projectRequire(moduleSpecifier)
     }
 
     // Resolve the local module path
@@ -162,8 +187,8 @@ export function evaluateWidgetModuleExports(projectRoot: string, filePath: strin
 /**
  * Evaluate a widget file as a server-style WidgetVariants module and return its object export.
  */
-export function evaluateWidgetModule(projectRoot: string, filePath: string): any {
-  const exports = evaluateWidgetModuleExports(projectRoot, filePath)
+export function evaluateWidgetModule(projectRoot: string, filePath: string, warnedRedirects = new Set<string>()): any {
+  const exports = evaluateWidgetModuleExports(projectRoot, filePath, warnedRedirects)
   const widgetVariants: any = exports.default || exports
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {
@@ -191,6 +216,7 @@ export async function prerenderWidgetState(
   renderer: WidgetRenderer
 ): Promise<PrerenderedWidgetStates> {
   const prerenderedStates: PrerenderedWidgetStates = new Map()
+  const warnedRedirects = new Set<string>()
 
   for (const widget of widgets) {
     if (!widget.initialStatePath) {
@@ -207,7 +233,7 @@ export async function prerenderWidgetState(
     try {
       for (const [localeKey, relativePath] of Object.entries(perLocalePaths)) {
         const absoluteWidgetPath = path.resolve(projectRoot, relativePath)
-        const widgetVariants = evaluateWidgetModule(projectRoot, absoluteWidgetPath)
+        const widgetVariants = evaluateWidgetModule(projectRoot, absoluteWidgetPath, warnedRedirects)
         const prerenderedState = renderer(widgetVariants)
         inner.set(localeKey, prerenderedState)
       }

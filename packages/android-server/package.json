@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/android-server",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "description": "Voltra server rendering for Android",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
@@ -16,6 +16,7 @@
   },
   "files": [
     "build",
+    "src",
     "README.md"
   ],
   "scripts": {
