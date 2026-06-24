@@ -50,6 +50,7 @@ export {
   getActiveWidgets,
   reloadAndroidWidgets,
   requestPinAndroidWidget,
+  setWidgetConfiguration,
   updateAndroidWidget,
 } from './widgets/api.js'
 export type {
@@ -72,3 +73,4 @@ export {
   VoltraWidgetPreview,
   type VoltraWidgetPreviewProps,
 } from './components/VoltraWidgetPreview.js'
+export { enableWidgetHotReload } from './utils/enableWidgetHotReload.js'

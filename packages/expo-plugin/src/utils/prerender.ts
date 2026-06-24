@@ -103,8 +103,16 @@ function transpileFile(filePath: string, projectRoot: string): string {
  * Evaluate a widget module using Babel transpilation and Node.js VM.
  * This allows executing widget code that uses JSX and React components.
  * Local module dependencies are also transpiled with the same Babel settings.
+ *
+ * Exported so platform-specific prerender flows can reuse the same module loader rather
+ * than duplicating the Babel + VM scaffolding. The returned value is the module's exports
+ * object — callers decide whether to read `.default`, a named export, etc.
  */
-function evaluateWidgetModule(projectRoot: string, filePath: string, warnedRedirects: Set<string>): any {
+export function evaluateWidgetModuleExports(
+  projectRoot: string,
+  filePath: string,
+  warnedRedirects = new Set<string>()
+): any {
   // Cache for already-evaluated modules to handle circular dependencies
   const moduleCache = new Map<string, any>()
   const projectRequire = createRequire(path.join(projectRoot, 'package.json'))
@@ -173,8 +181,14 @@ function evaluateWidgetModule(projectRoot: string, filePath: string, warnedRedir
     return mockModule.exports
   }
 
-  // Evaluate the entry module
-  const exports = customRequire(filePath, path.dirname(filePath))
+  return customRequire(filePath, path.dirname(filePath))
+}
+
+/**
+ * Evaluate a widget file as a server-style WidgetVariants module and return its object export.
+ */
+export function evaluateWidgetModule(projectRoot: string, filePath: string, warnedRedirects = new Set<string>()): any {
+  const exports = evaluateWidgetModuleExports(projectRoot, filePath, warnedRedirects)
   const widgetVariants: any = exports.default || exports
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {

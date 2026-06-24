@@ -3,7 +3,7 @@ import { IOSConfig } from 'expo/config-plugins'
 import { IOS } from './constants'
 import { withIOS, withPushNotifications } from './ios'
 import { withIOS as withIOSWidget } from './ios-widget'
-import type { IOSConfigPluginProps, VoltraIosConfigPlugin } from './types'
+import type { VoltraIosConfigPlugin } from './types'
 import { ensureURLScheme } from './utils/urlScheme'
 import { validateIOSConfigPluginProps } from './validation'
 
@@ -13,7 +13,8 @@ import { validateIOSConfigPluginProps } from './validation'
  * Configures Live Activities, the widget extension, and optional push-to-start support.
  */
 const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
-  validateIOSConfigPluginProps(props)
+  const projectRoot = (config as { modRequest?: { projectRoot?: string } }).modRequest?.projectRoot
+  validateIOSConfigPluginProps(props, projectRoot)
 
   const iosBundleIdentifier = config.ios?.bundleIdentifier
   if (!iosBundleIdentifier) {

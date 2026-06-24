@@ -10,6 +10,8 @@
 
 - **Home Screen widgets**: Update, reload, pin, and query widgets with `updateAndroidWidget`, `reloadAndroidWidgets`, `getActiveWidgets`, and more.
 
+- **Client-rendered widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (size, color scheme, Material You colors, locale, configuration).
+
 - **Ongoing notifications**: Start and update promoted ongoing notifications with `useAndroidOngoingNotification` and related APIs.
 
 - **Fast Refresh**: Previews integrate with your React Native dev workflow via `VoltraWidgetPreview` and `VoltraView`.
@@ -18,7 +20,28 @@
 
 - **Server-driven widgets**: Store credentials for background widget fetches with `setWidgetServerCredentials`.
 
-- **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to register widgets, optional notifications, and build-time initial states.
+- **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to declare widgets, optional notifications, and build-time initial states.
+
+## Client-rendered widgets (experimental)
+
+> [!WARNING]
+> Client-rendered widgets are **experimental** — usable in production at your own risk. The API may
+> change between releases.
+
+Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
+module must default-export the widget function or component; the exported name does not need to
+match the widget id. The widget renders on-device, so it can react to live environment values
+(size, color scheme, Material You `materialColors`, locale, and `configuration`).
+
+Configuration parameters declared in `app.json` (`appIntent.parameters`, with code-defined
+defaults) surface as `env.configuration`. Android has no system-managed widget configuration UI
+(unlike iOS's Edit Widget), so runtime values are set in-app via `setWidgetConfiguration` and
+override the declared defaults.
+
+Notes:
+
+- iOS and Android widget declarations stay separate, and the same widget id can exist on both platforms as separate entries.
+- Verify release rendering on a **real device** — emulators are unreliable for widget rendering.
 
 ## Documentation
 
@@ -26,7 +49,7 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). Rele
 
 - [Installation](https://use-voltra.dev/getting-started/installation)
 - [Android Setup](https://use-voltra.dev/android/setup)
-- [Developing Widgets](https://use-voltra.dev/android/development/developing-widgets)
+- [Developing client-rendered widgets](https://use-voltra.dev/android/development/dynamic-widgets)
 - [Managing Ongoing Notifications](https://use-voltra.dev/android/development/managing-ongoing-notifications)
 - [Plugin Configuration](https://use-voltra.dev/android/api/plugin-configuration)
 

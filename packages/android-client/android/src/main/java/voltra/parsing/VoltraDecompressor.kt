@@ -25,7 +25,12 @@ object VoltraDecompressor {
             e = payload.e?.map { decompressNode(it) },
         )
 
-    private fun decompressNode(node: VoltraNode): VoltraNode =
+    /**
+     * Expand short keys in a standalone node tree (no surrounding payload). Used by the
+     * Dynamic Widget path, where the on-device renderer emits a single node with the same
+     * short-key format as server payloads but without the `{v, variants, s, e}` envelope.
+     */
+    fun decompressNode(node: VoltraNode): VoltraNode =
         when (node) {
             is VoltraNode.Element -> VoltraNode.Element(decompressElement(node.element))
             is VoltraNode.Array -> VoltraNode.Array(node.elements.map { decompressNode(it) })

@@ -5,6 +5,7 @@ import * as path from 'path'
 import { isWidgetLocalizedMap, logger, widgetLabelEnglish } from '@use-voltra/expo-plugin'
 
 import type { AndroidWidgetConfig } from '../../types'
+import { androidWidgetResourceId } from '../resourceName'
 
 export interface GenerateXmlFilesProps {
   platformProjectRoot: string
@@ -95,7 +96,7 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
 
   // Write widget info XML for all widgets, including preview references where available
   for (const widget of widgets) {
-    const widgetInfoPath = path.join(xmlPath, `voltra_widget_${widget.id}_info.xml`)
+    const widgetInfoPath = path.join(xmlPath, `voltra_widget_${androidWidgetResourceId(widget.id)}_info.xml`)
     const previewImageResourceName = previewImageMap.get(widget.id)
     const previewLayoutResourceName = previewLayoutMap.get(widget.id)
     const widgetInfoContent = generateWidgetInfoXml(widget, previewImageResourceName, previewLayoutResourceName)
@@ -147,7 +148,9 @@ function generateWidgetInfoXml(
         android:initialLayout="@layout/voltra_widget_placeholder"
         android:resizeMode="${resizeMode}"
         android:widgetCategory="${widgetCategory}"
-        android:description="@string/voltra_widget_${widget.id}_description"${previewImageAttr}${previewLayoutAttr}>
+        android:description="@string/voltra_widget_${androidWidgetResourceId(
+          widget.id
+        )}_description"${previewImageAttr}${previewLayoutAttr}>
     </appwidget-provider>
   `
 }
@@ -284,7 +287,8 @@ function generateVoltraWidgetsStringResourcesXml(widgets: AndroidWidgetConfig[],
     .map((widget) => {
       const label = escapeAndroidStringRes(resolveAndroidWidgetLabel(widget, 'displayName', localeKey))
       const desc = escapeAndroidStringRes(resolveAndroidWidgetLabel(widget, 'description', localeKey))
-      return `<string name="voltra_widget_${widget.id}_label">${label}</string>\n    <string name="voltra_widget_${widget.id}_description">${desc}</string>`
+      const resId = androidWidgetResourceId(widget.id)
+      return `<string name="voltra_widget_${resId}_label">${label}</string>\n    <string name="voltra_widget_${resId}_description">${desc}</string>`
     })
     .join('\n    ')
 
@@ -376,7 +380,7 @@ function generateAutoImagePreviewLayout(widgetId: string, drawableResourceName: 
             android:layout_height="match_parent"
             android:src="@drawable/${drawableResourceName}"
             android:scaleType="centerCrop"
-            android:contentDescription="@string/voltra_widget_${widgetId}_description" />
+            android:contentDescription="@string/voltra_widget_${androidWidgetResourceId(widgetId)}_description" />
     </FrameLayout>
   `
 }
@@ -405,7 +409,7 @@ async function generatePreviewLayouts(
 
   for (const widget of widgets) {
     let layoutContent: string | null = null
-    const layoutResourceName = `voltra_widget_${widget.id}_preview`
+    const layoutResourceName = `voltra_widget_${androidWidgetResourceId(widget.id)}_preview`
     const layoutFilePath = path.join(layoutPath, `${layoutResourceName}.xml`)
 
     // Strategy 1: User provided custom preview layout

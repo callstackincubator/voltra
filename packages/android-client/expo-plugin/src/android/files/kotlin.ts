@@ -2,13 +2,14 @@ import dedent from 'dedent'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import type { AndroidWidgetConfig } from '../../types'
 import { widgetLabelEnglish } from '@use-voltra/expo-plugin'
+
+import type { DetectedAndroidWidget } from '../clientRendered'
 
 export interface GenerateKotlinFilesProps {
   platformProjectRoot: string
   packageName: string
-  widgets: AndroidWidgetConfig[]
+  widgets: DetectedAndroidWidget[]
 }
 
 // ============================================================================
@@ -48,9 +49,27 @@ export async function generateWidgetReceivers(props: GenerateKotlinFilesProps): 
  * Generates Kotlin code for a single widget receiver class.
  * If the widget has serverUpdate configured, includes WorkManager scheduling.
  */
-function generateWidgetReceiverClass(widget: AndroidWidgetConfig, packageName: string): string {
+function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName: string): string {
   const className = `VoltraWidget_${widget.id}Receiver`
   const labelForComment = widgetLabelEnglish(widget.displayName)
+
+  // Dynamic Widgets host VoltraClientGlanceWidget (on-device JS render) and have no
+  // server payload, so they never schedule WorkManager server updates.
+  if (widget.clientRendered) {
+    return dedent`
+      package ${packageName}.widget
+
+      import voltra.widget.VoltraClientWidgetReceiver
+
+      /**
+       * Auto-generated Dynamic Widget receiver for ${labelForComment}
+       * Widget ID: ${widget.id}
+       */
+      class ${className} : VoltraClientWidgetReceiver() {
+          override val widgetId: String = "${widget.id}"
+      }
+    `
+  }
 
   if (widget.serverUpdate) {
     const refreshEnabled = widget.serverUpdate.refresh === true

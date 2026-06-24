@@ -1,6 +1,6 @@
 import type { ConfigPlugin } from '@expo/config-plugins'
 
-import type { WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
+import type { DynamicWidgetEntryConfig, WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
 
 /**
  * Supported iOS Home Screen widget size families.
@@ -15,9 +15,32 @@ export type IOSWidgetFamily =
   | 'accessoryInline'
 
 /**
- * Configuration for a single iOS home screen widget.
+ * A single user-configurable parameter exposed via AppIntent (the native "Edit Widget" sheet).
  */
-export interface IOSWidgetConfig {
+export interface AppIntentParameter {
+  /** Swift property name + the key under `env.configuration`. */
+  name: string
+  /** Label shown in the widget configuration sheet. */
+  title: string
+  /** Default value used before the user configures the widget (the "from code" default). */
+  default?: string
+}
+
+/**
+ * AppIntent configuration for a user-configurable widget (iOS 17+).
+ */
+export interface IOSWidgetAppIntentConfig {
+  /** Parameters the user can edit via "Edit Widget"; surfaced as `env.configuration`. */
+  parameters: AppIntentParameter[]
+}
+
+/**
+ * Configuration for a single iOS home screen widget.
+ *
+ * `entry` is required only for Dynamic Widgets. Widgets without `entry` remain server-rendered /
+ * server-updated legacy widgets and are excluded from the Dynamic Widgets manifest.
+ */
+export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
   /**
    * Unique identifier for the widget (used as the widget kind and in JS API)
    */
@@ -28,6 +51,13 @@ export interface IOSWidgetConfig {
   supportedFamilies?: IOSWidgetFamily[]
   initialStatePath?: WidgetInitialStatePath
   serverUpdate?: IOSWidgetServerUpdateConfig
+  /**
+   * AppIntent configuration (iOS 17+). When set on a Dynamic Widget, the plugin generates
+   * an `AppIntentConfiguration` so users configure parameters via the native "Edit Widget" sheet;
+   * defaults come from `parameters[].default`, and the configured values are passed into the
+   * widget's `env.configuration` on each render.
+   */
+  appIntent?: IOSWidgetAppIntentConfig
 }
 
 /**

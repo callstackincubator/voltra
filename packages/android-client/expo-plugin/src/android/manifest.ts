@@ -2,6 +2,7 @@ import { ConfigPlugin, withAndroidManifest } from '@expo/config-plugins'
 import { AndroidConfig } from 'expo/config-plugins'
 
 import type { AndroidWidgetConfig } from '../types'
+import { androidWidgetResourceId } from './resourceName'
 
 export interface ConfigureAndroidManifestProps {
   enableNotifications?: boolean
@@ -63,6 +64,7 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
     // Add a receiver for each widget
     for (const widget of widgets) {
       const receiverClassName = `.widget.VoltraWidget_${widget.id}Receiver`
+      const resId = androidWidgetResourceId(widget.id)
 
       // Check if receiver already exists
       const alreadyExists = existingReceivers.some(
@@ -75,7 +77,7 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
           $: {
             'android:name': receiverClassName,
             'android:exported': 'true' as const,
-            'android:label': `@string/voltra_widget_${widget.id}_label`,
+            'android:label': `@string/voltra_widget_${resId}_label`,
           },
           'intent-filter': [
             {
@@ -92,7 +94,7 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
             {
               $: {
                 'android:name': 'android.appwidget.provider',
-                'android:resource': `@xml/voltra_widget_${widget.id}_info`,
+                'android:resource': `@xml/voltra_widget_${resId}_info`,
               },
             },
           ],

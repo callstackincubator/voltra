@@ -12,6 +12,8 @@
 
 - **iOS Widgets**: Update, schedule, reload, and query widgets with `updateWidget`, `scheduleWidget`, `getActiveWidgets`, and more.
 
+- **Client-rendered widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (family, color scheme, locale, configuration).
+
 - **Fast Refresh**: Hooks and previews integrate with your React Native dev workflow.
 
 - **Push & events**: Capture ActivityKit push tokens and component interactions via `addVoltraListener`.
@@ -20,6 +22,23 @@
 
 - **Expo config plugin**: Add `"@use-voltra/ios-client"` to `app.json` to generate the Live Activity extension, widget targets, and entitlements.
 
+## Client-rendered widgets (experimental)
+
+> [!WARNING]
+> Client-rendered widgets are **experimental** — usable in production at your own risk. The API may
+> change between releases.
+
+Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
+module must default-export the widget function or component; the exported name does not need to
+match the widget id. The widget renders on-device, so it can react to live environment values
+(widget family, color scheme, locale, and user `configuration` from the native Edit Widget sheet).
+
+Notes:
+
+- iOS and Android widget declarations stay separate, and the same widget id can exist on both platforms as separate entries.
+- Verify release rendering on a **real device** — the iOS Simulator is unreliable for widget
+  rendering.
+
 ## Documentation
 
 The documentation is available at [use-voltra.dev](https://use-voltra.dev). Relevant topics for this package:
@@ -27,7 +46,7 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). Rele
 - [Installation](https://use-voltra.dev/getting-started/installation)
 - [iOS Setup](https://use-voltra.dev/ios/setup)
 - [Developing Live Activities](https://use-voltra.dev/ios/development/developing-live-activities)
-- [Developing Widgets](https://use-voltra.dev/ios/development/developing-widgets)
+- [Developing client-rendered widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
 - [Plugin Configuration](https://use-voltra.dev/ios/api/plugin-configuration)
 - [API Reference](https://use-voltra.dev/ios/api/configuration)
 

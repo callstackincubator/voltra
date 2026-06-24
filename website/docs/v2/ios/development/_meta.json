@@ -16,6 +16,16 @@
   },
   {
     "type": "file",
+    "name": "dynamic-widgets",
+    "label": "Dynamic Widgets"
+  },
+  {
+    "type": "file",
+    "name": "configurable-widgets",
+    "label": "Configurable Widgets"
+  },
+  {
+    "type": "file",
     "name": "querying-active-widgets",
     "label": "Querying Active Widgets"
   },

@@ -1,14 +1,16 @@
 import fs from 'fs'
 import path from 'path'
 
-import type { AndroidWidgetConfig } from '../../types'
 import { logger, prerenderWidgetState, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
+
+import type { DetectedAndroidWidget } from '../clientRendered'
+import { prerenderClientRenderedAndroidWidgets } from './clientRenderedPrerender'
 
 /** Wrapped asset shape when multiple locales are built; matches Android reader in VoltraWidgetManager */
 export const VOLTRA_LOCALIZED_INITIAL_STATE_KEY = '__voltraLocales'
 
 export interface GenerateInitialStatesOptions {
-  widgets: AndroidWidgetConfig[]
+  widgets: DetectedAndroidWidget[]
   projectRoot: string
   platformProjectRoot: string
 }
@@ -30,12 +32,21 @@ export async function generateAndroidInitialStates(options: GenerateInitialState
     renderAndroidWidgetToString: RenderAndroidWidgetToString
   }
 
-  // Prerender widget states (per locale when `initialStatePath` is a locale map)
+  // Widgets with `initialStatePath` prerender from `exports.default`. Dynamic Widgets instead
+  // default-export a `(props, env) => JSX` function, so they're excluded here and prerendered
+  // separately below — feeding a client file to the initial-state prerender would throw.
+  const serverWidgets = widgets.filter((w) => !w.clientRendered)
   const prerenderedStates: PrerenderedWidgetStates = await prerenderWidgetState(
-    widgets,
+    serverWidgets,
     projectRoot,
     renderAndroidWidgetToString
   )
+
+  // Single-node placeholders for Dynamic Widgets (first paint / offline fallback).
+  const clientStates = await prerenderClientRenderedAndroidWidgets(widgets, projectRoot)
+  for (const [id, perLocale] of clientStates.entries()) {
+    prerenderedStates.set(id, perLocale)
+  }
 
   if (prerenderedStates.size === 0) {
     return
