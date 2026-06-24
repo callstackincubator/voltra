@@ -66,6 +66,11 @@ export interface AndroidConfigPluginProps {
   enableNotifications?: boolean
   widgets?: AndroidWidgetConfig[]
   fonts?: string[]
+  /**
+   * Route path used by generated widget configuration trampolines.
+   * Defaults to `voltraui/android-widget-config` to match the example app.
+   */
+  widgetConfigurationRoute?: string
 }
 
 export type VoltraAndroidConfigPlugin = ConfigPlugin<AndroidConfigPluginProps | undefined>
@@ -75,4 +80,10 @@ export interface AndroidPluginProps {
   widgets: AndroidWidgetConfig[]
   userImagesPath?: string
   fonts?: string[]
+  /**
+   * Deep-link scheme used by generated widget configuration trampolines.
+   * When omitted, the plugin derives one from the Expo app config.
+   */
+  scheme?: string
+  widgetConfigurationRoute?: string
 }

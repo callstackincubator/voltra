@@ -11,6 +11,7 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import voltra.runtime.VoltraConfigurationStore
 
 /**
  * Base widget receiver for Voltra home screen widgets.
@@ -133,6 +134,20 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
         Log.d(TAG, "Widget '$widgetId' resized to ${w}x$h")
 
         onWidgetResized(context)
+    }
+
+    override fun onDeleted(
+        context: Context,
+        appWidgetIds: IntArray,
+    ) {
+        super.onDeleted(context, appWidgetIds)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val store = VoltraConfigurationStore(context.applicationContext)
+            for (appWidgetId in appWidgetIds) {
+                store.clearInstance(appWidgetId)
+            }
+        }
     }
 
     /**

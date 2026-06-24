@@ -1,7 +1,12 @@
 import { useRouter } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
-import { requestPinAndroidWidget, setWidgetConfiguration } from '@use-voltra/android-client'
+import {
+  getActiveWidgets,
+  requestPinAndroidWidget,
+  setWidgetInstanceConfiguration,
+  type WidgetInfo,
+} from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
@@ -37,6 +42,8 @@ const AVAILABLE_WIDGETS = [
   },
 ]
 
+const CONFIGURABLE_WIDGET_ID = 'AndroidClientDemoWidget'
+
 export default function AndroidWidgetPinScreen() {
   const router = useRouter()
   const [selectedWidgetId, setSelectedWidgetId] = useState<string>('voltra')
@@ -44,20 +51,75 @@ export default function AndroidWidgetPinScreen() {
   const [previewHeight, setPreviewHeight] = useState<string>('150')
   const [isPinning, setIsPinning] = useState(false)
   const [configLabel, setConfigLabel] = useState<string>('')
+  const [activeWidgets, setActiveWidgets] = useState<WidgetInfo[]>([])
+  const [selectedWidgetInstanceId, setSelectedWidgetInstanceId] = useState<number | null>(null)
+
+  const selectedWidget = AVAILABLE_WIDGETS.find((w) => w.id === selectedWidgetId) || AVAILABLE_WIDGETS[0]
+
+  const resetPreviewDimensions = (widget = selectedWidget) => {
+    // Use dimensions that match actual widget content variants for better previews
+    if (widget.id === 'interactive_todos') {
+      setPreviewWidth('250')
+      setPreviewHeight('150')
+    } else {
+      setPreviewWidth(String(widget.defaultPreviewWidth))
+      setPreviewHeight(String(widget.defaultPreviewHeight))
+    }
+  }
+
+  const refreshActiveWidgets = useCallback(async () => {
+    if (Platform.OS !== 'android') {
+      return
+    }
+
+    try {
+      const widgets = await getActiveWidgets()
+      setActiveWidgets(widgets)
+      setSelectedWidgetInstanceId((current) => {
+        if (widgets.some((widget) => widget.widgetId === current && widget.name === CONFIGURABLE_WIDGET_ID)) {
+          return current
+        }
+
+        return widgets.find((widget) => widget.name === CONFIGURABLE_WIDGET_ID)?.widgetId ?? null
+      })
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || String(error))
+    }
+  }, [])
+
+  useEffect(() => {
+    refreshActiveWidgets()
+  }, [refreshActiveWidgets])
 
   const handleSetConfig = async () => {
     if (Platform.OS !== 'android') {
       return
     }
+
+    if (selectedWidgetInstanceId == null) {
+      Alert.alert('No widget selected', 'Pin the configurable demo widget first, then choose that instance.')
+      return
+    }
+
+    const selectedWidget = activeWidgets.find(
+      (widget) => widget.widgetId === selectedWidgetInstanceId && widget.name === CONFIGURABLE_WIDGET_ID
+    )
+    if (!selectedWidget) {
+      Alert.alert('Unsupported widget', 'Only the client-rendered demo widget is configurable in this example.')
+      return
+    }
+
     try {
-      await setWidgetConfiguration(selectedWidgetId, 'label', configLabel)
-      Alert.alert('Saved', `Set config "label" = "${configLabel}" for ${selectedWidgetId}. The widget re-renders.`)
+      await setWidgetInstanceConfiguration(selectedWidgetInstanceId, 'label', configLabel)
+      Alert.alert(
+        'Saved',
+        `Set config "label" = "${configLabel}" for widget instance #${selectedWidgetInstanceId}. The widget re-renders.`
+      )
+      await refreshActiveWidgets()
     } catch (error: any) {
       Alert.alert('Error', error?.message || String(error))
     }
   }
-
-  const selectedWidget = AVAILABLE_WIDGETS.find((w) => w.id === selectedWidgetId) || AVAILABLE_WIDGETS[0]
 
   const handlePinWidget = async (usePreview: boolean) => {
     if (Platform.OS !== 'android') {
@@ -81,6 +143,7 @@ export default function AndroidWidgetPinScreen() {
           'Success',
           `Pin request sent for ${selectedWidget.name}! Check your home screen to complete the pinning.`
         )
+        await refreshActiveWidgets()
       } else {
         Alert.alert(
           'Not Supported',
@@ -93,17 +156,6 @@ export default function AndroidWidgetPinScreen() {
       console.error('Widget pin error:', error)
     } finally {
       setIsPinning(false)
-    }
-  }
-
-  const resetPreviewDimensions = () => {
-    // Use dimensions that match actual widget content variants for better previews
-    if (selectedWidget.id === 'interactive_todos') {
-      setPreviewWidth('250')
-      setPreviewHeight('150')
-    } else {
-      setPreviewWidth(String(selectedWidget.defaultPreviewWidth))
-      setPreviewHeight(String(selectedWidget.defaultPreviewHeight))
     }
   }
 
@@ -121,7 +173,7 @@ export default function AndroidWidgetPinScreen() {
               variant={selectedWidgetId === widget.id ? 'primary' : 'secondary'}
               onPress={() => {
                 setSelectedWidgetId(widget.id)
-                resetPreviewDimensions()
+                resetPreviewDimensions(widget)
               }}
               style={styles.widgetButton}
             />
@@ -131,7 +183,34 @@ export default function AndroidWidgetPinScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Configuration (Dynamic Widget)</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Configuration (Dynamic Widget)</Text>
+          <Button title="Refresh" variant="ghost" onPress={refreshActiveWidgets} style={styles.smallButton} />
+        </View>
+        <Text style={styles.sectionDescription}>
+          Configure one placed client-rendered widget instance at a time. This uses the new instance-level API, so two
+          widgets of the same type can keep different values.
+        </Text>
+        <Text style={styles.sectionSubtitle}>Active widget instances</Text>
+        {activeWidgets.some((widget) => widget.name === CONFIGURABLE_WIDGET_ID) ? (
+          activeWidgets
+            .filter((widget) => widget.name === CONFIGURABLE_WIDGET_ID)
+            .map((widget) => (
+              <View key={`${widget.widgetId}`} style={styles.widgetInstanceOption}>
+                <Button
+                  title={`${widget.name} #${widget.widgetId}`}
+                  variant={selectedWidgetInstanceId === widget.widgetId ? 'primary' : 'secondary'}
+                  onPress={() => setSelectedWidgetInstanceId(widget.widgetId)}
+                  style={styles.widgetInstanceButton}
+                />
+                <Text style={styles.widgetInstanceDescription}>
+                  {widget.width}x{widget.height}dp · {widget.providerClassName}
+                </Text>
+              </View>
+            ))
+        ) : (
+          <Text style={styles.emptyState}>Pin the client-rendered demo widget first to configure an instance.</Text>
+        )}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>env.configuration.label</Text>
           <TextInput
@@ -143,7 +222,7 @@ export default function AndroidWidgetPinScreen() {
             autoCapitalize="none"
           />
         </View>
-        <Button title="Set configuration" onPress={handleSetConfig} style={styles.resetButton} />
+        <Button title="Set instance configuration" onPress={handleSetConfig} style={styles.resetButton} />
       </View>
 
       <View style={styles.section}>
@@ -204,11 +283,29 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     marginBottom: 12,
+  },
+  sectionDescription: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#94A3B8',
+    marginBottom: 12,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#CBD5E1',
+    marginBottom: 8,
   },
   widgetOption: {
     marginTop: 12,
@@ -217,6 +314,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   widgetDescription: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  widgetInstanceOption: {
+    marginTop: 12,
+  },
+  widgetInstanceButton: {
+    marginBottom: 4,
+  },
+  widgetInstanceDescription: {
     fontSize: 12,
     color: '#94A3B8',
     marginTop: 4,
@@ -258,8 +367,16 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 12,
-    color: '#8232FF',
-    textAlign: 'center',
+    color: '#94A3B8',
+  },
+  smallButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  emptyState: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginBottom: 12,
   },
   footer: {
     marginTop: 24,
