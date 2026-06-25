@@ -6,6 +6,7 @@ import {
   PBXGroup,
   PBXNativeTarget,
   PBXResourcesBuildPhase,
+  PBXShellScriptBuildPhase,
   PBXSourcesBuildPhase,
   XCBuildConfiguration,
   XCConfigurationList,
@@ -33,8 +34,53 @@ const STRINGS_FILE_TYPE = 'text.plist.strings'
 const PLIST_FILE_TYPE = 'text.plist.xml'
 const ASSET_CATALOG_FILE_TYPE = 'folder.assetcatalog'
 const COPY_FILES_PHASE_NAME = 'Embed Foundation Extensions'
+const DYNAMIC_WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra Dynamic Widgets'
 const SOURCE_EXTENSIONS = new Set(['.swift'])
 const RESOURCE_EXTENSIONS = new Set(['.xcassets', '.strings', '.ttf', '.otf', '.woff', '.woff2'])
+const DYNAMIC_WIDGET_BUNDLE_SHELL_SCRIPT = `if [[ "$CONFIGURATION" == *Debug* ]]; then
+  echo "Voltra: Debug build - Dynamic Widgets load from Metro, skipping bundling"
+  exit 0
+fi
+
+if [[ -f "$SRCROOT/.xcode.env" ]]; then
+  source "$SRCROOT/.xcode.env"
+fi
+if [[ -f "$SRCROOT/.xcode.env.local" ]]; then
+  source "$SRCROOT/.xcode.env.local"
+fi
+
+export PROJECT_ROOT="\${PROJECT_ROOT:-$SRCROOT/..}"
+NODE_BINARY="\${NODE_BINARY:-node}"
+
+BUNDLER="$("$NODE_BINARY" - "$PROJECT_ROOT" <<'NODE'
+const { createRequire } = require('node:module')
+const path = require('node:path')
+
+const projectRoot = process.argv[2]
+const requireFromProject = createRequire(path.join(projectRoot, 'package.json'))
+
+try {
+  const resolved = requireFromProject.resolve('@use-voltra/metro/bundle-widgets')
+  process.stdout.write(resolved)
+} catch (error) {
+  console.error(
+    'error: Voltra widget bundler could not resolve @use-voltra/metro from ' +
+      projectRoot +
+      '. Install @use-voltra/metro in app project so release widgets can be baked.'
+  )
+  console.error(error && error.message ? error.message : String(error))
+  process.exit(1)
+}
+NODE
+)"
+if [[ -z "$BUNDLER" ]]; then
+  echo "Voltra: resolver returned empty string for @use-voltra/metro/bundle-widgets" >&2
+  exit 1
+fi
+
+echo "Voltra: widget bundler resolved to $BUNDLER"
+"$NODE_BINARY" "$BUNDLER" --out-dir "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH" --platform ios --project-root "$PROJECT_ROOT"
+`
 
 export interface EnsureIOSWidgetTargetOptions {
   projectRoot: string
@@ -88,6 +134,10 @@ export async function ensureIOSWidgetTarget(
 
   ensureTargetDependency(context, widgetTarget)
   ensureTargetAttributes(context, widgetTarget)
+  ensureDynamicWidgetBundlePhase(
+    widgetTarget,
+    ios.widgets.some((widget) => widget.entry !== undefined)
+  )
   removeStaleGeneratedFileReferences(context, widgetTarget, widgetGroup, previousWidgetFiles, nextGeneratedFiles)
   ensureBuildPhases(context, widgetTarget, productFile, nextGeneratedFiles)
   ensureWidgetGroupFiles(context, widgetGroup, targetName, nextGeneratedFiles)
@@ -296,6 +346,36 @@ function ensureTargetAttributes(context: IOSXcodeProjectContext, widgetTarget: P
   const attributes = context.project.rootObject.props.attributes
   const targetAttributes = (attributes.TargetAttributes ??= {}) as Record<string, { LastSwiftMigration?: string }>
   targetAttributes[widgetTarget.uuid] ??= { LastSwiftMigration: '1250' }
+}
+
+function ensureDynamicWidgetBundlePhase(widgetTarget: PBXNativeTarget, enabled: boolean): void {
+  const matchingPhases = widgetTarget.props.buildPhases.filter(
+    (phase): phase is PBXShellScriptBuildPhase =>
+      PBXShellScriptBuildPhase.is(phase) && stripQuotes(phase.props.name) === DYNAMIC_WIDGET_BUNDLE_PHASE_NAME
+  )
+
+  if (!enabled) {
+    for (const phase of matchingPhases) {
+      phase.removeFromProject()
+    }
+    return
+  }
+  const primaryPhase =
+    matchingPhases[0] ??
+    widgetTarget.createBuildPhase(PBXShellScriptBuildPhase, {
+      name: DYNAMIC_WIDGET_BUNDLE_PHASE_NAME,
+      shellPath: '/bin/sh',
+      shellScript: DYNAMIC_WIDGET_BUNDLE_SHELL_SCRIPT,
+    })
+
+  primaryPhase.props.name = DYNAMIC_WIDGET_BUNDLE_PHASE_NAME
+  primaryPhase.props.shellPath = '/bin/sh'
+  primaryPhase.props.shellScript = DYNAMIC_WIDGET_BUNDLE_SHELL_SCRIPT
+  primaryPhase.props.alwaysOutOfDate = 1
+
+  for (const duplicatePhase of matchingPhases.slice(1)) {
+    duplicatePhase.removeFromProject()
+  }
 }
 
 function removeStaleWidgetTargets(context: IOSXcodeProjectContext, staleTargetNames: string[]): void {

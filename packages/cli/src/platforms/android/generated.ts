@@ -1,28 +1,32 @@
 import fs from 'node:fs'
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
-import vm from 'node:vm'
 import { createRequire } from 'node:module'
-
-import * as babel from '@babel/core'
 import { vdConvert } from 'vd-tool'
 
 import { requirePlatformPackage } from '../../dependencies/platformPackages'
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
+import { DYNAMIC_WIDGET_BUILD_INFO, evaluateWidgetModuleExports } from '../shared/widgetModule'
 
 import type { AndroidProjectDiscovery } from '../../discovery/android'
-import type { NormalizedAndroidWidgetConfig, NormalizedVoltraAndroidConfig, WidgetLabel } from '../../config/types'
+import type {
+  AndroidWidgetAppIntentParameter,
+  NormalizedAndroidWidgetConfig,
+  NormalizedVoltraAndroidConfig,
+  WidgetLabel,
+} from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 
-const MODULE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '']
 const VALID_DRAWABLE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.xml', '.svg'])
 const FONT_EXTENSIONS = new Set(['.ttf', '.otf', '.woff', '.woff2'])
 const MAX_IMAGE_SIZE_BYTES = 4096
 const DEFAULT_INITIAL_STATE_LOCALE = '__default'
 const LOCALIZED_INITIAL_STATE_KEY = '__voltraLocales'
 const DEFAULT_WIDGET_LOCALE_QUALIFIER = 'en'
+const ANDROID_DYNAMIC_WIDGET_MANIFEST_PATH = path.join('.voltra', 'manifest.android.json')
+const ANDROID_WIDGET_CONFIG_DEFAULTS_PATH = path.join('assets', 'voltra', 'widget_config_defaults.json')
 
 export interface GenerateAndroidFilesOptions {
   projectRoot: string
@@ -48,35 +52,65 @@ export class AndroidGeneratedFilesError extends VoltraCliError {
   }
 }
 
+function createAndroidGeneratedFilesError(message: string): AndroidGeneratedFilesError {
+  return new AndroidGeneratedFilesError(message)
+}
+
 type AndroidWidgetVariants = Record<string, unknown>
 type AndroidWidgetRenderer = (variants: AndroidWidgetVariants) => string
+type AndroidDynamicWidgetRenderer = (element: unknown) => unknown
 interface AndroidPlatformPackage {
   renderAndroidWidgetToString?: unknown
 }
 
 type PrerenderedWidgetStates = Map<string, Map<string, string>>
+type DynamicWidgetManifest = {
+  version: 1
+  platform: 'android'
+  widgets: Array<{ id: string; entry: string }>
+}
+type WidgetConfigDefaults = Record<string, Record<string, string>>
+type DetectedAndroidWidget =
+  | (NormalizedAndroidWidgetConfig & { clientRendered: false })
+  | (NormalizedAndroidWidgetConfig & { entry: string; clientRendered: true; clientSourcePath: string })
 
 export async function generateAndroidFiles(options: GenerateAndroidFilesOptions): Promise<GenerateAndroidFilesResult> {
   const { projectRoot, android, discovery } = options
   const resourceRoot = path.join(discovery.appModuleRoot, 'src', 'main')
+  const detectedWidgets = detectClientRenderedWidgets(projectRoot, android.widgets)
   const changes: ReportedChange[] = []
   const warnings: string[] = []
   const generatedFiles = new Set<string>()
 
-  const receiverFiles = await generateWidgetReceivers(projectRoot, discovery, android.widgets)
+  mergeSingleResult(
+    await writeGeneratedTextFile(
+      projectRoot,
+      path.join(projectRoot, ANDROID_DYNAMIC_WIDGET_MANIFEST_PATH),
+      `${JSON.stringify(createDynamicWidgetsManifest(detectedWidgets), null, 2)}\n`
+    ),
+    changes,
+    generatedFiles
+  )
+
+  const receiverFiles = await generateWidgetReceivers(projectRoot, discovery, detectedWidgets)
   mergeResult(receiverFiles, changes, warnings, generatedFiles)
 
   const assetFiles = await generateAndroidAssets(projectRoot, resourceRoot, android)
   mergeResult(assetFiles, changes, warnings, generatedFiles)
 
-  const xmlFiles = await generateAndroidXmlFiles(projectRoot, resourceRoot, android.widgets)
+  const xmlFiles = await generateAndroidXmlFiles(projectRoot, resourceRoot, detectedWidgets)
   mergeResult(xmlFiles, changes, warnings, generatedFiles)
 
   const fontFiles = await copyAndroidFonts(projectRoot, resourceRoot, android.fonts)
   mergeResult(fontFiles, changes, warnings, generatedFiles)
 
-  const initialStateFiles = await generateAndroidInitialStates(projectRoot, resourceRoot, android.widgets)
+  const initialStateFiles = await generateAndroidInitialStates(projectRoot, resourceRoot, detectedWidgets)
   mergeResult(initialStateFiles, changes, warnings, generatedFiles)
+
+  const configDefaultsResult = await generateAndroidConfigDefaults(projectRoot, resourceRoot, detectedWidgets)
+  if (configDefaultsResult) {
+    mergeSingleResult(configDefaultsResult, changes, generatedFiles)
+  }
 
   return {
     changes,
@@ -88,7 +122,7 @@ export async function generateAndroidFiles(options: GenerateAndroidFilesOptions)
 async function generateWidgetReceivers(
   projectRoot: string,
   discovery: AndroidProjectDiscovery,
-  widgets: NormalizedAndroidWidgetConfig[]
+  widgets: DetectedAndroidWidget[]
 ): Promise<GenerateAndroidFilesResult> {
   const javaRoot = path.join(discovery.appModuleRoot, 'src', 'main', 'java')
   const widgetDir = path.join(javaRoot, discovery.packageName.replace(/\./g, '/'), 'widget')
@@ -115,7 +149,7 @@ async function generateWidgetReceivers(
 async function generateAndroidXmlFiles(
   projectRoot: string,
   resourceRoot: string,
-  widgets: NormalizedAndroidWidgetConfig[]
+  widgets: DetectedAndroidWidget[]
 ): Promise<GenerateAndroidFilesResult> {
   const changes: ReportedChange[] = []
   const generatedFiles = new Set<string>()
@@ -194,7 +228,7 @@ async function generateAndroidXmlFiles(
 async function generatePreviewLayouts(
   projectRoot: string,
   layoutDir: string,
-  widgets: NormalizedAndroidWidgetConfig[],
+  widgets: DetectedAndroidWidget[],
   warnings: string[],
   changes: ReportedChange[],
   generatedFiles: Set<string>
@@ -375,22 +409,19 @@ async function copyAndroidFonts(
 async function generateAndroidInitialStates(
   projectRoot: string,
   resourceRoot: string,
-  widgets: NormalizedAndroidWidgetConfig[]
+  widgets: DetectedAndroidWidget[]
 ): Promise<GenerateAndroidFilesResult> {
-  const prerenderableWidgets = widgets.filter((widget) => widget.initialStatePath)
-
-  if (prerenderableWidgets.length === 0) {
-    return {
-      changes: [],
-      files: [],
-      warnings: [],
-    }
-  }
-  const prerenderedStates = await prerenderWidgetStates(
+  const serverWidgets = widgets.filter(
+    (widget): widget is Extract<DetectedAndroidWidget, { clientRendered: false }> => !widget.clientRendered
+  )
+  const prerenderableServerWidgets = serverWidgets.filter((widget) => widget.initialStatePath)
+  const serverStates = await prerenderWidgetStates(
     projectRoot,
-    prerenderableWidgets,
+    prerenderableServerWidgets,
     loadAndroidWidgetRenderer(projectRoot)
   )
+  const clientStates = await prerenderClientRenderedAndroidWidgets(projectRoot, widgets)
+  const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   if (prerenderedStates.size === 0) {
     return {
@@ -437,7 +468,7 @@ async function prerenderWidgetStates(
         throw new AndroidGeneratedFilesError(`Initial state file not found for widget '${widget.id}' at ${modulePath}`)
       }
 
-      const widgetVariants = evaluateWidgetModule(projectRoot, modulePath)
+      const widgetVariants = evaluateLegacyWidgetModule(projectRoot, modulePath)
       localeStates.set(localeKey, renderer(widgetVariants))
     }
 
@@ -447,50 +478,10 @@ async function prerenderWidgetStates(
   return prerenderedStates
 }
 
-function evaluateWidgetModule(projectRoot: string, filePath: string): AndroidWidgetVariants {
-  const projectRequire = createProjectRequire(projectRoot)
-  const moduleCache = new Map<string, unknown>()
-
-  const customRequire = (moduleSpecifier: string, currentDir: string): unknown => {
-    if (!isLocalModule(moduleSpecifier)) {
-      return projectRequire(moduleSpecifier)
-    }
-
-    const resolvedModulePath = resolveModulePath(moduleSpecifier, currentDir)
-
-    if (!resolvedModulePath) {
-      throw new AndroidGeneratedFilesError(`Cannot resolve module '${moduleSpecifier}' from '${currentDir}'`)
-    }
-
-    const cachedModule = moduleCache.get(resolvedModulePath)
-
-    if (cachedModule !== undefined) {
-      return cachedModule
-    }
-
-    const transpiledCode = transpileWidgetModule(projectRoot, resolvedModulePath, projectRequire)
-    const moduleDir = path.dirname(resolvedModulePath)
-    const moduleRecord = { exports: {} as Record<string, unknown> }
-    moduleCache.set(resolvedModulePath, moduleRecord.exports)
-
-    const context = vm.createContext({
-      __dirname: moduleDir,
-      __filename: resolvedModulePath,
-      console,
-      exports: moduleRecord.exports,
-      module: moduleRecord,
-      process,
-      require: (specifier: string) => customRequire(specifier, moduleDir),
-    })
-
-    const script = new vm.Script(transpiledCode, { filename: resolvedModulePath })
-    script.runInContext(context)
-
-    moduleCache.set(resolvedModulePath, moduleRecord.exports)
-    return moduleRecord.exports
+function evaluateLegacyWidgetModule(projectRoot: string, filePath: string): AndroidWidgetVariants {
+  const exports = evaluateWidgetModuleExports(projectRoot, filePath, createAndroidGeneratedFilesError) as {
+    default?: unknown
   }
-
-  const exports = customRequire(filePath, path.dirname(filePath)) as { default?: unknown }
   const widgetVariants = exports.default ?? exports
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {
@@ -512,84 +503,200 @@ function loadAndroidWidgetRenderer(projectRoot: string): AndroidWidgetRenderer {
   return androidPackage.renderAndroidWidgetToString as AndroidWidgetRenderer
 }
 
-function transpileWidgetModule(projectRoot: string, filePath: string, projectRequire: NodeRequire): string {
-  const source = fs.readFileSync(filePath, 'utf8')
-  const projectBabelConfigPath = resolveProjectBabelConfig(projectRoot)
-  const result = babel.transformSync(source, {
-    babelrc: false,
-    configFile: projectBabelConfigPath,
-    cwd: projectRoot,
-    filename: filePath,
-    presets: projectBabelConfigPath ? undefined : [resolveFallbackBabelPreset(projectRequire)],
-  })
+function loadAndroidDynamicWidgetRenderer(projectRoot: string): AndroidDynamicWidgetRenderer {
+  const androidPackage = requirePlatformPackage<{ renderAndroidVariantToJson?: unknown }>(projectRoot, 'android')
 
-  if (!result?.code) {
-    throw new AndroidGeneratedFilesError(`Babel transpilation failed for ${filePath}`)
+  if (typeof androidPackage.renderAndroidVariantToJson !== 'function') {
+    throw new AndroidGeneratedFilesError(
+      'Installed @use-voltra/android package does not export renderAndroidVariantToJson.'
+    )
   }
 
-  return result.code
+  return androidPackage.renderAndroidVariantToJson as AndroidDynamicWidgetRenderer
 }
 
-function resolveProjectBabelConfig(projectRoot: string): string | undefined {
-  const candidates = ['babel.config.js', 'babel.config.cjs', 'babel.config.mjs']
+function createDynamicWidgetsManifest(widgets: DetectedAndroidWidget[]): DynamicWidgetManifest {
+  return {
+    version: 1,
+    platform: 'android',
+    widgets: widgets
+      .filter((widget): widget is Extract<DetectedAndroidWidget, { clientRendered: true }> => widget.clientRendered)
+      .map((widget) => ({
+        id: widget.id,
+        entry: widget.entry,
+      })),
+  }
+}
 
-  for (const candidate of candidates) {
-    const candidatePath = path.join(projectRoot, candidate)
+function detectClientRenderedWidgets(
+  projectRoot: string,
+  widgets: NormalizedAndroidWidgetConfig[]
+): DetectedAndroidWidget[] {
+  return widgets.map((widget) => detectSingleWidget(projectRoot, widget))
+}
 
-    if (fs.existsSync(candidatePath)) {
-      return candidatePath
+function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidgetConfig): DetectedAndroidWidget {
+  if (!widget.entry) {
+    return {
+      ...widget,
+      clientRendered: false,
     }
   }
 
-  return undefined
+  const clientSourcePath = path.join(projectRoot, widget.entry)
+
+  if (!fs.existsSync(clientSourcePath) || !fs.statSync(clientSourcePath).isFile()) {
+    throw createAndroidGeneratedFilesError(`[voltra] Dynamic Widget "${widget.id}" entry not found at ${widget.entry}`)
+  }
+
+  const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, clientSourcePath)
+  const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
+
+  if (typeof widgetFn !== 'function') {
+    throw createAndroidGeneratedFilesError(
+      `[voltra] Dynamic Widget "${widget.id}" at ${widget.entry} must default-export a function or component.`
+    )
+  }
+
+  return {
+    ...widget,
+    entry: widget.entry,
+    clientRendered: true,
+    clientSourcePath,
+  }
 }
 
-function resolveFallbackBabelPreset(projectRequire: NodeRequire): string {
-  try {
-    return projectRequire.resolve('@react-native/babel-preset')
-  } catch {
+async function prerenderClientRenderedAndroidWidgets(
+  projectRoot: string,
+  widgets: DetectedAndroidWidget[]
+): Promise<PrerenderedWidgetStates> {
+  const clientWidgets = widgets.filter(
+    (widget): widget is Extract<DetectedAndroidWidget, { clientRendered: true }> => widget.clientRendered
+  )
+
+  if (clientWidgets.length === 0) {
+    return new Map()
+  }
+
+  const renderer = loadAndroidDynamicWidgetRenderer(projectRoot)
+  const placeholderEnv = {
+    date: Date.now(),
+    widgetFamily: '200x200',
+    colorScheme: 'light',
+    locale: 'en-US',
+    configuration: undefined,
+    build: DYNAMIC_WIDGET_BUILD_INFO,
+  }
+  const prerenderedStates: PrerenderedWidgetStates = new Map()
+
+  for (const widget of clientWidgets) {
     try {
-      return projectRequire.resolve('babel-preset-expo')
-    } catch {
-      throw new AndroidGeneratedFilesError(
-        'Could not resolve a Babel preset for Android initial state generation. Add a project babel.config.js or install @react-native/babel-preset.'
+      const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, widget.clientSourcePath)
+      const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
+      const element = widgetFn({}, placeholderEnv)
+      prerenderedStates.set(widget.id, new Map([[DEFAULT_INITIAL_STATE_LOCALE, JSON.stringify(renderer(element))]]))
+    } catch (error) {
+      if (error instanceof AndroidGeneratedFilesError) {
+        throw error
+      }
+
+      throw createAndroidGeneratedFilesError(
+        `[voltra] Dynamic Widget "${widget.id}" failed placeholder prerender at ${widget.entry}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       )
     }
   }
+
+  return prerenderedStates
+}
+
+function safelyEvaluateDynamicWidget(
+  projectRoot: string,
+  widgetId: string,
+  widgetEntry: string,
+  clientSourcePath: string
+): unknown {
+  try {
+    return evaluateWidgetModuleExports(projectRoot, clientSourcePath, createAndroidGeneratedFilesError)
+  } catch (error) {
+    if (error instanceof AndroidGeneratedFilesError) {
+      throw error
+    }
+
+    throw createAndroidGeneratedFilesError(
+      `[voltra] Dynamic Widget "${widgetId}" failed to evaluate entry at ${widgetEntry}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+  }
+}
+
+function readDynamicWidgetExport(
+  widgetId: string,
+  widgetEntry: string,
+  widgetModule: unknown
+): (props: unknown, env: unknown) => unknown {
+  const exports =
+    widgetModule && typeof widgetModule === 'object'
+      ? (widgetModule as { default?: unknown })
+      : { default: widgetModule }
+  const widgetFn = exports.default ?? widgetModule
+
+  if (typeof widgetFn !== 'function') {
+    throw createAndroidGeneratedFilesError(
+      `[voltra] Dynamic Widget "${widgetId}" at ${widgetEntry} must default-export a function or component.`
+    )
+  }
+
+  return widgetFn as (props: unknown, env: unknown) => unknown
+}
+
+async function generateAndroidConfigDefaults(
+  projectRoot: string,
+  resourceRoot: string,
+  widgets: DetectedAndroidWidget[]
+): Promise<GeneratedFileResult | undefined> {
+  const defaults = createWidgetConfigDefaults(widgets)
+
+  if (Object.keys(defaults).length === 0) {
+    return undefined
+  }
+
+  return writeGeneratedTextFile(
+    projectRoot,
+    path.join(resourceRoot, ANDROID_WIDGET_CONFIG_DEFAULTS_PATH),
+    `${JSON.stringify(defaults, null, 2)}\n`
+  )
+}
+
+function createWidgetConfigDefaults(widgets: DetectedAndroidWidget[]): WidgetConfigDefaults {
+  const defaults: WidgetConfigDefaults = {}
+
+  for (const widget of widgets) {
+    if (!widget.clientRendered) {
+      continue
+    }
+
+    const parameters = widget.appIntent?.parameters ?? []
+    const widgetDefaults = Object.fromEntries(
+      parameters
+        .filter((parameter): parameter is AndroidWidgetAppIntentParameter & { default: string } => {
+          return typeof parameter.default === 'string'
+        })
+        .map((parameter) => [parameter.name, parameter.default])
+    )
+
+    if (Object.keys(widgetDefaults).length > 0) {
+      defaults[widget.id] = widgetDefaults
+    }
+  }
+
+  return defaults
 }
 
 function createProjectRequire(projectRoot: string): NodeRequire {
   return createRequire(path.join(projectRoot, 'package.json'))
-}
-
-function isLocalModule(moduleSpecifier: string): boolean {
-  return moduleSpecifier.startsWith('.') || moduleSpecifier.startsWith('/')
-}
-
-function resolveModulePath(moduleSpecifier: string, fromDir: string): string | null {
-  const basePath = path.resolve(fromDir, moduleSpecifier)
-
-  for (const extension of MODULE_EXTENSIONS) {
-    const candidate = `${basePath}${extension}`
-
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
-      return candidate
-    }
-  }
-
-  if (!fs.existsSync(basePath) || !fs.statSync(basePath).isDirectory()) {
-    return null
-  }
-
-  for (const extension of MODULE_EXTENSIONS) {
-    const indexCandidate = path.join(basePath, `index${extension}`)
-
-    if (fs.existsSync(indexCandidate) && fs.statSync(indexCandidate).isFile()) {
-      return indexCandidate
-    }
-  }
-
-  return null
 }
 
 function convertPrerenderedStatesToObject(prerenderedStates: PrerenderedWidgetStates): Record<string, unknown> {
@@ -809,9 +916,26 @@ async function getLargeImageWarning(imagePath: string, fileName: string): Promis
   return `Image '${fileName}' is ${stat.size} bytes. Large Android widget images may not display correctly.`
 }
 
-function generateWidgetReceiverContent(widget: NormalizedAndroidWidgetConfig, packageName: string): string {
+function generateWidgetReceiverContent(widget: DetectedAndroidWidget, packageName: string): string {
   const className = `VoltraWidget_${widget.id}Receiver`
   const labelForComment = widgetLabelEnglish(widget.displayName)
+
+  if (widget.clientRendered) {
+    return [
+      `package ${packageName}.widget`,
+      '',
+      'import voltra.widget.VoltraClientWidgetReceiver',
+      '',
+      '/**',
+      ` * Auto-generated Dynamic Widget receiver for ${labelForComment}`,
+      ` * Widget ID: ${widget.id}`,
+      ' */',
+      `class ${className} : VoltraClientWidgetReceiver() {`,
+      `    override val widgetId: String = "${widget.id}"`,
+      '}',
+      '',
+    ].join('\n')
+  }
 
   if (widget.serverUpdate) {
     const refreshEnabled = widget.serverUpdate.refresh === true
@@ -1146,6 +1270,11 @@ function mergeResult(
   for (const filePath of result.files) {
     generatedFiles.add(normalizeRelativePath(filePath))
   }
+}
+
+function mergeSingleResult(result: GeneratedFileResult, changes: ReportedChange[], generatedFiles: Set<string>): void {
+  pushChange(changes, result.change)
+  generatedFiles.add(normalizeRelativePath(result.relativePath))
 }
 
 function pushChange(changes: ReportedChange[], change: ReportedChange | undefined): void {
