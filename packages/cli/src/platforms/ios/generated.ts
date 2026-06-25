@@ -626,9 +626,10 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
   ].join('\n')
 }
 
-function widgetUsesAppIntent(
-  widget: DetectedIOSWidget
-): widget is Extract<DetectedIOSWidget, { clientRendered: true }> & {
+function widgetUsesAppIntent(widget: DetectedIOSWidget): widget is Extract<
+  DetectedIOSWidget,
+  { clientRendered: true }
+> & {
   appIntent: { parameters: IOSWidgetAppIntentParameter[] }
 } {
   return widget.clientRendered && !!widget.appIntent && widget.appIntent.parameters.length > 0
