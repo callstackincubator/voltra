@@ -54,7 +54,7 @@ describe('@use-voltra/metro error-only Metro reporter', () => {
     assert.ok(writes.join('').includes('init failed'))
   })
 
-  test('reports Metro load and cache failures', () => {
+  test('swallows non-terminal Metro failure events', () => {
     const writes: string[] = []
     mock.method(process.stderr, 'write', (chunk: string | Uint8Array) => {
       writes.push(String(chunk))
@@ -63,10 +63,10 @@ describe('@use-voltra/metro error-only Metro reporter', () => {
 
     const reporter = createErrorOnlyMetroReporter()
 
+    reporter.update({ type: 'bundle_build_failed', buildID: 'build-1' })
     reporter.update({ type: 'transformer_load_failed', error: new Error('transformer failed') })
     reporter.update({ type: 'cache_read_error', error: new Error('cache failed') })
 
-    assert.ok(writes.join('').includes('transformer_load_failed'))
-    assert.ok(writes.join('').includes('cache_read_error'))
+    assert.equal(writes.length, 0)
   })
 })
