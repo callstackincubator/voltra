@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import { requireProjectModule, resolveProjectModulePath } from './resolveProjectModule'
+import { createErrorOnlyMetroReporter } from './createErrorOnlyMetroReporter'
 
 const blockedModules = new Set(['react-native'])
 
@@ -70,6 +71,7 @@ export async function createWidgetMetroConfig({
       getPolyfills: () => [],
       polyfillModuleNames: [],
     },
+    reporter: createErrorOnlyMetroReporter(),
     transformer: {
       ...config.transformer,
       babelTransformerPath: appConfig.transformer?.babelTransformerPath,
