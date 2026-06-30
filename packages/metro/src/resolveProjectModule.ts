@@ -11,19 +11,29 @@ function createExpoMetroRequire(projectRoot: string): NodeRequire {
 }
 
 export function requireProjectModule<T = unknown>(moduleName: string, projectRoot = process.cwd()): T {
+  const requireFromProject = createProjectRequire(projectRoot)
+
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require(moduleName) as T
-  } catch {
-    return createExpoMetroRequire(projectRoot)(moduleName) as T
+    return requireFromProject(moduleName) as T
+  } catch (projectError) {
+    try {
+      return createExpoMetroRequire(projectRoot)(moduleName) as T
+    } catch {
+      throw projectError
+    }
   }
 }
 
 export function resolveProjectModulePath(moduleName: string, projectRoot = process.cwd()): string {
+  const requireFromProject = createProjectRequire(projectRoot)
+
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require.resolve(moduleName)
-  } catch {
-    return createExpoMetroRequire(projectRoot).resolve(moduleName)
+    return requireFromProject.resolve(moduleName)
+  } catch (projectError) {
+    try {
+      return createExpoMetroRequire(projectRoot).resolve(moduleName)
+    } catch {
+      throw projectError
+    }
   }
 }

@@ -105,6 +105,11 @@ export type { EnsureGitWorktreeOptions, EnsureGitWorktreeResult, GitWorktreeStat
 export { AndroidGeneratedFilesError, generateAndroidFiles } from './platforms/android/generated'
 export type { GenerateAndroidFilesOptions, GenerateAndroidFilesResult } from './platforms/android/generated'
 export { applyAndroidPlatform, createAndroidPreflightRunner } from './platforms/android/apply'
+export { addDynamicWidgetBundlingSnippet, ensureAndroidGradleWidgetBundling } from './platforms/android/gradle'
+export type {
+  EnsureAndroidGradleWidgetBundlingOptions,
+  EnsureAndroidGradleWidgetBundlingResult,
+} from './platforms/android/gradle'
 export { AndroidManifestMutationError, ensureAndroidManifest } from './platforms/android/manifest'
 export type { EnsureAndroidManifestOptions, EnsureAndroidManifestResult } from './platforms/android/manifest'
 export { IOSGeneratedFilesError, generateIOSFiles } from './platforms/ios/generated'
@@ -161,10 +166,14 @@ export {
 } from './reporting/summary'
 export type {
   AndroidProjectOverrides,
+  AndroidWidgetAppIntentConfig,
+  AndroidWidgetAppIntentParameter,
   AndroidWidgetConfig,
   AndroidWidgetServerUpdateConfig,
   CliDefaults,
   IOSProjectOverrides,
+  IOSWidgetAppIntentConfig,
+  IOSWidgetAppIntentParameter,
   IOSWidgetConfig,
   IOSWidgetFamily,
   IOSWidgetServerUpdateConfig,
