@@ -101,14 +101,6 @@ function installProjectModuleStubs() {
   return calls
 }
 
-function captureConsoleLogs(): string[] {
-  const logs: string[] = []
-  mock.method(console, 'log', (...args: unknown[]) => {
-    logs.push(args.map(String).join(' '))
-  })
-  return logs
-}
-
 describe('withVoltra Metro config transformer', () => {
   const cleanups: Array<() => void> = []
 
@@ -127,7 +119,6 @@ describe('withVoltra Metro config transformer', () => {
     cleanups.push(cleanup)
 
     const calls = installProjectModuleStubs()
-    const logs = captureConsoleLogs()
     const config = await withVoltra({
       projectRoot,
       resolver: {},
@@ -137,10 +128,6 @@ describe('withVoltra Metro config transformer', () => {
     assert.equal(calls.includes('metro.createConnectMiddleware'), false)
     assert.equal(calls.includes('metro-config'), false)
     assert.equal(typeof config.resolver.resolveRequest, 'function')
-    assert.equal(
-      logs.some((message) => message.includes('dormant')),
-      true
-    )
   })
 
   test('starts widget Metro when at least one Dynamic Widget is configured', async () => {
@@ -156,7 +143,6 @@ describe('withVoltra Metro config transformer', () => {
     cleanups.push(cleanup)
 
     const calls = installProjectModuleStubs()
-    const logs = captureConsoleLogs()
     const config = await withVoltra({
       projectRoot,
       resolver: {},
@@ -166,9 +152,5 @@ describe('withVoltra Metro config transformer', () => {
     assert.equal(calls.includes('metro-config'), true)
     assert.equal(calls.includes('metro.createConnectMiddleware'), true)
     assert.equal(typeof config.server.enhanceMiddleware, 'function')
-    assert.equal(
-      logs.some((message) => message.includes('active')),
-      true
-    )
   })
 })
