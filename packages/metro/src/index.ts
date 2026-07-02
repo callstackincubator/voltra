@@ -86,10 +86,15 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
     },
   }
 
-  if (listConfiguredWidgets(registry).length === 0) {
+  const configuredWidgets = listConfiguredWidgets(registry)
+
+  if (configuredWidgets.length === 0) {
+    console.log('[voltra:metro] Dynamic Widgets not configured; secondary Metro dormant.')
     registry.close()
     return configWithResolver
   }
+
+  console.log(`[voltra:metro] Found ${configuredWidgets.length} Dynamic Widget(s); secondary Metro active.`)
 
   const widgetConfig = await createWidgetMetroConfig({
     projectRoot,
