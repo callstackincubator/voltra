@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/ios-client",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Client-only Voltra APIs for iOS",
   "main": "./build/commonjs/index.js",
   "module": "./build/module/index.js",
