@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/ios",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Voltra for iOS",
   "main": "build/commonjs/index.js",
   "module": "build/module/index.js",
