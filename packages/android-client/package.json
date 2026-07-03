@@ -24,6 +24,7 @@
   },
   "files": [
     "app.plugin.js",
+    "android/CMakeLists.txt",
     "android/build.gradle",
     "android/src/main",
     "build",
