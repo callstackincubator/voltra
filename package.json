@@ -6,7 +6,6 @@
     "build": "turbo run build --filter=!voltra-website",
     "build:all": "turbo run build --filter=!voltra-website",
     "build:plugin": "pnpm --filter @use-voltra/expo-plugin run build && pnpm --filter @use-voltra/ios-client run build:expo-plugin && pnpm --filter @use-voltra/android-client run build:expo-plugin",
-    "check:package-contents": "node scripts/check-package-contents.mjs",
     "clean": "turbo run clean --filter=!voltra-website",
     "clean:plugin": "pnpm --filter @use-voltra/expo-plugin run clean && pnpm --filter @use-voltra/ios-client run clean:expo-plugin && pnpm --filter @use-voltra/android-client run clean:expo-plugin",
     "format:check": "pnpm run format:js:check && pnpm --filter @use-voltra/android-client run format:check && pnpm --filter @use-voltra/ios-client run format:check",

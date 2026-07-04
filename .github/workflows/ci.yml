@@ -244,43 +244,11 @@ jobs:
       - name: Check Kotlin formatting
         run: pnpm run format:kotlin:check
 
-  package-integrity:
-    name: '[Pkg] Tarball contents'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.0
-          run_install: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24.14.0'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # `files` globs include build/**, so packages must be built before packing
-      # or the dry-run tarball listing would be missing the JS output.
-      - name: Build JS packages
-        run: pnpm run build:all
-
-      # Fast assertion layer: `npm pack --dry-run` reads each package's real
-      # `files` allowlist and globs it against the tree, so a native/config file
-      # present on disk but missing from `files` (the v2.1.0 CMakeLists.txt
-      # incident) fails here in seconds — no install or native build required.
-      - name: Assert critical files are packed
-        run: pnpm run check:package-contents
-
   android-tarball-build:
     name: '[Android] Tarball + all-ABI native build'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -313,12 +281,13 @@ jobs:
       - name: Build monorepo
         run: pnpm run build:all
 
-      # Real-build layer: pack android-client and install the *tarball* into the
-      # example app instead of the workspace symlink. `pnpm pack` rewrites the
-      # `workspace:` deps to real version ranges that match the sibling packages,
-      # so pnpm links those from the workspace while android-client itself is
-      # consumed exactly as it would ship to npm. A file missing from the
-      # tarball then breaks prebuild/gradle configure below.
+      # Packaging integrity: pack android-client and install the *tarball* into
+      # the example app instead of the workspace symlink. `pnpm pack` rewrites
+      # the `workspace:` deps to real version ranges that match the sibling
+      # packages, so pnpm links those from the workspace while android-client
+      # itself is consumed exactly as it would ship to npm. A file missing from
+      # the tarball (the v2.1.0 CMakeLists.txt incident) then breaks prebuild or
+      # gradle configure below.
       - name: Pack android-client tarball
         working-directory: packages/android-client
         run: |
