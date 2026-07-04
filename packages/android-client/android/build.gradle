@@ -23,6 +23,13 @@ def safeExtGet = { prop, fallback ->
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
 
+// Mirror the app's ABI selection (React Native template convention) so the
+// standalone Hermes runtime is only built for the architectures the app ships.
+def reactNativeArchitectures() {
+  def value = rootProject.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
+}
+
 // Read version from package.json for BuildConfig
 def packageJsonFile = new File(project.projectDir.parentFile, "package.json")
 def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
@@ -48,6 +55,10 @@ android {
         arguments "-DANDROID_STL=c++_shared"
       }
     }
+
+    ndk {
+      abiFilters(*reactNativeArchitectures())
+    }
   }
 
   externalNativeBuild {
@@ -71,6 +82,7 @@ android {
       "**/libfbjni.so",
       "**/libjsi.so",
       "**/libhermes.so",
+      "**/libhermesvm.so",
     ]
   }
 
