@@ -6,18 +6,9 @@ import { IOS } from '../../constants'
 // Types
 // ============================================================================
 
-export interface ConfigureTargetOptions {
+export interface CreateTargetSkeletonOptions {
   targetName: string
   targetUuid: string
-  productFile: { fileRef: string }
-  xCConfigurationList: { uuid: string }
-}
-
-interface AddNativeTargetOptions {
-  targetName: string
-  targetUuid: string
-  productFile: { fileRef: string }
-  xCConfigurationList: { uuid: string }
 }
 
 // ============================================================================
@@ -25,19 +16,39 @@ interface AddNativeTargetOptions {
 // ============================================================================
 
 /**
- * Configures the widget extension target in the Xcode project.
+ * Creates the minimal widget-extension native target and registers it with the project.
  *
- * This:
- * - Adds the target to PBXNativeTarget section
- * - Adds the target to PBXProject section
- * - Adds a dependency from the main app to the widget extension
+ * A target cannot be "ensured" into existence, so this is the one create-only step in
+ * {@link applyXcodeChanges}: it adds an empty `PBXNativeTarget` (no product reference, configuration
+ * list or build phases yet) to the `PBXNativeTarget` and `PBXProject` sections. The shared ensure
+ * pipeline then fills in the configuration list, product file, group, build phases, attributes and
+ * dependency — the same code that reconciles an already-existing target.
+ *
+ * @returns The freshly created native-target object (the value stored in the `PBXNativeTarget`
+ * section under `targetUuid`).
  */
-export function configureTarget(xcodeProject: XcodeProject, options: ConfigureTargetOptions) {
-  const target = addToPbxNativeTargetSection(xcodeProject, options)
-  addToPbxProjectSection(xcodeProject, target)
-  addTargetDependency(xcodeProject, target)
+export function createTargetSkeleton(xcodeProject: XcodeProject, options: CreateTargetSkeletonOptions) {
+  const { targetName, targetUuid } = options
 
-  return target
+  const target = {
+    uuid: targetUuid,
+    pbxNativeTarget: {
+      isa: 'PBXNativeTarget',
+      name: targetName,
+      productName: targetName,
+      productType: `"com.apple.product-type.app-extension"`,
+      buildConfigurationList: '',
+      productReference: '',
+      buildPhases: [],
+      buildRules: [],
+      dependencies: [],
+    },
+  }
+
+  xcodeProject.addToPbxNativeTargetSection(target)
+  xcodeProject.addToPbxProjectSection(target)
+
+  return xcodeProject.pbxNativeTargetSection()[targetUuid]
 }
 
 /**
@@ -82,67 +93,4 @@ export function ensureTargetDependency(xcodeProject: XcodeProject, targetUuid: s
   if (!alreadyExists) {
     xcodeProject.addTargetDependency(mainTargetUuid, [targetUuid])
   }
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Adds the widget extension target to the PBXNativeTarget section.
- */
-function addToPbxNativeTargetSection(xcodeProject: XcodeProject, options: AddNativeTargetOptions) {
-  const { targetName, targetUuid, productFile, xCConfigurationList } = options
-
-  const target = {
-    uuid: targetUuid,
-    pbxNativeTarget: {
-      isa: 'PBXNativeTarget',
-      name: targetName,
-      productName: targetName,
-      productReference: productFile.fileRef,
-      productType: `"com.apple.product-type.app-extension"`,
-      buildConfigurationList: xCConfigurationList.uuid,
-      buildPhases: [],
-      buildRules: [],
-      dependencies: [],
-    },
-  }
-
-  xcodeProject.addToPbxNativeTargetSection(target)
-
-  return target
-}
-
-/**
- * Adds the target to the PBXProject section.
- */
-function addToPbxProjectSection(xcodeProject: XcodeProject, target: { uuid: string }): void {
-  xcodeProject.addToPbxProjectSection(target)
-
-  // Add target attributes to project section
-  const projectSection = xcodeProject.pbxProjectSection()
-  const firstProject = xcodeProject.getFirstProject()
-
-  if (!projectSection[firstProject.uuid].attributes.TargetAttributes) {
-    projectSection[firstProject.uuid].attributes.TargetAttributes = {}
-  }
-
-  projectSection[firstProject.uuid].attributes.TargetAttributes[target.uuid] = {
-    LastSwiftMigration: IOS.LAST_SWIFT_MIGRATION,
-  }
-}
-
-/**
- * Adds a target dependency so the main app depends on the widget extension.
- */
-function addTargetDependency(xcodeProject: XcodeProject, target: { uuid: string }): void {
-  if (!xcodeProject.hash.project.objects['PBXTargetDependency']) {
-    xcodeProject.hash.project.objects['PBXTargetDependency'] = {}
-  }
-  if (!xcodeProject.hash.project.objects['PBXContainerItemProxy']) {
-    xcodeProject.hash.project.objects['PBXContainerItemProxy'] = {}
-  }
-
-  xcodeProject.addTargetDependency(xcodeProject.getFirstTarget().uuid, [target.uuid])
 }

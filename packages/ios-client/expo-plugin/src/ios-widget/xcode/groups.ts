@@ -32,8 +32,10 @@ function collectGroupFiles(widgetFiles: IOSWidgetExtensionFiles): string[] {
  * produce the "no parent for object" consistency errors from issues #87/#32. File references are
  * resolved through the widget-scoped {@link ensureWidgetFileReference} so they are shared with the
  * build phases instead of duplicated.
+ *
+ * Internal create-only fallback for {@link ensurePbxGroup}; not part of the public pipeline.
  */
-export function addPbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
+function addPbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
   const { targetName, widgetFiles } = options
   const allFiles = collectGroupFiles(widgetFiles)
 

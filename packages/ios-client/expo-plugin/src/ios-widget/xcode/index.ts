@@ -4,12 +4,12 @@ import * as path from 'path'
 import type { IOSWidgetConfig, IOSWidgetExtensionFiles } from '../../types'
 import { getIOSWidgetExtensionFiles } from '../../utils/fileDiscovery'
 import { detectClientRenderedWidgets } from '../clientRendered'
-import { addBuildPhases, ensureBuildPhases, ensureWidgetBundleScriptPhase } from './buildPhases'
-import { addXCConfigurationList, ensureXCConfigurationList } from './configurationList'
-import { addPbxGroup, ensurePbxGroup } from './groups'
+import { ensureBuildPhases, ensureWidgetBundleScriptPhase } from './buildPhases'
+import { ensureXCConfigurationList } from './configurationList'
+import { ensurePbxGroup } from './groups'
 import { getMainAppTargetSettings } from './mainAppSettings'
-import { addProductFile, ensureProductFile } from './productFile'
-import { configureTarget, ensureTargetAttributes, ensureTargetDependency } from './target'
+import { ensureProductFile } from './productFile'
+import { createTargetSkeleton, ensureTargetAttributes, ensureTargetDependency } from './target'
 
 export interface ConfigureXcodeProjectProps {
   targetName: string
@@ -26,8 +26,9 @@ export interface ConfigureXcodeProjectProps {
  * project in place. It performs no filesystem or `modRequest` access, which makes it directly
  * testable against pbxproj fixtures.
  *
- * It either creates the widget extension target (and all its build phases, product file and group)
- * or, when the target already exists, reconciles it idempotently.
+ * When the widget target does not exist yet, the minimal native-target skeleton is created first
+ * (targets cannot be "ensured" into existence); every other object is then reconciled by the same
+ * idempotent ensure pipeline that runs for an already-existing target.
  */
 export function applyXcodeChanges(
   xcodeProject: XcodeProject,
@@ -38,120 +39,74 @@ export function applyXcodeChanges(
   const { targetName, bundleIdentifier, deploymentTarget } = props
   const groupName = 'Embed Foundation Extensions'
 
-  // Check if target already exists
-  const nativeTargets = xcodeProject.pbxNativeTargetSection()
-  const existingTargetKey = xcodeProject.findTargetKey(targetName)
-  const existingTarget = existingTargetKey ? nativeTargets[existingTargetKey] : null
-
-  // Read main app target settings to synchronize code signing
+  // Read main app target settings to synchronize code signing (per configuration).
   const mainAppSettings = getMainAppTargetSettings(xcodeProject)
 
-  // Use the deploymentTarget from plugin config (or default), ignore main app's deployment target
-  // This allows the widget extension to have its own deployment target independent of the main app
+  // Use the deploymentTarget from plugin config (or default), ignore main app's deployment target.
+  // This allows the widget extension to have its own deployment target independent of the main app.
 
-  if (existingTarget && existingTargetKey) {
-    // Ensure configuration list is up to date
-    const xCConfigurationList = ensureXCConfigurationList(
-      xcodeProject,
-      {
-        targetName,
-        bundleIdentifier,
-        deploymentTarget,
-        codeSignStyle: mainAppSettings?.codeSignStyle,
-        developmentTeam: mainAppSettings?.developmentTeam,
-        provisioningProfileSpecifier: mainAppSettings?.provisioningProfileSpecifier,
-      },
-      existingTarget.buildConfigurationList
-    )
+  // Resolve (or create) the widget target. A target cannot be reconciled into existence, so the
+  // absent case creates the minimal skeleton; from here on both paths share one pipeline.
+  let targetUuid = xcodeProject.findTargetKey(targetName)
+  if (!targetUuid) {
+    targetUuid = xcodeProject.generateUuid()
+    createTargetSkeleton(xcodeProject, { targetName, targetUuid })
+  }
+  const target = xcodeProject.pbxNativeTargetSection()[targetUuid]
 
-    // Ensure product file exists
-    const productFile = ensureProductFile(xcodeProject, {
+  // Ensure the configuration list is present and its settings are in sync.
+  const xCConfigurationList = ensureXCConfigurationList(
+    xcodeProject,
+    {
       targetName,
-      groupName,
-    })
+      bundleIdentifier,
+      deploymentTarget,
+      codeSignStyle: mainAppSettings?.codeSignStyle,
+      developmentTeam: mainAppSettings?.developmentTeam,
+      provisioningProfileSpecifier: mainAppSettings?.provisioningProfileSpecifier,
+    },
+    target.buildConfigurationList
+  )
 
-    // Update target references
-    existingTarget.productReference = productFile.fileRef
-    existingTarget.buildConfigurationList = xCConfigurationList.uuid
-    existingTarget.productType = `"com.apple.product-type.app-extension"`
-    existingTarget.name = targetName
-    existingTarget.productName = targetName
-    if (!existingTarget.buildPhases) {
-      existingTarget.buildPhases = []
-    }
+  // Ensure the product file (.appex) exists.
+  const productFile = ensureProductFile(xcodeProject, {
+    targetName,
+    groupName,
+  })
 
-    // Ensure the group first so the widget's file references exist before the build phases
-    // reference them (the phases resolve files through the widget-scoped group).
-    ensurePbxGroup(xcodeProject, {
-      targetName,
-      widgetFiles,
-    })
-
-    // Ensure build phases and files
-    ensureBuildPhases(xcodeProject, {
-      targetUuid: existingTargetKey,
-      targetName,
-      groupName,
-      productFile,
-      widgetFiles,
-      mainTargetUuid: xcodeProject.getFirstTarget().uuid,
-    })
-
-    if (hasClientRenderedWidgets) {
-      ensureWidgetBundleScriptPhase(xcodeProject, existingTargetKey)
-    }
-
-    ensureTargetAttributes(xcodeProject, existingTargetKey)
-    ensureTargetDependency(xcodeProject, existingTargetKey)
-
-    return
+  // Point the target at the reconciled configuration list and product file.
+  target.productReference = productFile.fileRef
+  target.buildConfigurationList = xCConfigurationList.uuid
+  target.productType = `"com.apple.product-type.app-extension"`
+  target.name = targetName
+  target.productName = targetName
+  if (!target.buildPhases) {
+    target.buildPhases = []
   }
 
-  // Add configuration list
-  const targetUuid = xcodeProject.generateUuid()
-
-  const xCConfigurationList = addXCConfigurationList(xcodeProject, {
-    targetName,
-    bundleIdentifier,
-    deploymentTarget,
-    codeSignStyle: mainAppSettings?.codeSignStyle,
-    developmentTeam: mainAppSettings?.developmentTeam,
-    provisioningProfileSpecifier: mainAppSettings?.provisioningProfileSpecifier,
-  })
-
-  // Add product file
-  const productFile = addProductFile(xcodeProject, {
-    targetName,
-    groupName,
-  })
-
-  // Configure target (native target, project section, dependency)
-  configureTarget(xcodeProject, {
-    targetName,
-    targetUuid,
-    productFile,
-    xCConfigurationList,
-  })
-
-  // Add PBX group first so the widget's file references exist before the build phases reference
-  // them (the phases resolve files through the widget-scoped group).
-  addPbxGroup(xcodeProject, {
+  // Ensure the group first so the widget's file references exist before the build phases
+  // reference them (the phases resolve files through the widget-scoped group).
+  ensurePbxGroup(xcodeProject, {
     targetName,
     widgetFiles,
   })
 
-  // Add build phases
-  addBuildPhases(xcodeProject, {
+  // Ensure build phases and their files.
+  ensureBuildPhases(xcodeProject, {
     targetUuid,
     targetName,
     groupName,
     productFile,
     widgetFiles,
+    mainTargetUuid: xcodeProject.getFirstTarget().uuid,
   })
 
   if (hasClientRenderedWidgets) {
     ensureWidgetBundleScriptPhase(xcodeProject, targetUuid)
   }
+
+  ensureTargetAttributes(xcodeProject, targetUuid)
+  ensureTargetDependency(xcodeProject, targetUuid)
 }
 
 /**

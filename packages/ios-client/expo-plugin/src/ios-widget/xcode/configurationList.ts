@@ -52,9 +52,10 @@ function createCommonBuildSettings(options: AddConfigurationListOptions) {
 }
 
 /**
- * Adds the XCConfigurationList for the widget extension target.
+ * Adds a fresh XCConfigurationList for the widget extension target. Internal create-only fallback
+ * for {@link ensureXCConfigurationList}; not part of the public pipeline.
  */
-export function addXCConfigurationList(xcodeProject: XcodeProject, options: AddConfigurationListOptions) {
+function addXCConfigurationList(xcodeProject: XcodeProject, options: AddConfigurationListOptions) {
   const { targetName } = options
   const commonBuildSettings = createCommonBuildSettings(options)
 

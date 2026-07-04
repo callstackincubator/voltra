@@ -42,9 +42,10 @@ function findBuildFileForFileRef(xcodeProject: XcodeProject, fileRef: string): {
 }
 
 /**
- * Adds the product file (.appex) for the widget extension.
+ * Adds the product file (.appex) for the widget extension. Internal create-only fallback for
+ * {@link ensureProductFile}; not part of the public pipeline.
  */
-export function addProductFile(xcodeProject: XcodeProject, options: AddProductFileOptions) {
+function addProductFile(xcodeProject: XcodeProject, options: AddProductFileOptions) {
   const { targetName, groupName } = options
 
   const productFileOptions = {
