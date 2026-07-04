@@ -7,6 +7,13 @@ export interface EnsureConfigurationListOptions {
   targetName: string
   bundleIdentifier: string
   deploymentTarget: string
+  /**
+   * App marketing version (CFBundleShortVersionString). App Store Connect expects the appex
+   * version to match the app's, so this becomes the widget's MARKETING_VERSION.
+   */
+  version?: string
+  /** App build number; becomes the widget's CURRENT_PROJECT_VERSION. */
+  buildNumber?: string
   /** Main app signing settings, applied per configuration name (Debug→Debug, Release→Release). */
   mainAppSettings?: MainAppTargetSettings | null
 }
@@ -26,7 +33,7 @@ function signingForConfiguration(
 }
 
 function createBuildSettings(options: EnsureConfigurationListOptions, configurationName: string) {
-  const { targetName, bundleIdentifier, deploymentTarget, mainAppSettings } = options
+  const { targetName, bundleIdentifier, deploymentTarget, version, buildNumber, mainAppSettings } = options
   const { codeSignStyle, developmentTeam, provisioningProfileSpecifier } = signingForConfiguration(
     mainAppSettings,
     configurationName
@@ -38,8 +45,8 @@ function createBuildSettings(options: EnsureConfigurationListOptions, configurat
     TARGETED_DEVICE_FAMILY: `"${IOS.DEVICE_FAMILY}"`,
     INFOPLIST_FILE: `${targetName}/Info.plist`,
     INFOPLIST_OUTPUT_FORMAT: `"xml"`,
-    CURRENT_PROJECT_VERSION: `"1"`,
-    MARKETING_VERSION: `"1.0"`,
+    CURRENT_PROJECT_VERSION: `"${buildNumber ?? '1'}"`,
+    MARKETING_VERSION: `"${version ?? '1.0'}"`,
     IPHONEOS_DEPLOYMENT_TARGET: `"${deploymentTarget}"`,
     PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
     SWIFT_OPTIMIZATION_LEVEL: `"-Onone"`,

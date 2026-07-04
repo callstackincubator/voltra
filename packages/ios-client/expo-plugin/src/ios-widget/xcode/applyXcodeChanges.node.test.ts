@@ -130,23 +130,23 @@ describe('applyXcodeChanges — project with a pre-existing extension (fixture b
   })
 })
 
-describe('applyXcodeChanges — per-configuration code signing (fixture c)', () => {
-  /** Resolves the widget target's build settings keyed by configuration name. */
-  function widgetBuildSettingsByConfigName(project: any): Record<string, Record<string, string>> {
-    const objects = project.hash.project.objects
-    const targetKey = project.findTargetKey(PROPS.targetName)
-    const listId = String(objects.PBXNativeTarget[targetKey].buildConfigurationList).split(' ')[0]
-    const configRefs = objects.XCConfigurationList[listId].buildConfigurations
+/** Resolves the widget target's build settings keyed by configuration name. */
+function widgetBuildSettingsByConfigName(project: any): Record<string, Record<string, string>> {
+  const objects = project.hash.project.objects
+  const targetKey = project.findTargetKey(PROPS.targetName)
+  const listId = String(objects.PBXNativeTarget[targetKey].buildConfigurationList).split(' ')[0]
+  const configRefs = objects.XCConfigurationList[listId].buildConfigurations
 
-    const result: Record<string, Record<string, string>> = {}
-    for (const ref of configRefs) {
-      const configId = typeof ref === 'string' ? ref.split(' ')[0] : ref.value.split(' ')[0]
-      const config = objects.XCBuildConfiguration[configId]
-      result[String(config.name).replace(/^"|"$/g, '')] = config.buildSettings
-    }
-    return result
+  const result: Record<string, Record<string, string>> = {}
+  for (const ref of configRefs) {
+    const configId = typeof ref === 'string' ? ref.split(' ')[0] : ref.value.split(' ')[0]
+    const config = objects.XCBuildConfiguration[configId]
+    result[String(config.name).replace(/^"|"$/g, '')] = config.buildSettings
   }
+  return result
+}
 
+describe('applyXcodeChanges — per-configuration code signing (fixture c)', () => {
   it('maps main app Debug signing to widget Debug and Release to Release', () => {
     const project = loadFixtureProject('with-per-config-signing.pbxproj')
     useDeterministicUuids(project)
@@ -176,5 +176,41 @@ describe('applyXcodeChanges — per-configuration code signing (fixture c)', () 
     expect(settings.Release.PROVISIONING_PROFILE_SPECIFIER).toBe('"Voltra AppStore Profile"')
 
     expect(() => assertPbxConsistency(project)).not.toThrow()
+  })
+})
+
+describe('applyXcodeChanges — version passthrough', () => {
+  const VERSIONED_PROPS: ConfigureXcodeProjectProps = {
+    ...PROPS,
+    version: '3.2.1',
+    buildNumber: '42',
+  }
+
+  it('applies MARKETING_VERSION and CURRENT_PROJECT_VERSION to both Debug and Release', () => {
+    const project = loadFixtureProject('fresh.pbxproj')
+    useDeterministicUuids(project)
+
+    applyXcodeChanges(project, VERSIONED_PROPS, WIDGET_FILES)
+
+    const settings = widgetBuildSettingsByConfigName(project)
+    expect(settings.Debug.MARKETING_VERSION).toBe('"3.2.1"')
+    expect(settings.Release.MARKETING_VERSION).toBe('"3.2.1"')
+    expect(settings.Debug.CURRENT_PROJECT_VERSION).toBe('"42"')
+    expect(settings.Release.CURRENT_PROJECT_VERSION).toBe('"42"')
+
+    expect(() => assertPbxConsistency(project)).not.toThrow()
+  })
+
+  it('falls back to "1.0"/"1" when version and buildNumber are not provided', () => {
+    const project = loadFixtureProject('fresh.pbxproj')
+    useDeterministicUuids(project)
+
+    applyXcodeChanges(project, PROPS, WIDGET_FILES)
+
+    const settings = widgetBuildSettingsByConfigName(project)
+    expect(settings.Debug.MARKETING_VERSION).toBe('"1.0"')
+    expect(settings.Release.MARKETING_VERSION).toBe('"1.0"')
+    expect(settings.Debug.CURRENT_PROJECT_VERSION).toBe('"1"')
+    expect(settings.Release.CURRENT_PROJECT_VERSION).toBe('"1"')
   })
 })

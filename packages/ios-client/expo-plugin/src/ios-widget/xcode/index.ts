@@ -15,6 +15,10 @@ export interface ConfigureXcodeProjectProps {
   targetName: string
   bundleIdentifier: string
   deploymentTarget: string
+  /** App marketing version; becomes the widget's MARKETING_VERSION so the appex matches the app. */
+  version?: string
+  /** App build number; becomes the widget's CURRENT_PROJECT_VERSION. */
+  buildNumber?: string
   widgets?: IOSWidgetConfig[]
 }
 
@@ -36,7 +40,7 @@ export function applyXcodeChanges(
   widgetFiles: IOSWidgetExtensionFiles,
   hasClientRenderedWidgets = false
 ): void {
-  const { targetName, bundleIdentifier, deploymentTarget } = props
+  const { targetName, bundleIdentifier, deploymentTarget, version, buildNumber } = props
   const groupName = 'Embed Foundation Extensions'
 
   // Read main app target settings to synchronize code signing (per configuration).
@@ -61,6 +65,8 @@ export function applyXcodeChanges(
       targetName,
       bundleIdentifier,
       deploymentTarget,
+      version,
+      buildNumber,
       mainAppSettings,
     },
     target.buildConfigurationList
