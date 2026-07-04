@@ -140,17 +140,16 @@ function findExistingEmbedExtensionsPhase(xcodeProject: XcodeProject, targetUuid
 }
 
 /**
- * Finds a build phase of the given pbx section type on the given target, matched by the phase
- * entry's comment. The lookup never leaves the target's own `buildPhases` list, unlike the xcode
- * lib's `buildPhaseObject`, which silently falls back to a project-wide comment search and can
- * return another target's phase (e.g. the main app's "Sources").
+ * Finds a target's build phase of the given pbx section type by walking the target's own
+ * `buildPhases` list and checking membership in the type's object section; the first match wins.
+ *
+ * This is deliberately semantic: pbxproj comments are decorative and other tools strip them, and
+ * the xcode lib's `buildPhaseObject` both relies on comments and silently falls back to a
+ * project-wide search that can return another target's phase (e.g. the main app's "Sources").
+ * The embed phase is the one exception with extra semantics — see
+ * {@link findExistingEmbedExtensionsPhase} (`dstSubfolderSpec == 13`).
  */
-function findTargetPhaseByComment(
-  xcodeProject: XcodeProject,
-  targetUuid: string,
-  phaseType: string,
-  comment: string
-): any | null {
+function findTargetPhaseByType(xcodeProject: XcodeProject, targetUuid: string, phaseType: string): any | null {
   const target = xcodeProject.pbxNativeTargetSection()[targetUuid]
   if (!target?.buildPhases) {
     return null
@@ -158,9 +157,6 @@ function findTargetPhaseByComment(
 
   const phaseSection = xcodeProject.hash.project.objects[phaseType] || {}
   for (const entry of target.buildPhases) {
-    if (entry.comment !== comment) {
-      continue
-    }
     const phase = phaseSection[normalizeRef(entry.value)]
     if (phase) {
       return phase
@@ -181,55 +177,55 @@ export function ensureBuildPhases(xcodeProject: XcodeProject, options: EnsureBui
   const { swiftFiles, intentFiles, assetDirectories, localizedStringResources } = widgetFiles
   const resourcePaths = [...assetDirectories, ...localizedStringResources]
 
-  dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXSourcesBuildPhase', 'Sources')
-  dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXFrameworksBuildPhase', 'Frameworks')
-  dedupeBuildPhasesByComment(xcodeProject, mainTargetUuid, 'PBXCopyFilesBuildPhase', groupName)
+  dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXSourcesBuildPhase')
+  dedupeBuildPhasesForTarget(xcodeProject, targetUuid, 'PBXFrameworksBuildPhase')
+  dedupeEmbedPhasesForTarget(xcodeProject, mainTargetUuid)
 
   // Sources build phase
-  let sourcesPhase = findTargetPhaseByComment(xcodeProject, targetUuid, 'PBXSourcesBuildPhase', 'Sources')
+  let sourcesPhase = findTargetPhaseByType(xcodeProject, targetUuid, 'PBXSourcesBuildPhase')
   if (!sourcesPhase) {
     xcodeProject.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', targetUuid, folderType, buildPath)
-    sourcesPhase = findTargetPhaseByComment(xcodeProject, targetUuid, 'PBXSourcesBuildPhase', 'Sources')
+    sourcesPhase = findTargetPhaseByType(xcodeProject, targetUuid, 'PBXSourcesBuildPhase')
   }
   if (sourcesPhase) {
     ensureBuildPhaseFiles(xcodeProject, sourcesPhase, [...swiftFiles, ...intentFiles], targetName)
   }
 
-  // Copy files build phase (embed extension into main app) — reuse any existing embed phase
-  const existingEmbedPhase = findExistingEmbedExtensionsPhase(xcodeProject, mainTargetUuid)
-  let copyFilesPhase =
-    existingEmbedPhase ?? findTargetPhaseByComment(xcodeProject, mainTargetUuid, 'PBXCopyFilesBuildPhase', groupName)
+  // Copy files build phase (embed extension into main app) — the embed phase is matched purely by
+  // its `dstSubfolderSpec == 13` semantics, both before and after creation
+  let copyFilesPhase = findExistingEmbedExtensionsPhase(xcodeProject, mainTargetUuid)
   if (!copyFilesPhase) {
     xcodeProject.addBuildPhase([], 'PBXCopyFilesBuildPhase', groupName, mainTargetUuid, folderType, buildPath)
-    copyFilesPhase = findTargetPhaseByComment(xcodeProject, mainTargetUuid, 'PBXCopyFilesBuildPhase', groupName)
+    copyFilesPhase = findExistingEmbedExtensionsPhase(xcodeProject, mainTargetUuid)
   }
   if (copyFilesPhase) {
     ensureCopyFilesPhaseProduct(xcodeProject, copyFilesPhase, productFile)
   }
 
   // Frameworks build phase
-  const frameworksPhase = findTargetPhaseByComment(xcodeProject, targetUuid, 'PBXFrameworksBuildPhase', 'Frameworks')
+  const frameworksPhase = findTargetPhaseByType(xcodeProject, targetUuid, 'PBXFrameworksBuildPhase')
   if (!frameworksPhase) {
     xcodeProject.addBuildPhase([], 'PBXFrameworksBuildPhase', 'Frameworks', targetUuid, folderType, buildPath)
   }
 
   // Resources build phase
-  let resourcesPhase = findTargetPhaseByComment(xcodeProject, targetUuid, 'PBXResourcesBuildPhase', 'Resources')
+  let resourcesPhase = findTargetPhaseByType(xcodeProject, targetUuid, 'PBXResourcesBuildPhase')
   if (!resourcesPhase) {
     xcodeProject.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', targetUuid)
-    resourcesPhase = findTargetPhaseByComment(xcodeProject, targetUuid, 'PBXResourcesBuildPhase', 'Resources')
+    resourcesPhase = findTargetPhaseByType(xcodeProject, targetUuid, 'PBXResourcesBuildPhase')
   }
   if (resourcesPhase) {
     ensureBuildPhaseFiles(xcodeProject, resourcesPhase, resourcePaths, targetName)
   }
 }
 
-function dedupeBuildPhasesForTarget(
-  xcodeProject: XcodeProject,
-  targetUuid: string,
-  phaseType: string,
-  preferredComment: string
-): void {
+/**
+ * Drops duplicate build phases of one pbx section type from a target, keeping the first phase in
+ * the target's `buildPhases` order. Membership in the type's object section is the only criterion —
+ * comments are decorative and other tools strip them. De-referenced phase objects are deleted so no
+ * orphans remain.
+ */
+function dedupeBuildPhasesForTarget(xcodeProject: XcodeProject, targetUuid: string, phaseType: string): void {
   const nativeTargets = xcodeProject.pbxNativeTargetSection()
   const target = nativeTargets[targetUuid]
   if (!target?.buildPhases) {
@@ -237,38 +233,7 @@ function dedupeBuildPhasesForTarget(
   }
 
   const phaseSection = xcodeProject.hash.project.objects[phaseType] || {}
-  const matching = target.buildPhases.filter((entry: any) => phaseSection[entry.value])
-  if (matching.length <= 1) {
-    return
-  }
-
-  const keep = matching.find((entry: any) => entry.comment === preferredComment) ?? matching[0]
-  keep.comment = preferredComment
-
-  const removed = matching.filter((entry: any) => entry.value !== keep.value)
-  target.buildPhases = target.buildPhases.filter((entry: any) => {
-    if (!phaseSection[entry.value]) {
-      return true
-    }
-    return entry.value === keep.value
-  })
-  deleteOrphanPhaseObjects(phaseSection, removed)
-}
-
-function dedupeBuildPhasesByComment(
-  xcodeProject: XcodeProject,
-  targetUuid: string,
-  phaseType: string,
-  comment: string
-): void {
-  const nativeTargets = xcodeProject.pbxNativeTargetSection()
-  const target = nativeTargets[targetUuid]
-  if (!target?.buildPhases) {
-    return
-  }
-
-  const phaseSection = xcodeProject.hash.project.objects[phaseType] || {}
-  const matching = target.buildPhases.filter((entry: any) => phaseSection[entry.value] && entry.comment === comment)
+  const matching = target.buildPhases.filter((entry: any) => phaseSection[normalizeRef(entry.value)])
   if (matching.length <= 1) {
     return
   }
@@ -276,7 +241,42 @@ function dedupeBuildPhasesByComment(
   const keep = matching[0]
   const removed = matching.filter((entry: any) => entry.value !== keep.value)
   target.buildPhases = target.buildPhases.filter((entry: any) => {
-    if (!phaseSection[entry.value] || entry.comment !== comment) {
+    if (!phaseSection[normalizeRef(entry.value)]) {
+      return true
+    }
+    return entry.value === keep.value
+  })
+  deleteOrphanPhaseObjects(phaseSection, removed)
+}
+
+/**
+ * Drops duplicate embed-app-extensions copy-files phases (`dstSubfolderSpec == 13`) from a target,
+ * keeping the first one in the target's `buildPhases` order. Other copy-files phases (different
+ * `dstSubfolderSpec`) are left untouched. De-referenced phase objects are deleted so no orphans
+ * remain.
+ */
+function dedupeEmbedPhasesForTarget(xcodeProject: XcodeProject, targetUuid: string): void {
+  const nativeTargets = xcodeProject.pbxNativeTargetSection()
+  const target = nativeTargets[targetUuid]
+  if (!target?.buildPhases) {
+    return
+  }
+
+  const phaseSection = xcodeProject.hash.project.objects['PBXCopyFilesBuildPhase'] || {}
+  const isEmbedEntry = (entry: any) => {
+    const phase = phaseSection[normalizeRef(entry.value)]
+    return phase && String(phase.dstSubfolderSpec) === '13'
+  }
+
+  const matching = target.buildPhases.filter(isEmbedEntry)
+  if (matching.length <= 1) {
+    return
+  }
+
+  const keep = matching[0]
+  const removed = matching.filter((entry: any) => entry.value !== keep.value)
+  target.buildPhases = target.buildPhases.filter((entry: any) => {
+    if (!isEmbedEntry(entry)) {
       return true
     }
     return entry.value === keep.value
