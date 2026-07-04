@@ -243,3 +243,103 @@ jobs:
 
       - name: Check Kotlin formatting
         run: pnpm run format:kotlin:check
+
+  package-integrity:
+    name: '[Pkg] Tarball contents'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # `files` globs include build/**, so packages must be built before packing
+      # or the dry-run tarball listing would be missing the JS output.
+      - name: Build JS packages
+        run: pnpm run build:all
+
+      # Fast assertion layer: `npm pack --dry-run` reads each package's real
+      # `files` allowlist and globs it against the tree, so a native/config file
+      # present on disk but missing from `files` (the v2.1.0 CMakeLists.txt
+      # incident) fails here in seconds — no install or native build required.
+      - name: Assert critical files are packed
+        run: pnpm run check:package-contents
+
+  android-tarball-build:
+    name: '[Android] Tarball + all-ABI native build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # build/** must exist so the packed tarball is complete.
+      - name: Build monorepo
+        run: pnpm run build:all
+
+      # Real-build layer: pack android-client and install the *tarball* into the
+      # example app instead of the workspace symlink. `pnpm pack` rewrites the
+      # `workspace:` deps to real version ranges that match the sibling packages,
+      # so pnpm links those from the workspace while android-client itself is
+      # consumed exactly as it would ship to npm. A file missing from the
+      # tarball then breaks prebuild/gradle configure below.
+      - name: Pack android-client tarball
+        working-directory: packages/android-client
+        run: |
+          mkdir -p "$RUNNER_TEMP/tarballs"
+          pnpm pack --pack-destination "$RUNNER_TEMP/tarballs"
+          TARBALL=$(ls "$RUNNER_TEMP/tarballs"/*.tgz | head -n1)
+          echo "ANDROID_CLIENT_TARBALL=$TARBALL" >> "$GITHUB_ENV"
+
+      - name: Install android-client from tarball into example app
+        run: pnpm --filter voltra-example add "file:$ANDROID_CLIENT_TARBALL"
+
+      - name: Generate Android native project
+        working-directory: example
+        run: CI=1 pnpm exec expo prebuild --platform android
+
+      # All-ABI native build (issue #209): a targeted external-native-build task
+      # keeps CI fast while compiling libvoltra_js_renderer.so and linking
+      # ReactAndroid::jsi / hermes-engine::hermesvm / fbjni::fbjni for every ABI,
+      # so a per-ABI (e.g. armeabi-v7a) link regression fails CI.
+      - name: Build native library for all ABIs
+        working-directory: example/android
+        run: >-
+          ./gradlew :use-voltra_android-client:externalNativeBuildDebug
+          -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
