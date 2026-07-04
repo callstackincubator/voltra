@@ -296,6 +296,26 @@ jobs:
           TARBALL=$(ls "$RUNNER_TEMP/tarballs"/*.tgz | head -n1)
           echo "ANDROID_CLIENT_TARBALL=$TARBALL" >> "$GITHUB_ENV"
 
+      # `pnpm pack` rewrites the tarball's `workspace:^` deps to real semver
+      # ranges, which pnpm would otherwise resolve from the npm registry —
+      # tripping minimumReleaseAge for freshly published versions and testing
+      # published siblings instead of this branch. Override every @use-voltra
+      # sibling back to the workspace so only android-client itself is consumed
+      # from the tarball (it must NOT be overridden, or the tarball install —
+      # the whole point of this job — would be replaced by a workspace link).
+      - name: Resolve sibling packages from the workspace
+        run: |
+          {
+            echo ""
+            echo "overrides:"
+            for f in packages/*/package.json; do
+              name=$(node -p "require('./$f').name")
+              if [ "$name" != "@use-voltra/android-client" ]; then
+                echo "  \"$name\": workspace:*"
+              fi
+            done
+          } >> pnpm-workspace.yaml
+
       - name: Install android-client from tarball into example app
         run: pnpm --filter voltra-example add "file:$ANDROID_CLIENT_TARBALL"
 
