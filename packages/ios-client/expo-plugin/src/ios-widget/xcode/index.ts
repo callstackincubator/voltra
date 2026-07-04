@@ -61,9 +61,7 @@ export function applyXcodeChanges(
       targetName,
       bundleIdentifier,
       deploymentTarget,
-      codeSignStyle: mainAppSettings?.codeSignStyle,
-      developmentTeam: mainAppSettings?.developmentTeam,
-      provisioningProfileSpecifier: mainAppSettings?.provisioningProfileSpecifier,
+      mainAppSettings,
     },
     target.buildConfigurationList
   )

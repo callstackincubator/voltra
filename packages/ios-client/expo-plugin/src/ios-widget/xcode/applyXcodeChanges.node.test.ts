@@ -129,3 +129,52 @@ describe('applyXcodeChanges — project with a pre-existing extension (fixture b
     expect(afterThird).toEqual(afterSecond)
   })
 })
+
+describe('applyXcodeChanges — per-configuration code signing (fixture c)', () => {
+  /** Resolves the widget target's build settings keyed by configuration name. */
+  function widgetBuildSettingsByConfigName(project: any): Record<string, Record<string, string>> {
+    const objects = project.hash.project.objects
+    const targetKey = project.findTargetKey(PROPS.targetName)
+    const listId = String(objects.PBXNativeTarget[targetKey].buildConfigurationList).split(' ')[0]
+    const configRefs = objects.XCConfigurationList[listId].buildConfigurations
+
+    const result: Record<string, Record<string, string>> = {}
+    for (const ref of configRefs) {
+      const configId = typeof ref === 'string' ? ref.split(' ')[0] : ref.value.split(' ')[0]
+      const config = objects.XCBuildConfiguration[configId]
+      result[String(config.name).replace(/^"|"$/g, '')] = config.buildSettings
+    }
+    return result
+  }
+
+  it('maps main app Debug signing to widget Debug and Release to Release', () => {
+    const project = loadFixtureProject('with-per-config-signing.pbxproj')
+    useDeterministicUuids(project)
+
+    applyXcodeChanges(project, PROPS, WIDGET_FILES)
+
+    const settings = widgetBuildSettingsByConfigName(project)
+    expect(settings.Debug.PROVISIONING_PROFILE_SPECIFIER).toBe('"Voltra Dev Profile"')
+    expect(settings.Release.PROVISIONING_PROFILE_SPECIFIER).toBe('"Voltra AppStore Profile"')
+    expect(settings.Debug.DEVELOPMENT_TEAM).toBe('"ABCDE12345"')
+    expect(settings.Release.DEVELOPMENT_TEAM).toBe('"ABCDE12345"')
+    expect(settings.Debug.CODE_SIGN_STYLE).toBe('"Manual"')
+    expect(settings.Release.CODE_SIGN_STYLE).toBe('"Manual"')
+
+    expect(() => assertPbxConsistency(project)).not.toThrow()
+  })
+
+  it('keeps the per-config mapping on an idempotent re-run (existing-target path)', () => {
+    const project = loadFixtureProject('with-per-config-signing.pbxproj')
+    useDeterministicUuids(project)
+
+    applyXcodeChanges(project, PROPS, WIDGET_FILES)
+    applyXcodeChanges(project, PROPS, WIDGET_FILES)
+
+    const settings = widgetBuildSettingsByConfigName(project)
+    expect(settings.Debug.PROVISIONING_PROFILE_SPECIFIER).toBe('"Voltra Dev Profile"')
+    expect(settings.Release.PROVISIONING_PROFILE_SPECIFIER).toBe('"Voltra AppStore Profile"')
+
+    expect(() => assertPbxConsistency(project)).not.toThrow()
+  })
+})
