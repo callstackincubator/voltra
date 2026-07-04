@@ -18,7 +18,11 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
 
   const iosBundleIdentifier = config.ios?.bundleIdentifier
   if (!iosBundleIdentifier) {
-    return config
+    throw new Error(
+      'The Voltra iOS config plugin requires "expo.ios.bundleIdentifier" to be set in the app config — ' +
+        'it derives the widget extension bundle identifier from it. ' +
+        'Set "ios.bundleIdentifier" (e.g. "com.example.app") in app.json or app.config.(js|ts) and run prebuild again.'
+    )
   }
 
   const deploymentTarget = props.deploymentTarget || IOS.DEPLOYMENT_TARGET
