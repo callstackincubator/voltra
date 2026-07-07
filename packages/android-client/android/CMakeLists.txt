@@ -10,18 +10,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # NOTE: find_package does NOT error on a wrong target *name* — the failure only
 # surfaces at target_link_libraries. The Hermes prefab target on Android has
 # been renamed across RN versions (com.facebook.react:hermes-android):
-#   - RN <= 0.81: prefab module `libhermes`  -> CMake target hermes-engine::libhermes
-#   - RN >= 0.82: prefab module `libhermesvm` -> CMake target hermes-engine::hermesvm
+#   - RN <= 0.81: prefab module `libhermes` -> CMake target hermes-engine::libhermes
+#   - RN >= 0.82: prefab module `hermesvm`  -> CMake target hermes-engine::hermesvm
 # We branch on which target find_package actually resolved so Voltra builds
-# against both RN generations.
+# against both RN generations, and fail fast at configure time if neither
+# exists (e.g. a future prefab rename) instead of erroring later at link time.
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(hermes-engine REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
 
 if(TARGET hermes-engine::hermesvm)
-  set(VOLTRA_HERMES_TARGET hermes-engine::hermesvm)
+  set(VOLTRA_HERMES_TARGET hermes-engine::hermesvm)  # RN >= 0.82
+elseif(TARGET hermes-engine::libhermes)
+  set(VOLTRA_HERMES_TARGET hermes-engine::libhermes) # RN <= 0.81
 else()
-  set(VOLTRA_HERMES_TARGET hermes-engine::libhermes)
+  message(FATAL_ERROR "Voltra: hermes-engine prefab found but neither target hermes-engine::hermesvm (RN >= 0.82) nor hermes-engine::libhermes (RN <= 0.81) exists. Unsupported React Native version?")
 endif()
 
 # ---------------------------------------------------------------------------
