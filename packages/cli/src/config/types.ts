@@ -23,6 +23,25 @@ export interface AndroidWidgetServerUpdateConfig {
   refresh?: boolean
 }
 
+export interface AndroidWidgetAppIntentParameterConfig {
+  /** Stable parameter key surfaced to widget configuration runtime. */
+  name: string
+  /** Optional user-facing title for the parameter. */
+  title?: string
+  /** Optional default value used before runtime configuration exists. */
+  default?: string
+}
+
+export interface AndroidWidgetAppIntentConfig {
+  /** Declared Dynamic Widget configuration parameters. */
+  parameters: AndroidWidgetAppIntentParameterConfig[]
+}
+
+export interface AndroidWidgetConfigurationConfig {
+  /** Deep link opened to configure this Dynamic Widget instance. */
+  deepLink: string
+}
+
 export interface AndroidWidgetConfig {
   /** Stable widget identifier used in generated files and registrations. */
   id: string
@@ -54,6 +73,12 @@ export interface AndroidWidgetConfig {
   previewImage?: string
   /** Path to a preview layout XML file shown in widget pickers. */
   previewLayout?: string
+  /** Dynamic Widget entry module path. */
+  entry?: string
+  /** Optional Dynamic Widget configuration parameters. */
+  appIntent?: AndroidWidgetAppIntentConfig
+  /** Android-only Dynamic Widget configuration entrypoint. */
+  configuration?: AndroidWidgetConfigurationConfig
 }
 
 export type IOSWidgetFamily =

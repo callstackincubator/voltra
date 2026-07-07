@@ -367,3 +367,230 @@ test('android config normalization rejects missing widget dimensions', () => {
     }
   )
 })
+
+test('android config normalization accepts Dynamic Widget configuration deepLink and resolves entry', () => {
+  const { normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const entryPath = path.join(tempDir, 'widgets', 'portfolio.tsx')
+
+  fs.mkdirSync(path.dirname(entryPath), { recursive: true })
+  fs.writeFileSync(entryPath, 'export default function Portfolio() { return null }\n')
+
+  const normalized = normalizeVoltraConfig({
+    configDir: tempDir,
+    configPath: path.join(tempDir, 'voltra.config.json'),
+    config: {
+      android: {
+        widgets: [
+          {
+            id: 'portfolio',
+            entry: './widgets/portfolio.tsx',
+            displayName: 'Portfolio',
+            description: 'Track holdings',
+            targetCellWidth: 2,
+            targetCellHeight: 2,
+            appIntent: {
+              parameters: [{ name: 'accountId', title: 'Account', default: 'main' }],
+            },
+            configuration: {
+              deepLink: 'voltra://widget-config',
+            },
+          },
+        ],
+      },
+    },
+  })
+
+  assert.equal(normalized.android.widgets[0].entry, entryPath)
+  assert.equal(normalized.android.widgets[0].configuration.deepLink, 'voltra://widget-config')
+  assert.deepEqual(normalized.android.widgets[0].appIntent.parameters, [
+    { name: 'accountId', title: 'Account', default: 'main' },
+  ])
+})
+
+test('android config normalization rejects legacy widget configuration without entry', () => {
+  const { VoltraConfigNormalizationError, normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+
+  assert.throws(
+    () => {
+      normalizeVoltraConfig({
+        configDir: tempDir,
+        configPath: path.join(tempDir, 'voltra.config.json'),
+        config: {
+          android: {
+            widgets: [
+              {
+                id: 'portfolio',
+                displayName: 'Portfolio',
+                description: 'Track holdings',
+                targetCellWidth: 2,
+                targetCellHeight: 2,
+                configuration: {
+                  deepLink: 'voltra://widget-config',
+                },
+              },
+            ],
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.ok(error instanceof VoltraConfigNormalizationError)
+      assert.match(error.message, /configuration is supported only for Dynamic Widgets with entry/)
+      return true
+    }
+  )
+})
+
+test('android config normalization rejects malformed widget configuration', () => {
+  const { VoltraConfigNormalizationError, normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+
+  for (const configuration of [null, [], 123]) {
+    assert.throws(
+      () => {
+        normalizeVoltraConfig({
+          configDir: tempDir,
+          configPath: path.join(tempDir, 'voltra.config.json'),
+          config: {
+            android: {
+              widgets: [
+                {
+                  id: 'portfolio',
+                  entry: './widgets/portfolio.tsx',
+                  displayName: 'Portfolio',
+                  description: 'Track holdings',
+                  targetCellWidth: 2,
+                  targetCellHeight: 2,
+                  configuration,
+                },
+              ],
+            },
+          },
+        })
+      },
+      (error) => {
+        assert.ok(error instanceof VoltraConfigNormalizationError)
+        assert.match(error.message, /configuration must be an object with deepLink/)
+        return true
+      }
+    )
+  }
+})
+
+test('android config normalization rejects invalid configuration.deepLink', () => {
+  const { VoltraConfigNormalizationError, normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+
+  for (const deepLink of ['', '   ', 123]) {
+    assert.throws(
+      () => {
+        normalizeVoltraConfig({
+          configDir: tempDir,
+          configPath: path.join(tempDir, 'voltra.config.json'),
+          config: {
+            android: {
+              widgets: [
+                {
+                  id: 'portfolio',
+                  entry: './widgets/portfolio.tsx',
+                  displayName: 'Portfolio',
+                  description: 'Track holdings',
+                  targetCellWidth: 2,
+                  targetCellHeight: 2,
+                  configuration: {
+                    deepLink,
+                  },
+                },
+              ],
+            },
+          },
+        })
+      },
+      (error) => {
+        assert.ok(error instanceof VoltraConfigNormalizationError)
+        assert.match(error.message, /configuration\.deepLink must be a non-empty string/)
+        return true
+      }
+    )
+  }
+})
+
+test('android config normalization warns when configuration deepLink has no appIntent parameters', () => {
+  const { normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const warningSpy = []
+  const originalWarn = console.warn
+
+  console.warn = (message) => {
+    warningSpy.push(message)
+  }
+
+  try {
+    const normalized = normalizeVoltraConfig({
+      configDir: tempDir,
+      configPath: path.join(tempDir, 'voltra.config.json'),
+      config: {
+        android: {
+          widgets: [
+            {
+              id: 'portfolio',
+              entry: './widgets/portfolio.tsx',
+              displayName: 'Portfolio',
+              description: 'Track holdings',
+              targetCellWidth: 2,
+              targetCellHeight: 2,
+              configuration: {
+                deepLink: 'voltra://widget-config',
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    assert.equal(normalized.android.widgets[0].configuration.deepLink, 'voltra://widget-config')
+    assert.equal(warningSpy.length, 1)
+    assert.match(warningSpy[0], /\[voltra\] Warning:/)
+    assert.match(warningSpy[0], /configuration\.deepLink set but appIntent\.parameters is missing or empty/)
+  } finally {
+    console.warn = originalWarn
+  }
+})
+
+test('android config normalization validates appIntent parameter shape', () => {
+  const { VoltraConfigNormalizationError, normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+
+  assert.throws(
+    () => {
+      normalizeVoltraConfig({
+        configDir: tempDir,
+        configPath: path.join(tempDir, 'voltra.config.json'),
+        config: {
+          android: {
+            widgets: [
+              {
+                id: 'portfolio',
+                entry: './widgets/portfolio.tsx',
+                displayName: 'Portfolio',
+                description: 'Track holdings',
+                targetCellWidth: 2,
+                targetCellHeight: 2,
+                appIntent: {
+                  parameters: [{ name: '', title: 123 }],
+                },
+              },
+            ],
+          },
+        },
+      })
+    },
+    (error) => {
+      assert.ok(error instanceof VoltraConfigNormalizationError)
+      assert.match(error.message, /appIntent\.parameters\[0\]\.name must be a non-empty string/)
+      return true
+    }
+  )
+})

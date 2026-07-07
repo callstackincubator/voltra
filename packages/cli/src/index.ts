@@ -161,7 +161,10 @@ export {
 } from './reporting/summary'
 export type {
   AndroidProjectOverrides,
+  AndroidWidgetAppIntentConfig,
+  AndroidWidgetAppIntentParameterConfig,
   AndroidWidgetConfig,
+  AndroidWidgetConfigurationConfig,
   AndroidWidgetServerUpdateConfig,
   CliDefaults,
   IOSProjectOverrides,

@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import { resolveFromRoot } from '../fs/path'
+import { formatWarning } from '../reporting/summary'
 import { CLI_DEFAULTS } from './defaults'
 
 import type {
@@ -200,6 +201,90 @@ function normalizeServerUpdate(
   }
 }
 
+function normalizeAndroidWidgetEntry(
+  projectRoot: string,
+  entry: string | undefined,
+  context: string
+): string | undefined {
+  if (entry === undefined) {
+    return undefined
+  }
+
+  assertNonEmptyString(entry, context)
+  return resolvePathFromProjectRoot(projectRoot, entry)
+}
+
+function normalizeAndroidWidgetAppIntent(
+  appIntent: AndroidWidgetConfig['appIntent'],
+  context: string
+): AndroidWidgetConfig['appIntent'] {
+  if (appIntent === undefined) {
+    return undefined
+  }
+
+  assertObject(appIntent, context)
+
+  if (!Array.isArray(appIntent.parameters)) {
+    throw new VoltraConfigNormalizationError(`${context}.parameters must be an array`)
+  }
+
+  return {
+    parameters: appIntent.parameters.map((parameter, index) => {
+      const parameterContext = `${context}.parameters[${index}]`
+      assertObject(parameter, parameterContext)
+      assertNonEmptyString(parameter.name, `${parameterContext}.name`)
+
+      if (parameter.title !== undefined && typeof parameter.title !== 'string') {
+        throw new VoltraConfigNormalizationError(`${parameterContext}.title must be a string`)
+      }
+
+      if (parameter.default !== undefined && typeof parameter.default !== 'string') {
+        throw new VoltraConfigNormalizationError(`${parameterContext}.default must be a string`)
+      }
+
+      return {
+        name: parameter.name,
+        title: parameter.title,
+        default: parameter.default,
+      }
+    }),
+  }
+}
+
+function normalizeAndroidWidgetConfiguration(
+  widget: AndroidWidgetConfig,
+  context: string
+): AndroidWidgetConfig['configuration'] {
+  const { configuration } = widget
+  if (configuration === undefined) {
+    return undefined
+  }
+
+  if (configuration === null || typeof configuration !== 'object' || Array.isArray(configuration)) {
+    throw new VoltraConfigNormalizationError(`${context}.configuration must be an object with deepLink`)
+  }
+
+  if (widget.entry === undefined) {
+    throw new VoltraConfigNormalizationError(
+      `${context}.configuration is supported only for Dynamic Widgets with entry`
+    )
+  }
+
+  assertNonEmptyString(configuration.deepLink, `${context}.configuration.deepLink`)
+
+  if ((widget.appIntent?.parameters?.length ?? 0) === 0) {
+    console.warn(
+      formatWarning(
+        `android widget '${widget.id}' has configuration.deepLink set but appIntent.parameters is missing or empty; widget configuration UI will have no declared parameters.`
+      )
+    )
+  }
+
+  return {
+    deepLink: configuration.deepLink,
+  }
+}
+
 function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig): NormalizedAndroidWidgetConfig {
   assertObject(widget, 'android.widgets[]')
   assertNonEmptyString(widget.id, 'android.widgets[].id')
@@ -213,6 +298,9 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
     ...widget,
     displayName: normalizeLabel(widget.displayName, `android.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `android.widgets[${widget.id}].description`),
+    entry: normalizeAndroidWidgetEntry(projectRoot, widget.entry, `android.widgets[${widget.id}].entry`),
+    appIntent: normalizeAndroidWidgetAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`),
+    configuration: normalizeAndroidWidgetConfiguration(widget, `android.widgets[${widget.id}]`),
     initialStatePath: normalizeInitialStatePath(
       projectRoot,
       widget.initialStatePath,
