@@ -18,6 +18,10 @@ export interface AndroidWidgetAppIntentConfig {
   parameters: AppIntentParameter[]
 }
 
+export interface AndroidWidgetConfigurationConfig {
+  deepLink: string
+}
+
 /**
  * Configuration for a single Android home screen widget.
  *
@@ -46,6 +50,10 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
    * it before any runtime configuration; runtime values (set via `setWidgetConfiguration`) override.
    */
   appIntent?: AndroidWidgetAppIntentConfig
+  /**
+   * Android-only widget configuration entrypoint. Supported only for Dynamic Widgets (`entry`).
+   */
+  configuration?: AndroidWidgetConfigurationConfig
 }
 
 /**

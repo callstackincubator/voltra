@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import {
+  logger,
   validateHomeScreenWidgetId,
   validateInitialStatePath,
   validateWidgetEntry,
@@ -19,6 +20,8 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
   if (widget.entry !== undefined) {
     validateWidgetEntry(widget.entry, widget.id, projectRoot)
   }
+
+  validateAndroidWidgetConfiguration(widget)
 
   if (typeof widget.targetCellWidth !== 'number') {
     throw new Error(`Widget '${widget.id}': targetCellWidth is required and must be a number`)
@@ -85,6 +88,27 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
         throw new Error(`Widget '${widget.id}': previewLayout file not found at ${widget.previewLayout}`)
       }
     }
+  }
+}
+
+function validateAndroidWidgetConfiguration(widget: AndroidWidgetConfig): void {
+  const { configuration } = widget
+  if (configuration === undefined) {
+    return
+  }
+
+  if (widget.entry === undefined) {
+    throw new Error(`Widget '${widget.id}': configuration is supported only for Dynamic Widgets with entry`)
+  }
+
+  if (typeof configuration.deepLink !== 'string' || !configuration.deepLink.trim()) {
+    throw new Error(`Widget '${widget.id}': configuration.deepLink must be a non-empty string`)
+  }
+
+  if ((widget.appIntent?.parameters?.length ?? 0) === 0) {
+    logger.warn(
+      `Widget '${widget.id}': configuration.deepLink is set but appIntent.parameters is missing or empty; widget configuration UI will have no declared parameters.`
+    )
   }
 }
 
