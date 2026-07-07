@@ -1,0 +1,357 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the committed snapshot 1`] = `
+"// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		13B07FBF1A68108700A75B9A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.swift */; };
+		13B07FC11A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		13B07FC21A68108700A75B9A /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB61A68108700A75B9A /* Info.plist */; };
+		F1D000000000000000000011 /* VoltraWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000A /* VoltraWidget.swift */; };
+		F1D000000000000000000012 /* VoltraWidgetInitialStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000B /* VoltraWidgetInitialStates.swift */; };
+		F1D000000000000000000006 /* VoltraWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F1D000000000000000000005 /* VoltraWidgetExtension.appex */; };
+		F1D000000000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000E /* Assets.xcassets */; };
+		F1D000000000000000000017 /* VoltraWidgets.strings in Resources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000F /* VoltraWidgets.strings */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		13B07F961A680F5B00A75B9A /* voltraexample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = voltraexample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB01A68108700A75B9A /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = voltraexample/AppDelegate.swift; sourceTree = "<group>"; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = voltraexample/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = voltraexample/Info.plist; sourceTree = "<group>"; };
+		F1D000000000000000000005 /* VoltraWidgetExtension.appex */ = {isa = PBXFileReference; name = "VoltraWidgetExtension.appex"; path = "VoltraWidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; fileEncoding = undefined; lastKnownFileType = undefined; explicitFileType = wrapper.app-extension; includeInIndex = 0; };
+		F1D00000000000000000000A /* VoltraWidget.swift */ = {isa = PBXFileReference; name = "VoltraWidget.swift"; path = "VoltraWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000B /* VoltraWidgetInitialStates.swift */ = {isa = PBXFileReference; name = "VoltraWidgetInitialStates.swift"; path = "VoltraWidgetInitialStates.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000C /* VoltraWidgetExtension.entitlements */ = {isa = PBXFileReference; name = "VoltraWidgetExtension.entitlements"; path = "VoltraWidgetExtension.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000D /* VoltraWidgetExtension-Info.plist */ = {isa = PBXFileReference; name = "VoltraWidgetExtension-Info.plist"; path = "VoltraWidgetExtension-Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000E /* Assets.xcassets */ = {isa = PBXFileReference; name = "Assets.xcassets"; path = "Assets.xcassets"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = folder.assetcatalog; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000F /* VoltraWidgets.strings */ = {isa = PBXFileReference; name = "VoltraWidgets.strings"; path = "en.lproj/VoltraWidgets.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1D000000000000000000014 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		83CBB9F61A601CBA00E9B192 = {
+			isa = PBXGroup;
+			children = (
+				13B07FAE1A68108700A75B9A /* voltraexample */,
+				83CBBA001A601CBA00E9B192 /* Products */,
+				F1D000000000000000000009 /* VoltraWidgetExtension */,
+			);
+			indentWidth = 2;
+			sourceTree = "<group>";
+			tabWidth = 2;
+			usesTabs = 0;
+		};
+		13B07FAE1A68108700A75B9A /* voltraexample */ = {
+			isa = PBXGroup;
+			children = (
+				13B07FB01A68108700A75B9A /* AppDelegate.swift */,
+				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				13B07FB61A68108700A75B9A /* Info.plist */,
+			);
+			name = voltraexample;
+			sourceTree = "<group>";
+		};
+		83CBBA001A601CBA00E9B192 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13B07F961A680F5B00A75B9A /* voltraexample.app */,
+				F1D000000000000000000005 /* VoltraWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F1D000000000000000000009 /* VoltraWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				F1D00000000000000000000A /* VoltraWidget.swift */,
+				F1D00000000000000000000B /* VoltraWidgetInitialStates.swift */,
+				F1D00000000000000000000C /* VoltraWidgetExtension.entitlements */,
+				F1D00000000000000000000D /* VoltraWidgetExtension-Info.plist */,
+				F1D00000000000000000000E /* Assets.xcassets */,
+				F1D00000000000000000000F /* VoltraWidgets.strings */,
+			);
+			name = VoltraWidgetExtension;
+			path = VoltraWidgetExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		13B07F861A680F5B00A75B9A /* voltraexample */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "voltraexample" */;
+			buildPhases = (
+				13B07F871A680F5B00A75B9A /* Sources */,
+				13B07F8C1A680F5B00A75B9A /* Frameworks */,
+				13B07F8E1A680F5B00A75B9A /* Resources */,
+				F1D000000000000000000013 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F1D000000000000000000007 /* PBXTargetDependency */,
+			);
+			name = voltraexample;
+			productName = voltraexample;
+			productReference = 13B07F961A680F5B00A75B9A /* voltraexample.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F1D000000000000000000001 /* VoltraWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			name = VoltraWidgetExtension;
+			productName = VoltraWidgetExtension;
+			productReference = F1D000000000000000000005;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = F1D000000000000000000002;
+			buildPhases = (
+				F1D000000000000000000010 /* Sources */,
+				F1D000000000000000000014 /* Frameworks */,
+				F1D000000000000000000015 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		83CBB9F71A601CBA00E9B192 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1210;
+				TargetAttributes = {
+					13B07F861A680F5B00A75B9A = {
+						LastSwiftMigration = 1250;
+					};
+					F1D000000000000000000001 = {
+						LastSwiftMigration = 1250;
+					};
+				};
+			};
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "voltraexample" */;
+			compatibilityVersion = "Xcode 12.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 83CBB9F61A601CBA00E9B192;
+			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				13B07F861A680F5B00A75B9A /* voltraexample */,
+				F1D000000000000000000001 /* VoltraWidgetExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		13B07F8E1A680F5B00A75B9A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13B07FC11A68108700A75B9A /* Images.xcassets in Resources */,
+				13B07FC21A68108700A75B9A /* Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1D000000000000000000015 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F1D000000000000000000016 /* Assets.xcassets in Resources */,
+				F1D000000000000000000017 /* VoltraWidgets.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		13B07F871A680F5B00A75B9A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13B07FBF1A68108700A75B9A /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1D000000000000000000010 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F1D000000000000000000011 /* VoltraWidget.swift in Sources */,
+				F1D000000000000000000012 /* VoltraWidgetInitialStates.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		13B07F941A680F5B00A75B9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = voltraexample/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.voltra.example;
+				PRODUCT_NAME = voltraexample;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		13B07F951A680F5B00A75B9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = voltraexample/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = com.voltra.example;
+				PRODUCT_NAME = voltraexample;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		83CBBA201A601CBA00E9B192 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		83CBBA211A601CBA00E9B192 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+		F1D000000000000000000003 /* Debug */ = {
+			name = Debug;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				INFOPLIST_FILE = VoltraWidgetExtension/Info.plist;
+				INFOPLIST_OUTPUT_FORMAT = "xml";
+				CURRENT_PROJECT_VERSION = "1";
+				MARKETING_VERSION = "1.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "16.2";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.voltra.example.VoltraWidgetExtension";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = "VoltraWidgetExtension/VoltraWidgetExtension.entitlements";
+				APPLICATION_EXTENSION_API_ONLY = "YES";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+			};
+		};
+		F1D000000000000000000004 /* Release */ = {
+			name = Release;
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				INFOPLIST_FILE = VoltraWidgetExtension/Info.plist;
+				INFOPLIST_OUTPUT_FORMAT = "xml";
+				CURRENT_PROJECT_VERSION = "1";
+				MARKETING_VERSION = "1.0";
+				IPHONEOS_DEPLOYMENT_TARGET = "16.2";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.voltra.example.VoltraWidgetExtension";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = "VoltraWidgetExtension/VoltraWidgetExtension.entitlements";
+				APPLICATION_EXTENSION_API_ONLY = "YES";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+			};
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "voltraexample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				13B07F941A680F5B00A75B9A /* Debug */,
+				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "voltraexample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83CBBA201A601CBA00E9B192 /* Debug */,
+				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F1D000000000000000000002 /* Build configuration list for PBXNativeTarget "VoltraWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1D000000000000000000003 /* Debug */,
+				F1D000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin PBXTargetDependency section */
+		F1D000000000000000000007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F1D000000000000000000001 /* VoltraWidgetExtension */;
+			targetProxy = F1D000000000000000000008 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		F1D000000000000000000008 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F1D000000000000000000001;
+			remoteInfo = VoltraWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F1D000000000000000000013 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F1D000000000000000000006 /* VoltraWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			name = "Embed Foundation Extensions";
+			dstPath = "";
+			dstSubfolderSpec = 13;
+		};
+/* End PBXCopyFilesBuildPhase section */
+	};
+	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
+}
+"
+`;
