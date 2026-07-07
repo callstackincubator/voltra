@@ -122,6 +122,24 @@ describe('validateAndroidConfigPluginProps', () => {
     ).toThrow(/configuration is supported only for Dynamic Widgets with entry/)
   })
 
+  it.each([[null], [[]], [123]])('rejects malformed configuration value: %p', (configuration) => {
+    expect(() =>
+      validateAndroidConfigPluginProps({
+        widgets: [
+          {
+            id: 'demo',
+            entry: './widgets/demo.tsx',
+            displayName: 'Demo',
+            description: 'Demo widget',
+            targetCellWidth: 2,
+            targetCellHeight: 2,
+            configuration: configuration as never,
+          },
+        ],
+      })
+    ).toThrow(/configuration must be an object with deepLink/)
+  })
+
   it.each([[''], ['   '], [123 as unknown as string]])('rejects invalid configuration.deepLink: %p', (deepLink) => {
     expect(() =>
       validateAndroidConfigPluginProps({

@@ -97,6 +97,10 @@ function validateAndroidWidgetConfiguration(widget: AndroidWidgetConfig): void {
     return
   }
 
+  if (configuration === null || typeof configuration !== 'object' || Array.isArray(configuration)) {
+    throw new Error(`Widget '${widget.id}': configuration must be an object with deepLink`)
+  }
+
   if (widget.entry === undefined) {
     throw new Error(`Widget '${widget.id}': configuration is supported only for Dynamic Widgets with entry`)
   }
