@@ -8,11 +8,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # We consume them through find_package below.
 #
 # NOTE: find_package does NOT error on a wrong target *name* — the failure only
-# surfaces at target_link_libraries. The correct Hermes prefab target on Android
-# (RN 0.83, com.facebook.react:hermes-android) is `hermes-engine::hermesvm`.
+# surfaces at target_link_libraries. The Hermes prefab target on Android has
+# been renamed across RN versions (com.facebook.react:hermes-android):
+#   - RN <= 0.81: prefab module `libhermes`  -> CMake target hermes-engine::libhermes
+#   - RN >= 0.82: prefab module `libhermesvm` -> CMake target hermes-engine::hermesvm
+# We branch on which target find_package actually resolved so Voltra builds
+# against both RN generations.
 find_package(ReactAndroid REQUIRED CONFIG)
 find_package(hermes-engine REQUIRED CONFIG)
 find_package(fbjni REQUIRED CONFIG)
+
+if(TARGET hermes-engine::hermesvm)
+  set(VOLTRA_HERMES_TARGET hermes-engine::hermesvm)
+else()
+  set(VOLTRA_HERMES_TARGET hermes-engine::libhermes)
+endif()
 
 # ---------------------------------------------------------------------------
 # Voltra JS Renderer (Dynamic Widgets on Android)
@@ -28,6 +38,13 @@ target_link_libraries(voltra_js_renderer
   android
   log
   ReactAndroid::jsi
-  hermes-engine::hermesvm
+  ${VOLTRA_HERMES_TARGET}
   fbjni::fbjni
 )
+
+# 16KB page size support: explicitly align libvoltra_js_renderer.so to 16KB
+# pages regardless of host NDK version. NDK r28+ defaults to this, but we
+# pin it explicitly so older NDKs also produce 16KB-compatible output. We
+# only support 16KB alignment (no 4KB-only build) — 16KB-aligned libs run
+# fine on 4KB-page devices too.
+target_link_options(voltra_js_renderer PRIVATE "-Wl,-z,max-page-size=16384")

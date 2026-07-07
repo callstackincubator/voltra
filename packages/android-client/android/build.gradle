@@ -59,7 +59,7 @@ android {
   buildFeatures {
     buildConfig true
     compose true
-    // Required to consume React Native's published prefab modules (jsi, hermesvm, fbjni).
+    // Required to consume React Native's published prefab modules (jsi, hermes, fbjni).
     prefab true
   }
 
@@ -71,6 +71,7 @@ android {
       "**/libfbjni.so",
       "**/libjsi.so",
       "**/libhermes.so",
+      "**/libhermesvm.so",
     ]
   }
 
@@ -95,10 +96,11 @@ android {
 dependencies {
   // React Native
   implementation "com.facebook.react:react-android"
-  // Provides the `hermes-engine` prefab (libhermesvm) that CMakeLists.txt's
-  // find_package(hermes-engine) consumes for the standalone Hermes JS runtime. Without it the
-  // native build fails to configure in release variants (react-android alone does not publish the
-  // Hermes prefab). Version is substituted by the React Native Gradle Plugin (applied above).
+  // Provides the `hermes-engine` prefab (libhermes on RN <= 0.81, libhermesvm on RN >= 0.82)
+  // that CMakeLists.txt's find_package(hermes-engine) consumes for the standalone Hermes JS
+  // runtime. Without it the native build fails to configure in release variants (react-android
+  // alone does not publish the Hermes prefab). Version is substituted by the React Native
+  // Gradle Plugin (applied above).
   implementation "com.facebook.react:hermes-android"
 
   // Jetpack Glance
