@@ -5,7 +5,9 @@ import { formatWarning } from '../reporting/summary'
 import { CLI_DEFAULTS } from './defaults'
 
 import type {
+  AndroidWidgetAppIntentConfig,
   AndroidWidgetConfig,
+  IOSWidgetAppIntentConfig,
   IOSWidgetConfig,
   LoadedVoltraConfig,
   NormalizedAndroidWidgetConfig,
@@ -27,6 +29,7 @@ const VALID_IOS_WIDGET_FAMILIES = new Set([
   'accessoryRectangular',
   'accessoryInline',
 ])
+const WIDGET_ENTRY_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'])
 
 export class VoltraConfigNormalizationError extends Error {
   constructor(message: string) {
@@ -103,6 +106,51 @@ function resolveOptionalPathFromProjectRoot(projectRoot: string, filePath: strin
   return resolvePathFromProjectRoot(projectRoot, filePath)
 }
 
+function isAbsoluteWidgetPath(value: string): boolean {
+  return path.isAbsolute(value) || path.win32.isAbsolute(value) || /^[a-zA-Z]:[\\/]/.test(value)
+}
+
+function normalizeWidgetEntry(entry: string): string {
+  return path.posix.normalize(entry.replace(/\\/g, '/'))
+}
+
+function normalizeWidgetEntryPath(entry: string): string {
+  return normalizeWidgetEntry(entry)
+}
+
+function normalizeOptionalWidgetEntry(value: unknown, context: string): string | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  assertNonEmptyString(value, context)
+
+  if (isAbsoluteWidgetPath(value)) {
+    throw new VoltraConfigNormalizationError(`${context} must be a relative path, not an absolute path`)
+  }
+
+  const normalizedEntry = normalizeWidgetEntryPath(value)
+
+  if (!normalizedEntry || normalizedEntry === '.') {
+    throw new VoltraConfigNormalizationError(`${context} must point to a file inside the project root`)
+  }
+
+  if (normalizedEntry === '..' || normalizedEntry.startsWith('../')) {
+    throw new VoltraConfigNormalizationError(`${context} must stay within the project root after normalization`)
+  }
+
+  const extension = path.posix.extname(normalizedEntry)
+  if (!WIDGET_ENTRY_EXTENSIONS.has(extension)) {
+    throw new VoltraConfigNormalizationError(
+      `${context} must use a Metro-importable source extension (${Array.from(WIDGET_ENTRY_EXTENSIONS).join(
+        ', '
+      )}); received '${extension || '(none)'}'`
+    )
+  }
+
+  return normalizedEntry
+}
+
 function normalizeLocalizedPathMap(
   projectRoot: string,
   value: WidgetLocalizedValue,
@@ -166,6 +214,87 @@ function normalizeInitialStatePath(
   return normalizeLocalizedPathMap(projectRoot, value, context)
 }
 
+function normalizeWidgetParameterName(value: unknown, context: string): string {
+  assertNonEmptyString(value, context)
+  return value
+}
+
+function normalizeAndroidAppIntent(
+  value: AndroidWidgetAppIntentConfig | undefined,
+  context: string
+): AndroidWidgetAppIntentConfig | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  assertObject(value, context)
+
+  if (!Array.isArray(value.parameters)) {
+    throw new VoltraConfigNormalizationError(`${context}.parameters must be an array`)
+  }
+
+  const seenNames = new Set<string>()
+  const parameters = value.parameters.map((parameter, index) => {
+    const parameterContext = `${context}.parameters[${index}]`
+    assertObject(parameter, parameterContext)
+    const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
+    assertOptionalString(parameter.title, `${parameterContext}.title`)
+    assertOptionalString(parameter.default, `${parameterContext}.default`)
+
+    if (seenNames.has(name)) {
+      throw new VoltraConfigNormalizationError(`${context}.parameters contains duplicate name '${name}'`)
+    }
+
+    seenNames.add(name)
+
+    return {
+      name,
+      title: parameter.title,
+      default: parameter.default,
+    }
+  })
+
+  return { parameters }
+}
+
+function normalizeIOSAppIntent(
+  value: IOSWidgetAppIntentConfig | undefined,
+  context: string
+): IOSWidgetAppIntentConfig | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  assertObject(value, context)
+
+  if (!Array.isArray(value.parameters)) {
+    throw new VoltraConfigNormalizationError(`${context}.parameters must be an array`)
+  }
+
+  const seenNames = new Set<string>()
+  const parameters = value.parameters.map((parameter, index) => {
+    const parameterContext = `${context}.parameters[${index}]`
+    assertObject(parameter, parameterContext)
+    const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
+    assertNonEmptyString(parameter.title, `${parameterContext}.title`)
+    assertOptionalString(parameter.default, `${parameterContext}.default`)
+
+    if (seenNames.has(name)) {
+      throw new VoltraConfigNormalizationError(`${context}.parameters contains duplicate name '${name}'`)
+    }
+
+    seenNames.add(name)
+
+    return {
+      name,
+      title: parameter.title,
+      default: parameter.default,
+    }
+  })
+
+  return { parameters }
+}
+
 function normalizeServerUpdate(
   serverUpdate: { url: string; intervalMinutes?: number; refresh?: boolean },
   context: string,
@@ -201,58 +330,9 @@ function normalizeServerUpdate(
   }
 }
 
-function normalizeAndroidWidgetEntry(
-  projectRoot: string,
-  entry: string | undefined,
-  context: string
-): string | undefined {
-  if (entry === undefined) {
-    return undefined
-  }
-
-  assertNonEmptyString(entry, context)
-  return resolvePathFromProjectRoot(projectRoot, entry)
-}
-
-function normalizeAndroidWidgetAppIntent(
-  appIntent: AndroidWidgetConfig['appIntent'],
-  context: string
-): AndroidWidgetConfig['appIntent'] {
-  if (appIntent === undefined) {
-    return undefined
-  }
-
-  assertObject(appIntent, context)
-
-  if (!Array.isArray(appIntent.parameters)) {
-    throw new VoltraConfigNormalizationError(`${context}.parameters must be an array`)
-  }
-
-  return {
-    parameters: appIntent.parameters.map((parameter, index) => {
-      const parameterContext = `${context}.parameters[${index}]`
-      assertObject(parameter, parameterContext)
-      assertNonEmptyString(parameter.name, `${parameterContext}.name`)
-
-      if (parameter.title !== undefined && typeof parameter.title !== 'string') {
-        throw new VoltraConfigNormalizationError(`${parameterContext}.title must be a string`)
-      }
-
-      if (parameter.default !== undefined && typeof parameter.default !== 'string') {
-        throw new VoltraConfigNormalizationError(`${parameterContext}.default must be a string`)
-      }
-
-      return {
-        name: parameter.name,
-        title: parameter.title,
-        default: parameter.default,
-      }
-    }),
-  }
-}
-
 function normalizeAndroidWidgetConfiguration(
-  widget: AndroidWidgetConfig,
+  widget: Pick<AndroidWidgetConfig, 'id' | 'entry' | 'configuration'>,
+  appIntent: AndroidWidgetAppIntentConfig | undefined,
   context: string
 ): AndroidWidgetConfig['configuration'] {
   const { configuration } = widget
@@ -272,7 +352,7 @@ function normalizeAndroidWidgetConfiguration(
 
   assertNonEmptyString(configuration.deepLink, `${context}.configuration.deepLink`)
 
-  if ((widget.appIntent?.parameters?.length ?? 0) === 0) {
+  if ((appIntent?.parameters?.length ?? 0) === 0) {
     console.warn(
       formatWarning(
         `android widget '${widget.id}' has configuration.deepLink set but appIntent.parameters is missing or empty; widget configuration UI will have no declared parameters.`
@@ -294,13 +374,14 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
   assertOptionalPositiveInteger(widget.minCellWidth, `android.widgets[${widget.id}].minCellWidth`)
   assertOptionalPositiveInteger(widget.minCellHeight, `android.widgets[${widget.id}].minCellHeight`)
 
+  const entry = normalizeOptionalWidgetEntry(widget.entry, `android.widgets[${widget.id}].entry`)
+  const appIntent = normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`)
+
   return {
     ...widget,
     displayName: normalizeLabel(widget.displayName, `android.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `android.widgets[${widget.id}].description`),
-    entry: normalizeAndroidWidgetEntry(projectRoot, widget.entry, `android.widgets[${widget.id}].entry`),
-    appIntent: normalizeAndroidWidgetAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`),
-    configuration: normalizeAndroidWidgetConfiguration(widget, `android.widgets[${widget.id}]`),
+    entry,
     initialStatePath: normalizeInitialStatePath(
       projectRoot,
       widget.initialStatePath,
@@ -308,6 +389,12 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
     ),
     previewImage: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewImage),
     previewLayout: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewLayout),
+    appIntent,
+    configuration: normalizeAndroidWidgetConfiguration(
+      { ...widget, entry },
+      appIntent,
+      `android.widgets[${widget.id}]`
+    ),
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(
           widget.serverUpdate,
@@ -344,11 +431,13 @@ function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): Norma
     displayName: normalizeLabel(widget.displayName, `ios.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `ios.widgets[${widget.id}].description`),
     supportedFamilies: widget.supportedFamilies ?? [...CLI_DEFAULTS.ios.widgetFamilies],
+    entry: normalizeOptionalWidgetEntry(widget.entry, `ios.widgets[${widget.id}].entry`),
     initialStatePath: normalizeInitialStatePath(
       projectRoot,
       widget.initialStatePath,
       `ios.widgets[${widget.id}].initialStatePath`
     ),
+    appIntent: normalizeIOSAppIntent(widget.appIntent, `ios.widgets[${widget.id}].appIntent`),
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(
           widget.serverUpdate,

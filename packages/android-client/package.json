@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/android-client",
-  "version": "2.0.0",
+  "version": "2.1.1",
   "description": "Client-only Voltra APIs for Android",
   "main": "./build/commonjs/index.js",
   "module": "./build/module/index.js",
@@ -24,6 +24,7 @@
   },
   "files": [
     "app.plugin.js",
+    "android/CMakeLists.txt",
     "android/build.gradle",
     "android/src/main",
     "build",

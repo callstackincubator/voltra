@@ -1,27 +1,55 @@
 import { XcodeProject } from '@expo/config-plugins'
 
-export interface MainAppTargetSettings {
-  deploymentTarget: string
+/** Code-signing settings read from one of the main app target's build configurations. */
+export interface MainAppSigningSettings {
   codeSignStyle?: string
   developmentTeam?: string
   provisioningProfileSpecifier?: string
 }
 
+export interface MainAppTargetSettings {
+  /**
+   * Signing settings keyed by build-configuration name (e.g. `Debug`, `Release`). Release
+   * provisioning often differs from Debug, so the widget must mirror the main app per
+   * configuration rather than copying one configuration's signing into both.
+   */
+  byConfigurationName: Record<string, MainAppSigningSettings>
+  /** The first configuration's settings, used for widget configurations with no name match. */
+  fallback: MainAppSigningSettings
+}
+
+/** Strips surrounding quotes from a raw build-setting value. */
+function unquote(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+  return value.replace(/^"|"$/g, '')
+}
+
+/** Reads the signing-related build settings from a single XCBuildConfiguration. */
+function readSigningSettings(buildSettings: Record<string, unknown>): MainAppSigningSettings {
+  return {
+    codeSignStyle: unquote(buildSettings.CODE_SIGN_STYLE),
+    developmentTeam: unquote(buildSettings.DEVELOPMENT_TEAM),
+    provisioningProfileSpecifier: unquote(buildSettings.PROVISIONING_PROFILE_SPECIFIER),
+  }
+}
+
 /**
- * Reads build settings from the main app target to synchronize code signing with the widget extension.
+ * Reads code-signing build settings from every build configuration of the main app target, so the
+ * widget extension can synchronize signing per configuration (Debug→Debug, Release→Release).
  *
  * @param xcodeProject The Xcode project instance
- * @returns The main app target's build settings, or null if not found
+ * @returns Signing settings keyed by configuration name plus a first-configuration fallback, or
+ * null when the main app target or its configurations cannot be resolved
  */
 export function getMainAppTargetSettings(xcodeProject: XcodeProject): MainAppTargetSettings | null {
   try {
     const mainAppTarget = xcodeProject.getFirstTarget()?.firstTarget
-
     if (!mainAppTarget) {
       return null
     }
 
-    // Get the build configuration list for the main app target
     const buildConfigurationListId = mainAppTarget.buildConfigurationList
     if (!buildConfigurationListId) {
       return null
@@ -32,62 +60,39 @@ export function getMainAppTargetSettings(xcodeProject: XcodeProject): MainAppTar
 
     const buildConfigurationList =
       xcodeProject.hash.project.objects['XCConfigurationList']?.[buildConfigurationListUuid]
-    if (!buildConfigurationList || !buildConfigurationList.buildConfigurations) {
+    if (!buildConfigurationList?.buildConfigurations) {
       return null
     }
 
-    // Get the first build configuration (usually Debug) to read settings
-    const firstConfigRef = buildConfigurationList.buildConfigurations[0]
-    if (!firstConfigRef) {
+    const buildConfigurationSection = xcodeProject.hash.project.objects['XCBuildConfiguration'] ?? {}
+    const byConfigurationName: Record<string, MainAppSigningSettings> = {}
+    let fallback: MainAppSigningSettings | null = null
+
+    for (const configRef of buildConfigurationList.buildConfigurations) {
+      // Extract UUID from the config reference (it might include a comment)
+      const configUuid = typeof configRef === 'string' ? configRef.split(' ')[0] : configRef.value?.split(' ')[0]
+      if (!configUuid) {
+        continue
+      }
+
+      const buildConfiguration = buildConfigurationSection[configUuid]
+      if (!buildConfiguration?.buildSettings) {
+        continue
+      }
+
+      const settings = readSigningSettings(buildConfiguration.buildSettings)
+      const configName = unquote(buildConfiguration.name)
+      if (configName && !(configName in byConfigurationName)) {
+        byConfigurationName[configName] = settings
+      }
+      fallback = fallback ?? settings
+    }
+
+    if (!fallback) {
       return null
     }
 
-    // Extract UUID from config reference (it might include a comment)
-    const firstConfigUuid =
-      typeof firstConfigRef === 'string' ? firstConfigRef.split(' ')[0] : firstConfigRef.value?.split(' ')[0]
-    if (!firstConfigUuid) {
-      return null
-    }
-
-    const buildConfiguration = xcodeProject.hash.project.objects['XCBuildConfiguration']?.[firstConfigUuid]
-    if (!buildConfiguration || !buildConfiguration.buildSettings) {
-      return null
-    }
-
-    const buildSettings = buildConfiguration.buildSettings
-
-    // Extract deployment target (remove quotes if present)
-    const deploymentTarget =
-      buildSettings.IPHONEOS_DEPLOYMENT_TARGET?.replace(/^"|"$/g, '') ||
-      buildSettings['IPHONEOS_DEPLOYMENT_TARGET']?.replace(/^"|"$/g, '') ||
-      null
-
-    // Extract code signing settings
-    const codeSignStyle =
-      buildSettings.CODE_SIGN_STYLE?.replace(/^"|"$/g, '') ||
-      buildSettings['CODE_SIGN_STYLE']?.replace(/^"|"$/g, '') ||
-      null
-
-    const developmentTeam =
-      buildSettings.DEVELOPMENT_TEAM?.replace(/^"|"$/g, '') ||
-      buildSettings['DEVELOPMENT_TEAM']?.replace(/^"|"$/g, '') ||
-      null
-
-    const provisioningProfileSpecifier =
-      buildSettings.PROVISIONING_PROFILE_SPECIFIER?.replace(/^"|"$/g, '') ||
-      buildSettings['PROVISIONING_PROFILE_SPECIFIER']?.replace(/^"|"$/g, '') ||
-      null
-
-    if (!deploymentTarget) {
-      return null
-    }
-
-    return {
-      deploymentTarget,
-      codeSignStyle: codeSignStyle || undefined,
-      developmentTeam: developmentTeam || undefined,
-      provisioningProfileSpecifier: provisioningProfileSpecifier || undefined,
-    }
+    return { byConfigurationName, fallback }
   } catch {
     // If we can't read the settings, return null and use fallback values
     return null

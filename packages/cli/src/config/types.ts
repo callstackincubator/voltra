@@ -23,18 +23,18 @@ export interface AndroidWidgetServerUpdateConfig {
   refresh?: boolean
 }
 
-export interface AndroidWidgetAppIntentParameterConfig {
-  /** Stable parameter key surfaced to widget configuration runtime. */
+export interface AndroidWidgetAppIntentParameter {
+  /** Configuration key surfaced to env.configuration. */
   name: string
-  /** Optional user-facing title for the parameter. */
+  /** Optional label for runtime configuration UIs. */
   title?: string
-  /** Optional default value used before runtime configuration exists. */
+  /** Default value used before runtime configuration overrides it. */
   default?: string
 }
 
 export interface AndroidWidgetAppIntentConfig {
-  /** Declared Dynamic Widget configuration parameters. */
-  parameters: AndroidWidgetAppIntentParameterConfig[]
+  /** Parameters surfaced to env.configuration for Dynamic Widgets. */
+  parameters: AndroidWidgetAppIntentParameter[]
 }
 
 export interface AndroidWidgetConfigurationConfig {
@@ -67,18 +67,18 @@ export interface AndroidWidgetConfig {
   widgetCategory?: 'home_screen' | 'keyguard' | 'home_screen|keyguard'
   /** Path to the build-time initial state module for this widget. */
   initialStatePath?: WidgetInitialStatePath
+  /** Project-relative Dynamic Widget entry module. */
+  entry?: string
   /** Server-driven update settings for this widget. */
   serverUpdate?: AndroidWidgetServerUpdateConfig
   /** Path to the preview image shown in widget pickers. */
   previewImage?: string
   /** Path to a preview layout XML file shown in widget pickers. */
   previewLayout?: string
-  /** Dynamic Widget entry module path. */
-  entry?: string
-  /** Optional Dynamic Widget configuration parameters. */
-  appIntent?: AndroidWidgetAppIntentConfig
   /** Android-only Dynamic Widget configuration entrypoint. */
   configuration?: AndroidWidgetConfigurationConfig
+  /** Dynamic Widget configuration parameters surfaced to env.configuration. */
+  appIntent?: AndroidWidgetAppIntentConfig
 }
 
 export type IOSWidgetFamily =
@@ -99,6 +99,20 @@ export interface IOSWidgetServerUpdateConfig {
   refresh?: boolean
 }
 
+export interface IOSWidgetAppIntentParameter {
+  /** Configuration key surfaced to env.configuration. */
+  name: string
+  /** Label shown in the native Edit Widget sheet. */
+  title: string
+  /** Default value used before the user configures the widget. */
+  default?: string
+}
+
+export interface IOSWidgetAppIntentConfig {
+  /** Parameters exposed through AppIntentConfiguration for Dynamic Widgets. */
+  parameters: IOSWidgetAppIntentParameter[]
+}
+
 export interface IOSWidgetConfig {
   /** Stable widget identifier used in generated files and registrations. */
   id: string
@@ -110,8 +124,12 @@ export interface IOSWidgetConfig {
   supportedFamilies?: IOSWidgetFamily[]
   /** Path to the build-time initial state module for this widget. */
   initialStatePath?: WidgetInitialStatePath
+  /** Project-relative Dynamic Widget entry module. */
+  entry?: string
   /** Server-driven update settings for this widget. */
   serverUpdate?: IOSWidgetServerUpdateConfig
+  /** Dynamic Widget AppIntent configuration. */
+  appIntent?: IOSWidgetAppIntentConfig
 }
 
 export interface AndroidProjectOverrides {

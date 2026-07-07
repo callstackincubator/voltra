@@ -23,6 +23,13 @@ def safeExtGet = { prop, fallback ->
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
 
+// Mirror the app's ABI selection (React Native template convention) so the
+// standalone Hermes runtime is only built for the architectures the app ships.
+def reactNativeArchitectures() {
+  def value = rootProject.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
+}
+
 // Read version from package.json for BuildConfig
 def packageJsonFile = new File(project.projectDir.parentFile, "package.json")
 def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
@@ -48,6 +55,10 @@ android {
         arguments "-DANDROID_STL=c++_shared"
       }
     }
+
+    ndk {
+      abiFilters(*reactNativeArchitectures())
+    }
   }
 
   externalNativeBuild {
@@ -59,7 +70,7 @@ android {
   buildFeatures {
     buildConfig true
     compose true
-    // Required to consume React Native's published prefab modules (jsi, hermesvm, fbjni).
+    // Required to consume React Native's published prefab modules (jsi, hermes, fbjni).
     prefab true
   }
 
@@ -71,6 +82,7 @@ android {
       "**/libfbjni.so",
       "**/libjsi.so",
       "**/libhermes.so",
+      "**/libhermesvm.so",
     ]
   }
 
@@ -95,10 +107,11 @@ android {
 dependencies {
   // React Native
   implementation "com.facebook.react:react-android"
-  // Provides the `hermes-engine` prefab (libhermesvm) that CMakeLists.txt's
-  // find_package(hermes-engine) consumes for the standalone Hermes JS runtime. Without it the
-  // native build fails to configure in release variants (react-android alone does not publish the
-  // Hermes prefab). Version is substituted by the React Native Gradle Plugin (applied above).
+  // Provides the `hermes-engine` prefab (libhermes on RN <= 0.81, libhermesvm on RN >= 0.82)
+  // that CMakeLists.txt's find_package(hermes-engine) consumes for the standalone Hermes JS
+  // runtime. Without it the native build fails to configure in release variants (react-android
+  // alone does not publish the Hermes prefab). Version is substituted by the React Native
+  // Gradle Plugin (applied above).
   implementation "com.facebook.react:hermes-android"
 
   // Jetpack Glance

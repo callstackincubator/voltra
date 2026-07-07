@@ -1,6 +1,7 @@
 import { XcodeProject } from '@expo/config-plugins'
 
 import type { IOSWidgetExtensionFiles } from '../../types'
+import { ensureWidgetFileReference } from './fileReferences'
 
 const pbxFile = require('xcode/lib/pbxFile')
 
@@ -9,47 +10,10 @@ export interface AddPbxGroupOptions {
   widgetFiles: IOSWidgetExtensionFiles
 }
 
-/**
- * Adds a PBXGroup for the widget extension files.
- */
-export function addPbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
-  const { targetName, widgetFiles } = options
+function collectGroupFiles(widgetFiles: IOSWidgetExtensionFiles): string[] {
   const { swiftFiles, intentFiles, assetDirectories, entitlementFiles, plistFiles, localizedStringResources } =
     widgetFiles
-
-  // Add PBX group with all widget files
-  const { uuid: pbxGroupUuid } = xcodeProject.addPbxGroup(
-    [
-      ...swiftFiles,
-      ...intentFiles,
-      ...entitlementFiles,
-      ...plistFiles,
-      ...assetDirectories,
-      ...localizedStringResources,
-    ],
-    targetName,
-    targetName
-  )
-
-  // Add PBXGroup to top level group
-  const groups = xcodeProject.hash.project.objects['PBXGroup']
-  if (pbxGroupUuid) {
-    Object.keys(groups).forEach(function (key) {
-      if (groups[key].name === undefined && groups[key].path === undefined) {
-        xcodeProject.addToPbxGroup(pbxGroupUuid, key)
-      }
-    })
-  }
-}
-
-/**
- * Ensures a PBXGroup exists for the widget extension files.
- */
-export function ensurePbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
-  const { targetName, widgetFiles } = options
-  const { swiftFiles, intentFiles, assetDirectories, entitlementFiles, plistFiles, localizedStringResources } =
-    widgetFiles
-  const allFiles = [
+  return [
     ...swiftFiles,
     ...intentFiles,
     ...entitlementFiles,
@@ -57,6 +21,60 @@ export function ensurePbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupO
     ...assetDirectories,
     ...localizedStringResources,
   ]
+}
+
+/**
+ * Adds a PBXGroup for the widget extension files.
+ *
+ * Constructs the PBXGroup and its PBXFileReference children by hand rather than delegating to
+ * `xcodeProject.addPbxGroup`, because that helper also creates a PBXBuildFile per file as a side
+ * effect. Those extra build files collide with the ones managed by the build-phase functions and
+ * produce the "no parent for object" consistency errors from issues #87/#32. File references are
+ * resolved through the widget-scoped {@link ensureWidgetFileReference} so they are shared with the
+ * build phases instead of duplicated.
+ *
+ * Internal create-only fallback for {@link ensurePbxGroup}; not part of the public pipeline.
+ */
+function addPbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
+  const { targetName, widgetFiles } = options
+  const allFiles = collectGroupFiles(widgetFiles)
+
+  const pbxGroupUuid = xcodeProject.generateUuid()
+  const pbxGroup = {
+    isa: 'PBXGroup',
+    children: [] as { value: string; comment: string }[],
+    name: targetName,
+    path: targetName,
+    sourceTree: '"<group>"',
+  }
+
+  const groups = xcodeProject.hash.project.objects['PBXGroup']
+  groups[pbxGroupUuid] = pbxGroup
+  groups[`${pbxGroupUuid}_comment`] = targetName
+
+  for (const filePath of allFiles) {
+    const file = new pbxFile(filePath)
+    const fileRef = ensureWidgetFileReference(xcodeProject, filePath, targetName)
+    pbxGroup.children.push({ value: fileRef, comment: file.basename })
+  }
+
+  // Attach the new group to the top-level (unnamed, path-less) group.
+  Object.keys(groups).forEach(function (key) {
+    if (/_comment$/.test(key)) {
+      return
+    }
+    if (groups[key].name === undefined && groups[key].path === undefined) {
+      xcodeProject.addToPbxGroup(pbxGroupUuid, key)
+    }
+  })
+}
+
+/**
+ * Ensures a PBXGroup exists for the widget extension files.
+ */
+export function ensurePbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupOptions): void {
+  const { targetName, widgetFiles } = options
+  const allFiles = collectGroupFiles(widgetFiles)
 
   const existingGroup = xcodeProject.pbxGroupByName(targetName)
   if (!existingGroup) {
@@ -70,7 +88,7 @@ export function ensurePbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupO
 
   for (const filePath of allFiles) {
     const file = new pbxFile(filePath)
-    const fileRef = ensureFileReference(xcodeProject, filePath)
+    const fileRef = ensureWidgetFileReference(xcodeProject, filePath, targetName)
     const alreadyInGroup = existingGroup.children.some(
       (child: any) => child.value === fileRef || child.comment === file.basename
     )
@@ -78,24 +96,4 @@ export function ensurePbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupO
       existingGroup.children.push({ value: fileRef, comment: file.basename })
     }
   }
-}
-
-function ensureFileReference(xcodeProject: XcodeProject, filePath: string): string {
-  const fileReferenceSection = xcodeProject.pbxFileReferenceSection()
-  const file = new pbxFile(filePath)
-
-  for (const key of Object.keys(fileReferenceSection)) {
-    if (/_comment$/.test(key)) {
-      continue
-    }
-    const entry = fileReferenceSection[key]
-    const entryPath = typeof entry?.path === 'string' ? entry.path.replace(/^"|"$/g, '') : ''
-    if (entryPath === file.path || entryPath === filePath) {
-      return key
-    }
-  }
-
-  file.fileRef = xcodeProject.generateUuid()
-  xcodeProject.addToPbxFileReferenceSection(file)
-  return file.fileRef
 }

@@ -7,10 +7,17 @@ import { bundleWidgets } from './bundleWidgets'
 import { createVoltraMiddleware } from './createVoltraMiddleware'
 import { createWidgetMetroConfig } from './createWidgetMetroConfig'
 import { requireProjectModule } from './resolveProjectModule'
-import { createWidgetRegistry, ensureEmptyDevBarrel } from './widgetRegistry'
+import {
+  createWidgetRegistry,
+  ensureEmptyDevBarrel,
+  MissingVoltraManifestError,
+  type RegisteredVoltraWidget,
+  type WidgetRegistry,
+} from './widgetRegistry'
 
 const HOT_RELOAD_ALIAS = '@use-voltra/widget-hot-reload'
 const DEV_BARREL_PLATFORMS = new Set(['ios', 'android'])
+const WIDGET_PLATFORMS = ['ios', 'android'] as const
 
 type ResolveRequest = (context: any, moduleName: string, platform: string | null) => unknown
 
@@ -48,9 +55,44 @@ function createResolveRequest(
   }
 }
 
+function listConfiguredWidgets(registry: WidgetRegistry): RegisteredVoltraWidget[] {
+  const widgets: RegisteredVoltraWidget[] = []
+
+  for (const platform of WIDGET_PLATFORMS) {
+    try {
+      widgets.push(...registry.listWidgets(platform))
+    } catch (error) {
+      if (error instanceof MissingVoltraManifestError) {
+        continue
+      }
+
+      throw error
+    }
+  }
+
+  return widgets
+}
+
 export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) => {
   const projectRoot = metroConfig.projectRoot ?? process.cwd()
   const registry = createWidgetRegistry({ projectRoot })
+  const previousResolveRequest = metroConfig.resolver?.resolveRequest
+  const configWithResolver = {
+    ...metroConfig,
+    projectRoot,
+    resolver: {
+      ...metroConfig.resolver,
+      resolveRequest: createResolveRequest(projectRoot, previousResolveRequest),
+    },
+  }
+
+  const configuredWidgets = listConfiguredWidgets(registry)
+
+  if (configuredWidgets.length === 0) {
+    registry.close()
+    return configWithResolver
+  }
+
   const widgetConfig = await createWidgetMetroConfig({
     projectRoot,
     appConfig: metroConfig,
@@ -72,15 +114,9 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
   })
 
   const previousEnhanceMiddleware = metroConfig.server?.enhanceMiddleware || ((middleware: unknown) => middleware)
-  const previousResolveRequest = metroConfig.resolver?.resolveRequest
 
   return {
-    ...metroConfig,
-    projectRoot,
-    resolver: {
-      ...metroConfig.resolver,
-      resolveRequest: createResolveRequest(projectRoot, previousResolveRequest),
-    },
+    ...configWithResolver,
     server: {
       ...metroConfig.server,
       enhanceMiddleware(metroMiddleware: unknown, metroServer: unknown) {
