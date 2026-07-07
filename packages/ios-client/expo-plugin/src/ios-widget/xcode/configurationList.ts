@@ -1,34 +1,52 @@
 import { XcodeProject } from '@expo/config-plugins'
 
 import { IOS } from '../../constants'
+import type { MainAppSigningSettings, MainAppTargetSettings } from './mainAppSettings'
 
-export interface AddConfigurationListOptions {
+export interface EnsureConfigurationListOptions {
   targetName: string
   bundleIdentifier: string
   deploymentTarget: string
-  codeSignStyle?: string
-  developmentTeam?: string
-  provisioningProfileSpecifier?: string
+  /**
+   * App marketing version (CFBundleShortVersionString). App Store Connect expects the appex
+   * version to match the app's, so this becomes the widget's MARKETING_VERSION.
+   */
+  version?: string
+  /** App build number; becomes the widget's CURRENT_PROJECT_VERSION. */
+  buildNumber?: string
+  /** Main app signing settings, applied per configuration name (Debug→Debug, Release→Release). */
+  mainAppSettings?: MainAppTargetSettings | null
 }
 
-function createCommonBuildSettings(options: AddConfigurationListOptions) {
-  const {
-    targetName,
-    bundleIdentifier,
-    deploymentTarget,
-    codeSignStyle,
-    developmentTeam,
-    provisioningProfileSpecifier,
-  } = options
+/**
+ * Resolves the main app signing settings for a widget configuration name: an exact name match
+ * wins, otherwise the first available configuration's settings are used as fallback.
+ */
+function signingForConfiguration(
+  mainAppSettings: MainAppTargetSettings | null | undefined,
+  configurationName: string
+): MainAppSigningSettings {
+  if (!mainAppSettings) {
+    return {}
+  }
+  return mainAppSettings.byConfigurationName[configurationName] ?? mainAppSettings.fallback
+}
 
-  const commonBuildSettings: Record<string, string> = {
+function createBuildSettings(options: EnsureConfigurationListOptions, configurationName: string) {
+  const { targetName, bundleIdentifier, deploymentTarget, version, buildNumber, mainAppSettings } = options
+  const { codeSignStyle, developmentTeam, provisioningProfileSpecifier } = signingForConfiguration(
+    mainAppSettings,
+    configurationName
+  )
+
+  const buildSettings: Record<string, string> = {
     PRODUCT_NAME: `"$(TARGET_NAME)"`,
     SWIFT_VERSION: IOS.SWIFT_VERSION,
     TARGETED_DEVICE_FAMILY: `"${IOS.DEVICE_FAMILY}"`,
     INFOPLIST_FILE: `${targetName}/Info.plist`,
     INFOPLIST_OUTPUT_FORMAT: `"xml"`,
-    CURRENT_PROJECT_VERSION: `"1"`,
-    MARKETING_VERSION: `"1.0"`,
+    CURRENT_PROJECT_VERSION: `"${buildNumber ?? '1'}"`,
+    MARKETING_VERSION: `"${version ?? '1.0'}"`,
     IPHONEOS_DEPLOYMENT_TARGET: `"${deploymentTarget}"`,
     PRODUCT_BUNDLE_IDENTIFIER: `"${bundleIdentifier}"`,
     SWIFT_OPTIMIZATION_LEVEL: `"-Onone"`,
@@ -37,41 +55,37 @@ function createCommonBuildSettings(options: AddConfigurationListOptions) {
     ASSETCATALOG_COMPILER_APPICON_NAME: '""',
   }
 
-  // Synchronize code signing settings from main app target
+  // Synchronize code signing settings from the main app target's matching configuration
   if (codeSignStyle) {
-    commonBuildSettings.CODE_SIGN_STYLE = `"${codeSignStyle}"`
+    buildSettings.CODE_SIGN_STYLE = `"${codeSignStyle}"`
   }
   if (developmentTeam) {
-    commonBuildSettings.DEVELOPMENT_TEAM = `"${developmentTeam}"`
+    buildSettings.DEVELOPMENT_TEAM = `"${developmentTeam}"`
   }
   if (provisioningProfileSpecifier) {
-    commonBuildSettings.PROVISIONING_PROFILE_SPECIFIER = `"${provisioningProfileSpecifier}"`
+    buildSettings.PROVISIONING_PROFILE_SPECIFIER = `"${provisioningProfileSpecifier}"`
   }
 
-  return commonBuildSettings
+  return buildSettings
 }
 
 /**
- * Adds the XCConfigurationList for the widget extension target.
+ * Adds a fresh XCConfigurationList for the widget extension target. Internal create-only fallback
+ * for {@link ensureXCConfigurationList}; not part of the public pipeline.
  */
-export function addXCConfigurationList(xcodeProject: XcodeProject, options: AddConfigurationListOptions) {
+function addXCConfigurationList(xcodeProject: XcodeProject, options: EnsureConfigurationListOptions) {
   const { targetName } = options
-  const commonBuildSettings = createCommonBuildSettings(options)
 
   const buildConfigurationsList = [
     {
       name: 'Debug',
       isa: 'XCBuildConfiguration',
-      buildSettings: {
-        ...commonBuildSettings,
-      },
+      buildSettings: createBuildSettings(options, 'Debug'),
     },
     {
       name: 'Release',
       isa: 'XCBuildConfiguration',
-      buildSettings: {
-        ...commonBuildSettings,
-      },
+      buildSettings: createBuildSettings(options, 'Release'),
     },
   ]
 
@@ -85,11 +99,13 @@ export function addXCConfigurationList(xcodeProject: XcodeProject, options: AddC
 }
 
 /**
- * Ensures an existing XCConfigurationList is updated, or adds a new one if missing.
+ * Ensures an existing XCConfigurationList is updated, or adds a new one if missing. Each widget
+ * configuration receives the build settings derived for its own name, so Debug and Release signing
+ * stay in sync with the main app's respective configurations.
  */
 export function ensureXCConfigurationList(
   xcodeProject: XcodeProject,
-  options: AddConfigurationListOptions,
+  options: EnsureConfigurationListOptions,
   existingConfigurationListId?: string | { value?: string }
 ) {
   const configurationListId =
@@ -103,7 +119,6 @@ export function ensureXCConfigurationList(
     return addXCConfigurationList(xcodeProject, options)
   }
 
-  const commonBuildSettings = createCommonBuildSettings(options)
   const buildConfigurations = configurationList.buildConfigurations
   const buildConfigurationSection = xcodeProject.pbxXCBuildConfigurationSection()
 
@@ -117,9 +132,11 @@ export function ensureXCConfigurationList(
       continue
     }
 
+    const configurationName =
+      typeof buildConfiguration.name === 'string' ? buildConfiguration.name.replace(/^"|"$/g, '') : ''
     buildConfiguration.buildSettings = {
       ...(buildConfiguration.buildSettings ?? {}),
-      ...commonBuildSettings,
+      ...createBuildSettings(options, configurationName),
     }
   }
 
