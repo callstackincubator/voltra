@@ -21,19 +21,20 @@ export const withAndroid: ConfigPlugin<AndroidPluginProps> = (config, props) => 
   }
 
   const projectRoot = (config as { modRequest?: { projectRoot?: string } }).modRequest?.projectRoot
-  const detectedWidgets: DetectedAndroidWidget[] = projectRoot
-    ? detectClientRenderedWidgets(widgets, projectRoot)
-    : widgets.map((widget) =>
-        widget.entry === undefined
-          ? { ...widget, clientRendered: false as const }
-          : { ...widget, clientRendered: true as const, clientSourcePath: widget.entry }
-      )
+  const detectedWidgets = projectRoot ? detectClientRenderedWidgets(widgets, projectRoot) : undefined
+  const manifestWidgets: DetectedAndroidWidget[] =
+    detectedWidgets ??
+    widgets.map((widget) =>
+      widget.entry === undefined
+        ? { ...widget, clientRendered: false as const }
+        : { ...widget, clientRendered: true as const, clientSourcePath: widget.entry }
+    )
 
   widgets.forEach((widget) => validateAndroidWidgetConfig(widget, projectRoot))
 
   return withPlugins(config, [
     [generateAndroidWidgetFiles, { widgets, detectedWidgets, userImagesPath, fonts, scheme, widgetConfigurationRoute }],
-    [configureAndroidManifest, { enableNotifications, widgets: detectedWidgets }],
+    [configureAndroidManifest, { enableNotifications, widgets: manifestWidgets }],
     [withWidgetBundleGradle, { widgets }],
   ])
 }

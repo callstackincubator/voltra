@@ -65,4 +65,33 @@ describe('prerenderClientRenderedAndroidWidgets', () => {
       cleanup()
     }
   })
+
+  it('resolves project-relative client source paths before evaluating placeholders', async () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      'widgets/android/Dynamic.tsx': `
+        export default function DynamicWidget() {
+          return { source: 'relative-entry' }
+        }
+      `,
+    })
+
+    try {
+      const widget: DetectedAndroidWidget = {
+        id: 'dynamic_widget',
+        entry: './widgets/android/Dynamic.tsx',
+        displayName: 'Dynamic Widget',
+        description: 'Uses a project-relative entry',
+        targetCellWidth: 2,
+        targetCellHeight: 2,
+        clientRendered: true,
+        clientSourcePath: './widgets/android/Dynamic.tsx',
+      }
+
+      const result = await prerenderClientRenderedAndroidWidgets([widget], projectRoot)
+
+      expect(result.get('dynamic_widget')?.get('__default')).toContain('"source":"relative-entry"')
+    } finally {
+      cleanup()
+    }
+  })
 })
