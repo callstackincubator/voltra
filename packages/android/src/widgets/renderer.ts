@@ -1,6 +1,7 @@
 import { createElement, Fragment as ReactFragment, type ReactNode } from 'react'
 
 import { getAndroidComponentId } from '../payload/component-ids.js'
+import { validateAndroidLayoutChildLimit } from '../payload/validate-layout-child-limit.js'
 import { ComponentRegistry, createVoltraRenderer } from '../renderer/renderer.js'
 import type { AndroidWidgetVariants } from './types.js'
 
@@ -55,6 +56,7 @@ export const renderAndroidWidgetToJson = (
 
   // Add variants as a nested object (expected by Kotlin parser)
   rendered.variants = variantsMap
+  validateAndroidLayoutChildLimit(rendered)
 
   return rendered
 }
@@ -85,6 +87,7 @@ export const renderAndroidViewToJson = (
 
   delete rendered.content
   rendered.variants = { content: node }
+  validateAndroidLayoutChildLimit(rendered)
 
   return rendered
 }

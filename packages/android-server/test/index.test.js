@@ -66,6 +66,36 @@ test('serializes Android widget variants before returning the shared response', 
   assert.equal(calls[0].headers['x-voltra-request'], 'android-fetch')
 })
 
+test('warns about Android layout child limits when server rendering in development', () => {
+  const previousNodeEnv = process.env.NODE_ENV
+  const previousWarn = console.warn
+  const warnings = []
+  process.env.NODE_ENV = 'development'
+  console.warn = (message) => warnings.push(message)
+
+  try {
+    const children = Array.from({ length: 11 }, (_, index) =>
+      React.createElement(VoltraAndroid.Text, { key: index }, String(index))
+    )
+    renderAndroidWidgetToString([
+      {
+        size: { width: 150, height: 80 },
+        content: React.createElement(VoltraAndroid.Column, null, children),
+      },
+    ])
+
+    assert.equal(warnings.length, 1)
+    assert.match(warnings[0], /AndroidColumn has 11 direct children/)
+  } finally {
+    console.warn = previousWarn
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV
+    } else {
+      process.env.NODE_ENV = previousNodeEnv
+    }
+  }
+})
+
 test('passes validateToken through unchanged and preserves null render results', async () => {
   const authCalls = []
   const handler = createAndroidWidgetUpdateHandler({

@@ -16,4 +16,5 @@ export type {
   AndroidOngoingNotificationProgressSegment,
 } from './ongoing-notification/types.js'
 export { renderAndroidWidgetToString } from './widgets/renderer.js'
+export { validateAndroidLayoutChildLimit } from './payload/validate-layout-child-limit.js'
 export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'

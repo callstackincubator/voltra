@@ -1,4 +1,5 @@
 import { getAndroidComponentId } from '../payload/component-ids.js'
+import { validateAndroidLayoutChildLimit } from '../payload/validate-layout-child-limit.js'
 import type { ComponentRegistry } from '../renderer/index.js'
 import { createVoltraRenderer } from '../renderer/index.js'
 import type { AndroidLiveUpdateJson, AndroidLiveUpdateVariants } from './types.js'
@@ -27,6 +28,8 @@ export const renderAndroidLiveUpdateToJson = (variants: AndroidLiveUpdateVariant
   if (variants.channelId) {
     result.channelId = variants.channelId
   }
+
+  validateAndroidLayoutChildLimit(result)
 
   return result
 }

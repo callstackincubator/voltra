@@ -7,6 +7,7 @@ import {
 import type { ReactNode } from 'react'
 
 import { getAndroidComponentId } from '../payload/component-ids.js'
+import { validateAndroidLayoutChildLimit } from '../payload/validate-layout-child-limit.js'
 import type { VoltraNodeJson } from '../types.js'
 
 export const androidComponentRegistry: ComponentRegistry = {
@@ -17,7 +18,9 @@ export { VOLTRA_PAYLOAD_VERSION }
 export type { ComponentRegistry }
 
 export const renderAndroidVariantToJson = (element: ReactNode): VoltraNodeJson => {
-  return renderVariantToJson(element, androidComponentRegistry)
+  const rendered = renderVariantToJson(element, androidComponentRegistry)
+  validateAndroidLayoutChildLimit({ variants: { content: rendered } })
+  return rendered
 }
 
 export const createVoltraRenderer = (componentRegistry: ComponentRegistry = androidComponentRegistry) => {

@@ -5,8 +5,10 @@ export {
   AndroidOngoingNotification,
   renderAndroidOngoingNotificationPayload,
   renderAndroidOngoingNotificationPayloadToJson,
+  validateAndroidLayoutChildLimit,
 } from '@use-voltra/android/server'
 import { getAndroidComponentId } from '@use-voltra/android'
+import { validateAndroidLayoutChildLimit } from '@use-voltra/android/server'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
@@ -86,6 +88,7 @@ export const renderAndroidWidgetToJson = (
   }
 
   rendered.variants = variantsMap
+  validateAndroidLayoutChildLimit(rendered)
 
   return rendered
 }

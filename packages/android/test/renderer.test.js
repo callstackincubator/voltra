@@ -3,6 +3,7 @@ const test = require('node:test')
 const React = require('react')
 
 const android = require('../build/commonjs/index.js')
+const { validateAndroidLayoutChildLimit } = require('../build/commonjs/internal.js')
 const { createVoltraComponent } = require('../build/commonjs/jsx/createVoltraComponent.js')
 
 const {
@@ -11,6 +12,7 @@ const {
   getAndroidComponentId,
   renderAndroidLiveUpdateToJson,
   renderAndroidLiveUpdateToString,
+  renderAndroidVariantToJson,
   renderAndroidViewToJson,
   renderAndroidWidgetToJson,
   renderAndroidWidgetToString,
@@ -244,4 +246,134 @@ test('fails loudly for unknown Android component names', () => {
       message: /Unknown Android component name: "UnknownAndroidWidget"/,
     }
   )
+})
+
+function withDevelopmentWarnings(run) {
+  const previousNodeEnv = process.env.NODE_ENV
+  const previousWarn = console.warn
+  const warnings = []
+
+  process.env.NODE_ENV = 'development'
+  console.warn = (message) => warnings.push(message)
+
+  try {
+    run(warnings)
+  } finally {
+    console.warn = previousWarn
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV
+    } else {
+      process.env.NODE_ENV = previousNodeEnv
+    }
+  }
+}
+
+function createLayoutChildren(count) {
+  return Array.from({ length: count }, (_, index) =>
+    React.createElement(VoltraAndroid.Text, { key: index }, String(index))
+  )
+}
+
+test('warns when an Android Column has more than 10 direct rendered children in development', () => {
+  withDevelopmentWarnings((warnings) => {
+    renderAndroidViewToJson(React.createElement(VoltraAndroid.Column, null, createLayoutChildren(11)))
+
+    assert.equal(warnings.length, 1)
+    assert.match(warnings[0], /AndroidColumn/)
+    assert.match(warnings[0], /11 direct children/)
+    assert.match(warnings[0], /10-child limit/)
+    assert.match(warnings[0], /LazyColumn/)
+  })
+})
+
+test('warns when an Android Row has more than 10 direct rendered children in development', () => {
+  withDevelopmentWarnings((warnings) => {
+    renderAndroidWidgetToJson([
+      {
+        size: { width: 100, height: 100 },
+        content: React.createElement(VoltraAndroid.Row, null, createLayoutChildren(11)),
+      },
+    ])
+
+    assert.equal(warnings.length, 1)
+    assert.match(warnings[0], /AndroidRow/)
+    assert.match(warnings[0], /11 direct children/)
+  })
+})
+
+test('checks nested Android Columns independently', () => {
+  withDevelopmentWarnings((warnings) => {
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.Column,
+        null,
+        React.createElement(VoltraAndroid.Column, null, createLayoutChildren(11))
+      )
+    )
+
+    assert.equal(warnings.length, 1)
+    assert.match(warnings[0], /11 direct children/)
+  })
+})
+
+test('does not warn for Android LazyColumn children', () => {
+  withDevelopmentWarnings((warnings) => {
+    renderAndroidViewToJson(React.createElement(VoltraAndroid.LazyColumn, null, createLayoutChildren(11)))
+
+    assert.deepEqual(warnings, [])
+  })
+})
+
+test('counts shared-element references as their resolved direct children once', () => {
+  withDevelopmentWarnings((warnings) => {
+    validateAndroidLayoutChildLimit({
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidColumn'),
+          c: { $r: 0 },
+        },
+      },
+      e: [createLayoutChildren(11).map((child) => renderAndroidVariantToJson(child))],
+    })
+
+    assert.equal(warnings.length, 1)
+    assert.match(warnings[0], /11 direct children/)
+  })
+})
+
+test('does not warn in production or test environments', () => {
+  const previousNodeEnv = process.env.NODE_ENV
+  const previousWarn = console.warn
+  const warnings = []
+
+  console.warn = (message) => warnings.push(message)
+
+  try {
+    for (const environment of ['production', 'test']) {
+      process.env.NODE_ENV = environment
+      renderAndroidViewToJson(React.createElement(VoltraAndroid.Column, null, createLayoutChildren(11)))
+    }
+
+    assert.deepEqual(warnings, [])
+  } finally {
+    console.warn = previousWarn
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV
+    } else {
+      process.env.NODE_ENV = previousNodeEnv
+    }
+  }
+})
+
+test('validates single-variant and live-update Android render payloads', () => {
+  withDevelopmentWarnings((warnings) => {
+    renderAndroidVariantToJson(React.createElement(VoltraAndroid.Column, null, createLayoutChildren(11)))
+    renderAndroidLiveUpdateToJson({
+      expanded: React.createElement(VoltraAndroid.Row, null, createLayoutChildren(11)),
+    })
+
+    assert.equal(warnings.length, 2)
+    assert.match(warnings[0], /AndroidColumn/)
+    assert.match(warnings[1], /AndroidRow/)
+  })
 })
