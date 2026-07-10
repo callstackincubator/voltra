@@ -1,3 +1,5 @@
+import type { VoltraElementJson, VoltraNodeJson } from '@use-voltra/core'
+
 import { isAndroidDevelopmentEnvironment } from '../dev-environment.js'
 import { getAndroidComponentId } from './component-ids.js'
 
@@ -7,62 +9,47 @@ const LAYOUT_COMPONENT_NAMES = new Map([
   [getAndroidComponentId('AndroidRow'), 'AndroidRow'],
 ])
 
-type SerializedNode = string | SerializedElement | SerializedNodeReference | SerializedNode[]
-
-type SerializedElement = {
-  t: number
-  c?: SerializedNode
-  p?: Record<string, unknown>
-}
-
-type SerializedNodeReference = {
-  $r: number
-}
-
 type AndroidPayload = {
-  variants?: Record<string, SerializedNode>
-  collapsed?: SerializedNode
-  expanded?: SerializedNode
-  e?: SerializedNode[]
+  variants?: Record<string, VoltraNodeJson>
+  collapsed?: VoltraNodeJson
+  expanded?: VoltraNodeJson
+  e?: VoltraNodeJson[]
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-
-const isElement = (value: unknown): value is SerializedElement => isRecord(value) && typeof value.t === 'number'
-
-const isReference = (value: unknown): value is SerializedNodeReference =>
-  isRecord(value) && typeof value.$r === 'number'
-
-const countDirectRenderedChildren = (node: SerializedNode | undefined, sharedElements: SerializedNode[]): number => {
-  if (node === undefined) {
-    return 0
+const getReference = (value: unknown): number | undefined => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value) || !('$r' in value)) {
+    return undefined
   }
 
+  const reference = (value as { $r?: unknown }).$r
+  return typeof reference === 'number' ? reference : undefined
+}
+
+const countDirectRenderedChildren = (node: VoltraNodeJson | undefined, sharedElements: VoltraNodeJson[]): number => {
   const resolvingReferences = new Set<number>()
 
-  const count = (current: SerializedNode): number => {
+  const count = (current: VoltraNodeJson | undefined): number => {
+    if (current === undefined) {
+      return 0
+    }
+
     if (Array.isArray(current)) {
       return current.reduce((total, child) => total + count(child), 0)
     }
 
-    if (isReference(current)) {
-      if (resolvingReferences.has(current.$r)) {
-        return 0
-      }
-
-      const resolved = sharedElements[current.$r]
-      if (resolved === undefined) {
-        return 0
-      }
-
-      resolvingReferences.add(current.$r)
-      const result = count(resolved)
-      resolvingReferences.delete(current.$r)
-      return result
+    const reference = getReference(current)
+    if (reference === undefined) {
+      return 1
     }
 
-    return 1
+    if (resolvingReferences.has(reference)) {
+      return 0
+    }
+
+    resolvingReferences.add(reference)
+    const result = count(sharedElements[reference])
+    resolvingReferences.delete(reference)
+    return result
   }
 
   return count(node)
@@ -77,17 +64,8 @@ export const validateAndroidLayoutChildLimit = (payload: AndroidPayload): void =
   const sharedElements = payload.e ?? []
   const visitedNodes = new WeakSet<object>()
 
-  const traverseNode = (node: SerializedNode | undefined): void => {
-    if (node === undefined || typeof node === 'string') {
-      return
-    }
-
-    if (Array.isArray(node)) {
-      if (visitedNodes.has(node)) {
-        return
-      }
-      visitedNodes.add(node)
-      node.forEach(traverseNode)
+  const visit = (node: unknown): void => {
+    if (typeof node !== 'object' || node === null) {
       return
     }
 
@@ -96,18 +74,25 @@ export const validateAndroidLayoutChildLimit = (payload: AndroidPayload): void =
     }
     visitedNodes.add(node)
 
-    if (isReference(node)) {
-      traverseNode(sharedElements[node.$r])
+    if (Array.isArray(node)) {
+      node.forEach(visit)
       return
     }
 
-    if (!isElement(node)) {
+    const reference = getReference(node)
+    if (reference !== undefined) {
+      visit(sharedElements[reference])
       return
     }
 
-    const componentName = LAYOUT_COMPONENT_NAMES.get(node.t)
+    if (!('t' in node) || typeof node.t !== 'number') {
+      return
+    }
+
+    const element = node as VoltraElementJson
+    const componentName = LAYOUT_COMPONENT_NAMES.get(element.t)
     if (componentName) {
-      const childCount = countDirectRenderedChildren(node.c, sharedElements)
+      const childCount = countDirectRenderedChildren(element.c, sharedElements)
       if (childCount > MAX_LAYOUT_CHILDREN) {
         console.warn(
           `[Voltra] [Android] ${componentName} has ${childCount} direct children, exceeding Glance's ${MAX_LAYOUT_CHILDREN}-child limit. ` +
@@ -116,20 +101,12 @@ export const validateAndroidLayoutChildLimit = (payload: AndroidPayload): void =
       }
     }
 
-    traverseNode(node.c)
-    if (node.p) {
-      Object.values(node.p).forEach((value) => {
-        if (Array.isArray(value) || isElement(value) || isReference(value)) {
-          traverseNode(value as SerializedNode)
-        }
-      })
-    }
+    visit(element.c)
+    Object.values(element.p ?? {}).forEach(visit)
   }
 
-  if (payload.variants) {
-    Object.values(payload.variants).forEach(traverseNode)
-  }
-  traverseNode(payload.collapsed)
-  traverseNode(payload.expanded)
-  sharedElements.forEach(traverseNode)
+  Object.values(payload.variants ?? {}).forEach(visit)
+  visit(payload.collapsed)
+  visit(payload.expanded)
+  sharedElements.forEach(visit)
 }
