@@ -37,6 +37,22 @@ export type ComponentRegistry = {
   getComponentId: (name: string) => number
 }
 
+// `__DEV__` is provided by Metro/React Native bundles as a global boolean. It
+// isn't declared by this package (which has no react-native dependency), so
+// we declare it locally — this only introduces an ambient binding scoped to
+// this module, not a real global declaration.
+declare const __DEV__: boolean | undefined
+
+const isDevEnvironment = (): boolean => {
+  if (typeof __DEV__ !== 'undefined') {
+    return Boolean(__DEV__)
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.NODE_ENV !== 'production'
+  }
+  return false
+}
+
 type VoltraRenderingContext = {
   registry: ContextRegistry
   stylesheetRegistry?: StylesheetRegistry
@@ -234,6 +250,13 @@ function renderNodeInternal(element: ReactNode, context: VoltraRenderingContext)
 
       const id = typeof parameters.id === 'string' ? parameters.id : undefined
       const { id: _id, ...cleanParameters } = parameters
+
+      if (isDevEnvironment() && !isTextComponent) {
+        componentType.validate?.({
+          props: cleanParameters,
+          children: Array.isArray(renderedChildren) ? renderedChildren : [],
+        })
+      }
 
       if (isTextComponent) {
         if (typeof renderedChildren !== 'string') {
