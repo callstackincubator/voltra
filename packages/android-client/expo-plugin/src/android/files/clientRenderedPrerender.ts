@@ -1,3 +1,5 @@
+import path from 'path'
+
 import { evaluateWidgetModuleExports, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
 
 import type { DetectedAndroidWidget } from '../clientRendered'
@@ -56,12 +58,11 @@ export async function prerenderClientRenderedAndroidWidgets(
 
   for (const widget of clientWidgets) {
     try {
-      const widgetModule = evaluateWidgetModuleExports(projectRoot, widget.clientSourcePath)
+      const clientSourcePath = path.resolve(projectRoot, widget.clientSourcePath)
+      const widgetModule = evaluateWidgetModuleExports(projectRoot, clientSourcePath)
       const widgetFn = widgetModule?.default ?? widgetModule
       if (typeof widgetFn !== 'function') {
-        throw new Error(
-          `Expected the entry module at ${widget.clientSourcePath} to default-export a function or component.`
-        )
+        throw new Error(`Expected the entry module at ${clientSourcePath} to default-export a function or component.`)
       }
 
       const element = widgetFn({}, placeholderEnv)

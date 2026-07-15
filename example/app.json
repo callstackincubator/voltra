@@ -103,6 +103,7 @@
         "@use-voltra/android-client",
         {
           "enableNotifications": true,
+          "widgetConfigurationRoute": "voltraui/android-widget-config",
           "widgets": [
             {
               "id": "voltra",

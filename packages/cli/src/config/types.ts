@@ -37,6 +37,11 @@ export interface AndroidWidgetAppIntentConfig {
   parameters: AndroidWidgetAppIntentParameter[]
 }
 
+export interface AndroidWidgetConfigurationConfig {
+  /** Deep link opened to configure this Dynamic Widget instance. */
+  deepLink: string
+}
+
 export interface AndroidWidgetConfig {
   /** Stable widget identifier used in generated files and registrations. */
   id: string
@@ -70,6 +75,8 @@ export interface AndroidWidgetConfig {
   previewImage?: string
   /** Path to a preview layout XML file shown in widget pickers. */
   previewLayout?: string
+  /** Android-only Dynamic Widget configuration entrypoint. */
+  configuration?: AndroidWidgetConfigurationConfig
   /** Dynamic Widget configuration parameters surfaced to env.configuration. */
   appIntent?: AndroidWidgetAppIntentConfig
 }

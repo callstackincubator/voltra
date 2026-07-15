@@ -5,12 +5,14 @@ import * as path from 'path'
 import { isWidgetLocalizedMap, logger, widgetLabelEnglish } from '@use-voltra/expo-plugin'
 
 import type { AndroidWidgetConfig } from '../../types'
+import type { DetectedAndroidWidget } from '../clientRendered'
 import { androidWidgetResourceId } from '../resourceName'
 
 export interface GenerateXmlFilesProps {
   platformProjectRoot: string
   projectRoot: string
-  widgets: AndroidWidgetConfig[]
+  packageName: string
+  widgets: DetectedAndroidWidget[]
   previewImageMap: Map<string, string>
 }
 
@@ -83,7 +85,7 @@ export async function generateWidgetPlaceholderLayouts(props: { platformProjectR
  * Generates preview layouts for widgets
  */
 export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps): Promise<void> {
-  const { platformProjectRoot, projectRoot, widgets, previewImageMap } = props
+  const { platformProjectRoot, projectRoot, packageName, widgets, previewImageMap } = props
   const layoutPath = path.join(platformProjectRoot, 'app', 'src', 'main', 'res', 'layout')
   const xmlPath = path.join(platformProjectRoot, 'app', 'src', 'main', 'res', 'xml')
 
@@ -99,7 +101,15 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
     const widgetInfoPath = path.join(xmlPath, `voltra_widget_${androidWidgetResourceId(widget.id)}_info.xml`)
     const previewImageResourceName = previewImageMap.get(widget.id)
     const previewLayoutResourceName = previewLayoutMap.get(widget.id)
-    const widgetInfoContent = generateWidgetInfoXml(widget, previewImageResourceName, previewLayoutResourceName)
+    const configActivityClassName = hasWidgetConfiguration(widget)
+      ? `${packageName}.widget.VoltraWidget_${widget.id}ConfigurationActivity`
+      : undefined
+    const widgetInfoContent = generateWidgetInfoXml(
+      widget,
+      previewImageResourceName,
+      previewLayoutResourceName,
+      configActivityClassName
+    )
     fs.writeFileSync(widgetInfoPath, widgetInfoContent, 'utf8')
   }
 }
@@ -114,7 +124,8 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
 function generateWidgetInfoXml(
   widget: AndroidWidgetConfig,
   previewImageResourceName?: string,
-  previewLayoutResourceName?: string
+  previewLayoutResourceName?: string,
+  configureActivityName?: string
 ): string {
   const { targetCellWidth, targetCellHeight } = widget
   const resizeMode = widget.resizeMode || 'horizontal|vertical'
@@ -138,6 +149,7 @@ function generateWidgetInfoXml(
   const previewLayoutAttr = previewLayoutResourceName
     ? `\n    android:previewLayout="@layout/${previewLayoutResourceName}"`
     : ''
+  const configureAttr = configureActivityName ? `\n    android:configure="${configureActivityName}"` : ''
 
   return dedent`
     <?xml version="1.0" encoding="utf-8"?>
@@ -150,7 +162,7 @@ function generateWidgetInfoXml(
         android:widgetCategory="${widgetCategory}"
         android:description="@string/voltra_widget_${androidWidgetResourceId(
           widget.id
-        )}_description"${previewImageAttr}${previewLayoutAttr}>
+        )}_description"${previewImageAttr}${previewLayoutAttr}${configureAttr}>
     </appwidget-provider>
   `
 }
@@ -245,6 +257,10 @@ function collectAndroidLocaleKeysFromWidgets(widgets: AndroidWidgetConfig[]): Se
     }
   }
   return locales
+}
+
+function hasWidgetConfiguration(widget: DetectedAndroidWidget): boolean {
+  return widget.clientRendered && (widget.appIntent?.parameters?.length ?? 0) > 0
 }
 
 function resolveAndroidWidgetLabel(

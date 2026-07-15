@@ -1,7 +1,9 @@
 package voltra
 
+import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.ComponentCallbacks
+import android.content.Intent
 import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.ui.unit.DpSize
@@ -220,6 +222,79 @@ class VoltraModule(
                 promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
             }
         }
+    }
+
+    override fun setWidgetInstanceConfiguration(
+        appWidgetId: Double,
+        key: String,
+        value: String,
+        promise: Promise,
+    ) {
+        Log.d(TAG, "setWidgetInstanceConfiguration called with appWidgetId=$appWidgetId")
+
+        runBlocking {
+            try {
+                val widgetInstanceId = appWidgetId.toInt()
+                val widgetInfo =
+                    AppWidgetManager.getInstance(reactApplicationContext).getAppWidgetInfo(widgetInstanceId)
+                        ?: throw IllegalArgumentException("Unknown widget instance: $widgetInstanceId")
+                val widgetId = extractWidgetId(widgetInfo.provider.shortClassName)
+                val configurationStore = VoltraConfigurationStore(reactApplicationContext)
+                configurationStore.setInstance(widgetInstanceId, key, value)
+
+                val glanceId = GlanceAppWidgetManager(reactApplicationContext).getGlanceIdBy(widgetInstanceId)
+                VoltraWidgetReceiver.triggerGlanceUpdate(reactApplicationContext, widgetId, glanceId)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                Log.e(TAG, "setWidgetInstanceConfiguration failed", e)
+                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+            }
+        }
+    }
+
+    override fun completeWidgetConfiguration(
+        appWidgetId: Double,
+        promise: Promise,
+    ) {
+        val activity =
+            currentActivity
+                ?: run {
+                    promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", "No active widget configuration activity")
+                    return
+                }
+
+        val resultIntent =
+            Intent().apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId.toInt())
+            }
+
+        activity.setResult(Activity.RESULT_OK, resultIntent)
+        activity.finish()
+        promise.resolve(null)
+    }
+
+    override fun cancelWidgetConfiguration(promise: Promise) {
+        val activity =
+            currentActivity
+                ?: run {
+                    promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", "No active widget configuration activity")
+                    return
+                }
+
+        val appWidgetId =
+            activity.intent?.getIntExtra(
+                AppWidgetManager.EXTRA_APPWIDGET_ID,
+                AppWidgetManager.INVALID_APPWIDGET_ID,
+            ) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+
+        val resultIntent =
+            Intent().apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            }
+
+        activity.setResult(Activity.RESULT_CANCELED, resultIntent)
+        activity.finish()
+        promise.resolve(null)
     }
 
     override fun clearAndroidWidget(
@@ -457,5 +532,15 @@ class VoltraModule(
             }
         }
         promise.resolve(activeWidgets)
+    }
+
+    private fun extractWidgetId(shortClassName: String): String {
+        val prefix = ".widget.VoltraWidget_"
+        val suffix = "Receiver"
+        return if (shortClassName.startsWith(prefix) && shortClassName.endsWith(suffix)) {
+            shortClassName.substring(prefix.length, shortClassName.length - suffix.length)
+        } else {
+            shortClassName
+        }
     }
 }

@@ -51,10 +51,38 @@ export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
 }
 
 /**
- * Set a configuration value for a Dynamic Widget and re-render it. The value is
+ * Set a widget-type configuration value for a Dynamic Widget and re-render it. The value is
  * surfaced as `env.configuration[key]` in the widget's `(props, env) => JSX` render. Stand-in
  * for a Glance configuration activity.
  */
 export const setWidgetConfiguration = async (widgetId: string, key: string, value: string): Promise<void> => {
   return getNativeVoltraAndroid().setWidgetConfiguration(widgetId, key, value)
+}
+
+/**
+ * Set a configuration value for one placed Android widget instance.
+ *
+ * The instance is identified by its `appWidgetId`, which lets multiple widgets of the same type
+ * keep different configuration values.
+ */
+export const setWidgetInstanceConfiguration = async (
+  appWidgetId: number,
+  key: string,
+  value: string
+): Promise<void> => {
+  return getNativeVoltraAndroid().setWidgetInstanceConfiguration(appWidgetId, key, value)
+}
+
+/**
+ * Finish a widget configuration activity after the app has saved the instance settings.
+ */
+export const completeWidgetConfiguration = async (appWidgetId: number): Promise<void> => {
+  return getNativeVoltraAndroid().completeWidgetConfiguration(appWidgetId)
+}
+
+/**
+ * Cancel a widget configuration activity without saving changes.
+ */
+export const cancelWidgetConfiguration = async (): Promise<void> => {
+  return getNativeVoltraAndroid().cancelWidgetConfiguration()
 }

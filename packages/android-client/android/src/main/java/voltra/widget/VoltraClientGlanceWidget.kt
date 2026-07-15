@@ -13,6 +13,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.Alignment
@@ -190,7 +191,8 @@ class VoltraClientGlanceWidget(
 
         // Read user-configured params (DataStore) off the composition so env.configuration is
         // available synchronously during render.
-        val configuration = VoltraConfigurationStore(context).get(widgetId)
+        val appWidgetId = runCatching { GlanceAppWidgetManager(context).getAppWidgetId(id) }.getOrNull()
+        val configuration = VoltraConfigurationStore(context).get(widgetId, appWidgetId)
 
         provideContent {
             Content(bundleReady, configuration)
