@@ -19,6 +19,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import voltra.dynamicwidget.DynamicWidgetPropsStore
+import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
+import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.images.VoltraImageManager
 import voltra.runtime.VoltraConfigurationStore
 import voltra.widget.VoltraGlanceWidget
@@ -42,6 +45,19 @@ class VoltraModule(
 
     private val imageManager by lazy {
         VoltraImageManager(reactApplicationContext)
+    }
+
+    private val dynamicWidgetUpdater by lazy {
+        DynamicWidgetUpdater(
+            dynamicWidgetPropsPersistence = DynamicWidgetPropsStore(reactApplicationContext),
+            dynamicWidgetUpdateTrigger =
+                DynamicWidgetUpdateTrigger { dynamicWidgetId ->
+                    VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(
+                        context = reactApplicationContext,
+                        dynamicWidgetId = dynamicWidgetId,
+                    )
+                },
+        )
     }
 
     // Last-seen night-mode bit. ACTION_CONFIGURATION_CHANGED also fires for rotation, font scale,
@@ -186,6 +202,31 @@ class VoltraModule(
         runBlocking { widgetManager.updateWidget(widgetId) }
         Log.d(TAG, "updateAndroidWidget completed")
         promise.resolve(null)
+    }
+
+    override fun updateAndroidDynamicWidget(
+        dynamicWidgetId: String,
+        dynamicWidgetPropsJson: String,
+        promise: Promise,
+    ) {
+        Log.d(TAG, "updateAndroidDynamicWidget called with dynamicWidgetId=$dynamicWidgetId")
+        runBlocking {
+            try {
+                dynamicWidgetUpdater.updateDynamicWidget(
+                    dynamicWidgetId = dynamicWidgetId,
+                    dynamicWidgetPropsJson = dynamicWidgetPropsJson,
+                )
+                Log.d(TAG, "updateAndroidDynamicWidget completed")
+                promise.resolve(null)
+            } catch (dynamicWidgetUpdateException: Exception) {
+                Log.e(TAG, "updateAndroidDynamicWidget failed", dynamicWidgetUpdateException)
+                promise.reject(
+                    "VOLTRA_DYNAMIC_WIDGET_UPDATE_ERROR",
+                    dynamicWidgetUpdateException.message,
+                    dynamicWidgetUpdateException,
+                )
+            }
+        }
     }
 
     override fun reloadAndroidWidgets(

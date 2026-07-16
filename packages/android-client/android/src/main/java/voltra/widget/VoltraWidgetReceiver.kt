@@ -73,6 +73,40 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
             }
         }
 
+        internal fun requireDynamicWidgetGlanceAppWidget(
+            dynamicWidgetId: String,
+            dynamicWidgetGlanceAppWidget: GlanceAppWidget?,
+        ): VoltraClientGlanceWidget {
+            require(dynamicWidgetGlanceAppWidget is VoltraClientGlanceWidget) {
+                "Receiver for dynamicWidgetId=$dynamicWidgetId is not a Dynamic Widget receiver"
+            }
+            return dynamicWidgetGlanceAppWidget
+        }
+
+        /** Trigger a Dynamic Widget Glance update and propagate lookup or update failures. */
+        suspend fun triggerDynamicWidgetGlanceUpdate(
+            context: Context,
+            dynamicWidgetId: String,
+        ) {
+            val dynamicWidgetGlanceAppWidget =
+                requireDynamicWidgetGlanceAppWidget(
+                    dynamicWidgetId = dynamicWidgetId,
+                    dynamicWidgetGlanceAppWidget = getWidget(context, dynamicWidgetId),
+                )
+            val dynamicWidgetGlanceIds =
+                GlanceAppWidgetManager(context).getGlanceIds(dynamicWidgetGlanceAppWidget.javaClass)
+
+            for (dynamicWidgetGlanceId in dynamicWidgetGlanceIds) {
+                dynamicWidgetGlanceAppWidget.update(context, dynamicWidgetGlanceId)
+            }
+
+            Log.d(
+                TAG,
+                "Triggered Dynamic Widget update for '$dynamicWidgetId' " +
+                    "(${dynamicWidgetGlanceIds.size} instances)",
+            )
+        }
+
         /**
          * Trigger a Glance update for a specific glanceId using the registered widget.
          */

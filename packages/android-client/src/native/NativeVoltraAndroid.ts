@@ -92,6 +92,7 @@ export interface Spec extends TurboModule {
   getAndroidOngoingNotificationCapabilities(): AndroidOngoingNotificationCapabilitiesSpec
   openAndroidNotificationSettings(): Promise<void>
   updateAndroidWidget(widgetId: string, jsonString: string, options?: Readonly<{ deepLinkUrl?: string }>): Promise<void>
+  updateAndroidDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
   setWidgetConfiguration(widgetId: string, key: string, value: string): Promise<void>
   clearAndroidWidget(widgetId: string): Promise<void>

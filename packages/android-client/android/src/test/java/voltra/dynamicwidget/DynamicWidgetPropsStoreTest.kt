@@ -13,8 +13,8 @@ class DynamicWidgetPropsStoreTest {
     fun clearsAllDynamicWidgetProps() {
         val dynamicWidgetPropsStore =
             DynamicWidgetPropsStore(RuntimeEnvironment.getApplication())
-        dynamicWidgetPropsStore.setDynamicWidgetProps("clear-all-first-dynamic-widget", """{"value":1}""")
-        dynamicWidgetPropsStore.setDynamicWidgetProps("clear-all-second-dynamic-widget", """{"value":2}""")
+        dynamicWidgetPropsStore.persistDynamicWidgetProps("clear-all-first-dynamic-widget", """{"value":1}""")
+        dynamicWidgetPropsStore.persistDynamicWidgetProps("clear-all-second-dynamic-widget", """{"value":2}""")
 
         dynamicWidgetPropsStore.clearAllDynamicWidgetProps()
 
@@ -32,8 +32,8 @@ class DynamicWidgetPropsStoreTest {
     fun clearsOneDynamicWidgetWithoutAffectingAnother() {
         val dynamicWidgetPropsStore =
             DynamicWidgetPropsStore(RuntimeEnvironment.getApplication())
-        dynamicWidgetPropsStore.setDynamicWidgetProps("cleared-dynamic-widget", """{"value":1}""")
-        dynamicWidgetPropsStore.setDynamicWidgetProps("retained-dynamic-widget", """{"value":2}""")
+        dynamicWidgetPropsStore.persistDynamicWidgetProps("cleared-dynamic-widget", """{"value":1}""")
+        dynamicWidgetPropsStore.persistDynamicWidgetProps("retained-dynamic-widget", """{"value":2}""")
 
         dynamicWidgetPropsStore.clearDynamicWidgetProps("cleared-dynamic-widget")
 
@@ -52,7 +52,7 @@ class DynamicWidgetPropsStoreTest {
     @Test
     fun persistsDynamicWidgetPropsAcrossStoreInstances() {
         val application = RuntimeEnvironment.getApplication()
-        DynamicWidgetPropsStore(application).setDynamicWidgetProps(
+        DynamicWidgetPropsStore(application).persistDynamicWidgetProps(
             "persistent-dynamic-widget",
             """{"session":"survives"}""",
         )
@@ -72,8 +72,8 @@ class DynamicWidgetPropsStoreTest {
         val dynamicWidgetPropsStore =
             DynamicWidgetPropsStore(RuntimeEnvironment.getApplication())
 
-        dynamicWidgetPropsStore.setDynamicWidgetProps("first-dynamic-widget", """{"value":1}""")
-        dynamicWidgetPropsStore.setDynamicWidgetProps("second-dynamic-widget", """{"value":2}""")
+        dynamicWidgetPropsStore.persistDynamicWidgetProps("first-dynamic-widget", """{"value":1}""")
+        dynamicWidgetPropsStore.persistDynamicWidgetProps("second-dynamic-widget", """{"value":2}""")
 
         assertEquals(
             Json.parseToJsonElement("""{"value":1}"""),
@@ -115,7 +115,7 @@ class DynamicWidgetPropsStoreTest {
             }
             """.trimIndent()
 
-        dynamicWidgetPropsStore.setDynamicWidgetProps(
+        dynamicWidgetPropsStore.persistDynamicWidgetProps(
             dynamicWidgetId = "weather-dynamic-widget",
             dynamicWidgetPropsJson = dynamicWidgetPropsJson,
         )

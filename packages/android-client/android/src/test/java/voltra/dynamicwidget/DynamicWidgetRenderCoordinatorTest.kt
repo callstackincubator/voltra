@@ -45,7 +45,7 @@ class DynamicWidgetRenderCoordinatorTest {
     fun passesPersistedNestedDynamicWidgetPropsAndEnvironmentToTheDynamicWidgetRuntime() {
         val dynamicWidgetPropsStore =
             DynamicWidgetPropsStore(RuntimeEnvironment.getApplication())
-        dynamicWidgetPropsStore.setDynamicWidgetProps(
+        dynamicWidgetPropsStore.persistDynamicWidgetProps(
             dynamicWidgetId = "weather-dynamic-widget",
             dynamicWidgetPropsJson =
                 """{"title":"Forecast","weather":{"temperatures":[18,21,19],"metadata":{"units":"celsius","severe":false}}}""",

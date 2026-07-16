@@ -13,14 +13,14 @@ import org.json.JSONObject
  */
 internal class DynamicWidgetPropsStore(
     context: Context,
-) {
+) : DynamicWidgetPropsPersistence {
     private val dynamicWidgetPropsPreferences: SharedPreferences =
         context.applicationContext.getSharedPreferences(
             DYNAMIC_WIDGET_PROPS_STORAGE_NAMESPACE,
             Context.MODE_PRIVATE,
         )
 
-    fun setDynamicWidgetProps(
+    override fun persistDynamicWidgetProps(
         dynamicWidgetId: String,
         dynamicWidgetPropsJson: String,
     ) {
@@ -32,10 +32,15 @@ internal class DynamicWidgetPropsStore(
                     CURRENT_DYNAMIC_WIDGET_PROPS_STORAGE_VERSION,
                 ).put(DYNAMIC_WIDGET_PROPS_VALUE_KEY, dynamicWidgetProps)
 
-        dynamicWidgetPropsPreferences
-            .edit()
-            .putString(dynamicWidgetPropsStorageKey(dynamicWidgetId), dynamicWidgetPropsStorageEntry.toString())
-            .apply()
+        val dynamicWidgetPropsPersisted =
+            dynamicWidgetPropsPreferences
+                .edit()
+                .putString(dynamicWidgetPropsStorageKey(dynamicWidgetId), dynamicWidgetPropsStorageEntry.toString())
+                .commit()
+
+        check(dynamicWidgetPropsPersisted) {
+            "Failed to persist Dynamic Widget props for dynamicWidgetId=$dynamicWidgetId"
+        }
     }
 
     fun getDynamicWidgetProps(dynamicWidgetId: String): String {

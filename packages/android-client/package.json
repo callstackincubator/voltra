@@ -45,7 +45,7 @@
     "format:kotlin:fix": "ktlint -F \"android/**/*.kt\"",
     "lint": "oxlint src expo-plugin/src",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit && tsc -p expo-plugin/tsconfig.typecheck.json --noEmit",
-    "test": "jest --config expo-plugin/jest.config.js",
+    "test": "jest --config jest.dynamic-widget.config.js && jest --config expo-plugin/jest.config.js",
     "test:kotlin": "cd ../../example/android && ./gradlew :use-voltra_android-client:testDebugUnitTest"
   },
   "dependencies": {
