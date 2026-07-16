@@ -40,6 +40,7 @@ let package = Package(
         "DynamicWidgetPropsCodec.swift",
         "DynamicWidgetPropsStorage.swift",
         "DynamicWidgetPropsStore.swift",
+        "DynamicWidgetRenderCoordinator.swift",
         "JSONValue.swift",
         "VoltraConfig.swift",
         "VoltraConstants.swift",
