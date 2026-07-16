@@ -1,12 +1,12 @@
 # Dynamic Widgets
 
 :::warning Experimental Feature
-Dynamic widgets are experimental. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
+Dynamic Widgets are experimental. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
 :::
 
-Dynamic Widgets let your widget react to the current device state on iOS. Declare them in `app.json` with a stable `id` and an explicit `entry`, then default-export the widget from that file.
+Dynamic Widgets run their entry component on-device and can react to both app-supplied runtime props and current device state on iOS. Declare a Dynamic Widget in `app.json` with a stable `id` and an explicit `entry`, then default-export the Dynamic Widget from that file.
 
-That means your widget can react to:
+That means your Dynamic Widget can react to:
 
 - `env.widgetFamily`
 - `env.colorScheme`
@@ -28,9 +28,19 @@ When you change `app.json`, run Expo Prebuild or Voltra Apply so the updated wid
 ```tsx
 import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 
-export default function WeatherWidget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
+type WeatherDynamicWidgetProps = {
+  headline?: string
+  unreadCount?: number
+}
 
-  const renderedAt = env.date.toLocaleTimeString('en-US', {
+export default function WeatherDynamicWidget(
+  props: WeatherDynamicWidgetProps = {},
+  env: WidgetEnvironment = {} as WidgetEnvironment
+) {
+  const headline = props.headline ?? 'Weather update'
+  const unreadCount = props.unreadCount ?? 0
+
+  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
   })
@@ -38,8 +48,9 @@ export default function WeatherWidget(_props: object, env: WidgetEnvironment = {
   return (
     <Voltra.VStack style={{ padding: 16, backgroundColor: '#111827' }}>
       <Voltra.Text style={{ color: 'white', fontSize: 18, fontWeight: '700' }}>
-        Weather Widget
+        {headline}
       </Voltra.Text>
+      <Voltra.Text style={{ color: '#34D399', marginTop: 6 }}>{unreadCount} unread</Voltra.Text>
       <Voltra.Text style={{ color: '#9CA3AF', marginTop: 6 }}>
         Family: {env.widgetFamily}
       </Voltra.Text>
@@ -79,6 +90,33 @@ Example plugin config:
   }
 }
 ```
+
+After changing the plugin configuration, rebuild the native iOS app. You also need a native rebuild after upgrading to a version of `@use-voltra/ios-client` that introduces a new native API.
+
+## Update Dynamic Widget props
+
+Call `updateDynamicWidget` from your app. The object is serialized, persisted, and passed as the first argument to the entry component on each subsequent render. The update re-renders every installed instance with the matching Dynamic Widget id.
+
+```ts
+import { updateDynamicWidget } from '@use-voltra/ios-client'
+
+await updateDynamicWidget('weather_widget', {
+  headline: 'Rain arriving soon',
+  unreadCount: 2,
+})
+```
+
+Dynamic Widget props must be JSON-serializable. You can use strings, numbers, booleans, `null`, arrays, and nested objects. Functions, `undefined`, `Date`, `BigInt`, and cyclic references are not supported.
+
+Before the first call to `updateDynamicWidget`, the entry component receives `{}`. The latest props object is persisted by Dynamic Widget id, survives app process restarts, and is reused until a later call replaces it or the app's data is cleared.
+
+:::warning Choose the API by widget type
+`updateDynamicWidget` updates an entry-based Dynamic Widget by passing runtime props to its entry component. The legacy `updateWidget` API sends pre-rendered variant payloads to a payload-driven widget and cannot update an entry-based Dynamic Widget.
+:::
+
+## Runtime props and configuration are separate
+
+Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, edited by the user in the native iOS Edit Widget sheet, and read from `env.configuration`. Updating runtime props does not replace configuration.
 
 If you want user-editable values, add `appIntent` too. See [Configurable Widgets](./configurable-widgets).
 

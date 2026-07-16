@@ -1,7 +1,8 @@
 ---
 '@use-voltra/android-client': minor
+'@use-voltra/ios-client': minor
 ---
 
-Add `updateAndroidDynamicWidget` for updating entry-based Android Dynamic Widgets with typed, JSON-serializable runtime props. The latest props are persisted by Dynamic Widget ID and used for subsequent renders.
+Add `updateAndroidDynamicWidget` and `updateDynamicWidget` for updating entry-based Android and iOS Dynamic Widgets with typed, JSON-serializable runtime props. Each platform persists the latest props by Dynamic Widget ID and uses them for subsequent renders.
 
-Rebuild the native Android app after upgrading so the new TurboModule method and native props persistence are included.
+Rebuild the native Android and iOS apps after upgrading so the new TurboModule methods and native props persistence are included.

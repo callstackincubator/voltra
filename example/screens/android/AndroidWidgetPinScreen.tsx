@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
-import { requestPinAndroidWidget, setWidgetConfiguration, updateAndroidDynamicWidget } from '@use-voltra/android-client'
+import { requestPinAndroidWidget, setWidgetConfiguration } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
@@ -46,7 +46,6 @@ export default function AndroidWidgetPinScreen() {
   const [previewHeight, setPreviewHeight] = useState<string>('150')
   const [isPinning, setIsPinning] = useState(false)
   const [configLabel, setConfigLabel] = useState<string>('')
-  const [unreadCount, setUnreadCount] = useState(0)
 
   const handleSetConfig = async () => {
     if (Platform.OS !== 'android') {
@@ -58,21 +57,6 @@ export default function AndroidWidgetPinScreen() {
         'Saved',
         `Set env.configuration.label to "${configLabel}" for ${DYNAMIC_WIDGET_ID}. The Dynamic Widget re-renders.`
       )
-    } catch (error: any) {
-      Alert.alert('Error', error?.message || String(error))
-    }
-  }
-
-  const handleUpdateDynamicWidgetProps = async () => {
-    if (Platform.OS !== 'android') {
-      return
-    }
-
-    const nextUnreadCount = unreadCount + 1
-    try {
-      await updateAndroidDynamicWidget(DYNAMIC_WIDGET_ID, { unreadCount: nextUnreadCount })
-      setUnreadCount(nextUnreadCount)
-      Alert.alert('Updated', `Dynamic Widget props now contain unreadCount: ${nextUnreadCount}.`)
     } catch (error: any) {
       Alert.alert('Error', error?.message || String(error))
     }
@@ -149,14 +133,6 @@ export default function AndroidWidgetPinScreen() {
             <Text style={styles.widgetDescription}>{widget.description}</Text>
           </View>
         ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Dynamic Widget runtime props</Text>
-        <Text style={styles.widgetDescription}>
-          The entry component receives these props as its first argument. Current unread count: {unreadCount}
-        </Text>
-        <Button title="Increment unread count" onPress={handleUpdateDynamicWidgetProps} style={styles.resetButton} />
       </View>
 
       <View style={styles.section}>

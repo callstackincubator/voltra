@@ -1,6 +1,7 @@
 import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
 
 export type AndroidClientDemoWidgetProps = {
+  headline?: string
   unreadCount?: number
 }
 
@@ -12,6 +13,7 @@ export default function AndroidClientDemoWidget(
 ) {
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
   const hotReloadMarker = 'edit me'
+  const headline = props.headline ?? 'No headline yet'
   const unreadCount = props.unreadCount ?? 0
 
   const date = env.date ? new Date(env.date) : new Date()
@@ -57,6 +59,7 @@ export default function AndroidClientDemoWidget(
       {row('scheme:', env.colorScheme ?? '?')}
       {row('locale:', env.locale ?? '?')}
       {row('config:', configLabel)}
+      {row('headline:', headline)}
       {row('unread:', String(unreadCount))}
       {row('time:', renderedAt)}
       <VoltraAndroid.Spacer style={{ height: 8 }} />
