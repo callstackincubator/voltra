@@ -27,6 +27,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import voltra.BuildConfig
+import voltra.dynamicwidget.DynamicWidgetPropsStore
+import voltra.dynamicwidget.DynamicWidgetRenderCoordinator
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
@@ -221,8 +223,14 @@ class VoltraClientGlanceWidget(
         configuration: Map<String, String>,
     ): VoltraNode? {
         val envJson = buildEnvJson(context, size, configuration)
-        val resolved = VoltraJSRenderer.render(widgetId, "{}", envJson) ?: return null
-        return parseNode(resolved)
+        val dynamicWidgetPropsJson =
+            DynamicWidgetPropsStore(context).getDynamicWidgetProps(widgetId)
+        val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
+        return dynamicWidgetRenderCoordinator.renderDynamicWidget(
+            dynamicWidgetId = widgetId,
+            dynamicWidgetPropsJson = dynamicWidgetPropsJson,
+            dynamicWidgetEnvironmentJson = envJson,
+        )
     }
 
     /** Decode the plugin-prerendered single-node placeholder from the initial-states asset. */
