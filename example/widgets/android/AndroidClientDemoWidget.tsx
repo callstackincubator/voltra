@@ -1,14 +1,18 @@
 import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
 
-// Minimal Dynamic Widget example for Android: its JSX runs on-device in Hermes on every render,
-// receiving the live `env`. Edit the marker literal below and save — the home-screen widget
-// updates via Fast Refresh (dev). Mirrors the iOS ClientRenderedDemoWidget. Themes itself from
-// Material You via AndroidDynamicColors tokens, which the native renderer resolves to the system
-// dynamic color scheme (and which follow light/dark automatically).
+export type AndroidClientDemoWidgetProps = {
+  unreadCount?: number
+}
 
-export default function AndroidClientDemoWidget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
+// This Dynamic Widget runs on-device in Hermes on every render. Runtime props are the first
+// argument; live device state and app configuration are kept separately in `env`.
+export default function AndroidClientDemoWidget(
+  props: AndroidClientDemoWidgetProps = {},
+  env: WidgetEnvironment = {} as WidgetEnvironment
+) {
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
   const hotReloadMarker = 'edit me'
+  const unreadCount = props.unreadCount ?? 0
 
   const date = env.date ? new Date(env.date) : new Date()
   const renderedAt = date.toLocaleTimeString('en-US', {
@@ -38,7 +42,7 @@ export default function AndroidClientDemoWidget(_props: object, env: WidgetEnvir
   )
 
   const swatch = (color: string) => (
-    <VoltraAndroid.Box style={{ width: 16, height: 16, backgroundColor: color, cornerRadius: 4 }} />
+    <VoltraAndroid.Box style={{ width: 16, height: 16, backgroundColor: color, borderRadius: 4 }} />
   )
 
   return (
@@ -46,13 +50,14 @@ export default function AndroidClientDemoWidget(_props: object, env: WidgetEnvir
       style={{ backgroundColor: bg, width: '100%', height: '100%', padding: 12 }}
       verticalAlignment="center-vertically"
     >
-      <VoltraAndroid.Text style={{ fontSize: 12, color: fg }}>Client-rendered demo</VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ fontSize: 12, color: fg }}>Dynamic Widget demo</VoltraAndroid.Text>
       <VoltraAndroid.Text style={{ fontSize: 14, color: accent }}>{hotReloadMarker}</VoltraAndroid.Text>
       <VoltraAndroid.Spacer style={{ height: 6 }} />
       {row('size:', env.widgetFamily ?? '?')}
       {row('scheme:', env.colorScheme ?? '?')}
       {row('locale:', env.locale ?? '?')}
       {row('config:', configLabel)}
+      {row('unread:', String(unreadCount))}
       {row('time:', renderedAt)}
       <VoltraAndroid.Spacer style={{ height: 8 }} />
       <VoltraAndroid.Row>

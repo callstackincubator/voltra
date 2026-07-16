@@ -124,6 +124,66 @@ describe('@use-voltra/metro manifest registry', () => {
     }
   })
 
+  test('generated Android Dynamic Widget adapters parse propsJSON and forward props to the entry component', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.android.json': JSON.stringify(
+        {
+          version: 1,
+          platform: 'android',
+          widgets: [{ id: 'inbox', entry: 'widgets/inbox.js' }],
+        },
+        null,
+        2
+      ),
+      'widgets/inbox.js': 'export default function InboxDynamicWidget() { return null }\n',
+    })
+    cleanups.push(cleanup)
+
+    const registry = createWidgetRegistry({ projectRoot })
+
+    try {
+      const dynamicWidget = registry.getWidget('android', 'inbox')
+      assert.ok(dynamicWidget)
+
+      const generatedAdapter = fs.readFileSync(dynamicWidget.generatedEntryPath, 'utf8')
+      const executableAdapter = generatedAdapter
+        .split('\n')
+        .filter((line) => !line.startsWith('import '))
+        .join('\n')
+        .replace('export function render(propsJSON, envJSON)', 'function render(propsJSON, envJSON)')
+        .replace('export default render', 'return render')
+
+      type DynamicWidgetRender = (propsJSON: string, envJSON: string) => string
+      type DynamicWidgetElement = {
+        type: (props: Record<string, unknown>) => unknown
+        props: Record<string, unknown>
+      }
+
+      const createAdapter = new Function('createElement', 'renderVariantToJson', 'Widget', executableAdapter) as (
+        createElement: (type: DynamicWidgetElement['type'], props: Record<string, unknown>) => DynamicWidgetElement,
+        renderVariantToJson: (element: DynamicWidgetElement) => unknown,
+        Widget: (props: Record<string, unknown>, env: Record<string, unknown>) => unknown
+      ) => DynamicWidgetRender
+
+      const render = createAdapter(
+        (type, props) => ({ type, props }),
+        (element) => element.type(element.props),
+        (props, env) => ({ props, env })
+      )
+      const dynamicWidgetProps = { unreadCount: 7, mailbox: { id: 'primary' } }
+      const dynamicWidgetEnvironment = { widgetFamily: '200x100' }
+
+      const rendered = JSON.parse(render(JSON.stringify(dynamicWidgetProps), JSON.stringify(dynamicWidgetEnvironment)))
+
+      assert.deepEqual(rendered, {
+        props: dynamicWidgetProps,
+        env: dynamicWidgetEnvironment,
+      })
+    } finally {
+      registry.close()
+    }
+  })
+
   test('surfaces a missing platform manifest when a widget is requested', () => {
     const { projectRoot, cleanup } = makeTempProject({
       '.voltra/manifest.ios.json': JSON.stringify(
