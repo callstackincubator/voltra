@@ -28,6 +28,10 @@ public enum VoltraStorageKeys {
     "Voltra_Widget_ServerUrl_\(widgetId)"
   }
 
+  public static func dynamicWidgetPropsV1(_ dynamicWidgetId: String) -> String {
+    "Voltra_DynamicWidget_Props_v1_\(dynamicWidgetId)"
+  }
+
   // MARK: - Prefixes / kind identifiers
 
   public static let widgetKindPrefix = "Voltra_Widget_"
