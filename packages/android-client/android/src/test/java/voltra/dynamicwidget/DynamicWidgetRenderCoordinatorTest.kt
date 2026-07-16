@@ -27,11 +27,18 @@ class DynamicWidgetRenderCoordinatorTest {
         val dynamicWidgetNode =
             dynamicWidgetRenderCoordinator.renderDynamicWidget(
                 dynamicWidgetId = "absent-props-dynamic-widget",
-                dynamicWidgetPropsJson = dynamicWidgetPropsJson,
+                dynamicWidgetRenderInput =
+                    DynamicWidgetRenderInput(
+                        propsRevision = 0L,
+                        propsJson = dynamicWidgetPropsJson,
+                    ),
                 dynamicWidgetEnvironmentJson = """{"widgetFamily":"180x110"}""",
             )
 
-        assertEquals("{}", dynamicWidgetRuntimeBoundary.renderedDynamicWidgetPropsJson)
+        assertEquals(
+            DynamicWidgetRenderInput(propsRevision = 0L, propsJson = "{}"),
+            dynamicWidgetRuntimeBoundary.renderedDynamicWidgetInput,
+        )
         assertTrue(dynamicWidgetNode is VoltraNode.Element)
         val dynamicWidgetTextNode =
             (dynamicWidgetNode as VoltraNode.Element).element.c as VoltraNode.Text
@@ -67,15 +74,20 @@ class DynamicWidgetRenderCoordinatorTest {
         val dynamicWidgetNode =
             dynamicWidgetRenderCoordinator.renderDynamicWidget(
                 dynamicWidgetId = "weather-dynamic-widget",
-                dynamicWidgetPropsJson = dynamicWidgetPropsJson,
+                dynamicWidgetRenderInput =
+                    DynamicWidgetRenderInput(
+                        propsRevision = 17L,
+                        propsJson = dynamicWidgetPropsJson,
+                    ),
                 dynamicWidgetEnvironmentJson = dynamicWidgetEnvironmentJson,
             )
 
         assertEquals("weather-dynamic-widget", dynamicWidgetRuntimeBoundary.renderedDynamicWidgetId)
         assertEquals(
             """{"title":"Forecast","weather":{"temperatures":[18,21,19],"metadata":{"units":"celsius","severe":false}}}""",
-            dynamicWidgetRuntimeBoundary.renderedDynamicWidgetPropsJson,
+            dynamicWidgetRuntimeBoundary.renderedDynamicWidgetInput?.propsJson,
         )
+        assertEquals(17L, dynamicWidgetRuntimeBoundary.renderedDynamicWidgetInput?.propsRevision)
         assertEquals(
             dynamicWidgetEnvironmentJson,
             dynamicWidgetRuntimeBoundary.renderedDynamicWidgetEnvironmentJson,
@@ -93,16 +105,16 @@ class DynamicWidgetRenderCoordinatorTest {
         private val dynamicWidgetStandaloneNodeJson: String?,
     ) : DynamicWidgetRuntimeBoundary {
         var renderedDynamicWidgetId: String? = null
-        var renderedDynamicWidgetPropsJson: String? = null
+        var renderedDynamicWidgetInput: DynamicWidgetRenderInput? = null
         var renderedDynamicWidgetEnvironmentJson: String? = null
 
         override fun renderDynamicWidget(
             dynamicWidgetId: String,
-            dynamicWidgetPropsJson: String,
+            dynamicWidgetRenderInput: DynamicWidgetRenderInput,
             dynamicWidgetEnvironmentJson: String,
         ): String? {
             renderedDynamicWidgetId = dynamicWidgetId
-            renderedDynamicWidgetPropsJson = dynamicWidgetPropsJson
+            renderedDynamicWidgetInput = dynamicWidgetRenderInput
             renderedDynamicWidgetEnvironmentJson = dynamicWidgetEnvironmentJson
             return dynamicWidgetStandaloneNodeJson
         }

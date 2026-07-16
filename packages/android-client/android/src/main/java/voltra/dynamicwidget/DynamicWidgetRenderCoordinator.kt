@@ -10,20 +10,25 @@ import voltra.runtime.VoltraJSRenderer
 internal fun interface DynamicWidgetRuntimeBoundary {
     fun renderDynamicWidget(
         dynamicWidgetId: String,
-        dynamicWidgetPropsJson: String,
+        dynamicWidgetRenderInput: DynamicWidgetRenderInput,
         dynamicWidgetEnvironmentJson: String,
     ): String?
 }
 
+internal data class DynamicWidgetRenderInput(
+    val propsRevision: Long,
+    val propsJson: String,
+)
+
 internal object DynamicWidgetHermesRuntimeBoundary : DynamicWidgetRuntimeBoundary {
     override fun renderDynamicWidget(
         dynamicWidgetId: String,
-        dynamicWidgetPropsJson: String,
+        dynamicWidgetRenderInput: DynamicWidgetRenderInput,
         dynamicWidgetEnvironmentJson: String,
     ): String? =
         VoltraJSRenderer.render(
             dynamicWidgetId,
-            dynamicWidgetPropsJson,
+            dynamicWidgetRenderInput.propsJson,
             dynamicWidgetEnvironmentJson,
         )
 }
@@ -33,13 +38,13 @@ internal class DynamicWidgetRenderCoordinator(
 ) {
     fun renderDynamicWidget(
         dynamicWidgetId: String,
-        dynamicWidgetPropsJson: String,
+        dynamicWidgetRenderInput: DynamicWidgetRenderInput,
         dynamicWidgetEnvironmentJson: String,
     ): VoltraNode? {
         val dynamicWidgetStandaloneNodeJson =
             dynamicWidgetRuntimeBoundary.renderDynamicWidget(
                 dynamicWidgetId = dynamicWidgetId,
-                dynamicWidgetPropsJson = dynamicWidgetPropsJson,
+                dynamicWidgetRenderInput = dynamicWidgetRenderInput,
                 dynamicWidgetEnvironmentJson = dynamicWidgetEnvironmentJson,
             ) ?: return null
 

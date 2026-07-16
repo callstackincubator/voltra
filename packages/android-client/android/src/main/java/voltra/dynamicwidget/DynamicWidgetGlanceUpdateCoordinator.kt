@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
 import voltra.widget.VoltraClientGlanceWidget
 import voltra.widget.VoltraWidgetReceiver
 
@@ -13,6 +14,8 @@ internal interface DynamicWidgetGlanceUpdateBoundary {
     fun getDynamicWidgetAppWidgetIds(dynamicWidgetReceiverComponentName: ComponentName): IntArray
 
     suspend fun getDynamicWidgetGlanceId(dynamicWidgetAppWidgetId: Int): GlanceId
+
+    suspend fun advanceDynamicWidgetPropsRevision(dynamicWidgetGlanceId: GlanceId)
 
     suspend fun updateDynamicWidget(
         dynamicWidgetGlanceAppWidget: VoltraClientGlanceWidget,
@@ -31,6 +34,13 @@ internal class AndroidDynamicWidgetGlanceUpdateBoundary(
 
     override suspend fun getDynamicWidgetGlanceId(dynamicWidgetAppWidgetId: Int): GlanceId =
         glanceAppWidgetManager.getGlanceIdBy(dynamicWidgetAppWidgetId)
+
+    override suspend fun advanceDynamicWidgetPropsRevision(dynamicWidgetGlanceId: GlanceId) {
+        updateAppWidgetState(context, dynamicWidgetGlanceId) { preferences ->
+            val currentRevision = preferences[dynamicWidgetPropsRevisionKey] ?: 0L
+            preferences[dynamicWidgetPropsRevisionKey] = currentRevision + 1L
+        }
+    }
 
     override suspend fun updateDynamicWidget(
         dynamicWidgetGlanceAppWidget: VoltraClientGlanceWidget,
@@ -65,6 +75,7 @@ internal class DynamicWidgetGlanceUpdateCoordinator(
         for (dynamicWidgetAppWidgetId in dynamicWidgetAppWidgetIds) {
             val dynamicWidgetGlanceId =
                 dynamicWidgetGlanceUpdateBoundary.getDynamicWidgetGlanceId(dynamicWidgetAppWidgetId)
+            dynamicWidgetGlanceUpdateBoundary.advanceDynamicWidgetPropsRevision(dynamicWidgetGlanceId)
             dynamicWidgetGlanceUpdateBoundary.updateDynamicWidget(
                 dynamicWidgetGlanceAppWidget = validatedDynamicWidgetGlanceAppWidget,
                 dynamicWidgetGlanceId = dynamicWidgetGlanceId,

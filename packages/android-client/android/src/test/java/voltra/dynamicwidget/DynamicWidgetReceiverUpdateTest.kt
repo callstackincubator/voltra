@@ -36,11 +36,21 @@ class DynamicWidgetReceiverUpdateTest {
                 dynamicWidgetGlanceUpdateBoundary.requestedDynamicWidgetReceiverComponentName,
             )
             assertEquals(listOf(41, 42), dynamicWidgetGlanceUpdateBoundary.convertedDynamicWidgetAppWidgetIds)
-            assertEquals(2, dynamicWidgetGlanceUpdateBoundary.updatedDynamicWidgetInstances.size)
-            dynamicWidgetGlanceUpdateBoundary.updatedDynamicWidgetInstances.forEachIndexed { index, update ->
-                assertSame(dynamicWidgetGlanceAppWidget, update.first)
-                assertEquals(DynamicWidgetTestGlanceId(index + 41), update.second)
-            }
+            assertEquals(
+                listOf(
+                    DynamicWidgetUpdateEvent.RevisionAdvanced(DynamicWidgetTestGlanceId(41), 1L),
+                    DynamicWidgetUpdateEvent.WidgetUpdated(
+                        dynamicWidgetGlanceAppWidget,
+                        DynamicWidgetTestGlanceId(41),
+                    ),
+                    DynamicWidgetUpdateEvent.RevisionAdvanced(DynamicWidgetTestGlanceId(42), 1L),
+                    DynamicWidgetUpdateEvent.WidgetUpdated(
+                        dynamicWidgetGlanceAppWidget,
+                        DynamicWidgetTestGlanceId(42),
+                    ),
+                ),
+                dynamicWidgetGlanceUpdateBoundary.events,
+            )
         }
 
     @Test
@@ -57,9 +67,40 @@ class DynamicWidgetReceiverUpdateTest {
                 )
 
             assertEquals(emptyList<Int>(), dynamicWidgetGlanceUpdateBoundary.convertedDynamicWidgetAppWidgetIds)
+            assertEquals(emptyList<DynamicWidgetUpdateEvent>(), dynamicWidgetGlanceUpdateBoundary.events)
+        }
+
+    @Test
+    fun advancesEachInstanceRevisionForEverySequentialUpdate() =
+        runTest {
+            val dynamicWidgetGlanceUpdateBoundary =
+                RecordingDynamicWidgetGlanceUpdateBoundary(intArrayOf(41))
+            val dynamicWidgetGlanceUpdateCoordinator =
+                DynamicWidgetGlanceUpdateCoordinator(dynamicWidgetGlanceUpdateBoundary)
+            val dynamicWidgetGlanceAppWidget = VoltraClientGlanceWidget("weather")
+
+            repeat(2) {
+                dynamicWidgetGlanceUpdateCoordinator.triggerDynamicWidgetGlanceUpdate(
+                    packageName = "com.example.app",
+                    dynamicWidgetId = "weather",
+                    dynamicWidgetGlanceAppWidget = dynamicWidgetGlanceAppWidget,
+                )
+            }
+
             assertEquals(
-                emptyList<Pair<VoltraClientGlanceWidget, GlanceId>>(),
-                dynamicWidgetGlanceUpdateBoundary.updatedDynamicWidgetInstances,
+                listOf(
+                    DynamicWidgetUpdateEvent.RevisionAdvanced(DynamicWidgetTestGlanceId(41), 1L),
+                    DynamicWidgetUpdateEvent.WidgetUpdated(
+                        dynamicWidgetGlanceAppWidget,
+                        DynamicWidgetTestGlanceId(41),
+                    ),
+                    DynamicWidgetUpdateEvent.RevisionAdvanced(DynamicWidgetTestGlanceId(41), 2L),
+                    DynamicWidgetUpdateEvent.WidgetUpdated(
+                        dynamicWidgetGlanceAppWidget,
+                        DynamicWidgetTestGlanceId(41),
+                    ),
+                ),
+                dynamicWidgetGlanceUpdateBoundary.events,
             )
         }
 
@@ -153,19 +194,58 @@ class DynamicWidgetReceiverUpdateTest {
         assertSame(updateFailure, exception)
     }
 
+    @Test
+    fun propagatesRevisionAdvanceFailuresWithoutUpdatingTheWidgetInstance() {
+        val revisionAdvanceFailure = IllegalStateException("Dynamic Widget state update failed")
+        val dynamicWidgetGlanceUpdateBoundary =
+            RecordingDynamicWidgetGlanceUpdateBoundary(
+                dynamicWidgetAppWidgetIds = intArrayOf(41),
+                dynamicWidgetRevisionAdvanceFailure = revisionAdvanceFailure,
+            )
+
+        val exception =
+            assertThrows(IllegalStateException::class.java) {
+                runTest {
+                    DynamicWidgetGlanceUpdateCoordinator(dynamicWidgetGlanceUpdateBoundary)
+                        .triggerDynamicWidgetGlanceUpdate(
+                            packageName = "com.example.app",
+                            dynamicWidgetId = "weather",
+                            dynamicWidgetGlanceAppWidget = VoltraClientGlanceWidget("weather"),
+                        )
+                }
+            }
+
+        assertSame(revisionAdvanceFailure, exception)
+        assertEquals(emptyList<DynamicWidgetUpdateEvent>(), dynamicWidgetGlanceUpdateBoundary.events)
+    }
+
     private data class DynamicWidgetTestGlanceId(
         val appWidgetId: Int,
     ) : GlanceId
+
+    private sealed interface DynamicWidgetUpdateEvent {
+        data class RevisionAdvanced(
+            val glanceId: GlanceId,
+            val revision: Long,
+        ) : DynamicWidgetUpdateEvent
+
+        data class WidgetUpdated(
+            val glanceAppWidget: VoltraClientGlanceWidget,
+            val glanceId: GlanceId,
+        ) : DynamicWidgetUpdateEvent
+    }
 
     private class RecordingDynamicWidgetGlanceUpdateBoundary(
         private val dynamicWidgetAppWidgetIds: IntArray,
         private val dynamicWidgetReceiverLookupFailure: Exception? = null,
         private val dynamicWidgetGlanceIdConversionFailure: Exception? = null,
+        private val dynamicWidgetRevisionAdvanceFailure: Exception? = null,
         private val dynamicWidgetUpdateFailure: Exception? = null,
     ) : DynamicWidgetGlanceUpdateBoundary {
         var requestedDynamicWidgetReceiverComponentName: ComponentName? = null
         val convertedDynamicWidgetAppWidgetIds = mutableListOf<Int>()
-        val updatedDynamicWidgetInstances = mutableListOf<Pair<VoltraClientGlanceWidget, GlanceId>>()
+        val events = mutableListOf<DynamicWidgetUpdateEvent>()
+        private val revisions = mutableMapOf<GlanceId, Long>()
 
         override fun getDynamicWidgetAppWidgetIds(dynamicWidgetReceiverComponentName: ComponentName): IntArray {
             requestedDynamicWidgetReceiverComponentName = dynamicWidgetReceiverComponentName
@@ -179,12 +259,23 @@ class DynamicWidgetReceiverUpdateTest {
             return DynamicWidgetTestGlanceId(dynamicWidgetAppWidgetId)
         }
 
+        override suspend fun advanceDynamicWidgetPropsRevision(dynamicWidgetGlanceId: GlanceId) {
+            dynamicWidgetRevisionAdvanceFailure?.let { throw it }
+            val nextRevision = (revisions[dynamicWidgetGlanceId] ?: 0L) + 1L
+            revisions[dynamicWidgetGlanceId] = nextRevision
+            events += DynamicWidgetUpdateEvent.RevisionAdvanced(dynamicWidgetGlanceId, nextRevision)
+        }
+
         override suspend fun updateDynamicWidget(
             dynamicWidgetGlanceAppWidget: VoltraClientGlanceWidget,
             dynamicWidgetGlanceId: GlanceId,
         ) {
             dynamicWidgetUpdateFailure?.let { throw it }
-            updatedDynamicWidgetInstances += dynamicWidgetGlanceAppWidget to dynamicWidgetGlanceId
+            events +=
+                DynamicWidgetUpdateEvent.WidgetUpdated(
+                    dynamicWidgetGlanceAppWidget,
+                    dynamicWidgetGlanceId,
+                )
         }
     }
 }
