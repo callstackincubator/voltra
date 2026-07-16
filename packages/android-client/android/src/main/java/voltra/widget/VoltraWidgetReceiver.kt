@@ -11,6 +11,8 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import voltra.dynamicwidget.AndroidDynamicWidgetGlanceUpdateBoundary
+import voltra.dynamicwidget.DynamicWidgetGlanceUpdateCoordinator
 
 /**
  * Base widget receiver for Voltra home screen widgets.
@@ -88,22 +90,19 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
             context: Context,
             dynamicWidgetId: String,
         ) {
-            val dynamicWidgetGlanceAppWidget =
-                requireDynamicWidgetGlanceAppWidget(
+            val updatedDynamicWidgetInstanceCount =
+                DynamicWidgetGlanceUpdateCoordinator(
+                    AndroidDynamicWidgetGlanceUpdateBoundary(context),
+                ).triggerDynamicWidgetGlanceUpdate(
+                    packageName = context.packageName,
                     dynamicWidgetId = dynamicWidgetId,
                     dynamicWidgetGlanceAppWidget = getWidget(context, dynamicWidgetId),
                 )
-            val dynamicWidgetGlanceIds =
-                GlanceAppWidgetManager(context).getGlanceIds(dynamicWidgetGlanceAppWidget.javaClass)
-
-            for (dynamicWidgetGlanceId in dynamicWidgetGlanceIds) {
-                dynamicWidgetGlanceAppWidget.update(context, dynamicWidgetGlanceId)
-            }
 
             Log.d(
                 TAG,
                 "Triggered Dynamic Widget update for '$dynamicWidgetId' " +
-                    "(${dynamicWidgetGlanceIds.size} instances)",
+                    "($updatedDynamicWidgetInstanceCount instances)",
             )
         }
 
