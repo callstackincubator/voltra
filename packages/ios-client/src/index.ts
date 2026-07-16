@@ -5,6 +5,7 @@ export {
 } from './components/VoltraLiveActivityPreview.js'
 export { VoltraView, type VoltraViewProps } from './components/VoltraView.js'
 export { VoltraWidgetPreview, type VoltraWidgetPreviewProps } from './components/VoltraWidgetPreview.js'
+export { type DynamicWidgetProps, type DynamicWidgetPropsValue, updateDynamicWidget } from './dynamic-widget/api.js'
 export * from './events.js'
 export { isGlassSupported, isHeadless, useIsHeadless } from './helpers.js'
 export { logger, type VoltraLogLevel } from './logger.js'

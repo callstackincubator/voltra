@@ -145,6 +145,24 @@ public enum VoltraErrors: Error {
 
   // MARK: - Home Screen Widgets
 
+  @objc public func updateDynamicWidget(
+    _ dynamicWidgetId: String,
+    dynamicWidgetPropsJson: String,
+    completion: @escaping (Error?) -> Void
+  ) {
+    Task {
+      do {
+        try await impl.updateDynamicWidget(
+          dynamicWidgetId: dynamicWidgetId,
+          dynamicWidgetPropsJson: dynamicWidgetPropsJson
+        )
+        completion(nil)
+      } catch {
+        completion(error)
+      }
+    }
+  }
+
   @objc public func updateWidget(
     _ widgetId: String,
     jsonString: String,

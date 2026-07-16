@@ -289,6 +289,25 @@
   }];
 }
 
+- (void)updateDynamicWidget:(NSString *)dynamicWidgetId
+     dynamicWidgetPropsJson:(NSString *)dynamicWidgetPropsJson
+                    resolve:(RCTPromiseResolveBlock)resolve
+                     reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module updateDynamicWidget:dynamicWidgetId
+            dynamicWidgetPropsJson:dynamicWidgetPropsJson
+                         completion:^(NSError *error) {
+    if (error) {
+      NSString *message = [NSString stringWithFormat:@"Failed to update Dynamic Widget '%@': %@",
+                                                     dynamicWidgetId,
+                                                     error.localizedDescription];
+      reject(@"updateDynamicWidget", message, error);
+    } else {
+      resolve(nil);
+    }
+  }];
+}
+
 - (void)scheduleWidget:(NSString *)widgetId
           timelineJson:(NSString *)timelineJson
                resolve:(RCTPromiseResolveBlock)resolve
