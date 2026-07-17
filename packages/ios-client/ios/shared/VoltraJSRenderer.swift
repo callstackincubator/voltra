@@ -155,7 +155,9 @@ public enum VoltraJSRenderer {
   // MARK: - Lifecycle
 
   private static func context() -> JSContext? {
-    if let existing = _context { return existing }
+    if let existing = _context {
+      return existing
+    }
     guard let ctx = JSContext() else {
       VoltraLogger.widget.error("[\(TAG)] Failed to create JSContext")
       return nil

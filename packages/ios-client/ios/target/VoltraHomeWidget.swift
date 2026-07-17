@@ -461,7 +461,9 @@ private extension View {
 private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
   // Prefer the timeline entry's deep link URL if available
   if let entryUrl = entry.deepLinkUrl, !entryUrl.isEmpty {
-    if entryUrl.contains("://"), let url = URL(string: entryUrl) { return url }
+    if entryUrl.contains("://"), let url = URL(string: entryUrl) {
+      return url
+    }
     if let scheme = VoltraDeepLinkResolver.deepLinkScheme() {
       let path = entryUrl.hasPrefix("/") ? entryUrl : "/\(entryUrl)"
       return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")
@@ -470,7 +472,9 @@ private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
 
   // Fallback to static deep link URL from UserDefaults
   if let raw = VoltraHomeWidgetStore.readDeepLinkUrl(widgetId: entry.widgetId), !raw.isEmpty {
-    if raw.contains("://"), let url = URL(string: raw) { return url }
+    if raw.contains("://"), let url = URL(string: raw) {
+      return url
+    }
     if let scheme = VoltraDeepLinkResolver.deepLinkScheme() {
       let path = raw.hasPrefix("/") ? raw : "/\(raw)"
       return URL(string: "\(scheme)://\(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))")

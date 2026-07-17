@@ -200,12 +200,16 @@ enum JSGradientParser {
         depth += 1
       } else if char == ")" {
         depth -= 1
-        if depth < 0 { return [] }
+        if depth < 0 {
+          return []
+        }
       }
 
       if char == ",", depth == 0 {
         let token = current.trimmingCharacters(in: .whitespacesAndNewlines)
-        if token.isEmpty { return [] }
+        if token.isEmpty {
+          return []
+        }
         args.append(token)
         current = ""
       } else {
@@ -216,7 +220,9 @@ enum JSGradientParser {
     guard depth == 0 else { return [] }
 
     let token = current.trimmingCharacters(in: .whitespacesAndNewlines)
-    if token.isEmpty { return [] }
+    if token.isEmpty {
+      return []
+    }
     args.append(token)
     return args
   }
@@ -231,7 +237,9 @@ enum JSGradientParser {
         depth += 1
       } else if char == ")" {
         depth -= 1
-        if depth < 0 { return [] }
+        if depth < 0 {
+          return []
+        }
       }
 
       if char.isWhitespace, depth == 0 {
@@ -269,10 +277,14 @@ enum JSGradientParser {
     for word in words {
       switch word {
       case "left", "right":
-        if horizontal != nil { return nil }
+        if horizontal != nil {
+          return nil
+        }
         horizontal = word
       case "top", "bottom":
-        if vertical != nil { return nil }
+        if vertical != nil {
+          return nil
+        }
         vertical = word
       default:
         return nil
@@ -418,10 +430,14 @@ enum JSGradientParser {
     for token in tokens {
       switch token {
       case "left":
-        if x != nil { return nil }
+        if x != nil {
+          return nil
+        }
         x = 0
       case "right":
-        if x != nil { return nil }
+        if x != nil {
+          return nil
+        }
         x = 1
       case "center":
         if x == nil {
@@ -432,10 +448,14 @@ enum JSGradientParser {
           return nil
         }
       case "top":
-        if y != nil { return nil }
+        if y != nil {
+          return nil
+        }
         y = 0
       case "bottom":
-        if y != nil { return nil }
+        if y != nil {
+          return nil
+        }
         y = 1
       default:
         return nil
@@ -613,8 +633,12 @@ enum JSGradientParser {
     guard !stops.isEmpty else { return [] }
 
     var positions = stops.map(\.position)
-    if positions.first == nil { positions[0] = 0 }
-    if positions.last == nil { positions[positions.count - 1] = 1 }
+    if positions.first == nil {
+      positions[0] = 0
+    }
+    if positions.last == nil {
+      positions[positions.count - 1] = 1
+    }
 
     var lastDefined: Double?
     for idx in positions.indices {

@@ -30,7 +30,9 @@ enum VoltraDeepLinkResolver {
     guard !raw.isEmpty else { return nil }
 
     // If it's already an absolute URL, use it as-is
-    if raw.contains("://"), let url = URL(string: raw) { return url }
+    if raw.contains("://"), let url = URL(string: raw) {
+      return url
+    }
 
     // Otherwise, prepend the app's URL scheme
     if let scheme = deepLinkScheme() {

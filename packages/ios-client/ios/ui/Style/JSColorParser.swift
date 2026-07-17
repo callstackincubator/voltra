@@ -8,7 +8,9 @@ enum JSColorParser {
     // Optimize: standard trim and lowercase
     let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
-    if trimmed.isEmpty { return nil }
+    if trimmed.isEmpty {
+      return nil
+    }
 
     // 1. Hex (with or without #)
     if trimmed.hasPrefix("#") {
@@ -57,7 +59,9 @@ enum JSColorParser {
     guard let string = value as? String else { return nil }
 
     let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    if trimmed.isEmpty { return nil }
+    if trimmed.isEmpty {
+      return nil
+    }
 
     if trimmed.hasPrefix("#") {
       return parseHexComponents(trimmed)
@@ -477,7 +481,9 @@ enum JSColorParser {
 
   private static func normalizeUnit(_ value: Double) -> Double {
     var result = value.truncatingRemainder(dividingBy: 1)
-    if result < 0 { result += 1 }
+    if result < 0 {
+      result += 1
+    }
     return result
   }
 
@@ -506,12 +512,22 @@ enum JSColorParser {
   /// Helper function for HSL to RGB conversion
   private static func hueToRgb(p: Double, q: Double, t: Double) -> Double {
     var t = t
-    if t < 0 { t += 1 }
-    if t > 1 { t -= 1 }
+    if t < 0 {
+      t += 1
+    }
+    if t > 1 {
+      t -= 1
+    }
 
-    if t < 1.0 / 6.0 { return p + (q - p) * 6 * t }
-    if t < 1.0 / 2.0 { return q }
-    if t < 2.0 / 3.0 { return p + (q - p) * (2.0 / 3.0 - t) * 6 }
+    if t < 1.0 / 6.0 {
+      return p + (q - p) * 6 * t
+    }
+    if t < 1.0 / 2.0 {
+      return q
+    }
+    if t < 2.0 / 3.0 {
+      return p + (q - p) * (2.0 / 3.0 - t) * 6
+    }
     return p
   }
 }

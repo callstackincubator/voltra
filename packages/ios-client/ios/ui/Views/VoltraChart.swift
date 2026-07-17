@@ -49,7 +49,9 @@ public struct VoltraChart: VoltraView {
   }
 
   private func bool(_ v: JSONValue) -> Bool? {
-    if case let .bool(value) = v { return value }
+    if case let .bool(value) = v {
+      return value
+    }
     return nil
   }
 
@@ -60,16 +62,22 @@ public struct VoltraChart: VoltraView {
     else { return nil }
 
     let props = dict.compactMapValues { jsonValue(from: $0) }
-    if props.isEmpty { return nil }
+    if props.isEmpty {
+      return nil
+    }
 
     let visible = props["v"].flatMap(bool) ?? props["visible"].flatMap(bool)
     let color = (props["c"] ?? props["color"]).flatMap {
-      if case let .string(value) = $0 { return JSColorParser.parse(value) }
+      if case let .string(value) = $0 {
+        return JSColorParser.parse(value)
+      }
       return nil
     }
     let lineWidth = (props["lw"] ?? props["lineWidth"]).flatMap(num).map { CGFloat($0) }
     let dash = ((props["d"] ?? props["dash"]).flatMap {
-      if case let .array(values) = $0 { return values.compactMap(num).map { CGFloat($0) } }
+      if case let .array(values) = $0 {
+        return values.compactMap(num).map { CGFloat($0) }
+      }
       return nil
     })
 
@@ -140,7 +148,11 @@ public struct VoltraChart: VoltraView {
       default: return 0
       }
     }()
-    let series: String? = pt.count >= 3 ? { if case let .string(s) = pt[2] { return s }; return nil }() : nil
+    let series: String? = pt.count >= 3 ? {
+      if case let .string(s) = pt[2] {
+        return s
+      }; return nil
+    }() : nil
     switch pt[0] {
     case let .string(x): return (x, nil, y, series)
     case let .double(x): return (nil, x, y, series)
@@ -186,12 +198,24 @@ public struct VoltraChart: VoltraView {
 
   @ChartContentBuilder
   private func buildMark(_ m: WireMark) -> some ChartContent {
-    if m.type == "bar" { barContent(m) }
-    if m.type == "line" { lineContent(m) }
-    if m.type == "area" { areaContent(m) }
-    if m.type == "point" { pointContent(m) }
-    if m.type == "rule" { ruleContent(m) }
-    if #available(iOS 17.0, macOS 14.0, *), m.type == "sector" { sectorContent(m) }
+    if m.type == "bar" {
+      barContent(m)
+    }
+    if m.type == "line" {
+      lineContent(m)
+    }
+    if m.type == "area" {
+      areaContent(m)
+    }
+    if m.type == "point" {
+      pointContent(m)
+    }
+    if m.type == "rule" {
+      ruleContent(m)
+    }
+    if #available(iOS 17.0, macOS 14.0, *), m.type == "sector" {
+      sectorContent(m)
+    }
   }
 
   // MARK: Bar
@@ -208,10 +232,16 @@ public struct VoltraChart: VoltraView {
     let (xStr, xNum, y, series) = xy(pt)
     let cr: CGFloat? = props["cr"].flatMap(num).map { CGFloat($0) }
     let barWidth: MarkDimension = {
-      if let v = props["w"].flatMap(num) { return .fixed(CGFloat(v)) }
+      if let v = props["w"].flatMap(num) {
+        return .fixed(CGFloat(v))
+      }
       return .automatic
     }()
-    let grouped: Bool = { if case let .string(s)? = props["stk"] { return s == "grouped" }; return false }()
+    let grouped: Bool = {
+      if case let .string(s)? = props["stk"] {
+        return s == "grouped"
+      }; return false
+    }()
 
     if let x = xStr {
       if let series {
@@ -555,15 +585,21 @@ public struct VoltraChart: VoltraView {
        case let .string(category) = pt[1]
     {
       let inner: MarkDimension = {
-        if let v = props["ir"].flatMap(num) { return .ratio(CGFloat(v)) }
+        if let v = props["ir"].flatMap(num) {
+          return .ratio(CGFloat(v))
+        }
         return .automatic
       }()
       let outer: MarkDimension = {
-        if let v = props["or"].flatMap(num) { return .ratio(CGFloat(v)) }
+        if let v = props["or"].flatMap(num) {
+          return .ratio(CGFloat(v))
+        }
         return .automatic
       }()
       let inset: CGFloat = {
-        if let v = props["agin"].flatMap(num) { return CGFloat(v) }
+        if let v = props["agin"].flatMap(num) {
+          return CGFloat(v)
+        }
         return 0
       }()
 

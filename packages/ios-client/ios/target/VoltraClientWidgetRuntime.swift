@@ -378,7 +378,9 @@ public struct VoltraClientWidgetContentView: View {
   private func parseResolvedNode(jsonString: String) -> VoltraNode? {
     guard let json = try? JSONValue.parse(from: jsonString) else { return nil }
     let node = VoltraNode.parse(from: json)
-    if case .empty = node { return nil }
+    if case .empty = node {
+      return nil
+    }
     return node
   }
 
