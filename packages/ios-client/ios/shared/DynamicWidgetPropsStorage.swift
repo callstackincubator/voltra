@@ -26,6 +26,7 @@ enum DynamicWidgetPropsStoreError: Error, Equatable, LocalizedError {
 protocol DynamicWidgetPropsStorage {
   func string(forKey key: String) throws -> String?
   func set(_ value: String, forKey key: String) throws
+  func removeObject(forKey key: String) throws
 }
 
 struct DynamicWidgetPropsUserDefaultsStorage: DynamicWidgetPropsStorage {
@@ -44,5 +45,9 @@ struct DynamicWidgetPropsUserDefaultsStorage: DynamicWidgetPropsStorage {
     guard userDefaults.synchronize() else {
       throw DynamicWidgetPropsStoreError.persistenceFailed
     }
+  }
+
+  func removeObject(forKey key: String) throws {
+    userDefaults.removeObject(forKey: key)
   }
 }

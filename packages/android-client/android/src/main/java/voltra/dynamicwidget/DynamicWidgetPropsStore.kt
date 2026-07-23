@@ -67,14 +67,23 @@ internal class DynamicWidgetPropsStore(
     }
 
     fun clearDynamicWidgetProps(dynamicWidgetId: String) {
-        dynamicWidgetPropsPreferences
-            .edit()
-            .remove(dynamicWidgetPropsStorageKey(dynamicWidgetId))
-            .apply()
+        val dynamicWidgetPropsCleared =
+            dynamicWidgetPropsPreferences
+                .edit()
+                .remove(dynamicWidgetPropsStorageKey(dynamicWidgetId))
+                .commit()
+
+        check(dynamicWidgetPropsCleared) {
+            "Failed to clear Dynamic Widget props for dynamicWidgetId=$dynamicWidgetId"
+        }
     }
 
     fun clearAllDynamicWidgetProps() {
-        dynamicWidgetPropsPreferences.edit().clear().apply()
+        val dynamicWidgetPropsCleared = dynamicWidgetPropsPreferences.edit().clear().commit()
+
+        check(dynamicWidgetPropsCleared) {
+            "Failed to clear all Dynamic Widget props"
+        }
     }
 
     private fun dynamicWidgetPropsStorageKey(dynamicWidgetId: String): String =

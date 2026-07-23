@@ -48,6 +48,22 @@ final class DynamicWidgetPropsStoreTests: XCTestCase {
     )
   }
 
+  func testClearsOneDynamicWidgetWithoutAffectingAnother() throws {
+    let storage = InMemoryDynamicWidgetPropsStorage()
+    let store = DynamicWidgetPropsStore(storage: storage)
+
+    try store.persistDynamicWidgetProps(#"{"value":1}"#, for: "cleared-dynamic-widget")
+    try store.persistDynamicWidgetProps(#"{"value":2}"#, for: "retained-dynamic-widget")
+
+    try store.clearDynamicWidgetProps(for: "cleared-dynamic-widget")
+
+    XCTAssertEqual(store.dynamicWidgetProps(for: "cleared-dynamic-widget"), "{}")
+    XCTAssertEqual(
+      try JSONValue.parse(from: store.dynamicWidgetProps(for: "retained-dynamic-widget")),
+      try JSONValue.parse(from: #"{"value":2}"#)
+    )
+  }
+
   func testPersistsPropsAcrossUserDefaultsBackedStoreRecreation() throws {
     let suiteName = "dev.voltra.tests.dynamic-widget-props.\(UUID().uuidString)"
     let firstDefaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
@@ -215,5 +231,12 @@ private final class InMemoryDynamicWidgetPropsStorage: DynamicWidgetPropsStorage
       throw writeError
     }
     values[key] = value
+  }
+
+  func removeObject(forKey key: String) throws {
+    if let writeError {
+      throw writeError
+    }
+    values.removeValue(forKey: key)
   }
 }

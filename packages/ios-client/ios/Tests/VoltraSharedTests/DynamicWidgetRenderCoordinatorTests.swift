@@ -146,4 +146,8 @@ private final class InMemoryDynamicWidgetRenderPropsStorage: DynamicWidgetPropsS
   func set(_ value: String, forKey key: String) throws {
     values[key] = value
   }
+
+  func removeObject(forKey key: String) throws {
+    values.removeValue(forKey: key)
+  }
 }

@@ -39,6 +39,11 @@ struct DynamicWidgetPropsStore {
     return DynamicWidgetPropsCodec.decodeDynamicWidgetProps(storageEntryJSON: storageEntryJSON)
   }
 
+  func clearDynamicWidgetProps(for dynamicWidgetID: String) throws {
+    let resolvedStorage = try storage.get()
+    try resolvedStorage.removeObject(forKey: Self.storageKey(for: dynamicWidgetID))
+  }
+
   static func storageKey(for dynamicWidgetID: String) -> String {
     VoltraStorageKeys.dynamicWidgetPropsV1(dynamicWidgetID)
   }

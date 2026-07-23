@@ -87,6 +87,7 @@ the Dynamic Widget props passed as the first argument; updating one does not rep
 Notes:
 
 - iOS and Android widget declarations stay separate, and the same widget id can exist on both platforms as separate entries.
+- Set `groupIdentifier` in the Voltra plugin configuration before calling `updateDynamicWidget`; the app and WidgetKit extension use the shared App Group to exchange runtime props.
 - Rebuild the native iOS app after changing plugin configuration or upgrading to a package version that adds a native API.
 - Verify release rendering on a **real device** — the iOS Simulator is unreliable for widget
   rendering.

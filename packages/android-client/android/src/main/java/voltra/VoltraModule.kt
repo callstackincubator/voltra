@@ -24,6 +24,7 @@ import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.images.VoltraImageManager
 import voltra.runtime.VoltraConfigurationStore
+import voltra.widget.VoltraClientGlanceWidget
 import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetManager
 import voltra.widget.VoltraWidgetReceiver
@@ -47,9 +48,13 @@ class VoltraModule(
         VoltraImageManager(reactApplicationContext)
     }
 
+    private val dynamicWidgetPropsStore by lazy {
+        DynamicWidgetPropsStore(reactApplicationContext)
+    }
+
     private val dynamicWidgetUpdater by lazy {
         DynamicWidgetUpdater(
-            dynamicWidgetPropsPersistence = DynamicWidgetPropsStore(reactApplicationContext),
+            dynamicWidgetPropsPersistence = dynamicWidgetPropsStore,
             dynamicWidgetUpdateTrigger =
                 DynamicWidgetUpdateTrigger { dynamicWidgetId ->
                     VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(
@@ -269,7 +274,20 @@ class VoltraModule(
     ) {
         Log.d(TAG, "clearAndroidWidget called with widgetId=$widgetId")
         widgetManager.clearWidgetData(widgetId)
-        runBlocking { widgetManager.updateWidget(widgetId) }
+        dynamicWidgetPropsStore.clearDynamicWidgetProps(widgetId)
+        runBlocking {
+            if (
+                VoltraWidgetReceiver.getWidget(reactApplicationContext, widgetId) is
+                    VoltraClientGlanceWidget
+            ) {
+                VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(
+                    context = reactApplicationContext,
+                    dynamicWidgetId = widgetId,
+                )
+            } else {
+                widgetManager.updateWidget(widgetId)
+            }
+        }
         Log.d(TAG, "clearAndroidWidget completed")
         promise.resolve(null)
     }
@@ -277,6 +295,7 @@ class VoltraModule(
     override fun clearAllAndroidWidgets(promise: Promise) {
         Log.d(TAG, "clearAllAndroidWidgets called")
         widgetManager.clearAllWidgetData()
+        dynamicWidgetPropsStore.clearAllDynamicWidgetProps()
         runBlocking { widgetManager.reloadAllWidgets() }
         Log.d(TAG, "clearAllAndroidWidgets completed")
         promise.resolve(null)

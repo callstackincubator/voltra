@@ -74,6 +74,7 @@ Example plugin config:
       [
         "@use-voltra/ios-client",
         {
+          "groupIdentifier": "group.com.example.app",
           "widgets": [
             {
               "id": "weather_widget",
@@ -90,6 +91,8 @@ Example plugin config:
   }
 }
 ```
+
+`groupIdentifier` is required when using runtime props because the app and WidgetKit extension exchange the latest props through the shared App Group. Environment-only Dynamic Widgets can omit it.
 
 After changing the plugin configuration, rebuild the native iOS app. You also need a native rebuild after upgrading to a version of `@use-voltra/ios-client` that introduces a new native API.
 
