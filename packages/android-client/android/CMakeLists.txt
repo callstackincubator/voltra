@@ -50,4 +50,7 @@ target_link_libraries(voltra_js_renderer
 # pin it explicitly so older NDKs also produce 16KB-compatible output. We
 # only support 16KB alignment (no 4KB-only build) — 16KB-aligned libs run
 # fine on 4KB-page devices too.
-target_link_options(voltra_js_renderer PRIVATE "-Wl,-z,max-page-size=16384")
+target_link_options(voltra_js_renderer PRIVATE
+  "-Wl,-z,max-page-size=16384"
+  "-Wl,-z,common-page-size=16384"
+)
