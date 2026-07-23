@@ -2,11 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      resume_version:
-        description: 'Version of an interrupted release to resume'
-        required: false
-        type: string
 
 permissions: {}
 
@@ -38,6 +33,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          ref: main
           fetch-depth: 0
           persist-credentials: false
 
@@ -54,8 +50,7 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
-      - name: Install dependencies for a new release
-        if: ${{ !inputs.resume_version }}
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Configure git identity
@@ -63,8 +58,24 @@ jobs:
           git config user.name "$GIT_AUTHOR_NAME"
           git config user.email "$GIT_AUTHOR_EMAIL"
 
+      - name: Resolve release state
+        run: |
+          VERSION=$(node -p "require('./packages/core/package.json').version")
+          SUBJECT=$(git log -1 --format=%s)
+
+          if [ "$SUBJECT" = "chore: release $VERSION" ] || [ "$SUBJECT" = "chore: release v$VERSION" ]; then
+            echo "Retrying release $VERSION from the repository's release commit."
+            {
+              echo "RELEASE_RETRY=true"
+              echo "RELEASE_VERSION=$VERSION"
+              echo "RELEASE_COMMIT=$(git rev-parse HEAD)"
+            } >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_RETRY=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Check release plan
-        if: ${{ !inputs.resume_version }}
+        if: ${{ env.RELEASE_RETRY != 'true' }}
         run: |
           pnpm exec changeset status --output=.changeset-release-plan.json
           node <<'NODE'
@@ -86,13 +97,13 @@ jobs:
           NODE
 
       - name: Version packages
-        if: ${{ !inputs.resume_version }}
+        if: ${{ env.RELEASE_RETRY != 'true' }}
         run: |
           pnpm run version-packages
           pnpm install --lockfile-only
 
       - name: Resolve release version
-        if: ${{ !inputs.resume_version }}
+        if: ${{ env.RELEASE_RETRY != 'true' }}
         run: |
           VERSION=$(node <<'NODE'
           const plan = require('./.changeset-release-plan.json')
@@ -112,74 +123,6 @@ jobs:
           )
           echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      - name: Resolve interrupted release
-        if: ${{ inputs.resume_version }}
-        env:
-          RESUME_VERSION: ${{ inputs.resume_version }}
-        run: |
-          node <<'NODE'
-          const { execFileSync } = require('node:child_process')
-          const { appendFileSync } = require('node:fs')
-
-          const version = process.env.RESUME_VERSION
-          if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version ?? '')) {
-            throw new Error('resume_version must be a semantic version')
-          }
-
-          const commits = execFileSync(
-            'git',
-            [
-              'log',
-              'origin/main',
-              '--format=%H',
-              '--fixed-strings',
-              '--grep',
-              `chore: release ${version}`,
-              '--grep',
-              `chore: release v${version}`,
-            ],
-            { encoding: 'utf8' }
-          )
-            .trim()
-            .split('\n')
-            .filter(Boolean)
-
-          if (commits.length !== 1) {
-            throw new Error(`Expected one release commit for ${version}, got ${commits.length}`)
-          }
-
-          const packageFiles = execFileSync('git', ['ls-tree', '-r', '--name-only', commits[0], 'packages'], {
-            encoding: 'utf8',
-          })
-            .trim()
-            .split('\n')
-            .filter((file) => /^packages\/[^/]+\/package\.json$/.test(file))
-
-          const mismatchedPackages = packageFiles.flatMap((file) => {
-            const pkg = JSON.parse(execFileSync('git', ['show', `${commits[0]}:${file}`], { encoding: 'utf8' }))
-            return pkg.private || pkg.version === version ? [] : [`${pkg.name}@${pkg.version}`]
-          })
-
-          if (mismatchedPackages.length > 0) {
-            throw new Error(
-              `Release commit ${commits[0]} does not consistently version public packages: ${mismatchedPackages.join(', ')}`
-            )
-          }
-
-          appendFileSync(
-            process.env.GITHUB_ENV,
-            `RELEASE_VERSION=${version}\nRELEASE_COMMIT=${commits[0]}\n`
-          )
-          NODE
-
-      - name: Check out interrupted release commit
-        if: ${{ inputs.resume_version }}
-        run: git checkout --detach "$RELEASE_COMMIT"
-
-      - name: Install dependencies for an interrupted release
-        if: ${{ inputs.resume_version }}
-        run: pnpm install --frozen-lockfile
-
       - name: Build packages
         run: |
           # CI already validated the selected source commit. This fresh build
@@ -187,7 +130,7 @@ jobs:
           pnpm run build:all
 
       - name: Commit release changes
-        if: ${{ !inputs.resume_version }}
+        if: ${{ env.RELEASE_RETRY != 'true' }}
         run: |
           git add .changeset packages package.json pnpm-lock.yaml
           if git diff --cached --quiet; then
@@ -198,7 +141,7 @@ jobs:
           echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       - name: Push release commit
-        if: ${{ !inputs.resume_version }}
+        if: ${{ env.RELEASE_RETRY != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
