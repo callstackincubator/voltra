@@ -6,6 +6,10 @@ Components that arrange other elements or provide structural grouping using Jetp
 
 A vertical container that arranges its children in a column.
 
+:::warning Glance limit
+`Column` supports at most 10 direct rendered children. Jetpack Glance truncates extra children. Use `LazyColumn` for dynamic or scrollable collections.
+:::
+
 **Parameters:**
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
@@ -16,6 +20,10 @@ A vertical container that arranges its children in a column.
 ### Row
 
 A horizontal container that arranges its children in a row.
+
+:::warning Glance limit
+`Row` supports at most 10 direct rendered children. Jetpack Glance truncates extra children. Use `LazyColumn` for dynamic or scrollable collections.
+:::
 
 **Parameters:**
 

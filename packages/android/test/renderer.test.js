@@ -89,6 +89,30 @@ test('renders Android view payloads with metadata separate from variants', () =>
   )
 })
 
+test('warns when Column or Row exceed the 10 direct children Glance limit', () => {
+  const originalWarn = console.warn
+  const warnings = []
+  console.warn = (...args) => warnings.push(args.join(' '))
+
+  try {
+    const manyChildren = Array.from({ length: 11 }, (_, index) =>
+      React.createElement(VoltraAndroid.Text, { key: index }, `child-${index}`)
+    )
+
+    renderAndroidViewToJson(React.createElement(VoltraAndroid.Column, null, ...manyChildren))
+    renderAndroidViewToJson(React.createElement(VoltraAndroid.Row, null, ...manyChildren))
+    renderAndroidViewToJson(
+      React.createElement(VoltraAndroid.Column, null, React.createElement(VoltraAndroid.Text, null, 'ok'))
+    )
+  } finally {
+    console.warn = originalWarn
+  }
+
+  assert.equal(warnings.length, 2)
+  assert.match(warnings[0], /Column supports at most 10 direct children.*got 11.*LazyColumn/)
+  assert.match(warnings[1], /Row supports at most 10 direct children.*got 11.*LazyColumn/)
+})
+
 test('renders LazyVerticalGrid children with fixed columns and horizontal alignment', () => {
   const letters = ['A', 'B', 'C']
 
