@@ -5,6 +5,7 @@ import path from 'node:path'
 import Module from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, mock, test } from 'node:test'
+import { createElement } from 'react'
 
 import { bundleWidgets } from './bundleWidgets.ts'
 import { createVoltraMiddleware } from './createVoltraMiddleware.ts'
@@ -123,6 +124,78 @@ describe('@use-voltra/metro manifest registry', () => {
       registry.close()
     }
   })
+
+  for (const platform of ['ios', 'android'] as const) {
+    test(`generated ${platform} Dynamic Widget adapters preserve reserved React prop names`, () => {
+      const { projectRoot, cleanup } = makeTempProject({
+        [`.voltra/manifest.${platform}.json`]: JSON.stringify(
+          {
+            version: 1,
+            platform,
+            widgets: [{ id: 'inbox', entry: 'widgets/inbox.js' }],
+          },
+          null,
+          2
+        ),
+        'widgets/inbox.js': 'export default function InboxDynamicWidget() { return null }\n',
+      })
+      cleanups.push(cleanup)
+
+      const registry = createWidgetRegistry({ projectRoot })
+
+      try {
+        const dynamicWidget = registry.getWidget(platform, 'inbox')
+        assert.ok(dynamicWidget)
+
+        const generatedAdapter = fs.readFileSync(dynamicWidget.generatedEntryPath, 'utf8')
+        const executableAdapter = generatedAdapter
+          .split('\n')
+          .filter((line) => !line.startsWith('import '))
+          .join('\n')
+          .replace('export function render(propsJSON, envJSON)', 'function render(propsJSON, envJSON)')
+          .replace('export default render', 'return render')
+
+        type DynamicWidgetRender = (propsJSON: string, envJSON: string) => string
+        type DynamicWidgetElement = {
+          type: (props: Record<string, unknown>) => unknown
+          props: Record<string, unknown>
+        }
+        type CreateDynamicWidgetElement = (
+          type: DynamicWidgetElement['type'],
+          props: Record<string, unknown>
+        ) => DynamicWidgetElement
+
+        const createAdapter = new Function('createElement', 'renderVariantToJson', 'Widget', executableAdapter) as (
+          createElement: CreateDynamicWidgetElement,
+          renderVariantToJson: (element: DynamicWidgetElement) => unknown,
+          Widget: (props: Record<string, unknown>, env: Record<string, unknown>) => unknown
+        ) => DynamicWidgetRender
+
+        const render = createAdapter(
+          createElement as unknown as CreateDynamicWidgetElement,
+          (element) => element.type(element.props),
+          (props, env) => ({ props, env })
+        )
+        const dynamicWidgetProps = {
+          key: 'primary-inbox',
+          unreadCount: 7,
+          mailbox: { id: 'primary' },
+        }
+        const dynamicWidgetEnvironment = { widgetFamily: '200x100' }
+
+        const rendered = JSON.parse(
+          render(JSON.stringify(dynamicWidgetProps), JSON.stringify(dynamicWidgetEnvironment))
+        )
+
+        assert.deepEqual(rendered, {
+          props: dynamicWidgetProps,
+          env: dynamicWidgetEnvironment,
+        })
+      } finally {
+        registry.close()
+      }
+    })
+  }
 
   test('surfaces a missing platform manifest when a widget is requested', () => {
     const { projectRoot, cleanup } = makeTempProject({

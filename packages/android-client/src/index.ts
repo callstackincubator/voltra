@@ -45,6 +45,11 @@ export type {
   UseAndroidOngoingNotificationResult,
 } from '@use-voltra/android'
 export {
+  updateAndroidDynamicWidget,
+  type AndroidDynamicWidgetProps,
+  type AndroidDynamicWidgetPropsValue,
+} from './dynamic-widget/api.js'
+export {
   clearAllAndroidWidgets,
   clearAndroidWidget,
   getActiveWidgets,

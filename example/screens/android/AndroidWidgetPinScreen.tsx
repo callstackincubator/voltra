@@ -6,6 +6,8 @@ import { requestPinAndroidWidget, setWidgetConfiguration } from '@use-voltra/and
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
+const DYNAMIC_WIDGET_ID = 'AndroidClientDemoWidget'
+
 const AVAILABLE_WIDGETS = [
   {
     id: 'voltra',
@@ -29,9 +31,9 @@ const AVAILABLE_WIDGETS = [
     defaultPreviewHeight: 150,
   },
   {
-    id: 'AndroidClientDemoWidget',
-    name: 'Client-Rendered Demo',
-    description: 'On-device JSX render (Hermes) with live env',
+    id: DYNAMIC_WIDGET_ID,
+    name: 'Dynamic Widget Demo',
+    description: 'On-device JSX render (Hermes) with runtime props and live env',
     defaultPreviewWidth: 250,
     defaultPreviewHeight: 150,
   },
@@ -50,8 +52,11 @@ export default function AndroidWidgetPinScreen() {
       return
     }
     try {
-      await setWidgetConfiguration(selectedWidgetId, 'label', configLabel)
-      Alert.alert('Saved', `Set config "label" = "${configLabel}" for ${selectedWidgetId}. The widget re-renders.`)
+      await setWidgetConfiguration(DYNAMIC_WIDGET_ID, 'label', configLabel)
+      Alert.alert(
+        'Saved',
+        `Set env.configuration.label to "${configLabel}" for ${DYNAMIC_WIDGET_ID}. The Dynamic Widget re-renders.`
+      )
     } catch (error: any) {
       Alert.alert('Error', error?.message || String(error))
     }
@@ -131,7 +136,10 @@ export default function AndroidWidgetPinScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Configuration (Dynamic Widget)</Text>
+        <Text style={styles.sectionTitle}>Dynamic Widget configuration</Text>
+        <Text style={styles.widgetDescription}>
+          Configuration is separate from runtime props and is available through env.configuration.
+        </Text>
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>env.configuration.label</Text>
           <TextInput

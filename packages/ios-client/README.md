@@ -12,7 +12,7 @@
 
 - **iOS Widgets**: Update, schedule, reload, and query widgets with `updateWidget`, `scheduleWidget`, `getActiveWidgets`, and more.
 
-- **Client-rendered widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (family, color scheme, locale, configuration).
+- **Dynamic Widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the Dynamic Widget component, and render it on-device from runtime props and live environment values (family, color scheme, locale, configuration).
 
 - **Fast Refresh**: Hooks and previews integrate with your React Native dev workflow.
 
@@ -22,20 +22,73 @@
 
 - **Expo config plugin**: Add `"@use-voltra/ios-client"` to `app.json` to generate the Live Activity extension, widget targets, and entitlements.
 
-## Client-rendered widgets (experimental)
+## Dynamic Widgets (experimental)
 
 > [!WARNING]
-> Client-rendered widgets are **experimental** — usable in production at your own risk. The API may
+> Dynamic Widgets are **experimental** — usable in production at your own risk. The API may
 > change between releases.
 
-Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
-module must default-export the widget function or component; the exported name does not need to
-match the widget id. The widget renders on-device, so it can react to live environment values
-(widget family, color scheme, locale, and user `configuration` from the native Edit Widget sheet).
+Declare a Dynamic Widget in app.json with a stable `id` and a project-relative `entry` path. The
+entry module must default-export the Dynamic Widget function or component; the exported name does
+not need to match the Dynamic Widget id. A Dynamic Widget renders on-device, so it can react to both
+runtime props and live environment values (widget family, color scheme, locale, and user
+`configuration` from the native Edit Widget sheet).
+
+The first argument is the Dynamic Widget props object. Use `updateDynamicWidget` in your app to
+persist a new props object and re-render the installed Dynamic Widget with the matching id:
+
+```tsx
+// widgets/ios/inbox-widget.tsx
+import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
+
+type InboxDynamicWidgetProps = {
+  headline?: string
+  unreadCount?: number
+}
+
+export default function InboxDynamicWidget(
+  props: InboxDynamicWidgetProps = {},
+  env: WidgetEnvironment = {} as WidgetEnvironment
+) {
+  const headline = props.headline ?? 'Inbox'
+  const unreadCount = props.unreadCount ?? 0
+
+  return (
+    <Voltra.VStack style={{ padding: 16, backgroundColor: '#111827' }}>
+      <Voltra.Text style={{ color: 'white' }}>{headline}</Voltra.Text>
+      <Voltra.Text style={{ color: '#34D399' }}>{unreadCount} unread</Voltra.Text>
+      <Voltra.Text style={{ color: '#9CA3AF' }}>Family: {env.widgetFamily}</Voltra.Text>
+    </Voltra.VStack>
+  )
+}
+```
+
+```ts
+// App code
+import { updateDynamicWidget } from '@use-voltra/ios-client'
+
+await updateDynamicWidget('inbox_widget', { headline: 'Team inbox', unreadCount: 7 })
+```
+
+Dynamic Widget props must be JSON-serializable: strings, numbers, booleans, `null`, arrays, and nested
+objects are supported. Values such as functions, `undefined`, `Date`, `BigInt`, and cyclic references
+are not supported. Before the first `updateDynamicWidget` call, the entry receives `{}`. The latest
+props object is stored by Dynamic Widget id, survives app process restarts, and is reused on
+subsequent renders until another update replaces it or the app's data is cleared.
+
+`updateDynamicWidget` is only for an entry-based Dynamic Widget. The legacy `updateWidget` API sends
+pre-rendered variant payloads to a payload-driven widget and cannot update an entry-based Dynamic
+Widget.
+
+Configuration parameters declared in `app.json` (`appIntent.parameters`) are edited by the user in
+the native iOS Edit Widget sheet and surface as `env.configuration`. Configuration is separate from
+the Dynamic Widget props passed as the first argument; updating one does not replace the other.
 
 Notes:
 
 - iOS and Android widget declarations stay separate, and the same widget id can exist on both platforms as separate entries.
+- Set `groupIdentifier` in the Voltra plugin configuration before calling `updateDynamicWidget`; the app and WidgetKit extension use the shared App Group to exchange runtime props.
+- Rebuild the native iOS app after changing plugin configuration or upgrading to a package version that adds a native API.
 - Verify release rendering on a **real device** — the iOS Simulator is unreliable for widget
   rendering.
 
@@ -46,7 +99,7 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). Rele
 - [Installation](https://use-voltra.dev/getting-started/installation)
 - [iOS Setup](https://use-voltra.dev/ios/setup)
 - [Developing Live Activities](https://use-voltra.dev/ios/development/developing-live-activities)
-- [Developing client-rendered widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
+- [Developing Dynamic Widgets](https://use-voltra.dev/ios/development/dynamic-widgets)
 - [Plugin Configuration](https://use-voltra.dev/ios/api/plugin-configuration)
 - [API Reference](https://use-voltra.dev/ios/api/configuration)
 

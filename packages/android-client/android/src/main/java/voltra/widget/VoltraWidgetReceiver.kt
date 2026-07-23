@@ -11,6 +11,8 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import voltra.dynamicwidget.AndroidDynamicWidgetGlanceUpdateBoundary
+import voltra.dynamicwidget.DynamicWidgetGlanceUpdateCoordinator
 
 /**
  * Base widget receiver for Voltra home screen widgets.
@@ -71,6 +73,37 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to trigger update for '$widgetId': ${e.message}", e)
             }
+        }
+
+        internal fun requireDynamicWidgetGlanceAppWidget(
+            dynamicWidgetId: String,
+            dynamicWidgetGlanceAppWidget: GlanceAppWidget?,
+        ): VoltraClientGlanceWidget {
+            require(dynamicWidgetGlanceAppWidget is VoltraClientGlanceWidget) {
+                "Receiver for dynamicWidgetId=$dynamicWidgetId is not a Dynamic Widget receiver"
+            }
+            return dynamicWidgetGlanceAppWidget
+        }
+
+        /** Trigger a Dynamic Widget Glance update and propagate lookup or update failures. */
+        suspend fun triggerDynamicWidgetGlanceUpdate(
+            context: Context,
+            dynamicWidgetId: String,
+        ) {
+            val updatedDynamicWidgetInstanceCount =
+                DynamicWidgetGlanceUpdateCoordinator(
+                    AndroidDynamicWidgetGlanceUpdateBoundary(context),
+                ).triggerDynamicWidgetGlanceUpdate(
+                    packageName = context.packageName,
+                    dynamicWidgetId = dynamicWidgetId,
+                    dynamicWidgetGlanceAppWidget = getWidget(context, dynamicWidgetId),
+                )
+
+            Log.d(
+                TAG,
+                "Triggered Dynamic Widget update for '$dynamicWidgetId' " +
+                    "($updatedDynamicWidgetInstanceCount instances)",
+            )
         }
 
         /**

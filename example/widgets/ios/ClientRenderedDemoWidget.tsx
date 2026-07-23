@@ -2,13 +2,23 @@ import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 
 // Minimal Dynamic Widget example for verifying the dev loop.
 //
-// Plain black tile with the env values the runtime captured per render, plus a single
+// Plain black tile with runtime props and the env values captured per render, plus a single
 // editable literal (`hotReloadMarker` below) for proving hot reload end-to-end.
 // Edit the literal, save, watch the home-screen widget update within ~1 second.
 
-export default function ClientRenderedDemoWidget(_props: object, env: WidgetEnvironment = {} as WidgetEnvironment) {
+export type ClientRenderedDemoWidgetProps = {
+  headline?: string
+  unreadCount?: number
+}
+
+export default function ClientRenderedDemoWidget(
+  props: ClientRenderedDemoWidgetProps = {},
+  env: WidgetEnvironment = {} as WidgetEnvironment
+) {
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
   const hotReloadMarker = 'edit me'
+  const headline = props.headline ?? 'No headline yet'
+  const unreadCount = props.unreadCount ?? 0
 
   const date = env.date ? new Date(env.date) : new Date()
   const renderedAt = date.toLocaleTimeString('en-US', {
@@ -25,10 +35,14 @@ export default function ClientRenderedDemoWidget(_props: object, env: WidgetEnvi
   const valueStyle = { fontSize: 9, color: '#94A3B8' } as const
 
   return (
-    <Voltra.VStack alignment="leading" spacing={4} style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}>
+    <Voltra.VStack alignment="leading" spacing={3} style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}>
       <Voltra.Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Client-rendered demo</Voltra.Text>
 
       <Voltra.Text style={{ fontSize: 14, fontWeight: '600', color: '#34D399' }}>{hotReloadMarker}</Voltra.Text>
+
+      <Voltra.Text style={{ fontSize: 10, color: '#34D399' }}>
+        {headline} · {unreadCount} unread
+      </Voltra.Text>
 
       <Voltra.HStack spacing={4}>
         <Voltra.Text style={labelStyle}>family:</Voltra.Text>

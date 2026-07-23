@@ -100,6 +100,7 @@ export interface Spec extends TurboModule {
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>
   reloadLiveActivities(activityNames?: string[] | null): Promise<void>
   clearPreloadedImages(keys?: string[] | null): Promise<void>
+  updateDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   updateWidget(widgetId: string, jsonString: string, options: UpdateWidgetOptions): Promise<void>
   scheduleWidget(widgetId: string, timelineJson: string): Promise<void>
   reloadWidgets(widgetIds?: string[] | null): Promise<void>

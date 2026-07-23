@@ -351,10 +351,20 @@ public struct VoltraClientWidgetContentView: View {
         locale: locale,
         configuration: entry.configuration
       )
-      if let resolved = VoltraJSRenderer.render(
-        widgetId: entry.widgetId,
-        propsJSON: "{}",
-        envJSON: envJSON
+      let dynamicWidgetPropsStore = DynamicWidgetPropsStore()
+      let dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator(
+        dynamicWidgetPropsProvider: dynamicWidgetPropsStore.dynamicWidgetProps(for:),
+        dynamicWidgetRuntimeBoundary: { dynamicWidgetID, dynamicWidgetPropsJSON, dynamicWidgetEnvironmentJSON in
+          VoltraJSRenderer.render(
+            widgetId: dynamicWidgetID,
+            propsJSON: dynamicWidgetPropsJSON,
+            envJSON: dynamicWidgetEnvironmentJSON
+          )
+        }
+      )
+      if let resolved = dynamicWidgetRenderCoordinator.renderDynamicWidget(
+        dynamicWidgetID: entry.widgetId,
+        dynamicWidgetEnvironmentJSON: envJSON
       ), let node = parseResolvedNode(jsonString: resolved) {
         return VoltraHomeWidgetEntry(date: entry.date, rootNode: node, widgetId: entry.widgetId)
       }
@@ -368,7 +378,9 @@ public struct VoltraClientWidgetContentView: View {
   private func parseResolvedNode(jsonString: String) -> VoltraNode? {
     guard let json = try? JSONValue.parse(from: jsonString) else { return nil }
     let node = VoltraNode.parse(from: json)
-    if case .empty = node { return nil }
+    if case .empty = node {
+      return nil
+    }
     return node
   }
 

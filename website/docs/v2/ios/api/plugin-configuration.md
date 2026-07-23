@@ -38,6 +38,7 @@ App Group identifier for sharing data between your app and the widget extension.
 - Forward component events (like button taps) from Live Activities to your JavaScript code
 - Share images between your app and the extension
 - Use image preloading features
+- Update entry-based Dynamic Widgets with runtime props
 
 **Format:** Must start with `group.` (e.g., `group.your.bundle.identifier`)
 

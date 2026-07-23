@@ -23,6 +23,8 @@ export type ExampleSection = {
     | '/testing-grounds/widget-scheduling'
     | '/testing-grounds/server-driven-widgets'
     | '/testing-grounds/channel-updates'
+    | '/ios-widgets/dynamic-widget'
+    | '/android-widgets/dynamic-widget'
     | '/android-widgets/pin'
     | '/android-widgets/components'
     | '/android-widgets/image-preloading'

@@ -4,13 +4,13 @@
 
 [![mit licence][license-badge]][license] [![npm downloads][npm-downloads-badge]][npm-downloads] [![PRs Welcome][prs-welcome-badge]][prs-welcome]
 
-`@use-voltra/android-client` is the Android React Native package for Voltra. It re-exports the `VoltraAndroid` JSX namespace and related APIs from `@use-voltra/android` (installed automatically as a dependency) and provides runtime APIs for Home Screen widgets, ongoing notifications, development previews, event listeners, and the Expo config plugin.
+`@use-voltra/android-client` is the Android React Native package for Voltra. It re-exports the `VoltraAndroid` JSX namespace and related APIs from `@use-voltra/android` (installed automatically as a dependency) and provides runtime APIs for Home Screen widgets, Dynamic Widgets, ongoing notifications, development previews, event listeners, and the Expo config plugin.
 
 ## Features
 
-- **Home Screen widgets**: Update, reload, pin, and query widgets with `updateAndroidWidget`, `reloadAndroidWidgets`, `getActiveWidgets`, and more.
+- **Payload-driven Home Screen widgets**: Render and update widget variants with `updateAndroidWidget`, then reload, pin, and query widgets with `reloadAndroidWidgets`, `getActiveWidgets`, and more.
 
-- **Client-rendered widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the widget module, and render it on-device with live env (size, color scheme, Material You colors, locale, configuration).
+- **Dynamic Widgets** _(experimental)_: Declare a widget in app.json with an `id` and `entry`, default-export the Dynamic Widget component, and render it on-device from runtime props and live environment values (size, color scheme, Material You colors, locale, configuration).
 
 - **Ongoing notifications**: Start and update promoted ongoing notifications with `useAndroidOngoingNotification` and related APIs.
 
@@ -22,21 +22,69 @@
 
 - **Expo config plugin**: Add `"@use-voltra/android-client"` to `app.json` to declare widgets, optional notifications, and build-time initial states.
 
-## Client-rendered widgets (experimental)
+## Dynamic Widgets (experimental)
 
 > [!WARNING]
-> Client-rendered widgets are **experimental** — usable in production at your own risk. The API may
+> Dynamic Widgets are **experimental** — usable in production at your own risk. The API may
 > change between releases.
 
-Declare the widget in app.json with a stable `id` and a project-relative `entry` path. The entry
-module must default-export the widget function or component; the exported name does not need to
-match the widget id. The widget renders on-device, so it can react to live environment values
-(size, color scheme, Material You `materialColors`, locale, and `configuration`).
+Declare a Dynamic Widget in app.json with a stable `id` and a project-relative `entry` path. The
+entry module must default-export the Dynamic Widget function or component; the exported name does
+not need to match the Dynamic Widget id. A Dynamic Widget renders on-device, so it can react to both
+runtime props and live environment values (size, color scheme, Material You colors, locale, and
+configuration).
+
+The first argument is the Dynamic Widget props object. Use `updateAndroidDynamicWidget` in your app
+to persist a new props object and re-render every installed instance with the matching Dynamic Widget
+id:
+
+```tsx
+// widgets/android/inbox-widget.tsx
+import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
+
+type InboxDynamicWidgetProps = {
+  unreadCount?: number
+}
+
+export default function InboxDynamicWidget(
+  props: InboxDynamicWidgetProps = {},
+  env: WidgetEnvironment = {} as WidgetEnvironment
+) {
+  const unreadCount = props.unreadCount ?? 0
+
+  return (
+    <VoltraAndroid.Column style={{ padding: 16, backgroundColor: AndroidDynamicColors.surface }}>
+      <VoltraAndroid.Text style={{ color: AndroidDynamicColors.onSurface }}>{unreadCount} unread</VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ color: AndroidDynamicColors.onSurfaceVariant }}>
+        Size: {env.widgetFamily}
+      </VoltraAndroid.Text>
+    </VoltraAndroid.Column>
+  )
+}
+```
+
+```ts
+// App code
+import { updateAndroidDynamicWidget } from '@use-voltra/android-client'
+
+await updateAndroidDynamicWidget('inbox_widget', { unreadCount: 7 })
+```
+
+Dynamic Widget props must be JSON-serializable: strings, numbers, booleans, `null`, arrays, and nested
+objects are supported. Values such as functions, `undefined`, `Date`, `BigInt`, and cyclic references
+are not supported. Before the first `updateAndroidDynamicWidget` call, the entry receives `{}`. The
+latest props object is stored by Dynamic Widget id, survives app process restarts, and is reused on
+subsequent renders until another update replaces it or the app's data is cleared.
+
+`updateAndroidDynamicWidget` is only for an entry-based Dynamic Widget. The legacy
+`updateAndroidWidget` API sends pre-rendered variant payloads to a payload-driven widget and cannot
+update an entry-based Dynamic Widget.
 
 Configuration parameters declared in `app.json` (`appIntent.parameters`, with code-defined
 defaults) surface as `env.configuration`. Android has no system-managed widget configuration UI
 (unlike iOS's Edit Widget), so runtime values are set in-app via `setWidgetConfiguration` and
-override the declared defaults.
+override the declared defaults. `env.configuration` is separate from the Dynamic Widget props passed
+as the first argument.
 
 Notes:
 
@@ -49,7 +97,7 @@ The documentation is available at [use-voltra.dev](https://use-voltra.dev). Rele
 
 - [Installation](https://use-voltra.dev/getting-started/installation)
 - [Android Setup](https://use-voltra.dev/android/setup)
-- [Developing client-rendered widgets](https://use-voltra.dev/android/development/dynamic-widgets)
+- [Developing Dynamic Widgets](https://use-voltra.dev/android/development/dynamic-widgets)
 - [Managing Ongoing Notifications](https://use-voltra.dev/android/development/managing-ongoing-notifications)
 - [Plugin Configuration](https://use-voltra.dev/android/api/plugin-configuration)
 
@@ -94,7 +142,10 @@ Then run `npx expo prebuild --platform android` to generate the native project c
 
 See the [Android setup guide](https://use-voltra.dev/android/setup) for detailed instructions.
 
-## Quick example
+## Payload-driven widget example
+
+The following example uses the legacy `updateAndroidWidget` payload API. It is not an entry-based
+Dynamic Widget; see the Dynamic Widget example above for `updateAndroidDynamicWidget`.
 
 ```tsx
 import { updateAndroidWidget, VoltraAndroid } from '@use-voltra/android-client'

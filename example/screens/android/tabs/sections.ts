@@ -2,6 +2,12 @@ import type { ExampleSection } from '~/components/ExampleSectionCards'
 
 export const ANDROID_WIDGET_SECTIONS: ExampleSection[] = [
   {
+    id: 'dynamic-widget',
+    title: 'Dynamic Widget',
+    description: 'Update an entry-based Android Dynamic Widget with persisted runtime props.',
+    route: '/android-widgets/dynamic-widget',
+  },
+  {
     id: 'pin-widgets',
     title: 'Pin Widgets',
     description:

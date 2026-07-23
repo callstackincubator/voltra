@@ -257,6 +257,22 @@ public class VoltraModuleImpl {
 
   // MARK: - Widgets
 
+  func updateDynamicWidget(
+    dynamicWidgetId: String,
+    dynamicWidgetPropsJson: String
+  ) async throws {
+    let dynamicWidgetUpdater = DynamicWidgetUpdater(
+      dynamicWidgetPropsPersistence: DynamicWidgetPropsStore(),
+      dynamicWidgetTimelineReload: { dynamicWidgetId in
+        VoltraWidgetService.reloadTimeline(for: dynamicWidgetId)
+      }
+    )
+    try await dynamicWidgetUpdater.updateDynamicWidget(
+      dynamicWidgetID: dynamicWidgetId,
+      dynamicWidgetPropsJSON: dynamicWidgetPropsJson
+    )
+  }
+
   func updateWidget(widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws {
     try VoltraWidgetService.setWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
 

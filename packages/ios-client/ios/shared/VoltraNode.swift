@@ -55,7 +55,9 @@ public indirect enum VoltraNode: Hashable, View {
 
   /// Check if node represents nothing
   public var isEmpty: Bool {
-    if case .empty = self { return true }
+    if case .empty = self {
+      return true
+    }
     return false
   }
 
@@ -72,7 +74,9 @@ public indirect enum VoltraNode: Hashable, View {
       // Extract stylesheet (key "s")
       if case let .array(stylesheetArray) = rootObject["s"] {
         stylesheet = stylesheetArray.compactMap { item in
-          if case let .object(dict) = item { return dict }
+          if case let .object(dict) = item {
+            return dict
+          }
           return nil
         }
       }

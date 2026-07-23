@@ -373,6 +373,11 @@ class VoltraWidgetManager(
      * Otherwise, re-renders from cached data.
      */
     private suspend fun reloadSingleWidget(widgetId: String) {
+        if (VoltraWidgetReceiver.getWidget(context, widgetId) is VoltraClientGlanceWidget) {
+            VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(context, widgetId)
+            return
+        }
+
         val didEnqueue = VoltraWidgetUpdateScheduler.requestImmediateUpdate(context, widgetId)
         if (didEnqueue) {
             Log.d(TAG, "reloadSingleWidget: enqueued immediate server fetch for $widgetId")
@@ -422,7 +427,7 @@ class VoltraWidgetManager(
             }
             for (widgetId in clientIds) {
                 try {
-                    VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId)
+                    VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(context, widgetId)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to update client widget $widgetId: ${e.message}")
                 }

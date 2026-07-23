@@ -27,6 +27,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import voltra.BuildConfig
+import voltra.dynamicwidget.DynamicWidgetRenderCoordinator
+import voltra.dynamicwidget.DynamicWidgetRenderInput
+import voltra.dynamicwidget.currentDynamicWidgetRenderInput
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
@@ -204,10 +207,18 @@ class VoltraClientGlanceWidget(
     ) {
         val context = LocalContext.current
         val size = LocalSize.current
+        val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId)
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
         // placeholder node (first paint / offline / Metro down).
-        val node = (if (bundleReady) renderNode(context, size, configuration) else null) ?: placeholderNode(context)
+        val node =
+            (
+                if (bundleReady) {
+                    renderNode(context, size, configuration, dynamicWidgetRenderInput)
+                } else {
+                    null
+                }
+            ) ?: placeholderNode(context)
         if (node != null) {
             GlanceFactory(widgetId, null, null, size).Render(node)
         } else {
@@ -219,10 +230,15 @@ class VoltraClientGlanceWidget(
         context: Context,
         size: DpSize,
         configuration: Map<String, String>,
+        dynamicWidgetRenderInput: DynamicWidgetRenderInput,
     ): VoltraNode? {
         val envJson = buildEnvJson(context, size, configuration)
-        val resolved = VoltraJSRenderer.render(widgetId, "{}", envJson) ?: return null
-        return parseNode(resolved)
+        val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
+        return dynamicWidgetRenderCoordinator.renderDynamicWidget(
+            dynamicWidgetId = widgetId,
+            dynamicWidgetRenderInput = dynamicWidgetRenderInput,
+            dynamicWidgetEnvironmentJson = envJson,
+        )
     }
 
     /** Decode the plugin-prerendered single-node placeholder from the initial-states asset. */
