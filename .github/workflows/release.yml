@@ -1,0 +1,188 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      GIT_AUTHOR_NAME: github-actions[bot]
+      GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+      GIT_COMMITTER_NAME: github-actions[bot]
+      GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+
+    steps:
+      - name: Validate release branch
+        run: |
+          if [ "$GITHUB_REF_TYPE" != "branch" ] || [ "$GITHUB_REF_NAME" != "main" ]; then
+            echo "Release workflow must run from the main branch." >&2
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.14.0'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config user.name "$GIT_AUTHOR_NAME"
+          git config user.email "$GIT_AUTHOR_EMAIL"
+
+      - name: Resolve release state
+        run: |
+          VERSION=$(node -p "require('./packages/core/package.json').version")
+          SUBJECT=$(git log -1 --format=%s)
+
+          if [ "$SUBJECT" = "chore: release $VERSION" ] || [ "$SUBJECT" = "chore: release v$VERSION" ]; then
+            echo "Retrying release $VERSION from the repository's release commit."
+            {
+              echo "RELEASE_RETRY=true"
+              echo "RELEASE_VERSION=$VERSION"
+              echo "RELEASE_COMMIT=$(git rev-parse HEAD)"
+            } >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_RETRY=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Check release plan
+        if: ${{ env.RELEASE_RETRY != 'true' }}
+        run: |
+          pnpm exec changeset status --output=.changeset-release-plan.json
+          node <<'NODE'
+          const plan = require('./.changeset-release-plan.json')
+          const versions = [...new Set(
+            plan.releases
+              .filter((release) => release.type !== 'none')
+              .map((release) => release.newVersion)
+              .filter(Boolean)
+          )]
+
+          if (versions.length === 0) {
+            throw new Error('No packages to release')
+          }
+
+          if (versions.length !== 1) {
+            throw new Error(`Expected one release version, got: ${versions.join(', ')}`)
+          }
+          NODE
+
+      - name: Version packages
+        if: ${{ env.RELEASE_RETRY != 'true' }}
+        run: |
+          pnpm run version-packages
+          pnpm install --lockfile-only
+
+      - name: Resolve release version
+        if: ${{ env.RELEASE_RETRY != 'true' }}
+        run: |
+          VERSION=$(node <<'NODE'
+          const plan = require('./.changeset-release-plan.json')
+          const versions = [...new Set(
+            plan.releases
+              .filter((release) => release.type !== 'none')
+              .map((release) => release.newVersion)
+              .filter(Boolean)
+          )]
+
+          if (versions.length !== 1) {
+            throw new Error(`Expected one release version, got: ${versions.join(', ')}`)
+          }
+
+          console.log(versions[0])
+          NODE
+          )
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Build packages
+        run: |
+          # CI already validated the selected source commit. This fresh build
+          # creates the package artifacts that Changesets will publish.
+          pnpm run build:all
+
+      - name: Commit release changes
+        if: ${{ env.RELEASE_RETRY != 'true' }}
+        run: |
+          git add .changeset packages package.json pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "No release changes were staged." >&2
+            exit 1
+          fi
+          git commit -m "chore: release ${RELEASE_VERSION}"
+          echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Push release commit
+        if: ${{ env.RELEASE_RETRY != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+
+      - name: Publish missing packages
+        run: pnpm run release -- --no-git-tag
+
+      - name: Create and push release tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${RELEASE_VERSION}"
+          REMOTE_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          TAG_SHA=$(git ls-remote "$REMOTE_URL" "refs/tags/$TAG^{}" | awk 'NR == 1 { print $1 }')
+          if [ -z "$TAG_SHA" ]; then
+            TAG_SHA=$(git ls-remote "$REMOTE_URL" "refs/tags/$TAG" | awk 'NR == 1 { print $1 }')
+          fi
+
+          if [ -n "$TAG_SHA" ]; then
+            if [ "$TAG_SHA" != "$RELEASE_COMMIT" ]; then
+              echo "Tag $TAG points to $TAG_SHA, expected $RELEASE_COMMIT." >&2
+              exit 1
+            fi
+            echo "Tag $TAG already exists on the release commit."
+          else
+            git tag -a "$TAG" "$RELEASE_COMMIT" -m "Release $TAG"
+            git push "$REMOTE_URL" "refs/tags/$TAG"
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${RELEASE_VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub release $TAG already exists."
+          else
+            gh release create "$TAG" \
+              --verify-tag \
+              --generate-notes \
+              --latest
+          fi

@@ -2,7 +2,22 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.2/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@use-voltra/android",
+      "@use-voltra/android-client",
+      "@use-voltra/android-server",
+      "@use-voltra/compiler",
+      "@use-voltra/core",
+      "@use-voltra/expo-plugin",
+      "@use-voltra/ios",
+      "@use-voltra/ios-client",
+      "@use-voltra/ios-server",
+      "@use-voltra/metro",
+      "@use-voltra/server",
+      "voltra"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
