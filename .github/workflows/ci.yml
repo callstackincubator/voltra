@@ -332,3 +332,40 @@ jobs:
         run: >-
           ./gradlew :use-voltra_android-client:externalNativeBuildDebug
           -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
+
+      - name: Verify 16 KB ELF alignment
+        working-directory: example/android
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          android_client_root=$(node -p "require('path').dirname(require.resolve('@use-voltra/android-client/package.json'))")
+          readelf_bin=$(find "$ANDROID_HOME/ndk" -path '*/toolchains/llvm/prebuilt/*/bin/llvm-readelf' -print | sort -V | tail -n1)
+
+          if [[ -z "$readelf_bin" ]]; then
+            echo "::error::Could not find llvm-readelf in the Android NDK"
+            exit 1
+          fi
+
+          for abi in arm64-v8a x86_64; do
+            library_path=$(find "$android_client_root/android/build/intermediates/cxx" \
+              -path "*/obj/$abi/libvoltra_js_renderer.so" -print -quit)
+
+            if [[ -z "$library_path" ]]; then
+              echo "::error::Could not find libvoltra_js_renderer.so for $abi"
+              exit 1
+            fi
+
+            alignments=$("$readelf_bin" -lW "$library_path" | awk '$1 == "LOAD" { print $NF }')
+            if [[ -z "$alignments" ]]; then
+              echo "::error::No ELF LOAD segments found in $library_path"
+              exit 1
+            fi
+
+            while IFS= read -r alignment; do
+              if (( alignment < 0x4000 )); then
+                echo "::error::$library_path has an ELF LOAD segment aligned to $alignment; expected at least 0x4000"
+                exit 1
+              fi
+            done <<< "$alignments"
+          done
