@@ -42,7 +42,7 @@ export async function createWidgetMetroConfig({
   return {
     ...config,
     projectRoot,
-    watchFolders: unique([...(config.watchFolders ?? []), ...(appConfig.watchFolders ?? [])]),
+    watchFolders: unique([projectRoot, ...(config.watchFolders ?? []), ...(appConfig.watchFolders ?? [])]),
     resolver: {
       ...config.resolver,
       sourceExts,
