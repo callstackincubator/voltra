@@ -17,6 +17,13 @@ jobs:
       contents: write
       id-token: write
     env:
+      # Installing dependencies runs `lefthook install`, which would otherwise
+      # fire the repository's pre-push hooks when this job pushes the release
+      # commit. Those hooks run the native test suites, which need macOS and a
+      # prebuilt Android project that this runner does not have. The release
+      # commit only adds version and changelog changes on top of a commit that
+      # required CI checks on main already validated.
+      LEFTHOOK: 0
       GIT_AUTHOR_NAME: github-actions[bot]
       GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
       GIT_COMMITTER_NAME: github-actions[bot]
@@ -145,7 +152,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
+          git push --no-verify "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
 
       - name: Publish missing packages
         run: pnpm run release -- --no-git-tag
@@ -170,7 +177,7 @@ jobs:
             echo "Tag $TAG already exists on the release commit."
           else
             git tag -a "$TAG" "$RELEASE_COMMIT" -m "Release $TAG"
-            git push "$REMOTE_URL" "refs/tags/$TAG"
+            git push --no-verify "$REMOTE_URL" "refs/tags/$TAG"
           fi
 
       - name: Create GitHub release

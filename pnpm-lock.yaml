@@ -301,12 +301,6 @@ importers:
       '@clack/prompts':
         specifier: ^1.0.0-alpha.5
         version: 1.4.0
-      '@use-voltra/android':
-        specifier: '*'
-        version: 1.4.1(react@19.2.4)
-      '@use-voltra/ios':
-        specifier: '*'
-        version: 1.4.1(react@19.2.4)
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -4290,24 +4284,6 @@ packages:
       { integrity: sha512-5hfAaZ3XJq9JkspRzZdSPsMrXXA8v/SKiEOxZcN9L40o44byF/50bcQuOLgSSCAx8802mI5VG32KZXWTtsLu9Q== }
     peerDependencies:
       react: '>=18.3.1'
-
-  '@use-voltra/android@1.4.1':
-    resolution:
-      { integrity: sha512-y5IpgMkEvhh+Xk7WUhwyay5L7CZfHfvrmAI0ul9NLHXh8dYtPgAbB3HazH7XJMx0Lxhqa+IiGz6zp/3gNkJHXw== }
-    peerDependencies:
-      react: '*'
-
-  '@use-voltra/core@1.4.1':
-    resolution:
-      { integrity: sha512-yvyY19K3viFxhNaBHmuiKBFEvy/zx+VyARQaDtjx+F0nLA7kBIRraIK8snVEBVgajtPXt4mLLYc31zdQQtIxBg== }
-    peerDependencies:
-      react: '*'
-
-  '@use-voltra/ios@1.4.1':
-    resolution:
-      { integrity: sha512-ekVUJw1JqI9JpzIB2yq9M6JBzenxKcQWBY7SdRts/mwYldg6Wy8irszHmqs5KDh5vHHB9besLbTM1HnQKA6vDA== }
-    peerDependencies:
-      react: '*'
 
   '@vercel/analytics@2.0.1':
     resolution:
@@ -14870,21 +14846,6 @@ snapshots:
     dependencies:
       react: 19.2.4
       unhead: 2.1.15
-
-  '@use-voltra/android@1.4.1(react@19.2.4)':
-    dependencies:
-      '@use-voltra/core': 1.4.1(react@19.2.4)
-      react: 19.2.4
-
-  '@use-voltra/core@1.4.1(react@19.2.4)':
-    dependencies:
-      react: 19.2.4
-      react-is: 19.2.6
-
-  '@use-voltra/ios@1.4.1(react@19.2.4)':
-    dependencies:
-      '@use-voltra/core': 1.4.1(react@19.2.4)
-      react: 19.2.4
 
   '@vercel/analytics@2.0.1(react@19.2.4)':
     optionalDependencies:
