@@ -57,17 +57,5 @@
   },
   "devDependencies": {
     "@types/babel__core": "^7.20.5"
-  },
-  "peerDependencies": {
-    "@use-voltra/android": "*",
-    "@use-voltra/ios": "*"
-  },
-  "peerDependenciesMeta": {
-    "@use-voltra/android": {
-      "optional": true
-    },
-    "@use-voltra/ios": {
-      "optional": true
-    }
   }
 }
