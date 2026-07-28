@@ -41,6 +41,7 @@ function makeTempProject(files: Record<string, string>): TempProject {
 function installProjectModuleStubs() {
   const originalLoad = Module._load
   const calls: string[] = []
+  let widgetConfig: any
 
   mock.method(Module, '_load', function mockedLoad(request: string, parent: NodeModule, isMain: boolean) {
     if (request === 'metro-config') {
@@ -61,8 +62,9 @@ function installProjectModuleStubs() {
     if (request === 'metro') {
       calls.push(request)
       return {
-        async createConnectMiddleware() {
+        async createConnectMiddleware(config: any) {
           calls.push('metro.createConnectMiddleware')
+          widgetConfig = config
           return {
             middleware(_req: unknown, _res: unknown, next: () => void) {
               next()
@@ -83,22 +85,13 @@ function installProjectModuleStubs() {
       }
     }
 
-    if (request === 'chokidar') {
-      calls.push(request)
-      return {
-        watch() {
-          return {
-            on() {},
-            close() {},
-          }
-        },
-      }
-    }
-
     return originalLoad.apply(this, [request, parent, isMain])
   })
 
-  return calls
+  return {
+    calls,
+    getWidgetConfig: () => widgetConfig,
+  }
 }
 
 describe('withVoltra Metro config transformer', () => {
@@ -118,7 +111,7 @@ describe('withVoltra Metro config transformer', () => {
     })
     cleanups.push(cleanup)
 
-    const calls = installProjectModuleStubs()
+    const { calls } = installProjectModuleStubs()
     const config = await withVoltra({
       projectRoot,
       resolver: {},
@@ -142,15 +135,18 @@ describe('withVoltra Metro config transformer', () => {
     })
     cleanups.push(cleanup)
 
-    const calls = installProjectModuleStubs()
+    const { calls, getWidgetConfig } = installProjectModuleStubs()
+    const additionalWatchFolder = path.join(projectRoot, 'shared')
     const config = await withVoltra({
       projectRoot,
       resolver: {},
       server: {},
+      watchFolders: [additionalWatchFolder],
     })
 
     assert.equal(calls.includes('metro-config'), true)
     assert.equal(calls.includes('metro.createConnectMiddleware'), true)
+    assert.deepEqual(getWidgetConfig().watchFolders, [projectRoot, additionalWatchFolder])
     assert.equal(typeof config.server.enhanceMiddleware, 'function')
   })
 })

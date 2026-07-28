@@ -21,11 +21,6 @@ const RENDER_SHIM_FILES: Record<string, string> = {
     "export { renderAndroidVariantToJson as renderVariantToJson } from '@use-voltra/android'\n",
 }
 
-type FileWatcher = {
-  on(event: string, callback: (filePath: string) => void): void
-  close(): void
-}
-
 type PlatformState = {
   error: Error | null
   widgetsById: Map<string, RegisteredVoltraWidget>
@@ -416,7 +411,6 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
     android: createEmptyPlatformState(),
   }
   let ready = false
-  let watcher: FileWatcher | null = null
 
   function recordPlatformWidgets(platform: DynamicWidgetPlatform, widgets: RegisteredVoltraWidget[]): void {
     const state = platformStates[platform]
@@ -473,50 +467,12 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
     }
   }
 
-  function watchManifestFiles(): void {
-    let chokidar: { watch(paths: string[], options: unknown): FileWatcher }
-
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      chokidar = require('chokidar')
-    } catch {
-      try {
-        const metroDir = path.dirname(require.resolve('metro/package.json', { paths: [projectRoot] }))
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        chokidar = require(require.resolve('chokidar', { paths: [metroDir] }))
-      } catch {
-        console.warn('[voltra:metro] chokidar unavailable - manifest updates are startup-scan only (no live updates)')
-        return
-      }
-    }
-
-    const manifestPaths = DEV_BARREL_PLATFORMS.map((platform) => getManifestPath(projectRoot, platform))
-    watcher = chokidar.watch(manifestPaths, {
-      ignoreInitial: true,
-    })
-
-    const handleManifestChange = (filePath: string) => {
-      const normalizedFilePath = path.resolve(filePath)
-      for (const platform of DEV_BARREL_PLATFORMS) {
-        if (path.resolve(getManifestPath(projectRoot, platform)) === normalizedFilePath) {
-          refreshPlatform(platform)
-          break
-        }
-      }
-    }
-
-    watcher.on('add', handleManifestChange)
-    watcher.on('change', handleManifestChange)
-    watcher.on('unlink', handleManifestChange)
-  }
-
   ensureDirectory(generatedRoot)
   ensureEmptyDevBarrel(projectRoot)
   for (const platform of DEV_BARREL_PLATFORMS) {
     refreshPlatform(platform)
   }
   ready = true
-  watchManifestFiles()
 
   return {
     projectRoot,
@@ -548,11 +504,6 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
         return state.error ? [] : state.widgets
       })
     },
-    close() {
-      if (watcher) {
-        watcher.close()
-        watcher = null
-      }
-    },
+    close() {},
   }
 }
