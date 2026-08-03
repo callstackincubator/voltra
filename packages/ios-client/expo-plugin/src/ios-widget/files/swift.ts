@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 import {
+  getDynamicLiveActivityAttributesType,
   isWidgetLocalizedMap,
   logger,
   prerenderWidgetState,
@@ -12,7 +13,7 @@ import {
 } from '@use-voltra/expo-plugin'
 
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
-import type { IOSWidgetConfig } from '../../types'
+import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 import { detectClientRenderedWidgets, type DetectedIOSWidget } from '../clientRendered'
 import { prerenderClientRenderedWidgets } from '../clientRenderedPrerender'
@@ -21,6 +22,7 @@ export interface GenerateSwiftFilesOptions {
   targetPath: string
   projectRoot: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
 }
 
 type RenderWidgetToString = (variants: unknown) => string
@@ -37,7 +39,7 @@ type RenderWidgetToString = (variants: unknown) => string
  * - VoltraWidgetBundle.swift (widget bundle definition)
  */
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
-  const { targetPath, projectRoot, widgets } = options
+  const { targetPath, projectRoot, widgets, liveActivities } = options
 
   // Dynamic import keeps the plugin CommonJS-compatible while resolving the current package entry.
   const serverModuleId = '@use-voltra/ios/server'
@@ -76,12 +78,24 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
 
   // Generate the widget bundle Swift file
   const widgetBundleContent =
-    detectedWidgets.length > 0 ? generateWidgetBundleSwift(detectedWidgets) : generateDefaultWidgetBundleSwift()
+    detectedWidgets.length > 0 || (liveActivities?.length ?? 0) > 0
+      ? generateWidgetBundleSwift(detectedWidgets, liveActivities ?? [])
+      : generateDefaultWidgetBundleSwift()
 
   const widgetBundlePath = path.join(targetPath, 'VoltraWidgetBundle.swift')
   fs.writeFileSync(widgetBundlePath, widgetBundleContent)
 
   logger.info(`Generated VoltraWidgetBundle.swift with ${widgets?.length ?? 0} home screen widgets`)
+
+  fs.writeFileSync(
+    path.join(targetPath, 'VoltraDynamicLiveActivityTypes.swift'),
+    generateDynamicLiveActivityTypesSwift(liveActivities ?? [])
+  )
+  fs.writeFileSync(
+    path.join(targetPath, 'VoltraDynamicLiveActivities.swift'),
+    generateDynamicLiveActivitiesSwift(liveActivities ?? [])
+  )
+  logger.info(`Generated Dynamic Live Activity Swift scaffolding with ${liveActivities?.length ?? 0} definition(s)`)
 }
 
 const GENERATED_INITIAL_STATE_LOCALE_HELPER = dedent`
@@ -443,7 +457,10 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
 /**
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
-function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
+function generateWidgetBundleSwift(
+  widgets: DetectedIOSWidget[],
+  liveActivities: IOSDynamicLiveActivityConfig[] = []
+): string {
   // Generate widget structs
   const widgetStructs = widgets.map((w) => generateWidgetStruct(w)).join('\n\n')
 
@@ -457,7 +474,15 @@ function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
           .map((w) => `VoltraWidget_${w.id}()`)
           .join('\n      ')}\n    }`
       : ''
-  const widgetInstances = [plainInstances, appIntentInstances].filter(Boolean).join('\n    ')
+  const dynamicLiveActivityInstances = [...liveActivities]
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((liveActivity) => `VoltraDynamicLiveActivity_${getDynamicLiveActivityAttributesType(liveActivity.id)}()`)
+    .join('\n    ')
+  const widgetInstances = [plainInstances, appIntentInstances, dynamicLiveActivityInstances]
+    .filter(Boolean)
+    .join('\n    ')
+  const widgetSectionTitle =
+    liveActivities.length > 0 ? 'Home Screen Widgets and Dynamic Live Activities' : 'Home Screen Widgets'
 
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
   const foundationImport = needsFoundation ? 'import Foundation\n' : ''
@@ -481,7 +506,7 @@ function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
         // Live Activity (with Watch/CarPlay support)
         VoltraWidget()
 
-        // Home Screen Widgets
+        // ${widgetSectionTitle}
         ${widgetInstances}
       }
     }
@@ -493,8 +518,8 @@ function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
 }
 
 /**
- * Generates the VoltraWidgetBundle.swift file content when no widgets are configured
- * (only Live Activities)
+ * Generates the VoltraWidgetBundle.swift file content when no Home Screen widgets or Dynamic
+ * Live Activities are configured. Keep this legacy output stable for existing projects.
  */
 function generateDefaultWidgetBundleSwift(): string {
   return dedent`
@@ -517,6 +542,162 @@ function generateDefaultWidgetBundleSwift(): string {
       }
     }
   `
+}
+
+/** Generates the Dynamic Live Activity types shared by the app and extension targets. */
+function generateDynamicLiveActivityTypesSwift(liveActivities: IOSDynamicLiveActivityConfig[]): string {
+  const definitions = [...liveActivities].sort((left, right) => left.id.localeCompare(right.id))
+  const catalogEntries = definitions
+    .map((liveActivity) => `${getDynamicLiveActivityAttributesType(liveActivity.id)}.self`)
+    .join(', ')
+  const typeDefinitions = definitions.map(generateDynamicLiveActivitySwift).map(indentGeneratedSwift).join('\n\n')
+
+  const header = dedent`
+    //
+    //  VoltraDynamicLiveActivityTypes.swift
+    //
+    //  Auto-generated by Voltra config plugin. Do not edit.
+    //
+
+    import ActivityKit
+    import Foundation
+
+    /// The generic dynamic state shared by every generated Dynamic Live Activity type.
+    public struct VoltraDynamicLiveActivityContentState: Codable, Hashable {
+      public let props: [String: VoltraDynamicLiveActivityJSONValue]
+
+      public init(props: [String: VoltraDynamicLiveActivityJSONValue]) {
+        self.props = props
+      }
+    }
+
+    public indirect enum VoltraDynamicLiveActivityJSONValue: Codable, Hashable {
+      case null
+      case bool(Bool)
+      case number(Double)
+      case string(String)
+      case array([VoltraDynamicLiveActivityJSONValue])
+      case object([String: VoltraDynamicLiveActivityJSONValue])
+
+      public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+          self = .null
+        } else if let value = try? container.decode(Bool.self) {
+          self = .bool(value)
+        } else if let value = try? container.decode(Double.self) {
+          self = .number(value)
+        } else if let value = try? container.decode(String.self) {
+          self = .string(value)
+        } else if let value = try? container.decode([VoltraDynamicLiveActivityJSONValue].self) {
+          self = .array(value)
+        } else if let value = try? container.decode([String: VoltraDynamicLiveActivityJSONValue].self) {
+          self = .object(value)
+        } else {
+          throw DecodingError.dataCorruptedError(in: container, debugDescription: "Expected a JSON-compatible value")
+        }
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .null: try container.encodeNil()
+        case let .bool(value): try container.encode(value)
+        case let .number(value): try container.encode(value)
+        case let .string(value): try container.encode(value)
+        case let .array(value): try container.encode(value)
+        case let .object(value): try container.encode(value)
+        }
+      }
+    }
+
+    /// Type-erased metadata for the Dynamic Live Activity types bundled into this release.
+    public protocol VoltraDynamicLiveActivityDefinition: ActivityAttributes where ContentState == VoltraDynamicLiveActivityContentState {
+      static var definitionId: String { get }
+      static var attributesTypeName: String { get }
+    }
+
+    public enum VoltraDynamicLiveActivityCatalog {
+      public static let definitions: [any VoltraDynamicLiveActivityDefinition.Type] = [${catalogEntries}]
+
+      public static func contains(_ definitionId: String) -> Bool {
+        definitions.contains { $0.definitionId == definitionId }
+      }
+    }
+
+  `
+  return [header.trim(), typeDefinitions.trim()].filter(Boolean).join('\n\n')
+}
+
+function generateDynamicLiveActivitySwift(liveActivity: IOSDynamicLiveActivityConfig): string {
+  const attributesType = getDynamicLiveActivityAttributesType(liveActivity.id)
+  const definitionId = escapeForSwiftStringLiteral(liveActivity.id)
+
+  return dedent`
+    public struct ${attributesType}: ActivityAttributes {
+      public typealias ContentState = VoltraDynamicLiveActivityContentState
+
+      public let name: String
+      public let deepLinkUrl: String?
+
+      public init(name: String, deepLinkUrl: String? = nil) {
+        self.name = name
+        self.deepLinkUrl = deepLinkUrl
+      }
+    }
+
+    extension ${attributesType}: VoltraDynamicLiveActivityDefinition {
+      public static let definitionId = "${definitionId}"
+      public static let attributesTypeName = "${attributesType}"
+    }
+
+  `
+}
+
+/** Generates extension-only ActivityConfiguration declarations for Dynamic Live Activities. */
+function generateDynamicLiveActivitiesSwift(liveActivities: IOSDynamicLiveActivityConfig[]): string {
+  const definitions = [...liveActivities].sort((left, right) => left.id.localeCompare(right.id))
+  const configurations = definitions
+    .map((liveActivity) => {
+      const attributesType = getDynamicLiveActivityAttributesType(liveActivity.id)
+      const definitionId = escapeForSwiftStringLiteral(liveActivity.id)
+      return dedent`
+        public struct VoltraDynamicLiveActivity_${attributesType}: Widget {
+          public init() {}
+
+          public var body: some WidgetConfiguration {
+            ActivityConfiguration(for: ${attributesType}.self) { context in
+              VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "${definitionId}", context: context)
+            } dynamicIsland: { context in
+              VoltraDynamicLiveActivityRenderer.dynamicIsland(definitionId: "${definitionId}", context: context)
+            }
+          }
+        }
+      `
+    })
+    .map(indentGeneratedSwift)
+    .join('\n\n')
+
+  const header = dedent`
+    //
+    //  VoltraDynamicLiveActivities.swift
+    //
+    //  Auto-generated by Voltra config plugin. Do not edit.
+    //
+
+    import ActivityKit
+    import SwiftUI
+    import WidgetKit
+    import VoltraWidget
+
+  `
+  return [header.trim(), configurations.trim()].filter(Boolean).join('\n\n')
+}
+
+function indentGeneratedSwift(source: string): string {
+  const lines = source.trim().split('\n')
+  const indent = Math.min(...lines.filter(Boolean).map((line) => line.match(/^\s*/)?.[0].length ?? 0))
+  return lines.map((line) => line.slice(indent)).join('\n')
 }
 
 // ============================================================================
@@ -624,4 +805,6 @@ function getSwiftRawStringDelimiter(str: string): string {
 export const __test__ = {
   generateInitialStatesSwift,
   generateWidgetBundleSwift,
+  generateDynamicLiveActivityTypesSwift,
+  generateDynamicLiveActivitiesSwift,
 }

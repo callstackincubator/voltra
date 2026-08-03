@@ -1,7 +1,7 @@
 import { ConfigPlugin, withXcodeProject, XcodeProject } from '@expo/config-plugins'
 import * as path from 'path'
 
-import type { IOSWidgetConfig, IOSWidgetExtensionFiles } from '../../types'
+import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetExtensionFiles } from '../../types'
 import { getIOSWidgetExtensionFiles } from '../../utils/fileDiscovery'
 import { detectClientRenderedWidgets } from '../clientRendered'
 import { ensureBuildPhases, ensureWidgetBundleScriptPhase } from './buildPhases'
@@ -20,6 +20,7 @@ export interface ConfigureXcodeProjectProps {
   /** App build number; becomes the widget's CURRENT_PROJECT_VERSION. */
   buildNumber?: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
 }
 
 /**
@@ -103,9 +104,10 @@ export function applyXcodeChanges(
     productFile,
     widgetFiles,
     mainTargetUuid: xcodeProject.getFirstTarget().uuid,
+    mainSwiftFiles: (props.liveActivities?.length ?? 0) > 0 ? ['VoltraDynamicLiveActivityTypes.swift'] : undefined,
   })
 
-  if (hasClientRenderedWidgets) {
+  if (hasClientRenderedWidgets || (props.liveActivities?.length ?? 0) > 0) {
     ensureWidgetBundleScriptPhase(xcodeProject, targetUuid)
   }
 
@@ -128,7 +130,7 @@ export function applyXcodeChanges(
  * mutation to {@link applyXcodeChanges}.
  */
 export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (config, props) => {
-  const { targetName, widgets } = props
+  const { targetName, widgets, liveActivities } = props
 
   return withXcodeProject(config, (config) => {
     if (config.modRequest.introspect) {
@@ -147,7 +149,7 @@ export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (
     const targetPath = path.join(platformProjectRoot, targetName)
     const widgetFiles = getIOSWidgetExtensionFiles(targetPath, targetName)
 
-    applyXcodeChanges(xcodeProject, props, widgetFiles, hasClientRenderedWidgets)
+    applyXcodeChanges(xcodeProject, props, widgetFiles, hasClientRenderedWidgets || (liveActivities?.length ?? 0) > 0)
 
     return config
   })

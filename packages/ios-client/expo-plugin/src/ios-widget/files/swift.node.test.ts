@@ -74,6 +74,37 @@ describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
   })
 })
 
+describe('Dynamic Live Activity Swift generation', () => {
+  const liveActivities = [
+    { id: 'order_finished', entry: './live-activities/order-finished.tsx' },
+    { id: 'driver_arrived', entry: './live-activities/driver-arrived.tsx' },
+  ]
+
+  it('creates distinct ActivityKit types, configurations, and catalog entries', () => {
+    const types = __test__.generateDynamicLiveActivityTypesSwift(liveActivities)
+    const configurations = __test__.generateDynamicLiveActivitiesSwift(liveActivities)
+    const bundle = __test__.generateWidgetBundleSwift([], liveActivities)
+
+    expect(types).toContain('VoltraOrderFinishedLiveActivityAttributes')
+    expect(types).toContain('VoltraDriverArrivedLiveActivityAttributes')
+    expect(types).toContain('public let name: String')
+    expect(types).toContain('public let deepLinkUrl: String?')
+    expect(types).toContain('public let props: [String: VoltraDynamicLiveActivityJSONValue]')
+    expect(types).toContain(
+      'VoltraDriverArrivedLiveActivityAttributes.self, VoltraOrderFinishedLiveActivityAttributes.self'
+    )
+    expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "driver_arrived"')
+    expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.dynamicIsland(definitionId: "order_finished"')
+    expect(bundle).toContain('VoltraDynamicLiveActivity_VoltraDriverArrivedLiveActivityAttributes()')
+    expect(bundle).toContain('VoltraDynamicLiveActivity_VoltraOrderFinishedLiveActivityAttributes()')
+  })
+
+  it('keeps the legacy empty bundle unchanged when no Dynamic Live Activities are declared', () => {
+    expect(__test__.generateWidgetBundleSwift([], [])).toContain('import VoltraWidget')
+    expect(__test__.generateWidgetBundleSwift([], [])).not.toContain('VoltraDynamicLiveActivity_')
+  })
+})
+
 describe('generateWidgetBundleSwift — AppIntent configuration', () => {
   const configurableWidget: DetectedIOSWidget = {
     id: 'IosWeatherWidget',

@@ -8,6 +8,7 @@ export interface IOSConfigProps {
   groupIdentifier?: string
   widgetIds?: string[]
   widgets?: import('../types').IOSWidgetConfig[]
+  liveActivities?: import('../types').IOSDynamicLiveActivityConfig[]
   keychainGroup?: string
 }
 

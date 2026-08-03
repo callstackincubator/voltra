@@ -112,6 +112,8 @@ export interface EnsureBuildPhasesOptions {
   }
   widgetFiles: IOSWidgetExtensionFiles
   mainTargetUuid?: string
+  /** Generated ActivityKit types compiled into both the extension and the app. */
+  mainSwiftFiles?: string[]
 }
 
 /**
@@ -189,6 +191,17 @@ export function ensureBuildPhases(xcodeProject: XcodeProject, options: EnsureBui
   }
   if (sourcesPhase) {
     ensureBuildPhaseFiles(xcodeProject, sourcesPhase, [...swiftFiles, ...intentFiles], targetName)
+  }
+
+  if (options.mainSwiftFiles && options.mainSwiftFiles.length > 0) {
+    let mainSourcesPhase = findTargetPhaseByType(xcodeProject, mainTargetUuid, 'PBXSourcesBuildPhase')
+    if (!mainSourcesPhase) {
+      xcodeProject.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', mainTargetUuid, folderType, buildPath)
+      mainSourcesPhase = findTargetPhaseByType(xcodeProject, mainTargetUuid, 'PBXSourcesBuildPhase')
+    }
+    if (mainSourcesPhase) {
+      ensureBuildPhaseFiles(xcodeProject, mainSourcesPhase, options.mainSwiftFiles, targetName)
+    }
   }
 
   // Copy files build phase (embed extension into main app) — the embed phase is matched purely by

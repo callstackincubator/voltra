@@ -41,6 +41,7 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
     groupIdentifier: props.groupIdentifier,
     widgetIds: props.widgets && props.widgets.length > 0 ? props.widgets.map((w) => w.id) : undefined,
     widgets: props.widgets,
+    liveActivities: props.liveActivities,
     keychainGroup,
   })
 
@@ -49,6 +50,7 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
     bundleIdentifier,
     deploymentTarget,
     widgets: props.widgets,
+    liveActivities: props.liveActivities,
     version,
     buildNumber,
     ...(props.groupIdentifier ? { groupIdentifier: props.groupIdentifier } : {}),

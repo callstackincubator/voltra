@@ -2,7 +2,12 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 
-import { createIOSDynamicWidgetsManifest, generateIOSDynamicWidgetsManifest } from './manifest'
+import {
+  createIOSDynamicLiveActivitiesManifest,
+  createIOSDynamicWidgetsManifest,
+  generateIOSDynamicLiveActivitiesManifest,
+  generateIOSDynamicWidgetsManifest,
+} from './manifest'
 
 function makeTempProject(files: Record<string, string>): { projectRoot: string; cleanup: () => void } {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-ios-manifest-'))
@@ -70,6 +75,48 @@ describe('createIOSDynamicWidgetsManifest', () => {
         platform: 'ios',
         widgets: [{ id: 'home', entry: 'widgets/home.tsx' }],
       })
+    } finally {
+      cleanup()
+    }
+  })
+})
+
+describe('Dynamic Live Activity manifest generation', () => {
+  it('uses the dedicated manifest and sorts declarations deterministically', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      'live-activities/alpha.tsx': 'export default function Alpha() {}',
+      'live-activities/order.tsx': 'export default function Order() {}',
+    })
+
+    try {
+      expect(
+        createIOSDynamicLiveActivitiesManifest(projectRoot, [
+          { id: 'order_finished', entry: './live-activities/order.tsx' },
+          { id: 'alpha', entry: './live-activities/alpha.tsx' },
+        ])
+      ).toEqual({
+        version: 1,
+        platform: 'ios',
+        liveActivities: [
+          { id: 'alpha', entry: 'live-activities/alpha.tsx' },
+          { id: 'order_finished', entry: 'live-activities/order.tsx' },
+        ],
+      })
+    } finally {
+      cleanup()
+    }
+  })
+
+  it('always rewrites an empty dedicated manifest to remove stale declarations', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.live-activities.json': '{"stale":true}\n',
+    })
+
+    try {
+      generateIOSDynamicLiveActivitiesManifest({ projectRoot, liveActivities: [] })
+      expect(fs.readFileSync(path.join(projectRoot, '.voltra', 'manifest.ios.live-activities.json'), 'utf8')).toBe(
+        ['{', '  "version": 1,', '  "platform": "ios",', '  "liveActivities": []', '}', ''].join('\n')
+      )
     } finally {
       cleanup()
     }

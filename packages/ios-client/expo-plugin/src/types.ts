@@ -124,6 +124,7 @@ export interface IOSWidgetExtensionPluginProps {
   bundleIdentifier: string
   deploymentTarget: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
   groupIdentifier?: string
   keychainGroup?: string
   fonts?: string[]
