@@ -89,12 +89,14 @@ describe('Dynamic Live Activity Swift generation', () => {
     expect(types).toContain('VoltraDriverArrivedLiveActivityAttributes')
     expect(types).toContain('public let name: String')
     expect(types).toContain('public let deepLinkUrl: String?')
-    expect(types).toContain('public let props: [String: VoltraDynamicLiveActivityJSONValue]')
+    expect(types).toContain('import VoltraWidget')
+    expect(types).toContain('VoltraDynamicLiveActivityCatalog: VoltraDynamicLiveActivityCatalogLookup')
     expect(types).toContain(
       'VoltraDriverArrivedLiveActivityAttributes.self, VoltraOrderFinishedLiveActivityAttributes.self'
     )
     expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "driver_arrived"')
     expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.dynamicIsland(definitionId: "order_finished"')
+    expect(configurations).toContain('.supplementalActivityFamilies([.small, .medium])')
     expect(bundle).toContain('VoltraDynamicLiveActivity_VoltraDriverArrivedLiveActivityAttributes()')
     expect(bundle).toContain('VoltraDynamicLiveActivity_VoltraOrderFinishedLiveActivityAttributes()')
   })

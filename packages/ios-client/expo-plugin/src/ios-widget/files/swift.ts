@@ -562,62 +562,13 @@ function generateDynamicLiveActivityTypesSwift(liveActivities: IOSDynamicLiveAct
     import ActivityKit
     import Foundation
 
-    /// The generic dynamic state shared by every generated Dynamic Live Activity type.
-    public struct VoltraDynamicLiveActivityContentState: Codable, Hashable {
-      public let props: [String: VoltraDynamicLiveActivityJSONValue]
+    #if canImport(VoltraWidget)
+    import VoltraWidget
+    #else
+    import Voltra
+    #endif
 
-      public init(props: [String: VoltraDynamicLiveActivityJSONValue]) {
-        self.props = props
-      }
-    }
-
-    public indirect enum VoltraDynamicLiveActivityJSONValue: Codable, Hashable {
-      case null
-      case bool(Bool)
-      case number(Double)
-      case string(String)
-      case array([VoltraDynamicLiveActivityJSONValue])
-      case object([String: VoltraDynamicLiveActivityJSONValue])
-
-      public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if container.decodeNil() {
-          self = .null
-        } else if let value = try? container.decode(Bool.self) {
-          self = .bool(value)
-        } else if let value = try? container.decode(Double.self) {
-          self = .number(value)
-        } else if let value = try? container.decode(String.self) {
-          self = .string(value)
-        } else if let value = try? container.decode([VoltraDynamicLiveActivityJSONValue].self) {
-          self = .array(value)
-        } else if let value = try? container.decode([String: VoltraDynamicLiveActivityJSONValue].self) {
-          self = .object(value)
-        } else {
-          throw DecodingError.dataCorruptedError(in: container, debugDescription: "Expected a JSON-compatible value")
-        }
-      }
-
-      public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .null: try container.encodeNil()
-        case let .bool(value): try container.encode(value)
-        case let .number(value): try container.encode(value)
-        case let .string(value): try container.encode(value)
-        case let .array(value): try container.encode(value)
-        case let .object(value): try container.encode(value)
-        }
-      }
-    }
-
-    /// Type-erased metadata for the Dynamic Live Activity types bundled into this release.
-    public protocol VoltraDynamicLiveActivityDefinition: ActivityAttributes where ContentState == VoltraDynamicLiveActivityContentState {
-      static var definitionId: String { get }
-      static var attributesTypeName: String { get }
-    }
-
-    public enum VoltraDynamicLiveActivityCatalog {
+    public enum VoltraDynamicLiveActivityCatalog: VoltraDynamicLiveActivityCatalogLookup {
       public static let definitions: [any VoltraDynamicLiveActivityDefinition.Type] = [${catalogEntries}]
 
       public static func contains(_ definitionId: String) -> Bool {
@@ -666,6 +617,24 @@ function generateDynamicLiveActivitiesSwift(liveActivities: IOSDynamicLiveActivi
           public init() {}
 
           public var body: some WidgetConfiguration {
+            if #available(iOS 18.0, *) {
+              return adaptiveConfig()
+            } else {
+              return defaultConfig()
+            }
+          }
+
+          @available(iOS 18.0, *)
+          private func adaptiveConfig() -> some WidgetConfiguration {
+            ActivityConfiguration(for: ${attributesType}.self) { context in
+              VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "${definitionId}", context: context)
+            } dynamicIsland: { context in
+              VoltraDynamicLiveActivityRenderer.dynamicIsland(definitionId: "${definitionId}", context: context)
+            }
+            .supplementalActivityFamilies([.small, .medium])
+          }
+
+          private func defaultConfig() -> some WidgetConfiguration {
             ActivityConfiguration(for: ${attributesType}.self) { context in
               VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "${definitionId}", context: context)
             } dynamicIsland: { context in

@@ -30,6 +30,22 @@ public enum VoltraJSRenderer {
   /// Idempotent: re-evaluating the same widget overwrites the captured exports — used
   /// by dev-mode hot-reload (always-refetch policy).
   public static func evaluateBundle(source: String, widgetId: String) -> Bool {
+    evaluateBundle(source: source, id: widgetId, registryName: "__voltraWidgets", kind: "widget")
+  }
+
+  /// Evaluate a Dynamic Live Activity bundle in the shared JSContext. Its exports
+  /// are captured separately from Dynamic Widgets so both collections may use the
+  /// same definition ID without overwriting one another.
+  public static func evaluateLiveActivityBundle(source: String, definitionId: String) -> Bool {
+    evaluateBundle(
+      source: source,
+      id: definitionId,
+      registryName: "__voltraDynamicLiveActivities",
+      kind: "live activity"
+    )
+  }
+
+  private static func evaluateBundle(source: String, id: String, registryName: String, kind: String) -> Bool {
     lock.lock()
     defer { lock.unlock() }
 
@@ -38,7 +54,7 @@ public enum VoltraJSRenderer {
       return false
     }
 
-    let escapedId = jsStringLiteral(widgetId)
+    let escapedId = jsStringLiteral(id)
     // Metro emits the bundle's entry invocation as `__r(<entryModuleId>);` near the
     // end of the file (before the sourcemap/sourceURL comments). The entry id is NOT
     // always 0 — when Metro serves multiple widget bundles from the same process, it
@@ -50,34 +66,34 @@ public enum VoltraJSRenderer {
     let wrapped = """
     \(source)
     ;(function () {
-      if (!globalThis.__voltraWidgets) { globalThis.__voltraWidgets = {}; }
-      globalThis.__voltraWidgets[\(escapedId)] = __r(\(entryModuleId));
+      if (!globalThis.\(registryName)) { globalThis.\(registryName) = {}; }
+      globalThis.\(registryName)[\(escapedId)] = __r(\(entryModuleId));
     })();
     """
 
     ctx.exception = nil
     ctx.evaluateScript(wrapped)
     if let message = exceptionMessage(ctx) {
-      VoltraLogger.widget.error("[\(TAG)] Bundle eval failed for widgetId=\(widgetId): \(message)")
+      VoltraLogger.widget.error("[\(TAG)] Bundle eval failed for \(kind) id=\(id): \(message)")
       return false
     }
 
     // Verify the bootstrap captured the exports correctly
     guard
-      let registry = ctx.objectForKeyedSubscript("__voltraWidgets"),
+      let registry = ctx.objectForKeyedSubscript(registryName),
       !registry.isUndefined,
-      let widget = registry.objectForKeyedSubscript(widgetId),
-      !widget.isUndefined,
-      let renderFn = widget.objectForKeyedSubscript("render"),
+      let entry = registry.objectForKeyedSubscript(id),
+      !entry.isUndefined,
+      let renderFn = entry.objectForKeyedSubscript("render"),
       renderFn.isObject,
       renderFn.objectForKeyedSubscript("call") != nil
     else {
-      VoltraLogger.widget.error("[\(TAG)] Bundle evaluated but did not expose render() for widgetId=\(widgetId)")
+      VoltraLogger.widget.error("[\(TAG)] Bundle evaluated but did not expose render() for \(kind) id=\(id)")
       return false
     }
     _ = renderFn
 
-    VoltraLogger.widget.info("[\(TAG)] Bundle evaluated for widgetId=\(widgetId) (\(source.count) chars)")
+    VoltraLogger.widget.info("[\(TAG)] Bundle evaluated for \(kind) id=\(id) (\(source.count) chars)")
     return true
   }
 
@@ -90,11 +106,24 @@ public enum VoltraJSRenderer {
   /// evaluation never ran. The View calls this before `render()` so rendering never depends on
   /// which process evaluated the bundle.
   public static func ensureEvaluated(widgetId: String, source: String) -> Bool {
+    ensureEvaluated(source: source, id: widgetId, registryName: "__voltraWidgets", kind: "widget")
+  }
+
+  public static func ensureLiveActivityEvaluated(definitionId: String, source: String) -> Bool {
+    ensureEvaluated(
+      source: source,
+      id: definitionId,
+      registryName: "__voltraDynamicLiveActivities",
+      kind: "live activity"
+    )
+  }
+
+  private static func ensureEvaluated(source: String, id: String, registryName: String, kind: String) -> Bool {
     lock.lock()
     let alreadyEvaluated =
       _context?
-        .objectForKeyedSubscript("__voltraWidgets")?
-        .objectForKeyedSubscript(widgetId)?
+        .objectForKeyedSubscript(registryName)?
+        .objectForKeyedSubscript(id)?
         .objectForKeyedSubscript("render")?
         .isObject ?? false
     lock.unlock()
@@ -102,7 +131,7 @@ public enum VoltraJSRenderer {
     if alreadyEvaluated {
       return true
     }
-    return evaluateBundle(source: source, widgetId: widgetId)
+    return evaluateBundle(source: source, id: id, registryName: registryName, kind: kind)
   }
 
   /// Invoke the previously-evaluated widget's `render(propsJSON, envJSON)` function and
@@ -115,38 +144,63 @@ public enum VoltraJSRenderer {
     propsJSON: String,
     envJSON: String
   ) -> String? {
+    render(id: widgetId, propsJSON: propsJSON, envJSON: envJSON, registryName: "__voltraWidgets", kind: "widget")
+  }
+
+  /// Render a Dynamic Live Activity from its separately registered definition.
+  public static func renderLiveActivity(
+    definitionId: String,
+    propsJSON: String,
+    envJSON: String
+  ) -> String? {
+    render(
+      id: definitionId,
+      propsJSON: propsJSON,
+      envJSON: envJSON,
+      registryName: "__voltraDynamicLiveActivities",
+      kind: "live activity"
+    )
+  }
+
+  private static func render(
+    id: String,
+    propsJSON: String,
+    envJSON: String,
+    registryName: String,
+    kind: String
+  ) -> String? {
     lock.lock()
     defer { lock.unlock() }
 
     guard let ctx = _context else {
-      VoltraLogger.widget.error("[\(TAG)] render(\(widgetId)): no JSContext (call evaluateBundle first)")
+      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id): no JSContext (call evaluateBundle first)")
       return nil
     }
 
     guard
-      let registry = ctx.objectForKeyedSubscript("__voltraWidgets"),
+      let registry = ctx.objectForKeyedSubscript(registryName),
       !registry.isUndefined,
-      let widget = registry.objectForKeyedSubscript(widgetId),
-      !widget.isUndefined,
-      let renderFn = widget.objectForKeyedSubscript("render"),
+      let entry = registry.objectForKeyedSubscript(id),
+      !entry.isUndefined,
+      let renderFn = entry.objectForKeyedSubscript("render"),
       renderFn.isObject
     else {
-      VoltraLogger.widget.error("[\(TAG)] render(\(widgetId)): no captured render() — bundle not evaluated?")
+      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id): no captured render() — bundle not evaluated?")
       return nil
     }
 
     ctx.exception = nil
     guard let result = renderFn.call(withArguments: [propsJSON, envJSON]) else {
-      VoltraLogger.widget.error("[\(TAG)] render(\(widgetId)): call returned nil")
+      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id): call returned nil")
       return nil
     }
     if let message = exceptionMessage(ctx) {
-      VoltraLogger.widget.error("[\(TAG)] render(\(widgetId)) threw: \(message)")
+      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id) threw: \(message)")
       return nil
     }
 
     guard result.isString else {
-      VoltraLogger.widget.error("[\(TAG)] render(\(widgetId)) did not return a string")
+      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id) did not return a string")
       return nil
     }
     return result.toString()
