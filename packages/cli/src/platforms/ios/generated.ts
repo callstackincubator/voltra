@@ -3,11 +3,11 @@ import fsPromises from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
 
-import { requirePlatformPackage } from '../../dependencies/platformPackages'
+import { getPlatformClientPackageVersion, requirePlatformPackage } from '../../dependencies/platformPackages'
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
-import { DYNAMIC_WIDGET_BUILD_INFO, evaluateWidgetModuleExports } from '../shared/widgetModule'
+import { createDynamicWidgetBuildInfo, evaluateWidgetModuleExports } from '../shared/widgetModule'
 import { buildPlistXml, parsePlistFile } from './plist'
 import { resolveIOSWidgetTargetName } from './targetName'
 
@@ -152,6 +152,7 @@ function createGeneratedFilesError(message: string): IOSGeneratedFilesError {
 
 export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promise<GenerateIOSFilesResult> {
   const { projectRoot, ios, discovery } = options
+  const voltraVersion = getPlatformClientPackageVersion(projectRoot, 'ios')
   const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const targetPath = path.join(discovery.iosRoot, targetName)
   const detectedWidgets = detectClientRenderedWidgets(projectRoot, ios.widgets)
@@ -176,7 +177,8 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
     targetName,
     ios,
     mainAppMetadata,
-    detectedWidgets
+    detectedWidgets,
+    voltraVersion
   )
   mergeSingleResult(infoPlistResult, changes, generatedFiles)
 
@@ -189,7 +191,7 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
   const fontsResult = await copyIOSFonts(projectRoot, targetPath, ios.fonts)
   mergeResult(fontsResult, changes, warnings, generatedFiles)
 
-  const initialStatesResult = await generateInitialStatesSwift(projectRoot, detectedWidgets)
+  const initialStatesResult = await generateInitialStatesSwift(projectRoot, detectedWidgets, voltraVersion)
   mergeSingleResult(
     await writeGeneratedTextFile(
       projectRoot,
@@ -225,7 +227,8 @@ async function generateInfoPlistFile(
   targetName: string,
   ios: ResolvedVoltraIOSConfig,
   mainAppMetadata: MainAppMetadata,
-  widgets: DetectedIOSWidget[]
+  widgets: DetectedIOSWidget[],
+  voltraVersion: string
 ): Promise<GeneratedFileResult> {
   const plistPath = path.join(targetPath, 'Info.plist')
   const fontNames = ios.fonts.map((fontPath) => path.basename(fontPath)).sort()
@@ -257,6 +260,7 @@ async function generateInfoPlistFile(
       UIAppFonts: fontNames.length > 0 ? fontNames : undefined,
       Voltra_AppGroupIdentifier: ios.groupIdentifier,
       Voltra_KeychainGroup: ios.keychainGroup,
+      Voltra_Version: voltraVersion,
       Voltra_WidgetServerIntervals: Object.keys(serverIntervals).length > 0 ? serverIntervals : undefined,
       Voltra_WidgetServerRefresh: Object.keys(serverRefresh).length > 0 ? serverRefresh : undefined,
       NSAppTransportSecurity: createWidgetAppTransportSecurity(hasClientRenderedWidget, serverWidgets.length > 0),
@@ -470,7 +474,11 @@ async function readMainAppMetadata(infoPlistPath: string): Promise<MainAppMetada
   }
 }
 
-async function generateInitialStatesSwift(projectRoot: string, widgets: DetectedIOSWidget[]): Promise<string> {
+async function generateInitialStatesSwift(
+  projectRoot: string,
+  widgets: DetectedIOSWidget[],
+  voltraVersion: string
+): Promise<string> {
   const serverWidgets = widgets.filter(
     (widget): widget is Extract<DetectedIOSWidget, { clientRendered: false }> => !widget.clientRendered
   )
@@ -480,7 +488,7 @@ async function generateInitialStatesSwift(projectRoot: string, widgets: Detected
     prerenderableServerWidgets,
     loadIOSWidgetRenderer(projectRoot)
   )
-  const clientStates = await prerenderClientRenderedWidgets(projectRoot, widgets)
+  const clientStates = await prerenderClientRenderedWidgets(projectRoot, widgets, voltraVersion)
   const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   if (prerenderedStates.size === 0) {
@@ -899,7 +907,8 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedIOSWidgetConf
 
 async function prerenderClientRenderedWidgets(
   projectRoot: string,
-  widgets: DetectedIOSWidget[]
+  widgets: DetectedIOSWidget[],
+  voltraVersion: string
 ): Promise<PrerenderedWidgetStates> {
   const clientWidgets = widgets.filter(
     (widget): widget is Extract<DetectedIOSWidget, { clientRendered: true }> => widget.clientRendered
@@ -918,7 +927,7 @@ async function prerenderClientRenderedWidgets(
     widgetRenderingMode: 'fullColor',
     showsWidgetContainerBackground: true,
     configuration: undefined,
-    build: DYNAMIC_WIDGET_BUILD_INFO,
+    build: createDynamicWidgetBuildInfo(voltraVersion),
   }
   const prerenderedStates: PrerenderedWidgetStates = new Map()
 

@@ -1,4 +1,9 @@
-import { evaluateWidgetModuleExports, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
+import {
+  evaluateWidgetModuleExports,
+  logger,
+  resolveInstalledPackageVersion,
+  type PrerenderedWidgetStates,
+} from '@use-voltra/expo-plugin'
 
 import type { DetectedAndroidWidget } from '../clientRendered'
 
@@ -17,7 +22,7 @@ import type { DetectedAndroidWidget } from '../clientRendered'
 
 const SINGLE_LOCALE_KEY = '__default'
 
-function buildPlaceholderEnv(): Record<string, unknown> {
+function buildPlaceholderEnv(voltraVersion: string): Record<string, unknown> {
   return {
     date: Date.now(),
     widgetFamily: '200x200',
@@ -28,7 +33,7 @@ function buildPlaceholderEnv(): Record<string, unknown> {
       isDev: false,
       metroUrl: null,
       appVersion: 'unknown',
-      voltraVersion: '1.4.1',
+      voltraVersion,
     },
   }
 }
@@ -52,7 +57,7 @@ export async function prerenderClientRenderedAndroidWidgets(
     renderAndroidVariantToJson: (element: unknown) => unknown
   }
 
-  const placeholderEnv = buildPlaceholderEnv()
+  const placeholderEnv = buildPlaceholderEnv(resolveInstalledPackageVersion(projectRoot, '@use-voltra/android-client'))
 
   for (const widget of clientWidgets) {
     try {

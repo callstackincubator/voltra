@@ -4,11 +4,11 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { vdConvert } from 'vd-tool'
 
-import { requirePlatformPackage } from '../../dependencies/platformPackages'
+import { getPlatformClientPackageVersion, requirePlatformPackage } from '../../dependencies/platformPackages'
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
-import { DYNAMIC_WIDGET_BUILD_INFO, evaluateWidgetModuleExports } from '../shared/widgetModule'
+import { createDynamicWidgetBuildInfo, evaluateWidgetModuleExports } from '../shared/widgetModule'
 import { androidWidgetSizingAttributes, androidWidgetSizingWarnings } from './widgetSizing'
 
 import type { AndroidProjectDiscovery } from '../../discovery/android'
@@ -77,6 +77,7 @@ type DetectedAndroidWidget =
 
 export async function generateAndroidFiles(options: GenerateAndroidFilesOptions): Promise<GenerateAndroidFilesResult> {
   const { projectRoot, android, discovery } = options
+  const voltraVersion = getPlatformClientPackageVersion(projectRoot, 'android')
   const resourceRoot = path.join(discovery.appModuleRoot, 'src', 'main')
   const detectedWidgets = detectClientRenderedWidgets(projectRoot, android.widgets)
   const changes: ReportedChange[] = []
@@ -105,7 +106,12 @@ export async function generateAndroidFiles(options: GenerateAndroidFilesOptions)
   const fontFiles = await copyAndroidFonts(projectRoot, resourceRoot, android.fonts)
   mergeResult(fontFiles, changes, warnings, generatedFiles)
 
-  const initialStateFiles = await generateAndroidInitialStates(projectRoot, resourceRoot, detectedWidgets)
+  const initialStateFiles = await generateAndroidInitialStates(
+    projectRoot,
+    resourceRoot,
+    detectedWidgets,
+    voltraVersion
+  )
   mergeResult(initialStateFiles, changes, warnings, generatedFiles)
 
   const configDefaultsResult = await generateAndroidConfigDefaults(projectRoot, resourceRoot, detectedWidgets)
@@ -411,7 +417,8 @@ async function copyAndroidFonts(
 async function generateAndroidInitialStates(
   projectRoot: string,
   resourceRoot: string,
-  widgets: DetectedAndroidWidget[]
+  widgets: DetectedAndroidWidget[],
+  voltraVersion: string
 ): Promise<GenerateAndroidFilesResult> {
   const serverWidgets = widgets.filter(
     (widget): widget is Extract<DetectedAndroidWidget, { clientRendered: false }> => !widget.clientRendered
@@ -422,7 +429,7 @@ async function generateAndroidInitialStates(
     prerenderableServerWidgets,
     loadAndroidWidgetRenderer(projectRoot)
   )
-  const clientStates = await prerenderClientRenderedAndroidWidgets(projectRoot, widgets)
+  const clientStates = await prerenderClientRenderedAndroidWidgets(projectRoot, widgets, voltraVersion)
   const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   if (prerenderedStates.size === 0) {
@@ -570,7 +577,8 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidget
 
 async function prerenderClientRenderedAndroidWidgets(
   projectRoot: string,
-  widgets: DetectedAndroidWidget[]
+  widgets: DetectedAndroidWidget[],
+  voltraVersion: string
 ): Promise<PrerenderedWidgetStates> {
   const clientWidgets = widgets.filter(
     (widget): widget is Extract<DetectedAndroidWidget, { clientRendered: true }> => widget.clientRendered
@@ -587,7 +595,7 @@ async function prerenderClientRenderedAndroidWidgets(
     colorScheme: 'light',
     locale: 'en-US',
     configuration: undefined,
-    build: DYNAMIC_WIDGET_BUILD_INFO,
+    build: createDynamicWidgetBuildInfo(voltraVersion),
   }
   const prerenderedStates: PrerenderedWidgetStates = new Map()
 

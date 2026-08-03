@@ -19,10 +19,10 @@ function loadAndroidWidgetSizingModule() {
   return require(path.join(packageRoot, 'build/cjs/platforms/android/widgetSizing.js'))
 }
 
-function writeFakePackage(projectRoot, packageName) {
+function writeFakePackage(projectRoot, packageName, version = '0.0.0') {
   const packagePath = path.join(projectRoot, 'node_modules', ...packageName.split('/'), 'package.json')
   fs.mkdirSync(path.dirname(packagePath), { recursive: true })
-  fs.writeFileSync(packagePath, `${JSON.stringify({ name: packageName, version: '0.0.0' }, null, 2)}\n`)
+  fs.writeFileSync(packagePath, `${JSON.stringify({ name: packageName, version }, null, 2)}\n`)
 }
 
 function writeFakeModule(projectRoot, packageName, source) {
@@ -463,12 +463,13 @@ test('generateIOSFiles writes Dynamic Widget manifest and AppIntent Swift scaffo
 }
 `
   )
+  writeFakePackage(tempDir, '@use-voltra/ios-client', '9.8.7')
   fs.mkdirSync(path.dirname(legacyStatePath), { recursive: true })
   fs.writeFileSync(legacyStatePath, `module.exports = { systemSmall: { title: 'Legacy' } }\n`)
   fs.writeFileSync(
     dynamicEntryPath,
     `module.exports = function Widget(_props, env) {
-  return { family: env.widgetFamily, label: env.configuration ?? null }
+  return { family: env.widgetFamily, label: env.configuration ?? null, version: env.build.voltraVersion }
 }
 `
   )
@@ -538,7 +539,9 @@ test('generateIOSFiles writes Dynamic Widget manifest and AppIntent Swift scaffo
   const initialStatesSwift = fs.readFileSync(path.join(result.targetPath, 'VoltraWidgetInitialStates.swift'), 'utf8')
   assert.match(initialStatesSwift, /"legacy"/)
   assert.match(initialStatesSwift, /"dynamic"/)
+  assert.match(initialStatesSwift, /9\.8\.7/)
   const infoPlist = fs.readFileSync(path.join(result.targetPath, 'Info.plist'), 'utf8')
+  assert.match(infoPlist, /<key>Voltra_Version<\/key>\s*<string>9\.8\.7<\/string>/)
   assert.match(infoPlist, /Voltra_WidgetServerUrls/)
   assert.match(infoPlist, /https:\/\/example\.com\/widget/)
   assert.match(infoPlist, /NSAppTransportSecurity/)
@@ -571,12 +574,13 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
 }
 `
   )
+  writeFakePackage(tempDir, '@use-voltra/android-client', '9.8.7')
   fs.mkdirSync(path.dirname(legacyStatePath), { recursive: true })
   fs.writeFileSync(legacyStatePath, `module.exports = { small: { title: 'Legacy' } }\n`)
   fs.writeFileSync(
     dynamicEntryPath,
     `module.exports = function Widget(_props, env) {
-  return { family: env.widgetFamily, label: env.configuration ?? null }
+  return { family: env.widgetFamily, label: env.configuration ?? null, version: env.build.voltraVersion }
 }
 `
   )
@@ -643,6 +647,7 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
   )
   assert.ok(initialStates.legacy)
   assert.ok(initialStates.dynamic)
+  assert.equal(initialStates.dynamic.element.version, '9.8.7')
   assert.ok(result.files.includes('.voltra/manifest.android.json'))
 })
 
@@ -667,6 +672,7 @@ test('Dynamic Widget entry must default-export a function or component', async (
 }
 `
   )
+  writeFakePackage(tempDir, '@use-voltra/ios-client', '9.8.7')
   fs.mkdirSync(path.join(tempDir, 'widgets'), { recursive: true })
   fs.writeFileSync(path.join(tempDir, 'widgets', 'bad.js'), 'module.exports = { nope: true }\n')
   writeInfoPlist(infoPlistPath)
@@ -1360,6 +1366,7 @@ test('build configurations disagreeing on the app version are reported', async (
 }
 `
   )
+  writeFakePackage(tempDir, '@use-voltra/ios-client', '9.8.7')
 
   fs.writeFileSync(
     path.join(iosRoot, 'TestApp', 'Info-Debug.plist'),
