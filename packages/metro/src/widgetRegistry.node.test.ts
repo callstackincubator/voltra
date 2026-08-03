@@ -9,6 +9,7 @@ import { createElement } from 'react'
 
 import { bundleWidgets } from './bundleWidgets.ts'
 import { createVoltraMiddleware } from './createVoltraMiddleware.ts'
+import { createLiveActivityRegistry } from './liveActivityRegistry.ts'
 import { createWidgetRegistry } from './widgetRegistry.ts'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -223,6 +224,57 @@ describe('@use-voltra/metro manifest registry', () => {
       registry.close()
     }
   })
+
+  test('keeps Dynamic Live Activities in a separate registry when IDs collide with widgets', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.json': JSON.stringify({
+        version: 1,
+        platform: 'ios',
+        widgets: [{ id: 'order', entry: 'widgets/order.js' }],
+      }),
+      '.voltra/manifest.ios.live-activities.json': JSON.stringify({
+        version: 1,
+        platform: 'ios',
+        liveActivities: [{ id: 'order', entry: 'live-activities/order.js' }],
+      }),
+      'widgets/order.js': 'export default function OrderWidget() { return null }\n',
+      'live-activities/order.js': 'export default function OrderLiveActivity() { return {} }\n',
+    })
+    cleanups.push(cleanup)
+    const widgets = createWidgetRegistry({ projectRoot })
+    const liveActivities = createLiveActivityRegistry({ projectRoot })
+    try {
+      const widget = widgets.getWidget('ios', 'order')
+      const liveActivity = liveActivities.getLiveActivity('order')
+      assert.ok(widget)
+      assert.ok(liveActivity)
+      assert.notEqual(widget.generatedEntryPath, liveActivity.generatedEntryPath)
+      const generated = fs.readFileSync(liveActivity.generatedEntryPath, 'utf8')
+      assert.match(generated, /renderLiveActivityToJson/)
+      assert.match(generated, /new Date\(environment.date\)/)
+      assert.match(generated, /__voltraDynamicLiveActivities/)
+      assert.match(generated, /LiveActivity\(props, environment\)/)
+    } finally {
+      widgets.close()
+      liveActivities.close()
+    }
+  })
+
+  test('reports malformed Dynamic Live Activity manifests with collection-specific errors', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.live-activities.json': JSON.stringify({ version: 1, platform: 'ios', widgets: [] }),
+    })
+    cleanups.push(cleanup)
+    const registry = createLiveActivityRegistry({ projectRoot })
+    try {
+      assert.throws(
+        () => registry.listLiveActivities(),
+        /dynamic live activities manifest.*liveActivities must be an array/i
+      )
+    } finally {
+      registry.close()
+    }
+  })
 })
 
 describe('@use-voltra/metro middleware and bundling', () => {
@@ -295,6 +347,46 @@ describe('@use-voltra/metro middleware and bundling', () => {
       assert.equal(response.body, '')
     } finally {
       registry.close()
+    }
+  })
+
+  test('routes colliding Dynamic Live Activity bundles through their dedicated endpoint', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.json': JSON.stringify({
+        version: 1,
+        platform: 'ios',
+        widgets: [{ id: 'order', entry: 'widgets/order.js' }],
+      }),
+      '.voltra/manifest.ios.live-activities.json': JSON.stringify({
+        version: 1,
+        platform: 'ios',
+        liveActivities: [{ id: 'order', entry: 'live-activities/order.js' }],
+      }),
+      'widgets/order.js': 'export default function OrderWidget() { return null }\n',
+      'live-activities/order.js': 'export default function OrderLiveActivity() { return {} }\n',
+    })
+    cleanups.push(cleanup)
+    const registry = createWidgetRegistry({ projectRoot })
+    const liveActivityRegistry = createLiveActivityRegistry({ projectRoot })
+    const calls: string[] = []
+    const middleware = createVoltraMiddleware({
+      registry,
+      liveActivityRegistry,
+      widgetMetro: {
+        middleware(req: { url: string }) {
+          calls.push(req.url)
+        },
+      },
+    })
+    const response = { writeHead() {}, end() {} }
+    try {
+      middleware({ url: '/live-activities/order.bundle?platform=ios' }, response, () => {})
+      assert.equal(calls.length, 1)
+      assert.match(calls[0], /bundleEntry=.*live-activities/)
+      assert.match(calls[0], /platform=ios/)
+    } finally {
+      registry.close()
+      liveActivityRegistry.close()
     }
   })
 
@@ -384,5 +476,42 @@ describe('@use-voltra/metro middleware and bundling', () => {
     })
 
     assert.deepEqual(fs.readdirSync(outDir), ['voltra-widget-home.bundle'])
+  })
+
+  test('bakes Dynamic Live Activity bundles with their dedicated release prefix', async () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.json': JSON.stringify({
+        version: 1,
+        platform: 'ios',
+        widgets: [{ id: 'order', entry: 'widgets/order.js' }],
+      }),
+      '.voltra/manifest.ios.live-activities.json': JSON.stringify({
+        version: 1,
+        platform: 'ios',
+        liveActivities: [{ id: 'order', entry: 'live-activities/order.js' }],
+      }),
+      'widgets/order.js': 'export default function OrderWidget() { return null }\n',
+      'live-activities/order.js': 'export default function OrderLiveActivity() { return {} }\n',
+    })
+    cleanups.push(cleanup)
+    const originalLoad = (Module as any)._load
+    mock.method(Module as any, '_load', function (request: string, parent: unknown, isMain: boolean) {
+      if (request === 'metro') return { runBuild: async () => ({ code: 'bundle' }) }
+      if (request === 'metro-config')
+        return {
+          loadConfig: async () => ({ resolver: {}, watchFolders: [], serializer: {}, transformer: {}, server: {} }),
+          getDefaultConfig: async () => ({
+            resolver: {},
+            watchFolders: [],
+            serializer: {},
+            transformer: {},
+            server: {},
+          }),
+        }
+      return originalLoad.call(this, request, parent, isMain)
+    })
+    const outDir = path.join(projectRoot, 'dist', 'widgets')
+    await bundleWidgets({ projectRoot, outDir, platform: 'ios' })
+    assert.deepEqual(fs.readdirSync(outDir).sort(), ['voltra-live-activity-order.bundle', 'voltra-widget-order.bundle'])
   })
 })

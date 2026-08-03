@@ -1,4 +1,5 @@
 import type { WidgetRegistry } from './widgetRegistry'
+import type { LiveActivityRegistry } from './liveActivityRegistry'
 
 type Middleware = (req: any, res: any, next: () => void) => void
 
@@ -18,21 +19,23 @@ function sendJson(res: any, status: number, value: unknown): void {
 }
 
 function createBundleRequest(
-  widget: { generatedEntryRelativePath: string; platform: 'ios' | 'android' },
+  entry: { generatedEntryRelativePath: string; platform: 'ios' | 'android' },
   originalSearchParams: URLSearchParams
 ): string {
   const query = new URLSearchParams(originalSearchParams)
-  query.set('bundleEntry', widget.generatedEntryRelativePath)
-  query.set('platform', widget.platform)
+  query.set('bundleEntry', entry.generatedEntryRelativePath)
+  query.set('platform', entry.platform)
 
   return `/voltra-widget.bundle?${query.toString()}`
 }
 
 export function createVoltraMiddleware({
   registry,
+  liveActivityRegistry,
   widgetMetro,
 }: {
   registry: WidgetRegistry
+  liveActivityRegistry?: LiveActivityRegistry
   widgetMetro: { middleware: Middleware }
 }): Middleware {
   return (req, res, next) => {
@@ -48,8 +51,16 @@ export function createVoltraMiddleware({
       return
     }
 
-    if (pathname === '/' || pathname === '/widgets') {
+    if (pathname === '/' || pathname === '/widgets' || pathname === '/live-activities') {
       try {
+        if (pathname === '/live-activities') {
+          sendJson(res, 200, {
+            ready: liveActivityRegistry?.isReady() ?? false,
+            platform: 'ios',
+            liveActivities: liveActivityRegistry?.listLiveActivities() ?? [],
+          })
+          return
+        }
         sendJson(res, 200, {
           ready: registry.isReady(),
           platform: requestedPlatform,
@@ -90,6 +101,32 @@ export function createVoltraMiddleware({
         sendJson(res, 500, {
           error: error instanceof Error ? error.message : String(error),
         })
+      }
+    }
+
+    const liveActivityBundleMatch = pathname.match(/^\/live-activities\/([^/]+)\.bundle$/)
+    if (liveActivityBundleMatch) {
+      const definitionId = decodeURIComponent(liveActivityBundleMatch[1])
+      if (hasPlatformParam && requestedPlatform !== 'ios') {
+        sendJson(res, 400, { error: 'Dynamic Live Activities are available only for platform "ios".' })
+        return
+      }
+      if (!liveActivityRegistry) {
+        sendJson(res, 404, { error: `Unknown Voltra Dynamic Live Activity "${definitionId}" for platform "ios".` })
+        return
+      }
+      try {
+        const liveActivity = liveActivityRegistry.getLiveActivity(definitionId)
+        if (!liveActivity) {
+          sendJson(res, 404, { error: `Unknown Voltra Dynamic Live Activity "${definitionId}" for platform "ios".` })
+          return
+        }
+        req.url = createBundleRequest(liveActivity, requestUrl.searchParams)
+        widgetMetro.middleware(req, res, next)
+        return
+      } catch (error) {
+        sendJson(res, 500, { error: error instanceof Error ? error.message : String(error) })
+        return
       }
     }
 

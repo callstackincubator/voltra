@@ -6,6 +6,11 @@ import type { DynamicWidgetPlatform } from '@use-voltra/expo-plugin'
 import { createWidgetMetroConfig } from './createWidgetMetroConfig'
 import { requireProjectModule } from './resolveProjectModule'
 import { createWidgetRegistry } from './widgetRegistry'
+import {
+  createLiveActivityRegistry,
+  MissingVoltraLiveActivitiesManifestError,
+  type RegisteredVoltraLiveActivity,
+} from './liveActivityRegistry'
 
 export type BundleWidgetsOptions = {
   projectRoot: string
@@ -62,12 +67,21 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
   }
 
   const registry = createWidgetRegistry({ projectRoot })
+  const liveActivityRegistry = platform === 'ios' ? createLiveActivityRegistry({ projectRoot }) : null
 
   try {
     const widgets = registry.listWidgets(platform)
+    let liveActivities: RegisteredVoltraLiveActivity[] = []
+    if (liveActivityRegistry) {
+      try {
+        liveActivities = liveActivityRegistry.listLiveActivities()
+      } catch (error) {
+        if (!(error instanceof MissingVoltraLiveActivitiesManifestError)) throw error
+      }
+    }
 
-    if (widgets.length === 0) {
-      console.log(`[voltra] no Dynamic Widgets to bundle for platform "${platform}"`)
+    if (widgets.length === 0 && liveActivities.length === 0) {
+      console.log(`[voltra] no Dynamic Widgets or Dynamic Live Activities to bundle for platform "${platform}"`)
       return
     }
 
@@ -93,8 +107,16 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
       fs.writeFileSync(outPath, code)
       console.log(`[voltra] baked ${path.basename(outPath)} (${code.length} bytes)`)
     }
+    for (const liveActivity of liveActivities) {
+      const entry = path.resolve(projectRoot, liveActivity.generatedEntryRelativePath)
+      const { code } = await Metro.runBuild(widgetConfig, { entry, platform, dev: false, minify: true })
+      const outPath = path.join(outDir, `voltra-live-activity-${liveActivity.id}.bundle`)
+      fs.writeFileSync(outPath, code)
+      console.log(`[voltra] baked ${path.basename(outPath)} (${code.length} bytes)`)
+    }
   } finally {
     registry.close()
+    liveActivityRegistry?.close()
   }
 }
 
