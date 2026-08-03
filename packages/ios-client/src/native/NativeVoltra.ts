@@ -97,10 +97,12 @@ export interface Spec extends TurboModule {
   endAllLiveActivities(): Promise<void>
   getLatestVoltraActivityId(): Promise<string | null>
   listVoltraActivityIds(): Promise<string[]>
+  getDynamicLiveActivityDefinitionIds(): Promise<string[]>
   isLiveActivityActive(activityName: string): boolean
   isHeadless(): boolean
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>
   reloadLiveActivities(activityNames?: string[] | null): Promise<void>
+  reloadDynamicLiveActivities(definitionIds?: string[] | null): Promise<void>
   clearPreloadedImages(keys?: string[] | null): Promise<void>
   updateDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   updateWidget(widgetId: string, jsonString: string, options: UpdateWidgetOptions): Promise<void>

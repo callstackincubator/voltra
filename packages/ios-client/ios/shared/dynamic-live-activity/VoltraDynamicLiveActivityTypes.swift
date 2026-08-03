@@ -95,5 +95,8 @@ public enum VoltraDynamicLiveActivityError: Error {
     static func end(byName name: String, dismissalPolicy: ActivityUIDismissalPolicy) async -> Bool
     static func endAll(dismissalPolicy: ActivityUIDismissalPolicy) async
     static func activities() -> [VoltraDynamicLiveActivityReference]
+    static func definitionIds() -> [String]
+    static func startObserving(with observer: VoltraDynamicLiveActivityObserver) async
+    static func reload(definitionIds: Set<String>?) async
   }
 #endif

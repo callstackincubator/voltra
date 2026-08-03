@@ -253,6 +253,8 @@ describe('@use-voltra/metro manifest registry', () => {
       assert.match(generated, /renderLiveActivityToJson/)
       assert.match(generated, /new Date\(environment.date\)/)
       assert.match(generated, /__voltraDynamicLiveActivities/)
+      assert.match(generated, /__voltraDynamicLiveActivityDefinitionUpdated/)
+      assert.match(generated, /\("order"\)/)
       assert.match(generated, /LiveActivity\(props, environment\)/)
     } finally {
       widgets.close()

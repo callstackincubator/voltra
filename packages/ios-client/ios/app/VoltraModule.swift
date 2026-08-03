@@ -125,6 +125,10 @@ public enum VoltraErrors: Error {
     impl.listVoltraActivityIds()
   }
 
+  @objc public func getDynamicLiveActivityDefinitionIds() -> [String] {
+    impl.getDynamicLiveActivityDefinitionIds()
+  }
+
   @objc public func isLiveActivityActive(_ activityName: String) -> Bool {
     impl.isLiveActivityActive(name: activityName)
   }
@@ -165,6 +169,13 @@ public enum VoltraErrors: Error {
       } catch {
         completion(error)
       }
+    }
+  }
+
+  @objc public func reloadDynamicLiveActivities(_ definitionIds: NSArray?, completion: @escaping () -> Void) {
+    Task {
+      await impl.reloadDynamicLiveActivities(definitionIds: definitionIds?.compactMap { $0 as? String })
+      completion()
     }
   }
 

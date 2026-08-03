@@ -276,6 +276,11 @@
   resolve([self.module listVoltraActivityIds]);
 }
 
+- (void)getDynamicLiveActivityDefinitionIds:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  resolve([self.module getDynamicLiveActivityDefinitionIds]);
+}
+
 - (NSNumber *)isLiveActivityActive:(NSString *)activityName
 {
   return @([self.module isLiveActivityActive:activityName]);
@@ -300,6 +305,11 @@
   [self.module reloadLiveActivities:activityNames completion:^(NSError *error) {
     if (error) { reject(@"reloadLiveActivities", error.localizedDescription, error); } else { resolve(nil); }
   }];
+}
+
+- (void)reloadDynamicLiveActivities:(NSArray *)definitionIds resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module reloadDynamicLiveActivities:definitionIds completion:^{ resolve(nil); }];
 }
 
 - (void)clearPreloadedImages:(NSArray *)keys resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject

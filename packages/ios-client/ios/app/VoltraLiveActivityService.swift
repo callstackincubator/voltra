@@ -138,6 +138,12 @@ public class VoltraLiveActivityService {
     getAllActivityReferences().last?.id
   }
 
+  /// The installed capability list is generated during prebuild and does not
+  /// depend on Metro, the app group, or a server connection.
+  public func dynamicLiveActivityDefinitionIds() -> [String] {
+    VoltraDynamicLiveActivityCatalog.definitionIds()
+  }
+
   // MARK: - Create Operations
 
   /// Create a new Live Activity
@@ -322,6 +328,32 @@ public class VoltraLiveActivityService {
     guard try await VoltraDynamicLiveActivityCatalog.update(byName: name, request: request) else {
       throw VoltraLiveActivityError.notFound
     }
+  }
+
+  /// Refetch and re-evaluate only invalidated Dynamic Live Activity definitions,
+  /// then update their active instances with their current state to trigger a
+  /// WidgetKit render. Legacy activities are deliberately untouched.
+  public func reloadDynamicActivities(definitionIds: [String]?) async {
+    #if DEBUG
+      let requested = definitionIds.map(Set.init)
+      let ids = requested ?? Set(dynamicLiveActivityDefinitionIds())
+      var refreshed = Set<String>()
+      for definitionId in ids.sorted() {
+        guard VoltraDynamicLiveActivityCatalog.contains(definitionId) else { continue }
+        do {
+          let source = try VoltraDynamicLiveActivityBundleSource.load(definitionId: definitionId)
+          guard VoltraJSRenderer.evaluateLiveActivityBundle(source: source, definitionId: definitionId) else {
+            throw VoltraDynamicLiveActivityError.resourceUnavailable(
+              NSError(domain: "VoltraDynamicLiveActivity", code: -2, userInfo: [NSLocalizedDescriptionKey: "Dynamic Live Activity bundle could not be evaluated."])
+            )
+          }
+          refreshed.insert(definitionId)
+        } catch {
+          VoltraLogger.activity.error("Failed to refresh Dynamic Live Activity definition '\(definitionId)': \(error)")
+        }
+      }
+      await VoltraDynamicLiveActivityCatalog.reload(definitionIds: refreshed)
+    #endif
   }
 
   // MARK: - Monitoring

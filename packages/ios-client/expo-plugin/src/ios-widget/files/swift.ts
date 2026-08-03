@@ -640,6 +640,31 @@ ${definitions
                 .join(', ')}].flatMap { $0 }`
         }
       }
+
+      public static func definitionIds() -> [String] {
+        definitions.map(\.definitionId)
+      }
+
+      public static func startObserving(with observer: VoltraDynamicLiveActivityObserver) async {
+${definitions
+  .map(
+    (liveActivity) => `        await observer.observe(${getDynamicLiveActivityAttributesType(liveActivity.id)}.self)`
+  )
+  .join('\n')}
+      }
+
+      public static func reload(definitionIds: Set<String>?) async {
+${definitions
+  .map((liveActivity) => {
+    const definitionId = escapeForSwiftStringLiteral(liveActivity.id)
+    return `        if definitionIds?.contains("${definitionId}") != false {
+          await VoltraDynamicLiveActivityOperations.reload(${getDynamicLiveActivityAttributesType(
+            liveActivity.id
+          )}.self)
+        }`
+  })
+  .join('\n')}
+      }
     }
 
   `

@@ -30,6 +30,7 @@ public actor VoltraLiveActivityManager {
   /// Drives the main `Activity.activityUpdates` loop. When this task is cancelled,
   /// the loop exits and no new per-activity observers are created.
   private var activityUpdatesTask: Task<Void, Never>?
+  private var isObserving = false
 
   /// Drives the `Activity.pushToStartTokenUpdates` loop (iOS 17.2+ only).
   private var pushToStartTask: Task<Void, Never>?
@@ -41,6 +42,11 @@ public actor VoltraLiveActivityManager {
 
   /// One lifecycle-state observer task per live activity, keyed by `activity.id`.
   private var stateTasks: [String: Task<Void, Never>] = [:]
+
+  /// Generated Dynamic Live Activity types require separate ActivityKit streams.
+  /// This observer owns those streams while this manager continues to own the
+  /// unchanged legacy and app-wide push-to-start contracts.
+  private let dynamicObserver: VoltraDynamicLiveActivityObserver
 
   /// The last push-to-start token we forwarded to the callback.
   /// ActivityKit re-delivers the current token whenever a live activity starts or
@@ -59,6 +65,10 @@ public actor VoltraLiveActivityManager {
     self.onTokenUpdated = onTokenUpdated
     self.onPushToStartUpdated = onPushToStartUpdated
     self.onStateChanged = onStateChanged
+    dynamicObserver = VoltraDynamicLiveActivityObserver(
+      onTokenUpdated: onTokenUpdated,
+      onStateChanged: onStateChanged
+    )
   }
 
   // MARK: - Public API
@@ -69,9 +79,14 @@ public actor VoltraLiveActivityManager {
   /// To restart observation, call `stopObserving()` first.
   public func startObserving() {
     guard activityUpdatesTask == nil else { return }
+    isObserving = true
 
     startActivityUpdatesObservation()
     startPushToStartObservation()
+    Task { [weak self, dynamicObserver] in
+      guard await self?.currentlyObserving() == true else { return }
+      await VoltraDynamicLiveActivityCatalog.startObserving(with: dynamicObserver)
+    }
   }
 
   /// Stop all observation and cancel every outstanding task.
@@ -79,6 +94,7 @@ public actor VoltraLiveActivityManager {
   /// Safe to call from any context. After this returns the actor holds no running
   /// tasks; calling `startObserving()` again creates a fresh set.
   public func stopObserving() {
+    isObserving = false
     activityUpdatesTask?.cancel()
     activityUpdatesTask = nil
 
@@ -88,6 +104,13 @@ public actor VoltraLiveActivityManager {
     lastPushToStartToken = nil
 
     cancelAllPerActivityTasks()
+    Task { [dynamicObserver] in
+      await dynamicObserver.stopObserving()
+    }
+  }
+
+  private func currentlyObserving() -> Bool {
+    isObserving
   }
 
   // MARK: - deinit

@@ -252,6 +252,11 @@ public class VoltraModuleImpl {
     return liveActivityService.getAllActivityReferences().map(\.id)
   }
 
+  func getDynamicLiveActivityDefinitionIds() -> [String] {
+    guard #available(iOS 16.4, *) else { return [] }
+    return liveActivityService.dynamicLiveActivityDefinitionIds()
+  }
+
   func isLiveActivityActive(name: String) -> Bool {
     guard #available(iOS 16.4, *) else { return false }
     return liveActivityService.isActivityActive(name: name)
@@ -285,6 +290,13 @@ public class VoltraModuleImpl {
         VoltraLogger.activity.error("Failed to reload Live Activity '\(activity.attributes.name)': \(error)")
       }
     }
+  }
+
+  func reloadDynamicLiveActivities(definitionIds: [String]?) async {
+    #if DEBUG
+      syncDevServerURL()
+    #endif
+    await liveActivityService.reloadDynamicActivities(definitionIds: definitionIds)
   }
 
   // MARK: - Image Preloading

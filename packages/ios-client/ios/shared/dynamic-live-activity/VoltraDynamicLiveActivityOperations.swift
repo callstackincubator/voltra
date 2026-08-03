@@ -85,4 +85,16 @@ public enum VoltraDynamicLiveActivityOperations {
       VoltraDynamicLiveActivityReference(id: $0.id, name: $0.attributes.name, definitionId: Attributes.definitionId)
     }
   }
+
+  public static func reload<Attributes: VoltraDynamicLiveActivityDefinition>(
+    _: Attributes.Type
+  ) async {
+    for activity in Activity<Attributes>.activities {
+      await activity.update(ActivityContent(
+        state: activity.content.state,
+        staleDate: nil,
+        relevanceScore: 0.0
+      ))
+    }
+  }
 }
