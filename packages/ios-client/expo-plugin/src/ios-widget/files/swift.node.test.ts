@@ -94,6 +94,9 @@ describe('Dynamic Live Activity Swift generation', () => {
     expect(types).toContain(
       'VoltraDriverArrivedLiveActivityAttributes.self, VoltraOrderFinishedLiveActivityAttributes.self'
     )
+    expect(types).toContain('VoltraDynamicLiveActivityOperations.create(')
+    expect(types).toContain('VoltraDynamicLiveActivityOperations.update(')
+    expect(types).toContain('VoltraDynamicLiveActivityOperations.endAll(')
     expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "driver_arrived"')
     expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.dynamicIsland(definitionId: "order_finished"')
     expect(configurations).toContain('.supplementalActivityFamilies([.small, .medium])')

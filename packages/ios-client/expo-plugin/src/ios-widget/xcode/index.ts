@@ -43,6 +43,12 @@ export function applyXcodeChanges(
 ): void {
   const { targetName, bundleIdentifier, deploymentTarget, version, buildNumber } = props
   const groupName = 'Embed Foundation Extensions'
+  // The catalog is compiled into the app even for a legacy-only configuration.
+  // Keep it in the extension group too so both targets share one PBX file reference.
+  const effectiveWidgetFiles: IOSWidgetExtensionFiles = {
+    ...widgetFiles,
+    swiftFiles: Array.from(new Set([...widgetFiles.swiftFiles, 'VoltraDynamicLiveActivityTypes.swift'])),
+  }
 
   // Read main app target settings to synchronize code signing (per configuration).
   const mainAppSettings = getMainAppTargetSettings(xcodeProject)
@@ -93,7 +99,7 @@ export function applyXcodeChanges(
   // reference them (the phases resolve files through the widget-scoped group).
   ensurePbxGroup(xcodeProject, {
     targetName,
-    widgetFiles,
+    widgetFiles: effectiveWidgetFiles,
   })
 
   // Ensure build phases and their files.
@@ -102,9 +108,11 @@ export function applyXcodeChanges(
     targetName,
     groupName,
     productFile,
-    widgetFiles,
+    widgetFiles: effectiveWidgetFiles,
     mainTargetUuid: xcodeProject.getFirstTarget().uuid,
-    mainSwiftFiles: (props.liveActivities?.length ?? 0) > 0 ? ['VoltraDynamicLiveActivityTypes.swift'] : undefined,
+    // The app-side lifecycle service always compiles against the generated catalog.
+    // An empty catalog keeps legacy-only apps source-compatible.
+    mainSwiftFiles: ['VoltraDynamicLiveActivityTypes.swift'],
   })
 
   if (hasClientRenderedWidgets || (props.liveActivities?.length ?? 0) > 0) {

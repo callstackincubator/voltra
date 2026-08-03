@@ -4,6 +4,7 @@ public enum VoltraErrors: Error {
   case unsupportedOS
   case notFound
   case liveActivitiesNotEnabled
+  case rendererMismatch
   case unexpectedError(Error)
 }
 
@@ -52,6 +53,37 @@ public enum VoltraErrors: Error {
     Task {
       do {
         try await impl.updateLiveActivity(activityId: activityId, jsonString: jsonString, options: options)
+        completion(nil)
+      } catch {
+        completion(error)
+      }
+    }
+  }
+
+  @objc public func startDynamicLiveActivity(
+    _ definitionId: String,
+    propsJson: String,
+    options: StartVoltraOptions?,
+    completion: @escaping (String?, Error?) -> Void
+  ) {
+    Task {
+      do {
+        try completion(await impl.startDynamicLiveActivity(definitionId: definitionId, propsJson: propsJson, options: options), nil)
+      } catch {
+        completion(nil, error)
+      }
+    }
+  }
+
+  @objc public func updateDynamicLiveActivity(
+    _ activityId: String,
+    propsJson: String,
+    options: UpdateVoltraOptions?,
+    completion: @escaping (Error?) -> Void
+  ) {
+    Task {
+      do {
+        try await impl.updateDynamicLiveActivity(activityId: activityId, propsJson: propsJson, options: options)
         completion(nil)
       } catch {
         completion(error)

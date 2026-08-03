@@ -122,7 +122,20 @@ public class VoltraLiveActivityService {
 
   /// Check if an activity with the given name exists across both types
   public func isActivityActive(name: String) -> Bool {
-    findActivity(byName: name) != nil
+    findActivity(byName: name) != nil || VoltraDynamicLiveActivityCatalog.activities().contains { $0.name == name }
+  }
+
+  /// The unified list intentionally erases each engine's concrete attributes type.
+  public func getAllActivityReferences() -> [VoltraDynamicLiveActivityReference] {
+    guard Self.isSupported() else { return [] }
+    let legacy = getAllActivities().map {
+      VoltraDynamicLiveActivityReference(id: $0.id, name: $0.attributes.name, definitionId: "legacy")
+    }
+    return legacy + VoltraDynamicLiveActivityCatalog.activities()
+  }
+
+  public func latestActivityId() -> String? {
+    getAllActivityReferences().last?.id
   }
 
   // MARK: - Create Operations
@@ -202,6 +215,9 @@ public class VoltraLiveActivityService {
     request: UpdateActivityRequest
   ) async throws {
     guard let activity = findActivity(byName: name) else {
+      if VoltraDynamicLiveActivityCatalog.activities().contains(where: { $0.name == name }) {
+        throw VoltraLiveActivityError.rendererMismatch
+      }
       throw VoltraLiveActivityError.notFound
     }
     try await updateActivity(activity, request: request)
@@ -231,10 +247,15 @@ public class VoltraLiveActivityService {
     byName name: String,
     dismissalPolicy: ActivityUIDismissalPolicy = .immediate
   ) async throws {
-    guard let activity = findActivity(byName: name) else {
+    if let activity = findActivity(byName: name) {
+      await endActivity(activity, dismissalPolicy: dismissalPolicy)
+      // Names can collide across engines after a remote start. Shared ending covers both.
+      _ = await VoltraDynamicLiveActivityCatalog.end(byName: name, dismissalPolicy: dismissalPolicy)
+      return
+    }
+    guard await VoltraDynamicLiveActivityCatalog.end(byName: name, dismissalPolicy: dismissalPolicy) else {
       throw VoltraLiveActivityError.notFound
     }
-    await endActivity(activity, dismissalPolicy: dismissalPolicy)
   }
 
   /// End all activities with the same name
@@ -245,6 +266,7 @@ public class VoltraLiveActivityService {
     for activity in activities {
       await endActivity(activity)
     }
+    _ = await VoltraDynamicLiveActivityCatalog.end(byName: name, dismissalPolicy: .immediate)
   }
 
   /// End all Voltra Live Activities
@@ -253,6 +275,52 @@ public class VoltraLiveActivityService {
     let activities = getAllActivities()
     for activity in activities {
       await endActivity(activity)
+    }
+    await VoltraDynamicLiveActivityCatalog.endAll(dismissalPolicy: .immediate)
+  }
+
+  // MARK: - Dynamic operations
+
+  public func createDynamicActivity(_ request: VoltraDynamicLiveActivityCreateRequest) async throws -> String {
+    guard Self.isSupported() else { throw VoltraLiveActivityError.unsupportedOS }
+    guard Self.areActivitiesEnabled() else { throw VoltraLiveActivityError.liveActivitiesNotEnabled }
+    guard VoltraDynamicLiveActivityCatalog.contains(request.definitionId) else {
+      throw VoltraDynamicLiveActivityError.unknownDefinition(request.definitionId)
+    }
+    do {
+      let source = try VoltraDynamicLiveActivityBundleSource.load(definitionId: request.definitionId)
+      guard VoltraJSRenderer.evaluateLiveActivityBundle(source: source, definitionId: request.definitionId) else {
+        throw VoltraDynamicLiveActivityError.resourceUnavailable(
+          NSError(domain: "VoltraDynamicLiveActivity", code: -1, userInfo: [NSLocalizedDescriptionKey: "Dynamic Live Activity bundle could not be evaluated."])
+        )
+      }
+    } catch let error as VoltraDynamicLiveActivityError {
+      throw error
+    } catch {
+      throw VoltraDynamicLiveActivityError.resourceUnavailable(error)
+    }
+    try VoltraDynamicLiveActivityPayloadValidator.validate(
+      name: request.name,
+      deepLinkUrl: request.deepLinkUrl,
+      props: request.props
+    )
+    if request.name.isEmpty == false {
+      try await endActivities(byName: request.name)
+    }
+    guard try await VoltraDynamicLiveActivityCatalog.create(request) else {
+      throw VoltraDynamicLiveActivityError.unknownDefinition(request.definitionId)
+    }
+    return request.name
+  }
+
+  public func updateDynamicActivity(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws {
+    guard Self.isSupported() else { throw VoltraLiveActivityError.unsupportedOS }
+    if findActivity(byName: name) != nil {
+      throw VoltraDynamicLiveActivityError.rendererMismatch
+    }
+    try VoltraDynamicLiveActivityPayloadValidator.validateContentState(request.props)
+    guard try await VoltraDynamicLiveActivityCatalog.update(byName: name, request: request) else {
+      throw VoltraLiveActivityError.notFound
     }
   }
 
@@ -305,4 +373,5 @@ public enum VoltraLiveActivityError: Error {
   case unsupportedOS
   case notFound
   case liveActivitiesNotEnabled
+  case rendererMismatch
 }

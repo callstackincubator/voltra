@@ -211,6 +211,37 @@
   }];
 }
 
+- (void)startDynamicLiveActivity:(NSString *)definitionId
+                       propsJson:(NSString *)propsJson
+                         options:(JS::NativeVoltra::StartVoltraOptions &)options
+                         resolve:(RCTPromiseResolveBlock)resolve
+                          reject:(RCTPromiseRejectBlock)reject
+{
+  StartVoltraOptions *opts = [StartVoltraOptions new];
+  opts.activityName = options.activityName();
+  opts.deepLinkUrl = options.deepLinkUrl();
+  opts.channelId = options.channelId();
+  if (auto v = options.staleDate()) opts.staleDate = @(v.value());
+  if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
+  [self.module startDynamicLiveActivity:definitionId propsJson:propsJson options:opts completion:^(NSString *activityId, NSError *error) {
+    if (error) { reject(@"startDynamicLiveActivity", error.localizedDescription, error); } else { resolve(activityId); }
+  }];
+}
+
+- (void)updateDynamicLiveActivity:(NSString *)activityId
+                        propsJson:(NSString *)propsJson
+                          options:(JS::NativeVoltra::UpdateVoltraOptions &)options
+                          resolve:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
+{
+  UpdateVoltraOptions *opts = [UpdateVoltraOptions new];
+  if (auto v = options.staleDate()) opts.staleDate = @(v.value());
+  if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
+  [self.module updateDynamicLiveActivity:activityId propsJson:propsJson options:opts completion:^(NSError *error) {
+    if (error) { reject(@"updateDynamicLiveActivity", error.localizedDescription, error); } else { resolve(nil); }
+  }];
+}
+
 - (void)endLiveActivity:(NSString *)activityId
                 options:(JS::NativeVoltra::EndVoltraOptions &)options
                 resolve:(RCTPromiseResolveBlock)resolve

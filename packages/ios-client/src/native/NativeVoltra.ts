@@ -91,6 +91,8 @@ export interface Spec extends TurboModule {
   readonly onActivityPushToStartTokenReceived: CodegenTypes.EventEmitter<VoltraActivityPushToStartTokenReceivedEvent>
   startLiveActivity(jsonString: string, options: StartVoltraOptions): Promise<string>
   updateLiveActivity(activityId: string, jsonString: string, options: UpdateVoltraOptions): Promise<void>
+  startDynamicLiveActivity(definitionId: string, propsJson: string, options: StartVoltraOptions): Promise<string>
+  updateDynamicLiveActivity(activityId: string, propsJson: string, options: UpdateVoltraOptions): Promise<void>
   endLiveActivity(activityId: string, options: EndVoltraOptions): Promise<void>
   endAllLiveActivities(): Promise<void>
   getLatestVoltraActivityId(): Promise<string | null>

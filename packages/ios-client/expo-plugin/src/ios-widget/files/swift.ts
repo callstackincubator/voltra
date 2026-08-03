@@ -574,6 +574,72 @@ function generateDynamicLiveActivityTypesSwift(liveActivities: IOSDynamicLiveAct
       public static func contains(_ definitionId: String) -> Bool {
         definitions.contains { $0.definitionId == definitionId }
       }
+
+      public static func create(_ request: VoltraDynamicLiveActivityCreateRequest) async throws -> Bool {
+        switch request.definitionId {
+${definitions
+  .map(
+    (liveActivity) => `        case "${escapeForSwiftStringLiteral(liveActivity.id)}":
+          try await VoltraDynamicLiveActivityOperations.create(${getDynamicLiveActivityAttributesType(
+            liveActivity.id
+          )}.self, request: request)
+          return true`
+  )
+  .join('\n')}
+        default:
+          return false
+        }
+      }
+
+      public static func update(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws -> Bool {
+${definitions
+  .map(
+    (liveActivity) =>
+      `        if await VoltraDynamicLiveActivityOperations.update(${getDynamicLiveActivityAttributesType(
+        liveActivity.id
+      )}.self, byName: name, request: request) { return true }`
+  )
+  .join('\n')}
+        return false
+      }
+
+      public static func end(byName name: String, dismissalPolicy: ActivityUIDismissalPolicy) async -> Bool {
+${definitions
+  .map(
+    (liveActivity) =>
+      `        if await VoltraDynamicLiveActivityOperations.end(${getDynamicLiveActivityAttributesType(
+        liveActivity.id
+      )}.self, byName: name, dismissalPolicy: dismissalPolicy) { return true }`
+  )
+  .join('\n')}
+        return false
+      }
+
+      public static func endAll(dismissalPolicy: ActivityUIDismissalPolicy) async {
+${definitions
+  .map(
+    (liveActivity) =>
+      `        await VoltraDynamicLiveActivityOperations.endAll(${getDynamicLiveActivityAttributesType(
+        liveActivity.id
+      )}.self, dismissalPolicy: dismissalPolicy)`
+  )
+  .join('\n')}
+      }
+
+      public static func activities() -> [VoltraDynamicLiveActivityReference] {
+        ${
+          definitions.length === 0
+            ? 'return []'
+            : `[${definitions
+                .map(
+                  (liveActivity) =>
+                    `VoltraDynamicLiveActivityOperations.activities(${getDynamicLiveActivityAttributesType(
+                      liveActivity.id
+                    )}.self)`
+                )
+                .join(', ')}].flatMap { $0 }`
+        }
+      }
     }
 
   `

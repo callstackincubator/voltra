@@ -42,6 +42,8 @@ let package = Package(
         "DynamicWidgetPropsStore.swift",
         "DynamicWidgetRenderCoordinator.swift",
         "DynamicWidgetUpdater.swift",
+        "dynamic-live-activity/VoltraDynamicLiveActivityTypes.swift",
+        "dynamic-live-activity/VoltraDynamicLiveActivityPayloadValidator.swift",
         "JSONValue.swift",
         "VoltraConfig.swift",
         "VoltraConstants.swift",

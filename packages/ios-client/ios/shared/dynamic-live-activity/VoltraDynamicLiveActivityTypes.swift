@@ -1,5 +1,8 @@
-import ActivityKit
 import Foundation
+
+#if os(iOS)
+  import ActivityKit
+#endif
 
 /// The JSON-compatible value type used by Dynamic Live Activity props.
 ///
@@ -64,17 +67,33 @@ public struct VoltraDynamicLiveActivityContentState: Codable, Hashable {
   }
 }
 
-/// Metadata and static attributes supplied by each generated definition.
-public protocol VoltraDynamicLiveActivityDefinition: ActivityAttributes where ContentState == VoltraDynamicLiveActivityContentState {
-  static var definitionId: String { get }
-  static var attributesTypeName: String { get }
-
-  var name: String { get }
-  var deepLinkUrl: String? { get }
+public enum VoltraDynamicLiveActivityError: Error {
+  case unknownDefinition(String)
+  case payloadTooLarge(size: Int)
+  case rendererMismatch
+  case resourceUnavailable(Error)
 }
 
-/// Lets app-side lifecycle code check the generated catalog without coupling the
-/// shared renderer to a particular generated file.
-public protocol VoltraDynamicLiveActivityCatalogLookup {
-  static func contains(_ definitionId: String) -> Bool
-}
+// ActivityKit is unavailable to the macOS SwiftPM test target. The JSON props
+// contract above remains independently testable there.
+#if os(iOS)
+  /// Metadata and static attributes supplied by each generated definition.
+  public protocol VoltraDynamicLiveActivityDefinition: ActivityAttributes where ContentState == VoltraDynamicLiveActivityContentState {
+    static var definitionId: String { get }
+    static var attributesTypeName: String { get }
+
+    var name: String { get }
+    var deepLinkUrl: String? { get }
+  }
+
+  /// Lets app-side lifecycle code check the generated catalog without coupling the
+  /// shared renderer to a particular generated file.
+  public protocol VoltraDynamicLiveActivityCatalogLookup {
+    static func contains(_ definitionId: String) -> Bool
+    static func create(_ request: VoltraDynamicLiveActivityCreateRequest) async throws -> Bool
+    static func update(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws -> Bool
+    static func end(byName name: String, dismissalPolicy: ActivityUIDismissalPolicy) async -> Bool
+    static func endAll(dismissalPolicy: ActivityUIDismissalPolicy) async
+    static func activities() -> [VoltraDynamicLiveActivityReference]
+  }
+#endif
