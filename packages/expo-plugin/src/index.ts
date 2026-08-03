@@ -1,6 +1,8 @@
 export { MAX_IMAGE_SIZE_BYTES, MODULE_EXTENSIONS } from './constants'
+export { getDynamicLiveActivityAttributesType } from './dynamic-live-activity'
 export type {
   DynamicWidgetEntryConfig,
+  DynamicLiveActivityEntryConfig,
   DynamicWidgetManifest,
   DynamicWidgetManifestWidget,
   DynamicWidgetPlatform,

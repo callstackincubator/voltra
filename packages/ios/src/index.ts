@@ -8,12 +8,18 @@ export {
   COMPONENT_NAME_TO_ID,
 } from './payload/component-ids.js'
 export { renderLiveActivityToJson, renderLiveActivityToString } from './live-activity/renderer.js'
+export { getDynamicLiveActivityAttributesType } from './live-activity/dynamic.js'
 export type {
   DismissalPolicy,
   LiveActivityJson,
   LiveActivityVariants,
   LiveActivityVariantsJson,
 } from './live-activity/types.js'
+export type {
+  DynamicLiveActivityContentState,
+  DynamicLiveActivityProps,
+  DynamicLiveActivityPropsValue,
+} from './live-activity/dynamic.js'
 export { renderVoltraVariantToJson } from './renderer/index.js'
 export type { VoltraStyleProp, VoltraTextStyle, VoltraTextStyleProp, VoltraViewStyle } from './styles/index.js'
 export type {

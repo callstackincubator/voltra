@@ -67,6 +67,7 @@ export default withVoltraIos
 
 export type {
   IOSConfigPluginProps,
+  IOSDynamicLiveActivityConfig,
   IOSMainAppPluginProps,
   IOSWidgetConfig,
   IOSWidgetExtensionFiles,
