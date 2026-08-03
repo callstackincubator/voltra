@@ -1,5 +1,12 @@
 # @use-voltra/android
 
+## 2.2.0
+
+### Patch Changes
+
+- 6ee694b: Android widgets now warn you when a Column or Row has more children than can be displayed.
+  - @use-voltra/core@2.2.0
+
 ## 2.0.0
 
 ### Minor Changes

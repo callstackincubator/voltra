@@ -1,5 +1,13 @@
 # @use-voltra/ios-server
 
+## 2.2.0
+
+### Patch Changes
+
+- @use-voltra/core@2.2.0
+- @use-voltra/ios@2.2.0
+- @use-voltra/server@2.2.0
+
 ## 1.4.1
 
 ### Patch Changes

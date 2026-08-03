@@ -1,5 +1,11 @@
 # @use-voltra/ios
 
+## 2.2.0
+
+### Patch Changes
+
+- @use-voltra/core@2.2.0
+
 ## 2.0.0
 
 ### Minor Changes

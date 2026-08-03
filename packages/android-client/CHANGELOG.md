@@ -1,5 +1,26 @@
 # @use-voltra/android-client
 
+## 2.2.0
+
+### Minor Changes
+
+- 42996c5: Add typed, JSON-serializable runtime-props update APIs for entry-based Dynamic Widgets on both platforms:
+
+  - Android adds `updateAndroidDynamicWidget`, persists the latest props per widget ID in private `SharedPreferences`, passes them into the Hermes render path, and refreshes only matching Glance receiver instances.
+  - iOS adds `updateDynamicWidget`, persists the latest props per widget ID in App Group `UserDefaults`, passes them into the JavaScriptCore/WidgetKit render path, and reloads only the matching WidgetKit kind.
+
+  Both platforms default to `{}` when no props are stored. On iOS, configure `groupIdentifier` so the app and WidgetKit extension can share runtime props. Rebuild the native Android and iOS apps after upgrading so the new TurboModule methods and native props persistence are included.
+
+### Patch Changes
+
+- 46fdec0: Respect Android ABI selections and avoid bundling duplicate Hermes libraries.
+- 6fc0177: Android client native libraries now support 16 KB page sizes required by Android 15 and Google Play.
+- 5cc2189: Fix Android builds for React Native 0.81 apps by linking the correct Hermes prefab target.
+- Updated dependencies [6ee694b]
+  - @use-voltra/android@2.2.0
+  - @use-voltra/compiler@2.2.0
+  - @use-voltra/expo-plugin@2.2.0
+
 ## 2.0.0
 
 ### Patch Changes

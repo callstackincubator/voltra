@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/android",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Voltra for Android",
   "main": "build/commonjs/index.js",
   "module": "build/module/index.js",

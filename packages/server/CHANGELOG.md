@@ -1,5 +1,7 @@
 # @use-voltra/server
 
+## 2.2.0
+
 ## 1.4.1
 
 ### Patch Changes

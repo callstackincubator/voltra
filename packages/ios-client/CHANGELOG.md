@@ -1,5 +1,53 @@
 # @use-voltra/ios-client
 
+## 2.2.0
+
+### Minor Changes
+
+- 42996c5: Add typed, JSON-serializable runtime-props update APIs for entry-based Dynamic Widgets on both platforms:
+
+  - Android adds `updateAndroidDynamicWidget`, persists the latest props per widget ID in private `SharedPreferences`, passes them into the Hermes render path, and refreshes only matching Glance receiver instances.
+  - iOS adds `updateDynamicWidget`, persists the latest props per widget ID in App Group `UserDefaults`, passes them into the JavaScriptCore/WidgetKit render path, and reloads only the matching WidgetKit kind.
+
+  Both platforms default to `{}` when no props are stored. On iOS, configure `groupIdentifier` so the app and WidgetKit extension can share runtime props. Rebuild the native Android and iOS apps after upgrading so the new TurboModule methods and native props persistence are included.
+
+- 691b43f: Restructure the widget Xcode integration and fix signing, versioning, and misconfiguration behavior.
+
+  - Widget code signing now mirrors the main app per build configuration (Debug→Debug,
+    Release→Release) instead of copying the first configuration's settings into both, so
+    manual-signing release builds get the correct provisioning profile.
+  - The widget's `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` now follow `expo.version`
+    and `expo.ios.buildNumber` (falling back to the previous `1.0`/`1` when unset), matching
+    App Store Connect's requirement that an appex version match its host app.
+  - The plugin now throws an actionable error when `expo.ios.bundleIdentifier` is missing
+    instead of silently skipping widget setup.
+  - Internally, target setup is collapsed into a single idempotent ensure pipeline and build
+    phases are matched semantically rather than by comment strings.
+
+### Patch Changes
+
+- 97aefe4: Harden the generated Podfile widget-target block.
+
+  The block is now delimited by `# @voltra-widget-target BEGIN/END` markers and upserted
+  idempotently (legacy unmarked blocks are migrated, renamed targets update in place). The
+  embedded Ruby raises an actionable error when `@use-voltra/ios-client` cannot be resolved
+  instead of generating a broken target, and the podspec path is canonicalized with
+  `File.realpath` so pnpm and bun symlinked installs resolve correctly.
+
+- 121fa8d: Fix Xcode project corruption when the app already contains another app extension.
+
+  The config plugin now scopes all pbxproj mutations to the widget's own objects: file
+  references resolve through the widget's PBXGroup instead of by bare path, build phases are
+  created empty and populated without adopting other targets' PBXBuildFiles, and an existing
+  "Embed App Extensions" phase is reused (detected via `dstSubfolderSpec == 13`) instead of
+  duplicated. Resolves the `[Xcodeproj] Consistency issue: no parent for object` and
+  `Cycle inside <target>` failures during `pod install`, and makes repeated `expo prebuild`
+  runs idempotent.
+
+  - @use-voltra/compiler@2.2.0
+  - @use-voltra/expo-plugin@2.2.0
+  - @use-voltra/ios@2.2.0
+
 ## 2.0.0
 
 ### Major Changes
