@@ -1,6 +1,7 @@
 /** @type {import('jest').Config} */
 module.exports = {
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/tests/setup.node.js'],
   testMatch: [
     '<rootDir>/tests/dynamic-widget/**/*.node.test.ts',
     '<rootDir>/tests/dynamic-live-activity/**/*.node.test.ts',

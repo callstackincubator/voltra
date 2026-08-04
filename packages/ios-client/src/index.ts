@@ -23,6 +23,18 @@ export {
   type UseLiveActivityOptions,
   type UseLiveActivityResult,
 } from './live-activity/api.js'
+export {
+  getDynamicLiveActivityDefinitionIds,
+  startDynamicLiveActivity,
+  type StartDynamicLiveActivityOptions,
+  updateDynamicLiveActivity,
+  type UpdateDynamicLiveActivityOptions,
+  useDynamicLiveActivity,
+  type UseDynamicLiveActivityOptions,
+  type UseDynamicLiveActivityResult,
+  type DynamicLiveActivityProps,
+  type DynamicLiveActivityPropsValue,
+} from './live-activity/dynamic-api.js'
 export type { DismissalPolicy, LiveActivityVariants } from '@use-voltra/ios'
 export {
   clearPreloadedImages,
