@@ -122,7 +122,7 @@ public class VoltraLiveActivityService {
 
   /// Check if an activity with the given name exists across both types
   public func isActivityActive(name: String) -> Bool {
-    findActivity(byName: name) != nil || VoltraDynamicLiveActivityCatalog.activities().contains { $0.name == name }
+    findActivity(byName: name) != nil || VoltraDynamicLiveActivityRegistry.shared.activities().contains { $0.name == name }
   }
 
   /// The unified list intentionally erases each engine's concrete attributes type.
@@ -131,7 +131,7 @@ public class VoltraLiveActivityService {
     let legacy = getAllActivities().map {
       VoltraDynamicLiveActivityReference(id: $0.id, name: $0.attributes.name, definitionId: "legacy")
     }
-    return legacy + VoltraDynamicLiveActivityCatalog.activities()
+    return legacy + VoltraDynamicLiveActivityRegistry.shared.activities()
   }
 
   public func latestActivityId() -> String? {
@@ -141,7 +141,7 @@ public class VoltraLiveActivityService {
   /// The installed capability list is generated during prebuild and does not
   /// depend on Metro, the app group, or a server connection.
   public func dynamicLiveActivityDefinitionIds() -> [String] {
-    VoltraDynamicLiveActivityCatalog.definitionIds()
+    VoltraDynamicLiveActivityRegistry.shared.definitionIds()
   }
 
   // MARK: - Create Operations
@@ -221,7 +221,7 @@ public class VoltraLiveActivityService {
     request: UpdateActivityRequest
   ) async throws {
     guard let activity = findActivity(byName: name) else {
-      if VoltraDynamicLiveActivityCatalog.activities().contains(where: { $0.name == name }) {
+      if VoltraDynamicLiveActivityRegistry.shared.activities().contains(where: { $0.name == name }) {
         throw VoltraLiveActivityError.rendererMismatch
       }
       throw VoltraLiveActivityError.notFound
@@ -256,10 +256,10 @@ public class VoltraLiveActivityService {
     if let activity = findActivity(byName: name) {
       await endActivity(activity, dismissalPolicy: dismissalPolicy)
       // Names can collide across engines after a remote start. Shared ending covers both.
-      _ = await VoltraDynamicLiveActivityCatalog.end(byName: name, dismissalPolicy: dismissalPolicy)
+      _ = await VoltraDynamicLiveActivityRegistry.shared.end(byName: name, dismissalPolicy: dismissalPolicy)
       return
     }
-    guard await VoltraDynamicLiveActivityCatalog.end(byName: name, dismissalPolicy: dismissalPolicy) else {
+    guard await VoltraDynamicLiveActivityRegistry.shared.end(byName: name, dismissalPolicy: dismissalPolicy) else {
       throw VoltraLiveActivityError.notFound
     }
   }
@@ -272,7 +272,7 @@ public class VoltraLiveActivityService {
     for activity in activities {
       await endActivity(activity)
     }
-    _ = await VoltraDynamicLiveActivityCatalog.end(byName: name, dismissalPolicy: .immediate)
+    _ = await VoltraDynamicLiveActivityRegistry.shared.end(byName: name, dismissalPolicy: .immediate)
   }
 
   /// End all Voltra Live Activities
@@ -282,7 +282,7 @@ public class VoltraLiveActivityService {
     for activity in activities {
       await endActivity(activity)
     }
-    await VoltraDynamicLiveActivityCatalog.endAll(dismissalPolicy: .immediate)
+    await VoltraDynamicLiveActivityRegistry.shared.endAll(dismissalPolicy: .immediate)
   }
 
   // MARK: - Dynamic operations
@@ -290,7 +290,7 @@ public class VoltraLiveActivityService {
   public func createDynamicActivity(_ request: VoltraDynamicLiveActivityCreateRequest) async throws -> String {
     guard Self.isSupported() else { throw VoltraLiveActivityError.unsupportedOS }
     guard Self.areActivitiesEnabled() else { throw VoltraLiveActivityError.liveActivitiesNotEnabled }
-    guard VoltraDynamicLiveActivityCatalog.contains(request.definitionId) else {
+    guard VoltraDynamicLiveActivityRegistry.shared.contains(request.definitionId) else {
       throw VoltraDynamicLiveActivityError.unknownDefinition(request.definitionId)
     }
     do {
@@ -313,7 +313,7 @@ public class VoltraLiveActivityService {
     if request.name.isEmpty == false {
       try await endActivities(byName: request.name)
     }
-    guard try await VoltraDynamicLiveActivityCatalog.create(request) else {
+    guard try await VoltraDynamicLiveActivityRegistry.shared.create(request) != nil else {
       throw VoltraDynamicLiveActivityError.unknownDefinition(request.definitionId)
     }
     return request.name
@@ -321,13 +321,10 @@ public class VoltraLiveActivityService {
 
   public func updateDynamicActivity(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws {
     guard Self.isSupported() else { throw VoltraLiveActivityError.unsupportedOS }
-    if findActivity(byName: name) != nil {
-      throw VoltraDynamicLiveActivityError.rendererMismatch
-    }
     try VoltraDynamicLiveActivityPayloadValidator.validateContentState(request.props)
-    guard try await VoltraDynamicLiveActivityCatalog.update(byName: name, request: request) else {
-      throw VoltraLiveActivityError.notFound
-    }
+    if await VoltraDynamicLiveActivityRegistry.shared.update(byName: name, request: request) { return }
+    if findActivity(byName: name) != nil { throw VoltraDynamicLiveActivityError.rendererMismatch }
+    throw VoltraLiveActivityError.notFound
   }
 
   /// Refetch and re-evaluate only invalidated Dynamic Live Activity definitions,
@@ -339,7 +336,7 @@ public class VoltraLiveActivityService {
       let ids = requested ?? Set(dynamicLiveActivityDefinitionIds())
       var refreshed = Set<String>()
       for definitionId in ids.sorted() {
-        guard VoltraDynamicLiveActivityCatalog.contains(definitionId) else { continue }
+        guard VoltraDynamicLiveActivityRegistry.shared.contains(definitionId) else { continue }
         do {
           let source = try VoltraDynamicLiveActivityBundleSource.load(definitionId: definitionId)
           guard VoltraJSRenderer.evaluateLiveActivityBundle(source: source, definitionId: definitionId) else {
@@ -352,7 +349,7 @@ public class VoltraLiveActivityService {
           VoltraLogger.activity.error("Failed to refresh Dynamic Live Activity definition '\(definitionId)': \(error)")
         }
       }
-      await VoltraDynamicLiveActivityCatalog.reload(definitionIds: refreshed)
+      await VoltraDynamicLiveActivityRegistry.shared.reload(definitionIds: refreshed)
     #endif
   }
 

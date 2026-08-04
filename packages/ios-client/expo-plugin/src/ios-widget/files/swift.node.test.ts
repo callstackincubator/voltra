@@ -97,22 +97,15 @@ describe('Dynamic Live Activity Swift generation', () => {
     expect(types).toContain('public let deepLinkUrl: String?')
     expect(types).toContain('public static let attributesTypeName = "VoltraOrderFinishedLiveActivityAttributes"')
     expect(types).toContain('import VoltraWidget')
-    expect(types).toContain('VoltraDynamicLiveActivityCatalog: VoltraDynamicLiveActivityCatalogLookup')
+    expect(types).toContain('@objc(VoltraGeneratedDynamicLiveActivityRegistration)')
+    expect(types).toContain('public final class VoltraGeneratedDynamicLiveActivityRegistration: NSObject')
     expect(types).toContain(
-      'VoltraDriverArrivedLiveActivityAttributes.self, VoltraOrderFinishedLiveActivityAttributes.self'
+      'VoltraDynamicLiveActivityRegistry.shared.register(VoltraDriverArrivedLiveActivityAttributes.self)'
     )
-    expect(types).toContain('VoltraDynamicLiveActivityOperations.create(')
-    expect(types).toContain('VoltraDynamicLiveActivityOperations.update(')
-    expect(types).toContain('VoltraDynamicLiveActivityOperations.endAll(')
-    expect(types).toContain('public static func definitionIds() -> [String]')
-    expect(types).toContain('definitions.map(\\.definitionId)')
-    expect(types).toContain('public static func startObserving(with observer: VoltraDynamicLiveActivityObserver) async')
-    expect(types).toContain('await observer.observe(VoltraDriverArrivedLiveActivityAttributes.self)')
-    expect(types).toContain('await observer.observe(VoltraOrderFinishedLiveActivityAttributes.self)')
-    expect(types).toContain('public static func reload(definitionIds: Set<String>?) async')
     expect(types).toContain(
-      'VoltraDynamicLiveActivityOperations.reload(VoltraDriverArrivedLiveActivityAttributes.self)'
+      'VoltraDynamicLiveActivityRegistry.shared.register(VoltraOrderFinishedLiveActivityAttributes.self)'
     )
+    expect(types).not.toContain('VoltraDynamicLiveActivityCatalog')
     expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "driver_arrived"')
     expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.dynamicIsland(definitionId: "order_finished"')
     expect(configurations).toContain('.supplementalActivityFamilies([.small, .medium])')

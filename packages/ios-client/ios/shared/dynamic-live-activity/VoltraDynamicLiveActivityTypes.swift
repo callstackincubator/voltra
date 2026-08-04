@@ -84,19 +84,6 @@ public enum VoltraDynamicLiveActivityError: Error {
 
     var name: String { get }
     var deepLinkUrl: String? { get }
-  }
-
-  /// Lets app-side lifecycle code check the generated catalog without coupling the
-  /// shared renderer to a particular generated file.
-  public protocol VoltraDynamicLiveActivityCatalogLookup {
-    static func contains(_ definitionId: String) -> Bool
-    static func create(_ request: VoltraDynamicLiveActivityCreateRequest) async throws -> Bool
-    static func update(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws -> Bool
-    static func end(byName name: String, dismissalPolicy: ActivityUIDismissalPolicy) async -> Bool
-    static func endAll(dismissalPolicy: ActivityUIDismissalPolicy) async
-    static func activities() -> [VoltraDynamicLiveActivityReference]
-    static func definitionIds() -> [String]
-    static func startObserving(with observer: VoltraDynamicLiveActivityObserver) async
-    static func reload(definitionIds: Set<String>?) async
+    init(name: String, deepLinkUrl: String?)
   }
 #endif

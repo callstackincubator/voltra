@@ -547,9 +547,6 @@ function generateDefaultWidgetBundleSwift(): string {
 /** Generates the Dynamic Live Activity types shared by the app and extension targets. */
 function generateDynamicLiveActivityTypesSwift(liveActivities: IOSDynamicLiveActivityConfig[]): string {
   const definitions = [...liveActivities].sort((left, right) => left.id.localeCompare(right.id))
-  const catalogEntries = definitions
-    .map((liveActivity) => `${getDynamicLiveActivityAttributesType(liveActivity.id)}.self`)
-    .join(', ')
   const typeDefinitions = definitions.map(generateDynamicLiveActivitySwift).map(indentGeneratedSwift).join('\n\n')
 
   const header = dedent`
@@ -568,101 +565,16 @@ function generateDynamicLiveActivityTypesSwift(liveActivities: IOSDynamicLiveAct
     import Voltra
     #endif
 
-    public enum VoltraDynamicLiveActivityCatalog: VoltraDynamicLiveActivityCatalogLookup {
-      public static let definitions: [any VoltraDynamicLiveActivityDefinition.Type] = [${catalogEntries}]
-
-      public static func contains(_ definitionId: String) -> Bool {
-        definitions.contains { $0.definitionId == definitionId }
-      }
-
-      public static func create(_ request: VoltraDynamicLiveActivityCreateRequest) async throws -> Bool {
-        switch request.definitionId {
-${definitions
-  .map(
-    (liveActivity) => `        case "${escapeForSwiftStringLiteral(liveActivity.id)}":
-          try await VoltraDynamicLiveActivityOperations.create(${getDynamicLiveActivityAttributesType(
-            liveActivity.id
-          )}.self, request: request)
-          return true`
-  )
-  .join('\n')}
-        default:
-          return false
-        }
-      }
-
-      public static func update(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws -> Bool {
+    @objc(VoltraGeneratedDynamicLiveActivityRegistration)
+    public final class VoltraGeneratedDynamicLiveActivityRegistration: NSObject {
+      @objc public static func registerDefinitions() {
 ${definitions
   .map(
     (liveActivity) =>
-      `        if await VoltraDynamicLiveActivityOperations.update(${getDynamicLiveActivityAttributesType(
+      `        VoltraDynamicLiveActivityRegistry.shared.register(${getDynamicLiveActivityAttributesType(
         liveActivity.id
-      )}.self, byName: name, request: request) { return true }`
+      )}.self)`
   )
-  .join('\n')}
-        return false
-      }
-
-      public static func end(byName name: String, dismissalPolicy: ActivityUIDismissalPolicy) async -> Bool {
-${definitions
-  .map(
-    (liveActivity) =>
-      `        if await VoltraDynamicLiveActivityOperations.end(${getDynamicLiveActivityAttributesType(
-        liveActivity.id
-      )}.self, byName: name, dismissalPolicy: dismissalPolicy) { return true }`
-  )
-  .join('\n')}
-        return false
-      }
-
-      public static func endAll(dismissalPolicy: ActivityUIDismissalPolicy) async {
-${definitions
-  .map(
-    (liveActivity) =>
-      `        await VoltraDynamicLiveActivityOperations.endAll(${getDynamicLiveActivityAttributesType(
-        liveActivity.id
-      )}.self, dismissalPolicy: dismissalPolicy)`
-  )
-  .join('\n')}
-      }
-
-      public static func activities() -> [VoltraDynamicLiveActivityReference] {
-        ${
-          definitions.length === 0
-            ? 'return []'
-            : `[${definitions
-                .map(
-                  (liveActivity) =>
-                    `VoltraDynamicLiveActivityOperations.activities(${getDynamicLiveActivityAttributesType(
-                      liveActivity.id
-                    )}.self)`
-                )
-                .join(', ')}].flatMap { $0 }`
-        }
-      }
-
-      public static func definitionIds() -> [String] {
-        definitions.map(\.definitionId)
-      }
-
-      public static func startObserving(with observer: VoltraDynamicLiveActivityObserver) async {
-${definitions
-  .map(
-    (liveActivity) => `        await observer.observe(${getDynamicLiveActivityAttributesType(liveActivity.id)}.self)`
-  )
-  .join('\n')}
-      }
-
-      public static func reload(definitionIds: Set<String>?) async {
-${definitions
-  .map((liveActivity) => {
-    const definitionId = escapeForSwiftStringLiteral(liveActivity.id)
-    return `        if definitionIds?.contains("${definitionId}") != false {
-          await VoltraDynamicLiveActivityOperations.reload(${getDynamicLiveActivityAttributesType(
-            liveActivity.id
-          )}.self)
-        }`
-  })
   .join('\n')}
       }
     }
@@ -682,7 +594,7 @@ function generateDynamicLiveActivitySwift(liveActivity: IOSDynamicLiveActivityCo
       public let name: String
       public let deepLinkUrl: String?
 
-      public init(name: String, deepLinkUrl: String? = nil) {
+      public init(name: String, deepLinkUrl: String?) {
         self.name = name
         self.deepLinkUrl = deepLinkUrl
       }

@@ -30,13 +30,18 @@ public enum VoltraDynamicLiveActivityOperations {
   public static func create<Attributes: VoltraDynamicLiveActivityDefinition>(
     _: Attributes.Type,
     request: VoltraDynamicLiveActivityCreateRequest
-  ) async throws {
+  ) async throws -> VoltraDynamicLiveActivityReference {
     let attributes = Attributes(name: request.name, deepLinkUrl: request.deepLinkUrl)
     let state = VoltraDynamicLiveActivityContentState(props: request.props)
-    _ = try Activity.request(
+    let activity = try Activity.request(
       attributes: attributes,
       content: ActivityContent(state: state, staleDate: request.staleDate, relevanceScore: request.relevanceScore),
       pushType: request.pushType
+    )
+    return VoltraDynamicLiveActivityReference(
+      id: activity.id,
+      name: activity.attributes.name,
+      definitionId: Attributes.definitionId
     )
   }
 
@@ -92,8 +97,8 @@ public enum VoltraDynamicLiveActivityOperations {
     for activity in Activity<Attributes>.activities {
       await activity.update(ActivityContent(
         state: activity.content.state,
-        staleDate: nil,
-        relevanceScore: 0.0
+        staleDate: activity.content.staleDate,
+        relevanceScore: activity.content.relevanceScore
       ))
     }
   }

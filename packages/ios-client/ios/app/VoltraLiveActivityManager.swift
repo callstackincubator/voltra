@@ -85,7 +85,7 @@ public actor VoltraLiveActivityManager {
     startPushToStartObservation()
     Task { [weak self, dynamicObserver] in
       guard await self?.currentlyObserving() == true else { return }
-      await VoltraDynamicLiveActivityCatalog.startObserving(with: dynamicObserver)
+      await VoltraDynamicLiveActivityRegistry.shared.startObserving(with: dynamicObserver)
     }
   }
 

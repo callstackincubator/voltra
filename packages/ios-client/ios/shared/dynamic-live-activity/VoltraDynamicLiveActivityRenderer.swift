@@ -57,7 +57,7 @@ public enum VoltraDynamicLiveActivityRenderer {
     locale: Locale = .current,
     widgetRenderingMode: WidgetRenderingMode = .fullColor
   ) -> VoltraDynamicLiveActivityResolvedContent {
-    guard VoltraDynamicLiveActivityCatalog.contains(definitionId) else {
+    guard VoltraDynamicLiveActivityRegistry.shared.contains(definitionId) else {
       logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Definition is missing from the installed catalog")
       return .empty
     }
