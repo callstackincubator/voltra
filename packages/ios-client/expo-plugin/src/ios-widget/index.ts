@@ -19,6 +19,7 @@ export interface WithIOSProps {
   fonts?: string[]
   version: string
   buildNumber: string
+  voltraVersion: string
 }
 
 /**
@@ -49,6 +50,7 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     fonts,
     version,
     buildNumber,
+    voltraVersion,
   } = props
 
   const plugins: [ConfigPlugin<any>, any][] = [
@@ -73,7 +75,7 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     // 6. Generate widget extension files (dangerous mod should run before plist patchers)
     [
       generateWidgetExtensionFiles,
-      { targetName, widgets, liveActivities, groupIdentifier, keychainGroup, version, buildNumber },
+      { targetName, widgets, liveActivities, groupIdentifier, keychainGroup, version, buildNumber, voltraVersion },
     ],
   ]
 

@@ -17,6 +17,7 @@ export interface GenerateWidgetExtensionFilesProps {
   keychainGroup?: string
   version: string
   buildNumber: string
+  voltraVersion: string
 }
 
 /**
@@ -32,7 +33,8 @@ export interface GenerateWidgetExtensionFilesProps {
  * This should run before configureXcodeProject so the files exist when Xcode project is configured.
  */
 export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
-  const { targetName, widgets, liveActivities, groupIdentifier, keychainGroup, version, buildNumber } = props
+  const { targetName, widgets, liveActivities, groupIdentifier, keychainGroup, version, buildNumber, voltraVersion } =
+    props
 
   return withDangerousMod(config, [
     'ios',
@@ -50,7 +52,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
       }
 
       // Generate Info.plist
-      generateInfoPlist(targetPath, targetName, version, buildNumber)
+      generateInfoPlist(targetPath, targetName, version, buildNumber, voltraVersion)
 
       // Generate Assets.xcassets and copy user images
       generateAssets({ targetPath })

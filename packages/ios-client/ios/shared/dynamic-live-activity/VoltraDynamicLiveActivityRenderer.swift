@@ -21,29 +21,57 @@ public enum VoltraDynamicLiveActivityRenderer {
     definitionId: String,
     context: ActivityViewContext<Attributes>
   ) -> DynamicIsland {
-    let content = resolve(definitionId: definitionId, context: context, activityFamily: nil)
+    let fallbackContent = resolve(definitionId: definitionId, context: context, activityFamily: nil)
     let island = DynamicIsland {
       DynamicIslandExpandedRegion(.leading) {
-        content.view(for: .islandExpandedLeading, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        VoltraDynamicLiveActivityDynamicIslandRegionView(
+          definitionId: definitionId,
+          context: context,
+          region: .islandExpandedLeading
+        )
       }
       DynamicIslandExpandedRegion(.trailing) {
-        content.view(for: .islandExpandedTrailing, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        VoltraDynamicLiveActivityDynamicIslandRegionView(
+          definitionId: definitionId,
+          context: context,
+          region: .islandExpandedTrailing
+        )
       }
       DynamicIslandExpandedRegion(.center) {
-        content.view(for: .islandExpandedCenter, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        VoltraDynamicLiveActivityDynamicIslandRegionView(
+          definitionId: definitionId,
+          context: context,
+          region: .islandExpandedCenter
+        )
       }
       DynamicIslandExpandedRegion(.bottom) {
-        content.view(for: .islandExpandedBottom, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        VoltraDynamicLiveActivityDynamicIslandRegionView(
+          definitionId: definitionId,
+          context: context,
+          region: .islandExpandedBottom
+        )
       }
     } compactLeading: {
-      content.view(for: .islandCompactLeading, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+      VoltraDynamicLiveActivityDynamicIslandRegionView(
+        definitionId: definitionId,
+        context: context,
+        region: .islandCompactLeading
+      )
     } compactTrailing: {
-      content.view(for: .islandCompactTrailing, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+      VoltraDynamicLiveActivityDynamicIslandRegionView(
+        definitionId: definitionId,
+        context: context,
+        region: .islandCompactTrailing
+      )
     } minimal: {
-      content.view(for: .islandMinimal, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+      VoltraDynamicLiveActivityDynamicIslandRegionView(
+        definitionId: definitionId,
+        context: context,
+        region: .islandMinimal
+      )
     }
 
-    if let keylineTint = content.payload?.keylineTint, let color = JSColorParser.parse(keylineTint) {
+    if let keylineTint = fallbackContent.payload?.keylineTint, let color = JSColorParser.parse(keylineTint) {
       return island.keylineTint(color)
     }
     return island
@@ -102,6 +130,28 @@ public enum VoltraDynamicLiveActivityRenderer {
       definitionId: definitionId,
       message: message
     )
+  }
+}
+
+private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: VoltraDynamicLiveActivityDefinition>: View {
+  let definitionId: String
+  let context: ActivityViewContext<Attributes>
+  let region: VoltraRegion
+
+  @Environment(\.colorScheme) private var colorScheme
+  @Environment(\.locale) private var locale
+  @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+
+  var body: some View {
+    VoltraDynamicLiveActivityRenderer.resolve(
+      definitionId: definitionId,
+      context: context,
+      activityFamily: nil,
+      colorScheme: colorScheme,
+      locale: locale,
+      widgetRenderingMode: widgetRenderingMode
+    )
+    .view(for: region, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
   }
 }
 
@@ -200,7 +250,7 @@ private struct VoltraDynamicLiveActivityResolvedContent {
     if let nodes = payload?.regions[region], !nodes.isEmpty {
       let root: VoltraNode = nodes.count == 1 ? nodes[0] : .array(nodes)
       Voltra(root: root, activityId: activityId)
-        .voltraIfLet(deepLink) { view, url in view.widgetURL(URL(string: url)) }
+        .voltraIfLet(deepLink.flatMap(VoltraDeepLinkResolver.resolveUrl)) { view, url in view.widgetURL(url) }
     }
   }
 }
@@ -225,7 +275,7 @@ private enum VoltraDynamicLiveActivityEnvironmentBuilder {
       "isDev": isDev,
       "metroUrl": metroURL as Any,
       "appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
-      "voltraVersion": "1.4.1",
+      "voltraVersion": Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.voltraVersion) as? String ?? "unknown",
     ]
     var environment: [String: Any] = [
       "date": Int(date.timeIntervalSince1970 * 1000),
