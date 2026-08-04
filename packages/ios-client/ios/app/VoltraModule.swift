@@ -1,11 +1,42 @@
 import Foundation
 
-public enum VoltraErrors: Error {
+public enum VoltraErrors: Error, CustomNSError {
   case unsupportedOS
   case notFound
   case liveActivitiesNotEnabled
   case rendererMismatch
   case unexpectedError(Error)
+
+  public static let errorDomain = "com.callstack.voltra"
+
+  public var errorCode: Int {
+    switch self {
+    case .unexpectedError: 0
+    case .unsupportedOS: 1
+    case .notFound: 2
+    case .liveActivitiesNotEnabled: 3
+    case .rendererMismatch: 4
+    }
+  }
+
+  public var errorUserInfo: [String: Any] {
+    [NSLocalizedDescriptionKey: errorDescription]
+  }
+
+  private var errorDescription: String {
+    switch self {
+    case .unsupportedOS:
+      "Live Activities require iOS 16.4 or newer."
+    case .notFound:
+      "The requested Live Activity was not found."
+    case .liveActivitiesNotEnabled:
+      "Live Activities are disabled for this app."
+    case .rendererMismatch:
+      "The Live Activity belongs to a different renderer."
+    case let .unexpectedError(error):
+      error.localizedDescription
+    }
+  }
 }
 
 @objc public final class VoltraModule: NSObject {

@@ -7,6 +7,19 @@
 #import "VoltraRuntime-Swift.h"
 #endif
 
+static NSString *VoltraPromiseErrorCode(NSString *fallbackCode, NSError *error)
+{
+  if ([error.domain isEqualToString:@"com.callstack.voltra"] && error.code == 4) {
+    return @"VOLTRA_RENDERER_MISMATCH";
+  }
+  return fallbackCode;
+}
+
+static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallbackCode, NSError *error)
+{
+  reject(VoltraPromiseErrorCode(fallbackCode, error), error.localizedDescription, error);
+}
+
 @interface VoltraLaunchObserver : NSObject
 @end
 
@@ -201,7 +214,7 @@
   if (auto v = options.staleDate()) opts.staleDate = @(v.value());
   if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
   [self.module startLiveActivity:jsonString options:opts completion:^(NSString *activityId, NSError *error) {
-    if (error) { reject(@"startLiveActivity", error.localizedDescription, error); } else { resolve(activityId); }
+    if (error) { VoltraRejectPromise(reject, @"startLiveActivity", error); } else { resolve(activityId); }
   }];
 }
 
@@ -215,7 +228,7 @@
   if (auto v = options.staleDate()) opts.staleDate = @(v.value());
   if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
   [self.module updateLiveActivity:activityId jsonString:jsonString options:opts completion:^(NSError *error) {
-    if (error) { reject(@"updateLiveActivity", error.localizedDescription, error); } else { resolve(nil); }
+    if (error) { VoltraRejectPromise(reject, @"updateLiveActivity", error); } else { resolve(nil); }
   }];
 }
 
@@ -232,7 +245,7 @@
   if (auto v = options.staleDate()) opts.staleDate = @(v.value());
   if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
   [self.module startDynamicLiveActivity:definitionId propsJson:propsJson options:opts completion:^(NSString *activityId, NSError *error) {
-    if (error) { reject(@"startDynamicLiveActivity", error.localizedDescription, error); } else { resolve(activityId); }
+    if (error) { VoltraRejectPromise(reject, @"startDynamicLiveActivity", error); } else { resolve(activityId); }
   }];
 }
 
@@ -246,7 +259,7 @@
   if (auto v = options.staleDate()) opts.staleDate = @(v.value());
   if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
   [self.module updateDynamicLiveActivity:activityId propsJson:propsJson options:opts completion:^(NSError *error) {
-    if (error) { reject(@"updateDynamicLiveActivity", error.localizedDescription, error); } else { resolve(nil); }
+    if (error) { VoltraRejectPromise(reject, @"updateDynamicLiveActivity", error); } else { resolve(nil); }
   }];
 }
 
@@ -263,14 +276,14 @@
     opts.dismissalPolicy = policy;
   }
   [self.module endLiveActivity:activityId options:opts completion:^(NSError *error) {
-    if (error) { reject(@"endLiveActivity", error.localizedDescription, error); } else { resolve(nil); }
+    if (error) { VoltraRejectPromise(reject, @"endLiveActivity", error); } else { resolve(nil); }
   }];
 }
 
 - (void)endAllLiveActivities:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   [self.module endAllLiveActivities:^(NSError *error) {
-    if (error) { reject(@"endAllLiveActivities", error.localizedDescription, error); } else { resolve(nil); }
+    if (error) { VoltraRejectPromise(reject, @"endAllLiveActivities", error); } else { resolve(nil); }
   }];
 }
 
