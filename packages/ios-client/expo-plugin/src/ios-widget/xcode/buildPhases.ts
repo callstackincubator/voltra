@@ -6,7 +6,7 @@ import { ensureWidgetFileReference, normalizeRef } from './fileReferences'
 
 const pbxFile = require('xcode/lib/pbxFile')
 
-const WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra Dynamic Widgets'
+const WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra Dynamic Content'
 
 // Release-only build phase that bakes each Dynamic Widget's production JS bundle into the
 // extension's resources. Debug builds fetch from Metro (and hot-reload), so this no-ops there. Runs

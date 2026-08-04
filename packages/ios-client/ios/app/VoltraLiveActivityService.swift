@@ -294,7 +294,7 @@ public class VoltraLiveActivityService {
       throw VoltraDynamicLiveActivityError.unknownDefinition(request.definitionId)
     }
     do {
-      let source = try VoltraDynamicLiveActivityBundleSource.load(definitionId: request.definitionId)
+      let source = try await VoltraDynamicLiveActivityBundleSource.loadForApp(definitionId: request.definitionId)
       guard VoltraJSRenderer.evaluateLiveActivityBundle(source: source, definitionId: request.definitionId) else {
         throw VoltraDynamicLiveActivityError.resourceUnavailable(
           NSError(domain: "VoltraDynamicLiveActivity", code: -1, userInfo: [NSLocalizedDescriptionKey: "Dynamic Live Activity bundle could not be evaluated."])
@@ -338,7 +338,7 @@ public class VoltraLiveActivityService {
       for definitionId in ids.sorted() {
         guard VoltraDynamicLiveActivityRegistry.shared.contains(definitionId) else { continue }
         do {
-          let source = try VoltraDynamicLiveActivityBundleSource.load(definitionId: definitionId)
+          let source = try await VoltraDynamicLiveActivityBundleSource.loadForApp(definitionId: definitionId)
           guard VoltraJSRenderer.evaluateLiveActivityBundle(source: source, definitionId: definitionId) else {
             throw VoltraDynamicLiveActivityError.resourceUnavailable(
               NSError(domain: "VoltraDynamicLiveActivity", code: -2, userInfo: [NSLocalizedDescriptionKey: "Dynamic Live Activity bundle could not be evaluated."])

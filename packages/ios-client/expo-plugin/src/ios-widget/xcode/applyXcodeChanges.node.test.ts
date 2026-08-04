@@ -50,12 +50,15 @@ describe('applyXcodeChanges — fresh Expo project (fixture a)', () => {
 
     const objects = project.hash.project.objects
     const widgetTarget = project.findTargetKey(PROPS.targetName)
+    const appTarget = project.getFirstTarget().uuid
     const shellPhases = objects.PBXShellScriptBuildPhase || {}
-    expect(
-      objects.PBXNativeTarget[widgetTarget].buildPhases.some((entry: any) =>
-        String(shellPhases[String(entry.value).split(' ')[0]]?.name).includes('Bundle Voltra Dynamic Widgets')
-      )
-    ).toBe(true)
+    for (const target of [widgetTarget, appTarget]) {
+      expect(
+        objects.PBXNativeTarget[target].buildPhases.some((entry: any) =>
+          String(shellPhases[String(entry.value).split(' ')[0]]?.name).includes('Bundle Voltra Dynamic Content')
+        )
+      ).toBe(true)
+    }
 
     const typeRefs = Object.entries(objects.PBXFileReference).filter(
       ([key, reference]: [string, any]) =>

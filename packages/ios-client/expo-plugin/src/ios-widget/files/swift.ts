@@ -498,7 +498,7 @@ function generateWidgetBundleSwift(
 
     ${foundationImport}${appIntentsImport}import SwiftUI
     import WidgetKit
-    import VoltraWidget
+    import VoltraRuntime
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
@@ -532,7 +532,7 @@ function generateDefaultWidgetBundleSwift(): string {
 
     import SwiftUI
     import WidgetKit
-    import VoltraWidget  // Import Voltra widgets
+    import VoltraRuntime  // Import Voltra widgets
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
@@ -559,11 +559,7 @@ function generateDynamicLiveActivityTypesSwift(liveActivities: IOSDynamicLiveAct
     import ActivityKit
     import Foundation
 
-    #if canImport(VoltraWidget)
-    import VoltraWidget
-    #else
-    import Voltra
-    #endif
+    import VoltraRuntime
 
     @objc(VoltraGeneratedDynamicLiveActivityRegistration)
     public final class VoltraGeneratedDynamicLiveActivityRegistration: NSObject {
@@ -660,7 +656,7 @@ function generateDynamicLiveActivitiesSwift(liveActivities: IOSDynamicLiveActivi
     import ActivityKit
     import SwiftUI
     import WidgetKit
-    import VoltraWidget
+    import VoltraRuntime
 
   `
   return [header.trim(), configurations.trim()].filter(Boolean).join('\n\n')

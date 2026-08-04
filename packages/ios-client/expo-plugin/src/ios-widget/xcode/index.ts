@@ -43,6 +43,7 @@ export function applyXcodeChanges(
 ): void {
   const { targetName, bundleIdentifier, deploymentTarget, version, buildNumber } = props
   const groupName = 'Embed Foundation Extensions'
+  const mainTargetUuid = xcodeProject.getFirstTarget().uuid
   // The catalog is compiled into the app even for a legacy-only configuration.
   // Keep it in the extension group too so both targets share one PBX file reference.
   const effectiveWidgetFiles: IOSWidgetExtensionFiles = {
@@ -117,6 +118,10 @@ export function applyXcodeChanges(
 
   if (hasClientRenderedWidgets || (props.liveActivities?.length ?? 0) > 0) {
     ensureWidgetBundleScriptPhase(xcodeProject, targetUuid)
+    // Local Dynamic Live Activity starts preflight the baked definition from
+    // the app process, while WidgetKit renders from the extension process.
+    // Bake the same manifest into both products.
+    ensureWidgetBundleScriptPhase(xcodeProject, mainTargetUuid)
   }
 
   ensureTargetAttributes(xcodeProject, targetUuid)

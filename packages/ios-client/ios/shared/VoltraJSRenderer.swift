@@ -15,6 +15,7 @@ import JavaScriptCore
 /// indefinitely.
 public enum VoltraJSRenderer {
   private static var _context: JSContext?
+  private static var liveActivitySources: [String: String] = [:]
   private static let lock = NSLock()
   private static let TAG = "VoltraJSRenderer"
 
@@ -37,12 +38,18 @@ public enum VoltraJSRenderer {
   /// are captured separately from Dynamic Widgets so both collections may use the
   /// same definition ID without overwriting one another.
   public static func evaluateLiveActivityBundle(source: String, definitionId: String) -> Bool {
-    evaluateBundle(
+    let evaluated = evaluateBundle(
       source: source,
       id: definitionId,
       registryName: "__voltraDynamicLiveActivities",
       kind: "live activity"
     )
+    if evaluated {
+      lock.lock()
+      liveActivitySources[definitionId] = source
+      lock.unlock()
+    }
+    return evaluated
   }
 
   private static func evaluateBundle(source: String, id: String, registryName: String, kind: String) -> Bool {
@@ -110,12 +117,17 @@ public enum VoltraJSRenderer {
   }
 
   public static func ensureLiveActivityEvaluated(definitionId: String, source: String) -> Bool {
-    ensureEvaluated(
-      source: source,
-      id: definitionId,
-      registryName: "__voltraDynamicLiveActivities",
-      kind: "live activity"
-    )
+    lock.lock()
+    let currentSource = liveActivitySources[definitionId]
+    let hasRender =
+      _context?
+        .objectForKeyedSubscript("__voltraDynamicLiveActivities")?
+        .objectForKeyedSubscript(definitionId)?
+        .objectForKeyedSubscript("render")?
+        .isObject ?? false
+    lock.unlock()
+    if hasRender, currentSource == source { return true }
+    return evaluateLiveActivityBundle(source: source, definitionId: definitionId)
   }
 
   private static func ensureEvaluated(source: String, id: String, registryName: String, kind: String) -> Bool {
