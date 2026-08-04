@@ -5,7 +5,7 @@ module.exports = {
   modulePathIgnorePatterns: ['<rootDir>/build'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^@use-voltra/core$': '<rootDir>/../core/src/index.ts',
+    '^@use-voltra/core/dynamic-live-activity$': '<rootDir>/../core/src/dynamic-live-activity.ts',
   },
   transform: {
     '^.+\\.tsx?$': [

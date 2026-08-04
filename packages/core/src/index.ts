@@ -1,5 +1,4 @@
 export * from './jsx/createVoltraComponent.js'
-export * from './dynamic-live-activity.js'
 export * from './payload.js'
 export * from './payload/short-names.js'
 export * from './renderer/index.js'
