@@ -121,7 +121,7 @@ import { enableDynamicLiveActivityHotReload } from '@use-voltra/ios-client'
 enableDynamicLiveActivityHotReload()
 ```
 
-The changed definition alone is reloaded. A development bundle is served from `/voltra/live-activities/<id>.bundle`; release bundles use the separate `voltra-live-activity-<id>.bundle` asset prefix.
+When Metro identifies the generated definition entry, only that definition is reloaded. A component-only Fast Refresh boundary does not re-evaluate its importer, so Voltra safely falls back to reloading all Dynamic Live Activity definitions. Legacy Live Activities and Dynamic Widgets are unaffected. A development bundle is served from `/voltra/live-activities/<id>.bundle`; release bundles use the separate `voltra-live-activity-<id>.bundle` asset prefix.
 
 ## Remote updates and payloads
 

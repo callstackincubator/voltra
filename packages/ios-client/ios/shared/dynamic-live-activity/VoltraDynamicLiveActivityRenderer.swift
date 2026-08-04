@@ -91,38 +91,6 @@ public enum VoltraDynamicLiveActivityRenderer {
       logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Could not encode content-state props")
       return .empty
     }
-    let cacheKey = VoltraDynamicLiveActivityRenderCache.Key(
-      activityId: context.activityID,
-      definitionId: definitionId,
-      props: propsJSON,
-      activityFamily: activityFamily,
-      colorScheme: String(describing: colorScheme ?? .light),
-      locale: locale.identifier,
-      widgetRenderingMode: String(describing: widgetRenderingMode),
-      isStale: context.isStale
-    )
-    return VoltraDynamicLiveActivityRenderCache.shared.resolve(cacheKey) {
-      resolveUncached(
-        definitionId: definitionId,
-        context: context,
-        propsJSON: propsJSON,
-        activityFamily: activityFamily,
-        colorScheme: colorScheme,
-        locale: locale,
-        widgetRenderingMode: widgetRenderingMode
-      )
-    }
-  }
-
-  private static func resolveUncached<Attributes: VoltraDynamicLiveActivityDefinition>(
-    definitionId: String,
-    context: ActivityViewContext<Attributes>,
-    propsJSON: String,
-    activityFamily: String?,
-    colorScheme: ColorScheme?,
-    locale: Locale,
-    widgetRenderingMode: WidgetRenderingMode
-  ) -> VoltraDynamicLiveActivityResolvedContent {
     let environmentJSON = VoltraDynamicLiveActivityEnvironmentBuilder.build(
       date: Date(),
       colorScheme: colorScheme,
@@ -282,36 +250,6 @@ private struct VoltraDynamicLiveActivityResolvedContent {
       Voltra(root: root, activityId: activityId)
         .voltraIfLet(deepLink.flatMap(VoltraDeepLinkResolver.resolveUrl)) { view, url in view.widgetURL(url) }
     }
-  }
-}
-
-/// WidgetKit may independently ask each Dynamic Island region to render. Cache
-/// the complete variants shape per ActivityKit state/environment so all regions
-/// share one JS evaluation and one failure diagnostic.
-private final class VoltraDynamicLiveActivityRenderCache: @unchecked Sendable {
-  struct Key: Hashable {
-    let activityId: String
-    let definitionId: String
-    let props: String
-    let activityFamily: String?
-    let colorScheme: String
-    let locale: String
-    let widgetRenderingMode: String
-    let isStale: Bool
-  }
-
-  static let shared = VoltraDynamicLiveActivityRenderCache()
-  private let lock = NSLock()
-  private var values: [Key: VoltraDynamicLiveActivityResolvedContent] = [:]
-
-  func resolve(_ key: Key, render: () -> VoltraDynamicLiveActivityResolvedContent) -> VoltraDynamicLiveActivityResolvedContent {
-    lock.lock()
-    defer { lock.unlock() }
-    if let existing = values[key] { return existing }
-    let resolved = render()
-    if values.count >= 100 { values.removeAll(keepingCapacity: true) }
-    values[key] = resolved
-    return resolved
   }
 }
 
