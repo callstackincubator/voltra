@@ -122,7 +122,6 @@ function generateDynamicLiveActivitySwift(liveActivity: IOSDynamicLiveActivityCo
 
     extension ${attributesType}: VoltraDynamicLiveActivityDefinition {
       public static let definitionId = "${definitionId}"
-      public static let attributesTypeName = "${attributesType}"
     }
 
   `

@@ -16,9 +16,12 @@ export type BundleWidgetsOptions = {
   projectRoot: string
   outDir: string
   platform: DynamicWidgetPlatform
+  /** Select bundles for a product target. The extension needs both; the app only needs activities. */
+  content?: 'widgets' | 'live-activities' | 'all'
 }
 
 type ParsedArgs = {
+  content: 'widgets' | 'live-activities' | 'all'
   outDir: string | null
   platform: DynamicWidgetPlatform
   projectRoot: string
@@ -33,7 +36,7 @@ function parsePlatform(value: string | undefined): DynamicWidgetPlatform {
 }
 
 export function parseBundleWidgetsArgs(argv: string[]): ParsedArgs {
-  const args: ParsedArgs = { outDir: null, platform: 'ios', projectRoot: process.cwd() }
+  const args: ParsedArgs = { content: 'all', outDir: null, platform: 'ios', projectRoot: process.cwd() }
   for (let i = 2; i < argv.length; i += 1) {
     const value = argv[i + 1]
     switch (argv[i]) {
@@ -49,6 +52,13 @@ export function parseBundleWidgetsArgs(argv: string[]): ParsedArgs {
         args.projectRoot = path.resolve(value)
         i += 1
         break
+      case '--content':
+        if (value !== 'widgets' && value !== 'live-activities' && value !== 'all') {
+          throw new Error(`Invalid content '${value}'. Expected widgets, live-activities, or all.`)
+        }
+        args.content = value
+        i += 1
+        break
       default:
         break
     }
@@ -61,7 +71,12 @@ async function loadAppMetroConfig(projectRoot: string): Promise<any> {
   return loadConfig({ cwd: projectRoot })
 }
 
-export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWidgetsOptions): Promise<void> {
+export async function bundleWidgets({
+  projectRoot,
+  outDir,
+  platform,
+  content = 'all',
+}: BundleWidgetsOptions): Promise<void> {
   if (!outDir) {
     throw new Error('bundleWidgets: --out-dir is required')
   }
@@ -70,9 +85,9 @@ export async function bundleWidgets({ projectRoot, outDir, platform }: BundleWid
   const liveActivityRegistry = platform === 'ios' ? createLiveActivityRegistry({ projectRoot }) : null
 
   try {
-    const widgets = registry.listWidgets(platform)
+    const widgets = content === 'live-activities' ? [] : registry.listWidgets(platform)
     let liveActivities: RegisteredVoltraLiveActivity[] = []
-    if (liveActivityRegistry) {
+    if (liveActivityRegistry && content !== 'widgets') {
       try {
         liveActivities = liveActivityRegistry.listLiveActivities()
       } catch (error) {
@@ -126,5 +141,6 @@ export async function runBundleWidgetsCli(argv = process.argv): Promise<void> {
     projectRoot: args.projectRoot,
     outDir: args.outDir ?? '',
     platform: args.platform,
+    content: args.content,
   })
 }

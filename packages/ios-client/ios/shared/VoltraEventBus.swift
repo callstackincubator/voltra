@@ -10,7 +10,7 @@ public class VoltraEventBus {
   private var observer: NSObjectProtocol?
   private var renderFailureObserver: UUID?
   private var handler: ((String, [String: Any]) -> Void)?
-  private var isRenderFailureListenerReady = false
+  private var renderFailureListenerCount = 0
   private let lock = NSLock()
 
   private init() {}
@@ -78,13 +78,13 @@ public class VoltraEventBus {
     VoltraLogger.event.info("Replayed \(persistedEvents.count) persisted events")
   }
 
-  /// Called only after JavaScript has installed the dedicated failure listener.
-  /// Until then notifier and foreground callbacks leave persisted failures intact.
-  public func requestDynamicLiveActivityRenderFailureDrain() {
+  /// JS owns the dedicated emitter subscription count. Persisted failures must
+  /// remain queued whenever there is no relevant JavaScript listener.
+  public func setDynamicLiveActivityRenderFailureListenerActive(_ active: Bool) {
     lock.lock()
-    isRenderFailureListenerReady = true
+    renderFailureListenerCount = active ? 1 : 0
     lock.unlock()
-    drainDynamicLiveActivityRenderFailures()
+    if active { drainDynamicLiveActivityRenderFailures() }
   }
 
   /// Flush only the dedicated Dynamic Live Activity diagnostic queue. This
@@ -92,7 +92,7 @@ public class VoltraEventBus {
   public func drainDynamicLiveActivityRenderFailures() {
     lock.lock()
     let handler = handler
-    let isReady = isRenderFailureListenerReady
+    let isReady = renderFailureListenerCount > 0
     lock.unlock()
     guard isReady, let handler else { return }
 
@@ -119,7 +119,7 @@ public class VoltraEventBus {
       self.renderFailureObserver = nil
     }
     handler = nil
-    isRenderFailureListenerReady = false
+    renderFailureListenerCount = 0
   }
 
   deinit {

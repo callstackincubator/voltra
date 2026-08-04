@@ -176,8 +176,8 @@ public enum VoltraErrors: Error, CustomNSError {
     impl.drainDynamicLiveActivityRenderFailures()
   }
 
-  @objc public func requestDynamicLiveActivityRenderFailureDrain() {
-    impl.requestDynamicLiveActivityRenderFailureDrain()
+  @objc public func setDynamicLiveActivityRenderFailureListenerActive(_ active: Bool) {
+    impl.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
   // MARK: - Images

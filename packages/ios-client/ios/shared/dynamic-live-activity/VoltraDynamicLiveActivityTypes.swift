@@ -80,8 +80,6 @@ public enum VoltraDynamicLiveActivityError: Error {
   /// Metadata and static attributes supplied by each generated definition.
   public protocol VoltraDynamicLiveActivityDefinition: ActivityAttributes where ContentState == VoltraDynamicLiveActivityContentState {
     static var definitionId: String { get }
-    static var attributesTypeName: String { get }
-
     var name: String { get }
     var deepLinkUrl: String? { get }
     init(name: String, deepLinkUrl: String?)

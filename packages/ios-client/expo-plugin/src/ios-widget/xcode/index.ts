@@ -118,10 +118,12 @@ export function applyXcodeChanges(
 
   if (hasClientRenderedWidgets || (props.liveActivities?.length ?? 0) > 0) {
     ensureWidgetBundleScriptPhase(xcodeProject, targetUuid)
+  }
+  if ((props.liveActivities?.length ?? 0) > 0) {
     // Local Dynamic Live Activity starts preflight the baked definition from
     // the app process, while WidgetKit renders from the extension process.
     // Bake the same manifest into both products.
-    ensureWidgetBundleScriptPhase(xcodeProject, mainTargetUuid)
+    ensureWidgetBundleScriptPhase(xcodeProject, mainTargetUuid, 'live-activities')
   }
 
   ensureTargetAttributes(xcodeProject, targetUuid)

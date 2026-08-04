@@ -93,8 +93,8 @@ public class VoltraModuleImpl {
     VoltraEventBus.shared.drainDynamicLiveActivityRenderFailures()
   }
 
-  func requestDynamicLiveActivityRenderFailureDrain() {
-    VoltraEventBus.shared.requestDynamicLiveActivityRenderFailureDrain()
+  func setDynamicLiveActivityRenderFailureListenerActive(_ active: Bool) {
+    VoltraEventBus.shared.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
   var pushNotificationsEnabled: Bool {

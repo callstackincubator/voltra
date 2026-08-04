@@ -7,6 +7,7 @@ import { ensureWidgetFileReference, normalizeRef } from './fileReferences'
 const pbxFile = require('xcode/lib/pbxFile')
 
 const WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra Dynamic Content'
+const LEGACY_WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra Dynamic Widgets'
 
 // Release-only build phase that bakes each Dynamic Widget's production JS bundle into the
 // extension's resources. Debug builds fetch from Metro (and hot-reload), so this no-ops there. Runs
@@ -14,7 +15,8 @@ const WIDGET_BUNDLE_PHASE_NAME = 'Bundle Voltra Dynamic Content'
 // voltra-widget-<id>.bundle lands in the .appex (Bundle.main) where the runtime's release loader
 // reads it. SRCROOT is the ios/ dir; the project root is one level up, matching how Expo's main
 // "Bundle React Native code and images" phase resolves things.
-const WIDGET_BUNDLE_SHELL_SCRIPT = `if [[ "$CONFIGURATION" == *Debug* ]]; then
+function bundleShellScript(content: 'all' | 'live-activities'): string {
+  return `if [[ "$CONFIGURATION" == *Debug* ]]; then
   echo "Voltra: Debug build — Dynamic Widgets load from Metro, skipping bundling"
   exit 0
 fi
@@ -48,6 +50,7 @@ try {
   console.error(error && error.message ? error.message : String(error))
   process.exit(1)
 }
+
 NODE
 )"
 if [[ -z "$BUNDLER" ]]; then
@@ -56,14 +59,23 @@ if [[ -z "$BUNDLER" ]]; then
 fi
 
 echo "Voltra: widget bundler resolved to $BUNDLER"
-"$NODE_BINARY" "$BUNDLER" --out-dir "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH" --platform ios --project-root "$PROJECT_ROOT"
+"$NODE_BINARY" "$BUNDLER" --out-dir "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH" --platform ios --project-root "$PROJECT_ROOT" --content ${content}
 `
+}
+
+function pbxQuotedShellScript(script: string): string {
+  return `"${script.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`
+}
 
 /**
  * Adds (idempotently) the release-only shell-script phase that bakes Dynamic Widget
  * bundles into the extension. Safe to call on every prebuild; only added when absent.
  */
-export function ensureWidgetBundleScriptPhase(xcodeProject: XcodeProject, targetUuid: string): void {
+export function ensureWidgetBundleScriptPhase(
+  xcodeProject: XcodeProject,
+  targetUuid: string,
+  content: 'all' | 'live-activities' = 'all'
+): void {
   const nativeTargets = xcodeProject.pbxNativeTargetSection()
   const target = nativeTargets[targetUuid]
   if (!target) {
@@ -75,15 +87,37 @@ export function ensureWidgetBundleScriptPhase(xcodeProject: XcodeProject, target
 
   const shellPhases = xcodeProject.hash.project.objects.PBXShellScriptBuildPhase || {}
   const quotedName = `"${WIDGET_BUNDLE_PHASE_NAME}"`
-  const alreadyPresent = target.buildPhases.some((entry: any) => shellPhases[entry.value]?.name === quotedName)
-  if (alreadyPresent) {
-    return
-  }
-
-  xcodeProject.addBuildPhase([], 'PBXShellScriptBuildPhase', WIDGET_BUNDLE_PHASE_NAME, targetUuid, {
-    shellPath: '/bin/sh',
-    shellScript: WIDGET_BUNDLE_SHELL_SCRIPT,
+  const quotedLegacyName = `"${LEGACY_WIDGET_BUNDLE_PHASE_NAME}"`
+  const matchingEntries = target.buildPhases.filter((entry: any) => {
+    const name = shellPhases[entry.value]?.name
+    return name === quotedName || name === quotedLegacyName
   })
+  let phase: any | undefined
+  if (matchingEntries.length > 0) {
+    const retained = matchingEntries[0]
+    phase = shellPhases[retained.value]
+    phase.name = quotedName
+    target.buildPhases = target.buildPhases.filter((entry: any) => {
+      if (entry === retained || !matchingEntries.includes(entry)) return true
+      delete shellPhases[entry.value]
+      delete shellPhases[`${entry.value}_comment`]
+      return false
+    })
+  } else {
+    xcodeProject.addBuildPhase([], 'PBXShellScriptBuildPhase', WIDGET_BUNDLE_PHASE_NAME, targetUuid, {
+      shellPath: '/bin/sh',
+      shellScript: bundleShellScript(content),
+    })
+    phase = Object.values(xcodeProject.hash.project.objects.PBXShellScriptBuildPhase || {}).find(
+      (candidate: any) => candidate?.name === quotedName
+    )
+  }
+  if (phase) {
+    // xcode's serializer expects an already PBX-quoted value when an existing
+    // phase is reconciled directly (addBuildPhase performs this for new ones).
+    phase.shellScript = pbxQuotedShellScript(bundleShellScript(content))
+    phase.alwaysOutOfDate = 1
+  }
 
   // The phase intentionally re-bakes on every release build (it can't statically enumerate every
   // widget source as an input). Mark it always-out-of-date so Xcode doesn't warn about the missing

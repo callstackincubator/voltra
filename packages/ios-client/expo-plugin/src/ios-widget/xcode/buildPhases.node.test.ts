@@ -60,6 +60,22 @@ describe('ensureWidgetBundleScriptPhase', () => {
     expect(project.hash.project.objects.PBXNativeTarget[TARGET_UUID].buildPhases).toHaveLength(1)
   })
 
+  it('migrates the legacy phase name without leaving a duplicate phase behind', () => {
+    const project = makeProject()
+    const legacyUuid = 'C'.repeat(24)
+    project.hash.project.objects.PBXShellScriptBuildPhase = {
+      [legacyUuid]: { name: '"Bundle Voltra Dynamic Widgets"', shellScript: 'legacy' },
+    }
+    project.hash.project.objects.PBXNativeTarget[TARGET_UUID].buildPhases = [{ value: legacyUuid }]
+
+    ensureWidgetBundleScriptPhase(project, TARGET_UUID, 'live-activities')
+
+    const phases = shellPhaseObjects(project)
+    expect(phases).toHaveLength(1)
+    expect(phases[0].name).toBe('"Bundle Voltra Dynamic Content"')
+    expect(phases[0].shellScript).toContain('--content live-activities')
+  })
+
   it('does nothing when the target is absent', () => {
     const project = makeProject()
     ensureWidgetBundleScriptPhase(project, 'B'.repeat(24))

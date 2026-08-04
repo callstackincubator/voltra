@@ -95,7 +95,6 @@ describe('Dynamic Live Activity Swift generation', () => {
     expect(types).toContain('public typealias ContentState = VoltraDynamicLiveActivityContentState')
     expect(types).toContain('public let name: String')
     expect(types).toContain('public let deepLinkUrl: String?')
-    expect(types).toContain('public static let attributesTypeName = "VoltraOrderFinishedLiveActivityAttributes"')
     expect(types).toContain('import VoltraRuntime')
     expect(types).not.toContain('import VoltraWidget')
     expect(types).toContain('@objc(VoltraGeneratedDynamicLiveActivityRegistration)')

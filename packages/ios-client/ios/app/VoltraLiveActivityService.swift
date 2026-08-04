@@ -138,7 +138,11 @@ public class VoltraLiveActivityService {
   }
 
   public func latestActivityId() -> String? {
-    getAllActivityReferences().last?.id
+    guard Self.isSupported() else { return nil }
+    let legacy = getAllActivities().map {
+      VoltraDynamicLiveActivityReference(id: $0.id, name: $0.attributes.name, definitionId: "legacy")
+    }
+    return chronology.latest(legacy + dynamicService.activityReferences())?.id
   }
 
   /// The installed capability list is generated during prebuild and does not

@@ -107,7 +107,12 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
 
 - (void)drainDynamicLiveActivityRenderFailures
 {
-  [self.module requestDynamicLiveActivityRenderFailureDrain];
+  [self.module drainDynamicLiveActivityRenderFailures];
+}
+
+- (void)setDynamicLiveActivityRenderFailureListenerActive:(BOOL)active
+{
+  [self.module setDynamicLiveActivityRenderFailureListenerActive:active];
 }
 
 - (UIView *)reactRootViewInView:(UIView *)view

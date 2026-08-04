@@ -7,6 +7,7 @@ import {
 } from '@use-voltra/ios-client'
 import { enableWidgetHotReload as enableAndroidWidgetHotReload } from '@use-voltra/android-client'
 import '@use-voltra/widget-hot-reload'
+import '@use-voltra/live-activity-hot-reload'
 
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
