@@ -93,6 +93,10 @@ public class VoltraModuleImpl {
     VoltraEventBus.shared.drainDynamicLiveActivityRenderFailures()
   }
 
+  func requestDynamicLiveActivityRenderFailureDrain() {
+    VoltraEventBus.shared.requestDynamicLiveActivityRenderFailureDrain()
+  }
+
   var pushNotificationsEnabled: Bool {
     // Support both keys for compatibility with older plugin and new Voltra naming
     let main = Bundle.main

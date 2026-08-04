@@ -12,12 +12,20 @@ describe('Dynamic Live Activity render failure events', () => {
   it('subscribes through the dedicated native emitter with the exported event shape', () => {
     const subscription = { remove: jest.fn() }
     const onDynamicLiveActivityRenderFailed = jest.fn(() => subscription)
-    mockedGetNativeVoltra.mockReturnValue({ onDynamicLiveActivityRenderFailed } as unknown as Spec)
+    const drainDynamicLiveActivityRenderFailures = jest.fn()
+    mockedGetNativeVoltra.mockReturnValue({
+      onDynamicLiveActivityRenderFailed,
+      drainDynamicLiveActivityRenderFailures,
+    } as unknown as Spec)
     const listener = jest.fn<(event: VoltraDynamicLiveActivityRenderFailedEvent) => void>()
 
     const returned = addVoltraListener('dynamicLiveActivityRenderFailed', listener)
 
     expect(onDynamicLiveActivityRenderFailed).toHaveBeenCalledWith(listener)
+    expect(drainDynamicLiveActivityRenderFailures).toHaveBeenCalledTimes(1)
+    expect(onDynamicLiveActivityRenderFailed.mock.invocationCallOrder[0]).toBeLessThan(
+      drainDynamicLiveActivityRenderFailures.mock.invocationCallOrder[0]!
+    )
     expect(returned).toBe(subscription)
   })
 })

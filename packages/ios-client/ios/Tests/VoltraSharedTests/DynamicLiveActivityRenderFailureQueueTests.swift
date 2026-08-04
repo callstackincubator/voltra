@@ -54,6 +54,45 @@ final class DynamicLiveActivityRenderFailureQueueTests: XCTestCase {
     XCTAssertEqual(storage.interactionEvents, ["interaction event"])
   }
 
+  func testFileStorageRecoversFromCorruptData() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try Data("not-json".utf8).write(
+      to: directory.appendingPathComponent("dynamic-live-activity-render-failures-v1.json")
+    )
+    let queue = VoltraDynamicLiveActivityRenderFailureQueue(
+      storage: VoltraDynamicLiveActivityRenderFailureFileStorage(directoryURL: directory)
+    )
+
+    XCTAssertTrue(queue.record(failure(1)))
+    XCTAssertEqual(queue.drain(), [failure(1)])
+    XCTAssertTrue(
+      try FileManager.default.contentsOfDirectory(atPath: directory.path).contains { $0.contains(".corrupt-") }
+    )
+  }
+
+  func testFileStorageSerializesConcurrentWritersAcrossQueueInstances() {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let queues = (0 ..< 20).map { _ in
+      VoltraDynamicLiveActivityRenderFailureQueue(
+        storage: VoltraDynamicLiveActivityRenderFailureFileStorage(directoryURL: directory)
+      )
+    }
+    let group = DispatchGroup()
+    for (index, queue) in queues.enumerated() {
+      group.enter()
+      DispatchQueue.global().async {
+        XCTAssertTrue(queue.record(self.failure(index)))
+        group.leave()
+      }
+    }
+    XCTAssertEqual(group.wait(timeout: .now() + 5), .success)
+
+    let failures = queues[0].drain()
+    XCTAssertEqual(failures.count, 20)
+    XCTAssertEqual(Set(failures.map(\.activityName)).count, 20)
+  }
+
   private func failure(_ index: Int) -> VoltraDynamicLiveActivityRenderFailure {
     VoltraDynamicLiveActivityRenderFailure(
       activityName: "activity-\(index)",
@@ -68,11 +107,21 @@ private final class InMemoryRenderFailureStorage: VoltraDynamicLiveActivityRende
   var failures: [VoltraDynamicLiveActivityRenderFailure] = []
   var interactionEvents: [String] = []
 
-  func load() throws -> [VoltraDynamicLiveActivityRenderFailure] {
-    failures
+  private let lock = NSLock()
+
+  func append(_ failure: VoltraDynamicLiveActivityRenderFailure, capacity: Int) throws {
+    lock.lock()
+    defer { lock.unlock() }
+    failures.append(failure)
+    if failures.count > capacity {
+      failures.removeFirst(failures.count - capacity)
+    }
   }
 
-  func save(_ failures: [VoltraDynamicLiveActivityRenderFailure]) throws {
-    self.failures = failures
+  func drain() throws -> [VoltraDynamicLiveActivityRenderFailure] {
+    lock.lock()
+    defer { lock.unlock() }
+    defer { failures.removeAll() }
+    return failures
   }
 }

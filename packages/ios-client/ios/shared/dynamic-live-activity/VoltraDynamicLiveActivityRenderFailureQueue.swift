@@ -1,5 +1,11 @@
 import Foundation
 
+#if canImport(Darwin)
+  import Darwin
+#else
+  import Glibc
+#endif
+
 /// The intentionally minimal diagnostic record sent from the widget extension
 /// to the app after a Dynamic Live Activity definition cannot be rendered.
 /// Do not add props, tokens, stages, or arbitrary error details here.
@@ -47,35 +53,95 @@ public struct VoltraDynamicLiveActivityRenderFailure: Codable, Equatable {
 }
 
 public protocol VoltraDynamicLiveActivityRenderFailureStorage {
-  func load() throws -> [VoltraDynamicLiveActivityRenderFailure]
-  func save(_ failures: [VoltraDynamicLiveActivityRenderFailure]) throws
+  func append(_ failure: VoltraDynamicLiveActivityRenderFailure, capacity: Int) throws
+  func drain() throws -> [VoltraDynamicLiveActivityRenderFailure]
 }
 
-/// A dedicated, bounded queue. Its lock makes draining and appending atomic in
-/// a process: a failure recorded while a drain is in progress remains queued
-/// for the next drain rather than being cleared accidentally.
+/// Cross-process-safe file storage for the dedicated failure queue.
+///
+/// The app and widget extension take an advisory lock on the same App Group
+/// lock file before every read/modify/write transaction. Atomic replacement of
+/// the JSON data file prevents partial writes. Corrupt data is quarantined and
+/// treated as an empty queue so one damaged record cannot permanently disable
+/// diagnostics.
+public final class VoltraDynamicLiveActivityRenderFailureFileStorage: VoltraDynamicLiveActivityRenderFailureStorage {
+  private let directoryURL: URL
+  private let fileManager: FileManager
+  private let queueFileName = "dynamic-live-activity-render-failures-v1.json"
+  private let lockFileName = "dynamic-live-activity-render-failures-v1.lock"
+
+  public init(directoryURL: URL, fileManager: FileManager = .default) {
+    self.directoryURL = directoryURL
+    self.fileManager = fileManager
+  }
+
+  public func append(_ failure: VoltraDynamicLiveActivityRenderFailure, capacity: Int) throws {
+    try withExclusiveAccess { queueURL in
+      var failures = loadRecoveringCorruption(from: queueURL)
+      failures.append(failure)
+      if failures.count > capacity {
+        failures.removeFirst(failures.count - capacity)
+      }
+      try write(failures, to: queueURL)
+    }
+  }
+
+  public func drain() throws -> [VoltraDynamicLiveActivityRenderFailure] {
+    try withExclusiveAccess { queueURL in
+      let failures = loadRecoveringCorruption(from: queueURL)
+      try write([], to: queueURL)
+      return failures
+    }
+  }
+
+  private func withExclusiveAccess<Result>(
+    _ operation: (URL) throws -> Result
+  ) throws -> Result {
+    try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+    let lockURL = directoryURL.appendingPathComponent(lockFileName, isDirectory: false)
+    let descriptor = open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
+    guard descriptor >= 0 else { throw POSIXError(.EIO) }
+    defer { close(descriptor) }
+    guard flock(descriptor, LOCK_EX) == 0 else { throw POSIXError(.EIO) }
+    defer { flock(descriptor, LOCK_UN) }
+    return try operation(directoryURL.appendingPathComponent(queueFileName, isDirectory: false))
+  }
+
+  private func loadRecoveringCorruption(from url: URL) -> [VoltraDynamicLiveActivityRenderFailure] {
+    guard fileManager.fileExists(atPath: url.path) else { return [] }
+    do {
+      return try JSONDecoder().decode(
+        [VoltraDynamicLiveActivityRenderFailure].self,
+        from: Data(contentsOf: url)
+      )
+    } catch {
+      let quarantineURL = directoryURL.appendingPathComponent(
+        "\(queueFileName).corrupt-\(UUID().uuidString)",
+        isDirectory: false
+      )
+      try? fileManager.moveItem(at: url, to: quarantineURL)
+      return []
+    }
+  }
+
+  private func write(_ failures: [VoltraDynamicLiveActivityRenderFailure], to url: URL) throws {
+    try JSONEncoder().encode(failures).write(to: url, options: .atomic)
+  }
+}
+
+/// A dedicated, bounded queue whose storage owns the append/drain transaction.
 public final class VoltraDynamicLiveActivityRenderFailureQueue {
   public static let capacity = 100
 
   private let storage: VoltraDynamicLiveActivityRenderFailureStorage
-  private let lock = NSLock()
-
   public init(storage: VoltraDynamicLiveActivityRenderFailureStorage) {
     self.storage = storage
   }
 
   @discardableResult
   public func record(_ failure: VoltraDynamicLiveActivityRenderFailure) -> Bool {
-    lock.lock()
-    defer { lock.unlock() }
-
     do {
-      var failures = try storage.load()
-      failures.append(failure)
-      if failures.count > Self.capacity {
-        failures.removeFirst(failures.count - Self.capacity)
-      }
-      try storage.save(failures)
+      try storage.append(failure, capacity: Self.capacity)
       return true
     } catch {
       return false
@@ -83,13 +149,8 @@ public final class VoltraDynamicLiveActivityRenderFailureQueue {
   }
 
   public func drain() -> [VoltraDynamicLiveActivityRenderFailure] {
-    lock.lock()
-    defer { lock.unlock() }
-
     do {
-      let failures = try storage.load()
-      try storage.save([])
-      return failures
+      return try storage.drain()
     } catch {
       return []
     }

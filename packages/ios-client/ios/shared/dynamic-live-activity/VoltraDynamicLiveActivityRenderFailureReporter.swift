@@ -1,32 +1,6 @@
 import CoreFoundation
 import Foundation
 
-private final class VoltraDynamicLiveActivityRenderFailureUserDefaultsStorage: VoltraDynamicLiveActivityRenderFailureStorage {
-  private static let key = "Voltra_DynamicLiveActivity_RenderFailures_v1"
-
-  func load() throws -> [VoltraDynamicLiveActivityRenderFailure] {
-    guard let defaults = defaults() else { throw StorageError.unavailable }
-    guard let data = defaults.data(forKey: Self.key) else { return [] }
-    return try JSONDecoder().decode([VoltraDynamicLiveActivityRenderFailure].self, from: data)
-  }
-
-  func save(_ failures: [VoltraDynamicLiveActivityRenderFailure]) throws {
-    guard let defaults = defaults() else { throw StorageError.unavailable }
-    try defaults.set(JSONEncoder().encode(failures), forKey: Self.key)
-    guard defaults.synchronize() else { throw StorageError.writeFailed }
-  }
-
-  private func defaults() -> UserDefaults? {
-    guard let group = VoltraConfig.groupIdentifier() else { return nil }
-    return UserDefaults(suiteName: group)
-  }
-
-  private enum StorageError: Error {
-    case unavailable
-    case writeFailed
-  }
-}
-
 /// Cross-process notification relay for the App Group backed failure queue.
 /// Darwin notifications carry no payload, so consumers always drain storage.
 private final class VoltraDynamicLiveActivityRenderFailureNotifier {
@@ -100,9 +74,17 @@ private final class VoltraDynamicLiveActivityRenderFailureNotifier {
 /// Owns the production App Group queue and OS logging path. The extension only
 /// records failures; the app's event bus drains them when JavaScript can listen.
 public enum VoltraDynamicLiveActivityRenderFailureReporter {
-  private static let queue = VoltraDynamicLiveActivityRenderFailureQueue(
-    storage: VoltraDynamicLiveActivityRenderFailureUserDefaultsStorage()
-  )
+  private static var queue: VoltraDynamicLiveActivityRenderFailureQueue? {
+    guard
+      let group = VoltraConfig.groupIdentifier(),
+      let directoryURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)
+    else {
+      return nil
+    }
+    return VoltraDynamicLiveActivityRenderFailureQueue(
+      storage: VoltraDynamicLiveActivityRenderFailureFileStorage(directoryURL: directoryURL)
+    )
+  }
 
   @discardableResult
   public static func record(activityName: String, definitionId: String, message: String) -> Bool {
@@ -111,7 +93,7 @@ public enum VoltraDynamicLiveActivityRenderFailureReporter {
       definitionId: definitionId,
       message: message
     )
-    let persisted = queue.record(failure)
+    let persisted = queue?.record(failure) ?? false
     VoltraLogger.activity.error(
       "[DynamicLiveActivity] activity=\(failure.activityName, privacy: .public) definitionId=\(failure.definitionId, privacy: .public) \(failure.message, privacy: .public)"
     )
@@ -124,7 +106,7 @@ public enum VoltraDynamicLiveActivityRenderFailureReporter {
   }
 
   public static func drain() -> [VoltraDynamicLiveActivityRenderFailure] {
-    queue.drain()
+    queue?.drain() ?? []
   }
 
   /// The returned token must be removed when the JS bridge listener goes away.

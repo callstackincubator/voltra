@@ -92,6 +92,11 @@
   [self updateRootAppPropertiesHeadless:NO];
 }
 
+- (void)drainDynamicLiveActivityRenderFailures
+{
+  [self.module requestDynamicLiveActivityRenderFailureDrain];
+}
+
 - (UIView *)reactRootViewInView:(UIView *)view
 {
   if ([view respondsToSelector:NSSelectorFromString(@"appProperties")] &&

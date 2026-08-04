@@ -72,9 +72,11 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
     case 'interaction':
       return voltraModule.onInteraction(listener as (arg: VoltraInteractionEvent) => void)
     case 'dynamicLiveActivityRenderFailed':
-      return voltraModule.onDynamicLiveActivityRenderFailed(
+      const subscription = voltraModule.onDynamicLiveActivityRenderFailed(
         listener as (arg: VoltraDynamicLiveActivityRenderFailedEvent) => void
       )
+      voltraModule.drainDynamicLiveActivityRenderFailures()
+      return subscription
     default:
       console.warn(`[Voltra] Event '${event}' is not supported. Returning no-op subscription.`)
       return noopSubscription

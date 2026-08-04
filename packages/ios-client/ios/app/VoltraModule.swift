@@ -145,6 +145,10 @@ public enum VoltraErrors: Error {
     impl.drainDynamicLiveActivityRenderFailures()
   }
 
+  @objc public func requestDynamicLiveActivityRenderFailureDrain() {
+    impl.requestDynamicLiveActivityRenderFailureDrain()
+  }
+
   // MARK: - Images
 
   @objc public func preloadImages(
