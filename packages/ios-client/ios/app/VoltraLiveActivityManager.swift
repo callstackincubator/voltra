@@ -13,6 +13,9 @@ public actor VoltraLiveActivityManager {
   // Callbacks are `let` + `@Sendable` so they are immutable after init and safe
   // to call from any concurrency context without capturing `self`.
 
+  /// Called when ActivityKit exposes an activity instance to this process.
+  private let onActivityDiscovered: (@Sendable (String) -> Void)?
+
   /// Called when a push token is received or rotated for a specific activity.
   /// Parameters: (activityName, hexToken)
   private let onTokenUpdated: (@Sendable (String, String) -> Void)?
@@ -58,14 +61,17 @@ public actor VoltraLiveActivityManager {
   // MARK: - Init
 
   public init(
+    onActivityDiscovered: (@Sendable (String) -> Void)? = nil,
     onTokenUpdated: (@Sendable (String, String) -> Void)? = nil,
     onPushToStartUpdated: (@Sendable (String) -> Void)? = nil,
     onStateChanged: (@Sendable (String, String) -> Void)? = nil
   ) {
+    self.onActivityDiscovered = onActivityDiscovered
     self.onTokenUpdated = onTokenUpdated
     self.onPushToStartUpdated = onPushToStartUpdated
     self.onStateChanged = onStateChanged
     dynamicObserver = VoltraDynamicLiveActivityObserver(
+      onActivityDiscovered: onActivityDiscovered,
       onTokenUpdated: onTokenUpdated,
       onStateChanged: onStateChanged
     )
@@ -192,6 +198,7 @@ public actor VoltraLiveActivityManager {
   private func observe(_ activity: Activity<VoltraAttributes>) {
     let activityId = activity.id
     let activityName = activity.attributes.name
+    onActivityDiscovered?(activityId)
 
     // Token observation
     if let onTokenUpdated, tokenTasks[activityId] == nil {

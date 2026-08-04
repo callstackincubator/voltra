@@ -5,6 +5,7 @@ import Foundation
 /// activity streams are type-specific, so the generated catalog invokes this
 /// observer once for each bundled attributes type.
 public actor VoltraDynamicLiveActivityObserver {
+  private let onActivityDiscovered: (@Sendable (String) -> Void)?
   private let onTokenUpdated: (@Sendable (String, String) -> Void)?
   private let onStateChanged: (@Sendable (String, String) -> Void)?
 
@@ -13,9 +14,11 @@ public actor VoltraDynamicLiveActivityObserver {
   private var stateTasks: [String: Task<Void, Never>] = [:]
 
   public init(
+    onActivityDiscovered: (@Sendable (String) -> Void)? = nil,
     onTokenUpdated: (@Sendable (String, String) -> Void)? = nil,
     onStateChanged: (@Sendable (String, String) -> Void)? = nil
   ) {
+    self.onActivityDiscovered = onActivityDiscovered
     self.onTokenUpdated = onTokenUpdated
     self.onStateChanged = onStateChanged
   }
@@ -56,6 +59,7 @@ public actor VoltraDynamicLiveActivityObserver {
   ) {
     let key = "\(definitionId):\(activity.id)"
     let name = activity.attributes.name
+    onActivityDiscovered?(activity.id)
 
     if let onTokenUpdated, tokenTasks[key] == nil {
       tokenTasks[key] = Task { [weak self] in

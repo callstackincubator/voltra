@@ -45,6 +45,7 @@ let package = Package(
         "dynamic-live-activity/VoltraDynamicLiveActivityTypes.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityPayloadValidator.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityRenderFailureQueue.swift",
+        "dynamic-live-activity/VoltraLiveActivityOrder.swift",
         "JSONValue.swift",
         "VoltraConfig.swift",
         "VoltraConstants.swift",
