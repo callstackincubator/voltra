@@ -89,6 +89,10 @@ public class VoltraModuleImpl {
     VoltraHeadlessState.shared.clear()
   }
 
+  func drainDynamicLiveActivityRenderFailures() {
+    VoltraEventBus.shared.drainDynamicLiveActivityRenderFailures()
+  }
+
   var pushNotificationsEnabled: Bool {
     // Support both keys for compatibility with older plugin and new Voltra naming
     let main = Bundle.main

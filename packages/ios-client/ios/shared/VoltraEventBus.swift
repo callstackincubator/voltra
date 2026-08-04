@@ -8,6 +8,8 @@ public class VoltraEventBus {
   public static let shared = VoltraEventBus()
 
   private var observer: NSObjectProtocol?
+  private var renderFailureObserver: UUID?
+  private var handler: ((String, [String: Any]) -> Void)?
   private let lock = NSLock()
 
   private init() {}
@@ -39,20 +41,18 @@ public class VoltraEventBus {
   /// - Parameter handler: A closure that receives the event name and event data dictionary
   public func subscribe(handler: @escaping (String, [String: Any]) -> Void) {
     lock.lock()
-    defer { lock.unlock() }
-
     if let observer {
       NotificationCenter.default.removeObserver(observer)
       self.observer = nil
     }
+    if let renderFailureObserver {
+      VoltraDynamicLiveActivityRenderFailureReporter.removeChangeObserver(renderFailureObserver)
+      self.renderFailureObserver = nil
+    }
+    self.handler = handler
 
     // 1. Replay persisted events from UserDefaults (interactions from widget)
     let persistedEvents = VoltraPersistentEventQueue.popAll()
-    for event in persistedEvents {
-      handler(event.name, event.data)
-    }
-    VoltraLogger.event.info("Replayed \(persistedEvents.count) persisted events")
-
     // 2. Listen for all events via NotificationCenter (hot delivery)
     observer = NotificationCenter.default.addObserver(
       forName: .voltraEvent,
@@ -66,6 +66,33 @@ public class VoltraEventBus {
       }
       handler(eventName, userInfo)
     }
+    renderFailureObserver = VoltraDynamicLiveActivityRenderFailureReporter.observeChanges { [weak self] in
+      self?.drainDynamicLiveActivityRenderFailures()
+    }
+    lock.unlock()
+
+    for event in persistedEvents {
+      handler(event.name, event.data)
+    }
+    VoltraLogger.event.info("Replayed \(persistedEvents.count) persisted events")
+    drainDynamicLiveActivityRenderFailures()
+  }
+
+  /// Flush only the dedicated Dynamic Live Activity diagnostic queue. This
+  /// cannot read, displace, or clear persistent interaction events.
+  public func drainDynamicLiveActivityRenderFailures() {
+    lock.lock()
+    let handler = handler
+    lock.unlock()
+    guard let handler else { return }
+
+    let failures = VoltraDynamicLiveActivityRenderFailureReporter.drain()
+    for failure in failures {
+      handler(failure.type, failure.dictionary)
+    }
+    if !failures.isEmpty {
+      VoltraLogger.event.info("Replayed \(failures.count) Dynamic Live Activity render failures")
+    }
   }
 
   /// Unsubscribe from Voltra events
@@ -77,6 +104,11 @@ public class VoltraEventBus {
       NotificationCenter.default.removeObserver(observer)
       self.observer = nil
     }
+    if let renderFailureObserver {
+      VoltraDynamicLiveActivityRenderFailureReporter.removeChangeObserver(renderFailureObserver)
+      self.renderFailureObserver = nil
+    }
+    handler = nil
   }
 
   deinit {

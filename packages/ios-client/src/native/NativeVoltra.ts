@@ -32,6 +32,15 @@ type VoltraInteractionEvent = Readonly<{
   payload: string
 }>
 
+type VoltraDynamicLiveActivityRenderFailedEvent = Readonly<{
+  source: string
+  timestamp: number
+  type: 'dynamicLiveActivityRenderFailed'
+  activityName: string
+  definitionId: string
+  message: string
+}>
+
 type StartVoltraOptions = Readonly<{
   target?: string
   deepLinkUrl?: string
@@ -86,6 +95,7 @@ type WidgetServerCredentials = Readonly<{
 
 export interface Spec extends TurboModule {
   readonly onInteraction: CodegenTypes.EventEmitter<VoltraInteractionEvent>
+  readonly onDynamicLiveActivityRenderFailed: CodegenTypes.EventEmitter<VoltraDynamicLiveActivityRenderFailedEvent>
   readonly onStateChanged: CodegenTypes.EventEmitter<VoltraActivityUpdateEvent>
   readonly onActivityTokenReceived: CodegenTypes.EventEmitter<VoltraActivityTokenReceivedEvent>
   readonly onActivityPushToStartTokenReceived: CodegenTypes.EventEmitter<VoltraActivityPushToStartTokenReceivedEvent>

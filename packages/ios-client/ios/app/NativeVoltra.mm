@@ -65,6 +65,8 @@
 
     if ([eventName isEqualToString:@"interaction"]) {
       [strongSelf emitOnInteraction:eventData];
+    } else if ([eventName isEqualToString:@"dynamicLiveActivityRenderFailed"]) {
+      [strongSelf emitOnDynamicLiveActivityRenderFailed:eventData];
     } else if ([eventName isEqualToString:@"stateChange"]) {
       [strongSelf emitOnStateChanged:eventData];
     } else if ([eventName isEqualToString:@"activityTokenReceived"]) {
@@ -86,6 +88,7 @@
 - (void)applicationWillEnterForeground
 {
   [self.module clearHeadless];
+  [self.module drainDynamicLiveActivityRenderFailures];
   [self updateRootAppPropertiesHeadless:NO];
 }
 

@@ -141,6 +141,10 @@ public enum VoltraErrors: Error {
     impl.clearHeadless()
   }
 
+  @objc public func drainDynamicLiveActivityRenderFailures() {
+    impl.drainDynamicLiveActivityRenderFailures()
+  }
+
   // MARK: - Images
 
   @objc public func preloadImages(

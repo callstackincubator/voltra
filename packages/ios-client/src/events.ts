@@ -30,6 +30,13 @@ export type VoltraInteractionEvent = BasicVoltraEvent & {
   payload: string
 }
 
+export type VoltraDynamicLiveActivityRenderFailedEvent = BasicVoltraEvent & {
+  type: 'dynamicLiveActivityRenderFailed'
+  activityName: string
+  definitionId: string
+  message: string
+}
+
 const noopSubscription: EventSubscription = {
   remove: () => {},
 }
@@ -39,6 +46,7 @@ export type VoltraEventMap = {
   activityPushToStartTokenReceived: VoltraActivityPushToStartTokenReceivedEvent
   stateChange: VoltraActivityUpdateEvent
   interaction: VoltraInteractionEvent
+  dynamicLiveActivityRenderFailed: VoltraDynamicLiveActivityRenderFailedEvent
 }
 
 export function addVoltraListener<K extends keyof VoltraEventMap>(
@@ -63,6 +71,10 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
       return voltraModule.onStateChanged(listener as (arg: VoltraActivityUpdateEvent) => void)
     case 'interaction':
       return voltraModule.onInteraction(listener as (arg: VoltraInteractionEvent) => void)
+    case 'dynamicLiveActivityRenderFailed':
+      return voltraModule.onDynamicLiveActivityRenderFailed(
+        listener as (arg: VoltraDynamicLiveActivityRenderFailedEvent) => void
+      )
     default:
       console.warn(`[Voltra] Event '${event}' is not supported. Returning no-op subscription.`)
       return noopSubscription

@@ -57,8 +57,12 @@ public enum VoltraDynamicLiveActivityRenderer {
     locale: Locale = .current,
     widgetRenderingMode: WidgetRenderingMode = .fullColor
   ) -> VoltraDynamicLiveActivityResolvedContent {
+    guard VoltraDynamicLiveActivityCatalog.contains(definitionId) else {
+      logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Definition is missing from the installed catalog")
+      return .empty
+    }
     guard let propsJSON = DynamicLiveActivityPropsCodec.encode(context.state.props) else {
-      logFailure(definitionId: definitionId, message: "Could not encode content-state props")
+      logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Could not encode content-state props")
       return .empty
     }
     let environmentJSON = VoltraDynamicLiveActivityEnvironmentBuilder.build(
@@ -73,7 +77,7 @@ public enum VoltraDynamicLiveActivityRenderer {
     do {
       let source = try VoltraDynamicLiveActivityBundleSource.load(definitionId: definitionId)
       guard VoltraJSRenderer.ensureLiveActivityEvaluated(definitionId: definitionId, source: source) else {
-        logFailure(definitionId: definitionId, message: "Could not evaluate definition bundle")
+        logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Could not evaluate definition bundle")
         return .empty
       }
       guard let renderedJSON = VoltraJSRenderer.renderLiveActivity(
@@ -81,20 +85,23 @@ public enum VoltraDynamicLiveActivityRenderer {
         propsJSON: propsJSON,
         envJSON: environmentJSON
       ) else {
-        logFailure(definitionId: definitionId, message: "Definition render failed")
+        logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Definition render failed")
         return .empty
       }
       let payload = try VoltraLiveActivityPayload(jsonString: renderedJSON)
       return VoltraDynamicLiveActivityResolvedContent(payload: payload)
     } catch {
-      logFailure(definitionId: definitionId, message: error.localizedDescription)
+      logFailure(definitionId: definitionId, activityName: context.attributes.name, message: error.localizedDescription)
       return .empty
     }
   }
 
-  fileprivate static func logFailure(definitionId: String, message: String) {
-    // Task 07 will additionally persist this structured failure in the App Group queue.
-    VoltraLogger.activity.error("[DynamicLiveActivity] definitionId=\(definitionId) \(message)")
+  fileprivate static func logFailure(definitionId: String, activityName: String, message: String) {
+    VoltraDynamicLiveActivityRenderFailureReporter.record(
+      activityName: activityName,
+      definitionId: definitionId,
+      message: message
+    )
   }
 }
 
