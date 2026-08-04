@@ -11,6 +11,7 @@ export { renderLiveActivityToJson, renderLiveActivityToString } from './live-act
 export { getDynamicLiveActivityAttributesType } from './live-activity/dynamic.js'
 export type {
   DismissalPolicy,
+  LiveActivityEnvironment,
   LiveActivityJson,
   LiveActivityVariants,
   LiveActivityVariantsJson,

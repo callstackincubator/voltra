@@ -1,3 +1,5 @@
+import { getDynamicLiveActivityAttributesType } from '../../../../../ios/src/live-activity/dynamic'
+
 import type { DetectedIOSWidget } from '../clientRendered'
 
 import { __test__ } from './swift'
@@ -86,9 +88,14 @@ describe('Dynamic Live Activity Swift generation', () => {
     const bundle = __test__.generateWidgetBundleSwift([], liveActivities)
 
     expect(types).toContain('VoltraOrderFinishedLiveActivityAttributes')
+    expect(types).toContain(
+      `public struct ${getDynamicLiveActivityAttributesType('order_finished')}: ActivityAttributes`
+    )
     expect(types).toContain('VoltraDriverArrivedLiveActivityAttributes')
+    expect(types).toContain('public typealias ContentState = VoltraDynamicLiveActivityContentState')
     expect(types).toContain('public let name: String')
     expect(types).toContain('public let deepLinkUrl: String?')
+    expect(types).toContain('public static let attributesTypeName = "VoltraOrderFinishedLiveActivityAttributes"')
     expect(types).toContain('import VoltraWidget')
     expect(types).toContain('VoltraDynamicLiveActivityCatalog: VoltraDynamicLiveActivityCatalogLookup')
     expect(types).toContain(

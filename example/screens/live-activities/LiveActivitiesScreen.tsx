@@ -9,6 +9,7 @@ import { ScreenLayout } from '~/components/ScreenLayout'
 import BasicLiveActivity from '~/screens/live-activities/BasicLiveActivity'
 import CompassLiveActivity from '~/screens/live-activities/CompassLiveActivity'
 import DeepLinksLiveActivity from '~/screens/live-activities/DeepLinksLiveActivity'
+import DynamicOrderFinishedLiveActivity from '~/screens/live-activities/DynamicOrderFinishedLiveActivity'
 import FlightLiveActivity from '~/screens/live-activities/FlightLiveActivity'
 import LiquidGlassLiveActivity from '~/screens/live-activities/LiquidGlassLiveActivity'
 import MusicPlayerLiveActivity from '~/screens/live-activities/MusicPlayerLiveActivity'
@@ -22,6 +23,7 @@ type ActivityKey =
   | 'stylesheet'
   | 'glass'
   | 'deepLinks'
+  | 'dynamicOrderFinished'
   | 'flight'
   | 'workout'
   | 'compass'
@@ -43,6 +45,10 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
   deepLinks: {
     title: 'Links & Navigation',
     description: 'Link component for URL navigation. Supports absolute/relative URLs.',
+  },
+  dynamicOrderFinished: {
+    title: 'Dynamic order status (experimental)',
+    description: 'A bundled definition updated with complete opaque props instead of rendered UI payloads.',
   },
   flight: {
     title: 'Flight Tracker',
@@ -68,6 +74,7 @@ const CARD_ORDER: ActivityKey[] = [
   'stylesheet',
   'glass',
   'deepLinks',
+  'dynamicOrderFinished',
   'flight',
   'workout',
   'compass',
@@ -80,6 +87,7 @@ export default function LiveActivitiesScreen() {
     stylesheet: false,
     glass: false,
     deepLinks: false,
+    dynamicOrderFinished: false,
     flight: false,
     workout: false,
     compass: false,
@@ -91,6 +99,7 @@ export default function LiveActivitiesScreen() {
   const stylesheetRef = useRef<LiveActivityExampleComponentRef>(null)
   const glassRef = useRef<LiveActivityExampleComponentRef>(null)
   const deepLinksRef = useRef<LiveActivityExampleComponentRef>(null)
+  const dynamicOrderFinishedRef = useRef<LiveActivityExampleComponentRef>(null)
   const flightRef = useRef<LiveActivityExampleComponentRef>(null)
   const workoutRef = useRef<LiveActivityExampleComponentRef>(null)
   const compassRef = useRef<LiveActivityExampleComponentRef>(null)
@@ -103,6 +112,7 @@ export default function LiveActivitiesScreen() {
       stylesheet: stylesheetRef,
       glass: glassRef,
       deepLinks: deepLinksRef,
+      dynamicOrderFinished: dynamicOrderFinishedRef,
       flight: flightRef,
       workout: workoutRef,
       compass: compassRef,
@@ -132,6 +142,10 @@ export default function LiveActivitiesScreen() {
   )
   const handleDeepLinksStatusChange = useCallback(
     (isActive: boolean) => handleStatusChange('deepLinks', isActive),
+    [handleStatusChange]
+  )
+  const handleDynamicOrderFinishedStatusChange = useCallback(
+    (isActive: boolean) => handleStatusChange('dynamicOrderFinished', isActive),
     [handleStatusChange]
   )
   const handleFlightStatusChange = useCallback(
@@ -208,6 +222,10 @@ export default function LiveActivitiesScreen() {
       <MusicPlayerLiveActivity ref={stylesheetRef} onIsActiveChange={handleStylesheetStatusChange} />
       <LiquidGlassLiveActivity ref={glassRef} onIsActiveChange={handleGlassStatusChange} />
       <DeepLinksLiveActivity ref={deepLinksRef} onIsActiveChange={handleDeepLinksStatusChange} />
+      <DynamicOrderFinishedLiveActivity
+        ref={dynamicOrderFinishedRef}
+        onIsActiveChange={handleDynamicOrderFinishedStatusChange}
+      />
       <FlightLiveActivity ref={flightRef} onIsActiveChange={handleFlightStatusChange} />
       <WorkoutLiveActivity ref={workoutRef} onIsActiveChange={handleWorkoutStatusChange} />
       <CompassLiveActivity ref={compassRef} onIsActiveChange={handleCompassStatusChange} />

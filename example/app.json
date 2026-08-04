@@ -32,6 +32,12 @@
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "keychainGroup": "$(AppIdentifierPrefix)group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
+          "liveActivities": [
+            {
+              "id": "order_finished",
+              "entry": "./components/live-activities/OrderFinishedDynamicLiveActivity.tsx"
+            }
+          ],
           "widgets": [
             {
               "id": "weather",
