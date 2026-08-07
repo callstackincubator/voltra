@@ -47,8 +47,8 @@ const ACTIVITY_METADATA: Record<ActivityKey, { title: string; description: strin
     description: 'Link component for URL navigation. Supports absolute/relative URLs.',
   },
   dynamicOrderFinished: {
-    title: 'Dynamic order status (experimental)',
-    description: 'A bundled definition updated with complete opaque props instead of rendered UI payloads.',
+    title: 'Dynamic Live Activity',
+    description: 'Uses an experimental new rendering engine, the same one used for Dynamic Widgets.',
   },
   flight: {
     title: 'Flight Tracker',
