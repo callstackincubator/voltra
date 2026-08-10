@@ -9,7 +9,6 @@
 /packages/*/ios/.build
 /example/.expo
 /example/ios
-/example/android
 /ios/.build
 /plugin/build
 /.eslintrc.js
@@ -17,12 +16,7 @@
 /website/doc_build
 /website/docs
 /.turbo
-/.pnpm-store
 /pnpm-lock.yaml
-/test-app-*
-/ISSUES.md
-/test.md
-/website.html
 **/*.d.ts
 **/*.d.ts.map
 **/*.js.map
