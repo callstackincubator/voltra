@@ -1,3 +1,4 @@
+export * from './fastRefreshHub.js'
 export * from './jsx/createVoltraComponent.js'
 export * from './payload.js'
 export * from './payload/short-names.js'

@@ -1,14 +1,13 @@
-import { reloadWidgets } from '../widgets/widget-api.js'
+import { getFastRefreshHub } from '@use-voltra/ios'
 
-declare global {
-  var __accept: (...args: unknown[]) => void
-}
+import { reloadWidgets } from '../widgets/widget-api.js'
 
 /**
  * Trigger `reloadWidgets()` on every Metro Fast Refresh patch (DEV only).
  *
- * Hooks the global `__accept` callback Metro fires when a Fast Refresh patch
- * lands in the host app's JS runtime. When fired, calls
+ * Subscribes to the shared {@link getFastRefreshHub}, which wraps the global
+ * `__accept` callback Metro fires when a Fast Refresh patch lands in the host
+ * app's JS runtime. On each debounced patch it calls
  * `WidgetCenter.shared.reloadAllTimelines()` so WidgetKit re-invokes each widget
  * Provider, which re-fetches the freshest bundle from Metro and renders the
  * updated UI.
@@ -19,21 +18,15 @@ declare global {
  * workflow the dev still relies on WidgetKit's natural lifecycle refresh on
  * app foreground.
  *
- * Call once at app startup. Returns `dispose()` to restore the prior
- * `__accept` (rarely needed in practice). No-op in release builds.
+ * Call once at app startup. Returns `dispose()` to unsubscribe (rarely needed
+ * in practice). No-op in release builds.
  */
 export function enableWidgetHotReload(): () => void {
   if (!__DEV__) {
     return () => {}
   }
 
-  const oldAccept = global['__accept']
-  global['__accept'] = (...args) => {
+  return getFastRefreshHub().onPatch(() => {
     void reloadWidgets()
-    oldAccept?.(...args)
-  }
-
-  return () => {
-    global['__accept'] = oldAccept
-  }
+  })
 }

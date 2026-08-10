@@ -39,5 +39,5 @@ export type {
 } from './types.js'
 export { renderWidgetToJson, renderWidgetToString } from './widgets/renderer.js'
 export type { ScheduledWidgetEntry, WidgetFamily, WidgetInfo, WidgetVariants } from './widgets/types.js'
-export { isAndroidEnv, isIosEnv } from '@use-voltra/core'
-export type { WidgetBuildEnvironment, WidgetEnvironment } from '@use-voltra/core'
+export { getFastRefreshHub, isAndroidEnv, isIosEnv } from '@use-voltra/core'
+export type { FastRefreshHub, WidgetBuildEnvironment, WidgetEnvironment } from '@use-voltra/core'
