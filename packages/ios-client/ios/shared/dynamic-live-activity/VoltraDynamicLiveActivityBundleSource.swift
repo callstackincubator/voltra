@@ -51,6 +51,26 @@ enum VoltraDynamicLiveActivityBundleSource {
     #endif
   }
 
+  /// A cheap token that changes whenever the bytes behind `load` change, used to
+  /// invalidate the render cache. In DEBUG it is the debug-cache file's
+  /// modification time, which the app process rewrites on every hot reload; the
+  /// extension reads only the file's metadata, never decoding the whole bundle.
+  /// In release the baked asset never changes at runtime, so the token is
+  /// constant and the render cache stays valid for the process lifetime.
+  static func revision(definitionId: String) -> String {
+    #if DEBUG
+      guard
+        let url = try? debugCacheURL(definitionId: definitionId),
+        let modified = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+      else {
+        return ""
+      }
+      return String(modified.timeIntervalSince1970)
+    #else
+      return "baked"
+    #endif
+  }
+
   private static func metroRequest(definitionId: String) throws -> URLRequest {
     let base = VoltraWidgetDefaults.devServerURL() ?? "http://localhost:8081"
     guard let url = URL(string: "\(base)/voltra/live-activities/\(definitionId).bundle?platform=ios&dev=true") else {
