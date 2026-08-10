@@ -84,7 +84,9 @@ public class VoltraEventBus {
     lock.lock()
     renderFailureListenerCount = active ? 1 : 0
     lock.unlock()
-    if active { drainDynamicLiveActivityRenderFailures() }
+    if active {
+      drainDynamicLiveActivityRenderFailures()
+    }
   }
 
   /// Flush only the dedicated Dynamic Live Activity diagnostic queue. This

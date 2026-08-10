@@ -306,8 +306,12 @@ public class VoltraLiveActivityService {
 
   public func updateDynamicActivity(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws {
     guard Self.isSupported() else { throw VoltraLiveActivityError.unsupportedOS }
-    if try await dynamicService.update(byName: name, request: request) { return }
-    if findActivity(byName: name) != nil { throw VoltraDynamicLiveActivityError.rendererMismatch }
+    if try await dynamicService.update(byName: name, request: request) {
+      return
+    }
+    if findActivity(byName: name) != nil {
+      throw VoltraDynamicLiveActivityError.rendererMismatch
+    }
     throw VoltraLiveActivityError.notFound
   }
 

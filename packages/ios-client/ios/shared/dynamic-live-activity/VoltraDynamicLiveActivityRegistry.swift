@@ -69,7 +69,9 @@ public final class VoltraDynamicLiveActivityRegistry {
 
   public func update(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async -> Bool {
     for descriptor in descriptorSnapshot() {
-      if await descriptor.update(name, request) { return true }
+      if await descriptor.update(name, request) {
+        return true
+      }
     }
     return false
   }
@@ -77,7 +79,9 @@ public final class VoltraDynamicLiveActivityRegistry {
   public func end(byName name: String, dismissalPolicy: ActivityUIDismissalPolicy) async -> Bool {
     var ended = false
     for descriptor in descriptorSnapshot() {
-      if await descriptor.end(name, dismissalPolicy) { ended = true }
+      if await descriptor.end(name, dismissalPolicy) {
+        ended = true
+      }
     }
     return ended
   }

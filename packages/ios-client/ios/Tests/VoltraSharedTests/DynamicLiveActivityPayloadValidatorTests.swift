@@ -74,7 +74,9 @@ final class DynamicLiveActivityPayloadValidatorTests: XCTestCase {
     while true {
       let props: [String: VoltraDynamicLiveActivityJSONValue] = ["value": .string(value)]
       let size = try VoltraDynamicLiveActivityPayloadValidator.encodedContentStateSize(props)
-      if size == target { return props }
+      if size == target {
+        return props
+      }
       if size > target {
         XCTFail("Could not construct an encoded payload of exactly \(target) bytes")
         return props

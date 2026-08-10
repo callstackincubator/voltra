@@ -126,7 +126,9 @@ public enum VoltraJSRenderer {
         .objectForKeyedSubscript("render")?
         .isObject ?? false
     lock.unlock()
-    if hasRender, currentSource == source { return true }
+    if hasRender, currentSource == source {
+      return true
+    }
     return evaluateLiveActivityBundle(source: source, definitionId: definitionId)
   }
 

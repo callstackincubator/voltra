@@ -316,9 +316,13 @@ private final class VoltraDynamicLiveActivityRenderCache: @unchecked Sendable {
   func resolve(_ key: Key, render: () -> VoltraDynamicLiveActivityResolvedContent) -> VoltraDynamicLiveActivityResolvedContent {
     lock.lock()
     defer { lock.unlock() }
-    if let existing = values[key] { return existing }
+    if let existing = values[key] {
+      return existing
+    }
     let resolved = render()
-    if values.count >= 100 { values.removeAll(keepingCapacity: true) }
+    if values.count >= 100 {
+      values.removeAll(keepingCapacity: true)
+    }
     values[key] = resolved
     return resolved
   }
