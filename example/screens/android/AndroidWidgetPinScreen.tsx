@@ -2,7 +2,9 @@ import { useRouter } from 'expo-router'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
+  clearWidgetInstanceConfiguration,
   getActiveWidgets,
+  getWidgetInstanceConfiguration,
   requestPinAndroidWidget,
   setWidgetInstanceConfiguration,
   type WidgetInfo,
@@ -76,11 +78,11 @@ export default function AndroidWidgetPinScreen() {
       const widgets = await getActiveWidgets()
       setActiveWidgets(widgets)
       setSelectedWidgetInstanceId((current) => {
-        if (widgets.some((widget) => widget.widgetId === current && widget.name === CONFIGURABLE_WIDGET_ID)) {
+        if (widgets.some((widget) => widget.appWidgetId === current && widget.widgetType === CONFIGURABLE_WIDGET_ID)) {
           return current
         }
 
-        return widgets.find((widget) => widget.name === CONFIGURABLE_WIDGET_ID)?.widgetId ?? null
+        return widgets.find((widget) => widget.widgetType === CONFIGURABLE_WIDGET_ID)?.appWidgetId ?? null
       })
     } catch (error: any) {
       Alert.alert('Error', error?.message || String(error))
@@ -90,6 +92,31 @@ export default function AndroidWidgetPinScreen() {
   useEffect(() => {
     refreshActiveWidgets()
   }, [refreshActiveWidgets])
+
+  // Load the instance's current value whenever the selected instance changes, so the input
+  // reflects what's actually stored instead of starting blank.
+  useEffect(() => {
+    if (Platform.OS !== 'android' || selectedWidgetInstanceId == null) {
+      return
+    }
+
+    let cancelled = false
+    getWidgetInstanceConfiguration(selectedWidgetInstanceId)
+      .then((values) => {
+        if (!cancelled) {
+          setConfigLabel(values.label ?? '')
+        }
+      })
+      .catch((error: any) => {
+        if (!cancelled) {
+          Alert.alert('Error', error?.message || String(error))
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedWidgetInstanceId])
 
   const handleSetConfig = async () => {
     if (Platform.OS !== 'android') {
@@ -102,7 +129,7 @@ export default function AndroidWidgetPinScreen() {
     }
 
     const selectedWidget = activeWidgets.find(
-      (widget) => widget.widgetId === selectedWidgetInstanceId && widget.name === CONFIGURABLE_WIDGET_ID
+      (widget) => widget.appWidgetId === selectedWidgetInstanceId && widget.widgetType === CONFIGURABLE_WIDGET_ID
     )
     if (!selectedWidget) {
       Alert.alert('Unsupported widget', 'Only the client-rendered demo widget is configurable in this example.')
@@ -110,12 +137,32 @@ export default function AndroidWidgetPinScreen() {
     }
 
     try {
-      await setWidgetInstanceConfiguration(selectedWidgetInstanceId, 'label', configLabel)
+      await setWidgetInstanceConfiguration(selectedWidgetInstanceId, { label: configLabel })
       Alert.alert(
         'Saved',
         `Set config "label" = "${configLabel}" for widget instance #${selectedWidgetInstanceId}. The widget re-renders.`
       )
       await refreshActiveWidgets()
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || String(error))
+    }
+  }
+
+  const handleResetConfig = async () => {
+    if (Platform.OS !== 'android') {
+      return
+    }
+
+    if (selectedWidgetInstanceId == null) {
+      Alert.alert('No widget selected', 'Pin the configurable demo widget first, then choose that instance.')
+      return
+    }
+
+    try {
+      await clearWidgetInstanceConfiguration(selectedWidgetInstanceId)
+      const values = await getWidgetInstanceConfiguration(selectedWidgetInstanceId)
+      setConfigLabel(values.label ?? '')
+      Alert.alert('Reset', `Cleared instance configuration for widget instance #${selectedWidgetInstanceId}.`)
     } catch (error: any) {
       Alert.alert('Error', error?.message || String(error))
     }
@@ -192,15 +239,15 @@ export default function AndroidWidgetPinScreen() {
           widgets of the same type can keep different values.
         </Text>
         <Text style={styles.sectionSubtitle}>Active widget instances</Text>
-        {activeWidgets.some((widget) => widget.name === CONFIGURABLE_WIDGET_ID) ? (
+        {activeWidgets.some((widget) => widget.widgetType === CONFIGURABLE_WIDGET_ID) ? (
           activeWidgets
-            .filter((widget) => widget.name === CONFIGURABLE_WIDGET_ID)
+            .filter((widget) => widget.widgetType === CONFIGURABLE_WIDGET_ID)
             .map((widget) => (
-              <View key={`${widget.widgetId}`} style={styles.widgetInstanceOption}>
+              <View key={`${widget.appWidgetId}`} style={styles.widgetInstanceOption}>
                 <Button
-                  title={`${widget.name} #${widget.widgetId}`}
-                  variant={selectedWidgetInstanceId === widget.widgetId ? 'primary' : 'secondary'}
-                  onPress={() => setSelectedWidgetInstanceId(widget.widgetId)}
+                  title={`${widget.widgetType} #${widget.appWidgetId}`}
+                  variant={selectedWidgetInstanceId === widget.appWidgetId ? 'primary' : 'secondary'}
+                  onPress={() => setSelectedWidgetInstanceId(widget.appWidgetId)}
                   style={styles.widgetInstanceButton}
                 />
                 <Text style={styles.widgetInstanceDescription}>
@@ -222,7 +269,10 @@ export default function AndroidWidgetPinScreen() {
             autoCapitalize="none"
           />
         </View>
-        <Button title="Set instance configuration" onPress={handleSetConfig} style={styles.resetButton} />
+        <View style={styles.buttonRow}>
+          <Button title="Set instance configuration" onPress={handleSetConfig} style={styles.pinButton} />
+          <Button title="Reset to defaults" variant="ghost" onPress={handleResetConfig} style={styles.pinButton} />
+        </View>
       </View>
 
       <View style={styles.section}>

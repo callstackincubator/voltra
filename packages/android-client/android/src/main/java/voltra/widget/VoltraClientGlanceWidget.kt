@@ -191,7 +191,15 @@ class VoltraClientGlanceWidget(
 
         // Read user-configured params (DataStore) off the composition so env.configuration is
         // available synchronously during render.
-        val appWidgetId = runCatching { GlanceAppWidgetManager(context).getAppWidgetId(id) }.getOrNull()
+        val appWidgetId =
+            runCatching { GlanceAppWidgetManager(context).getAppWidgetId(id) }
+                .onFailure { e ->
+                    Log.w(
+                        TAG,
+                        "Failed to resolve appWidgetId for widgetId=$widgetId, glanceId=$id: ${e.message}. " +
+                            "Falling back to widget-type configuration only (no instance layer).",
+                    )
+                }.getOrNull()
         val configuration = VoltraConfigurationStore(context).get(widgetId, appWidgetId)
 
         provideContent {

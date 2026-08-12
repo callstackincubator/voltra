@@ -18,10 +18,6 @@ export interface AndroidWidgetAppIntentConfig {
   parameters: AppIntentParameter[]
 }
 
-export interface AndroidWidgetConfigurationConfig {
-  deepLink: string
-}
-
 /**
  * Configuration for a single Android home screen widget.
  *
@@ -50,10 +46,6 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
    * it before any runtime configuration; runtime values (set via `setWidgetConfiguration`) override.
    */
   appIntent?: AndroidWidgetAppIntentConfig
-  /**
-   * Android-only widget configuration entrypoint. Supported only for Dynamic Widgets (`entry`).
-   */
-  configuration?: AndroidWidgetConfigurationConfig
 }
 
 /**
@@ -74,11 +66,6 @@ export interface AndroidConfigPluginProps {
   enableNotifications?: boolean
   widgets?: AndroidWidgetConfig[]
   fonts?: string[]
-  /**
-   * Route path used by generated widget configuration trampolines.
-   * Defaults to `voltraui/android-widget-config` to match the example app.
-   */
-  widgetConfigurationRoute?: string
 }
 
 export type VoltraAndroidConfigPlugin = ConfigPlugin<AndroidConfigPluginProps | undefined>
@@ -88,10 +75,4 @@ export interface AndroidPluginProps {
   widgets: AndroidWidgetConfig[]
   userImagesPath?: string
   fonts?: string[]
-  /**
-   * Deep-link scheme used by generated widget configuration trampolines.
-   * When omitted, the plugin derives one from the Expo app config.
-   */
-  scheme?: string
-  widgetConfigurationRoute?: string
 }

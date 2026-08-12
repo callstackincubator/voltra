@@ -21,10 +21,14 @@ export type AndroidWidgetSizeVariant = {
  * Information about an active widget instance on Android
  */
 export type WidgetInfo = {
-  /** The name (ID) of the widget as defined in the config plugin */
-  name: string
-  /** The unique ID for this widget instance (required for updates) */
+  /** The Android appWidgetId identifying this specific placed widget instance. */
+  appWidgetId: number
+  /** The Voltra widget id (the `id` from the config plugin), shared by all instances of this type. */
+  widgetType: string
+  /** Deprecated: confusingly named — this is the appWidgetId. Use `appWidgetId`. */
   widgetId: number
+  /** Deprecated: confusingly named — this is the Voltra widget id. Use `widgetType`. */
+  name: string
   /** The class name of the provider (e.g., ".WeatherWidget") */
   providerClassName: string
   /** Current labeling associated with the widget */

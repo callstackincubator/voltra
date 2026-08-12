@@ -83,7 +83,54 @@ Example plugin config:
 }
 ```
 
-If you need user-controlled values, add `appIntent.parameters` and update them in-app with `setWidgetConfiguration(widgetId, key, value)`.
+If you need user-controlled values, add `appIntent.parameters` and update them in-app. See [Configuration](#configuration) below.
+
+## Configuration
+
+Declare the available keys with `appIntent.parameters`, each with an optional `default`. The values are surfaced to your widget as `env.configuration`, and resolve in three layers — later layers win:
+
+1. **Code defaults** — `appIntent.parameters[].default` from `app.json`.
+2. **Widget-type values** — shared by every placement of that widget.
+3. **Instance values** — scoped to one placed widget, identified by its `appWidgetId`.
+
+Use instance values when two placements of the same widget should show different data — two accounts, two cities, two filters:
+
+```tsx
+import {
+  getActiveWidgets,
+  getWidgetInstanceConfiguration,
+  setWidgetInstanceConfiguration,
+  clearWidgetInstanceConfiguration,
+} from '@use-voltra/android-client'
+
+// Find the placed widgets of a given type.
+const widgets = await getActiveWidgets()
+const instance = widgets.find((widget) => widget.widgetType === 'weather')
+
+if (instance) {
+  // Read what the widget currently sees, to populate your form.
+  const current = await getWidgetInstanceConfiguration(instance.appWidgetId)
+
+  // Write one key, or several at once.
+  await setWidgetInstanceConfiguration(instance.appWidgetId, 'city', 'Kraków')
+  await setWidgetInstanceConfiguration(instance.appWidgetId, { city: 'Kraków', units: 'metric' })
+
+  // Fall back to widget-type and default values.
+  await clearWidgetInstanceConfiguration(instance.appWidgetId)
+}
+```
+
+Prefer the object form when writing several keys: it is one write and one widget re-render, instead of one of each per key.
+
+`setWidgetConfiguration(widgetId, key, value)` still sets a value for every placement of a widget type, and `getWidgetConfiguration(widgetId)` reads that layer merged with the defaults.
+
+:::note
+Instance values shadow widget-type values. Once an instance has its own value for a key, `setWidgetConfiguration` no longer changes what that instance displays — the call still succeeds and still updates every other, unconfigured instance. Use `clearWidgetInstanceConfiguration` to hand an instance back to the widget-type value.
+:::
+
+An instance's values are removed when the user deletes that widget from the home screen. Android recycles `appWidgetId`s, so this keeps a newly placed widget from inheriting a deleted one's configuration.
+
+Configuration is written from inside your app — Android has no system-provided widget configuration UI equivalent to iOS's, so build a screen for it. `getActiveWidgets` returns the placed instances to choose from.
 
 ## Notes
 

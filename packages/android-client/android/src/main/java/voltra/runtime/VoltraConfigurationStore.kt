@@ -2,6 +2,9 @@ package voltra.runtime
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -37,8 +40,10 @@ internal class VoltraConfigurationStore(
         widgetId: String,
         appWidgetId: Int? = null,
     ): Map<String, String> {
-        val typeValues = getStored(widgetId)
-        val instanceValues = if (appWidgetId != null) getStoredInstance(appWidgetId) else emptyMap()
+        migrateLegacyKeysIfNeeded()
+        val snapshot = context.voltraConfigurationDataStore.data.first()
+        val typeValues = getStored(snapshot, widgetId)
+        val instanceValues = if (appWidgetId != null) getStoredInstance(snapshot, appWidgetId) else emptyMap()
         return loadDefaults(widgetId) + typeValues + instanceValues
     }
 
@@ -47,20 +52,27 @@ internal class VoltraConfigurationStore(
         key: String,
         value: String,
     ) {
+        migrateLegacyKeysIfNeeded()
         val prefKey = stringPreferencesKey(keyPrefix(widgetId) + key)
         context.voltraConfigurationDataStore.edit { it[prefKey] = value }
     }
 
-    suspend fun setInstance(
+    /** Write all [values] for one widget instance in a single DataStore transaction. */
+    suspend fun setValues(
         appWidgetId: Int,
-        key: String,
-        value: String,
+        values: Map<String, String>,
     ) {
-        val prefKey = stringPreferencesKey(keyPrefix(appWidgetId) + key)
-        context.voltraConfigurationDataStore.edit { it[prefKey] = value }
+        migrateLegacyKeysIfNeeded()
+        val prefix = keyPrefix(appWidgetId)
+        context.voltraConfigurationDataStore.edit { preferences ->
+            values.forEach { (key, value) ->
+                preferences[stringPreferencesKey(prefix + key)] = value
+            }
+        }
     }
 
     suspend fun clearInstance(appWidgetId: Int) {
+        migrateLegacyKeysIfNeeded()
         val prefix = keyPrefix(appWidgetId)
         context.voltraConfigurationDataStore.edit { preferences ->
             val keysToRemove = preferences.asMap().keys.filter { it.name.startsWith(prefix) }
@@ -68,16 +80,12 @@ internal class VoltraConfigurationStore(
         }
     }
 
-    private suspend fun getStored(widgetId: String): Map<String, String> {
+    private fun getStored(
+        snapshot: Preferences,
+        widgetId: String,
+    ): Map<String, String> {
         val prefix = keyPrefix(widgetId)
-        val legacyPrefix = legacyKeyPrefix(widgetId)
-        val snapshot = context.voltraConfigurationDataStore.data.first()
         val out = mutableMapOf<String, String>()
-        snapshot.asMap().forEach { (key, value) ->
-            if (key.name.startsWith(legacyPrefix) && value is String) {
-                out[key.name.substring(legacyPrefix.length)] = value
-            }
-        }
         snapshot.asMap().forEach { (key, value) ->
             if (key.name.startsWith(prefix) && value is String) {
                 out[key.name.substring(prefix.length)] = value
@@ -86,9 +94,11 @@ internal class VoltraConfigurationStore(
         return out
     }
 
-    private suspend fun getStoredInstance(appWidgetId: Int): Map<String, String> {
+    private fun getStoredInstance(
+        snapshot: Preferences,
+        appWidgetId: Int,
+    ): Map<String, String> {
         val prefix = keyPrefix(appWidgetId)
-        val snapshot = context.voltraConfigurationDataStore.data.first()
         val out = mutableMapOf<String, String>()
         snapshot.asMap().forEach { (key, value) ->
             if (key.name.startsWith(prefix) && value is String) {
@@ -127,19 +137,77 @@ internal class VoltraConfigurationStore(
         return all[widgetId] ?: emptyMap()
     }
 
-    private fun keyPrefix(widgetId: String): String = "voltra.config.widget.$widgetId."
+    /**
+     * One-time migration of legacy `voltra.config.<widgetId>.<key>` keys (predating the
+     * `voltra.config.widget.` / `voltra.config.instance.` namespacing) to the new
+     * `voltra.config.widget.<widgetId>.<key>` form, then drops the legacy key. Idempotent: guarded
+     * by a persisted flag plus a process-level cache so it only touches DataStore once per process.
+     * Must run before any read or write.
+     */
+    private suspend fun migrateLegacyKeysIfNeeded() {
+        if (migrated) return
 
-    private fun legacyKeyPrefix(widgetId: String): String = "voltra.config.$widgetId."
+        context.voltraConfigurationDataStore.edit { preferences ->
+            if (preferences[migratedKey] == true) {
+                migrated = true
+                return@edit
+            }
 
-    private fun keyPrefix(appWidgetId: Int): String = "voltra.config.instance.$appWidgetId."
+            val legacyEntries =
+                preferences.asMap().entries.filter { (key, value) ->
+                    value is String &&
+                        !key.name.startsWith(NEW_TYPE_PREFIX) &&
+                        !key.name.startsWith(NEW_INSTANCE_PREFIX) &&
+                        key.name.startsWith(LEGACY_PREFIX) &&
+                        key.name != migratedKey.name
+                }
+
+            legacyEntries.forEach { (key, value) ->
+                val suffix = key.name.substring(LEGACY_PREFIX.length)
+                val newKey = stringPreferencesKey(NEW_TYPE_PREFIX + suffix)
+                // New-format value wins if both exist — do not overwrite it.
+                if (preferences[newKey] == null) {
+                    preferences[newKey] = value as String
+                }
+                preferences.remove(key)
+            }
+
+            preferences[migratedKey] = true
+            migrated = true
+        }
+    }
+
+    private fun keyPrefix(widgetId: String): String = "$NEW_TYPE_PREFIX$widgetId."
+
+    private fun keyPrefix(appWidgetId: Int): String = "$NEW_INSTANCE_PREFIX$appWidgetId."
 
     companion object {
         private const val TAG = "VoltraConfigurationStore"
         private const val DEFAULTS_ASSET_PATH = "voltra/widget_config_defaults.json"
+        private const val LEGACY_PREFIX = "voltra.config."
+        private const val NEW_TYPE_PREFIX = "voltra.config.widget."
+        private const val NEW_INSTANCE_PREFIX = "voltra.config.instance."
+
+        private val migratedKey = booleanPreferencesKey("voltra.config.migrated.v2")
 
         @Volatile
         private var defaultsCache: Map<String, Map<String, String>>? = null
+
+        @Volatile
+        private var migrated: Boolean = false
+
+        /**
+         * Reset the process-level caches. Robolectric resets statics per test class, not per test
+         * method, so tests that depend on the migration running must clear this between methods.
+         */
+        @VisibleForTesting
+        internal fun resetProcessCachesForTesting() {
+            migrated = false
+            defaultsCache = null
+        }
     }
 }
 
-private val Context.voltraConfigurationDataStore by preferencesDataStore(name = "voltra_widget_configuration")
+// Internal (rather than private) so unit tests can seed/inspect raw DataStore state, e.g. to
+// verify the legacy-key migration in VoltraConfigurationStoreTest.
+internal val Context.voltraConfigurationDataStore by preferencesDataStore(name = "voltra_widget_configuration")

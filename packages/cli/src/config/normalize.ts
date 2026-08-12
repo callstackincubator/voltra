@@ -1,7 +1,6 @@
 import path from 'node:path'
 
 import { resolveFromRoot } from '../fs/path'
-import { formatWarning } from '../reporting/summary'
 import { CLI_DEFAULTS } from './defaults'
 
 import type {
@@ -330,41 +329,6 @@ function normalizeServerUpdate(
   }
 }
 
-function normalizeAndroidWidgetConfiguration(
-  widget: Pick<AndroidWidgetConfig, 'id' | 'entry' | 'configuration'>,
-  appIntent: AndroidWidgetAppIntentConfig | undefined,
-  context: string
-): AndroidWidgetConfig['configuration'] {
-  const { configuration } = widget
-  if (configuration === undefined) {
-    return undefined
-  }
-
-  if (configuration === null || typeof configuration !== 'object' || Array.isArray(configuration)) {
-    throw new VoltraConfigNormalizationError(`${context}.configuration must be an object with deepLink`)
-  }
-
-  if (widget.entry === undefined) {
-    throw new VoltraConfigNormalizationError(
-      `${context}.configuration is supported only for Dynamic Widgets with entry`
-    )
-  }
-
-  assertNonEmptyString(configuration.deepLink, `${context}.configuration.deepLink`)
-
-  if ((appIntent?.parameters?.length ?? 0) === 0) {
-    console.warn(
-      formatWarning(
-        `android widget '${widget.id}' has configuration.deepLink set but appIntent.parameters is missing or empty; widget configuration UI will have no declared parameters.`
-      )
-    )
-  }
-
-  return {
-    deepLink: configuration.deepLink,
-  }
-}
-
 function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig): NormalizedAndroidWidgetConfig {
   assertObject(widget, 'android.widgets[]')
   assertNonEmptyString(widget.id, 'android.widgets[].id')
@@ -374,14 +338,11 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
   assertOptionalPositiveInteger(widget.minCellWidth, `android.widgets[${widget.id}].minCellWidth`)
   assertOptionalPositiveInteger(widget.minCellHeight, `android.widgets[${widget.id}].minCellHeight`)
 
-  const entry = normalizeOptionalWidgetEntry(widget.entry, `android.widgets[${widget.id}].entry`)
-  const appIntent = normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`)
-
   return {
     ...widget,
     displayName: normalizeLabel(widget.displayName, `android.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `android.widgets[${widget.id}].description`),
-    entry,
+    entry: normalizeOptionalWidgetEntry(widget.entry, `android.widgets[${widget.id}].entry`),
     initialStatePath: normalizeInitialStatePath(
       projectRoot,
       widget.initialStatePath,
@@ -389,12 +350,7 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
     ),
     previewImage: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewImage),
     previewLayout: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewLayout),
-    appIntent,
-    configuration: normalizeAndroidWidgetConfiguration(
-      { ...widget, entry },
-      appIntent,
-      `android.widgets[${widget.id}]`
-    ),
+    appIntent: normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`),
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(
           widget.serverUpdate,

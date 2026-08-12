@@ -2,21 +2,17 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 
 import type { AndroidWidgetConfig } from '../../types'
 import { detectClientRenderedWidgets } from '../clientRendered'
-import type { DetectedAndroidWidget } from '../clientRendered'
 import { generateAndroidAssets } from './assets'
 import { generateAndroidConfigDefaults } from './configDefaults'
 import { copyAndroidFonts } from './fonts'
 import { generateAndroidInitialStates } from './initialStates'
-import { generateWidgetConfigurationActivities, generateWidgetReceivers } from './kotlin'
+import { generateWidgetReceivers } from './kotlin'
 import { generateWidgetInfoFiles, generateWidgetPlaceholderLayouts, generateWidgetPreviewLayouts } from './xml'
 
 export interface GenerateAndroidWidgetFilesProps {
   widgets: AndroidWidgetConfig[]
-  detectedWidgets?: DetectedAndroidWidget[]
   userImagesPath?: string
   fonts?: string[]
-  scheme?: string
-  widgetConfigurationRoute?: string
 }
 
 /**
@@ -32,14 +28,7 @@ export interface GenerateAndroidWidgetFilesProps {
  * This should run before configureAndroidManifest so the files exist when the manifest is configured.
  */
 export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFilesProps> = (config, props) => {
-  const {
-    widgets,
-    detectedWidgets: providedDetectedWidgets,
-    userImagesPath,
-    fonts,
-    scheme,
-    widgetConfigurationRoute,
-  } = props
+  const { widgets, userImagesPath, fonts } = props
 
   return withDangerousMod(config, [
     'android',
@@ -59,7 +48,7 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
 
       // Tag each widget once; Dynamic Widget detection drives receiver wiring and placeholder
       // prerendering. Other generators ignore the extra fields.
-      const detectedWidgets = providedDetectedWidgets ?? detectClientRenderedWidgets(widgets, projectRoot)
+      const detectedWidgets = detectClientRenderedWidgets(widgets, projectRoot)
 
       // Generate assets (drawable images and preview images)
       const previewImageMap = await generateAndroidAssets({
@@ -76,14 +65,6 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
         widgets: detectedWidgets,
       })
 
-      await generateWidgetConfigurationActivities({
-        platformProjectRoot,
-        packageName,
-        widgets: detectedWidgets,
-        scheme,
-        widgetConfigurationRoute,
-      })
-
       // Generate XML files (widget info, layouts, strings)
       await generateWidgetInfoFiles({
         platformProjectRoot,
@@ -97,8 +78,7 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
       await generateWidgetPreviewLayouts({
         platformProjectRoot,
         projectRoot,
-        packageName,
-        widgets: detectedWidgets,
+        widgets,
         previewImageMap,
       })
 

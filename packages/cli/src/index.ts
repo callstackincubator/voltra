@@ -169,7 +169,6 @@ export type {
   AndroidWidgetAppIntentConfig,
   AndroidWidgetAppIntentParameter,
   AndroidWidgetConfig,
-  AndroidWidgetConfigurationConfig,
   AndroidWidgetServerUpdateConfig,
   CliDefaults,
   IOSProjectOverrides,

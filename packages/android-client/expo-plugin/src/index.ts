@@ -3,28 +3,6 @@ import { generateAndroidDynamicWidgetsManifest } from './android/files/manifest'
 import type { VoltraAndroidConfigPlugin } from './types'
 import { validateAndroidConfigPluginProps } from './validation'
 
-function resolveScheme(config: unknown): string | undefined {
-  const expoConfig = config as { scheme?: unknown; android?: { package?: unknown } }
-  const rawScheme = expoConfig.scheme
-
-  if (Array.isArray(rawScheme)) {
-    const scheme = rawScheme.find((value) => typeof value === 'string' && value.trim())
-    if (typeof scheme === 'string') {
-      return scheme.trim()
-    }
-  }
-
-  if (typeof rawScheme === 'string' && rawScheme.trim()) {
-    return rawScheme.trim()
-  }
-
-  if (typeof expoConfig.android?.package === 'string' && expoConfig.android.package.trim()) {
-    return expoConfig.android.package.trim()
-  }
-
-  return undefined
-}
-
 /**
  * Voltra Android Expo config plugin.
  *
@@ -35,12 +13,6 @@ const withVoltraAndroid: VoltraAndroidConfigPlugin = (config, props = {}) => {
   validateAndroidConfigPluginProps(props, projectRoot)
 
   const widgets = props.widgets ?? []
-  const scheme = resolveScheme(config)
-
-  if (scheme && !(config as { scheme?: unknown }).scheme) {
-    ;(config as { scheme?: string }).scheme = scheme
-  }
-
   config = generateAndroidDynamicWidgetsManifest(config, { widgets })
 
   if (!config.android?.package) {
@@ -55,8 +27,6 @@ const withVoltraAndroid: VoltraAndroidConfigPlugin = (config, props = {}) => {
     enableNotifications: props.enableNotifications,
     widgets,
     ...(props.fonts ? { fonts: props.fonts } : {}),
-    ...(scheme ? { scheme } : {}),
-    ...(props.widgetConfigurationRoute ? { widgetConfigurationRoute: props.widgetConfigurationRoute } : {}),
   })
 }
 

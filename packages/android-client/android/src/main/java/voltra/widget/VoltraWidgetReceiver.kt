@@ -142,10 +142,19 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
     ) {
         super.onDeleted(context, appWidgetIds)
 
+        // Android may kill the process once onDeleted() returns, before a launched coroutine gets
+        // to run — losing this cleanup. Since appWidgetIds are recycled, a newly placed widget
+        // could then inherit a deleted widget's configuration. goAsync() extends the receiver's
+        // lifetime until pendingResult.finish() is called, keeping the process alive long enough.
+        val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
-            val store = VoltraConfigurationStore(context.applicationContext)
-            for (appWidgetId in appWidgetIds) {
-                store.clearInstance(appWidgetId)
+            try {
+                val store = VoltraConfigurationStore(context.applicationContext)
+                for (appWidgetId in appWidgetIds) {
+                    store.clearInstance(appWidgetId)
+                }
+            } finally {
+                pendingResult.finish()
             }
         }
     }
