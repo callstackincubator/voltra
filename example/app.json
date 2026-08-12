@@ -250,6 +250,11 @@
                     "name": "label",
                     "title": "Label",
                     "default": "Hello"
+                  },
+                  {
+                    "name": "subtitle",
+                    "title": "Subtitle",
+                    "default": "World"
                   }
                 ]
               }

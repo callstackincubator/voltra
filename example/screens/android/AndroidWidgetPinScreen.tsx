@@ -4,8 +4,10 @@ import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native
 import {
   clearWidgetInstanceConfiguration,
   getActiveWidgets,
+  getWidgetConfiguration,
   getWidgetInstanceConfiguration,
   requestPinAndroidWidget,
+  setWidgetConfiguration,
   setWidgetInstanceConfiguration,
   type WidgetInfo,
 } from '@use-voltra/android-client'
@@ -53,6 +55,8 @@ export default function AndroidWidgetPinScreen() {
   const [previewHeight, setPreviewHeight] = useState<string>('150')
   const [isPinning, setIsPinning] = useState(false)
   const [configLabel, setConfigLabel] = useState<string>('')
+  const [configSubtitle, setConfigSubtitle] = useState<string>('')
+  const [typeConfigLabel, setTypeConfigLabel] = useState<string>('')
   const [activeWidgets, setActiveWidgets] = useState<WidgetInfo[]>([])
   const [selectedWidgetInstanceId, setSelectedWidgetInstanceId] = useState<number | null>(null)
 
@@ -105,6 +109,7 @@ export default function AndroidWidgetPinScreen() {
       .then((values) => {
         if (!cancelled) {
           setConfigLabel(values.label ?? '')
+          setConfigSubtitle(values.subtitle ?? '')
         }
       })
       .catch((error: any) => {
@@ -128,23 +133,65 @@ export default function AndroidWidgetPinScreen() {
       return
     }
 
-    const selectedWidget = activeWidgets.find(
-      (widget) => widget.appWidgetId === selectedWidgetInstanceId && widget.widgetType === CONFIGURABLE_WIDGET_ID
-    )
-    if (!selectedWidget) {
-      Alert.alert('Unsupported widget', 'Only the client-rendered demo widget is configurable in this example.')
-      return
-    }
-
     try {
-      await setWidgetInstanceConfiguration(selectedWidgetInstanceId, { label: configLabel })
+      // Both keys in one call: a single write and a single widget re-render, rather than one of
+      // each per key.
+      await setWidgetInstanceConfiguration(selectedWidgetInstanceId, {
+        label: configLabel,
+        subtitle: configSubtitle,
+      })
       Alert.alert(
         'Saved',
-        `Set config "label" = "${configLabel}" for widget instance #${selectedWidgetInstanceId}. The widget re-renders.`
+        `Set label="${configLabel}", subtitle="${configSubtitle}" for widget instance #${selectedWidgetInstanceId}. The widget re-renders once.`
       )
       await refreshActiveWidgets()
     } catch (error: any) {
       Alert.alert('Error', error?.message || String(error))
+    }
+  }
+
+  // Widget-type configuration: applies to every placement of the type that has no instance value
+  // of its own. Instance values shadow it.
+  const handleSetTypeConfig = async () => {
+    if (Platform.OS !== 'android') {
+      return
+    }
+
+    try {
+      await setWidgetConfiguration(CONFIGURABLE_WIDGET_ID, 'label', typeConfigLabel)
+      const values = await getWidgetConfiguration(CONFIGURABLE_WIDGET_ID)
+      Alert.alert(
+        'Saved (widget type)',
+        `Set label="${typeConfigLabel}" for every ${CONFIGURABLE_WIDGET_ID}.\n\n` +
+          `getWidgetConfiguration now reads: ${JSON.stringify(values)}\n\n` +
+          'Instances with their own value keep showing it.'
+      )
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || String(error))
+    }
+  }
+
+  // Configuration is only supported for Dynamic Widgets; this should be rejected by the native
+  // module rather than silently doing nothing.
+  const handleConfigureServerWidget = async () => {
+    if (Platform.OS !== 'android') {
+      return
+    }
+
+    const serverWidget = activeWidgets.find((widget) => widget.widgetType !== CONFIGURABLE_WIDGET_ID)
+    if (!serverWidget) {
+      Alert.alert('No server-rendered widget', 'Pin a non-Dynamic widget (e.g. Voltra Widget) first.')
+      return
+    }
+
+    try {
+      await setWidgetInstanceConfiguration(serverWidget.appWidgetId, { label: 'should be rejected' })
+      Alert.alert(
+        'Unexpected success',
+        `Configuring server-rendered widget #${serverWidget.appWidgetId} (${serverWidget.widgetType}) should have been rejected.`
+      )
+    } catch (error: any) {
+      Alert.alert('Rejected as expected', error?.message || String(error))
     }
   }
 
@@ -162,6 +209,7 @@ export default function AndroidWidgetPinScreen() {
       await clearWidgetInstanceConfiguration(selectedWidgetInstanceId)
       const values = await getWidgetInstanceConfiguration(selectedWidgetInstanceId)
       setConfigLabel(values.label ?? '')
+      setConfigSubtitle(values.subtitle ?? '')
       Alert.alert('Reset', `Cleared instance configuration for widget instance #${selectedWidgetInstanceId}.`)
     } catch (error: any) {
       Alert.alert('Error', error?.message || String(error))
@@ -269,10 +317,52 @@ export default function AndroidWidgetPinScreen() {
             autoCapitalize="none"
           />
         </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>env.configuration.subtitle</Text>
+          <TextInput
+            style={styles.input}
+            value={configSubtitle}
+            onChangeText={setConfigSubtitle}
+            placeholder="subtitle value"
+            placeholderTextColor="#64748B"
+            autoCapitalize="none"
+          />
+        </View>
         <View style={styles.buttonRow}>
           <Button title="Set instance configuration" onPress={handleSetConfig} style={styles.pinButton} />
           <Button title="Reset to defaults" variant="ghost" onPress={handleResetConfig} style={styles.pinButton} />
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Configuration (widget type)</Text>
+        <Text style={styles.sectionDescription}>
+          Applies to every placement of the demo widget that has no instance value of its own. Instances configured
+          above keep showing their own value — instance values shadow widget-type values.
+        </Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>label (all instances)</Text>
+          <TextInput
+            style={styles.input}
+            value={typeConfigLabel}
+            onChangeText={setTypeConfigLabel}
+            placeholder="shared label value"
+            placeholderTextColor="#64748B"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.buttonRow}>
+          <Button title="Set widget-type value" onPress={handleSetTypeConfig} style={styles.pinButton} />
+          <Button
+            title="Configure a server widget"
+            variant="ghost"
+            onPress={handleConfigureServerWidget}
+            style={styles.pinButton}
+          />
+        </View>
+        <Text style={styles.sectionDescription}>
+          &quot;Configure a server widget&quot; targets a non-Dynamic widget on purpose — it should be rejected.
+        </Text>
       </View>
 
       <View style={styles.section}>

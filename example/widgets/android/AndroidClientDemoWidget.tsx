@@ -20,6 +20,9 @@ export default function AndroidClientDemoWidget(_props: object, env: WidgetEnvir
 
   const config = env.configuration as Record<string, unknown> | undefined
   const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
+  // Second configuration key, so a single batched write can be observed changing both rows with
+  // only one re-render (the `time:` row below advances once).
+  const configSubtitle = typeof config?.subtitle === 'string' ? config.subtitle : '(unset)'
 
   // Material You tokens — resolved natively from the system dynamic color scheme.
   const bg = AndroidDynamicColors.surface
@@ -53,6 +56,7 @@ export default function AndroidClientDemoWidget(_props: object, env: WidgetEnvir
       {row('scheme:', env.colorScheme ?? '?')}
       {row('locale:', env.locale ?? '?')}
       {row('config:', configLabel)}
+      {row('sub:', configSubtitle)}
       {row('time:', renderedAt)}
       <VoltraAndroid.Spacer style={{ height: 8 }} />
       <VoltraAndroid.Row>
