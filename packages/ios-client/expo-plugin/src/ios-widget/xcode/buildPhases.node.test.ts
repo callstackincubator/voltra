@@ -38,7 +38,7 @@ describe('ensureWidgetBundleScriptPhase', () => {
     expect(phases).toHaveLength(1)
 
     const phase = phases[0]
-    expect(phase.name).toContain('Bundle Voltra Dynamic Widgets')
+    expect(phase.name).toContain('Bundle Voltra Dynamic Content')
     expect(phase.shellScript).toContain('@use-voltra/metro/bundle-widgets')
     // Debug builds use Metro, so the script must skip them...
     expect(phase.shellScript).toContain('Debug')
@@ -58,6 +58,22 @@ describe('ensureWidgetBundleScriptPhase', () => {
 
     expect(shellPhaseObjects(project)).toHaveLength(1)
     expect(project.hash.project.objects.PBXNativeTarget[TARGET_UUID].buildPhases).toHaveLength(1)
+  })
+
+  it('migrates the legacy phase name without leaving a duplicate phase behind', () => {
+    const project = makeProject()
+    const legacyUuid = 'C'.repeat(24)
+    project.hash.project.objects.PBXShellScriptBuildPhase = {
+      [legacyUuid]: { name: '"Bundle Voltra Dynamic Widgets"', shellScript: 'legacy' },
+    }
+    project.hash.project.objects.PBXNativeTarget[TARGET_UUID].buildPhases = [{ value: legacyUuid }]
+
+    ensureWidgetBundleScriptPhase(project, TARGET_UUID, 'live-activities')
+
+    const phases = shellPhaseObjects(project)
+    expect(phases).toHaveLength(1)
+    expect(phases[0].name).toBe('"Bundle Voltra Dynamic Content"')
+    expect(phases[0].shellScript).toContain('--content live-activities')
   })
 
   it('does nothing when the target is absent', () => {

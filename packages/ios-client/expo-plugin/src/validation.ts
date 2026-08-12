@@ -4,8 +4,9 @@ import {
   validateWidgetEntry,
   validateWidgetLabel,
 } from '@use-voltra/expo-plugin'
+import { getDynamicLiveActivityAttributesType } from '@use-voltra/expo-plugin'
 
-import type { IOSConfigPluginProps, IOSWidgetConfig, IOSWidgetFamily } from './types'
+import type { IOSConfigPluginProps, IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetFamily } from './types'
 
 const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
   'systemSmall',
@@ -16,6 +17,25 @@ const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
   'accessoryRectangular',
   'accessoryInline',
 ])
+const DYNAMIC_LIVE_ACTIVITY_ID_PATTERN = /^[a-zA-Z0-9_]+$/
+
+export function validateIOSDynamicLiveActivityConfig(
+  liveActivity: IOSDynamicLiveActivityConfig,
+  projectRoot?: string
+): void {
+  if (!liveActivity.id || typeof liveActivity.id !== 'string') {
+    throw new Error('Dynamic Live Activity ID is required and must be a string')
+  }
+
+  if (!DYNAMIC_LIVE_ACTIVITY_ID_PATTERN.test(liveActivity.id)) {
+    throw new Error(
+      `Dynamic Live Activity ID '${liveActivity.id}' is invalid. ` +
+        'It must be non-empty and contain only alphanumeric characters and underscores.'
+    )
+  }
+
+  validateWidgetEntry(liveActivity.entry, liveActivity.id, projectRoot)
+}
 
 export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: string): void {
   validateHomeScreenWidgetId(widget.id)
@@ -67,6 +87,36 @@ export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projec
         throw new Error(`Duplicate widget ID: '${widget.id}'`)
       }
       seenIds.add(widget.id)
+    }
+  }
+
+  if (props.liveActivities !== undefined) {
+    if (!Array.isArray(props.liveActivities)) {
+      throw new Error('liveActivities must be an array')
+    }
+
+    if (props.liveActivities.length > 0 && !props.groupIdentifier) {
+      throw new Error('groupIdentifier is required when liveActivities is non-empty')
+    }
+
+    const seenIds = new Set<string>()
+    const seenAttributesTypes = new Map<string, string>()
+    for (const liveActivity of props.liveActivities) {
+      validateIOSDynamicLiveActivityConfig(liveActivity, projectRoot)
+
+      if (seenIds.has(liveActivity.id)) {
+        throw new Error(`Duplicate Dynamic Live Activity ID: '${liveActivity.id}'`)
+      }
+      seenIds.add(liveActivity.id)
+
+      const attributesType = getDynamicLiveActivityAttributesType(liveActivity.id)
+      const conflictingId = seenAttributesTypes.get(attributesType)
+      if (conflictingId) {
+        throw new Error(
+          `Dynamic Live Activity IDs '${conflictingId}' and '${liveActivity.id}' generate the same ActivityKit attributes type '${attributesType}'`
+        )
+      }
+      seenAttributesTypes.set(attributesType, liveActivity.id)
     }
   }
 }

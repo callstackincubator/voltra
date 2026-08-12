@@ -2,6 +2,8 @@
 
 Voltra provides APIs that make building and testing Live Activities easier during development.
 
+For bundled, on-device definitions that receive generic props rather than a rendered UI payload, see [Dynamic Live Activities](./dynamic-live-activities).
+
 ## Supported variants
 
 Live Activities in iOS can appear in different contexts, and Voltra supports defining UI variants for each of these contexts. For detailed information about Live Activity design guidelines, see the [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/live-activities).

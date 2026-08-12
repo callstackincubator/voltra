@@ -9,7 +9,12 @@ import { logger } from '@use-voltra/expo-plugin'
  * This includes version information and the required WidgetKit extension point.
  * Version keys are written directly to the plist following the Expo pattern.
  */
-function generateInfoPlistContent(targetName: string, version: string, buildNumber: string): string {
+function generateInfoPlistContent(
+  targetName: string,
+  version: string,
+  buildNumber: string,
+  voltraVersion: string
+): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -32,6 +37,8 @@ function generateInfoPlistContent(targetName: string, version: string, buildNumb
 	<string>${version}</string>
 	<key>CFBundleVersion</key>
 	<string>${buildNumber}</string>
+	<key>Voltra_Version</key>
+	<string>${voltraVersion}</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
@@ -50,8 +57,14 @@ function generateInfoPlistContent(targetName: string, version: string, buildNumb
  * @param version - The app version (CFBundleShortVersionString)
  * @param buildNumber - The build number (CFBundleVersion)
  */
-export function generateInfoPlist(targetPath: string, targetName: string, version: string, buildNumber: string): void {
+export function generateInfoPlist(
+  targetPath: string,
+  targetName: string,
+  version: string,
+  buildNumber: string,
+  voltraVersion: string
+): void {
   const infoPlistPath = path.join(targetPath, 'Info.plist')
-  fs.writeFileSync(infoPlistPath, generateInfoPlistContent(targetName, version, buildNumber))
+  fs.writeFileSync(infoPlistPath, generateInfoPlistContent(targetName, version, buildNumber, voltraVersion))
   logger.info('Generated Info.plist')
 }

@@ -1,6 +1,24 @@
 import type { ReactNode } from 'react'
 
+import type { WidgetEnvironment } from '@use-voltra/core'
+
 import type { VoltraNodeJson } from '../types.js'
+
+/**
+ * Runtime context supplied to a Dynamic Live Activity entry.
+ *
+ * Unlike `WidgetEnvironment`, this intentionally omits Home Screen-only fields
+ * such as `widgetFamily`, `showsWidgetContainerBackground`, and `configuration`.
+ */
+export type LiveActivityEnvironment = Pick<
+  WidgetEnvironment,
+  'date' | 'colorScheme' | 'locale' | 'widgetRenderingMode' | 'build'
+> & {
+  /** Whether ActivityKit currently considers this activity stale. */
+  isStale: boolean
+  /** iOS 18+ ActivityKit family, when the activity is rendered in one. */
+  activityFamily?: string
+}
 
 /**
  * Live Activity variants - defines content for different states

@@ -1,15 +1,26 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { type DynamicWidgetManifest, logger, validateWidgetEntry } from '@use-voltra/expo-plugin'
+import {
+  type DynamicLiveActivityManifest,
+  type DynamicWidgetManifest,
+  logger,
+  validateWidgetEntry,
+} from '@use-voltra/expo-plugin'
 
-import type { IOSWidgetConfig } from '../../types'
+import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 
 const MANIFEST_PATH = path.join('.voltra', 'manifest.ios.json')
+const LIVE_ACTIVITIES_MANIFEST_PATH = path.join('.voltra', 'manifest.ios.live-activities.json')
 
 export interface GenerateIOSDynamicWidgetsManifestOptions {
   projectRoot: string
   widgets?: IOSWidgetConfig[]
+}
+
+export interface GenerateIOSDynamicLiveActivitiesManifestOptions {
+  projectRoot: string
+  liveActivities?: IOSDynamicLiveActivityConfig[]
 }
 
 export function createIOSDynamicWidgetsManifest(
@@ -36,6 +47,22 @@ export function createIOSDynamicWidgetsManifest(
   }
 }
 
+export function createIOSDynamicLiveActivitiesManifest(
+  projectRoot: string,
+  liveActivities: IOSDynamicLiveActivityConfig[]
+): DynamicLiveActivityManifest {
+  return {
+    version: 1,
+    platform: 'ios',
+    liveActivities: [...liveActivities]
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((liveActivity) => ({
+        id: liveActivity.id,
+        entry: validateWidgetEntry(liveActivity.entry, liveActivity.id, projectRoot),
+      })),
+  }
+}
+
 export function generateIOSDynamicWidgetsManifest(options: GenerateIOSDynamicWidgetsManifestOptions): void {
   const { projectRoot, widgets } = options
   const manifestPath = path.join(projectRoot, MANIFEST_PATH)
@@ -44,4 +71,17 @@ export function generateIOSDynamicWidgetsManifest(options: GenerateIOSDynamicWid
   fs.mkdirSync(path.dirname(manifestPath), { recursive: true })
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
   logger.info(`Generated ${MANIFEST_PATH}`)
+}
+
+/** Writes the dedicated Dynamic Live Activity manifest on every prebuild, including when empty. */
+export function generateIOSDynamicLiveActivitiesManifest(
+  options: GenerateIOSDynamicLiveActivitiesManifestOptions
+): void {
+  const { projectRoot, liveActivities } = options
+  const manifestPath = path.join(projectRoot, LIVE_ACTIVITIES_MANIFEST_PATH)
+  const manifest = createIOSDynamicLiveActivitiesManifest(projectRoot, liveActivities ?? [])
+
+  fs.mkdirSync(path.dirname(manifestPath), { recursive: true })
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+  logger.info(`Generated ${LIVE_ACTIVITIES_MANIFEST_PATH}`)
 }

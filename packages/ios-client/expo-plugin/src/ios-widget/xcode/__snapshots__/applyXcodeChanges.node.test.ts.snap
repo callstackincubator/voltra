@@ -13,11 +13,13 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 		13B07FBF1A68108700A75B9A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.swift */; };
 		13B07FC11A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC21A68108700A75B9A /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB61A68108700A75B9A /* Info.plist */; };
-		F1D00000000000000000000F /* VoltraWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D000000000000000000008 /* VoltraWidget.swift */; };
-		F1D000000000000000000010 /* VoltraWidgetInitialStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D000000000000000000009 /* VoltraWidgetInitialStates.swift */; };
+		F1D000000000000000000010 /* VoltraWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D000000000000000000008 /* VoltraWidget.swift */; };
+		F1D000000000000000000011 /* VoltraWidgetInitialStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D000000000000000000009 /* VoltraWidgetInitialStates.swift */; };
+		F1D000000000000000000012 /* VoltraDynamicLiveActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000A /* VoltraDynamicLiveActivityTypes.swift */; };
+		F1D000000000000000000013 /* VoltraDynamicLiveActivityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000A /* VoltraDynamicLiveActivityTypes.swift */; };
 		F1D000000000000000000006 /* VoltraWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F1D000000000000000000005 /* VoltraWidgetExtension.appex */; };
-		F1D000000000000000000014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000C /* Assets.xcassets */; };
-		F1D000000000000000000015 /* VoltraWidgets.strings in Resources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000D /* VoltraWidgets.strings */; };
+		F1D000000000000000000017 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000D /* Assets.xcassets */; };
+		F1D000000000000000000018 /* VoltraWidgets.strings in Resources */ = {isa = PBXBuildFile; fileRef = F1D00000000000000000000E /* VoltraWidgets.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,10 +30,11 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 		F1D000000000000000000005 /* VoltraWidgetExtension.appex */ = {isa = PBXFileReference; name = "VoltraWidgetExtension.appex"; path = "VoltraWidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; fileEncoding = undefined; lastKnownFileType = undefined; explicitFileType = wrapper.app-extension; includeInIndex = 0; };
 		F1D000000000000000000008 /* VoltraWidget.swift */ = {isa = PBXFileReference; name = "VoltraWidget.swift"; path = "VoltraWidget.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
 		F1D000000000000000000009 /* VoltraWidgetInitialStates.swift */ = {isa = PBXFileReference; name = "VoltraWidgetInitialStates.swift"; path = "VoltraWidgetInitialStates.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
-		F1D00000000000000000000A /* VoltraWidgetExtension.entitlements */ = {isa = PBXFileReference; name = "VoltraWidgetExtension.entitlements"; path = "VoltraWidgetExtension.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		F1D00000000000000000000B /* VoltraWidgetExtension-Info.plist */ = {isa = PBXFileReference; name = "VoltraWidgetExtension-Info.plist"; path = "VoltraWidgetExtension-Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
-		F1D00000000000000000000C /* Assets.xcassets */ = {isa = PBXFileReference; name = "Assets.xcassets"; path = "Assets.xcassets"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = folder.assetcatalog; explicitFileType = undefined; includeInIndex = 0; };
-		F1D00000000000000000000D /* VoltraWidgets.strings */ = {isa = PBXFileReference; name = "VoltraWidgets.strings"; path = "en.lproj/VoltraWidgets.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000A /* VoltraDynamicLiveActivityTypes.swift */ = {isa = PBXFileReference; name = "VoltraDynamicLiveActivityTypes.swift"; path = "VoltraDynamicLiveActivityTypes.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000B /* VoltraWidgetExtension.entitlements */ = {isa = PBXFileReference; name = "VoltraWidgetExtension.entitlements"; path = "VoltraWidgetExtension.entitlements"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000C /* VoltraWidgetExtension-Info.plist */ = {isa = PBXFileReference; name = "VoltraWidgetExtension-Info.plist"; path = "VoltraWidgetExtension-Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000D /* Assets.xcassets */ = {isa = PBXFileReference; name = "Assets.xcassets"; path = "Assets.xcassets"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = folder.assetcatalog; explicitFileType = undefined; includeInIndex = 0; };
+		F1D00000000000000000000E /* VoltraWidgets.strings */ = {isa = PBXFileReference; name = "VoltraWidgets.strings"; path = "en.lproj/VoltraWidgets.strings"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.strings; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -42,7 +45,7 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F1D000000000000000000012 /* Frameworks */ = {
+		F1D000000000000000000015 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -88,10 +91,11 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 			children = (
 				F1D000000000000000000008 /* VoltraWidget.swift */,
 				F1D000000000000000000009 /* VoltraWidgetInitialStates.swift */,
-				F1D00000000000000000000A /* VoltraWidgetExtension.entitlements */,
-				F1D00000000000000000000B /* VoltraWidgetExtension-Info.plist */,
-				F1D00000000000000000000C /* Assets.xcassets */,
-				F1D00000000000000000000D /* VoltraWidgets.strings */,
+				F1D00000000000000000000A /* VoltraDynamicLiveActivityTypes.swift */,
+				F1D00000000000000000000B /* VoltraWidgetExtension.entitlements */,
+				F1D00000000000000000000C /* VoltraWidgetExtension-Info.plist */,
+				F1D00000000000000000000D /* Assets.xcassets */,
+				F1D00000000000000000000E /* VoltraWidgets.strings */,
 			);
 			name = VoltraWidgetExtension;
 			path = VoltraWidgetExtension;
@@ -107,12 +111,12 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
-				F1D000000000000000000011 /* Embed Foundation Extensions */,
+				F1D000000000000000000014 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				F1D000000000000000000016 /* PBXTargetDependency */,
+				F1D000000000000000000019 /* PBXTargetDependency */,
 			);
 			name = voltraexample;
 			productName = voltraexample;
@@ -127,9 +131,9 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 			buildConfigurationList = F1D000000000000000000002;
 			productReference = F1D000000000000000000005;
 			buildPhases = (
-				F1D00000000000000000000E /* Sources */,
-				F1D000000000000000000012 /* Frameworks */,
-				F1D000000000000000000013 /* Resources */,
+				F1D00000000000000000000F /* Sources */,
+				F1D000000000000000000015 /* Frameworks */,
+				F1D000000000000000000016 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -181,12 +185,12 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F1D000000000000000000013 /* Resources */ = {
+		F1D000000000000000000016 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F1D000000000000000000014 /* Assets.xcassets in Resources */,
-				F1D000000000000000000015 /* VoltraWidgets.strings in Resources */,
+				F1D000000000000000000017 /* Assets.xcassets in Resources */,
+				F1D000000000000000000018 /* VoltraWidgets.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -198,15 +202,17 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 			buildActionMask = 2147483647;
 			files = (
 				13B07FBF1A68108700A75B9A /* AppDelegate.swift in Sources */,
+				F1D000000000000000000013 /* VoltraDynamicLiveActivityTypes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F1D00000000000000000000E /* Sources */ = {
+		F1D00000000000000000000F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F1D00000000000000000000F /* VoltraWidget.swift in Sources */,
-				F1D000000000000000000010 /* VoltraWidgetInitialStates.swift in Sources */,
+				F1D000000000000000000010 /* VoltraWidget.swift in Sources */,
+				F1D000000000000000000011 /* VoltraWidgetInitialStates.swift in Sources */,
+				F1D000000000000000000012 /* VoltraDynamicLiveActivityTypes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,7 +326,7 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 /* End XCConfigurationList section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		F1D000000000000000000011 /* Embed Foundation Extensions */ = {
+		F1D000000000000000000014 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -334,15 +340,15 @@ exports[`applyXcodeChanges — fresh Expo project (fixture a) matches the commit
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		F1D000000000000000000016 /* PBXTargetDependency */ = {
+		F1D000000000000000000019 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = F1D000000000000000000001 /* VoltraWidgetExtension */;
-			targetProxy = F1D000000000000000000017 /* PBXContainerItemProxy */;
+			targetProxy = F1D00000000000000000001A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXContainerItemProxy section */
-		F1D000000000000000000017 /* PBXContainerItemProxy */ = {
+		F1D00000000000000000001A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
 			proxyType = 1;

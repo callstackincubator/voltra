@@ -1,10 +1,42 @@
 import Foundation
 
-public enum VoltraErrors: Error {
+public enum VoltraErrors: Error, CustomNSError {
   case unsupportedOS
   case notFound
   case liveActivitiesNotEnabled
+  case rendererMismatch
   case unexpectedError(Error)
+
+  public static let errorDomain = "com.callstack.voltra"
+
+  public var errorCode: Int {
+    switch self {
+    case .unexpectedError: 0
+    case .unsupportedOS: 1
+    case .notFound: 2
+    case .liveActivitiesNotEnabled: 3
+    case .rendererMismatch: 4
+    }
+  }
+
+  public var errorUserInfo: [String: Any] {
+    [NSLocalizedDescriptionKey: errorDescription]
+  }
+
+  private var errorDescription: String {
+    switch self {
+    case .unsupportedOS:
+      "Live Activities require iOS 16.4 or newer."
+    case .notFound:
+      "The requested Live Activity was not found."
+    case .liveActivitiesNotEnabled:
+      "Live Activities are disabled for this app."
+    case .rendererMismatch:
+      "The Live Activity belongs to a different renderer."
+    case let .unexpectedError(error):
+      error.localizedDescription
+    }
+  }
 }
 
 @objc public final class VoltraModule: NSObject {
@@ -59,6 +91,37 @@ public enum VoltraErrors: Error {
     }
   }
 
+  @objc public func startDynamicLiveActivity(
+    _ definitionId: String,
+    propsJson: String,
+    options: StartVoltraOptions?,
+    completion: @escaping (String?, Error?) -> Void
+  ) {
+    Task {
+      do {
+        try completion(await impl.startDynamicLiveActivity(definitionId: definitionId, propsJson: propsJson, options: options), nil)
+      } catch {
+        completion(nil, error)
+      }
+    }
+  }
+
+  @objc public func updateDynamicLiveActivity(
+    _ activityId: String,
+    propsJson: String,
+    options: UpdateVoltraOptions?,
+    completion: @escaping (Error?) -> Void
+  ) {
+    Task {
+      do {
+        try await impl.updateDynamicLiveActivity(activityId: activityId, propsJson: propsJson, options: options)
+        completion(nil)
+      } catch {
+        completion(error)
+      }
+    }
+  }
+
   @objc public func endLiveActivity(
     _ activityId: String,
     options: EndVoltraOptions?,
@@ -93,6 +156,10 @@ public enum VoltraErrors: Error {
     impl.listVoltraActivityIds()
   }
 
+  @objc public func getDynamicLiveActivityDefinitionIds() -> [String] {
+    impl.getDynamicLiveActivityDefinitionIds()
+  }
+
   @objc public func isLiveActivityActive(_ activityName: String) -> Bool {
     impl.isLiveActivityActive(name: activityName)
   }
@@ -103,6 +170,14 @@ public enum VoltraErrors: Error {
 
   @objc public func clearHeadless() {
     impl.clearHeadless()
+  }
+
+  @objc public func drainDynamicLiveActivityRenderFailures() {
+    impl.drainDynamicLiveActivityRenderFailures()
+  }
+
+  @objc public func setDynamicLiveActivityRenderFailureListenerActive(_ active: Bool) {
+    impl.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
   // MARK: - Images
@@ -133,6 +208,13 @@ public enum VoltraErrors: Error {
       } catch {
         completion(error)
       }
+    }
+  }
+
+  @objc public func reloadDynamicLiveActivities(_ definitionIds: NSArray?, completion: @escaping () -> Void) {
+    Task {
+      await impl.reloadDynamicLiveActivities(definitionIds: definitionIds?.compactMap { $0 as? String })
+      completion()
     }
   }
 

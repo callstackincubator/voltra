@@ -1,3 +1,5 @@
+import { getDynamicLiveActivityAttributesType } from '../../../../../ios/src/live-activity/dynamic'
+
 import type { DetectedIOSWidget } from '../clientRendered'
 
 import { __test__ } from './swift'
@@ -71,6 +73,49 @@ describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
       expect(swift).toContain('.supportedFamilies(')
       expect(swift).toContain('.contentMarginsDisabled()')
     }
+  })
+})
+
+describe('Dynamic Live Activity Swift generation', () => {
+  const liveActivities = [
+    { id: 'order_finished', entry: './live-activities/order-finished.tsx' },
+    { id: 'driver_arrived', entry: './live-activities/driver-arrived.tsx' },
+  ]
+
+  it('creates distinct ActivityKit types, configurations, and catalog entries', () => {
+    const types = __test__.generateDynamicLiveActivityTypesSwift(liveActivities)
+    const configurations = __test__.generateDynamicLiveActivitiesSwift(liveActivities)
+    const bundle = __test__.generateWidgetBundleSwift([], liveActivities)
+
+    expect(types).toContain('VoltraOrderFinishedLiveActivityAttributes')
+    expect(types).toContain(
+      `public struct ${getDynamicLiveActivityAttributesType('order_finished')}: ActivityAttributes`
+    )
+    expect(types).toContain('VoltraDriverArrivedLiveActivityAttributes')
+    expect(types).toContain('public typealias ContentState = VoltraDynamicLiveActivityContentState')
+    expect(types).toContain('public let name: String')
+    expect(types).toContain('public let deepLinkUrl: String?')
+    expect(types).toContain('import VoltraRuntime')
+    expect(types).not.toContain('import VoltraWidget')
+    expect(types).toContain('@objc(VoltraGeneratedDynamicLiveActivityRegistration)')
+    expect(types).toContain('public final class VoltraGeneratedDynamicLiveActivityRegistration: NSObject')
+    expect(types).toContain(
+      'VoltraDynamicLiveActivityRegistry.shared.register(VoltraDriverArrivedLiveActivityAttributes.self)'
+    )
+    expect(types).toContain(
+      'VoltraDynamicLiveActivityRegistry.shared.register(VoltraOrderFinishedLiveActivityAttributes.self)'
+    )
+    expect(types).not.toContain('VoltraDynamicLiveActivityCatalog')
+    expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.lockScreen(definitionId: "driver_arrived"')
+    expect(configurations).toContain('VoltraDynamicLiveActivityRenderer.dynamicIsland(definitionId: "order_finished"')
+    expect(configurations).toContain('.supplementalActivityFamilies([.small, .medium])')
+    expect(bundle).toContain('VoltraDynamicLiveActivity_VoltraDriverArrivedLiveActivityAttributes()')
+    expect(bundle).toContain('VoltraDynamicLiveActivity_VoltraOrderFinishedLiveActivityAttributes()')
+  })
+
+  it('keeps the legacy empty bundle unchanged when no Dynamic Live Activities are declared', () => {
+    expect(__test__.generateWidgetBundleSwift([], [])).toContain('import VoltraRuntime')
+    expect(__test__.generateWidgetBundleSwift([], [])).not.toContain('VoltraDynamicLiveActivity_')
   })
 })
 

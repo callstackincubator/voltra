@@ -1,8 +1,5 @@
+import { getFastRefreshHub } from '@use-voltra/android'
 import { useEffect, useState } from 'react'
-
-declare global {
-  var __accept: (...args: unknown[]) => void
-}
 
 export const useUpdateOnHMR = () => {
   const [, forceUpdate] = useState(0)
@@ -12,14 +9,8 @@ export const useUpdateOnHMR = () => {
       return
     }
 
-    const oldAccept = global['__accept']
-    global['__accept'] = (...args) => {
+    return getFastRefreshHub().onPatch(() => {
       forceUpdate((prev) => prev + 1)
-      oldAccept?.(...args)
-    }
-
-    return () => {
-      global['__accept'] = oldAccept
-    }
+    })
   }, [])
 }

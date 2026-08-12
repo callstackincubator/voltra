@@ -1,7 +1,7 @@
 import { ConfigPlugin, withXcodeProject, XcodeProject } from '@expo/config-plugins'
 import * as path from 'path'
 
-import type { IOSWidgetConfig, IOSWidgetExtensionFiles } from '../../types'
+import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetExtensionFiles } from '../../types'
 import { getIOSWidgetExtensionFiles } from '../../utils/fileDiscovery'
 import { detectClientRenderedWidgets } from '../clientRendered'
 import { ensureBuildPhases, ensureWidgetBundleScriptPhase } from './buildPhases'
@@ -20,6 +20,7 @@ export interface ConfigureXcodeProjectProps {
   /** App build number; becomes the widget's CURRENT_PROJECT_VERSION. */
   buildNumber?: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
 }
 
 /**
@@ -42,6 +43,13 @@ export function applyXcodeChanges(
 ): void {
   const { targetName, bundleIdentifier, deploymentTarget, version, buildNumber } = props
   const groupName = 'Embed Foundation Extensions'
+  const mainTargetUuid = xcodeProject.getFirstTarget().uuid
+  // The catalog is compiled into the app even for a legacy-only configuration.
+  // Keep it in the extension group too so both targets share one PBX file reference.
+  const effectiveWidgetFiles: IOSWidgetExtensionFiles = {
+    ...widgetFiles,
+    swiftFiles: Array.from(new Set([...widgetFiles.swiftFiles, 'VoltraDynamicLiveActivityTypes.swift'])),
+  }
 
   // Read main app target settings to synchronize code signing (per configuration).
   const mainAppSettings = getMainAppTargetSettings(xcodeProject)
@@ -92,7 +100,7 @@ export function applyXcodeChanges(
   // reference them (the phases resolve files through the widget-scoped group).
   ensurePbxGroup(xcodeProject, {
     targetName,
-    widgetFiles,
+    widgetFiles: effectiveWidgetFiles,
   })
 
   // Ensure build phases and their files.
@@ -101,12 +109,21 @@ export function applyXcodeChanges(
     targetName,
     groupName,
     productFile,
-    widgetFiles,
+    widgetFiles: effectiveWidgetFiles,
     mainTargetUuid: xcodeProject.getFirstTarget().uuid,
+    // The app-side lifecycle service always compiles against the generated catalog.
+    // An empty catalog keeps legacy-only apps source-compatible.
+    mainSwiftFiles: ['VoltraDynamicLiveActivityTypes.swift'],
   })
 
-  if (hasClientRenderedWidgets) {
+  if (hasClientRenderedWidgets || (props.liveActivities?.length ?? 0) > 0) {
     ensureWidgetBundleScriptPhase(xcodeProject, targetUuid)
+  }
+  if ((props.liveActivities?.length ?? 0) > 0) {
+    // Local Dynamic Live Activity starts preflight the baked definition from
+    // the app process, while WidgetKit renders from the extension process.
+    // Bake the same manifest into both products.
+    ensureWidgetBundleScriptPhase(xcodeProject, mainTargetUuid, 'live-activities')
   }
 
   ensureTargetAttributes(xcodeProject, targetUuid)
@@ -128,7 +145,7 @@ export function applyXcodeChanges(
  * mutation to {@link applyXcodeChanges}.
  */
 export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (config, props) => {
-  const { targetName, widgets } = props
+  const { targetName, widgets, liveActivities } = props
 
   return withXcodeProject(config, (config) => {
     if (config.modRequest.introspect) {
@@ -147,7 +164,7 @@ export const configureXcodeProject: ConfigPlugin<ConfigureXcodeProjectProps> = (
     const targetPath = path.join(platformProjectRoot, targetName)
     const widgetFiles = getIOSWidgetExtensionFiles(targetPath, targetName)
 
-    applyXcodeChanges(xcodeProject, props, widgetFiles, hasClientRenderedWidgets)
+    applyXcodeChanges(xcodeProject, props, widgetFiles, hasClientRenderedWidgets || (liveActivities?.length ?? 0) > 0)
 
     return config
   })

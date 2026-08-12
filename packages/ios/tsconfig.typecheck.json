@@ -11,6 +11,7 @@
       "@use-voltra/android/server": ["packages/android/src/server.ts"],
       "@use-voltra/android-server": ["packages/android-server/src/index.ts"],
       "@use-voltra/core": ["packages/core/src/index.ts"],
+      "@use-voltra/core/dynamic-live-activity": ["packages/core/src/dynamic-live-activity.ts"],
       "@use-voltra/ios": ["packages/ios/src/index.ts"],
       "@use-voltra/ios-client": ["packages/ios-client/src/index.ts"],
       "@use-voltra/ios/client": ["packages/ios-client/src/index.ts"],

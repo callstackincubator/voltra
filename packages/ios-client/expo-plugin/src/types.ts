@@ -1,6 +1,11 @@
 import type { ConfigPlugin } from '@expo/config-plugins'
 
-import type { DynamicWidgetEntryConfig, WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
+import type {
+  DynamicLiveActivityEntryConfig,
+  DynamicWidgetEntryConfig,
+  WidgetInitialStatePath,
+  WidgetLabel,
+} from '@use-voltra/expo-plugin'
 
 /**
  * Supported iOS Home Screen widget size families.
@@ -61,6 +66,12 @@ export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
 }
 
 /**
+ * A Dynamic Live Activity bundled with the app.
+ * @experimental
+ */
+export interface IOSDynamicLiveActivityConfig extends DynamicLiveActivityEntryConfig {}
+
+/**
  * Server-driven iOS widget updates (WidgetKit background refresh).
  */
 export interface IOSWidgetServerUpdateConfig {
@@ -91,6 +102,8 @@ export interface IOSConfigPluginProps {
   enablePushNotifications?: boolean
   groupIdentifier?: string
   widgets?: IOSWidgetConfig[]
+  /** @experimental Dynamic Live Activities rendered from bundled JavaScript entries. */
+  liveActivities?: IOSDynamicLiveActivityConfig[]
   deploymentTarget?: string
   targetName?: string
   fonts?: string[]
@@ -111,6 +124,7 @@ export interface IOSWidgetExtensionPluginProps {
   bundleIdentifier: string
   deploymentTarget: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
   groupIdentifier?: string
   keychainGroup?: string
   fonts?: string[]

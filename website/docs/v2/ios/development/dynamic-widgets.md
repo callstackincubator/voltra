@@ -17,6 +17,25 @@ That means your Dynamic Widget can react to:
 
 When you change `app.json`, run Expo Prebuild or Voltra Apply so the updated widget configuration is available on device. If you change only the widget JS, reopen the app in development and the widget updates automatically.
 
+## Set up Metro
+
+Dynamic Widgets require `@use-voltra/metro` in the app project. Install it alongside the iOS packages:
+
+```sh
+npm install @use-voltra/metro
+```
+
+Wrap the app's existing Metro config with `withVoltra`:
+
+```js title="metro.config.js"
+const { getDefaultConfig } = require('expo/metro-config')
+const { withVoltra } = require('@use-voltra/metro')
+
+const config = getDefaultConfig(__dirname)
+
+module.exports = withVoltra(config)
+```
+
 ## How to use it
 
 1. Add an iOS widget declaration to `app.json` with an `id`, an `entry`, and any widget metadata you need.

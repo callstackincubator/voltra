@@ -1,9 +1,13 @@
 import { Stack } from 'expo-router'
 import { Platform } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { enableWidgetHotReload as enableIosWidgetHotReload } from '@use-voltra/ios-client'
+import {
+  enableDynamicLiveActivityHotReload,
+  enableWidgetHotReload as enableIosWidgetHotReload,
+} from '@use-voltra/ios-client'
 import { enableWidgetHotReload as enableAndroidWidgetHotReload } from '@use-voltra/android-client'
 import '@use-voltra/widget-hot-reload'
+import '@use-voltra/live-activity-hot-reload'
 
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
@@ -13,6 +17,7 @@ if (Platform.OS === 'android') {
   enableAndroidWidgetHotReload()
 } else {
   enableIosWidgetHotReload()
+  enableDynamicLiveActivityHotReload()
 }
 updateAndroidVoltraWidget({ width: 300, height: 200 })
 

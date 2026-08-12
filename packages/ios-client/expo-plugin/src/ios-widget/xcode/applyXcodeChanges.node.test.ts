@@ -34,6 +34,40 @@ function useDeterministicUuids(project: any): void {
 }
 
 describe('applyXcodeChanges — fresh Expo project (fixture a)', () => {
+  it('adds the release bundler and shared ActivityKit types when only Dynamic Live Activities exist', () => {
+    const project = loadFixtureProject('fresh.pbxproj')
+    useDeterministicUuids(project)
+
+    applyXcodeChanges(
+      project,
+      {
+        ...PROPS,
+        liveActivities: [{ id: 'order_finished', entry: './live-activities/order-finished.tsx' }],
+      },
+      { ...WIDGET_FILES, swiftFiles: [...WIDGET_FILES.swiftFiles, 'VoltraDynamicLiveActivityTypes.swift'] },
+      true
+    )
+
+    const objects = project.hash.project.objects
+    const widgetTarget = project.findTargetKey(PROPS.targetName)
+    const appTarget = project.getFirstTarget().uuid
+    const shellPhases = objects.PBXShellScriptBuildPhase || {}
+    for (const target of [widgetTarget, appTarget]) {
+      expect(
+        objects.PBXNativeTarget[target].buildPhases.some((entry: any) =>
+          String(shellPhases[String(entry.value).split(' ')[0]]?.name).includes('Bundle Voltra Dynamic Content')
+        )
+      ).toBe(true)
+    }
+
+    const typeRefs = Object.entries(objects.PBXFileReference).filter(
+      ([key, reference]: [string, any]) =>
+        !key.endsWith('_comment') && JSON.stringify(reference).includes('VoltraDynamicLiveActivityTypes.swift')
+    )
+    expect(typeRefs).toHaveLength(1)
+    expect(() => assertPbxConsistency(project)).not.toThrow()
+  })
+
   it('produces a consistent project', () => {
     const project = loadFixtureProject('fresh.pbxproj')
     useDeterministicUuids(project)
