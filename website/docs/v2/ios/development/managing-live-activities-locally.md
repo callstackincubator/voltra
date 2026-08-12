@@ -13,6 +13,8 @@ Managing Live Activities locally involves four main phases:
 
 Voltra offers both imperative APIs for direct control and React hooks for seamless integration with your components.
 
+This page documents the legacy server-rendered engine. For the separate experimental engine that bundles a definition with the app and updates it with props, see [Dynamic Live Activities](./dynamic-live-activities).
+
 ## Imperative APIs
 
 The imperative APIs provide direct, programmatic control over Live Activities. These are the core functions you'll use to manage Live Activity lifecycles.

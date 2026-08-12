@@ -1,6 +1,6 @@
 import { ConfigPlugin, withPlugins } from '@expo/config-plugins'
 
-import type { IOSWidgetConfig } from '../types'
+import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../types'
 import { configureEasBuild } from './eas'
 import { generateWidgetExtensionFiles } from './files'
 import { withFonts } from './fonts'
@@ -13,11 +13,13 @@ export interface WithIOSProps {
   bundleIdentifier: string
   deploymentTarget: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
   groupIdentifier?: string
   keychainGroup?: string
   fonts?: string[]
   version: string
   buildNumber: string
+  voltraVersion: string
 }
 
 /**
@@ -42,11 +44,13 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     bundleIdentifier,
     deploymentTarget,
     widgets,
+    liveActivities,
     groupIdentifier,
     keychainGroup,
     fonts,
     version,
     buildNumber,
+    voltraVersion,
   } = props
 
   const plugins: [ConfigPlugin<any>, any][] = [
@@ -54,7 +58,10 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     ...(fonts && fonts.length > 0 ? [[withFonts, { fonts, targetName }] as [ConfigPlugin<any>, any]] : []),
 
     // 2. Configure Xcode project (creates the target - must run before fonts mod executes)
-    [configureXcodeProject, { targetName, bundleIdentifier, deploymentTarget, widgets, version, buildNumber }],
+    [
+      configureXcodeProject,
+      { targetName, bundleIdentifier, deploymentTarget, widgets, liveActivities, version, buildNumber },
+    ],
 
     // 3. Configure Podfile for widget extension target
     [configurePodfile, { targetName }],
@@ -66,7 +73,10 @@ export const withIOS: ConfigPlugin<WithIOSProps> = (config, props) => {
     [configureEasBuild, { targetName, bundleIdentifier, groupIdentifier }],
 
     // 6. Generate widget extension files (dangerous mod should run before plist patchers)
-    [generateWidgetExtensionFiles, { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber }],
+    [
+      generateWidgetExtensionFiles,
+      { targetName, widgets, liveActivities, groupIdentifier, keychainGroup, version, buildNumber, voltraVersion },
+    ],
   ]
 
   return withPlugins(config, plugins)

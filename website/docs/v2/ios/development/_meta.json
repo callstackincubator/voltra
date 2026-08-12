@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "dynamic-live-activities",
+    "label": "Dynamic Live Activities (experimental)"
+  },
+  {
+    "type": "file",
     "name": "developing-widgets",
     "label": "Developing Widgets"
   },

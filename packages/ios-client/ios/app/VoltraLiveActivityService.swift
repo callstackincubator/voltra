@@ -78,6 +78,9 @@ public struct UpdateActivityRequest {
 
 /// Service for managing Voltra Live Activities
 public class VoltraLiveActivityService {
+  private let chronology = VoltraLiveActivityChronology.shared
+  private let dynamicService = VoltraDynamicLiveActivityService()
+
   // MARK: - Availability Checks
 
   /// Check if Live Activities are supported on this OS version
@@ -113,7 +116,7 @@ public class VoltraLiveActivityService {
     return Array(Activity<VoltraAttributes>.activities)
   }
 
-  /// Get the latest (most recently created) activity across both types
+  /// Get the latest legacy activity.
   public func getLatestActivity() -> VoltraActivity? {
     guard Self.isSupported() else { return nil }
     let allActivities = getAllActivities()
@@ -122,7 +125,30 @@ public class VoltraLiveActivityService {
 
   /// Check if an activity with the given name exists across both types
   public func isActivityActive(name: String) -> Bool {
-    findActivity(byName: name) != nil
+    findActivity(byName: name) != nil || dynamicService.isActive(name: name)
+  }
+
+  /// The unified list intentionally erases each engine's concrete attributes type.
+  public func getAllActivityReferences() -> [VoltraDynamicLiveActivityReference] {
+    guard Self.isSupported() else { return [] }
+    let legacy = getAllActivities().map {
+      VoltraDynamicLiveActivityReference(id: $0.id, name: $0.attributes.name, definitionId: "legacy")
+    }
+    return chronology.order(legacy + dynamicService.activityReferences())
+  }
+
+  public func latestActivityId() -> String? {
+    guard Self.isSupported() else { return nil }
+    let legacy = getAllActivities().map {
+      VoltraDynamicLiveActivityReference(id: $0.id, name: $0.attributes.name, definitionId: "legacy")
+    }
+    return chronology.latest(legacy + dynamicService.activityReferences())?.id
+  }
+
+  /// The installed capability list is generated during prebuild and does not
+  /// depend on Metro, the app group, or a server connection.
+  public func dynamicLiveActivityDefinitionIds() -> [String] {
+    dynamicService.definitionIds()
   }
 
   // MARK: - Create Operations
@@ -154,7 +180,7 @@ public class VoltraLiveActivityService {
     let initialState = try VoltraAttributes.ContentState(uiJsonData: request.jsonString)
 
     // Request the activity
-    _ = try Activity.request(
+    let activity = try Activity.request(
       attributes: attributes,
       content: .init(
         state: initialState,
@@ -163,6 +189,7 @@ public class VoltraLiveActivityService {
       ),
       pushType: request.pushType
     )
+    chronology.record(activity.id)
 
     return finalActivityId
   }
@@ -202,6 +229,9 @@ public class VoltraLiveActivityService {
     request: UpdateActivityRequest
   ) async throws {
     guard let activity = findActivity(byName: name) else {
+      if dynamicService.isActive(name: name) {
+        throw VoltraLiveActivityError.rendererMismatch
+      }
       throw VoltraLiveActivityError.notFound
     }
     try await updateActivity(activity, request: request)
@@ -231,10 +261,15 @@ public class VoltraLiveActivityService {
     byName name: String,
     dismissalPolicy: ActivityUIDismissalPolicy = .immediate
   ) async throws {
-    guard let activity = findActivity(byName: name) else {
+    if let activity = findActivity(byName: name) {
+      await endActivity(activity, dismissalPolicy: dismissalPolicy)
+      // Names can collide across engines after a remote start. Shared ending covers both.
+      _ = await dynamicService.end(byName: name, dismissalPolicy: dismissalPolicy)
+      return
+    }
+    guard await dynamicService.end(byName: name, dismissalPolicy: dismissalPolicy) else {
       throw VoltraLiveActivityError.notFound
     }
-    await endActivity(activity, dismissalPolicy: dismissalPolicy)
   }
 
   /// End all activities with the same name
@@ -245,6 +280,7 @@ public class VoltraLiveActivityService {
     for activity in activities {
       await endActivity(activity)
     }
+    _ = await dynamicService.end(byName: name, dismissalPolicy: .immediate)
   }
 
   /// End all Voltra Live Activities
@@ -254,6 +290,38 @@ public class VoltraLiveActivityService {
     for activity in activities {
       await endActivity(activity)
     }
+    await dynamicService.endAll(dismissalPolicy: .immediate)
+  }
+
+  // MARK: - Dynamic operations
+
+  public func createDynamicActivity(_ request: VoltraDynamicLiveActivityCreateRequest) async throws -> String {
+    guard Self.isSupported() else { throw VoltraLiveActivityError.unsupportedOS }
+    guard Self.areActivitiesEnabled() else { throw VoltraLiveActivityError.liveActivitiesNotEnabled }
+    if request.name.isEmpty == false {
+      try await endActivities(byName: request.name)
+    }
+    return try await dynamicService.create(request)
+  }
+
+  public func updateDynamicActivity(byName name: String, request: VoltraDynamicLiveActivityUpdateRequest) async throws {
+    guard Self.isSupported() else { throw VoltraLiveActivityError.unsupportedOS }
+    if try await dynamicService.update(byName: name, request: request) {
+      return
+    }
+    if findActivity(byName: name) != nil {
+      throw VoltraDynamicLiveActivityError.rendererMismatch
+    }
+    throw VoltraLiveActivityError.notFound
+  }
+
+  /// Refetch and re-evaluate only invalidated Dynamic Live Activity definitions,
+  /// then update their active instances with their current state to trigger a
+  /// WidgetKit render. Legacy activities are deliberately untouched.
+  public func reloadDynamicActivities(definitionIds: [String]?) async {
+    #if DEBUG
+      await dynamicService.reload(definitionIds: definitionIds)
+    #endif
   }
 
   // MARK: - Monitoring
@@ -280,6 +348,9 @@ public class VoltraLiveActivityService {
     }
 
     let manager = VoltraLiveActivityManager(
+      onActivityDiscovered: { [chronology] activityId in
+        chronology.record(activityId)
+      },
       onTokenUpdated: onTokenUpdated,
       onPushToStartUpdated: onPushToStartUpdated,
       onStateChanged: { activityName, state in
@@ -305,4 +376,5 @@ public enum VoltraLiveActivityError: Error {
   case unsupportedOS
   case notFound
   case liveActivitiesNotEnabled
+  case rendererMismatch
 }

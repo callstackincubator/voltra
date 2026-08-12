@@ -7,6 +7,7 @@ export interface ConfigureInfoPlistProps {
   widgetIds?: string[]
   widgets?: IOSWidgetConfig[]
   keychainGroup?: string
+  voltraVersion: string
 }
 
 /**
@@ -20,10 +21,11 @@ export interface ConfigureInfoPlistProps {
  * - Voltra_WidgetServerIntervals: Map of widget IDs to update intervals (if any widgets have serverUpdate)
  * - Voltra_KeychainGroup: Keychain access group for shared credentials (if provided)
  */
-export const configureInfoPlist: ConfigPlugin<ConfigureInfoPlistProps> = (config, props = {}) => {
+export const configureInfoPlist: ConfigPlugin<ConfigureInfoPlistProps> = (config, props) => {
   return withInfoPlist(config, (mod) => {
     mod.modResults.NSSupportsLiveActivities = true
     mod.modResults.NSSupportsLiveActivitiesFrequentUpdates = false
+    mod.modResults.Voltra_Version = props.voltraVersion
 
     // Only add group identifier if provided
     if (props.groupIdentifier) {

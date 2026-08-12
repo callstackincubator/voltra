@@ -6,6 +6,7 @@ import { createMetroConfigTransformer } from 'metro-config-transformers'
 import { bundleWidgets } from './bundleWidgets'
 import { createVoltraMiddleware } from './createVoltraMiddleware'
 import { createWidgetMetroConfig } from './createWidgetMetroConfig'
+import { createLiveActivityRegistry, MissingVoltraLiveActivitiesManifestError } from './liveActivityRegistry'
 import { requireProjectModule } from './resolveProjectModule'
 import {
   createWidgetRegistry,
@@ -16,6 +17,7 @@ import {
 } from './widgetRegistry'
 
 const HOT_RELOAD_ALIAS = '@use-voltra/widget-hot-reload'
+const LIVE_ACTIVITY_HOT_RELOAD_ALIAS = '@use-voltra/live-activity-hot-reload'
 const DEV_BARREL_PLATFORMS = new Set(['ios', 'android'])
 const WIDGET_PLATFORMS = ['ios', 'android'] as const
 
@@ -38,6 +40,12 @@ function resolveHotReloadAlias(projectRoot: string, context: any, platform: stri
   return { type: 'sourceFile', filePath: platformBarrel }
 }
 
+function resolveLiveActivityHotReloadAlias(projectRoot: string, context: any, platform: string | null): unknown {
+  if (!context.dev || platform !== 'ios') return { type: 'empty' }
+  const barrel = path.join(projectRoot, '.voltra', 'metro', 'live-activity-hot-reload.ios.js')
+  return fs.existsSync(barrel) ? { type: 'sourceFile', filePath: barrel } : { type: 'empty' }
+}
+
 function createResolveRequest(
   projectRoot: string,
   previousResolveRequest: ResolveRequest | null | undefined
@@ -45,6 +53,9 @@ function createResolveRequest(
   return (context, moduleName, platform) => {
     if (moduleName === HOT_RELOAD_ALIAS) {
       return resolveHotReloadAlias(projectRoot, context, platform)
+    }
+    if (moduleName === LIVE_ACTIVITY_HOT_RELOAD_ALIAS) {
+      return resolveLiveActivityHotReloadAlias(projectRoot, context, platform)
     }
 
     if (previousResolveRequest) {
@@ -76,6 +87,7 @@ function listConfiguredWidgets(registry: WidgetRegistry): RegisteredVoltraWidget
 export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) => {
   const projectRoot = metroConfig.projectRoot ?? process.cwd()
   const registry = createWidgetRegistry({ projectRoot })
+  const liveActivityRegistry = createLiveActivityRegistry({ projectRoot })
   const previousResolveRequest = metroConfig.resolver?.resolveRequest
   const configWithResolver = {
     ...metroConfig,
@@ -87,9 +99,16 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
   }
 
   const configuredWidgets = listConfiguredWidgets(registry)
+  let configuredLiveActivities = []
+  try {
+    configuredLiveActivities = liveActivityRegistry.listLiveActivities()
+  } catch (error) {
+    if (!(error instanceof MissingVoltraLiveActivitiesManifestError)) throw error
+  }
 
-  if (configuredWidgets.length === 0) {
+  if (configuredWidgets.length === 0 && configuredLiveActivities.length === 0) {
     registry.close()
+    liveActivityRegistry.close()
     return configWithResolver
   }
 
@@ -110,6 +129,7 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
   })
   const voltraMiddleware = createVoltraMiddleware({
     registry,
+    liveActivityRegistry,
     widgetMetro,
   })
 
@@ -128,7 +148,20 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
   }
 })
 
-export { bundleWidgets, createVoltraMiddleware, createWidgetMetroConfig, createWidgetRegistry }
+export {
+  bundleWidgets,
+  createVoltraMiddleware,
+  createWidgetMetroConfig,
+  createWidgetRegistry,
+  createLiveActivityRegistry,
+}
 export { requireProjectModule, resolveProjectModulePath } from './resolveProjectModule'
 export { scanVoltraDirectives, type VoltraDirectiveWidget } from './scanner'
 export { DuplicateVoltraWidgetError, type RegisteredVoltraWidget, type WidgetRegistry } from './widgetRegistry'
+export {
+  DuplicateVoltraLiveActivityError,
+  InvalidVoltraLiveActivitiesManifestError,
+  MissingVoltraLiveActivitiesManifestError,
+  type LiveActivityRegistry,
+  type RegisteredVoltraLiveActivity,
+} from './liveActivityRegistry'

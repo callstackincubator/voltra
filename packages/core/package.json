@@ -12,6 +12,12 @@
       "import": "./build/esm/index.js",
       "default": "./build/esm/index.js"
     },
+    "./dynamic-live-activity": {
+      "types": "./build/types/dynamic-live-activity.d.ts",
+      "require": "./build/cjs/dynamic-live-activity.js",
+      "import": "./build/esm/dynamic-live-activity.js",
+      "default": "./build/esm/dynamic-live-activity.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

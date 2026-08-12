@@ -5,6 +5,7 @@
 /packages/*/expo-plugin/build
 /packages/*/.expo
 /packages/*/android/build
+/packages/*/android/.cxx
 /packages/*/ios/.build
 /example/.expo
 /example/ios
@@ -15,6 +16,7 @@
 /website/doc_build
 /website/docs
 /.turbo
+/pnpm-lock.yaml
 **/*.d.ts
 **/*.d.ts.map
 **/*.js.map

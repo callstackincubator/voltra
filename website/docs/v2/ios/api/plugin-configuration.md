@@ -39,6 +39,7 @@ App Group identifier for sharing data between your app and the widget extension.
 - Share images between your app and the extension
 - Use image preloading features
 - Update entry-based Dynamic Widgets with runtime props
+- Use Dynamic Live Activities
 
 **Format:** Must start with `group.` (e.g., `group.your.bundle.identifier`)
 
@@ -48,6 +49,12 @@ Enable server-side updates for Live Activities via Apple Push Notification Servi
 
 **Type:** `boolean`  
 **Default:** `false`
+
+### `liveActivities` (optional, experimental)
+
+Bundled Dynamic Live Activity definitions. Every declaration has a stable `id` and an `entry` module that default-exports the renderer function. IDs use only alphanumeric characters and underscores, and are unique within this collection; they are separate from Dynamic Widget IDs.
+
+When this array is non-empty, `groupIdentifier` is required. See [Dynamic Live Activities](../development/dynamic-live-activities) for the entry signature, lifecycle APIs, and push payload contract.
 
 ### `deploymentTarget` (optional)
 

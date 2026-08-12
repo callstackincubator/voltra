@@ -50,4 +50,5 @@ public enum VoltraStorageKeys {
   public static let appGroupIdentifier = "Voltra_AppGroupIdentifier"
   public static let legacyAppGroupIdentifier = "AppGroupIdentifier"
   public static let keychainGroup = "Voltra_KeychainGroup"
+  public static let voltraVersion = "Voltra_Version"
 }

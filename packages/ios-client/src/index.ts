@@ -23,6 +23,18 @@ export {
   type UseLiveActivityOptions,
   type UseLiveActivityResult,
 } from './live-activity/api.js'
+export {
+  getDynamicLiveActivityDefinitionIds,
+  startDynamicLiveActivity,
+  type StartDynamicLiveActivityOptions,
+  updateDynamicLiveActivity,
+  type UpdateDynamicLiveActivityOptions,
+  useDynamicLiveActivity,
+  type UseDynamicLiveActivityOptions,
+  type UseDynamicLiveActivityResult,
+  type DynamicLiveActivityProps,
+  type DynamicLiveActivityPropsValue,
+} from './live-activity/dynamic-api.js'
 export type { DismissalPolicy, LiveActivityVariants } from '@use-voltra/ios'
 export {
   clearPreloadedImages,
@@ -33,6 +45,7 @@ export {
 } from './preload.js'
 export { assertRunningOnApple } from './utils/assertRunningOnApple.js'
 export { enableWidgetHotReload } from './utils/enableWidgetHotReload.js'
+export { enableDynamicLiveActivityHotReload } from './utils/enableDynamicLiveActivityHotReload.js'
 export { useUpdateOnHMR } from './utils/useUpdateOnHMR.js'
 export * from './utils/helpers.js'
 export type { VoltraElementJson, VoltraNodeJson } from './types.js'

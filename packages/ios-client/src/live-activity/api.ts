@@ -40,7 +40,7 @@ export type UseLiveActivityResult = {
   isActive: boolean
 }
 
-const normalizeSharedLiveActivityOptions = (
+export const normalizeSharedLiveActivityOptions = (
   options?: SharedLiveActivityOptions
 ): SharedLiveActivityOptions | undefined => {
   if (!options) return undefined
@@ -66,7 +66,7 @@ const normalizeSharedLiveActivityOptions = (
   return Object.keys(normalizedOptions).length > 0 ? normalizedOptions : undefined
 }
 
-const normalizeEndLiveActivityOptions = (
+export const normalizeEndLiveActivityOptions = (
   options?: EndLiveActivityOptions
 ): { dismissalPolicy?: { type: 'immediate' | 'after'; date?: number } } | undefined => {
   if (!options?.dismissalPolicy) return undefined
