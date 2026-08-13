@@ -57,12 +57,8 @@ export default initialState
 ```
 
 :::info
-`initialStatePath` files are **not** part of your React Native app bundle. They run in Node.js during prebuild. Import `Voltra` and types from `@use-voltra/ios`, not `@use-voltra/ios-client` — the client package pulls in native modules that are unavailable in the prebuild sandbox.
+`initialStatePath` files are **not** part of your React Native app bundle. Voltra transpiles them with Babel and runs them in Node.js during prebuild to generate the initial states bundled into the iOS app. Import `Voltra` and types from `@use-voltra/ios`, not `@use-voltra/ios-client` — the client package pulls in native modules that are unavailable in the prebuild sandbox.
 :::
-
-## Build Process
-
-During build time, Voltra transpiles your widget files with Babel and executes them in a Node.js environment to generate initial states that are bundled into the iOS app.
 
 ## Limitations
 

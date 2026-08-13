@@ -70,10 +70,7 @@ iOS deployment target version for the widget extension. If not provided, default
 
 Custom target name for the widget extension. If not provided, defaults to `{AppName}LiveActivity` where `AppName` is your app's sanitized name.
 
-This is useful when:
-- Migrating from other Live Activity solutions (e.g., `@bacons/apple-targets`)
-- Matching existing provisioning profiles or credentials
-- Using a specific naming convention for your organization
+Useful for matching existing provisioning profiles, credentials, or naming conventions (e.g., when migrating from `@bacons/apple-targets`).
 
 **Type:** `string`
 **Default:** `"{AppName}LiveActivity"`

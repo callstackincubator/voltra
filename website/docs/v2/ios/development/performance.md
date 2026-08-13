@@ -4,7 +4,7 @@ Voltra provides automatic optimizations to help you create efficient Live Activi
 
 ## Element deduplication
 
-Reuse JSX elements by creating them once, storing them in variables, and reusing them across your JSX tree. Voltra automatically detects duplicate element references and stores them only once in the payload, using lightweight references (`{ $r: index }`) for subsequent occurrences.
+Reuse JSX elements by creating them once, storing them in variables, and reusing them across your JSX tree, instead of recreating the same element inline in multiple places. Voltra automatically detects duplicate element references and shrinks the payload size as a result — no extra code required.
 
 ```tsx
 import { Voltra } from '@use-voltra/ios'
@@ -31,33 +31,6 @@ const variants = {
   },
 }
 ```
-
-**Payload result:**
-
-```json
-{
-  "v": 2,
-  "e": [
-    { "t": 1, "p": { "onPress": "action" }, "c": "Click me" },
-    { "t": 2, "p": { "name": "star.fill" } }
-  ],
-  "ls": {
-    "t": 11,
-    "c": [{ "t": 0, "c": "Order Status" }, { "$r": 0 }, { "$r": 1 }]
-  },
-  "isl_min": {
-    "t": 12,
-    "c": [{ "$r": 1 }, { "$r": 0 }]
-  }
-}
-```
-
-**Benefits:**
-
-- Eliminates redundant element serialization
-- Can significantly reduce payload size for complex UIs
-- Works across different Live Activity variants
-- Automatic - no additional code required
 
 ```tsx
 // ❌ Avoid: Creating separate element instances

@@ -22,12 +22,9 @@ Install the same native Voltra packages you would use in Expo for the platforms 
 
 ### Voltra CLI
 
-<PackageManagerTabs command="install --save-dev voltra" />
+<PackageManagerTabs command="install -D voltra" />
 
-Then create a `voltra.config.ts` file. Most properties under `ios` and `android` are the same as the Expo config equivalents, so use the existing platform docs for the shared configuration:
-
-- [iOS Expo config options](/ios/api/plugin-configuration)
-- [Android Expo config options](/android/api/plugin-configuration)
+Then create a `voltra.config.ts` file. Most properties under `ios` and `android` are the same as the Expo config equivalents (see [Configuration](#configuration) below).
 
 Minimal example:
 
@@ -99,15 +96,6 @@ For the full config shape, see [`VoltraConfig` and related types in source](http
 
 ## Using Voltra CLI
 
-Every time you change `voltra.config.ts`, reapply the native project changes:
-
-<PackageManagerTabs
-  command={{
-    npm: 'npx voltra apply',
-    yarn: 'yarn voltra apply',
-    pnpm: 'pnpm voltra apply',
-    bun: 'bunx voltra apply',
-  }}
-/>
+Every time you change `voltra.config.ts`, reapply the native project changes (see the command above).
 
 The JSX APIs and runtime APIs are the same as in the rest of the Voltra docs. Once `voltra apply` has set up your native project, continue with the platform guides for [iOS](/ios/introduction) and [Android](/android/introduction).

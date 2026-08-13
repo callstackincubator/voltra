@@ -12,8 +12,8 @@ It requires iOS 17+, because Voltra wires it through `AppIntentConfiguration`.
 
 1. Define a Dynamic Widget module with a default export.
 2. Add `entry` and `appIntent.parameters` to the widget config in `app.json`.
-3. Read the selected values in your widget.
-4. Let the user edit the widget from the iOS widget sheet.
+3. Read the selected values from `env.configuration` in your widget's JSX.
+4. Build and install the app on a real iPhone, add the widget to the Home Screen, then long-press it and tap **Edit Widget** to change parameters — your widget re-reads `env.configuration` with the new values.
 
 Each parameter has:
 
@@ -82,14 +82,6 @@ Plugin config:
   }
 }
 ```
-
-## Using it in app
-
-1. Build and install the app on a real iPhone.
-2. Add the widget to Home Screen.
-3. Long-press it and tap **Edit Widget**.
-4. Change parameters.
-5. Read values from `env.configuration` in your JSX.
 
 If you need more than one value, add more entries to `appIntent.parameters` and read each key from `env.configuration`.
 

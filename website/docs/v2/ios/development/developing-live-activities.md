@@ -172,11 +172,7 @@ function OrderLiveActivity({ orderId, status }) {
 
 ## VoltraView Component
 
-For testing and development, Voltra provides a `VoltraView` component that renders Voltra JSX components directly in your React Native app. This is useful for:
-
-- Testing component layouts before deploying to Live Activities
-- Handling user interactions in development
-- Previewing how your Live Activity will look
+For testing and development, Voltra provides a `VoltraView` component that renders Voltra JSX components directly in your React Native app, so you can test layouts and interactions before deploying to a real Live Activity.
 
 ```tsx
 import { Voltra } from '@use-voltra/ios'
@@ -213,8 +209,6 @@ function MyComponent() {
 - `style`: React Native style for the container
 - `onInteraction`: Callback for user interactions with buttons/toggles
 
-```
-
 **Hook Options:**
 
 - `activityName`: Name of the Live Activity
@@ -228,4 +222,3 @@ function MyComponent() {
 - `update()`: Update the Live Activity
 - `end()`: Stop the Live Activity
 - `isActive`: Boolean indicating if the Live Activity is currently active
-```

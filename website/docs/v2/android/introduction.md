@@ -1,10 +1,10 @@
 # Android Introduction
 
 :::warning Experimental Support
-Android support is **experimental**. Although it should work just fine, the API may change. Stay vigilant.
+Android support is **experimental**. The API may still change before it's stable.
 :::
 
-Voltra brings the power of JSX-based UI to Android Home Screen widgets. Using Jetpack Compose Glance under the hood, Voltra allows you to define Android widgets using a set of primitives that map directly to Glance components.
+Voltra lets you build Android Home Screen widgets with JSX. Under the hood it uses Jetpack Compose Glance, and Voltra's primitives map directly to Glance components.
 
 ## Widgets on Android
 
@@ -51,12 +51,6 @@ const MyWidget = () => (
   </VoltraAndroid.Column>
 )
 ```
-
-## Key Differences
-
-- **Primitives:** Use `VoltraAndroid.Column`, `VoltraAndroid.Row`, and `VoltraAndroid.Box` instead of stacks.
-- **Alignment:** Android uses specific alignment props like `verticalAlignment` and `horizontalAlignment`.
-- **Sizing:** Use `"100%"` for full size or `"auto"` for wrapping content.
 
 ## Testing and Previews
 

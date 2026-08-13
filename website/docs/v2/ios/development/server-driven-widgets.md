@@ -244,35 +244,12 @@ See [Widget pre-rendering](./widget-pre-rendering) for details on creating initi
 Provide a meaningful initial state (e.g. "Loading..." or placeholder content) rather than leaving it empty. The user sees this until the first server fetch succeeds.
 :::
 
-## Architecture overview
-
-```
-┌─────────────────┐     setWidgetServerCredentials()     ┌──────────────────┐
-│   React Native   │ ──────────────────────────────────►  │  Shared Keychain  │
-│   (main app)     │                                      └──────────────────┘
-└─────────────────┘                                              │
-                                                                 │ reads token
-                                                                 ▼
-┌─────────────────┐ GET ?widgetId=X&platform=ios&family=Y&theme=Z ┌──────────────────┐
-│  WidgetKit       │ ──────────────────────────────────►  │  Your Server     │
-│  (extension)     │ ◄──────────────────────────────────  │  (Voltra SSR)    │
-└─────────────────┘          JSON payload                 └──────────────────┘
-        │
-        ▼
-   Home Screen Widget
-```
-
-WidgetKit manages the scheduling and calls your server at the configured interval. The widget extension reads credentials from the Shared Keychain, makes the HTTP request, and renders the response payload.
-
 ## Error handling and retries
 
-When a server fetch fails, the widget extension falls back to the last successfully fetched data (or the initial state if no data has been fetched yet). WidgetKit schedules a retry after 15 minutes.
+When a server fetch fails, the widget extension falls back to the last successfully fetched data (or the initial state if no data has been fetched yet), and WidgetKit schedules a retry after 15 minutes. This applies to network errors/timeouts, non-2xx server errors, and empty responses.
 
-- **Network error / timeout:** The widget falls back to cached content and retries in 15 minutes.
-- **Server errors (non-2xx):** Same fallback behavior — cached content is shown and a retry is scheduled in 15 minutes.
-- **Empty response:** Treated as an error; cached content is displayed.
-- **Parse errors:** If the server returns a 2xx response but the JSON can't be parsed into a valid widget tree, the cached data from the previous successful fetch is preserved (not overwritten). The widget continues to show the last known good content.
+Parse errors are handled slightly differently: if the server returns a 2xx response but the JSON can't be parsed into a valid widget tree, the cached data from the previous successful fetch is preserved (not overwritten), so the widget keeps showing the last known good content.
 
 :::note
-Unlike Android's WorkManager which retries with exponential backoff, iOS WidgetKit uses its own timeline-based scheduling. After a failed fetch, the timeline provider falls back to local data and schedules a retry in 15 minutes. WidgetKit may also throttle updates based on battery level and widget visibility.
+WidgetKit may also throttle updates based on battery level and widget visibility.
 :::

@@ -126,7 +126,7 @@ The `User-Agent` header is set to `VoltraWidget/<version> (Android/<version>)`.
 
 ## Authentication
 
-Widgets on Android are part of the main app binary, so the WorkManager background worker can access credential storage directly. Voltra encrypts credentials at rest using **Google Tink** (AES-256-GCM with Android Keystore-backed key management) and persists them in Jetpack DataStore.
+Widgets on Android are part of the main app binary, so the WorkManager background worker can access credential storage directly. Voltra credentials are encrypted at rest on-device.
 
 ### Setting credentials
 
@@ -171,11 +171,7 @@ Server-driven widgets can display a native refresh button that lets users trigge
 }
 ```
 
-When enabled, a small circular button (↻) appears in the top-right corner of the widget. Tapping it performs an inline HTTP fetch, generates new `RemoteViews`, and pushes the update directly to the widget—all without waiting for the next WorkManager cycle.
-
-:::note
-The refresh callback bypasses Glance's `update()` method (which doesn't reliably trigger `provideGlance()`) and instead uses `GlanceRemoteViews.compose()` to generate `RemoteViews` that are pushed directly via `AppWidgetManager.updateAppWidget()`.
-:::
+When enabled, a small circular button (↻) appears in the top-right corner of the widget. Tapping it performs an inline HTTP fetch and pushes the update directly to the widget—all without waiting for the next WorkManager cycle.
 
 ## Resize handling
 
@@ -250,30 +246,6 @@ const handler = createWidgetUpdateHandler({
 The handler uses the required `platform` query parameter to route requests to the correct render function.
 
 If you're serving the cross-platform endpoint from Node or Express, use `createWidgetUpdateNodeHandler()` or `createWidgetUpdateExpressHandler()` from `@use-voltra/server` instead.
-
-## Architecture overview
-
-```
-┌─────────────────┐   setWidgetServerCredentials()   ┌─────────────────────────┐
-│   React Native   │ ─────────────────────────────►   │  EncryptedSharedPrefs    │
-│   (main app)     │                                  └─────────────────────────┘
-└─────────────────┘                                            │
-                                                               │ reads token
-                                                               ▼
-┌─────────────────┐ GET ?widgetId=X&platform=android&theme=Y ┌──────────────────┐
-│  WorkManager     │ ─────────────────────────────►   │  Your Server     │
-│  (background)    │ ◄─────────────────────────────   │  (Voltra SSR)    │
-└─────────────────┘       JSON payload               └──────────────────┘
-        │
-        ▼
-   AppWidgetManager
-   (RemoteViews update)
-        │
-        ▼
-   Home Screen Widget
-```
-
-WorkManager handles scheduling, network constraints, and retries. The background worker reads credentials from encrypted storage, makes the HTTP request, parses the response, generates `RemoteViews`, and pushes the update via `AppWidgetManager`.
 
 ## Error handling and retries
 
