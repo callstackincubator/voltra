@@ -14,7 +14,7 @@ The insight of combining JavaScript-driven development with iOS Live Activities 
 
 ### Expo Widgets
 
-Voltra spawns a secondary JS runtime to drive native widget and Live Activity rendering. That's not just a theoretical option — Expo's own [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/) module does the same thing in production: when the system asks for a widget timeline or starts a Live Activity, your component runs in a separate JS runtime and produces a native layout tree. Seeing this pattern work at Expo-SDK scale, across both iOS and Android, was a strong signal that it's a practical foundation to build on, not just a corner case.
+Voltra spawns a secondary JS runtime to drive native widget and Live Activity rendering. That's not just a theoretical option — Expo's own [`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/) module does the same thing in production: when the system asks for a widget timeline or starts a Live Activity, your component runs in a separate JS runtime and produces a native layout tree. Seeing this pattern work at Expo SDK scale, across both iOS and Android, was a strong signal that it's a practical foundation to build on, not just a corner case.
 
 ## Thank You
 
