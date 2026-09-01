@@ -2,10 +2,6 @@
 
 Use charts in Android widgets to show trends, comparisons, progress, or composition at a glance. You can mix bars, lines, areas, points, rules, and sectors in a single chart.
 
-:::info
-Charts are rendered to a bitmap using the Android Canvas API and displayed as a Glance `Image`. This approach is required because Jetpack Glance has no native charting components.
-:::
-
 :::warning
 Mark components (`BarMark`, `LineMark`, and the other mark types) must be direct children of `<VoltraAndroid.Chart>`. Do not wrap them in a custom component.
 :::
@@ -49,9 +45,9 @@ type SectorDataPoint = {
 
 ## Marks
 
-### BarMark
+Pick the mark that fits your data: bars for comparing values across categories, lines for trends over time, areas for volume, points for sparse or scattered measurements, rules for reference lines, and sectors for pie/donut breakdowns.
 
-Use bars when people need to compare values across categories.
+### BarMark
 
 **Parameters:**
 
@@ -78,8 +74,6 @@ Use bars when people need to compare values across categories.
 ---
 
 ### LineMark
-
-Use a line when the shape of change matters more than individual columns.
 
 **Parameters:**
 
@@ -109,8 +103,6 @@ Use a line when the shape of change matters more than individual columns.
 
 ### AreaMark
 
-Use an area chart when you want the overall volume or rise/fall pattern to read quickly.
-
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
@@ -133,8 +125,6 @@ Use an area chart when you want the overall volume or rise/fall pattern to read 
 ---
 
 ### PointMark
-
-Use points for sparse measurements, scatter plots, or to emphasize exact observations.
 
 **Parameters:**
 
@@ -232,20 +222,6 @@ The `<VoltraAndroid.Chart>` container accepts these props in addition to the sta
 | `yAxisGridStyle` | `{ visible?: boolean }` | Show or hide y-axis grid lines |
 | `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
 
-## Grid Lines
-
-Hide grid lines when you want the chart to feel more compact:
-
-```tsx
-<VoltraAndroid.Chart
-  style={{ width: '100%', height: '100%' }}
-  xAxisGridStyle={{ visible: false }}
-  yAxisGridStyle={{ visible: false }}
->
-  <VoltraAndroid.LineMark data={data} color="#4285f4" interpolation="monotone" />
-</VoltraAndroid.Chart>
-```
-
 ## Multi-Series Charts
 
 Add a `series` field to your data points when you want multiple datasets in the same chart. Use `foregroundStyleScale` to keep those series colors consistent:
@@ -289,23 +265,6 @@ Mix mark types when one chart needs both context and emphasis, such as bars for 
   <VoltraAndroid.BarMark data={salesData} color="#4285f4" cornerRadius={4} />
   <VoltraAndroid.LineMark data={trendData} color="#ea4335" lineWidth={2} />
   <VoltraAndroid.RuleMark yValue={averageValue} color="#fbbc04" lineWidth={1} />
-</VoltraAndroid.Chart>
-```
-
-## Sparkline / Minimal Style
-
-Hide axes for a clean, compact visualization:
-
-```tsx
-<VoltraAndroid.Chart
-  style={{ width: '100%', height: '100%' }}
-  xAxisVisibility="hidden"
-  yAxisVisibility="hidden"
->
-  <VoltraAndroid.AreaMark
-    data={data}
-    color="#4285f4"
-  />
 </VoltraAndroid.Chart>
 ```
 

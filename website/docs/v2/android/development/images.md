@@ -21,12 +21,7 @@ project-root/
 │       └── background.webp
 ```
 
-Here's how build-time asset copying works:
-
-1.  Images in `/assets/voltra-android/` are automatically detected during build (run `npx expo prebuild` to apply changes).
-2.  Filenames are sanitized to be compatible with Android resource naming rules (lowercase, underscores only).
-3.  SVGs are automatically converted to Android Vector Drawables (XML).
-4.  Images are copied to `res/drawable/` in the native Android project.
+Run `npx expo prebuild` to apply changes — images are detected during the build, sanitized to fit Android resource naming rules, and copied into the native Android project (SVGs are converted to Vector Drawables along the way).
 
 ### Naming & Sanitization
 
@@ -70,13 +65,7 @@ import { VoltraAndroid } from '@use-voltra/android'
 
 ## Runtime preloading
 
-For dynamic images from remote URLs, use Voltra's image preloading API to cache images locally.
-
-The image preloading system works by:
-
-1.  Downloading images from URLs to the app's internal cache.
-2.  Making images available to widgets via a local content provider.
-3.  Providing APIs to reload widgets when new images are ready.
+For dynamic images from remote URLs, use Voltra's image preloading API to cache images locally. See [Image Preloading](./image-preloading) for how it works.
 
 Once images are preloaded, reference them using the key you provided:
 

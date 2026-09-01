@@ -1,6 +1,6 @@
 # Components Overview (iOS)
 
-Voltra provides SwiftUI primitives with JSX bindings, allowing developers to create rich, interactive Live Activities using React/JSX syntax. These components connect web development workflows with native iOS Live Activity rendering.
+Voltra provides SwiftUI primitives with JSX bindings, allowing developers to create rich, interactive Live Activities using React/JSX syntax.
 
 ## Getting Started
 

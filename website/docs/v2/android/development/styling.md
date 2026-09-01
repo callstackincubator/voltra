@@ -48,32 +48,7 @@ In addition to general styles, `Image` components support:
 
 ## Dynamic colors
 
-Android widgets can use semantic Material color roles that resolve through native `GlanceTheme.colors.*` values during rendering.
-
-```tsx
-import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
-
-const element = (
-  <VoltraAndroid.Box
-    style={{
-      padding: 16,
-      backgroundColor: AndroidDynamicColors.widgetBackground,
-    }}
-  >
-    <VoltraAndroid.Text
-      style={{
-        color: AndroidDynamicColors.onSurface,
-        fontSize: 18,
-        fontWeight: 'bold',
-      }}
-    >
-      Android Widget Text
-    </VoltraAndroid.Text>
-  </VoltraAndroid.Box>
-)
-```
-
-This is the preferred approach when you want widgets to follow Android's dynamic palette even when the app is not running. See [Dynamic Colors](./dynamic-colors) for the full role list and server-rendering behavior.
+Android widgets can use semantic Material color roles (`AndroidDynamicColors.*`) so they follow the system palette even when the app isn't running. See [Dynamic Colors](./dynamic-colors) for the full role list, examples, and server-rendering behavior.
 
 ## Gradient Backgrounds
 

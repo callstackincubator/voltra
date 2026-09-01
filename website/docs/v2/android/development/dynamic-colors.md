@@ -114,11 +114,3 @@ const content = (
 ```
 
 The same `AndroidDynamicColors.*` values work whether the widget is rendered in-app or returned from your server.
-
-## Migration notes
-
-Voltra no longer uses the old Android dynamic palette snapshot approach.
-
-- Use `AndroidDynamicColors.*` for Android widgets that should react to system palette changes.
-- Keep using literal colors when you want a fixed color.
-- There is no `useAndroidDynamicColorPalette()` or `getAndroidDynamicColorPalette()` API anymore.

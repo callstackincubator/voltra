@@ -45,7 +45,7 @@ const subscription = addVoltraListener('interaction', (event) => {
 
 ### Examples
 
-**Styled button:**
+**Basic button:**
 
 ```tsx
 <Voltra.Button id="save-button" buttonStyle="borderedProminent">
@@ -61,14 +61,6 @@ const subscription = addVoltraListener('interaction', (event) => {
     <Voltra.Symbol name="trash" size={16} />
     <Voltra.Text>Delete</Voltra.Text>
   </Voltra.HStack>
-</Voltra.Button>
-```
-
-**Compact button:**
-
-```tsx
-<Voltra.Button id="like-button" buttonStyle="plain">
-  <Voltra.Symbol name="heart.fill" tintColor="#FF3B30" size={20} />
 </Voltra.Button>
 ```
 
@@ -121,17 +113,6 @@ Link automatically normalizes URLs using your app's URL scheme:
 </Voltra.Link>
 ```
 
-**External link:**
-
-```tsx
-<Voltra.Link destination="https://example.com/support">
-  <Voltra.HStack spacing={8}>
-    <Voltra.Symbol name="globe" tintColor="#06B6D4" size={20} />
-    <Voltra.Text>Visit Support Site</Voltra.Text>
-  </Voltra.HStack>
-</Voltra.Link>
-```
-
 ### When to use Link vs Button
 
 | Feature | Link | Button |
@@ -141,8 +122,6 @@ Link automatically normalizes URLs using your app's URL scheme:
 | **iOS Version** | 14.0+ | 17.0+ |
 | **Tap Behavior** | Opens URL | Fires interaction event |
 | **Mechanism** | SwiftUI Link | AppIntents (VoltraInteractionIntent) |
-
-**Recommendation:** Use `Link` for navigation (e.g., list items, cards that open URLs). Use `Button` for actions that your app needs to handle (e.g., play/pause, save, delete).
 
 ---
 

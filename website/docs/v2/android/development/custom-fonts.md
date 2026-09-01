@@ -54,15 +54,7 @@ import { VoltraAndroid } from '@use-voltra/android'
 
 The `fontFamily` value should match the font filename **without the extension**.
 
-## How it works
-
-When `renderAsBitmap` is set and `fontFamily` is provided in the style:
-
-1. The font is loaded via `Typeface.createFromAsset()` (cached with an LRU cache)
-2. Text is drawn to an Android `Canvas` bitmap using `StaticLayout`
-3. The bitmap is displayed as a Glance `Image` with fixed dp dimensions
-
-This means the text is rasterized — it won't respond to system font size settings. Use it only when a custom typeface is needed.
+Note that `renderAsBitmap` text is rasterized — it won't respond to system font size or accessibility settings. Use it only when a custom typeface is needed.
 
 ## Supported style properties
 

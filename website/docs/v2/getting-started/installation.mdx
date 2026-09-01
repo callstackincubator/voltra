@@ -32,15 +32,9 @@ Use these in your backend or SSR service-not in the React Native app bundle:
 - **Android payloads:** `@use-voltra/android-server`
 - **Cross-platform widget HTTP handlers:** `@use-voltra/server`
 
-## 2. Import patterns
+Note that pre-render files such as `initialStatePath` should import JSX from `@use-voltra/ios` or `@use-voltra/android` directly, not from the client packages.
 
-The docs use these package boundaries consistently:
-
-- React Native app code: JSX from `@use-voltra/ios` or `@use-voltra/android`, lifecycle APIs from the matching `*-client` package
-- Node/server code: JSX plus render helpers from `@use-voltra/ios-server` or `@use-voltra/android-server`
-- Pre-render files such as `initialStatePath`: import from `@use-voltra/ios` or `@use-voltra/android`, not from client packages
-
-## 3. Next Steps
+## 2. Next Steps
 
 After installing packages, configure the Voltra Expo plugin for each platform you support:
 
