@@ -28,6 +28,11 @@ import type { IOSXcodeProjectContext } from './xcode'
 import type { BuildSettings } from '@bacons/xcode/build/json/types'
 
 const IOS_APP_EXTENSION_PRODUCT_TYPE = 'com.apple.product-type.app-extension'
+const OPTIONAL_WIDGET_CODE_SIGNING_SETTINGS = [
+  'CODE_SIGN_STYLE',
+  'DEVELOPMENT_TEAM',
+  'PROVISIONING_PROFILE_SPECIFIER',
+] as const
 const PRODUCT_FILE_TYPE = 'wrapper.app-extension'
 const SWIFT_FILE_TYPE = 'sourcecode.swift'
 const STRINGS_FILE_TYPE = 'text.plist.strings'
@@ -164,7 +169,7 @@ function ensureWidgetTarget(
   const existingTarget = getWidgetTargetOptional(context, targetName)
 
   if (existingTarget) {
-    ensureBuildConfigurations(existingTarget, targetName, deploymentTarget, mainAppSettings)
+    ensureBuildConfigurations(context, existingTarget, targetName, deploymentTarget, mainAppSettings)
     return existingTarget
   }
 
@@ -207,6 +212,7 @@ function createBuildConfigurationList(
 }
 
 function ensureBuildConfigurations(
+  context: IOSXcodeProjectContext,
   target: PBXNativeTarget,
   targetName: string,
   minimumDeploymentTarget: string,
@@ -220,17 +226,60 @@ function ensureBuildConfigurations(
     )
   }
 
+  addMissingWidgetBuildConfigurations(context, configurationList, targetName, minimumDeploymentTarget, mainAppSettings)
+
   for (const config of configurationList.props.buildConfigurations) {
     const deploymentTarget = resolveBuildConfigurationDeploymentTarget(config, minimumDeploymentTarget)
 
-    Object.assign(
-      config.props.buildSettings,
-      buildWidgetBuildSettings(
-        targetName,
-        deploymentTarget,
-        config.props.name,
-        getMainAppSettingsFor(mainAppSettings, config.props.name)
-      )
+    const nextBuildSettings = buildWidgetBuildSettings(
+      targetName,
+      deploymentTarget,
+      config.props.name,
+      getMainAppSettingsFor(mainAppSettings, config.props.name)
+    )
+
+    Object.assign(config.props.buildSettings, nextBuildSettings)
+
+    // Signing settings the app configuration no longer sets are dropped rather than left behind,
+    // now that each configuration can change independently of the default one.
+    for (const settingName of OPTIONAL_WIDGET_CODE_SIGNING_SETTINGS) {
+      if (nextBuildSettings[settingName] === undefined) {
+        delete (config.props.buildSettings as unknown as Record<string, unknown>)[settingName]
+      }
+    }
+  }
+}
+
+/**
+ * Mirrors build configurations added to the app since the widget target was created, so an
+ * environment added later still builds the extension.
+ */
+function addMissingWidgetBuildConfigurations(
+  context: IOSXcodeProjectContext,
+  configurationList: XCConfigurationList,
+  targetName: string,
+  minimumDeploymentTarget: string,
+  mainAppSettings: MainAppSettingsByConfiguration
+): void {
+  const existingNames = new Set(configurationList.props.buildConfigurations.map((config) => config.props.name))
+
+  for (const config of context.mainAppTarget.buildConfigurations.all) {
+    const configurationName = config.props.name
+
+    if (existingNames.has(configurationName)) {
+      continue
+    }
+
+    configurationList.props.buildConfigurations.push(
+      XCBuildConfiguration.create(context.project, {
+        name: configurationName,
+        buildSettings: buildWidgetBuildSettings(
+          targetName,
+          resolveBuildConfigurationDeploymentTarget(config, minimumDeploymentTarget),
+          configurationName,
+          getMainAppSettingsFor(mainAppSettings, configurationName)
+        ),
+      })
     )
   }
 }
@@ -834,13 +883,22 @@ function getMainAppSettingsFor(
 }
 
 function readMainAppBundleIdentifier(config: XCBuildConfiguration): string | undefined {
-  const bundleIdentifier = config.resolveBuildSetting('PRODUCT_BUNDLE_IDENTIFIER')
+  // The unexpanded value is what the widget needs: an app identifier assembled from other build
+  // settings, such as `com.example.app$(BUNDLE_SUFFIX)`, has to keep expanding per build. Resolving
+  // it here would collapse any setting defined outside this configuration to an empty string.
+  const rawBundleIdentifier = readBuildSettingString(config.props.buildSettings?.PRODUCT_BUNDLE_IDENTIFIER)
 
-  if (typeof bundleIdentifier !== 'string' || bundleIdentifier.length === 0) {
+  if (rawBundleIdentifier) {
+    return rawBundleIdentifier
+  }
+
+  const inheritedBundleIdentifier = config.resolveBuildSetting('PRODUCT_BUNDLE_IDENTIFIER')
+
+  if (typeof inheritedBundleIdentifier !== 'string' || inheritedBundleIdentifier.length === 0) {
     return undefined
   }
 
-  return stripQuotes(bundleIdentifier)
+  return stripQuotes(inheritedBundleIdentifier)
 }
 
 function sanitizeBundleIdentifierSegment(targetName: string): string {

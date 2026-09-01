@@ -129,7 +129,10 @@ function isIOSProjectDiscovery(value: unknown): value is IOSProjectDiscovery {
       candidate.podfilePath,
       candidate.mainTargetName,
       candidate.infoPlistPath,
-    ].every((entry) => typeof entry === 'string' && entry.length > 0) && Array.isArray(candidate.mainTargetCandidates)
+    ].every((entry) => typeof entry === 'string' && entry.length > 0) &&
+    [candidate.mainTargetCandidates, candidate.infoPlistPaths, candidate.entitlementsPaths].every((entry) =>
+      Array.isArray(entry)
+    )
   )
 }
 

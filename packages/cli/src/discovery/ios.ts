@@ -357,14 +357,15 @@ async function resolveInfoPlistPaths(
   target: ParsedPbxNativeTarget,
   buildConfigurations: ParsedXCBuildConfiguration[]
 ): Promise<string[]> {
-  const infoPlistPaths = config.infoPlistPath
-    ? [config.infoPlistPath]
+  const discoveredPaths = config.infoPlistPath
+    ? new Map<string, string[]>()
     : resolveBuildSettingPaths(
         iosRoot,
         target,
         buildConfigurations,
         (configuration) => configuration.buildSettings.infoPlistFile
       )
+  const infoPlistPaths = config.infoPlistPath ? [config.infoPlistPath] : [...discoveredPaths.keys()]
 
   if (infoPlistPaths.length === 0) {
     throw new IOSProjectDiscoveryError(
@@ -377,7 +378,10 @@ async function resolveInfoPlistPaths(
       infoPlistPath,
       config.infoPlistPath
         ? `Configured Info.plist does not exist: ${infoPlistPath}`
-        : `Discovered Info.plist does not exist: ${infoPlistPath}`
+        : `Discovered Info.plist does not exist: ${infoPlistPath}${describeReferencingBuildConfigurations(
+            discoveredPaths,
+            infoPlistPath
+          )}. Set ios.project.infoPlistPath to override discovery.`
     )
   }
 
@@ -390,21 +394,25 @@ async function resolveEntitlementsPaths(
   target: ParsedPbxNativeTarget,
   buildConfigurations: ParsedXCBuildConfiguration[]
 ): Promise<string[]> {
-  const entitlementsPaths = config.entitlementsPath
-    ? [config.entitlementsPath]
+  const discoveredPaths = config.entitlementsPath
+    ? new Map<string, string[]>()
     : resolveBuildSettingPaths(
         iosRoot,
         target,
         buildConfigurations,
         (configuration) => configuration.buildSettings.codeSignEntitlements
       )
+  const entitlementsPaths = config.entitlementsPath ? [config.entitlementsPath] : [...discoveredPaths.keys()]
 
   for (const entitlementsPath of entitlementsPaths) {
     await ensureFile(
       entitlementsPath,
       config.entitlementsPath
         ? `Configured entitlements file does not exist: ${entitlementsPath}`
-        : `Discovered entitlements file does not exist: ${entitlementsPath}`
+        : `Discovered entitlements file does not exist: ${entitlementsPath}${describeReferencingBuildConfigurations(
+            discoveredPaths,
+            entitlementsPath
+          )}. Set ios.project.entitlementsPath to override discovery.`
     )
   }
 
@@ -421,8 +429,8 @@ function resolveBuildSettingPaths(
   target: ParsedPbxNativeTarget,
   buildConfigurations: ParsedXCBuildConfiguration[],
   getSettingValue: (configuration: ParsedXCBuildConfiguration) => string | undefined
-): string[] {
-  const resolvedPaths: string[] = []
+): Map<string, string[]> {
+  const resolvedPaths = new Map<string, string[]>()
 
   for (const configuration of buildConfigurations) {
     const settingValue = getSettingValue(configuration)
@@ -432,13 +440,23 @@ function resolveBuildSettingPaths(
     }
 
     const resolvedPath = resolveXcodePathValue(settingValue, iosRoot, target, configuration)
+    const configurationNames = resolvedPaths.get(resolvedPath) ?? []
 
-    if (!resolvedPaths.includes(resolvedPath)) {
-      resolvedPaths.push(resolvedPath)
-    }
+    configurationNames.push(configuration.name)
+    resolvedPaths.set(resolvedPath, configurationNames)
   }
 
   return resolvedPaths
+}
+
+/** Names the build configurations that reference a path, so a missing file can be traced back. */
+function describeReferencingBuildConfigurations(
+  pathsByBuildConfiguration: Map<string, string[]>,
+  filePath: string
+): string {
+  const configurationNames = pathsByBuildConfiguration.get(filePath)
+
+  return configurationNames?.length ? ` (referenced by ${configurationNames.join(', ')})` : ''
 }
 
 function resolveXcodePathValue(
