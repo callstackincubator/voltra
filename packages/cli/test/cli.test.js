@@ -1731,3 +1731,123 @@ test('androidWidgetSizingAttributes prefers an explicit minWidth/minHeight over 
     ]
   )
 })
+
+test('androidWidgetSizingAttributes emits all four resize bounds after the targetCell attributes', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(
+    androidWidgetSizingAttributes({
+      targetCellWidth: 2,
+      targetCellHeight: 2,
+      minResizeWidth: 100,
+      minResizeHeight: 90,
+      maxResizeWidth: 300,
+      maxResizeHeight: 250,
+    }),
+    [
+      'android:minWidth="130dp"',
+      'android:minHeight="117dp"',
+      'android:targetCellWidth="2"',
+      'android:targetCellHeight="2"',
+      'android:minResizeWidth="100dp"',
+      'android:minResizeHeight="90dp"',
+      'android:maxResizeWidth="300dp"',
+      'android:maxResizeHeight="250dp"',
+    ]
+  )
+})
+
+test('androidWidgetSizingAttributes omits resize bounds that are not set', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(androidWidgetSizingAttributes({ targetCellWidth: 2, targetCellHeight: 2 }), [
+    'android:minWidth="130dp"',
+    'android:minHeight="117dp"',
+    'android:targetCellWidth="2"',
+    'android:targetCellHeight="2"',
+  ])
+})
+
+test('androidWidgetSizingAttributes emits only the resize bounds that are set', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(
+    androidWidgetSizingAttributes({
+      targetCellWidth: 2,
+      targetCellHeight: 2,
+      minResizeWidth: 100,
+      maxResizeHeight: 250,
+    }),
+    [
+      'android:minWidth="130dp"',
+      'android:minHeight="117dp"',
+      'android:targetCellWidth="2"',
+      'android:targetCellHeight="2"',
+      'android:minResizeWidth="100dp"',
+      'android:maxResizeHeight="250dp"',
+    ]
+  )
+})
+
+test('androidWidgetSizingWarnings reports nothing when the resize bounds are consistent with the minimum size', () => {
+  const { androidWidgetSizingWarnings } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(
+    androidWidgetSizingWarnings(
+      {
+        targetCellWidth: 2,
+        targetCellHeight: 2,
+        minResizeWidth: 100,
+        minResizeHeight: 90,
+        maxResizeWidth: 300,
+        maxResizeHeight: 250,
+      },
+      'widget1'
+    ),
+    []
+  )
+})
+
+test('androidWidgetSizingWarnings reports nothing when no resize bounds are set', () => {
+  const { androidWidgetSizingWarnings } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(androidWidgetSizingWarnings({ targetCellWidth: 2, targetCellHeight: 2 }, 'widget1'), [])
+})
+
+test('androidWidgetSizingWarnings reports a minResizeWidth greater than minWidth', () => {
+  const { androidWidgetSizingWarnings } = loadAndroidWidgetSizingModule()
+
+  const warnings = androidWidgetSizingWarnings(
+    { targetCellWidth: 2, targetCellHeight: 2, minWidth: 150, minResizeWidth: 200 },
+    'widget1'
+  )
+
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0], /minResizeWidth/)
+})
+
+test('androidWidgetSizingWarnings reports a maxResizeWidth smaller than minWidth', () => {
+  const { androidWidgetSizingWarnings } = loadAndroidWidgetSizingModule()
+
+  const warnings = androidWidgetSizingWarnings(
+    { targetCellWidth: 2, targetCellHeight: 2, minWidth: 150, maxResizeWidth: 100 },
+    'widget1'
+  )
+
+  assert.equal(warnings.length, 1)
+  assert.match(warnings[0], /maxResizeWidth/)
+})
+
+test('androidWidgetSizingWarnings compares against the derived minWidth when none is set explicitly', () => {
+  const { androidWidgetSizingWarnings } = loadAndroidWidgetSizingModule()
+
+  // targetCellWidth: 2 derives minWidth: 130dp
+  assert.equal(
+    androidWidgetSizingWarnings({ targetCellWidth: 2, targetCellHeight: 2, minResizeWidth: 200 }, 'widget1').length,
+    1
+  )
+  assert.deepEqual(
+    androidWidgetSizingWarnings({ targetCellWidth: 2, targetCellHeight: 2, minResizeWidth: 100 }, 'widget1'),
+    []
+  )
+})

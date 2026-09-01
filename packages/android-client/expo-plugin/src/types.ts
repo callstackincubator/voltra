@@ -42,6 +42,14 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
    * size varies by device, launcher and orientation.
    */
   minCellHeight?: number
+  /** Minimum width, in dp, the widget can be resized down to. */
+  minResizeWidth?: number
+  /** Minimum height, in dp, the widget can be resized down to. */
+  minResizeHeight?: number
+  /** Maximum width, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeWidth?: number
+  /** Maximum height, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeHeight?: number
   targetCellWidth: number
   targetCellHeight: number
   resizeMode?: 'none' | 'horizontal' | 'vertical' | 'horizontal|vertical'

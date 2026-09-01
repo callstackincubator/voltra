@@ -59,6 +59,10 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `minHeight`: (optional) Minimum height in dp, used on Android 11 and older (defaults to a value derived from `minCellHeight` or `targetCellHeight`)
 - `minCellWidth`: **Deprecated.** (optional) Minimum width in grid cells, converted to dp; prefer `minWidth`
 - `minCellHeight`: **Deprecated.** (optional) Minimum height in grid cells, converted to dp; prefer `minHeight`
+- `minResizeWidth`: (optional) Smallest width the user can resize the widget to, in dp (supported on all Android versions)
+- `minResizeHeight`: (optional) Smallest height the user can resize the widget to, in dp (supported on all Android versions)
+- `maxResizeWidth`: (optional) Largest width the user can resize the widget to, in dp (Android 12+; ignored on older versions)
+- `maxResizeHeight`: (optional) Largest height the user can resize the widget to, in dp (Android 12+; ignored on older versions)
 - `resizeMode`: (optional) Widget resize behavior (`"none"` | `"horizontal"` | `"vertical"` | `"horizontal|vertical"`, default: `"horizontal|vertical"`)
 - `widgetCategory`: (optional) Widget category (`"home_screen"` | `"keyguard"` | `"home_screen|keyguard"`, default: `"home_screen"`)
 - `initialStatePath`: (optional) Path to a file that exports initial widget state, or a locale map of paths for localized build-time pre-rendering (see [Widget Pre-rendering](../development/widget-pre-rendering))

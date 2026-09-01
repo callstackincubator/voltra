@@ -57,6 +57,22 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
     validatePositiveIntegerField(widget, 'minCellHeight')
   }
 
+  if (widget.minResizeWidth !== undefined) {
+    validatePositiveIntegerField(widget, 'minResizeWidth')
+  }
+
+  if (widget.minResizeHeight !== undefined) {
+    validatePositiveIntegerField(widget, 'minResizeHeight')
+  }
+
+  if (widget.maxResizeWidth !== undefined) {
+    validatePositiveIntegerField(widget, 'maxResizeWidth')
+  }
+
+  if (widget.maxResizeHeight !== undefined) {
+    validatePositiveIntegerField(widget, 'maxResizeHeight')
+  }
+
   if (widget.previewImage !== undefined) {
     if (typeof widget.previewImage !== 'string' || !widget.previewImage.trim()) {
       throw new Error(`Widget '${widget.id}': previewImage must be a non-empty string`)

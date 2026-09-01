@@ -9,7 +9,7 @@ import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 import { DYNAMIC_WIDGET_BUILD_INFO, evaluateWidgetModuleExports } from '../shared/widgetModule'
-import { androidWidgetSizingAttributes } from './widgetSizing'
+import { androidWidgetSizingAttributes, androidWidgetSizingWarnings } from './widgetSizing'
 
 import type { AndroidProjectDiscovery } from '../../discovery/android'
 import type {
@@ -217,6 +217,7 @@ async function generateAndroidXmlFiles(
     const widgetInfoResult = await writeGeneratedTextFile(projectRoot, widgetInfoPath, widgetInfoContent)
     pushChange(changes, widgetInfoResult.change)
     generatedFiles.add(widgetInfoResult.relativePath)
+    warnings.push(...androidWidgetSizingWarnings(widget, widget.id))
   }
 
   return {

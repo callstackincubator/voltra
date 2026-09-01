@@ -32,6 +32,48 @@ and `minHeight` explicitly in dp instead of relying on the conversion.
 | Large | 4×2 | 276 × 117 | Rich content |
 | Extra Large | 4×4 | 276 × 249 | Complex layouts |
 
+### Resize Bounds
+
+Voltra can also emit `minResizeWidth`, `minResizeHeight`, `maxResizeWidth`, and `maxResizeHeight` in the
+generated `appwidget-provider` XML, all optional and all in dp:
+
+- `minResizeWidth`/`minResizeHeight` set the smallest size the user can resize the widget to, and are
+  supported on all Android versions.
+- `maxResizeWidth`/`maxResizeHeight` set the largest size the user can resize the widget to. They were
+  introduced in Android 12 and are ignored on older versions.
+
+These bounds only take effect on axes the widget can resize along, per `resizeMode` — a `maxResizeHeight`
+on a widget with `resizeMode: "horizontal"` has no effect, for instance. Set only the ones you need; Voltra
+emits exactly what you provide and nothing otherwise, so existing widgets are unaffected.
+
+Android also ignores a bound that contradicts the widget's minimum size: `minResizeWidth` has no effect if
+it's greater than `minWidth`, and `maxResizeWidth` has no effect if it's smaller than `minWidth` — likewise
+for the height pair against `minHeight`. Since `minWidth`/`minHeight` are often derived from
+`targetCellWidth`/`targetCellHeight` rather than written explicitly (see above), Voltra warns at build time
+when it detects one of these contradictions, naming the attribute, rather than failing the build.
+
+For example:
+
+```json
+{
+  "widgets": [
+    {
+      "id": "weather",
+      "displayName": "Weather Widget",
+      "targetCellWidth": 2,
+      "targetCellHeight": 2,
+      "resizeMode": "horizontal|vertical",
+      "minResizeWidth": 110,
+      "minResizeHeight": 100,
+      "maxResizeWidth": 276,
+      "maxResizeHeight": 249
+    }
+  ]
+}
+```
+
+This lets the widget resize down to 110×100 dp, and up to 276×249 dp on Android 12+.
+
 ## Widget Picker Previews
 
 When users add a widget to their home screen, Android displays a preview in the widget picker. Voltra supports three preview methods, with automatic fallback:

@@ -53,6 +53,10 @@ Use `@use-voltra/android-client` for Android config.
 - `minHeight`
 - `minCellWidth` (deprecated, prefer `minWidth`)
 - `minCellHeight` (deprecated, prefer `minHeight`)
+- `minResizeWidth`
+- `minResizeHeight`
+- `maxResizeWidth` (Android 12+)
+- `maxResizeHeight` (Android 12+)
 - `resizeMode`
 - `widgetCategory`
 - `initialStatePath` (string or per-locale map of paths)

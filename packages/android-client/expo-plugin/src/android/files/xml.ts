@@ -6,7 +6,7 @@ import { isWidgetLocalizedMap, logger, widgetLabelEnglish } from '@use-voltra/ex
 
 import type { AndroidWidgetConfig } from '../../types'
 import { androidWidgetResourceId } from '../resourceName'
-import { androidWidgetSizingAttributes } from '../widgetSizing'
+import { androidWidgetSizingAttributes, androidWidgetSizingWarnings } from '../widgetSizing'
 
 export interface GenerateXmlFilesProps {
   platformProjectRoot: string
@@ -97,6 +97,10 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
 
   // Write widget info XML for all widgets, including preview references where available
   for (const widget of widgets) {
+    for (const warning of androidWidgetSizingWarnings(widget, widget.id)) {
+      logger.warn(warning)
+    }
+
     const widgetInfoPath = path.join(xmlPath, `voltra_widget_${androidWidgetResourceId(widget.id)}_info.xml`)
     const previewImageResourceName = previewImageMap.get(widget.id)
     const previewLayoutResourceName = previewLayoutMap.get(widget.id)
