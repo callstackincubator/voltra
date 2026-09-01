@@ -125,6 +125,18 @@ dependencies {
   api "androidx.glance:glance:1.2.0-rc01"
   api "androidx.glance:glance-appwidget:1.2.0-rc01"
 
+  // AndroidX Core — ContextCompat.registerReceiver() needs 1.9.0+ for the flags overload
+  // that dispatches to the right registerReceiver() across API levels. 1.9.0 is already the
+  // version resolved transitively via work-runtime-ktx below, so this pin doesn't change what
+  // gets bundled, it just makes the dependency explicit instead of relying on Glance/WorkManager
+  // to keep pulling it in.
+  implementation "androidx.core:core:1.9.0"
+
+  // AndroidX Annotation — @RequiresApi, already on the compile classpath transitively via
+  // Glance (androidx.annotation:annotation:1.8.1); declared explicitly since we now use it
+  // directly.
+  implementation "androidx.annotation:annotation:1.8.1"
+
   // Compose runtime (required for Glance)
   api "androidx.compose.runtime:runtime:1.6.8"
 
