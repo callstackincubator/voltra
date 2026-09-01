@@ -93,8 +93,11 @@ android {
     ]
   }
 
-  lintOptions {
-    abortOnError false
+  // Lint's NewApi check is what catches calls to APIs newer than our minSdk floor - the class
+  // of bug that shipped an API 31 RemoteViews constructor to apps running API 24. It is opt-in
+  // via -PvoltraLintStrict so CI enforces it without failing consuming apps' own lint runs.
+  lint {
+    abortOnError = project.hasProperty("voltraLintStrict")
   }
 
   testOptions {
