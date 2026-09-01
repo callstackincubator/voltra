@@ -9,6 +9,7 @@ import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 import { DYNAMIC_WIDGET_BUILD_INFO, evaluateWidgetModuleExports } from '../shared/widgetModule'
+import { androidWidgetSizingAttributes } from './widgetSizing'
 
 import type { AndroidProjectDiscovery } from '../../discovery/android'
 import type {
@@ -1010,18 +1011,12 @@ function generateWidgetInfoXml(
   previewImageResourceName?: string,
   previewLayoutResourceName?: string
 ): string {
-  const minWidth = widget.minWidth ?? (widget.minCellWidth !== undefined ? widget.minCellWidth * 70 - 30 : undefined)
-  const minHeight =
-    widget.minHeight ?? (widget.minCellHeight !== undefined ? widget.minCellHeight * 70 - 30 : undefined)
   const resizeMode = widget.resizeMode ?? 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory ?? 'home_screen'
   const lines = [
     '<?xml version="1.0" encoding="utf-8"?>',
-    `<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"${
-      minWidth !== undefined ? ` android:minWidth="${minWidth}dp"` : ''
-    }${minHeight !== undefined ? ` android:minHeight="${minHeight}dp"` : ''}`,
-    `    android:targetCellWidth="${widget.targetCellWidth}"`,
-    `    android:targetCellHeight="${widget.targetCellHeight}"`,
+    '<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"',
+    ...androidWidgetSizingAttributes(widget).map((attribute) => `    ${attribute}`),
     '    android:updatePeriodMillis="0"',
     '    android:initialLayout="@layout/voltra_widget_placeholder"',
     `    android:resizeMode="${resizeMode}"`,

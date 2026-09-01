@@ -15,6 +15,10 @@ function loadIosMainAppEntitlementsModule() {
   return require(path.join(packageRoot, 'build/cjs/platforms/ios/mainAppEntitlements.js'))
 }
 
+function loadAndroidWidgetSizingModule() {
+  return require(path.join(packageRoot, 'build/cjs/platforms/android/widgetSizing.js'))
+}
+
 function writeFakePackage(projectRoot, packageName) {
   const packagePath = path.join(projectRoot, 'node_modules', ...packageName.split('/'), 'package.json')
   fs.mkdirSync(path.dirname(packagePath), { recursive: true })
@@ -1635,4 +1639,95 @@ test('build settings Voltra does not own are left alone', async () => {
   await ensureIOSWidgetTarget({ projectRoot: tempDir, ios, discovery, generatedFiles: [], buildSettings })
 
   assert.match(fs.readFileSync(pbxprojPath, 'utf8'), /VOLTRA_API_URL = "?https:\/\/api\.example\.com"?;/)
+})
+
+// Bug report: on the reporter's Samsung phone one launcher grid cell measures 69dp wide, but on
+// their Samsung tablet the same cell measures 111dp. The previous `cells * 70 - 30` formula gave a
+// 2-cell width of 110dp, which fits inside a single tablet cell, so the widget was placed only
+// 1 cell wide there even though it declared `targetCellWidth: 2`.
+test('androidWidgetSizingAttributes always emits minWidth/minHeight so Android 11 and older place the widget correctly', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(androidWidgetSizingAttributes({ targetCellWidth: 2, targetCellHeight: 2 }), [
+    'android:minWidth="130dp"',
+    'android:minHeight="117dp"',
+    'android:targetCellWidth="2"',
+    'android:targetCellHeight="2"',
+  ])
+})
+
+test('androidWidgetSizingAttributes derives minWidth/minHeight from non-square targetCell dimensions', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(androidWidgetSizingAttributes({ targetCellWidth: 3, targetCellHeight: 2 }), [
+    'android:minWidth="203dp"',
+    'android:minHeight="117dp"',
+    'android:targetCellWidth="3"',
+    'android:targetCellHeight="2"',
+  ])
+})
+
+test('androidWidgetSizingAttributes derives minWidth/minHeight for a 1x1 widget', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(androidWidgetSizingAttributes({ targetCellWidth: 1, targetCellHeight: 1 }), [
+    'android:minWidth="57dp"',
+    'android:minHeight="51dp"',
+    'android:targetCellWidth="1"',
+    'android:targetCellHeight="1"',
+  ])
+})
+
+test('androidWidgetSizingAttributes prefers an explicit minWidth/minHeight over targetCell dimensions', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(
+    androidWidgetSizingAttributes({ targetCellWidth: 3, targetCellHeight: 3, minWidth: 200, minHeight: 100 }),
+    [
+      'android:minWidth="200dp"',
+      'android:minHeight="100dp"',
+      'android:targetCellWidth="3"',
+      'android:targetCellHeight="3"',
+    ]
+  )
+})
+
+test('androidWidgetSizingAttributes falls back to the deprecated minCellWidth/minCellHeight', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(
+    androidWidgetSizingAttributes({
+      targetCellWidth: 4,
+      targetCellHeight: 4,
+      minCellWidth: 2,
+      minCellHeight: 2,
+    }),
+    [
+      'android:minWidth="130dp"',
+      'android:minHeight="117dp"',
+      'android:targetCellWidth="4"',
+      'android:targetCellHeight="4"',
+    ]
+  )
+})
+
+test('androidWidgetSizingAttributes prefers an explicit minWidth/minHeight over the deprecated minCellWidth/minCellHeight', () => {
+  const { androidWidgetSizingAttributes } = loadAndroidWidgetSizingModule()
+
+  assert.deepEqual(
+    androidWidgetSizingAttributes({
+      targetCellWidth: 4,
+      targetCellHeight: 4,
+      minCellWidth: 2,
+      minCellHeight: 2,
+      minWidth: 200,
+      minHeight: 100,
+    }),
+    [
+      'android:minWidth="200dp"',
+      'android:minHeight="100dp"',
+      'android:targetCellWidth="4"',
+      'android:targetCellHeight="4"',
+    ]
+  )
 })

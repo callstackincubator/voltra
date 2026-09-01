@@ -45,13 +45,23 @@ export interface AndroidWidgetConfig {
   displayName: WidgetLabel
   /** User-facing widget description shown by the launcher. */
   description: WidgetLabel
-  /** Minimum widget width in dp. */
+  /** Minimum widget width in dp. Only affects Android 11 and older. */
   minWidth?: number
-  /** Minimum widget height in dp. */
+  /** Minimum widget height in dp. Only affects Android 11 and older. */
   minHeight?: number
-  /** Minimum widget width in launcher grid cells. */
+  /**
+   * Minimum widget width in launcher grid cells.
+   *
+   * @deprecated Use `minWidth` instead. The value is approximated in dp for Android 11 and
+   * older.
+   */
   minCellWidth?: number
-  /** Minimum widget height in launcher grid cells. */
+  /**
+   * Minimum widget height in launcher grid cells.
+   *
+   * @deprecated Use `minHeight` instead. The value is approximated in dp for Android 11 and
+   * older.
+   */
   minCellHeight?: number
   /** Default widget width in launcher grid cells. */
   targetCellWidth: number

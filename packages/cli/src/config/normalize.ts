@@ -387,6 +387,8 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
   assertPositiveInteger(widget.targetCellHeight, `android.widgets[${widget.id}].targetCellHeight`)
   assertOptionalPositiveInteger(widget.minCellWidth, `android.widgets[${widget.id}].minCellWidth`)
   assertOptionalPositiveInteger(widget.minCellHeight, `android.widgets[${widget.id}].minCellHeight`)
+  assertOptionalPositiveInteger(widget.minWidth, `android.widgets[${widget.id}].minWidth`)
+  assertOptionalPositiveInteger(widget.minHeight, `android.widgets[${widget.id}].minHeight`)
 
   return {
     ...widget,
