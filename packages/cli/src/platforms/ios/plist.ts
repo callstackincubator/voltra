@@ -28,7 +28,7 @@ export interface EnsureInfoPlistOptions {
 }
 
 export interface EnsureInfoPlistResult {
-  change?: ReportedChange
+  changes: ReportedChange[]
 }
 
 export class IOSInfoPlistMutationError extends VoltraCliError {
@@ -40,7 +40,26 @@ export class IOSInfoPlistMutationError extends VoltraCliError {
 
 export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<EnsureInfoPlistResult> {
   const { projectRoot, ios, discovery } = options
-  const infoPlist = await parsePlistFile(discovery.infoPlistPath, 'main app Info.plist', createInfoPlistError)
+  const changes: ReportedChange[] = []
+
+  // Build configurations of a multi-environment app can each reference their own Info.plist.
+  for (const infoPlistPath of discovery.infoPlistPaths) {
+    const change = await ensureSingleInfoPlist(projectRoot, ios, infoPlistPath)
+
+    if (change) {
+      changes.push(change)
+    }
+  }
+
+  return { changes }
+}
+
+async function ensureSingleInfoPlist(
+  projectRoot: string,
+  ios: NormalizedVoltraIOSConfig,
+  infoPlistPath: string
+): Promise<ReportedChange | undefined> {
+  const infoPlist = await parsePlistFile(infoPlistPath, 'main app Info.plist', createInfoPlistError)
 
   infoPlist.NSSupportsLiveActivities = true
   infoPlist.NSSupportsLiveActivitiesFrequentUpdates = false
@@ -70,9 +89,8 @@ export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<
   )
 
   const nextContent = buildPlistXml(infoPlist, createInfoPlistError)
-  const change = await writePlistIfChanged(projectRoot, discovery.infoPlistPath, nextContent)
 
-  return { change }
+  return await writePlistIfChanged(projectRoot, infoPlistPath, nextContent)
 }
 
 export async function parsePlistFile(

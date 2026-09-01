@@ -93,11 +93,10 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
   }
 
   const changes = [
-    infoPlistResult.change,
-    entitlementsResult.change,
-    podfileResult.change,
-    xcodeTargetResult.change,
-  ].filter(isDefined)
+    ...infoPlistResult.changes,
+    ...entitlementsResult.changes,
+    ...[podfileResult.change, xcodeTargetResult.change].filter(isDefined),
+  ]
 
   return {
     platform: 'ios',

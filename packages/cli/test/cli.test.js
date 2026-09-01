@@ -95,6 +95,8 @@ function createIOSPodfileTestOptions(projectRoot, podfileContent) {
       mainTargetName: 'TestApp',
       mainTargetCandidates: ['TestApp'],
       infoPlistPath: path.join(iosRoot, 'TestApp', 'Info.plist'),
+      infoPlistPaths: [path.join(iosRoot, 'TestApp', 'Info.plist')],
+      entitlementsPaths: [],
     },
   }
 }
@@ -262,11 +264,13 @@ test('ensureEntitlements creates the main app entitlements file when it is missi
       mainTargetName: 'TestApp',
       mainTargetCandidates: ['TestApp'],
       infoPlistPath,
+      infoPlistPaths: [infoPlistPath],
+      entitlementsPaths: [],
     },
   })
 
-  assert.ok(result.change)
-  assert.equal(result.change.kind, 'created')
+  assert.equal(result.changes.length, 1)
+  assert.equal(result.changes[0].kind, 'created')
   assert.equal(fs.existsSync(entitlementsPath), true)
   const entitlements = fs.readFileSync(entitlementsPath, 'utf8')
   assert.match(entitlements, /com\.apple\.security\.application-groups/)
@@ -505,6 +509,8 @@ test('generateIOSFiles writes Dynamic Widget manifest and AppIntent Swift scaffo
       mainTargetName: 'TestApp',
       mainTargetCandidates: ['TestApp'],
       infoPlistPath,
+      infoPlistPaths: [infoPlistPath],
+      entitlementsPaths: [],
     },
   })
 
@@ -686,6 +692,8 @@ test('Dynamic Widget entry must default-export a function or component', async (
           mainTargetName: 'TestApp',
           mainTargetCandidates: ['TestApp'],
           infoPlistPath,
+          infoPlistPaths: [infoPlistPath],
+          entitlementsPaths: [],
         },
       }),
     /\[voltra\] Dynamic Widget "bad" at widgets\/bad\.js must default-export a function or component\./
@@ -812,4 +820,359 @@ test('ensureAndroidGradleWidgetBundling preserves user content after unknown leg
   const gradle = fs.readFileSync(buildGradlePath, 'utf8')
   assert.equal(gradle, `android {\n}\n\n// @voltra-widget-bundling\nunknown old block\ncustomTrailingConfig()\n`)
   assert.match(result.warnings[0], /Preserved trailing Gradle content/)
+})
+
+function writeEntitlements(filePath, body = '') {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  fs.writeFileSync(
+    filePath,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>${body}</dict>
+</plist>
+`
+  )
+}
+
+const MULTI_CONFIGURATION_NAMES = ['Debug', 'Staging', 'Release']
+
+const MULTI_CONFIGURATION_TARGET_SETTINGS = {
+  Debug: {
+    bundleIdentifier: 'com.example.app.dev',
+    entitlements: 'TestApp/TestAppDebug.entitlements',
+    infoPlist: 'TestApp/Info-Debug.plist',
+    profile: 'Dev Profile',
+  },
+  Staging: {
+    bundleIdentifier: 'com.example.app.staging',
+    entitlements: 'TestApp/TestAppStaging.entitlements',
+    infoPlist: 'TestApp/Info.plist',
+    profile: 'Staging Profile',
+  },
+  Release: {
+    bundleIdentifier: 'com.example.app',
+    entitlements: 'TestApp/TestApp.entitlements',
+    infoPlist: 'TestApp/Info.plist',
+    profile: 'Release Profile',
+  },
+}
+
+function buildMultiConfigurationPbxproj() {
+  const targetConfigurationIds = {
+    Debug: 'AA00000000000000000001',
+    Staging: 'AA00000000000000000002',
+    Release: 'AA00000000000000000003',
+  }
+  const projectConfigurationIds = {
+    Debug: 'BB00000000000000000001',
+    Staging: 'BB00000000000000000002',
+    Release: 'BB00000000000000000003',
+  }
+
+  const targetConfigurations = MULTI_CONFIGURATION_NAMES.map((name) => {
+    const settings = MULTI_CONFIGURATION_TARGET_SETTINGS[name]
+    return [
+      `\t\t${targetConfigurationIds[name]} /* ${name} */ = {`,
+      '\t\t\tisa = XCBuildConfiguration;',
+      '\t\t\tbuildSettings = {',
+      '\t\t\t\tCODE_SIGN_STYLE = Manual;',
+      `\t\t\t\tCODE_SIGN_ENTITLEMENTS = ${settings.entitlements};`,
+      '\t\t\t\tDEVELOPMENT_TEAM = ABCDE12345;',
+      `\t\t\t\tINFOPLIST_FILE = ${settings.infoPlist};`,
+      '\t\t\t\tIPHONEOS_DEPLOYMENT_TARGET = 15.1;',
+      `\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = ${settings.bundleIdentifier};`,
+      '\t\t\t\tPRODUCT_NAME = TestApp;',
+      `\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "${settings.profile}";`,
+      '\t\t\t};',
+      `\t\t\tname = ${name};`,
+      '\t\t};',
+    ].join('\n')
+  })
+
+  const projectConfigurations = MULTI_CONFIGURATION_NAMES.map((name) =>
+    [
+      `\t\t${projectConfigurationIds[name]} /* ${name} */ = {`,
+      '\t\t\tisa = XCBuildConfiguration;',
+      '\t\t\tbuildSettings = {',
+      '\t\t\t\tIPHONEOS_DEPLOYMENT_TARGET = 15.1;',
+      '\t\t\t\tSDKROOT = iphoneos;',
+      '\t\t\t};',
+      `\t\t\tname = ${name};`,
+      '\t\t};',
+    ].join('\n')
+  )
+
+  const configurationListEntry = (id, label, ids) =>
+    [
+      `\t\t${id} /* Build configuration list for ${label} */ = {`,
+      '\t\t\tisa = XCConfigurationList;',
+      '\t\t\tbuildConfigurations = (',
+      ...MULTI_CONFIGURATION_NAMES.map((name) => `\t\t\t\t${ids[name]} /* ${name} */,`),
+      '\t\t\t);',
+      '\t\t\tdefaultConfigurationIsVisible = 0;',
+      '\t\t\tdefaultConfigurationName = Release;',
+      '\t\t};',
+    ].join('\n')
+
+  return `// !$*UTF8*$!
+{
+\tarchiveVersion = 1;
+\tclasses = {
+\t};
+\tobjectVersion = 54;
+\tobjects = {
+
+/* Begin PBXFileReference section */
+\t\t13B07F961A680F5B00A75B9A /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+\t\t13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
+\t\t\tisa = PBXFrameworksBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+\t\t83CBB9F61A601CBA00E9B192 = {
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+\t\t\t\t83CBBA001A601CBA00E9B192 /* Products */,
+\t\t\t\t83CBBA011A601CBA00E9B192 /* Frameworks */,
+\t\t\t);
+\t\t\tsourceTree = "<group>";
+\t\t};
+\t\t83CBBA011A601CBA00E9B192 /* Frameworks */ = {
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+\t\t\t);
+\t\t\tname = Frameworks;
+\t\t\tsourceTree = "<group>";
+\t\t};
+\t\t83CBBA001A601CBA00E9B192 /* Products */ = {
+\t\t\tisa = PBXGroup;
+\t\t\tchildren = (
+\t\t\t\t13B07F961A680F5B00A75B9A /* TestApp.app */,
+\t\t\t);
+\t\t\tname = Products;
+\t\t\tsourceTree = "<group>";
+\t\t};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+\t\t13B07F861A680F5B00A75B9A /* TestApp */ = {
+\t\t\tisa = PBXNativeTarget;
+\t\t\tbuildConfigurationList = CC00000000000000000001 /* Build configuration list for PBXNativeTarget "TestApp" */;
+\t\t\tbuildPhases = (
+\t\t\t\t13B07F871A680F5B00A75B9A /* Sources */,
+\t\t\t\t13B07F8C1A680F5B00A75B9A /* Frameworks */,
+\t\t\t\t13B07F8E1A680F5B00A75B9A /* Resources */,
+\t\t\t);
+\t\t\tbuildRules = (
+\t\t\t);
+\t\t\tdependencies = (
+\t\t\t);
+\t\t\tname = TestApp;
+\t\t\tproductName = TestApp;
+\t\t\tproductReference = 13B07F961A680F5B00A75B9A /* TestApp.app */;
+\t\t\tproductType = "com.apple.product-type.application";
+\t\t};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+\t\t83CBB9F71A601CBA00E9B192 /* Project object */ = {
+\t\t\tisa = PBXProject;
+\t\t\tattributes = {
+\t\t\t\tLastUpgradeCheck = 1210;
+\t\t\t\tTargetAttributes = {
+\t\t\t\t};
+\t\t\t};
+\t\t\tbuildConfigurationList = CC00000000000000000002 /* Build configuration list for PBXProject "TestApp" */;
+\t\t\tcompatibilityVersion = "Xcode 12.0";
+\t\t\tdevelopmentRegion = en;
+\t\t\thasScannedForEncodings = 0;
+\t\t\tknownRegions = (
+\t\t\t\ten,
+\t\t\t\tBase,
+\t\t\t);
+\t\t\tmainGroup = 83CBB9F61A601CBA00E9B192;
+\t\t\tproductRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
+\t\t\tprojectDirPath = "";
+\t\t\tprojectRoot = "";
+\t\t\ttargets = (
+\t\t\t\t13B07F861A680F5B00A75B9A /* TestApp */,
+\t\t\t);
+\t\t};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+\t\t13B07F8E1A680F5B00A75B9A /* Resources */ = {
+\t\t\tisa = PBXResourcesBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+\t\t13B07F871A680F5B00A75B9A /* Sources */ = {
+\t\t\tisa = PBXSourcesBuildPhase;
+\t\t\tbuildActionMask = 2147483647;
+\t\t\tfiles = (
+\t\t\t);
+\t\t\trunOnlyForDeploymentPostprocessing = 0;
+\t\t};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+${[...targetConfigurations, ...projectConfigurations].join('\n')}
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+${configurationListEntry('CC00000000000000000001', 'PBXNativeTarget "TestApp"', targetConfigurationIds)}
+${configurationListEntry('CC00000000000000000002', 'PBXProject "TestApp"', projectConfigurationIds)}
+/* End XCConfigurationList section */
+\t};
+\trootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
+}
+`
+}
+
+function writeMultiConfigurationIosProject() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+  const iosRoot = path.join(tempDir, 'ios')
+  const pbxprojPath = path.join(iosRoot, 'TestApp.xcodeproj', 'project.pbxproj')
+
+  fs.mkdirSync(path.dirname(pbxprojPath), { recursive: true })
+  fs.writeFileSync(pbxprojPath, buildMultiConfigurationPbxproj())
+  fs.writeFileSync(path.join(iosRoot, 'Podfile'), "platform :ios, '15.1'\n")
+
+  for (const name of MULTI_CONFIGURATION_NAMES) {
+    const settings = MULTI_CONFIGURATION_TARGET_SETTINGS[name]
+    writeEntitlements(path.join(iosRoot, settings.entitlements))
+    writeInfoPlist(path.join(iosRoot, settings.infoPlist))
+  }
+
+  return { tempDir, iosRoot, pbxprojPath }
+}
+
+function multiConfigurationIosConfig(overrides = {}) {
+  return {
+    enablePushNotifications: false,
+    deploymentTarget: '16.2',
+    fonts: [],
+    project: {},
+    userImagesPath: '/tmp/voltra-user-images',
+    widgets: [],
+    ...overrides,
+  }
+}
+
+test('iOS discovery reports every entitlements file and Info.plist across build configurations', async () => {
+  const { discoverIOSProject } = loadCliModule()
+  const { tempDir, iosRoot } = writeMultiConfigurationIosProject()
+
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  assert.deepEqual(discovery.entitlementsPaths, [
+    path.join(iosRoot, 'TestApp', 'TestApp.entitlements'),
+    path.join(iosRoot, 'TestApp', 'TestAppDebug.entitlements'),
+    path.join(iosRoot, 'TestApp', 'TestAppStaging.entitlements'),
+  ])
+  assert.deepEqual(discovery.infoPlistPaths, [
+    path.join(iosRoot, 'TestApp', 'Info.plist'),
+    path.join(iosRoot, 'TestApp', 'Info-Debug.plist'),
+  ])
+  assert.equal(discovery.entitlementsPath, path.join(iosRoot, 'TestApp', 'TestApp.entitlements'))
+  assert.equal(discovery.infoPlistPath, path.join(iosRoot, 'TestApp', 'Info.plist'))
+})
+
+test('ensureEntitlements writes the app group into every build configuration entitlements file', async () => {
+  const { discoverIOSProject, ensureEntitlements } = loadCliModule()
+  const { tempDir, iosRoot } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  const result = await ensureEntitlements({
+    projectRoot: tempDir,
+    ios: multiConfigurationIosConfig({ groupIdentifier: 'group.com.example.app' }),
+    discovery,
+  })
+
+  assert.equal(result.changes.length, 3)
+
+  for (const name of MULTI_CONFIGURATION_NAMES) {
+    const entitlements = fs.readFileSync(
+      path.join(iosRoot, MULTI_CONFIGURATION_TARGET_SETTINGS[name].entitlements),
+      'utf8'
+    )
+    assert.match(entitlements, /group\.com\.example\.app/)
+  }
+})
+
+test('ensureInfoPlist writes Voltra keys into every build configuration Info.plist', async () => {
+  const { discoverIOSProject, ensureInfoPlist } = loadCliModule()
+  const { tempDir, iosRoot } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  const result = await ensureInfoPlist({
+    projectRoot: tempDir,
+    ios: multiConfigurationIosConfig({ groupIdentifier: 'group.com.example.app' }),
+    discovery,
+  })
+
+  assert.equal(result.changes.length, 2)
+
+  for (const infoPlist of ['Info.plist', 'Info-Debug.plist']) {
+    const content = fs.readFileSync(path.join(iosRoot, 'TestApp', infoPlist), 'utf8')
+    assert.match(content, /Voltra_AppGroupIdentifier/)
+    assert.match(content, /group\.com\.example\.app/)
+  }
+})
+
+test('ensureIOSWidgetTarget matches the widget to each build configuration of the app', async () => {
+  const { discoverIOSProject, ensureIOSWidgetTarget } = loadCliModule()
+  const { tempDir, pbxprojPath } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  await ensureIOSWidgetTarget({
+    projectRoot: tempDir,
+    ios: multiConfigurationIosConfig({ groupIdentifier: 'group.com.example.app' }),
+    discovery,
+    generatedFiles: [],
+  })
+
+  const pbxproj = fs.readFileSync(pbxprojPath, 'utf8')
+
+  for (const name of MULTI_CONFIGURATION_NAMES) {
+    const settings = MULTI_CONFIGURATION_TARGET_SETTINGS[name]
+
+    assert.ok(
+      pbxproj.includes(`PRODUCT_BUNDLE_IDENTIFIER = "${settings.bundleIdentifier}.TestAppLiveActivity"`) ||
+        pbxproj.includes(`PRODUCT_BUNDLE_IDENTIFIER = ${settings.bundleIdentifier}.TestAppLiveActivity;`),
+      `expected a widget bundle identifier for ${name}`
+    )
+    assert.ok(
+      pbxproj.includes(`CODE_SIGN_ENTITLEMENTS = ${settings.entitlements};`) ||
+        pbxproj.includes(`CODE_SIGN_ENTITLEMENTS = "${settings.entitlements}"`),
+      `expected ${name} to keep its own entitlements file`
+    )
+  }
+
+  const provisioningProfiles = [...pbxproj.matchAll(/PROVISIONING_PROFILE_SPECIFIER = "([^"]+)"/g)].map(
+    (match) => match[1]
+  )
+
+  for (const name of MULTI_CONFIGURATION_NAMES) {
+    const expectedProfile = MULTI_CONFIGURATION_TARGET_SETTINGS[name].profile
+    assert.equal(
+      provisioningProfiles.filter((profile) => profile === expectedProfile).length,
+      2,
+      `expected the app and the widget to share the ${name} provisioning profile`
+    )
+  }
 })
