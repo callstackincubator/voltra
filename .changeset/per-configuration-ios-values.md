@@ -15,6 +15,12 @@ ios: {
 }
 ```
 
-`voltra apply` writes those values into the Xcode project as build settings, so
-each build picks up the value for the configuration it is built with. A single
-string keeps behaving exactly as before.
+`voltra apply` writes those values into the Xcode project as build settings on
+the app and widget targets, so each build picks up the value for the
+configuration it is built with. A single string keeps behaving exactly as
+before.
+
+The `ios` parameter of the exported iOS platform helpers is now
+`ResolvedVoltraIOSConfig`, the shape those helpers already required: per-build
+configuration values are resolved against the Xcode project before they reach
+it.

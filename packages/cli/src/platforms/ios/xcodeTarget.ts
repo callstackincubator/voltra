@@ -19,7 +19,7 @@ import { resolveIOSWidgetTargetName } from './targetName'
 import { ensureMainGroupChild, openIOSXcodeProject, saveIOSXcodeProject } from './xcode'
 import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
 import { needsEntitlementsMutation } from './entitlements'
-import { VOLTRA_BUILD_SETTING_PREFIX } from './buildConfigurationValues'
+import { VOLTRA_OWNED_BUILD_SETTINGS } from './buildConfigurationValues'
 import { VOLTRA_MIN_IOS_DEPLOYMENT_TARGET, maxIOSDeploymentTarget } from './deploymentTarget'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
@@ -125,7 +125,6 @@ export async function ensureIOSWidgetTarget(
   const mainAppEntitlementsPath = await getMainAppEntitlementsBuildSetting(discovery, ios)
 
   removeStaleWidgetTargets(context, staleTargetNames)
-  ensureVoltraBuildSettings(context, buildSettings ?? new Map())
   ensureMainAppEntitlementsBuildSetting(
     context,
     mainAppEntitlementsPath,
@@ -136,6 +135,8 @@ export async function ensureIOSWidgetTarget(
   ensureWidgetTarget(context, targetName, ios.deploymentTarget, mainAppSettings)
 
   const widgetTarget = getWidgetTarget(context, targetName)
+
+  ensureVoltraBuildSettings(context, widgetTarget, buildSettings ?? new Map())
   const widgetGroup = ensureWidgetGroup(context, targetName)
   const productFile = ensureProductFile(context, targetName, productPath)
 
@@ -985,22 +986,29 @@ async function getMainAppEntitlementsBuildSetting(
 }
 
 /**
- * Writes the user-defined build settings that hold Voltra's per-build-configuration values. They
- * are set on the project so both the app and the generated widget extension inherit them, and
- * settings Voltra no longer defines are removed.
+ * Writes the user-defined build settings that hold Voltra's per-build-configuration values.
+ *
+ * They are set on the app and widget targets rather than on the project, so the build
+ * configurations written to are exactly the ones the values were validated against: a target can
+ * carry a configuration the project-level list does not have, and a value silently dropped there
+ * would expand to an empty App Group at build time. Settings Voltra no longer defines are removed.
  */
 function ensureVoltraBuildSettings(
   context: IOSXcodeProjectContext,
+  widgetTarget: PBXNativeTarget,
   buildSettings: Map<string, Record<string, string>>
 ): void {
-  const projectConfigurations = context.project.rootObject.props.buildConfigurationList?.props.buildConfigurations ?? []
+  const configurations = [
+    ...context.mainAppTarget.buildConfigurations.all,
+    ...(widgetTarget.props.buildConfigurationList?.props.buildConfigurations ?? []),
+  ]
 
-  for (const config of projectConfigurations) {
+  for (const config of configurations) {
     const configurationSettings = config.props.buildSettings as unknown as Record<string, string | undefined>
     const nextSettings = buildSettings.get(config.props.name) ?? {}
 
-    for (const settingName of Object.keys(configurationSettings)) {
-      if (settingName.startsWith(VOLTRA_BUILD_SETTING_PREFIX) && nextSettings[settingName] === undefined) {
+    for (const settingName of VOLTRA_OWNED_BUILD_SETTINGS) {
+      if (nextSettings[settingName] === undefined) {
         delete configurationSettings[settingName]
       }
     }

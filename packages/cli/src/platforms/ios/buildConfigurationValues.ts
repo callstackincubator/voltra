@@ -14,6 +14,12 @@ export const VOLTRA_BUILD_SETTING_PREFIX = 'VOLTRA_'
 const APP_GROUP_IDENTIFIER_SETTING = `${VOLTRA_BUILD_SETTING_PREFIX}APP_GROUP_IDENTIFIER`
 const KEYCHAIN_GROUP_SETTING = `${VOLTRA_BUILD_SETTING_PREFIX}KEYCHAIN_GROUP`
 
+/**
+ * The settings Voltra writes and is therefore allowed to remove. Anything else a project happens to
+ * name `VOLTRA_*` belongs to the user and is left alone.
+ */
+export const VOLTRA_OWNED_BUILD_SETTINGS: readonly string[] = [APP_GROUP_IDENTIFIER_SETTING, KEYCHAIN_GROUP_SETTING]
+
 export interface IOSBuildConfigurationValues {
   /** iOS config with every per-build-configuration value collapsed to a single string. */
   ios: ResolvedVoltraIOSConfig

@@ -1580,3 +1580,57 @@ test('an entitlements path per build configuration is applied to the Xcode proje
     assert.match(fs.readFileSync(entitlements, 'utf8'), /group\.com\.example\.app/)
   }
 })
+
+test('a build configuration the project-level list lacks still gets its value', async () => {
+  const { discoverIOSProject, ensureIOSWidgetTarget, resolveIOSBuildConfigurationValues } = loadCliModule()
+  const { tempDir, iosRoot, pbxprojPath } = writeMultiConfigurationIosProject()
+
+  // Adding a configuration to a target without adding it project-wide is ordinary in Xcode.
+  writeEntitlements(path.join(iosRoot, 'TestApp', 'TestAppPreview.entitlements'))
+  addAppBuildConfiguration(pbxprojPath, 'Preview', {
+    CODE_SIGN_ENTITLEMENTS: 'TestApp/TestAppPreview.entitlements',
+    INFOPLIST_FILE: 'TestApp/Info.plist',
+    PRODUCT_BUNDLE_IDENTIFIER: 'com.example.app.preview',
+    PRODUCT_NAME: 'TestApp',
+  })
+
+  const discovery = await discoverIOSProject(tempDir, {})
+  const { ios, buildSettings } = resolveIOSBuildConfigurationValues(
+    multiConfigurationIosConfig({
+      groupIdentifier: {
+        Debug: 'group.com.example.app.dev',
+        Staging: 'group.com.example.app.staging',
+        Release: 'group.com.example.app',
+        Preview: 'group.com.example.app.preview',
+      },
+    }),
+    discovery
+  )
+
+  await ensureIOSWidgetTarget({ projectRoot: tempDir, ios, discovery, generatedFiles: [], buildSettings })
+
+  // Without a value, $(VOLTRA_APP_GROUP_IDENTIFIER) expands to nothing and the App Group is empty.
+  assert.match(
+    fs.readFileSync(pbxprojPath, 'utf8'),
+    /VOLTRA_APP_GROUP_IDENTIFIER = "?group\.com\.example\.app\.preview"?;/
+  )
+})
+
+test('build settings Voltra does not own are left alone', async () => {
+  const { discoverIOSProject, ensureIOSWidgetTarget, resolveIOSBuildConfigurationValues } = loadCliModule()
+  const { tempDir, pbxprojPath } = writeMultiConfigurationIosProject({
+    projectSettings: {
+      Debug: { VOLTRA_API_URL: '"https://api.example.com"' },
+    },
+  })
+
+  const discovery = await discoverIOSProject(tempDir, {})
+  const { ios, buildSettings } = resolveIOSBuildConfigurationValues(
+    multiConfigurationIosConfig({ groupIdentifier: 'group.com.example.app' }),
+    discovery
+  )
+
+  await ensureIOSWidgetTarget({ projectRoot: tempDir, ios, discovery, generatedFiles: [], buildSettings })
+
+  assert.match(fs.readFileSync(pbxprojPath, 'utf8'), /VOLTRA_API_URL = "?https:\/\/api\.example\.com"?;/)
+})
