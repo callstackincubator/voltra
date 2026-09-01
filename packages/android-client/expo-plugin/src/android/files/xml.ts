@@ -120,18 +120,12 @@ function generateWidgetInfoXml(
   const resizeMode = widget.resizeMode || 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory || 'home_screen'
 
-  let minWidth = widget.minWidth
-  if (minWidth === undefined && widget.minCellWidth !== undefined) {
-    minWidth = widget.minCellWidth * 70 - 30
-  }
+  // android:targetCellWidth/Height are API 31+ only and ignored below that, so min sizes must
+  // always be declared too, derived from the (required) target cell counts when not set explicitly.
+  const cellsToDp = (cells: number) => cells * 70 - 30
+  const minWidth = widget.minWidth ?? cellsToDp(widget.minCellWidth ?? widget.targetCellWidth)
+  const minHeight = widget.minHeight ?? cellsToDp(widget.minCellHeight ?? widget.targetCellHeight)
 
-  let minHeight = widget.minHeight
-  if (minHeight === undefined && widget.minCellHeight !== undefined) {
-    minHeight = widget.minCellHeight * 70 - 30
-  }
-
-  const minWidthAttr = minWidth !== undefined ? `\n    android:minWidth="${minWidth}dp"` : ''
-  const minHeightAttr = minHeight !== undefined ? `\n    android:minHeight="${minHeight}dp"` : ''
   const previewImageAttr = previewImageResourceName
     ? `\n    android:previewImage="@drawable/${previewImageResourceName}"`
     : ''
@@ -141,7 +135,9 @@ function generateWidgetInfoXml(
 
   return dedent`
     <?xml version="1.0" encoding="utf-8"?>
-    <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"${minWidthAttr}${minHeightAttr}
+    <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+        android:minWidth="${minWidth}dp"
+        android:minHeight="${minHeight}dp"
         android:targetCellWidth="${targetCellWidth}"
         android:targetCellHeight="${targetCellHeight}"
         android:updatePeriodMillis="0"
@@ -228,6 +224,7 @@ function localeKeyToAndroidValuesQualifier(localeKey: string): string {
 
 export const __test__ = {
   localeKeyToAndroidValuesQualifier,
+  generateWidgetInfoXml,
 }
 
 function collectAndroidLocaleKeysFromWidgets(widgets: AndroidWidgetConfig[]): Set<string> {

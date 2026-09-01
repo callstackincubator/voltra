@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.util.Log
-import android.widget.RemoteViews
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
@@ -160,13 +159,8 @@ class VoltraWidgetUpdateWorker(
                         Log.w(TAG, "No widget instances found on home screen for '$widgetId'")
                     } else if (sizeMapping.isNotEmpty()) {
                         for (appWidgetId in appWidgetIds) {
-                            try {
-                                val responsiveRemoteViews = RemoteViews(sizeMapping)
-                                appWidgetManager.updateAppWidget(appWidgetId, responsiveRemoteViews)
-                                Log.d(TAG, "Updated widget instance $appWidgetId with server data")
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Failed to update widget instance $appWidgetId: ${e.message}", e)
-                            }
+                            appWidgetManager.updateResponsiveAppWidget(appWidgetId, sizeMapping)
+                            Log.d(TAG, "Updated widget instance $appWidgetId with server data")
                         }
                     }
 

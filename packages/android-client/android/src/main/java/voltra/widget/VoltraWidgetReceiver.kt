@@ -170,8 +170,8 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
 
     /**
      * Re-render after a resize. Server-rendered widgets re-render from cached data — the payload
-     * carries all size variants, so RemoteViews(sizeMapping) picks the closest match; no network
-     * request needed. Client-rendered widgets override this to no-op: they use
+     * carries all size variants, so [updateResponsiveAppWidget] picks the closest match; no
+     * network request needed. Client-rendered widgets override this to no-op: they use
      * `SizeMode.Exact`, so Glance already re-composes `provideGlance` for the new size (and there
      * is no cached payload to re-render from).
      */
