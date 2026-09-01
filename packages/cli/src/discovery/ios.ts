@@ -430,8 +430,8 @@ async function resolveEntitlements(
   const entitlementsPaths = entitlementsPathByConfiguration
     ? [...new Set(entitlementsPathByConfiguration.values())]
     : typeof config.entitlementsPath === 'string'
-      ? [config.entitlementsPath]
-      : [...discoveredPaths.keys()]
+    ? [config.entitlementsPath]
+    : [...discoveredPaths.keys()]
 
   for (const entitlementsPath of entitlementsPaths) {
     await ensureFile(
