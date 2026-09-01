@@ -19,10 +19,11 @@ import { resolveIOSWidgetTargetName } from './targetName'
 import { ensureMainGroupChild, openIOSXcodeProject, saveIOSXcodeProject } from './xcode'
 import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
 import { needsEntitlementsMutation } from './entitlements'
+import { VOLTRA_OWNED_BUILD_SETTINGS } from './buildConfigurationValues'
 import { VOLTRA_MIN_IOS_DEPLOYMENT_TARGET, maxIOSDeploymentTarget } from './deploymentTarget'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { NormalizedVoltraIOSConfig } from '../../config/types'
+import type { ResolvedVoltraIOSConfig } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 import type { IOSXcodeProjectContext } from './xcode'
 import type { BuildSettings } from '@bacons/xcode/build/json/types'
@@ -89,10 +90,12 @@ echo "Voltra: widget bundler resolved to $BUNDLER"
 
 export interface EnsureIOSWidgetTargetOptions {
   projectRoot: string
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
   discovery: IOSProjectDiscovery
   generatedFiles: string[]
   previousGeneratedFiles?: string[]
+  /** User-defined build settings to write at project level, keyed by build configuration name. */
+  buildSettings?: Map<string, Record<string, string>>
 }
 
 export interface EnsureIOSWidgetTargetResult {
@@ -110,7 +113,7 @@ export class IOSWidgetTargetMutationError extends VoltraCliError {
 export async function ensureIOSWidgetTarget(
   options: EnsureIOSWidgetTargetOptions
 ): Promise<EnsureIOSWidgetTargetResult> {
-  const { projectRoot, ios, discovery, generatedFiles, previousGeneratedFiles } = options
+  const { projectRoot, ios, discovery, generatedFiles, previousGeneratedFiles, buildSettings } = options
   const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const context = openIOSXcodeProject(discovery)
   const beforeSerialized = JSON.stringify(context.project.toJSON())
@@ -122,11 +125,18 @@ export async function ensureIOSWidgetTarget(
   const mainAppEntitlementsPath = await getMainAppEntitlementsBuildSetting(discovery, ios)
 
   removeStaleWidgetTargets(context, staleTargetNames)
-  ensureMainAppEntitlementsBuildSetting(context, mainAppEntitlementsPath, ios.project.entitlementsPath !== undefined)
+  ensureMainAppEntitlementsBuildSetting(
+    context,
+    mainAppEntitlementsPath,
+    ios.project.entitlementsPath !== undefined,
+    getEntitlementsPathByConfiguration(discovery)
+  )
   ensureMainAppDeploymentTarget(context)
   ensureWidgetTarget(context, targetName, ios.deploymentTarget, mainAppSettings)
 
   const widgetTarget = getWidgetTarget(context, targetName)
+
+  ensureVoltraBuildSettings(context, widgetTarget, buildSettings ?? new Map())
   const widgetGroup = ensureWidgetGroup(context, targetName)
   const productFile = ensureProductFile(context, targetName, productPath)
 
@@ -956,7 +966,7 @@ function getCodeSigningSettings(config: XCBuildConfiguration): MainAppCodeSignin
 
 async function getMainAppEntitlementsBuildSetting(
   discovery: IOSProjectDiscovery,
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
 ): Promise<string | undefined> {
   if (discovery.entitlementsPath) {
     return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
@@ -975,12 +985,61 @@ async function getMainAppEntitlementsBuildSetting(
   return normalizeRelativePath(path.relative(discovery.iosRoot, entitlementsPath))
 }
 
+/**
+ * Writes the user-defined build settings that hold Voltra's per-build-configuration values.
+ *
+ * They are set on the app and widget targets rather than on the project, so the build
+ * configurations written to are exactly the ones the values were validated against: a target can
+ * carry a configuration the project-level list does not have, and a value silently dropped there
+ * would expand to an empty App Group at build time. Settings Voltra no longer defines are removed.
+ */
+function ensureVoltraBuildSettings(
+  context: IOSXcodeProjectContext,
+  widgetTarget: PBXNativeTarget,
+  buildSettings: Map<string, Record<string, string>>
+): void {
+  const configurations = [
+    ...context.mainAppTarget.buildConfigurations.all,
+    ...(widgetTarget.props.buildConfigurationList?.props.buildConfigurations ?? []),
+  ]
+
+  for (const config of configurations) {
+    const configurationSettings = config.props.buildSettings as unknown as Record<string, string | undefined>
+    const nextSettings = buildSettings.get(config.props.name) ?? {}
+
+    for (const settingName of VOLTRA_OWNED_BUILD_SETTINGS) {
+      if (nextSettings[settingName] === undefined) {
+        delete configurationSettings[settingName]
+      }
+    }
+
+    Object.assign(configurationSettings, nextSettings)
+  }
+}
+
+function getEntitlementsPathByConfiguration(discovery: IOSProjectDiscovery): Map<string, string> {
+  return new Map(
+    [...(discovery.entitlementsPathByConfiguration ?? [])].map(([buildConfigurationName, entitlementsPath]) => [
+      buildConfigurationName,
+      normalizeRelativePath(path.relative(discovery.iosRoot, entitlementsPath)),
+    ])
+  )
+}
+
 function ensureMainAppEntitlementsBuildSetting(
   context: IOSXcodeProjectContext,
   entitlementsPath: string | undefined,
-  isConfiguredExplicitly: boolean
+  isConfiguredExplicitly: boolean,
+  entitlementsPathByConfiguration: Map<string, string>
 ): void {
   for (const config of context.mainAppTarget.buildConfigurations.all) {
+    const configuredEntitlementsPath = entitlementsPathByConfiguration.get(config.props.name)
+
+    if (configuredEntitlementsPath) {
+      config.props.buildSettings.CODE_SIGN_ENTITLEMENTS = configuredEntitlementsPath
+      continue
+    }
+
     if (!entitlementsPath) {
       delete config.props.buildSettings.CODE_SIGN_ENTITLEMENTS
       continue

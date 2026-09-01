@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { Stats } from 'node:fs'
 
 import { VoltraCliError } from '../reporting/summary'
+import { getValuesByBuildConfiguration, isPerConfigurationMap } from '../config/perConfiguration'
 
 import type { NormalizedIOSProjectConfig } from '../config/types'
 
@@ -19,6 +20,8 @@ export interface IOSProjectDiscovery {
   podfilePath: string
   mainTargetName: string
   mainTargetCandidates: string[]
+  /** Build configuration names of the app target, default build configuration first. */
+  buildConfigurationNames: string[]
   /** Info.plist of the default build configuration. Always the first entry of `infoPlistPaths`. */
   infoPlistPath: string
   /** Every distinct Info.plist the app target references, default build configuration first. */
@@ -27,6 +30,8 @@ export interface IOSProjectDiscovery {
   entitlementsPath?: string
   /** Every distinct entitlements file the app target references, default build configuration first. */
   entitlementsPaths: string[]
+  /** Entitlements file per build configuration, when the config file names one per configuration. */
+  entitlementsPathByConfiguration?: Map<string, string>
 }
 
 interface ParsedPbxNativeTarget {
@@ -79,7 +84,12 @@ export async function discoverIOSProject(
   const mainTarget = resolveMainTarget(mainTargetCandidates, config.mainTargetName, pbxprojPath)
   const mainTargetBuildConfigurations = getTargetBuildConfigurations(parsedProject, mainTarget, pbxprojPath)
   const infoPlistPaths = await resolveInfoPlistPaths(iosRoot, config, mainTarget, mainTargetBuildConfigurations)
-  const entitlementsPaths = await resolveEntitlementsPaths(iosRoot, config, mainTarget, mainTargetBuildConfigurations)
+  const { entitlementsPaths, entitlementsPathByConfiguration } = await resolveEntitlements(
+    iosRoot,
+    config,
+    mainTarget,
+    mainTargetBuildConfigurations
+  )
 
   return {
     iosRoot,
@@ -88,10 +98,12 @@ export async function discoverIOSProject(
     podfilePath,
     mainTargetName: mainTarget.name,
     mainTargetCandidates: mainTargetCandidates.map((target) => target.name).sort(),
+    buildConfigurationNames: mainTargetBuildConfigurations.map((configuration) => configuration.name),
     infoPlistPath: infoPlistPaths[0],
     infoPlistPaths,
     entitlementsPath: entitlementsPaths[0],
     entitlementsPaths,
+    entitlementsPathByConfiguration,
   }
 }
 
@@ -388,12 +400,25 @@ async function resolveInfoPlistPaths(
   return infoPlistPaths
 }
 
-async function resolveEntitlementsPaths(
+interface ResolvedEntitlements {
+  entitlementsPaths: string[]
+  entitlementsPathByConfiguration?: Map<string, string>
+}
+
+async function resolveEntitlements(
   iosRoot: string,
   config: NormalizedIOSProjectConfig,
   target: ParsedPbxNativeTarget,
   buildConfigurations: ParsedXCBuildConfiguration[]
-): Promise<string[]> {
+): Promise<ResolvedEntitlements> {
+  const entitlementsPathByConfiguration = isPerConfigurationMap(config.entitlementsPath)
+    ? getValuesByBuildConfiguration(
+        config.entitlementsPath,
+        buildConfigurations.map((configuration) => configuration.name),
+        'ios.project.entitlementsPath',
+        (message) => new IOSProjectDiscoveryError(message)
+      )
+    : undefined
   const discoveredPaths = config.entitlementsPath
     ? new Map<string, string[]>()
     : resolveBuildSettingPaths(
@@ -402,7 +427,11 @@ async function resolveEntitlementsPaths(
         buildConfigurations,
         (configuration) => configuration.buildSettings.codeSignEntitlements
       )
-  const entitlementsPaths = config.entitlementsPath ? [config.entitlementsPath] : [...discoveredPaths.keys()]
+  const entitlementsPaths = entitlementsPathByConfiguration
+    ? [...new Set(entitlementsPathByConfiguration.values())]
+    : typeof config.entitlementsPath === 'string'
+    ? [config.entitlementsPath]
+    : [...discoveredPaths.keys()]
 
   for (const entitlementsPath of entitlementsPaths) {
     await ensureFile(
@@ -416,7 +445,7 @@ async function resolveEntitlementsPaths(
     )
   }
 
-  return entitlementsPaths
+  return { entitlementsPaths, entitlementsPathByConfiguration }
 }
 
 /**

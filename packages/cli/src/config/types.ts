@@ -1,4 +1,5 @@
 import type { CLI_DEFAULTS } from './defaults'
+import type { PerConfiguration } from './perConfiguration'
 
 export type VoltraPlatform = 'android' | 'ios'
 
@@ -145,8 +146,11 @@ export interface IOSProjectOverrides {
   mainTargetName?: string
   /** Explicit path to the app target Info.plist file. */
   infoPlistPath?: string
-  /** Explicit path to the main app entitlements file. */
-  entitlementsPath?: string
+  /**
+   * Explicit path to the main app entitlements file, or one path per Xcode build configuration
+   * name when each environment has its own.
+   */
+  entitlementsPath?: PerConfiguration<string>
   /** Explicit path to the Podfile. */
   podfilePath?: string
 }
@@ -175,8 +179,11 @@ export interface VoltraAndroidConfig {
 export interface VoltraIOSConfig {
   /** Whether to enable push-notification-related iOS setup for widgets and Live Activities. */
   enablePushNotifications?: boolean
-  /** App Group identifier used to share data between the app and widget extension. */
-  groupIdentifier?: string
+  /**
+   * App Group identifier used to share data between the app and widget extension, or one per Xcode
+   * build configuration name when each environment has its own.
+   */
+  groupIdentifier?: PerConfiguration<string>
   /** iOS widgets to generate and register. */
   widgets?: IOSWidgetConfig[]
   /** Minimum iOS deployment target for generated widget targets. */
@@ -187,8 +194,11 @@ export interface VoltraIOSConfig {
   fonts?: string[]
   /** Directory containing user-provided images for iOS widgets. */
   userImagesPath?: string
-  /** Keychain access group shared by the app and extension. */
-  keychainGroup?: string
+  /**
+   * Keychain access group shared by the app and extension, or one per Xcode build configuration
+   * name when each environment has its own.
+   */
+  keychainGroup?: PerConfiguration<string>
   /** Native iOS project discovery overrides. */
   project?: IOSProjectOverrides
 }
@@ -261,8 +271,8 @@ export interface NormalizedIOSProjectConfig {
   mainTargetName?: string
   /** Absolute path to the Info.plist file, if overridden. */
   infoPlistPath?: string
-  /** Absolute path to the entitlements file, if overridden. */
-  entitlementsPath?: string
+  /** Absolute path to the entitlements file, or one per build configuration name, if overridden. */
+  entitlementsPath?: PerConfiguration<string>
   /** Absolute path to the Podfile, if overridden. */
   podfilePath?: string
 }
@@ -284,7 +294,7 @@ export interface NormalizedVoltraIOSConfig {
   /** Whether iOS push-notification-related setup should be applied. */
   enablePushNotifications: boolean
   /** App Group identifier used to share data between the app and extension. */
-  groupIdentifier?: string
+  groupIdentifier?: PerConfiguration<string>
   /** iOS widgets after validation and normalization. */
   widgets: NormalizedIOSWidgetConfig[]
   /** Effective iOS deployment target for generated widget targets. */
@@ -296,9 +306,35 @@ export interface NormalizedVoltraIOSConfig {
   /** Absolute path to the iOS user images directory. */
   userImagesPath: string
   /** Keychain access group shared by the app and extension. */
-  keychainGroup?: string
+  keychainGroup?: PerConfiguration<string>
   /** Normalized iOS native project discovery overrides. */
   project: NormalizedIOSProjectConfig
+}
+
+/**
+ * iOS project overrides after per-build-configuration values have been resolved against the Xcode
+ * project.
+ */
+export type ResolvedIOSProjectConfig = Omit<NormalizedIOSProjectConfig, 'entitlementsPath'> & {
+  /** Absolute path to the entitlements file of the default build configuration, if overridden. */
+  entitlementsPath?: string
+}
+
+/**
+ * iOS config as the platform mutators consume it: every per-build-configuration value has been
+ * collapsed to a single string, either the configured value or a reference to a build setting
+ * Voltra writes per build configuration.
+ */
+export type ResolvedVoltraIOSConfig = Omit<
+  NormalizedVoltraIOSConfig,
+  'groupIdentifier' | 'keychainGroup' | 'project'
+> & {
+  /** App Group identifier used to share data between the app and extension. */
+  groupIdentifier?: string
+  /** Keychain access group shared by the app and extension. */
+  keychainGroup?: string
+  /** Resolved iOS native project discovery overrides. */
+  project: ResolvedIOSProjectConfig
 }
 
 export interface NormalizedVoltraConfig {

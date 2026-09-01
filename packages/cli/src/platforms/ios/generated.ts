@@ -16,7 +16,7 @@ import type {
   IOSWidgetAppIntentParameter,
   IOSWidgetFamily,
   NormalizedIOSWidgetConfig,
-  NormalizedVoltraIOSConfig,
+  ResolvedVoltraIOSConfig,
   WidgetLabel,
 } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
@@ -99,7 +99,7 @@ const GENERATED_INITIAL_STATE_LOCALE_HELPER = `private enum VoltraGeneratedIniti
 
 export interface GenerateIOSFilesOptions {
   projectRoot: string
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
   discovery: IOSProjectDiscovery
 }
 
@@ -223,7 +223,7 @@ async function generateInfoPlistFile(
   projectRoot: string,
   targetPath: string,
   targetName: string,
-  ios: NormalizedVoltraIOSConfig,
+  ios: ResolvedVoltraIOSConfig,
   mainAppMetadata: MainAppMetadata,
   widgets: DetectedIOSWidget[]
 ): Promise<GeneratedFileResult> {
@@ -296,7 +296,7 @@ async function generateEntitlementsFile(
   projectRoot: string,
   targetPath: string,
   targetName: string,
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
 ): Promise<GeneratedFileResult> {
   const entitlementsPath = path.join(targetPath, `${targetName}.entitlements`)
   const entitlements = buildPlistXml(
