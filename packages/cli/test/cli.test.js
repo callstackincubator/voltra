@@ -1415,6 +1415,8 @@ test('a bundle identifier naming the target is resolved against the app, not the
     /PRODUCT_BUNDLE_IDENTIFIER = "org\.reactjs\.native\.example\.\$\(PRODUCT_NAME:rfc1034identifier\)";/
   )
   assert.doesNotMatch(pbxproj, /\$\(PRODUCT_NAME:rfc1034identifier\)\.TestAppLiveActivity/)
+})
+
 test('per-build-configuration values become build settings the app and widget both inherit', async () => {
   const { discoverIOSProject, ensureIOSWidgetTarget, ensureEntitlements, resolveIOSBuildConfigurationValues } =
     loadCliModule()
