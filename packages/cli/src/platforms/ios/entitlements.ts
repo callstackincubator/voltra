@@ -6,7 +6,7 @@ import { buildPlistXml, parsePlistFile } from './plist'
 import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { NormalizedVoltraIOSConfig } from '../../config/types'
+import type { ResolvedVoltraIOSConfig } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 
 interface PreviousVoltraEntitlementValues {
@@ -17,7 +17,7 @@ interface PreviousVoltraEntitlementValues {
 
 export interface EnsureEntitlementsOptions {
   projectRoot: string
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
   discovery: IOSProjectDiscovery
 }
 
@@ -87,7 +87,7 @@ export async function ensureEntitlements(options: EnsureEntitlementsOptions): Pr
  * multi-environment app keeps its own file. Falls back to the standard path when the project
  * references none and Voltra has values to write.
  */
-function resolveEntitlementsPathsToMutate(ios: NormalizedVoltraIOSConfig, discovery: IOSProjectDiscovery): string[] {
+function resolveEntitlementsPathsToMutate(ios: ResolvedVoltraIOSConfig, discovery: IOSProjectDiscovery): string[] {
   if (discovery.entitlementsPaths.length > 0) {
     return discovery.entitlementsPaths
   }
@@ -95,7 +95,7 @@ function resolveEntitlementsPathsToMutate(ios: NormalizedVoltraIOSConfig, discov
   return needsEntitlementsMutation(ios) ? [resolveMainAppEntitlementsPath(discovery)] : []
 }
 
-export function needsEntitlementsMutation(ios: NormalizedVoltraIOSConfig): boolean {
+export function needsEntitlementsMutation(ios: ResolvedVoltraIOSConfig): boolean {
   return ios.enablePushNotifications || ios.groupIdentifier !== undefined || ios.keychainGroup !== undefined
 }
 

@@ -95,6 +95,7 @@ function createIOSPodfileTestOptions(projectRoot, podfileContent) {
       mainTargetName: 'TestApp',
       mainTargetCandidates: ['TestApp'],
       infoPlistPath: path.join(iosRoot, 'TestApp', 'Info.plist'),
+      buildConfigurationNames: ['Release', 'Debug'],
       infoPlistPaths: [path.join(iosRoot, 'TestApp', 'Info.plist')],
       entitlementsPaths: [],
     },
@@ -264,6 +265,7 @@ test('ensureEntitlements creates the main app entitlements file when it is missi
       mainTargetName: 'TestApp',
       mainTargetCandidates: ['TestApp'],
       infoPlistPath,
+      buildConfigurationNames: ['Release', 'Debug'],
       infoPlistPaths: [infoPlistPath],
       entitlementsPaths: [],
     },
@@ -509,6 +511,7 @@ test('generateIOSFiles writes Dynamic Widget manifest and AppIntent Swift scaffo
       mainTargetName: 'TestApp',
       mainTargetCandidates: ['TestApp'],
       infoPlistPath,
+      buildConfigurationNames: ['Release', 'Debug'],
       infoPlistPaths: [infoPlistPath],
       entitlementsPaths: [],
     },
@@ -692,6 +695,7 @@ test('Dynamic Widget entry must default-export a function or component', async (
           mainTargetName: 'TestApp',
           mainTargetCandidates: ['TestApp'],
           infoPlistPath,
+          buildConfigurationNames: ['Release', 'Debug'],
           infoPlistPaths: [infoPlistPath],
           entitlementsPaths: [],
         },
@@ -1411,4 +1415,168 @@ test('a bundle identifier naming the target is resolved against the app, not the
     /PRODUCT_BUNDLE_IDENTIFIER = "org\.reactjs\.native\.example\.\$\(PRODUCT_NAME:rfc1034identifier\)";/
   )
   assert.doesNotMatch(pbxproj, /\$\(PRODUCT_NAME:rfc1034identifier\)\.TestAppLiveActivity/)
+test('per-build-configuration values become build settings the app and widget both inherit', async () => {
+  const { discoverIOSProject, ensureIOSWidgetTarget, ensureEntitlements, resolveIOSBuildConfigurationValues } =
+    loadCliModule()
+  const { tempDir, iosRoot, pbxprojPath } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  const { ios, buildSettings } = resolveIOSBuildConfigurationValues(
+    multiConfigurationIosConfig({
+      groupIdentifier: {
+        Debug: 'group.com.example.app.dev',
+        Staging: 'group.com.example.app.staging',
+        Release: 'group.com.example.app',
+      },
+    }),
+    discovery
+  )
+
+  assert.equal(ios.groupIdentifier, '$(VOLTRA_APP_GROUP_IDENTIFIER)')
+  assert.deepEqual(buildSettings.get('Debug'), { VOLTRA_APP_GROUP_IDENTIFIER: 'group.com.example.app.dev' })
+
+  await ensureEntitlements({ projectRoot: tempDir, ios, discovery })
+  await ensureIOSWidgetTarget({ projectRoot: tempDir, ios, discovery, generatedFiles: [], buildSettings })
+
+  const entitlements = fs.readFileSync(path.join(iosRoot, 'TestApp', 'TestAppDebug.entitlements'), 'utf8')
+  assert.match(entitlements, /\$\(VOLTRA_APP_GROUP_IDENTIFIER\)/)
+
+  const pbxproj = fs.readFileSync(pbxprojPath, 'utf8')
+  assert.match(pbxproj, /VOLTRA_APP_GROUP_IDENTIFIER = "?group\.com\.example\.app\.dev"?;/)
+  assert.match(pbxproj, /VOLTRA_APP_GROUP_IDENTIFIER = "?group\.com\.example\.app\.staging"?;/)
+  assert.match(pbxproj, /VOLTRA_APP_GROUP_IDENTIFIER = "?group\.com\.example\.app"?;/)
+})
+
+test('a plain string value writes no build settings', async () => {
+  const { discoverIOSProject, resolveIOSBuildConfigurationValues } = loadCliModule()
+  const { tempDir } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  const { ios, buildSettings } = resolveIOSBuildConfigurationValues(
+    multiConfigurationIosConfig({ groupIdentifier: 'group.com.example.app' }),
+    discovery
+  )
+
+  assert.equal(ios.groupIdentifier, 'group.com.example.app')
+  assert.equal(buildSettings.size, 0)
+})
+
+test('build settings Voltra no longer defines are removed from the project', async () => {
+  const { discoverIOSProject, ensureIOSWidgetTarget, resolveIOSBuildConfigurationValues } = loadCliModule()
+  const { tempDir, pbxprojPath } = writeMultiConfigurationIosProject()
+
+  const perConfigurationDiscovery = await discoverIOSProject(tempDir, {})
+  const perConfiguration = resolveIOSBuildConfigurationValues(
+    multiConfigurationIosConfig({
+      groupIdentifier: {
+        Debug: 'group.com.example.app.dev',
+        Staging: 'group.com.example.app.staging',
+        Release: 'group.com.example.app',
+      },
+    }),
+    perConfigurationDiscovery
+  )
+
+  await ensureIOSWidgetTarget({
+    projectRoot: tempDir,
+    ios: perConfiguration.ios,
+    discovery: perConfigurationDiscovery,
+    generatedFiles: [],
+    buildSettings: perConfiguration.buildSettings,
+  })
+
+  assert.match(fs.readFileSync(pbxprojPath, 'utf8'), /VOLTRA_APP_GROUP_IDENTIFIER/)
+
+  const plainDiscovery = await discoverIOSProject(tempDir, {})
+  const plain = resolveIOSBuildConfigurationValues(
+    multiConfigurationIosConfig({ groupIdentifier: 'group.com.example.app' }),
+    plainDiscovery
+  )
+
+  await ensureIOSWidgetTarget({
+    projectRoot: tempDir,
+    ios: plain.ios,
+    discovery: plainDiscovery,
+    generatedFiles: [],
+    buildSettings: plain.buildSettings,
+  })
+
+  assert.doesNotMatch(fs.readFileSync(pbxprojPath, 'utf8'), /VOLTRA_APP_GROUP_IDENTIFIER/)
+})
+
+test('a value missing a build configuration is reported before the project is touched', async () => {
+  const { discoverIOSProject, resolveIOSBuildConfigurationValues } = loadCliModule()
+  const { tempDir } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  assert.throws(
+    () =>
+      resolveIOSBuildConfigurationValues(
+        multiConfigurationIosConfig({
+          groupIdentifier: { Debug: 'group.com.example.app.dev', Release: 'group.com.example.app' },
+        }),
+        discovery
+      ),
+    /ios\.groupIdentifier has no value for build configuration 'Staging'\. This project has: Release, Debug, Staging\./
+  )
+})
+
+test('a value naming an unknown build configuration is reported', async () => {
+  const { discoverIOSProject, resolveIOSBuildConfigurationValues } = loadCliModule()
+  const { tempDir } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  assert.throws(
+    () =>
+      resolveIOSBuildConfigurationValues(
+        multiConfigurationIosConfig({
+          groupIdentifier: {
+            Debug: 'group.com.example.app.dev',
+            Staging: 'group.com.example.app.staging',
+            Release: 'group.com.example.app',
+            Preview: 'group.com.example.app.preview',
+          },
+        }),
+        discovery
+      ),
+    /ios\.groupIdentifier names unknown build configurations: Preview\./
+  )
+})
+
+test('an entitlements path per build configuration is applied to the Xcode project', async () => {
+  const { discoverIOSProject, ensureEntitlements, ensureIOSWidgetTarget, resolveIOSBuildConfigurationValues } =
+    loadCliModule()
+  const { tempDir, iosRoot, pbxprojPath } = writeMultiConfigurationIosProject()
+  const debugEntitlements = path.join(iosRoot, 'TestApp', 'Custom-Debug.entitlements')
+  const releaseEntitlements = path.join(iosRoot, 'TestApp', 'Custom-Release.entitlements')
+  writeEntitlements(debugEntitlements)
+  writeEntitlements(releaseEntitlements)
+
+  const entitlementsPath = {
+    Debug: debugEntitlements,
+    Staging: releaseEntitlements,
+    Release: releaseEntitlements,
+  }
+  const discovery = await discoverIOSProject(tempDir, { entitlementsPath })
+
+  assert.deepEqual(discovery.entitlementsPaths, [releaseEntitlements, debugEntitlements])
+
+  const { ios, buildSettings } = resolveIOSBuildConfigurationValues(
+    multiConfigurationIosConfig({
+      groupIdentifier: 'group.com.example.app',
+      project: { entitlementsPath },
+    }),
+    discovery
+  )
+
+  await ensureEntitlements({ projectRoot: tempDir, ios, discovery })
+  await ensureIOSWidgetTarget({ projectRoot: tempDir, ios, discovery, generatedFiles: [], buildSettings })
+
+  const pbxproj = fs.readFileSync(pbxprojPath, 'utf8')
+  assert.match(pbxproj, /CODE_SIGN_ENTITLEMENTS = "?TestApp\/Custom-Debug\.entitlements"?;/)
+  assert.match(pbxproj, /CODE_SIGN_ENTITLEMENTS = "?TestApp\/Custom-Release\.entitlements"?;/)
+
+  for (const entitlements of [debugEntitlements, releaseEntitlements]) {
+    assert.match(fs.readFileSync(entitlements, 'utf8'), /group\.com\.example\.app/)
+  }
 })

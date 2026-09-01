@@ -5,7 +5,7 @@ import { toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { NormalizedVoltraIOSConfig } from '../../config/types'
+import type { ResolvedVoltraIOSConfig } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 
 interface OrderedPlistNode {
@@ -23,7 +23,7 @@ type PlistErrorFactory = (message: string) => Error
 
 export interface EnsureInfoPlistOptions {
   projectRoot: string
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
   discovery: IOSProjectDiscovery
 }
 
@@ -56,7 +56,7 @@ export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<
 
 async function ensureSingleInfoPlist(
   projectRoot: string,
-  ios: NormalizedVoltraIOSConfig,
+  ios: ResolvedVoltraIOSConfig,
   infoPlistPath: string
 ): Promise<ReportedChange | undefined> {
   const infoPlist = await parsePlistFile(infoPlistPath, 'main app Info.plist', createInfoPlistError)

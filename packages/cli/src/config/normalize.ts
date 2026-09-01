@@ -2,6 +2,9 @@ import path from 'node:path'
 
 import { resolveFromRoot } from '../fs/path'
 import { CLI_DEFAULTS } from './defaults'
+import { isPerConfigurationMap } from './perConfiguration'
+
+import type { PerConfiguration } from './perConfiguration'
 
 import type {
   AndroidWidgetAppIntentConfig,
@@ -50,6 +53,33 @@ function assertRecord(value: unknown, context: string): asserts value is Record<
 function assertOptionalString(value: unknown, context: string): asserts value is string | undefined {
   if (value !== undefined && typeof value !== 'string') {
     throw new VoltraConfigNormalizationError(`${context} must be a string`)
+  }
+}
+
+function assertOptionalPerConfigurationString(
+  value: unknown,
+  context: string
+): asserts value is PerConfiguration<string> | undefined {
+  if (value === undefined || typeof value === 'string') {
+    return
+  }
+
+  if (!isPerConfigurationMap(value as PerConfiguration<unknown>)) {
+    throw new VoltraConfigNormalizationError(
+      `${context} must be a string, or an object of strings keyed by build configuration name`
+    )
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+
+  if (entries.length === 0) {
+    throw new VoltraConfigNormalizationError(`${context} must not be an empty object`)
+  }
+
+  for (const [buildConfigurationName, configurationValue] of entries) {
+    if (typeof configurationValue !== 'string' || !configurationValue.trim()) {
+      throw new VoltraConfigNormalizationError(`${context}.${buildConfigurationName} must be a non-empty string`)
+    }
   }
 }
 
@@ -103,6 +133,26 @@ function resolveOptionalPathFromProjectRoot(projectRoot: string, filePath: strin
   }
 
   return resolvePathFromProjectRoot(projectRoot, filePath)
+}
+
+function resolveOptionalPerConfigurationPath(
+  projectRoot: string,
+  filePath: PerConfiguration<string> | undefined
+): PerConfiguration<string> | undefined {
+  if (!filePath) {
+    return undefined
+  }
+
+  if (!isPerConfigurationMap(filePath)) {
+    return resolvePathFromProjectRoot(projectRoot, filePath)
+  }
+
+  return Object.fromEntries(
+    Object.entries(filePath).map(([buildConfigurationName, configurationPath]) => [
+      buildConfigurationName,
+      resolvePathFromProjectRoot(projectRoot, configurationPath),
+    ])
+  )
 }
 
 function isAbsoluteWidgetPath(value: string): boolean {
@@ -492,12 +542,12 @@ function normalizeIOSConfig(
 
   assertObject(config, 'ios')
   assertOptionalBoolean(config.enablePushNotifications, 'ios.enablePushNotifications')
-  assertOptionalString(config.groupIdentifier, 'ios.groupIdentifier')
+  assertOptionalPerConfigurationString(config.groupIdentifier, 'ios.groupIdentifier')
   assertOptionalString(config.deploymentTarget, 'ios.deploymentTarget')
   assertOptionalString(config.targetName, 'ios.targetName')
   assertOptionalStringArray(config.fonts, 'ios.fonts')
   assertOptionalString(config.userImagesPath, 'ios.userImagesPath')
-  assertOptionalString(config.keychainGroup, 'ios.keychainGroup')
+  assertOptionalPerConfigurationString(config.keychainGroup, 'ios.keychainGroup')
 
   if (config.project !== undefined) {
     assertObject(config.project, 'ios.project')
@@ -505,7 +555,7 @@ function normalizeIOSConfig(
     assertOptionalString(config.project.xcodeprojPath, 'ios.project.xcodeprojPath')
     assertOptionalString(config.project.mainTargetName, 'ios.project.mainTargetName')
     assertOptionalString(config.project.infoPlistPath, 'ios.project.infoPlistPath')
-    assertOptionalString(config.project.entitlementsPath, 'ios.project.entitlementsPath')
+    assertOptionalPerConfigurationString(config.project.entitlementsPath, 'ios.project.entitlementsPath')
     assertOptionalString(config.project.podfilePath, 'ios.project.podfilePath')
   }
 
@@ -537,7 +587,7 @@ function normalizeIOSConfig(
       xcodeprojPath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.xcodeprojPath),
       mainTargetName: config.project?.mainTargetName,
       infoPlistPath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.infoPlistPath),
-      entitlementsPath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.entitlementsPath),
+      entitlementsPath: resolveOptionalPerConfigurationPath(projectRoot, config.project?.entitlementsPath),
       podfilePath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.podfilePath),
     },
   }

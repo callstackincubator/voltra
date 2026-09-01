@@ -1,7 +1,7 @@
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { NormalizedVoltraIOSConfig } from '../../config/types'
+import type { ResolvedVoltraIOSConfig } from '../../config/types'
 
-export function resolveIOSWidgetTargetName(ios: NormalizedVoltraIOSConfig, discovery: IOSProjectDiscovery): string {
+export function resolveIOSWidgetTargetName(ios: ResolvedVoltraIOSConfig, discovery: IOSProjectDiscovery): string {
   if (ios.targetName) {
     return ios.targetName
   }
