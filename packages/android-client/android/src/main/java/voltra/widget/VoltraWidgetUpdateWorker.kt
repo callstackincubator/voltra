@@ -1,7 +1,6 @@
 package voltra.widget
 
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.util.Log
 import android.widget.RemoteViews
@@ -150,9 +149,8 @@ class VoltraWidgetUpdateWorker(
                             RemoteViewsGenerator.generateWidgetRemoteViews(applicationContext, payload)
                         }
 
-                    val receiverClassName =
-                        "${applicationContext.packageName}.widget.VoltraWidget_${widgetId}Receiver"
-                    val componentName = ComponentName(applicationContext.packageName, receiverClassName)
+                    val componentName =
+                        VoltraWidgetReceivers.componentName(applicationContext, widgetId)
                     val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
                     val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
 

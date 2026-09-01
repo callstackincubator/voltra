@@ -1,7 +1,6 @@
 package voltra.widget
 
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Resources
@@ -239,8 +238,7 @@ class VoltraWidgetManager(
             }
 
             // 2. Get widget instances from AppWidgetManager
-            val receiverClassName = "${context.packageName}.widget.VoltraWidget_${widgetId}Receiver"
-            val componentName = ComponentName(context.packageName, receiverClassName)
+            val componentName = VoltraWidgetReceivers.componentName(context, widgetId)
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
 
@@ -308,10 +306,9 @@ class VoltraWidgetManager(
     private suspend fun updateWidgetViaGlance(widgetId: String) {
         Log.d(TAG, "updateWidgetViaGlance: widgetId=$widgetId")
 
-        // Build the receiver component name by convention (no reflection needed)
-        val receiverClassName = "${context.packageName}.widget.VoltraWidget_${widgetId}Receiver"
-        val componentName = ComponentName(context.packageName, receiverClassName)
-        Log.d(TAG, "Looking for receiver: $receiverClassName")
+        // Resolve the receiver from the installed providers (no reflection needed)
+        val componentName = VoltraWidgetReceivers.componentName(context, widgetId)
+        Log.d(TAG, "Looking for receiver: ${componentName.className}")
 
         // Get widget IDs using standard Android AppWidgetManager
         val appWidgetManager = AppWidgetManager.getInstance(context)
@@ -460,23 +457,18 @@ class VoltraWidgetManager(
         }
 
     /**
-     * Widget ids of all currently-pinned Voltra widgets, derived from bound AppWidget providers
-     * named `<pkg>.widget.VoltraWidget_<id>Receiver`. Covers Dynamic Widgets, which keep no
-     * cached prefs data, so reloadAllWidgets reaches them too.
+     * Widget ids of all currently-pinned Voltra widgets, derived from bound AppWidget providers.
+     * Covers Dynamic Widgets, which keep no cached prefs data, so
+     * reloadAllWidgets reaches them too.
      */
     private fun pinnedVoltraWidgetIds(): Set<String> {
         val appWidgetManager = AppWidgetManager.getInstance(context)
-        val prefix = "VoltraWidget_"
-        val suffix = "Receiver"
         val ids = mutableSetOf<String>()
         try {
-            for (provider in appWidgetManager.installedProviders) {
-                val componentName = provider.provider
-                if (componentName.packageName != context.packageName) continue
-                val simpleName = componentName.className.substringAfterLast('.')
-                if (!simpleName.startsWith(prefix) || !simpleName.endsWith(suffix)) continue
+            for (componentName in VoltraWidgetReceivers.installedReceivers(context)) {
+                val widgetId = VoltraWidgetReceivers.widgetIdOrNull(componentName.className) ?: continue
                 if (appWidgetManager.getAppWidgetIds(componentName).isEmpty()) continue // not pinned
-                ids.add(simpleName.removePrefix(prefix).removeSuffix(suffix))
+                ids.add(widgetId)
             }
         } catch (e: Exception) {
             Log.e(TAG, "pinnedVoltraWidgetIds failed: ${e.message}")

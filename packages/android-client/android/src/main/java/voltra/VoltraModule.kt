@@ -28,6 +28,7 @@ import voltra.widget.VoltraClientGlanceWidget
 import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetManager
 import voltra.widget.VoltraWidgetReceiver
+import voltra.widget.VoltraWidgetReceivers
 
 class VoltraModule(
     reactContext: ReactApplicationContext,
@@ -307,7 +308,7 @@ class VoltraModule(
         promise: Promise,
     ) {
         Log.d(TAG, "requestPinGlanceAppWidget called with widgetId=$widgetId")
-        val receiverClassName = "${reactApplicationContext.packageName}.widget.VoltraWidget_${widgetId}Receiver"
+        val receiverClassName = VoltraWidgetReceivers.className(reactApplicationContext, widgetId)
         Log.d(TAG, "Looking for receiver: $receiverClassName")
 
         val receiverClass =
@@ -495,14 +496,7 @@ class VoltraModule(
                 val minWidth = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
                 val minHeight = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
                 val shortClassName = providerInfo.provider.shortClassName
-                val prefix = ".widget.VoltraWidget_"
-                val suffix = "Receiver"
-                val name =
-                    if (shortClassName.startsWith(prefix) && shortClassName.endsWith(suffix)) {
-                        shortClassName.substring(prefix.length, shortClassName.length - suffix.length)
-                    } else {
-                        shortClassName
-                    }
+                val name = VoltraWidgetReceivers.widgetIdOrNull(providerInfo.provider.className) ?: shortClassName
 
                 activeWidgets.pushMap(
                     WritableNativeMap().apply {
