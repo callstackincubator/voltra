@@ -157,7 +157,7 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
   const detectedWidgets = detectClientRenderedWidgets(projectRoot, ios.widgets)
   const mainAppMetadata = await readMainAppMetadata(discovery.infoPlistPath)
   const changes: ReportedChange[] = []
-  const warnings: string[] = []
+  const warnings: string[] = [...(await getDivergentMainAppMetadataWarnings(discovery, mainAppMetadata))]
   const generatedFiles = new Set<string>()
 
   mergeSingleResult(
@@ -416,6 +416,41 @@ async function generateLocalizedWidgetStrings(
     targetName: '',
     targetPath,
   }
+}
+
+/**
+ * The widget extension has a single Info.plist, so its version has to come from one of the app's.
+ * An app whose build configurations disagree on the version would ship an extension that matches
+ * only some of them, which App Store validation rejects, so say so rather than picking silently.
+ */
+async function getDivergentMainAppMetadataWarnings(
+  discovery: IOSProjectDiscovery,
+  mainAppMetadata: MainAppMetadata
+): Promise<string[]> {
+  const warnings: string[] = []
+
+  for (const infoPlistPath of discovery.infoPlistPaths.slice(1)) {
+    const metadata = await readMainAppMetadata(infoPlistPath)
+
+    if (
+      metadata.shortVersionString === mainAppMetadata.shortVersionString &&
+      metadata.buildNumber === mainAppMetadata.buildNumber
+    ) {
+      continue
+    }
+
+    warnings.push(
+      `${toRelativePath(discovery.iosRoot, infoPlistPath)} sets version ${metadata.shortVersionString} (${
+        metadata.buildNumber
+      }) while ${toRelativePath(discovery.iosRoot, discovery.infoPlistPath)} sets ${
+        mainAppMetadata.shortVersionString
+      } (${
+        mainAppMetadata.buildNumber
+      }). The widget extension is generated with the version of the default build configuration. Set ios.project.infoPlistPath to choose a different one.`
+    )
+  }
+
+  return warnings
 }
 
 async function readMainAppMetadata(infoPlistPath: string): Promise<MainAppMetadata> {
