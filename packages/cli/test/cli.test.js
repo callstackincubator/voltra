@@ -1379,3 +1379,36 @@ test('build configurations disagreeing on the app version are reported', async (
     `expected a version divergence warning, got: ${JSON.stringify(result.warnings)}`
   )
 })
+
+test('a bundle identifier naming the target is resolved against the app, not the widget', async () => {
+  const { discoverIOSProject, ensureIOSWidgetTarget } = loadCliModule()
+  // The React Native template ships exactly this shape.
+  const templateIdentifier = '"org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)"'
+  const { tempDir, pbxprojPath } = writeMultiConfigurationIosProject({
+    targetSettingsOverrides: {
+      Debug: { PRODUCT_BUNDLE_IDENTIFIER: templateIdentifier },
+      Staging: { PRODUCT_BUNDLE_IDENTIFIER: templateIdentifier },
+      Release: { PRODUCT_BUNDLE_IDENTIFIER: templateIdentifier },
+    },
+  })
+  const discovery = await discoverIOSProject(tempDir, {})
+
+  await ensureIOSWidgetTarget({
+    projectRoot: tempDir,
+    ios: multiConfigurationIosConfig({ groupIdentifier: 'group.com.example.app' }),
+    discovery,
+    generatedFiles: [],
+  })
+
+  const pbxproj = fs.readFileSync(pbxprojPath, 'utf8')
+
+  // PRODUCT_NAME is the widget's own name inside the widget target, so leaving the reference
+  // unexpanded would stop the extension being a child of the app's identifier.
+  assert.match(pbxproj, /PRODUCT_BUNDLE_IDENTIFIER = "?org\.reactjs\.native\.example\.TestApp\.TestAppLiveActivity"?;/)
+  // The app target keeps its own reference untouched; only the widget's copy is resolved.
+  assert.match(
+    pbxproj,
+    /PRODUCT_BUNDLE_IDENTIFIER = "org\.reactjs\.native\.example\.\$\(PRODUCT_NAME:rfc1034identifier\)";/
+  )
+  assert.doesNotMatch(pbxproj, /\$\(PRODUCT_NAME:rfc1034identifier\)\.TestAppLiveActivity/)
+})

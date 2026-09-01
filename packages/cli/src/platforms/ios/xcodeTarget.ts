@@ -883,13 +883,10 @@ function getMainAppSettingsFor(
 }
 
 function readMainAppBundleIdentifier(config: XCBuildConfiguration): string | undefined {
-  // The unexpanded value is what the widget needs: an app identifier assembled from other build
-  // settings, such as `com.example.app$(BUNDLE_SUFFIX)`, has to keep expanding per build. Resolving
-  // it here would collapse any setting defined outside this configuration to an empty string.
   const rawBundleIdentifier = readBuildSettingString(config.props.buildSettings?.PRODUCT_BUNDLE_IDENTIFIER)
 
   if (rawBundleIdentifier) {
-    return rawBundleIdentifier
+    return substituteTargetScopedBuildSettings(rawBundleIdentifier, config)
   }
 
   const inheritedBundleIdentifier = config.resolveBuildSetting('PRODUCT_BUNDLE_IDENTIFIER')
@@ -899,6 +896,45 @@ function readMainAppBundleIdentifier(config: XCBuildConfiguration): string | und
   }
 
   return stripQuotes(inheritedBundleIdentifier)
+}
+
+/**
+ * Substitutes the build settings whose value depends on the target being built, leaving every other
+ * reference in place.
+ *
+ * An app identifier is routinely assembled from build settings. Those that mean something different
+ * in the widget target have to be resolved against the app now — the React Native template's
+ * `org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)` would otherwise name the widget
+ * after itself and stop being a child of the app's identifier. Everything else is left unexpanded,
+ * so a setting the project defines per build configuration, such as `$(BUNDLE_SUFFIX)`, keeps
+ * expanding per build in the widget target too.
+ */
+function substituteTargetScopedBuildSettings(value: string, config: XCBuildConfiguration): string {
+  return value.replace(/\$\((PRODUCT_NAME|TARGET_NAME)(?::([A-Za-z0-9]+))?\)/g, (match, settingName, modifier) => {
+    const settingValue = config.resolveBuildSetting(settingName)
+
+    if (typeof settingValue !== 'string' || settingValue.length === 0) {
+      return match
+    }
+
+    return applyBuildSettingModifier(stripQuotes(settingValue), modifier) ?? match
+  })
+}
+
+function applyBuildSettingModifier(value: string, modifier: string | undefined): string | undefined {
+  switch (modifier) {
+    case undefined:
+      return value
+    case 'rfc1034identifier':
+      return value.replace(/[^a-zA-Z0-9]/g, '-')
+    case 'lower':
+      return value.toLowerCase()
+    case 'upper':
+      return value.toUpperCase()
+    default:
+      // An unsupported modifier is left for Xcode rather than guessed at.
+      return undefined
+  }
 }
 
 function sanitizeBundleIdentifierSegment(targetName: string): string {
