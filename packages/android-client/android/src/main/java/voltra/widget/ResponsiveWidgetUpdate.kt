@@ -67,27 +67,45 @@ private fun AppWidgetManager.resolveForCurrentBounds(
 private fun Bundle?.intOrZero(key: String): Int = this?.getInt(key, 0) ?: 0
 
 /**
- * Picks the largest-area variant that fits within [boxWidth] x [boxHeight] (dp, matching the
- * `OPTION_APPWIDGET_*` bundle keys). Falls back to the smallest-area variant when nothing fits,
- * or when the box isn't known yet (either dimension `<= 0`).
+ * Picks the variant to show for a box of [boxWidth] x [boxHeight] (dp, matching the
+ * `OPTION_APPWIDGET_*` bundle keys), mirroring the platform's own selection in
+ * `RemoteViews.findBestFitLayout`: among the variants that fit, take the one closest to the box
+ * by squared distance, and fall back to the smallest variant when none fits or the launcher
+ * hasn't reported bounds yet (either dimension `<= 0`).
+ *
+ * Matching the platform matters because API 31+ resolves the same mapping itself — selecting by
+ * some other rule here would render a different variant below 31 than above it.
+ *
+ * Generic in the value type and `internal` so the selection can be unit-tested on its own.
  */
-private fun bestFitVariant(
-    sizeMapping: Map<SizeF, RemoteViews>,
+internal fun <T> bestFitVariant(
+    variants: Map<SizeF, T>,
     boxWidth: Int,
     boxHeight: Int,
-): RemoteViews {
-    val area: (Map.Entry<SizeF, RemoteViews>) -> Float = { it.key.width * it.key.height }
+): T {
+    val smallest = variants.entries.minBy { it.key.width * it.key.height }.value
+    if (boxWidth <= 0 || boxHeight <= 0) return smallest
 
-    val fitting =
-        if (boxWidth > 0 && boxHeight > 0) {
-            sizeMapping.filterKeys { it.width <= boxWidth && it.height <= boxHeight }
-        } else {
-            emptyMap()
-        }
+    return variants.entries
+        .filter { fitsIn(it.key, boxWidth, boxHeight) }
+        .minByOrNull { squareDistance(it.key, boxWidth, boxHeight) }
+        ?.value ?: smallest
+}
 
-    return if (fitting.isEmpty()) {
-        sizeMapping.entries.minBy(area).value
-    } else {
-        fitting.entries.maxBy(area).value
-    }
+/** Mirrors `RemoteViews.fitsIn`, including the 1dp tolerance it allows for rounding. */
+private fun fitsIn(
+    variant: SizeF,
+    boxWidth: Int,
+    boxHeight: Int,
+): Boolean = boxWidth + 1 > variant.width && boxHeight + 1 > variant.height
+
+/** Mirrors `RemoteViews.squareDistance`. */
+private fun squareDistance(
+    variant: SizeF,
+    boxWidth: Int,
+    boxHeight: Int,
+): Float {
+    val dx = variant.width - boxWidth
+    val dy = variant.height - boxHeight
+    return dx * dx + dy * dy
 }
