@@ -41,7 +41,9 @@ internal object VoltraWidgetReceivers {
     fun installedReceivers(context: Context): Map<String, ComponentName> {
         receivers?.let { return it }
         return synchronized(this) {
-            receivers ?: resolveDeclaredReceivers(context).also { receivers = it }
+            // Only a successful read is cached. Caching a failure would strand every later
+            // lookup on the convention fallback for the rest of the process.
+            receivers ?: resolveDeclaredReceivers(context)?.also { receivers = it } ?: emptyMap()
         }
     }
 
@@ -73,7 +75,7 @@ internal object VoltraWidgetReceivers {
         synchronized(this) { receivers = null }
     }
 
-    private fun resolveDeclaredReceivers(context: Context): Map<String, ComponentName> =
+    private fun resolveDeclaredReceivers(context: Context): Map<String, ComponentName>? =
         try {
             val declared =
                 context.packageManager
@@ -90,6 +92,6 @@ internal object VoltraWidgetReceivers {
             // Includes NameNotFoundException and TransactionTooLargeException on apps with an
             // unusually large component list. Callers fall back to the naming convention.
             Log.e(TAG, "Could not read declared receivers: ${e.message}", e)
-            emptyMap()
+            null
         }
 }

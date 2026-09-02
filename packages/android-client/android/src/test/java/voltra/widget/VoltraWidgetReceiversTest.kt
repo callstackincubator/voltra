@@ -5,6 +5,7 @@ import android.content.pm.ActivityInfo
 import android.content.pm.PackageInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,6 +78,23 @@ class VoltraWidgetReceiversTest {
         assertEquals(
             "myReceiver",
             VoltraWidgetReceivers.widgetIdOrNull("com.example.app.widget.VoltraWidget_myReceiverReceiver"),
+        )
+    }
+
+    /**
+     * A failed read must not be cached: doing so would strand every later lookup on the
+     * convention fallback for the rest of the process, with no way back.
+     */
+    @Test
+    fun retriesAfterAFailedLookup() {
+        shadowOf(context.packageManager).removePackage(context.packageName)
+        assertTrue(VoltraWidgetReceivers.installedReceivers(context).isEmpty())
+
+        declareReceivers("com.example.app.widget.VoltraWidget_weatherReceiver")
+
+        assertEquals(
+            "com.example.app.widget.VoltraWidget_weatherReceiver",
+            VoltraWidgetReceivers.componentName(context, "weather").className,
         )
     }
 
