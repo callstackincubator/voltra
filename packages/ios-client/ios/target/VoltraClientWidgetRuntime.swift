@@ -238,6 +238,7 @@ public enum VoltraClientWidgetEnvBuilder {
   ) -> String {
     let timestampMs = Int(date.timeIntervalSince1970 * 1000)
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+    let voltraVersion = VoltraConfig.voltraVersion()
 
     #if DEBUG
       let isDev = true
@@ -253,7 +254,7 @@ public enum VoltraClientWidgetEnvBuilder {
       "isDev": \(isDev),
       "metroUrl": \(metroUrlLiteral),
       "appVersion": \(jsonString(appVersion)),
-      "voltraVersion": \(jsonString("1.4.1"))
+      "voltraVersion": \(jsonString(voltraVersion))
     }
     """
 

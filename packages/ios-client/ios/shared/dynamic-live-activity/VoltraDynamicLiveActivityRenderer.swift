@@ -348,7 +348,7 @@ private enum VoltraDynamicLiveActivityEnvironmentBuilder {
       "isDev": isDev,
       "metroUrl": metroURL as Any,
       "appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
-      "voltraVersion": Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.voltraVersion) as? String ?? "unknown",
+      "voltraVersion": VoltraConfig.voltraVersion(),
     ]
     var environment: [String: Any] = [
       "date": Int(date.timeIntervalSince1970 * 1000),

@@ -36,6 +36,17 @@ export function requirePlatformPackage<TPackage>(projectRoot: string, platform: 
   return createProjectRequire(projectRoot)(getPlatformPackageName(platform)) as TPackage
 }
 
+export function getPlatformClientPackageVersion(projectRoot: string, platform: VoltraPlatform): string {
+  const packageName = getPlatformClientPackageName(platform)
+  const manifest = createProjectRequire(projectRoot)(`${packageName}/package.json`) as { version?: unknown }
+
+  if (typeof manifest.version !== 'string' || manifest.version.length === 0) {
+    throw new Error(`Package ${packageName} does not declare a valid version.`)
+  }
+
+  return manifest.version
+}
+
 export function getMissingPlatformPackageMessage(
   platform: VoltraPlatform,
   packageNames = getRequiredPlatformPackageNames(platform)

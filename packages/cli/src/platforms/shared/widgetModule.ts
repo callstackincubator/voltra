@@ -11,14 +11,16 @@ export interface WidgetModuleBuildInfo {
   isDev: false
   metroUrl: null
   appVersion: 'unknown'
-  voltraVersion: '1.4.1'
+  voltraVersion: string
 }
 
-export const DYNAMIC_WIDGET_BUILD_INFO: WidgetModuleBuildInfo = {
-  isDev: false,
-  metroUrl: null,
-  appVersion: 'unknown',
-  voltraVersion: '1.4.1',
+export function createDynamicWidgetBuildInfo(voltraVersion: string): WidgetModuleBuildInfo {
+  return {
+    isDev: false,
+    metroUrl: null,
+    appVersion: 'unknown',
+    voltraVersion,
+  }
 }
 
 export function evaluateWidgetModuleExports(

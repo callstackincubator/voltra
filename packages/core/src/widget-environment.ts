@@ -83,8 +83,10 @@ export type WidgetBuildEnvironment = {
   /** App version string (`CFBundleShortVersionString` on iOS, `versionName` on Android). */
   appVersion: string
 
-  /** Voltra package version (`@use-voltra/core`). Surfaces in error reports and lets
-   * widgets gate behaviour by compatibility level if needed. */
+  /** Installed Voltra client package version — `@use-voltra/ios-client` or
+   * `@use-voltra/android-client`, resolved from the app project when the native project is
+   * generated. Surfaces in error reports and lets widgets gate behaviour by compatibility level
+   * if needed. */
   voltraVersion: string
 }
 

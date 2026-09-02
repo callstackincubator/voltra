@@ -1,4 +1,9 @@
-import { evaluateWidgetModuleExports, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
+import {
+  evaluateWidgetModuleExports,
+  logger,
+  resolveInstalledPackageVersion,
+  type PrerenderedWidgetStates,
+} from '@use-voltra/expo-plugin'
 
 import type { DetectedIOSWidget } from './clientRendered'
 
@@ -31,7 +36,7 @@ const SINGLE_LOCALE_KEY = '__default'
  * mirror `WidgetEnvironment` from packages/core/src/widget-environment.ts so the widget
  * function sees the same shape it gets at runtime.
  */
-function buildPlaceholderEnv(): Record<string, unknown> {
+function buildPlaceholderEnv(voltraVersion: string): Record<string, unknown> {
   return {
     date: Date.now(),
     widgetFamily: 'systemMedium',
@@ -44,7 +49,7 @@ function buildPlaceholderEnv(): Record<string, unknown> {
       isDev: false,
       metroUrl: null,
       appVersion: 'unknown',
-      voltraVersion: '1.4.1',
+      voltraVersion,
     },
   }
 }
@@ -75,7 +80,7 @@ export async function prerenderClientRenderedWidgets(
     renderVoltraVariantToJson: (element: unknown) => unknown
   }
 
-  const placeholderEnv = buildPlaceholderEnv()
+  const placeholderEnv = buildPlaceholderEnv(resolveInstalledPackageVersion(projectRoot, '@use-voltra/ios-client'))
 
   for (const widget of clientWidgets) {
     try {
