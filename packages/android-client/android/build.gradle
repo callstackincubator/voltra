@@ -35,13 +35,20 @@ def packageJsonFile = new File(project.projectDir.parentFile, "package.json")
 def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
 def voltraVersion = packageJson.version
 
+def hostMinSdk = safeExtGet("minSdkVersion", 24)
+if (hostMinSdk < 24) {
+  throw new GradleException(
+    "@use-voltra/android-client requires minSdkVersion 24 (Android 7.0); this app sets ${hostMinSdk}."
+  )
+}
+
 android {
   namespace "voltra"
 
   compileSdkVersion safeExtGet("compileSdkVersion", 36)
 
   defaultConfig {
-    minSdkVersion safeExtGet("minSdkVersion", 31)
+    minSdkVersion hostMinSdk
     targetSdkVersion safeExtGet("targetSdkVersion", 36)
     versionCode 1
     versionName "0.1.0"

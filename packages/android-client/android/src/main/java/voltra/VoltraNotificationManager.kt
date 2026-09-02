@@ -354,6 +354,17 @@ class VoltraNotificationManager(
         return "ongoing-notification-$intId"
     }
 
+    // Notification.Builder(Context, String) is API 26. Notification channels don't exist
+    // below API 26, so falling back to the single-arg constructor (and discarding
+    // channelId) on 24-25 is correct behavior, not a compromise.
+    @Suppress("DEPRECATION")
+    private fun newBuilder(channelId: String?): Builder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channelId != null) {
+            Builder(appContext, channelId)
+        } else {
+            Builder(appContext).setPriority(Notification.PRIORITY_DEFAULT)
+        }
+
     private fun postNotification(
         record: AndroidOngoingNotificationRecord,
         payload: AndroidOngoingNotificationPayload,
@@ -371,7 +382,7 @@ class VoltraNotificationManager(
         }
 
         val builder =
-            Builder(appContext, record.channelId)
+            newBuilder(record.channelId)
                 .setSmallIcon(resolveSmallIcon(record.smallIcon))
                 .setOngoing(true)
                 .setOnlyAlertOnce(onlyAlertOnce)
