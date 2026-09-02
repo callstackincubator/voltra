@@ -122,6 +122,14 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
   public let widgetId: String
   public let initialState: Data?
 
+  /// Last successful server response per widget, shared by every provider instance in this
+  /// extension process. Backs fetch coalescing and the fallback when a fetch fails, without
+  /// depending on an App Group being configured.
+  private static let serverResponseStore = ServerWidgetResponseStore()
+
+  /// How long WidgetKit waits before asking again after a fetch failed.
+  private static let retryInterval: TimeInterval = 900
+
   public init(widgetId: String, initialState: Data? = nil) {
     self.widgetId = widgetId
     self.initialState = initialState
@@ -132,126 +140,99 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
   }
 
   public func getSnapshot(in context: Context, completion: @escaping (VoltraHomeWidgetEntry) -> Void) {
-    // Prioritize timeline data for consistency with getTimeline
-    if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId),
-       let firstEntry = timeline.entries.first
-    {
-      let node = parseJsonToNode(data: firstEntry.json, family: context.family)
-      completion(VoltraHomeWidgetEntry(
-        date: Date(),
-        rootNode: node,
-        widgetId: widgetId,
-        deepLinkUrl: firstEntry.deepLinkUrl
-      ))
-      return
-    }
-
-    // Fallback to single-entry data
-    let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
-    let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
-    completion(VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId))
+    // Snapshots come from local data so the gallery preview never waits on the network.
+    completion(localTimeline(in: context, policy: .never).entries.first ?? placeholder(in: context))
   }
 
   public func getTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
-    // Prune expired timeline entries if any exist
-    VoltraHomeWidgetStore.pruneExpiredEntries(widgetId: widgetId)
-
-    // Check if server-driven updates are configured for this widget
-    if VoltraWidgetServerFetcher.serverUrl(for: widgetId) != nil {
-      getServerDrivenTimeline(in: context, completion: completion)
+    guard VoltraWidgetServerFetcher.serverUrl(for: widgetId) != nil else {
+      completion(localTimeline(in: context, policy: .never))
       return
     }
 
-    // Local-only mode: use existing data from UserDefaults
-    getLocalTimeline(in: context, completion: completion)
+    Task { completion(await serverTimeline(in: context)) }
   }
 
-  // MARK: - Server-Driven Timeline
+  // MARK: - Server-driven timeline
 
-  private static var lastFetchTimes: [String: Date] = [:]
-  private static let coalesceInterval: TimeInterval = 3 // seconds
+  private func serverTimeline(in context: Context) async -> Timeline<VoltraHomeWidgetEntry> {
+    let resolver = ServerWidgetContentResolver(
+      responseStore: Self.serverResponseStore,
+      fetch: { widgetId in try await fetchServerContent(widgetId: widgetId, in: context) }
+    )
 
-  /// Fetch widget content from a remote Voltra SSR server and build a timeline.
-  private func getServerDrivenTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
-    let familyKey = familyToKey(context.family)
-    let intervalMinutes = VoltraWidgetServerFetcher.updateInterval(for: widgetId)
-
-    // Coalesce: if we fetched for this widget very recently, use cached data.
-    // The server returns all families in every response, so subsequent getTimeline
-    // calls for different families can safely use the just-cached response —
-    // selectContentForFamily will pick the correct family-specific content.
-    if let lastFetch = Self.lastFetchTimes[widgetId],
-       Date().timeIntervalSince(lastFetch) < Self.coalesceInterval
-    {
-      VoltraLogger.widget.info("Coalescing fetch for '\(widgetId)' family '\(familyKey)' (last fetch \(Date().timeIntervalSince(lastFetch))s ago)")
-      getLocalTimeline(in: context, completion: completion)
-      return
-    }
-
-    Task {
-      do {
-        let data = try await VoltraWidgetServerFetcher.fetchWidgetContent(
-          widgetId: widgetId,
-          family: familyKey
-        )
-
-        // Record that we just fetched successfully
-        Self.lastFetchTimes[widgetId] = Date()
-
-        let node = parseJsonToNode(data: data, family: context.family)
-
-        // Only cache the data after successful parsing to avoid overwriting
-        // good cached content with unparseable responses
-        if node != nil, let jsonString = String(data: data, encoding: .utf8) {
-          try? VoltraWidgetDefaults.setWidgetJson(jsonString, for: widgetId, deepLinkUrl: nil)
-        }
-
-        let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
-
-        // Schedule next update based on configured interval
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? Date().addingTimeInterval(900)
-        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
-
-        VoltraLogger.widget.info("Server-driven update succeeded for '\(widgetId)', next update in \(intervalMinutes)m")
-      } catch {
-        VoltraLogger.widget.error("Server-driven update failed for '\(widgetId)': \(error.localizedDescription)")
-
-        // Fall back to local data on network failure
-        getLocalTimeline(in: context, completion: completion)
-      }
+    switch await resolver.resolve(widgetId: widgetId) {
+    case let .current(data):
+      let intervalMinutes = VoltraWidgetServerFetcher.updateInterval(for: widgetId)
+      let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? retryDate
+      return serverTimeline(from: data, in: context, policy: .after(nextUpdate))
+    case let .lastKnown(data, error):
+      VoltraLogger.widget.error("Server-driven update failed for '\(widgetId)', keeping last server content: \(error.localizedDescription)")
+      return serverTimeline(from: data, in: context, policy: .after(retryDate))
+    case let .unavailable(error):
+      VoltraLogger.widget.error("Server-driven update failed for '\(widgetId)', falling back to local data: \(error.localizedDescription)")
+      return localTimeline(in: context, policy: .after(retryDate))
     }
   }
 
-  // MARK: - Local Timeline
+  /// Fetch, validate, and persist one server response. Throws on network errors and on responses
+  /// that do not parse into a widget tree, so they are never treated as good content.
+  private func fetchServerContent(widgetId: String, in context: Context) async throws -> Data {
+    let data = try await VoltraWidgetServerFetcher.fetchWidgetContent(
+      widgetId: widgetId,
+      family: familyToKey(context.family)
+    )
+
+    guard parseJsonToNode(data: data, family: context.family) != nil else {
+      throw UnparseableServerContentError()
+    }
+
+    // Best-effort on-disk copy so a fresh extension process has something to fall back to.
+    // Requires an App Group; without one the in-memory store above still covers this process.
+    if let jsonString = String(data: data, encoding: .utf8) {
+      try? VoltraWidgetDefaults.setWidgetJson(jsonString, for: widgetId, deepLinkUrl: nil)
+    }
+
+    VoltraLogger.widget.info("Server-driven update succeeded for '\(widgetId)'")
+    return data
+  }
+
+  private func serverTimeline(
+    from data: Data,
+    in context: Context,
+    policy: TimelineReloadPolicy
+  ) -> Timeline<VoltraHomeWidgetEntry> {
+    let node = parseJsonToNode(data: data, family: context.family)
+    let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
+    return Timeline(entries: [entry], policy: policy)
+  }
+
+  private var retryDate: Date {
+    Date().addingTimeInterval(Self.retryInterval)
+  }
+
+  // MARK: - Local timeline
 
   /// Build a timeline from locally stored data (UserDefaults / initial state).
-  private func getLocalTimeline(in context: Context, completion: @escaping (Timeline<VoltraHomeWidgetEntry>) -> Void) {
+  private func localTimeline(in context: Context, policy: TimelineReloadPolicy) -> Timeline<VoltraHomeWidgetEntry> {
+    VoltraHomeWidgetStore.pruneExpiredEntries(widgetId: widgetId)
+
     if let timeline = VoltraHomeWidgetStore.readTimeline(widgetId: widgetId), !timeline.entries.isEmpty {
       let entries = timeline.entries.map { timelineEntry in
-        let node = parseJsonToNode(data: timelineEntry.json, family: context.family)
-        return VoltraHomeWidgetEntry(
+        VoltraHomeWidgetEntry(
           date: timelineEntry.date,
-          rootNode: node,
+          rootNode: parseJsonToNode(data: timelineEntry.json, family: context.family),
           widgetId: widgetId,
           deepLinkUrl: timelineEntry.deepLinkUrl
         )
       }
-      completion(Timeline(entries: entries, policy: .never))
-      return
+      return Timeline(entries: entries, policy: policy)
     }
 
-    // Fallback to single-entry behavior
     let data = VoltraHomeWidgetStore.readJson(widgetId: widgetId) ?? initialState
     let node = data.flatMap { parseJsonToNode(data: $0, family: context.family) }
     let entry = VoltraHomeWidgetEntry(date: Date(), rootNode: node, widgetId: widgetId)
-
-    // If server updates are configured but we're in fallback, retry sooner
-    if VoltraWidgetServerFetcher.serverUrl(for: widgetId) != nil {
-      let retryDate = Date().addingTimeInterval(900) // Retry in 15 minutes
-      completion(Timeline(entries: [entry], policy: .after(retryDate)))
-    } else {
-      completion(Timeline(entries: [entry], policy: .never))
-    }
+    return Timeline(entries: [entry], policy: policy)
   }
 
   /// Parse JSON data into a VoltraNode for the given widget family.
@@ -270,6 +251,12 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
 
     // 3. Parse into VoltraNode AST
     return VoltraNode.parse(from: json)
+  }
+}
+
+private struct UnparseableServerContentError: LocalizedError {
+  var errorDescription: String? {
+    "Server response could not be parsed into a widget tree"
   }
 }
 
