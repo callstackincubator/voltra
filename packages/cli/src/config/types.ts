@@ -63,6 +63,14 @@ export interface AndroidWidgetConfig {
    * older.
    */
   minCellHeight?: number
+  /** Minimum width, in dp, the widget can be resized down to. */
+  minResizeWidth?: number
+  /** Minimum height, in dp, the widget can be resized down to. */
+  minResizeHeight?: number
+  /** Maximum width, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeWidth?: number
+  /** Maximum height, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeHeight?: number
   /** Default widget width in launcher grid cells. */
   targetCellWidth: number
   /** Default widget height in launcher grid cells. */

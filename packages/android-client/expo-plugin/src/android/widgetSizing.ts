@@ -26,7 +26,14 @@ export interface AndroidWidgetSizingInput {
   minHeight?: number
   minCellWidth?: number
   minCellHeight?: number
+  minResizeWidth?: number
+  minResizeHeight?: number
+  maxResizeWidth?: number
+  maxResizeHeight?: number
 }
+
+/** Resize bounds, in dp, emitted only when set. `maxResize*` is honoured from Android 12 on. */
+const RESIZE_BOUNDS = ['minResizeWidth', 'minResizeHeight', 'maxResizeWidth', 'maxResizeHeight'] as const
 
 function cellsToWidthDp(cells: number): number {
   return cells * 73 - 16
@@ -34,6 +41,13 @@ function cellsToWidthDp(cells: number): number {
 
 function cellsToHeightDp(cells: number): number {
   return cells * 66 - 15
+}
+
+function resolveMinimumSize(widget: AndroidWidgetSizingInput): { minWidth: number; minHeight: number } {
+  return {
+    minWidth: widget.minWidth ?? cellsToWidthDp(widget.minCellWidth ?? widget.targetCellWidth),
+    minHeight: widget.minHeight ?? cellsToHeightDp(widget.minCellHeight ?? widget.targetCellHeight),
+  }
 }
 
 /**
@@ -44,13 +58,55 @@ function cellsToHeightDp(cells: number): number {
  * target cell count.
  */
 export function androidWidgetSizingAttributes(widget: AndroidWidgetSizingInput): string[] {
-  const minWidth = widget.minWidth ?? cellsToWidthDp(widget.minCellWidth ?? widget.targetCellWidth)
-  const minHeight = widget.minHeight ?? cellsToHeightDp(widget.minCellHeight ?? widget.targetCellHeight)
+  const { minWidth, minHeight } = resolveMinimumSize(widget)
 
-  return [
+  const attributes = [
     `android:minWidth="${minWidth}dp"`,
     `android:minHeight="${minHeight}dp"`,
     `android:targetCellWidth="${widget.targetCellWidth}"`,
     `android:targetCellHeight="${widget.targetCellHeight}"`,
   ]
+
+  for (const bound of RESIZE_BOUNDS) {
+    const value = widget[bound]
+    if (value !== undefined) {
+      attributes.push(`android:${bound}="${value}dp"`)
+    }
+  }
+
+  return attributes
+}
+
+/**
+ * Resize bounds Android will silently ignore, described for the developer who set them.
+ *
+ * `minResizeWidth` has no effect when it is greater than `minWidth`, and `maxResizeWidth` has no
+ * effect when it is smaller; likewise for the height pair. This reports rather than throws,
+ * because `minWidth` is usually the approximation derived from the widget's cell count.
+ * https://developer.android.com/reference/android/appwidget/AppWidgetProviderInfo
+ */
+export function androidWidgetSizingWarnings(widget: AndroidWidgetSizingInput, widgetId: string): string[] {
+  const { minWidth, minHeight } = resolveMinimumSize(widget)
+  const warnings: string[] = []
+
+  const report = (bound: string, value: number, relation: string, minimum: string, minimumValue: number): void => {
+    warnings.push(
+      `Widget '${widgetId}': ${bound} (${value}dp) is ${relation} ${minimum} (${minimumValue}dp), so Android ignores it.`
+    )
+  }
+
+  if (widget.minResizeWidth !== undefined && widget.minResizeWidth > minWidth) {
+    report('minResizeWidth', widget.minResizeWidth, 'greater than', 'minWidth', minWidth)
+  }
+  if (widget.minResizeHeight !== undefined && widget.minResizeHeight > minHeight) {
+    report('minResizeHeight', widget.minResizeHeight, 'greater than', 'minHeight', minHeight)
+  }
+  if (widget.maxResizeWidth !== undefined && widget.maxResizeWidth < minWidth) {
+    report('maxResizeWidth', widget.maxResizeWidth, 'smaller than', 'minWidth', minWidth)
+  }
+  if (widget.maxResizeHeight !== undefined && widget.maxResizeHeight < minHeight) {
+    report('maxResizeHeight', widget.maxResizeHeight, 'smaller than', 'minHeight', minHeight)
+  }
+
+  return warnings
 }
