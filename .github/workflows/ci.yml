@@ -159,6 +159,10 @@ jobs:
         working-directory: example/android
         run: ./gradlew :use-voltra_android-client:testDebugUnitTest
 
+      - name: Run Android Lint
+        working-directory: example/android
+        run: ./gradlew :use-voltra_android-client:lintDebug -PvoltraLintStrict
+
   native-swift-test:
     name: '[Swift] Test'
     runs-on: macos-latest
