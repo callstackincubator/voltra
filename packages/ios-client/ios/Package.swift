@@ -42,6 +42,8 @@ let package = Package(
         "DynamicWidgetPropsStore.swift",
         "DynamicWidgetRenderCoordinator.swift",
         "DynamicWidgetUpdater.swift",
+        "ServerWidgetContentResolver.swift",
+        "ServerWidgetResponseStore.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityTypes.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityPayloadValidator.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityRenderFailureQueue.swift",
