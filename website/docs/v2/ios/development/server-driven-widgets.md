@@ -246,7 +246,7 @@ Provide a meaningful initial state (e.g. "Loading..." or placeholder content) ra
 
 ## Error handling and retries
 
-When a server fetch fails, the widget extension falls back to the last successfully fetched data (or the initial state if no data has been fetched yet), and WidgetKit schedules a retry after 15 minutes. This applies to network errors/timeouts, non-2xx server errors, and empty responses.
+When a server fetch fails, the widget extension falls back to the last successfully fetched data (or the initial state if no data has been fetched yet), and WidgetKit schedules a retry after 15 minutes. The last successful response is kept in memory for the lifetime of the widget extension process; when an App Group is configured it is also persisted so a freshly started process can fall back to it. This applies to network errors/timeouts, non-2xx server errors, and empty responses.
 
 Parse errors are handled slightly differently: if the server returns a 2xx response but the JSON can't be parsed into a valid widget tree, the cached data from the previous successful fetch is preserved (not overwritten), so the widget keeps showing the last known good content.
 
