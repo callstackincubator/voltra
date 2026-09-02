@@ -465,8 +465,7 @@ class VoltraWidgetManager(
         val appWidgetManager = AppWidgetManager.getInstance(context)
         val ids = mutableSetOf<String>()
         try {
-            for (componentName in VoltraWidgetReceivers.installedReceivers(context)) {
-                val widgetId = VoltraWidgetReceivers.widgetIdOrNull(componentName.className) ?: continue
+            for ((widgetId, componentName) in VoltraWidgetReceivers.installedReceivers(context)) {
                 if (appWidgetManager.getAppWidgetIds(componentName).isEmpty()) continue // not pinned
                 ids.add(widgetId)
             }
