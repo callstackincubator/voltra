@@ -238,8 +238,7 @@ public enum VoltraClientWidgetEnvBuilder {
   ) -> String {
     let timestampMs = Int(date.timeIntervalSince1970 * 1000)
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
-    let voltraVersion =
-      Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.voltraVersion) as? String ?? "unknown"
+    let voltraVersion = VoltraConfig.voltraVersion()
 
     #if DEBUG
       let isDev = true
