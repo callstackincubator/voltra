@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
+  # No `branches` filter: stacked PRs (e.g. via gh-stack) target another
+  # feature branch instead of `main`, and the filter would otherwise stop
+  # this workflow from ever running for them.
   pull_request:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
