@@ -24,11 +24,10 @@ internal object VoltraWidgetReceivers {
         try {
             AppWidgetManager
                 .getInstance(context)
-                .installedProviders
+                .getInstalledProvidersForPackage(context.packageName, null)
                 .map { it.provider }
-                .filter { it.packageName == context.packageName }
         } catch (e: Exception) {
-            Log.e(TAG, "installedProviders failed: ${e.message}", e)
+            Log.e(TAG, "getInstalledProvidersForPackage failed: ${e.message}", e)
             emptyList()
         }
 
