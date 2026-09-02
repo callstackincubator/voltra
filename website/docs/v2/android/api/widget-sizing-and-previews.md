@@ -4,22 +4,33 @@
 
 ### Grid Cells vs Density-Independent Pixels (dp)
 
-Android uses grid cells to define widget sizes. By default:
+Android widgets are sized two different ways depending on the OS version. Android 12+ places
+widgets using `targetCellWidth`/`targetCellHeight`, in grid cells. Android 11 and older don't
+understand those attributes at all and place widgets using `minWidth`/`minHeight`, in dp, so Voltra
+always emits both.
 
-- **minWidth/minHeight (dp) = (cellCount × 70) - 30**
+When `minWidth`/`minHeight` aren't set explicitly, they're derived from the widget's cell size using
+Google's published figures for a 5x4 handset grid:
 
-For example, 2 cells comes out to 110 dp, and 4 cells to 250 dp.
+- **minWidth (dp) = (cellCount × 73) - 16**
+- **minHeight (dp) = (cellCount × 66) - 15**
 
-You can override this with explicit `minWidth` and `minHeight` in dp.
+For example, 2 cells comes out to 130 dp wide and 117 dp tall, and 4 cells to 276 dp wide and 249 dp
+tall.
+
+Cell size varies by device, launcher and orientation, so this conversion is only an approximation,
+and it only matters on Android 11 and older — Android 12+ sizes the widget from `targetCellWidth`/
+`targetCellHeight` directly. If you need precise placement on Android 11 and older, set `minWidth`
+and `minHeight` explicitly in dp instead of relying on the conversion.
 
 ### Standard Dimensions
 
 | Family | Cells | Default DP | Typical Use |
 |--------|-------|-----------|-------------|
-| Small | 2×1 | 110 × 40 | Quick glance info |
-| Medium | 2×2 | 110 × 110 | Main widget size |
-| Large | 4×2 | 250 × 110 | Rich content |
-| Extra Large | 4×4 | 250 × 250 | Complex layouts |
+| Small | 2×1 | 130 × 51 | Quick glance info |
+| Medium | 2×2 | 130 × 117 | Main widget size |
+| Large | 4×2 | 276 × 117 | Rich content |
+| Extra Large | 4×4 | 276 × 249 | Complex layouts |
 
 ## Widget Picker Previews
 

@@ -49,10 +49,10 @@ Use `@use-voltra/android-client` for Android config.
 - `description` (string or per-locale map)
 - `targetCellWidth`
 - `targetCellHeight`
-- `minCellWidth`
-- `minCellHeight`
 - `minWidth`
 - `minHeight`
+- `minCellWidth` (deprecated, prefer `minWidth`)
+- `minCellHeight` (deprecated, prefer `minHeight`)
 - `resizeMode`
 - `widgetCategory`
 - `initialStatePath` (string or per-locale map of paths)

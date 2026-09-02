@@ -10,6 +10,13 @@ import {
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
 
+function validatePositiveIntegerField(widget: AndroidWidgetConfig, field: keyof AndroidWidgetConfig): void {
+  const value = widget[field]
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    throw new Error(`Widget '${widget.id}': ${field} must be a positive integer`)
+  }
+}
+
 export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): void {
   validateHomeScreenWidgetId(widget.id)
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
@@ -34,20 +41,20 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
     throw new Error(`Widget '${widget.id}': targetCellHeight must be a positive integer (typically 1-5)`)
   }
 
+  if (widget.minWidth !== undefined) {
+    validatePositiveIntegerField(widget, 'minWidth')
+  }
+
+  if (widget.minHeight !== undefined) {
+    validatePositiveIntegerField(widget, 'minHeight')
+  }
+
   if (widget.minCellWidth !== undefined) {
-    if (typeof widget.minCellWidth !== 'number' || !Number.isInteger(widget.minCellWidth) || widget.minCellWidth < 1) {
-      throw new Error(`Widget '${widget.id}': minCellWidth must be a positive integer`)
-    }
+    validatePositiveIntegerField(widget, 'minCellWidth')
   }
 
   if (widget.minCellHeight !== undefined) {
-    if (
-      typeof widget.minCellHeight !== 'number' ||
-      !Number.isInteger(widget.minCellHeight) ||
-      widget.minCellHeight < 1
-    ) {
-      throw new Error(`Widget '${widget.id}': minCellHeight must be a positive integer`)
-    }
+    validatePositiveIntegerField(widget, 'minCellHeight')
   }
 
   if (widget.previewImage !== undefined) {

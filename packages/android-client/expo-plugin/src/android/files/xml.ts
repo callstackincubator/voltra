@@ -6,6 +6,7 @@ import { isWidgetLocalizedMap, logger, widgetLabelEnglish } from '@use-voltra/ex
 
 import type { AndroidWidgetConfig } from '../../types'
 import { androidWidgetResourceId } from '../resourceName'
+import { androidWidgetSizingAttributes } from '../widgetSizing'
 
 export interface GenerateXmlFilesProps {
   platformProjectRoot: string
@@ -116,16 +117,12 @@ function generateWidgetInfoXml(
   previewImageResourceName?: string,
   previewLayoutResourceName?: string
 ): string {
-  const { targetCellWidth, targetCellHeight } = widget
   const resizeMode = widget.resizeMode || 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory || 'home_screen'
 
-  // android:targetCellWidth/Height are API 31+ only and ignored below that, so min sizes must
-  // always be declared too, derived from the (required) target cell counts when not set explicitly.
-  const cellsToDp = (cells: number) => cells * 70 - 30
-  const minWidth = widget.minWidth ?? cellsToDp(widget.minCellWidth ?? widget.targetCellWidth)
-  const minHeight = widget.minHeight ?? cellsToDp(widget.minCellHeight ?? widget.targetCellHeight)
-
+  const sizingAttrs = androidWidgetSizingAttributes(widget)
+    .map((attr) => `        ${attr}`)
+    .join('\n')
   const previewImageAttr = previewImageResourceName
     ? `\n    android:previewImage="@drawable/${previewImageResourceName}"`
     : ''
@@ -136,10 +133,7 @@ function generateWidgetInfoXml(
   return dedent`
     <?xml version="1.0" encoding="utf-8"?>
     <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-        android:minWidth="${minWidth}dp"
-        android:minHeight="${minHeight}dp"
-        android:targetCellWidth="${targetCellWidth}"
-        android:targetCellHeight="${targetCellHeight}"
+${sizingAttrs}
         android:updatePeriodMillis="0"
         android:initialLayout="@layout/voltra_widget_placeholder"
         android:resizeMode="${resizeMode}"

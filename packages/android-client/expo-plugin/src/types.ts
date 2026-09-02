@@ -28,9 +28,19 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
   id: string
   displayName: WidgetLabel
   description: WidgetLabel
+  /** Minimum widget width in dp. Only affects Android 11 and older. */
   minWidth?: number
+  /** Minimum widget height in dp. Only affects Android 11 and older. */
   minHeight?: number
+  /**
+   * @deprecated Use `minWidth` instead. Approximated in dp for Android 11 and older, since cell
+   * size varies by device, launcher and orientation.
+   */
   minCellWidth?: number
+  /**
+   * @deprecated Use `minHeight` instead. Approximated in dp for Android 11 and older, since cell
+   * size varies by device, launcher and orientation.
+   */
   minCellHeight?: number
   targetCellWidth: number
   targetCellHeight: number
