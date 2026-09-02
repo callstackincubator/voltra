@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.util.Log
-import android.widget.RemoteViews
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
@@ -140,13 +139,8 @@ class VoltraRefreshActionCallback : ActionCallback {
             val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
 
             for (appWidgetId in appWidgetIds) {
-                try {
-                    val responsiveRemoteViews = RemoteViews(sizeMapping)
-                    appWidgetManager.updateAppWidget(appWidgetId, responsiveRemoteViews)
-                    Log.d(TAG, "Pushed RemoteViews to widget instance $appWidgetId")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update widget instance $appWidgetId: ${e.message}", e)
-                }
+                appWidgetManager.updateResponsiveAppWidget(appWidgetId, sizeMapping)
+                Log.d(TAG, "Pushed RemoteViews to widget instance $appWidgetId")
             }
 
             Log.d(TAG, "Refresh completed for widget '$widgetId' (${appWidgetIds.size} instances)")

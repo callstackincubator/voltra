@@ -7,7 +7,6 @@ import android.content.SharedPreferences
 import android.content.res.Resources
 import android.os.Build
 import android.util.Log
-import android.widget.RemoteViews
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import kotlinx.coroutines.Dispatchers
@@ -211,7 +210,7 @@ class VoltraWidgetManager(
     /**
      * Update a widget directly using GlanceRemoteViews, bypassing Glance's session lock.
      * This allows rapid widget updates without the 45-50 second cooldown.
-     * Uses RemoteViews with size mapping for responsive layouts (Android 12+ required).
+     * Uses [updateResponsiveAppWidget] to push the size-mapped RemoteViews to each instance.
      */
     @OptIn(ExperimentalGlanceRemoteViewsApi::class)
     suspend fun updateWidgetDirect(widgetId: String) =
@@ -267,15 +266,8 @@ class VoltraWidgetManager(
 
             // 4. Update each widget instance with responsive RemoteViews
             for (appWidgetId in appWidgetIds) {
-                try {
-                    // Android 12+ (API 31): Use RemoteViews with size mapping for responsive layout
-                    // The system will automatically select the appropriate RemoteViews based on current size
-                    val responsiveRemoteViews = RemoteViews(sizeMapping)
-                    appWidgetManager.updateAppWidget(appWidgetId, responsiveRemoteViews)
-                    Log.d(TAG, "Updated widget $appWidgetId with responsive RemoteViews (${sizeMapping.size} sizes)")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update widget instance $appWidgetId: ${e.message}", e)
-                }
+                appWidgetManager.updateResponsiveAppWidget(appWidgetId, sizeMapping)
+                Log.d(TAG, "Updated widget $appWidgetId with responsive RemoteViews (${sizeMapping.size} sizes)")
             }
 
             Log.d(TAG, "Direct widget update completed for $widgetId")
