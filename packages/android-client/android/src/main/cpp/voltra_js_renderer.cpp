@@ -69,7 +69,7 @@ std::string jstringToStd(JNIEnv *env, jstring jstr) {
 // registered `globalThis.__voltraWidgets[<widgetId>].render`. Returns false on
 // any JS error or if the render function was not captured.
 extern "C" JNIEXPORT jboolean JNICALL
-Java_voltra_runtime_VoltraJSRenderer_nativeEvaluateBundle(
+Java_voltra_dynamicwidget_VoltraJSRenderer_nativeEvaluateBundle(
     JNIEnv *env, jobject /* this */, jstring jWrappedSource, jstring jSourceURL,
     jstring jWidgetId) {
   std::lock_guard<std::mutex> lock(g_mutex);
@@ -128,7 +128,7 @@ Java_voltra_runtime_VoltraJSRenderer_nativeEvaluateBundle(
 // entry returns a JSON string (the resolved Voltra node tree), so no JSON
 // marshaling is needed here. Returns null on any error.
 extern "C" JNIEXPORT jstring JNICALL
-Java_voltra_runtime_VoltraJSRenderer_nativeRender(
+Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
     JNIEnv *env, jobject /* this */, jstring jWidgetId, jstring jPropsJSON,
     jstring jEnvJSON) {
   std::lock_guard<std::mutex> lock(g_mutex);

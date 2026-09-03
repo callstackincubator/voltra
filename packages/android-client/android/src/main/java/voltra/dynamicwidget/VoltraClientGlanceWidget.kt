@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.dynamicwidget
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -27,15 +27,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import voltra.BuildConfig
-import voltra.dynamicwidget.DynamicWidgetPlaceholderStore
-import voltra.dynamicwidget.DynamicWidgetRenderCoordinator
-import voltra.dynamicwidget.DynamicWidgetRenderInput
-import voltra.dynamicwidget.currentDynamicWidgetRenderInput
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
-import voltra.runtime.VoltraConfigurationStore
-import voltra.runtime.VoltraJSRenderer
 import java.net.HttpURLConnection
 import java.net.URL
 

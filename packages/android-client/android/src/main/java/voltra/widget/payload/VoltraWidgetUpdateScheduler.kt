@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import android.content.Context
 import android.util.Log
@@ -19,6 +19,7 @@ import androidx.work.WorkManager
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import voltra.widget.VoltraWidgetUpdateWorker
 import java.util.concurrent.TimeUnit
 
 private val Context.voltraServerUrlsDataStore: DataStore<Preferences> by preferencesDataStore(

@@ -1,4 +1,4 @@
-package voltra.runtime
+package voltra.dynamicwidget
 
 import android.util.Log
 

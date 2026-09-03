@@ -1,12 +1,13 @@
-package voltra.widget
+package voltra.dynamicwidget
 
-import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
+import voltra.widget.VoltraWidgetKind
+import voltra.widget.VoltraWidgetReceiver
 
 /**
  * Base receiver for Dynamic Voltra widgets. Identical lifecycle to
  * [VoltraWidgetReceiver] but hosts a [VoltraClientGlanceWidget] (on-device JS render) instead
- * of the server-rendered [VoltraGlanceWidget].
+ * of the server-rendered `voltra.widget.payload.VoltraGlanceWidget`.
  *
  * Generated Dynamic Widget receivers extend this and provide their `widgetId`.
  */
@@ -16,6 +17,6 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     override fun createGlanceAppWidget(): GlanceAppWidget = VoltraClientGlanceWidget(widgetId)
 
     // Client widgets use SizeMode.Exact, so Glance re-composes provideGlance for the new size on
-    // resize. The server-cache re-render path doesn't apply (there is no cached payload).
-    override fun onWidgetResized(context: Context) = Unit
+    // resize; the base class's no-op default already covers that (there is no cached payload to
+    // re-render from).
 }

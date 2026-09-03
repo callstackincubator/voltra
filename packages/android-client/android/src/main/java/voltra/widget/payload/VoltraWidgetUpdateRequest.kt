@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import android.content.Context
 import android.content.res.Configuration

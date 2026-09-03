@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

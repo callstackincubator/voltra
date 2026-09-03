@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import android.content.Context
 import android.util.Log
@@ -31,6 +31,8 @@ import androidx.glance.text.TextStyle
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraPayload
 import voltra.parsing.VoltraPayloadParser
+import voltra.widget.VoltraRefreshActionCallback
+import voltra.widget.VoltraWidgetReceiver
 
 class VoltraGlanceWidget(
     private val widgetId: String = "default",

@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import android.appwidget.AppWidgetManager
 import android.os.Build

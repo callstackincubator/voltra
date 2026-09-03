@@ -1,6 +1,8 @@
-package voltra.widget
+package voltra.widget.payload
 
 import android.util.Log
+import voltra.widget.VoltraWidgetKind
+import voltra.widget.VoltraWidgetKindResolution
 
 /** Resolves a widget id's [VoltraWidgetKind]. Injectable so [PayloadWidgetUpdater] is testable. */
 internal fun interface PayloadWidgetKindResolver {

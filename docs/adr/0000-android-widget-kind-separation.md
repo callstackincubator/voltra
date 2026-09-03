@@ -1,6 +1,8 @@
 # ADR 0000: Separate payload-driven and Dynamic Android widget paths
 
-Status: Accepted — not yet implemented
+Status: Accepted
+
+Implemented by #261 (kind resolution and placeholder isolation) and the package split pull request that follows it.
 
 ## Introduction
 

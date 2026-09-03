@@ -36,7 +36,7 @@ internal class DefaultDynamicWidgetPlaceholderAssetSource(
  * Reads the Dynamic Widget placeholder node from the plugin-prerendered
  * `voltra_initial_states.json` asset ONLY. Per ADR 0000 ("Dynamic Widgets never read payload
  * state"), this store never consults the payload SharedPreferences store
- * (`voltra.widget.VoltraWidgetManager`'s `voltra_widgets` prefs) — a payload written under a
+ * (`voltra.widget.payload.VoltraWidgetManager`'s `voltra_widgets` prefs) — a payload written under a
  * Dynamic widget id must never be handed to the Dynamic Widget's single-node decoder.
  */
 internal class DynamicWidgetPlaceholderStore(

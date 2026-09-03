@@ -110,6 +110,9 @@ android {
         showExceptions true
         showStackTraces true
       }
+      // Lets VoltraJSRendererJniNamesTest locate src/main/cpp/voltra_js_renderer.cpp without
+      // guessing at a relative path from the test's working directory.
+      systemProperty "voltra.moduleDir", project.projectDir.absolutePath
     }
   }
 }
