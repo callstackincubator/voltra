@@ -4,7 +4,6 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Resources
-import android.os.Build
 import android.util.Log
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -25,9 +24,6 @@ class VoltraWidgetManager(
         private const val KEY_JSON_PREFIX = "Voltra_Widget_JSON_"
         private const val KEY_DEEP_LINK_PREFIX = "Voltra_Widget_DeepLinkURL_"
         private const val ASSET_INITIAL_STATES = "voltra_initial_states.json"
-
-        /** Keys must match `@use-voltra/android-client` expo-plugin `initialStates.ts` */
-        private const val LOCALIZED_INITIAL_STATE_KEY = "__voltraLocales"
     }
 
     private val prefs: SharedPreferences =
@@ -111,64 +107,12 @@ class VoltraWidgetManager(
 
     /**
      * Legacy flat payload vs localized `{ "__voltraLocales": { "en": {...}, "pl": {...} } }`.
+     * Delegates to [InitialStateLocalePicker], shared with the Dynamic Widget placeholder reader.
      */
     private fun resolveInitialStatePayload(
         obj: JSONObject,
         res: Resources,
-    ): String {
-        if (!obj.has(LOCALIZED_INITIAL_STATE_KEY)) {
-            return obj.toString()
-        }
-        val perLocale = obj.optJSONObject(LOCALIZED_INITIAL_STATE_KEY) ?: return obj.toString()
-        val picked = pickLocalizedPayload(perLocale, res) ?: return obj.toString()
-        return picked.toString()
-    }
-
-    private fun preferredLanguageTags(res: Resources): List<String> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val locales = res.configuration.locales
-            (0 until locales.size()).map { locales[it].toLanguageTag() }
-        } else {
-            @Suppress("DEPRECATION")
-            listOf(res.configuration.locale.toLanguageTag())
-        }
-
-    private fun normalizeLocaleTag(tag: String): String = tag.trim().lowercase().replace('_', '-')
-
-    /** Mirrors `@use-voltra/expo-plugin` `localePick` */
-    private fun pickLocalizedPayload(
-        perLocale: JSONObject,
-        res: Resources,
-    ): JSONObject? {
-        val keys = perLocale.keys().asSequence().toList()
-        if (keys.isEmpty()) {
-            return null
-        }
-        val preferred = preferredLanguageTags(res)
-
-        fun keyNorm(k: String) = normalizeLocaleTag(k)
-        val byNorm = keys.associateBy { keyNorm(it) }
-
-        for (pref in preferred) {
-            val n = keyNorm(pref)
-            byNorm[n]?.let { k -> return perLocale.optJSONObject(k) }
-            val lang = n.substringBefore('-')
-            for (k in keys) {
-                val kn = keyNorm(k)
-                val keyLang = kn.substringBefore('-')
-                if (keyLang == lang) {
-                    return perLocale.optJSONObject(k)
-                }
-            }
-        }
-        if (perLocale.has("en")) {
-            return perLocale.optJSONObject("en")
-        }
-        if (perLocale.has("__default")) {
-            return perLocale.optJSONObject("__default")
-        }
-        return keys.sorted().firstOrNull()?.let { perLocale.optJSONObject(it) }
-    }
+    ): String = InitialStateLocalePicker.resolveInitialStatePayload(obj, res)
 
     /**
      * Read widget deep link URL from SharedPreferences
@@ -309,8 +253,9 @@ class VoltraWidgetManager(
         Log.d(TAG, "Found ${appWidgetIds.size} app widget instances for $widgetId: ${appWidgetIds.toList()}")
 
         if (appWidgetIds.isNotEmpty()) {
-            // Create the widget instance with the specific widgetId
-            val widget = VoltraGlanceWidget(widgetId)
+            // Use the receiver's registered widget instance (the right class for this widget's
+            // kind) rather than assuming the payload-driven VoltraGlanceWidget.
+            val widget = VoltraWidgetReceiver.getWidget(context, widgetId) ?: VoltraGlanceWidget(widgetId)
 
             // Get the GlanceAppWidgetManager to convert IDs
             val glanceManager = GlanceAppWidgetManager(context)

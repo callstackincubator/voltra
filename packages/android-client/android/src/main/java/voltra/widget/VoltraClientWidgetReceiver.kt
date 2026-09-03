@@ -11,6 +11,8 @@ import androidx.glance.appwidget.GlanceAppWidget
  * Generated Dynamic Widget receivers extend this and provide their `widgetId`.
  */
 abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
+    override val widgetKind: VoltraWidgetKind = VoltraWidgetKind.Dynamic
+
     override fun createGlanceAppWidget(): GlanceAppWidget = VoltraClientGlanceWidget(widgetId)
 
     // Client widgets use SizeMode.Exact, so Glance re-composes provideGlance for the new size on

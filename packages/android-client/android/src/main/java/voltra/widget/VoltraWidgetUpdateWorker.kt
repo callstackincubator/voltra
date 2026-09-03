@@ -53,6 +53,29 @@ class VoltraWidgetUpdateWorker(
 
             Log.d(TAG, "Starting server update for widget '$widgetId' from $serverUrl")
 
+            // Resolve the widget's kind before opening any connection (ADR 0000): a Dynamic
+            // Widget's placeholder reader never consults this payload store, so fetching for the
+            // wrong kind is wasted work, and neither an unresolved id nor a kind mismatch should
+            // fail the periodic chain -- there is nothing to retry.
+            when (val kindResolution = VoltraWidgetKindResolver.resolve(applicationContext, widgetId)) {
+                is VoltraWidgetKindResolution.Unresolved -> {
+                    Log.w(TAG, "Skipping server update for widget '$widgetId': ${kindResolution.reason}")
+                    return@withContext Result.success()
+                }
+
+                is VoltraWidgetKindResolution.Resolved -> {
+                    if (kindResolution.kind != VoltraWidgetKind.Payload) {
+                        Log.w(
+                            TAG,
+                            "Skipping server update for widget '$widgetId': not a payload-driven widget " +
+                                "(${kindResolution.kind}). Cancelling its periodic update.",
+                        )
+                        VoltraWidgetUpdateScheduler.cancelPeriodicUpdate(applicationContext, widgetId)
+                        return@withContext Result.success()
+                    }
+                }
+            }
+
             try {
                 // 1. Build URL with query parameters
                 val url = VoltraWidgetUpdateRequest.buildUrl(serverUrl, widgetId, applicationContext)
