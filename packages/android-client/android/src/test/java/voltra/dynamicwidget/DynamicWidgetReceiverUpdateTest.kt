@@ -9,8 +9,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import voltra.widget.VoltraClientGlanceWidget
-import voltra.widget.VoltraGlanceWidget
+import voltra.widget.payload.VoltraGlanceWidget
 
 @RunWith(RobolectricTestRunner::class)
 class DynamicWidgetReceiverUpdateTest {

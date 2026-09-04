@@ -577,6 +577,8 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
   writeFakePackage(tempDir, '@use-voltra/android-client', '9.8.7')
   fs.mkdirSync(path.dirname(legacyStatePath), { recursive: true })
   fs.writeFileSync(legacyStatePath, `module.exports = { small: { title: 'Legacy' } }\n`)
+  const serverStatePath = path.join(tempDir, 'widgets', 'server.js')
+  fs.writeFileSync(serverStatePath, `module.exports = { small: { title: 'Server' } }\n`)
   fs.writeFileSync(
     dynamicEntryPath,
     `module.exports = function Widget(_props, env) {
@@ -600,6 +602,19 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
           targetCellWidth: 2,
           targetCellHeight: 2,
           initialStatePath: legacyStatePath,
+        },
+        {
+          id: 'server',
+          displayName: 'Server',
+          description: 'Server updated',
+          targetCellWidth: 2,
+          targetCellHeight: 2,
+          initialStatePath: serverStatePath,
+          serverUpdate: {
+            url: 'https://example.com/widget',
+            intervalMinutes: 30,
+            refresh: true,
+          },
         },
         {
           id: 'dynamic',
@@ -631,11 +646,27 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
     widgets: [{ id: 'dynamic', entry: 'widgets/dynamic.js' }],
   })
 
-  const receiver = fs.readFileSync(
+  const dynamicReceiver = fs.readFileSync(
     path.join(resourceRoot, 'java', 'com', 'example', 'app', 'widget', 'VoltraWidget_dynamicReceiver.kt'),
     'utf8'
   )
-  assert.match(receiver, /VoltraClientWidgetReceiver/)
+  assert.match(dynamicReceiver, /^import voltra\.dynamicwidget\.VoltraClientWidgetReceiver$/m)
+  assert.match(dynamicReceiver, /^class VoltraWidget_dynamicReceiver : VoltraClientWidgetReceiver\(\) \{$/m)
+
+  const legacyReceiver = fs.readFileSync(
+    path.join(resourceRoot, 'java', 'com', 'example', 'app', 'widget', 'VoltraWidget_legacyReceiver.kt'),
+    'utf8'
+  )
+  assert.match(legacyReceiver, /^import voltra\.widget\.payload\.VoltraPayloadWidgetReceiver$/m)
+  assert.match(legacyReceiver, /^class VoltraWidget_legacyReceiver : VoltraPayloadWidgetReceiver\(\) \{$/m)
+
+  const serverReceiver = fs.readFileSync(
+    path.join(resourceRoot, 'java', 'com', 'example', 'app', 'widget', 'VoltraWidget_serverReceiver.kt'),
+    'utf8'
+  )
+  assert.match(serverReceiver, /^import voltra\.widget\.payload\.VoltraPayloadWidgetReceiver$/m)
+  assert.match(serverReceiver, /^import voltra\.widget\.payload\.VoltraWidgetUpdateScheduler$/m)
+  assert.match(serverReceiver, /^class VoltraWidget_serverReceiver : VoltraPayloadWidgetReceiver\(\) \{$/m)
 
   const defaults = JSON.parse(
     fs.readFileSync(path.join(resourceRoot, 'assets', 'voltra', 'widget_config_defaults.json'), 'utf8')

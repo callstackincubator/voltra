@@ -24,18 +24,19 @@ import voltra.dynamicwidget.DynamicWidgetPropsStore
 import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
+import voltra.dynamicwidget.VoltraConfigurationStore
+import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
 import voltra.images.VoltraImageManager
-import voltra.runtime.VoltraConfigurationStore
-import voltra.widget.PayloadWidgetUpdateRejection
-import voltra.widget.PayloadWidgetUpdater
-import voltra.widget.VoltraClientGlanceWidget
-import voltra.widget.VoltraGlanceWidget
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.VoltraWidgetKindResolver
-import voltra.widget.VoltraWidgetManager
 import voltra.widget.VoltraWidgetReceiver
 import voltra.widget.VoltraWidgetReceivers
+import voltra.widget.payload.PayloadWidgetUpdateRejection
+import voltra.widget.payload.PayloadWidgetUpdater
+import voltra.widget.payload.VoltraGlanceWidget
+import voltra.widget.payload.VoltraWidgetCredentialStore
+import voltra.widget.payload.VoltraWidgetManager
 
 class VoltraModule(
     reactContext: ReactApplicationContext,
@@ -50,6 +51,10 @@ class VoltraModule(
 
     private val widgetManager by lazy {
         VoltraWidgetManager(reactApplicationContext)
+    }
+
+    private val widgetOrchestrator by lazy {
+        WidgetOrchestrator(reactApplicationContext, widgetManager)
     }
 
     private val imageManager by lazy {
@@ -68,7 +73,7 @@ class VoltraModule(
             dynamicWidgetPropsPersistence = dynamicWidgetPropsStore,
             dynamicWidgetUpdateTrigger =
                 DynamicWidgetUpdateTrigger { dynamicWidgetId ->
-                    VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(
+                    triggerDynamicWidgetGlanceUpdate(
                         context = reactApplicationContext,
                         dynamicWidgetId = dynamicWidgetId,
                     )
@@ -108,7 +113,7 @@ class VoltraModule(
                 lastNightMode = nightMode
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        widgetManager.reloadClientWidgets()
+                        widgetOrchestrator.reloadClientWidgets()
                     } catch (e: Exception) {
                         Log.e(TAG, "Color-scheme reload failed: ${e.message}")
                     }
@@ -289,6 +294,17 @@ class VoltraModule(
                     false
                 }
             if (succeeded) {
+                // Belt and braces (ADR 0000): a payload from before PR #261, or from the old
+                // updateAndroidWidget misuse, can still be cached for this id. Purge it now so
+                // WidgetOrchestrator.reloadAllWidgets can never mistake this Dynamic Widget for a
+                // payload-driven one because of stale SharedPreferences state.
+                if (dynamicWidgetId in widgetManager.cachedWidgetIds()) {
+                    Log.d(
+                        TAG,
+                        "updateAndroidDynamicWidget: purging stale cached payload for $dynamicWidgetId",
+                    )
+                    widgetManager.clearWidgetData(dynamicWidgetId)
+                }
                 Log.d(TAG, "updateAndroidDynamicWidget completed")
                 promise.resolve(null)
             }
@@ -304,7 +320,7 @@ class VoltraModule(
             widgetIds?.let { array ->
                 (0 until array.size()).mapNotNull { array.getString(it) }
             }
-        runBlocking { widgetManager.reloadWidgets(ids) }
+        runBlocking { widgetOrchestrator.reloadWidgets(ids) }
         Log.d(TAG, "reloadAndroidWidgets completed")
         promise.resolve(null)
     }
@@ -356,16 +372,22 @@ class VoltraModule(
         widgetManager.clearWidgetData(widgetId)
         dynamicWidgetPropsStore.clearDynamicWidgetProps(widgetId)
         runBlocking {
-            if (
-                VoltraWidgetReceiver.getWidget(reactApplicationContext, widgetId) is
-                    VoltraClientGlanceWidget
-            ) {
-                VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(
-                    context = reactApplicationContext,
-                    dynamicWidgetId = widgetId,
-                )
-            } else {
-                widgetManager.updateWidget(widgetId)
+            when (val resolution = VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)) {
+                is VoltraWidgetKindResolution.Resolved -> {
+                    if (resolution.kind == VoltraWidgetKind.Dynamic) {
+                        triggerDynamicWidgetGlanceUpdate(
+                            context = reactApplicationContext,
+                            dynamicWidgetId = widgetId,
+                        )
+                    } else {
+                        widgetManager.updateWidget(widgetId)
+                    }
+                }
+
+                is VoltraWidgetKindResolution.Unresolved -> {
+                    Log.w(TAG, "clearAndroidWidget: could not resolve kind for '$widgetId': ${resolution.reason}")
+                    widgetManager.updateWidget(widgetId)
+                }
             }
         }
         Log.d(TAG, "clearAndroidWidget completed")
@@ -376,7 +398,7 @@ class VoltraModule(
         Log.d(TAG, "clearAllAndroidWidgets called")
         widgetManager.clearAllWidgetData()
         dynamicWidgetPropsStore.clearAllDynamicWidgetProps()
-        runBlocking { widgetManager.reloadAllWidgets() }
+        runBlocking { widgetOrchestrator.reloadAllWidgets() }
         Log.d(TAG, "clearAllAndroidWidgets completed")
         promise.resolve(null)
     }
@@ -566,23 +588,21 @@ class VoltraModule(
             }
 
         runBlocking {
-            voltra.widget.VoltraWidgetCredentialStore.saveToken(reactApplicationContext, token)
+            VoltraWidgetCredentialStore.saveToken(reactApplicationContext, token)
             if (!headers.isNullOrEmpty()) {
-                voltra.widget.VoltraWidgetCredentialStore.saveHeaders(reactApplicationContext, headers)
+                VoltraWidgetCredentialStore.saveHeaders(reactApplicationContext, headers)
             }
         }
 
-        val wm = voltra.widget.VoltraWidgetManager(reactApplicationContext)
-        runBlocking { wm.reloadAllWidgets() }
+        runBlocking { widgetOrchestrator.reloadAllWidgets() }
         Log.d(TAG, "Widget server credentials saved")
         promise.resolve(null)
     }
 
     override fun clearWidgetServerCredentials(promise: Promise) {
         Log.d(TAG, "clearWidgetServerCredentials called")
-        runBlocking { voltra.widget.VoltraWidgetCredentialStore.clearAll(reactApplicationContext) }
-        val wm = voltra.widget.VoltraWidgetManager(reactApplicationContext)
-        runBlocking { wm.reloadAllWidgets() }
+        runBlocking { VoltraWidgetCredentialStore.clearAll(reactApplicationContext) }
+        runBlocking { widgetOrchestrator.reloadAllWidgets() }
         Log.d(TAG, "Widget server credentials cleared")
         promise.resolve(null)
     }

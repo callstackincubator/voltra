@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -8,6 +8,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import voltra.widget.VoltraWidgetKind
+import voltra.widget.VoltraWidgetKindResolution
 
 @RunWith(RobolectricTestRunner::class)
 class PayloadWidgetUpdaterTest {

@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -10,8 +10,10 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import voltra.glance.RemoteViewsGenerator
 import voltra.parsing.VoltraPayloadParser
+import voltra.widget.InitialStateLocalePicker
+import voltra.widget.VoltraWidgetReceiver
+import voltra.widget.VoltraWidgetReceivers
 import java.io.InputStream
 import java.nio.charset.Charset
 
@@ -151,6 +153,17 @@ class VoltraWidgetManager(
     }
 
     /**
+     * Widget ids that currently have cached payload data in SharedPreferences. Used by
+     * [voltra.WidgetOrchestrator] to reload payload-driven widgets without reaching into this
+     * store's private key format.
+     */
+    internal fun cachedWidgetIds(): Set<String> =
+        prefs.all.keys
+            .filter { it.startsWith(KEY_JSON_PREFIX) }
+            .map { it.removePrefix(KEY_JSON_PREFIX) }
+            .toSet()
+
+    /**
      * Update a widget directly using GlanceRemoteViews, bypassing Glance's session lock.
      * This allows rapid widget updates without the 45-50 second cooldown.
      * Uses [updateResponsiveAppWidget] to push the size-mapped RemoteViews to each instance.
@@ -274,141 +287,5 @@ class VoltraWidgetManager(
         } else {
             Log.w(TAG, "No widget instances found on home screen for $widgetId")
         }
-    }
-
-    /**
-     * Reload specific widgets or all widgets.
-     *
-     * For server-driven widgets (those with a registered server URL),
-     * this enqueues an immediate WorkManager fetch so the widget gets
-     * fresh content from the server. For local-only widgets it
-     * re-renders from the cached SharedPreferences data.
-     */
-    suspend fun reloadWidgets(widgetIds: List<String>?) =
-        withContext(Dispatchers.Main) {
-            if (widgetIds != null && widgetIds.isNotEmpty()) {
-                Log.d(TAG, "reloadWidgets: specific widgets ${widgetIds.joinToString()}")
-                for (widgetId in widgetIds) {
-                    try {
-                        reloadSingleWidget(widgetId)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to reload widget $widgetId: ${e.message}")
-                    }
-                }
-            } else {
-                Log.d(TAG, "reloadWidgets: all widgets")
-                reloadAllWidgets()
-            }
-        }
-
-    /**
-     * Reload a single widget.
-     * If the widget is server-driven, enqueues an immediate server fetch.
-     * Otherwise, re-renders from cached data.
-     */
-    private suspend fun reloadSingleWidget(widgetId: String) {
-        if (VoltraWidgetReceiver.getWidget(context, widgetId) is VoltraClientGlanceWidget) {
-            VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(context, widgetId)
-            return
-        }
-
-        val didEnqueue = VoltraWidgetUpdateScheduler.requestImmediateUpdate(context, widgetId)
-        if (didEnqueue) {
-            Log.d(TAG, "reloadSingleWidget: enqueued immediate server fetch for $widgetId")
-        } else {
-            Log.d(TAG, "reloadSingleWidget: no server URL for $widgetId, updating from cache")
-            updateWidget(widgetId)
-        }
-    }
-
-    /**
-     * Reload all widgets by finding all saved widget data
-     */
-    suspend fun reloadAllWidgets() =
-        withContext(Dispatchers.Main) {
-            Log.d(TAG, "reloadAllWidgets")
-
-            // Get all widget IDs from saved data
-            val allKeys = prefs.all.keys
-            val widgetIds =
-                allKeys
-                    .filter { it.startsWith(KEY_JSON_PREFIX) }
-                    .map { it.removePrefix(KEY_JSON_PREFIX) }
-                    .toSet()
-
-            // Also include server-driven widgets that may not have cached data yet
-            val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
-            val cachedAndServerIds = widgetIds + serverDrivenIds
-
-            // Pinned widgets that have neither cached data nor a server URL are Dynamic Widgets
-            // (they render from Metro). reloadSingleWidget's cache path can't refresh them, so
-            // trigger their Glance update directly to re-run provideGlance.
-            val pinnedIds = pinnedVoltraWidgetIds()
-            val clientIds = pinnedIds - cachedAndServerIds
-
-            Log.d(
-                TAG,
-                "Found ${cachedAndServerIds.size + clientIds.size} widgets to reload " +
-                    "(${widgetIds.size} cached, ${serverDrivenIds.size} server-driven, ${clientIds.size} Dynamic Widgets)",
-            )
-
-            for (widgetId in cachedAndServerIds) {
-                try {
-                    reloadSingleWidget(widgetId)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update widget $widgetId: ${e.message}")
-                }
-            }
-            for (widgetId in clientIds) {
-                try {
-                    VoltraWidgetReceiver.triggerDynamicWidgetGlanceUpdate(context, widgetId)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update client widget $widgetId: ${e.message}")
-                }
-            }
-        }
-
-    /**
-     * Re-render only Dynamic Widgets (pinned widgets with neither cached data nor a server
-     * URL — they render on-device from `provideGlance`). Used to react to environment changes that
-     * affect `env` but not server payloads, e.g. a light/dark (color scheme) toggle.
-     */
-    suspend fun reloadClientWidgets() =
-        withContext(Dispatchers.Main) {
-            val cachedIds =
-                prefs.all.keys
-                    .filter { it.startsWith(KEY_JSON_PREFIX) }
-                    .map { it.removePrefix(KEY_JSON_PREFIX) }
-                    .toSet()
-            val serverDrivenIds = VoltraWidgetUpdateScheduler.getAllServerDrivenWidgetIds(context)
-            val clientIds = pinnedVoltraWidgetIds() - cachedIds - serverDrivenIds
-
-            Log.d(TAG, "reloadClientWidgets: ${clientIds.size} client widget(s)")
-            for (widgetId in clientIds) {
-                try {
-                    VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to reload client widget $widgetId: ${e.message}")
-                }
-            }
-        }
-
-    /**
-     * Widget ids of all currently-pinned Voltra widgets, derived from bound AppWidget providers.
-     * Covers Dynamic Widgets, which keep no cached prefs data, so
-     * reloadAllWidgets reaches them too.
-     */
-    private fun pinnedVoltraWidgetIds(): Set<String> {
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val ids = mutableSetOf<String>()
-        try {
-            for ((widgetId, componentName) in VoltraWidgetReceivers.installedReceivers(context)) {
-                if (appWidgetManager.getAppWidgetIds(componentName).isEmpty()) continue // not pinned
-                ids.add(widgetId)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "pinnedVoltraWidgetIds failed: ${e.message}")
-        }
-        return ids
     }
 }

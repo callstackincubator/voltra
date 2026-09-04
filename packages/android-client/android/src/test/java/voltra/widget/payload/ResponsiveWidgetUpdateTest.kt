@@ -1,4 +1,4 @@
-package voltra.widget
+package voltra.widget.payload
 
 import android.util.SizeF
 import org.junit.Assert.assertEquals

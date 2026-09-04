@@ -59,7 +59,7 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
     return dedent`
       package ${packageName}.widget
 
-      import voltra.widget.VoltraClientWidgetReceiver
+      import voltra.dynamicwidget.VoltraClientWidgetReceiver
 
       /**
        * Auto-generated Dynamic Widget receiver for ${labelForComment}
@@ -79,8 +79,8 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
 
       import android.appwidget.AppWidgetManager
       import android.content.Context
-      import voltra.widget.VoltraWidgetReceiver
-      import voltra.widget.VoltraWidgetUpdateScheduler
+      import voltra.widget.payload.VoltraPayloadWidgetReceiver
+      import voltra.widget.payload.VoltraWidgetUpdateScheduler
 
       /**
        * Auto-generated widget receiver for ${labelForComment}
@@ -88,7 +88,7 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
        * Server Update: ${widget.serverUpdate.url} (every ${widget.serverUpdate.intervalMinutes ?? 15} minutes)
        * Refresh Button: ${refreshEnabled}
        */
-      class ${className} : VoltraWidgetReceiver() {
+      class ${className} : VoltraPayloadWidgetReceiver() {
           override val widgetId: String = "${widget.id}"
 
           override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -128,13 +128,13 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
   return dedent`
     package ${packageName}.widget
 
-    import voltra.widget.VoltraWidgetReceiver
+    import voltra.widget.payload.VoltraPayloadWidgetReceiver
 
     /**
      * Auto-generated widget receiver for ${labelForComment}
      * Widget ID: ${widget.id}
      */
-    class ${className} : VoltraWidgetReceiver() {
+    class ${className} : VoltraPayloadWidgetReceiver() {
         override val widgetId: String = "${widget.id}"
     }
   `

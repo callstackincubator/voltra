@@ -1,4 +1,4 @@
-package voltra.glance
+package voltra.widget.payload
 
 import android.content.Context
 import android.util.Log
@@ -26,6 +26,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import voltra.glance.GlanceFactory
 import voltra.models.VoltraNode
 import voltra.models.VoltraPayload
 import voltra.widget.VoltraRefreshActionCallback

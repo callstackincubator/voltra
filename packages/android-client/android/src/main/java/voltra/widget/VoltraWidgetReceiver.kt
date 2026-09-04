@@ -9,11 +9,6 @@ import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import voltra.dynamicwidget.AndroidDynamicWidgetGlanceUpdateBoundary
-import voltra.dynamicwidget.DynamicWidgetGlanceUpdateCoordinator
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -73,38 +68,6 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
             }
         }
 
-        internal fun requireDynamicWidgetGlanceAppWidget(
-            dynamicWidgetId: String,
-            dynamicWidgetGlanceAppWidget: GlanceAppWidget?,
-        ): VoltraClientGlanceWidget {
-            require(dynamicWidgetGlanceAppWidget is VoltraClientGlanceWidget) {
-                "Receiver for dynamicWidgetId=$dynamicWidgetId is not a Dynamic Widget receiver"
-            }
-            return dynamicWidgetGlanceAppWidget
-        }
-
-        /** Trigger a Dynamic Widget Glance update and propagate lookup or update failures. */
-        suspend fun triggerDynamicWidgetGlanceUpdate(
-            context: Context,
-            dynamicWidgetId: String,
-        ) {
-            val updatedDynamicWidgetInstanceCount =
-                DynamicWidgetGlanceUpdateCoordinator(
-                    AndroidDynamicWidgetGlanceUpdateBoundary(context),
-                ).triggerDynamicWidgetGlanceUpdate(
-                    dynamicWidgetReceiverComponentName =
-                        VoltraWidgetReceivers.componentName(context, dynamicWidgetId),
-                    dynamicWidgetId = dynamicWidgetId,
-                    dynamicWidgetGlanceAppWidget = getWidget(context, dynamicWidgetId),
-                )
-
-            Log.d(
-                TAG,
-                "Triggered Dynamic Widget update for '$dynamicWidgetId' " +
-                    "($updatedDynamicWidgetInstanceCount instances)",
-            )
-        }
-
         /**
          * Trigger a Glance update for a specific glanceId using the registered widget.
          */
@@ -156,21 +119,23 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
     abstract val widgetId: String
 
     /**
-     * The engine this receiver's widget belongs to (ADR 0000). Defaults to [VoltraWidgetKind.Payload]
-     * since this base class hosts the server-rendered [VoltraGlanceWidget] by default;
-     * [VoltraClientWidgetReceiver] overrides this to [VoltraWidgetKind.Dynamic]. Resolved by
-     * [VoltraWidgetKindResolver] before any cross-kind write, so this must not be computed from
-     * [createGlanceAppWidget] or the registry.
+     * The engine this receiver's widget belongs to (ADR 0000). Declared by the kind-specific base
+     * class each generated receiver extends — [voltra.widget.payload.VoltraPayloadWidgetReceiver]
+     * sets this to [VoltraWidgetKind.Payload], [voltra.dynamicwidget.VoltraClientWidgetReceiver]
+     * to [VoltraWidgetKind.Dynamic]. Resolved by [VoltraWidgetKindResolver] before any cross-kind
+     * write, so this must not be computed from [createGlanceAppWidget] or the registry. This base
+     * package must not import either kind-specific package to supply a default here (ADR 0000).
      */
-    open val widgetKind: VoltraWidgetKind = VoltraWidgetKind.Payload
+    abstract val widgetKind: VoltraWidgetKind
 
     /**
-     * The GlanceAppWidget this receiver hosts. Defaults to the server-rendered
-     * [VoltraGlanceWidget]; Dynamic Widget receivers override this to return a
-     * [voltra.widget.VoltraClientGlanceWidget]. Kept as a factory (not a direct property) so
-     * the shared registry registration in [glanceAppWidget] stays in one place.
+     * The GlanceAppWidget this receiver hosts. Supplied by the kind-specific base class each
+     * generated receiver extends — [voltra.widget.payload.VoltraPayloadWidgetReceiver] returns
+     * the server-rendered `VoltraGlanceWidget`, [voltra.dynamicwidget.VoltraClientWidgetReceiver]
+     * returns `VoltraClientGlanceWidget`. Kept as a factory (not a direct property) so the shared
+     * registry registration in [glanceAppWidget] stays in one place.
      */
-    protected open fun createGlanceAppWidget(): GlanceAppWidget = VoltraGlanceWidget(widgetId)
+    protected abstract fun createGlanceAppWidget(): GlanceAppWidget
 
     override val glanceAppWidget: GlanceAppWidget by lazy {
         Log.d(TAG, "Creating GlanceAppWidget for widgetId=$widgetId")
@@ -198,16 +163,11 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
     }
 
     /**
-     * Re-render after a resize. Server-rendered widgets re-render from cached data — the payload
-     * carries all size variants, so [updateResponsiveAppWidget] picks the closest match; no
-     * network request needed. Client-rendered widgets override this to no-op: they use
-     * `SizeMode.Exact`, so Glance already re-composes `provideGlance` for the new size (and there
-     * is no cached payload to re-render from).
+     * Re-render after a resize. No-op by default. [voltra.widget.payload.VoltraPayloadWidgetReceiver]
+     * overrides this to re-render from cached data — the payload carries all size variants, so
+     * `updateResponsiveAppWidget` picks the closest match; no network request needed. Dynamic
+     * Widgets keep the no-op default: they use `SizeMode.Exact`, so Glance already re-composes
+     * `provideGlance` for the new size (and there is no cached payload to re-render from).
      */
-    protected open fun onWidgetResized(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val widgetManager = VoltraWidgetManager(context.applicationContext)
-            widgetManager.updateWidgetDirect(widgetId)
-        }
-    }
+    protected open fun onWidgetResized(context: Context) = Unit
 }

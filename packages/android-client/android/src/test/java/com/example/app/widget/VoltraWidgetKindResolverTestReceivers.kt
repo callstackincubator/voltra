@@ -1,7 +1,8 @@
 package com.example.app.widget
 
-import voltra.widget.VoltraClientWidgetReceiver
+import voltra.dynamicwidget.VoltraClientWidgetReceiver
 import voltra.widget.VoltraWidgetReceiver
+import voltra.widget.payload.VoltraPayloadWidgetReceiver
 
 /**
  * Generated-receiver-style test fixtures for [voltra.widget.VoltraWidgetKindResolverTest]. Named
@@ -11,7 +12,7 @@ import voltra.widget.VoltraWidgetReceiver
  * before any widget instance has been placed.
  */
 @Suppress("ktlint:standard:class-naming")
-class VoltraWidget_resolverPayloadTestReceiver : VoltraWidgetReceiver() {
+class VoltraWidget_resolverPayloadTestReceiver : VoltraPayloadWidgetReceiver() {
     override val widgetId: String = "resolverPayloadTest"
 }
 
