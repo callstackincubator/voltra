@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import voltra.BuildConfig
+import voltra.dynamicwidget.DynamicWidgetPlaceholderStore
 import voltra.dynamicwidget.DynamicWidgetRenderCoordinator
 import voltra.dynamicwidget.DynamicWidgetRenderInput
 import voltra.dynamicwidget.currentDynamicWidgetRenderInput
@@ -241,9 +242,13 @@ class VoltraClientGlanceWidget(
         )
     }
 
-    /** Decode the plugin-prerendered single-node placeholder from the initial-states asset. */
+    /**
+     * Decode the plugin-prerendered single-node placeholder from the initial-states asset.
+     * Dynamic Widgets never read payload state (ADR 0000), so this goes through
+     * [DynamicWidgetPlaceholderStore] rather than the payload-owning [VoltraWidgetManager].
+     */
     private fun placeholderNode(context: Context): VoltraNode? {
-        val raw = VoltraWidgetManager(context).readWidgetJson(widgetId) ?: return null
+        val raw = DynamicWidgetPlaceholderStore(context).readPlaceholderJson(widgetId) ?: return null
         return parseNode(raw)
     }
 

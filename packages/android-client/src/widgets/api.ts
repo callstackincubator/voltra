@@ -15,6 +15,12 @@ export type {
   WidgetInfo,
 } from '@use-voltra/android'
 
+/**
+ * Update a payload-driven widget's content.
+ *
+ * Rejects with `VOLTRA_WIDGET_KIND_MISMATCH` when `widgetId` belongs to a Dynamic Widget; use
+ * {@link updateAndroidDynamicWidget} for those instead.
+ */
 export const updateAndroidWidget = async (
   widgetId: string,
   variants: AndroidWidgetVariants,
@@ -54,6 +60,9 @@ export const getActiveWidgets = async (): Promise<WidgetInfo[]> => {
  * Set a configuration value for a Dynamic Widget and re-render it. The value is
  * surfaced as `env.configuration[key]` in the widget's `(props, env) => JSX` render. Stand-in
  * for a Glance configuration activity.
+ *
+ * Rejects with `VOLTRA_WIDGET_KIND_MISMATCH` when `widgetId` belongs to a payload-driven widget,
+ * and with `VOLTRA_WIDGET_NOT_FOUND` when `widgetId` is unknown.
  */
 export const setWidgetConfiguration = async (widgetId: string, key: string, value: string): Promise<void> => {
   return getNativeVoltraAndroid().setWidgetConfiguration(widgetId, key, value)

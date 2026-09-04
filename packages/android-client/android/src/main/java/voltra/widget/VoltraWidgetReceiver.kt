@@ -4,6 +4,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -13,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import voltra.dynamicwidget.AndroidDynamicWidgetGlanceUpdateBoundary
 import voltra.dynamicwidget.DynamicWidgetGlanceUpdateCoordinator
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Base widget receiver for Voltra home screen widgets.
@@ -23,7 +25,7 @@ import voltra.dynamicwidget.DynamicWidgetGlanceUpdateCoordinator
 abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
     companion object {
         private const val TAG = "VoltraWidgetReceiver"
-        private val widgetRegistry = mutableMapOf<String, GlanceAppWidget>()
+        private val widgetRegistry = ConcurrentHashMap<String, GlanceAppWidget>()
 
         /**
          * Get the registered GlanceAppWidget for a widgetId.
@@ -49,6 +51,14 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
         }
 
         /**
+         * Whether [widgetId] currently has a registered [GlanceAppWidget]. Exposed for tests to
+         * assert that resolving a widget's kind ([VoltraWidgetKindResolver]) has no side effect on
+         * this registry.
+         */
+        @VisibleForTesting
+        internal fun isRegistered(widgetId: String): Boolean = widgetRegistry.containsKey(widgetId)
+
+        /**
          * Trigger a Glance update for a specific widget using its registered instance.
          * This is the only reliable way to trigger provideGlance() from outside the receiver.
          */
@@ -56,19 +66,8 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
             context: Context,
             widgetId: String,
         ) {
-            val widget = getWidget(context, widgetId)
-            if (widget == null) {
-                Log.w(TAG, "No registered widget for '$widgetId', cannot trigger update")
-                return
-            }
-
             try {
-                val manager = GlanceAppWidgetManager(context)
-                val glanceIds = manager.getGlanceIds(widget.javaClass)
-                for (glanceId in glanceIds) {
-                    widget.update(context, glanceId)
-                }
-                Log.d(TAG, "Triggered update on registered widget '$widgetId' (${glanceIds.size} instances)")
+                triggerGlanceUpdateOrThrow(context, widgetId)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to trigger update for '$widgetId': ${e.message}", e)
             }
@@ -127,6 +126,27 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
                 Log.e(TAG, "Failed to trigger update for '$widgetId': ${e.message}", e)
             }
         }
+
+        /**
+         * Trigger a Glance update for a specific widget using its registered instance, propagating
+         * lookup or update failures to the caller instead of only logging them. Used where the
+         * caller must surface the failure (e.g. rejecting a promise), unlike [triggerGlanceUpdate].
+         */
+        suspend fun triggerGlanceUpdateOrThrow(
+            context: Context,
+            widgetId: String,
+        ) {
+            val widget =
+                getWidget(context, widgetId)
+                    ?: error("No registered widget for '$widgetId', cannot trigger update")
+
+            val manager = GlanceAppWidgetManager(context)
+            val glanceIds = manager.getGlanceIds(widget.javaClass)
+            for (glanceId in glanceIds) {
+                widget.update(context, glanceId)
+            }
+            Log.d(TAG, "Triggered update on registered widget '$widgetId' (${glanceIds.size} instances)")
+        }
     }
 
     /**
@@ -134,6 +154,15 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
      * Must be provided by subclasses.
      */
     abstract val widgetId: String
+
+    /**
+     * The engine this receiver's widget belongs to (ADR 0000). Defaults to [VoltraWidgetKind.Payload]
+     * since this base class hosts the server-rendered [VoltraGlanceWidget] by default;
+     * [VoltraClientWidgetReceiver] overrides this to [VoltraWidgetKind.Dynamic]. Resolved by
+     * [VoltraWidgetKindResolver] before any cross-kind write, so this must not be computed from
+     * [createGlanceAppWidget] or the registry.
+     */
+    open val widgetKind: VoltraWidgetKind = VoltraWidgetKind.Payload
 
     /**
      * The GlanceAppWidget this receiver hosts. Defaults to the server-rendered

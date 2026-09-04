@@ -51,6 +51,8 @@ import { updateAndroidWidget } from '@use-voltra/android-client'
 await updateAndroidWidget('weather_widget', <WeatherWidget temperature={22} condition="Sunny" />)
 ```
 
+`updateAndroidWidget` only updates payload-driven widgets like this one. Calling it on a Dynamic Widget (see [Dynamic Widgets](./dynamic-widgets)) rejects with `VOLTRA_WIDGET_KIND_MISMATCH`.
+
 ## Layout Constraints
 
 Unlike standard React Native or iOS Stacks, Android Glance layouts are more restrictive:

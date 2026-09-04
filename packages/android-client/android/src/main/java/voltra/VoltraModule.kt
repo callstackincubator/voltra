@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
@@ -20,12 +21,18 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import voltra.dynamicwidget.DynamicWidgetPropsStore
+import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.images.VoltraImageManager
 import voltra.runtime.VoltraConfigurationStore
+import voltra.widget.PayloadWidgetUpdateRejection
+import voltra.widget.PayloadWidgetUpdater
 import voltra.widget.VoltraClientGlanceWidget
 import voltra.widget.VoltraGlanceWidget
+import voltra.widget.VoltraWidgetKind
+import voltra.widget.VoltraWidgetKindResolution
+import voltra.widget.VoltraWidgetKindResolver
 import voltra.widget.VoltraWidgetManager
 import voltra.widget.VoltraWidgetReceiver
 import voltra.widget.VoltraWidgetReceivers
@@ -55,6 +62,9 @@ class VoltraModule(
 
     private val dynamicWidgetUpdater by lazy {
         DynamicWidgetUpdater(
+            dynamicWidgetKindResolver = { dynamicWidgetId ->
+                VoltraWidgetKindResolver.resolve(reactApplicationContext, dynamicWidgetId)
+            },
             dynamicWidgetPropsPersistence = dynamicWidgetPropsStore,
             dynamicWidgetUpdateTrigger =
                 DynamicWidgetUpdateTrigger { dynamicWidgetId ->
@@ -63,6 +73,20 @@ class VoltraModule(
                         dynamicWidgetId = dynamicWidgetId,
                     )
                 },
+        )
+    }
+
+    private val payloadWidgetUpdater by lazy {
+        PayloadWidgetUpdater(
+            payloadWidgetKindResolver = { widgetId ->
+                VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)
+            },
+            payloadWidgetPersistence = { widgetId, jsonString, deepLinkUrl ->
+                widgetManager.writeWidgetData(widgetId, jsonString, deepLinkUrl)
+            },
+            payloadWidgetUpdateTrigger = { widgetId ->
+                widgetManager.updateWidget(widgetId)
+            },
         )
     }
 
@@ -204,10 +228,31 @@ class VoltraModule(
     ) {
         Log.d(TAG, "updateAndroidWidget called with widgetId=$widgetId")
         val deepLinkUrl = options?.getString("deepLinkUrl")
-        widgetManager.writeWidgetData(widgetId, jsonString, deepLinkUrl)
-        runBlocking { widgetManager.updateWidget(widgetId) }
-        Log.d(TAG, "updateAndroidWidget completed")
-        promise.resolve(null)
+        runBlocking {
+            // promise.resolve(null) is called only after the try/catch below completes without
+            // rejecting, so a throwing resolve can never be followed by a reject call.
+            val succeeded =
+                try {
+                    payloadWidgetUpdater.updatePayloadWidget(
+                        widgetId = widgetId,
+                        jsonString = jsonString,
+                        deepLinkUrl = deepLinkUrl,
+                    )
+                    true
+                } catch (kindMismatch: PayloadWidgetUpdateRejection.KindMismatch) {
+                    Log.e(TAG, "updateAndroidWidget rejected: ${kindMismatch.message}")
+                    promise.reject("VOLTRA_WIDGET_KIND_MISMATCH", kindMismatch.message)
+                    false
+                } catch (e: Exception) {
+                    Log.e(TAG, "updateAndroidWidget failed", e)
+                    promise.reject("VOLTRA_WIDGET_UPDATE_FAILED", e.message, e)
+                    false
+                }
+            if (succeeded) {
+                Log.d(TAG, "updateAndroidWidget completed")
+                promise.resolve(null)
+            }
+        }
     }
 
     override fun updateAndroidDynamicWidget(
@@ -217,20 +262,35 @@ class VoltraModule(
     ) {
         Log.d(TAG, "updateAndroidDynamicWidget called with dynamicWidgetId=$dynamicWidgetId")
         runBlocking {
-            try {
-                dynamicWidgetUpdater.updateDynamicWidget(
-                    dynamicWidgetId = dynamicWidgetId,
-                    dynamicWidgetPropsJson = dynamicWidgetPropsJson,
-                )
+            // promise.resolve(null) is called only after the try/catch below completes without
+            // rejecting, so a throwing resolve can never be followed by a reject call.
+            val succeeded =
+                try {
+                    dynamicWidgetUpdater.updateDynamicWidget(
+                        dynamicWidgetId = dynamicWidgetId,
+                        dynamicWidgetPropsJson = dynamicWidgetPropsJson,
+                    )
+                    true
+                } catch (kindMismatch: DynamicWidgetUpdateRejection.KindMismatch) {
+                    Log.e(TAG, "updateAndroidDynamicWidget rejected: ${kindMismatch.message}")
+                    promise.reject("VOLTRA_WIDGET_KIND_MISMATCH", kindMismatch.message)
+                    false
+                } catch (notFound: DynamicWidgetUpdateRejection.NotFound) {
+                    Log.e(TAG, "updateAndroidDynamicWidget rejected: ${notFound.message}")
+                    promise.reject("VOLTRA_WIDGET_NOT_FOUND", notFound.message)
+                    false
+                } catch (dynamicWidgetUpdateException: Exception) {
+                    Log.e(TAG, "updateAndroidDynamicWidget failed", dynamicWidgetUpdateException)
+                    promise.reject(
+                        "VOLTRA_DYNAMIC_WIDGET_UPDATE_ERROR",
+                        dynamicWidgetUpdateException.message,
+                        dynamicWidgetUpdateException,
+                    )
+                    false
+                }
+            if (succeeded) {
                 Log.d(TAG, "updateAndroidDynamicWidget completed")
                 promise.resolve(null)
-            } catch (dynamicWidgetUpdateException: Exception) {
-                Log.e(TAG, "updateAndroidDynamicWidget failed", dynamicWidgetUpdateException)
-                promise.reject(
-                    "VOLTRA_DYNAMIC_WIDGET_UPDATE_ERROR",
-                    dynamicWidgetUpdateException.message,
-                    dynamicWidgetUpdateException,
-                )
             }
         }
     }
@@ -256,11 +316,30 @@ class VoltraModule(
         promise: Promise,
     ) {
         // Stand-in for a Glance configuration activity: persist a config value and re-render the
-        // widget so its client render picks it up via env.configuration.
+        // widget so its client render picks it up via env.configuration. Configuration only
+        // applies to Dynamic Widgets.
+        when (val resolution = VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)) {
+            is VoltraWidgetKindResolution.Resolved -> {
+                if (resolution.kind != VoltraWidgetKind.Dynamic) {
+                    promise.reject(
+                        "VOLTRA_WIDGET_KIND_MISMATCH",
+                        "Widget '$widgetId' is a payload-driven widget and has no configuration. " +
+                            "setWidgetConfiguration only applies to Dynamic Widgets.",
+                    )
+                    return
+                }
+            }
+
+            is VoltraWidgetKindResolution.Unresolved -> {
+                promise.reject("VOLTRA_WIDGET_NOT_FOUND", resolution.reason)
+                return
+            }
+        }
+
         runBlocking {
             try {
                 VoltraConfigurationStore(reactApplicationContext).set(widgetId, key, value)
-                VoltraWidgetReceiver.triggerGlanceUpdate(reactApplicationContext, widgetId)
+                VoltraWidgetReceiver.triggerGlanceUpdateOrThrow(reactApplicationContext, widgetId)
                 promise.resolve(null)
             } catch (e: Exception) {
                 Log.e(TAG, "setWidgetConfiguration failed", e)
@@ -331,10 +410,38 @@ class VoltraModule(
                 null
             }
 
+        // A composed preview only matters when a preview size was requested; resolve the kind
+        // first so a Dynamic Widget's preview never composes its registered widget -- doing so
+        // would evaluate its JS inside the runBlocking below, on the calling thread (ANR risk) --
+        // and an unresolved id rejects instead of the widget being pinned in the loading state.
+        val previewWidget: GlanceAppWidget? =
+            if (previewSize != null) {
+                when (val resolution = VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)) {
+                    is VoltraWidgetKindResolution.Unresolved -> {
+                        Log.e(TAG, "requestPinGlanceAppWidget rejected: ${resolution.reason}")
+                        promise.reject("VOLTRA_WIDGET_NOT_FOUND", resolution.reason)
+                        return
+                    }
+
+                    is VoltraWidgetKindResolution.Resolved -> {
+                        if (resolution.kind == VoltraWidgetKind.Dynamic) {
+                            // Let the launcher fall back to the provider's preview image/layout.
+                            null
+                        } else {
+                            // Use the registered widget for this id (the right Glance class for
+                            // its kind) instead of assuming the payload-driven VoltraGlanceWidget.
+                            VoltraWidgetReceiver.getWidget(reactApplicationContext, widgetId)
+                                ?: VoltraGlanceWidget(widgetId)
+                        }
+                    }
+                }
+            } else {
+                null
+            }
+
         val result =
             runBlocking {
-                if (previewSize != null) {
-                    val previewWidget = VoltraGlanceWidget(widgetId)
+                if (previewSize != null && previewWidget != null) {
                     glanceManager.requestPinGlanceAppWidget(
                         receiver = receiverClass,
                         preview = previewWidget,

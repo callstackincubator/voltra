@@ -50,6 +50,26 @@ class VoltraRefreshActionCallback : ActionCallback {
             return
         }
 
+        // Resolve the widget's kind before opening any connection (ADR 0000, mirroring
+        // VoltraWidgetUpdateWorker): a Dynamic Widget's placeholder reader never consults this
+        // payload store, so fetching for the wrong kind is wasted work.
+        when (val kindResolution = VoltraWidgetKindResolver.resolve(context, widgetId)) {
+            is VoltraWidgetKindResolution.Unresolved -> {
+                Log.w(TAG, "Skipping refresh for widget '$widgetId': ${kindResolution.reason}")
+                return
+            }
+
+            is VoltraWidgetKindResolution.Resolved -> {
+                if (kindResolution.kind != VoltraWidgetKind.Payload) {
+                    Log.w(
+                        TAG,
+                        "Skipping refresh for widget '$widgetId': not a payload-driven widget (${kindResolution.kind})",
+                    )
+                    return
+                }
+            }
+        }
+
         val jsonString =
             withContext(Dispatchers.IO) {
                 try {

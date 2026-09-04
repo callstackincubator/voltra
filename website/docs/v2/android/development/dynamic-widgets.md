@@ -146,7 +146,7 @@ Dynamic Widget props must be JSON-serializable. You can use strings, numbers, bo
 Before the first call to `updateAndroidDynamicWidget`, the entry component receives `{}`. The latest props object is persisted by Dynamic Widget id, survives app process restarts, and is reused until a later call replaces it or the app's data is cleared.
 
 :::warning Choose the API by widget type
-`updateAndroidDynamicWidget` updates an entry-based Dynamic Widget by passing runtime props to its entry component. The legacy `updateAndroidWidget` API sends pre-rendered variant payloads to a payload-driven widget and cannot update an entry-based Dynamic Widget.
+`updateAndroidDynamicWidget` updates an entry-based Dynamic Widget by passing runtime props to its entry component. The legacy `updateAndroidWidget` API sends pre-rendered variant payloads to a payload-driven widget and cannot update an entry-based Dynamic Widget. Calling it on a Dynamic Widget now rejects with `VOLTRA_WIDGET_KIND_MISMATCH`, and `updateAndroidDynamicWidget` rejects the same way when called on a payload-driven widget.
 :::
 
 ## Runtime props and configuration are separate
