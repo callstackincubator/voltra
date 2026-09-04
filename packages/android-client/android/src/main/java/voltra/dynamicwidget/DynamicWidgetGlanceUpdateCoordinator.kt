@@ -54,7 +54,7 @@ internal class DynamicWidgetGlanceUpdateCoordinator(
     private val dynamicWidgetGlanceUpdateBoundary: DynamicWidgetGlanceUpdateBoundary,
 ) {
     suspend fun triggerDynamicWidgetGlanceUpdate(
-        packageName: String,
+        dynamicWidgetReceiverComponentName: ComponentName,
         dynamicWidgetId: String,
         dynamicWidgetGlanceAppWidget: GlanceAppWidget?,
     ): Int {
@@ -63,10 +63,6 @@ internal class DynamicWidgetGlanceUpdateCoordinator(
                 dynamicWidgetId = dynamicWidgetId,
                 dynamicWidgetGlanceAppWidget = dynamicWidgetGlanceAppWidget,
             )
-        val dynamicWidgetReceiverClassName =
-            "$packageName.widget.VoltraWidget_${dynamicWidgetId}Receiver"
-        val dynamicWidgetReceiverComponentName =
-            ComponentName(packageName, dynamicWidgetReceiverClassName)
         val dynamicWidgetAppWidgetIds =
             dynamicWidgetGlanceUpdateBoundary.getDynamicWidgetAppWidgetIds(
                 dynamicWidgetReceiverComponentName,

@@ -36,8 +36,7 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
             widgetRegistry[widgetId]?.let { return it }
 
             try {
-                val receiverClassName =
-                    "${context.packageName}.widget.VoltraWidget_${widgetId}Receiver"
+                val receiverClassName = VoltraWidgetReceivers.className(context, widgetId)
                 val receiverClass = Class.forName(receiverClassName)
                 val receiver = receiverClass.getDeclaredConstructor().newInstance() as VoltraWidgetReceiver
                 receiver.glanceAppWidget
@@ -94,7 +93,8 @@ abstract class VoltraWidgetReceiver : GlanceAppWidgetReceiver() {
                 DynamicWidgetGlanceUpdateCoordinator(
                     AndroidDynamicWidgetGlanceUpdateBoundary(context),
                 ).triggerDynamicWidgetGlanceUpdate(
-                    packageName = context.packageName,
+                    dynamicWidgetReceiverComponentName =
+                        VoltraWidgetReceivers.componentName(context, dynamicWidgetId),
                     dynamicWidgetId = dynamicWidgetId,
                     dynamicWidgetGlanceAppWidget = getWidget(context, dynamicWidgetId),
                 )

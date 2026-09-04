@@ -23,7 +23,11 @@ class DynamicWidgetReceiverUpdateTest {
 
             DynamicWidgetGlanceUpdateCoordinator(dynamicWidgetGlanceUpdateBoundary)
                 .triggerDynamicWidgetGlanceUpdate(
-                    packageName = "com.example.app",
+                    dynamicWidgetReceiverComponentName =
+                        ComponentName(
+                            "com.example.app",
+                            "com.example.app.widget.VoltraWidget_weatherReceiver",
+                        ),
                     dynamicWidgetId = "weather",
                     dynamicWidgetGlanceAppWidget = dynamicWidgetGlanceAppWidget,
                 )
@@ -61,7 +65,11 @@ class DynamicWidgetReceiverUpdateTest {
 
             DynamicWidgetGlanceUpdateCoordinator(dynamicWidgetGlanceUpdateBoundary)
                 .triggerDynamicWidgetGlanceUpdate(
-                    packageName = "com.example.app",
+                    dynamicWidgetReceiverComponentName =
+                        ComponentName(
+                            "com.example.app",
+                            "com.example.app.widget.VoltraWidget_weatherReceiver",
+                        ),
                     dynamicWidgetId = "weather",
                     dynamicWidgetGlanceAppWidget = VoltraClientGlanceWidget("weather"),
                 )
@@ -81,7 +89,11 @@ class DynamicWidgetReceiverUpdateTest {
 
             repeat(2) {
                 dynamicWidgetGlanceUpdateCoordinator.triggerDynamicWidgetGlanceUpdate(
-                    packageName = "com.example.app",
+                    dynamicWidgetReceiverComponentName =
+                        ComponentName(
+                            "com.example.app",
+                            "com.example.app.widget.VoltraWidget_weatherReceiver",
+                        ),
                     dynamicWidgetId = "weather",
                     dynamicWidgetGlanceAppWidget = dynamicWidgetGlanceAppWidget,
                 )
@@ -112,7 +124,11 @@ class DynamicWidgetReceiverUpdateTest {
                     DynamicWidgetGlanceUpdateCoordinator(
                         RecordingDynamicWidgetGlanceUpdateBoundary(intArrayOf(41)),
                     ).triggerDynamicWidgetGlanceUpdate(
-                        packageName = "com.example.app",
+                        dynamicWidgetReceiverComponentName =
+                            ComponentName(
+                                "com.example.app",
+                                "com.example.app.widget.VoltraWidget_legacy-widgetReceiver",
+                            ),
                         dynamicWidgetId = "legacy-widget",
                         dynamicWidgetGlanceAppWidget = VoltraGlanceWidget("legacy-widget"),
                     )
@@ -138,7 +154,11 @@ class DynamicWidgetReceiverUpdateTest {
                             dynamicWidgetReceiverLookupFailure = lookupFailure,
                         ),
                     ).triggerDynamicWidgetGlanceUpdate(
-                        packageName = "com.example.app",
+                        dynamicWidgetReceiverComponentName =
+                            ComponentName(
+                                "com.example.app",
+                                "com.example.app.widget.VoltraWidget_weatherReceiver",
+                            ),
                         dynamicWidgetId = "weather",
                         dynamicWidgetGlanceAppWidget = VoltraClientGlanceWidget("weather"),
                     )
@@ -161,7 +181,11 @@ class DynamicWidgetReceiverUpdateTest {
                             dynamicWidgetGlanceIdConversionFailure = conversionFailure,
                         ),
                     ).triggerDynamicWidgetGlanceUpdate(
-                        packageName = "com.example.app",
+                        dynamicWidgetReceiverComponentName =
+                            ComponentName(
+                                "com.example.app",
+                                "com.example.app.widget.VoltraWidget_weatherReceiver",
+                            ),
                         dynamicWidgetId = "weather",
                         dynamicWidgetGlanceAppWidget = VoltraClientGlanceWidget("weather"),
                     )
@@ -184,7 +208,11 @@ class DynamicWidgetReceiverUpdateTest {
                             dynamicWidgetUpdateFailure = updateFailure,
                         ),
                     ).triggerDynamicWidgetGlanceUpdate(
-                        packageName = "com.example.app",
+                        dynamicWidgetReceiverComponentName =
+                            ComponentName(
+                                "com.example.app",
+                                "com.example.app.widget.VoltraWidget_weatherReceiver",
+                            ),
                         dynamicWidgetId = "weather",
                         dynamicWidgetGlanceAppWidget = VoltraClientGlanceWidget("weather"),
                     )
@@ -208,7 +236,11 @@ class DynamicWidgetReceiverUpdateTest {
                 runTest {
                     DynamicWidgetGlanceUpdateCoordinator(dynamicWidgetGlanceUpdateBoundary)
                         .triggerDynamicWidgetGlanceUpdate(
-                            packageName = "com.example.app",
+                            dynamicWidgetReceiverComponentName =
+                                ComponentName(
+                                    "com.example.app",
+                                    "com.example.app.widget.VoltraWidget_weatherReceiver",
+                                ),
                             dynamicWidgetId = "weather",
                             dynamicWidgetGlanceAppWidget = VoltraClientGlanceWidget("weather"),
                         )
