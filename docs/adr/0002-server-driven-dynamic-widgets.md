@@ -1,6 +1,6 @@
 # ADR 0002: Server-driven Dynamic Widgets
 
-Status: Proposed
+Status: Accepted — not yet implemented
 
 Tracks [#176](https://github.com/callstackincubator/voltra/issues/176).
 
@@ -252,8 +252,10 @@ Two supported ways, both on purpose:
 
 - **Optimistic update.** `updateDynamicWidget(id, props)` writes the same
   props slot the fetch commits into. Last writer wins until the next fetch.
-  For a payload widget, `updateWidget` does the same with a payload.
-- **Take over.** `setWidgetServerUpdate({ enabled: false }, { widgetId })`
+  Writing props never pauses or delays fetching; the next scheduled fetch
+  runs as planned and overwrites them. For a payload widget, `updateWidget`
+  does the same with a payload.
+- **Take over.** Only `setWidgetServerUpdate({ enabled: false }, { widgetId })`
   stops fetching for that widget. The app then drives it through
   `updateDynamicWidget` for as long as it wants; `enabled: true` or a `clear`
   hands it back to the server. `env.serverUpdate.status` reports `disabled`
