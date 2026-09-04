@@ -259,36 +259,70 @@ Two supported ways, both on purpose:
 
 ### One settings store, one resolver
 
-The four layers, the build-time config, and the credential storage are read
-through one abstraction per platform. Both engines call it; neither engine
-reads Keychain, DataStore, Info.plist, or generated code for server-update
-purposes on its own.
+Everything that needs server-update settings reads them through **one**
+abstraction per platform: a resolver with a single read method. Internally
+the resolver is composed of four layer objects that share one small
+interface, stacked in a fixed order. Nothing outside the shared package sees
+a layer; neither engine reads Keychain, DataStore, Info.plist, or generated
+assets for server-update purposes on its own.
+
+```
+protocol WidgetServerSettingsLayer {            // one implementation per source
+  func settings(for widgetId: String) -> WidgetServerUpdateSettings?   // partial
+}
+
+final class WidgetServerSettingsResolver {     // the only read API
+  init(layers: [WidgetServerSettingsLayer])    // fixed order: config, credentials, global, widget
+  func resolve(_ widgetId: String) -> ResolvedWidgetServerSettings
+  func revision(_ widgetId: String) -> Int
+}
+
+final class WidgetServerSettingsStore {        // the only write API
+  func set(_ settings: WidgetServerUpdateSettings, scope: Scope)   // .global or .widget(id)
+  func clear(scope: Scope)
+}
+```
+
+- The four layers are `ConfigLayer` (build-time defaults, read-only),
+  `CredentialsLayer` (legacy, written only by the deprecated functions),
+  `GlobalLayer`, and `WidgetLayer`. Each returns a partial settings object or
+  nothing. The resolver walks them from lowest to highest and applies the
+  merge rules from the API section: per-key merge for `headers` and `query`,
+  last-wins for everything else. That rule lives in the resolver, once.
+- `resolve` returns a complete object: `url` may be absent (no fetch),
+  `intervalMinutes` is always filled (floor applied here), `enabled`
+  defaults to true, `method` defaults to GET.
+- `revision` increments whenever any layer that can affect the widget
+  changes. Fetchers record it and commit only if it is still current.
+- Adding a layer later, for example an instance layer above `widget`, is a
+  new `WidgetServerSettingsLayer` plus one entry in the order. The resolver
+  API and every caller stay as they are.
 
 **iOS**: new folder `packages/ios-client/ios/shared/WidgetServer/`.
 
-- `WidgetServerSettingsStore`: `setLayer`, `clearLayer`, `resolve(widgetId)`,
-  `revision(widgetId)`. The config layer reads the existing
-  `Voltra_WidgetServerUrls` / `Intervals` plist keys. Wraps
-  `VoltraKeychainHelper`, which moves here.
+- The four layers, the resolver, and the store as above. `ConfigLayer` reads
+  the existing `Voltra_WidgetServerUrls` / `Intervals` plist keys. The three
+  runtime layers persist through `VoltraKeychainHelper`, which moves here.
 - `WidgetServerRequestBuilder`: resolved settings + Voltra params + stored
   ETag → `URLRequest`. Applies the GET-body rule.
 
 **Android**: new package `voltra.widget.server`.
 
-- `WidgetServerSettingsStore` and `WidgetServerRequestBuilder` with the same
-  responsibilities, producing a configured `HttpURLConnection`. The config
-  layer reads a generated asset `voltra/widget_server_defaults.json`
-  (same pattern as `widget_config_defaults.json`), replacing the URL and
-  interval inlined into generated receivers today.
+- Same four layers, resolver, store, and builder, producing a configured
+  `HttpURLConnection`. `ConfigLayer` reads a generated asset
+  `voltra/widget_server_defaults.json` (same pattern as
+  `widget_config_defaults.json`), replacing the URL and interval inlined
+  into generated receivers today.
 - `VoltraWidgetCredentialStore` and `VoltraCryptoManager` move here from
-  `voltra.widget.payload`. Same DataStore file, same keys.
+  `voltra.widget.payload` and back the three runtime layers. Same DataStore
+  file, same keys.
 
 Dependency rule, extending ADR 0000: `voltra.widget.payload` and
 `voltra.dynamicwidget` may depend on `voltra.widget.server`; it depends on
 neither. Same shape on iOS by folder convention.
 
-The payload fetchers and schedulers on both platforms switch to the store and
-builder in this change. With no runtime layers set, the request and the
+The payload fetchers and schedulers on both platforms switch to the resolver
+and builder in this change. With no runtime layers set, the request and the
 schedule are what they are today. This is what gives payload widgets runtime
 URLs and non-GET requests too.
 
@@ -431,9 +465,17 @@ What is rendered, in order:
 
 ### Later, on purpose
 
-- Per-instance requests and props keyed by instance or `env.configuration`.
-  Comes with a first-class instance concept; `family` returns to the request
-  then.
+- Per-instance requests and props. There is no `instanceId` in the codebase
+  today. The open Android PR
+  [#218](https://github.com/callstackincubator/voltra/pull/218) scopes
+  `env.configuration` per placement using the system `appWidgetId`, Android
+  only, and its author notes that per-instance server fetches need
+  instance-keyed URL and cache storage plus cleanup on delete and recycled
+  id safety. iOS has no equivalent: WidgetKit's `WidgetInfo` is identified
+  by kind, family, and configuration, so two identical placements are
+  indistinguishable. When instances become a first-class concept, they slot
+  in as a fifth settings layer above `widget` and `family` returns to the
+  request.
 - A failure event to the app (`dynamicWidgetServerUpdateFailed`, one per
   widget per error kind, reusing the Dynamic Live Activity failure queue).
   `env.serverUpdate` is enough for widgets; the event is for dashboards.
