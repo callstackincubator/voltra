@@ -135,7 +135,7 @@ type DynamicWidgetManifest = {
   widgets: Array<{ id: string; entry: string }>
 }
 
-type DetectedIOSWidget =
+export type DetectedIOSWidget =
   | (NormalizedIOSWidgetConfig & { clientRendered: false })
   | (NormalizedIOSWidgetConfig & { entry: string; clientRendered: true; clientSourcePath: string })
 
@@ -562,7 +562,7 @@ function generateWidgetBundleSwift(widgets: DetectedIOSWidget[]): string {
     appIntentWidgets.length > 0 ? 'import AppIntents' : undefined,
     'import SwiftUI',
     'import WidgetKit',
-    'import VoltraWidget',
+    'import VoltraRuntime',
   ]
     .filter((value): value is string => value !== undefined)
     .join('\n')
@@ -1274,4 +1274,8 @@ function mergeSingleResult(result: GeneratedFileResult, changes: ReportedChange[
   }
 
   generatedFiles.add(normalizeRelativePath(result.relativePath))
+}
+
+export const __test__ = {
+  generateWidgetBundleSwift,
 }
