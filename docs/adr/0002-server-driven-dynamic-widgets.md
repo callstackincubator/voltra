@@ -159,7 +159,8 @@ a later ADR, when instances become a first-class concept. Payload widgets
 keep sending exactly what they send today plus `locale`.
 
 Everything above the blank line can be changed by the app: method, extra
-query params, extra headers, a body.
+query params, extra headers, a body. `instance` is a reserved query key,
+not sent today.
 
 ### Response contract for Dynamic Widgets
 
@@ -220,7 +221,8 @@ widget       (per id)                 ← setWidgetServerUpdate(settings, { widg
 - `headers` and `query` merge per key. `url`, `intervalMinutes`, `enabled`,
   `method`, and `body` come from the highest layer that sets them.
 - Voltra's own query keys (`widgetId`, `platform`, `family`, `theme`,
-  `locale`) are reserved; a `query` that names one is rejected at call time.
+  `locale`, `instance`) are reserved; a `query` that names one is rejected
+  at call time.
 - `url` is validated at call time with the same rule as app.json: `https` in
   release, `http` only for localhost / `10.0.2.2` in dev builds.
 - No validation of method against body. A body with GET or HEAD is stored as
@@ -267,19 +269,24 @@ a layer; neither engine reads Keychain, DataStore, Info.plist, or generated
 assets for server-update purposes on its own.
 
 ```
+enum WidgetScope {                             // the key type for everything per widget
+  case widget(id: String)                       // the only case in this ADR
+  // case instance(id: String, key: String)     // reserved, see "Instance-ready"
+}
+
 protocol WidgetServerSettingsLayer {            // one implementation per source
-  func settings(for widgetId: String) -> WidgetServerUpdateSettings?   // partial
+  func settings(for scope: WidgetScope) -> WidgetServerUpdateSettings?   // partial
 }
 
 final class WidgetServerSettingsResolver {     // the only read API
   init(layers: [WidgetServerSettingsLayer])    // fixed order: config, credentials, global, widget
-  func resolve(_ widgetId: String) -> ResolvedWidgetServerSettings
-  func revision(_ widgetId: String) -> Int
+  func resolve(_ scope: WidgetScope) -> ResolvedWidgetServerSettings
+  func revision(_ scope: WidgetScope) -> Int
 }
 
 final class WidgetServerSettingsStore {        // the only write API
-  func set(_ settings: WidgetServerUpdateSettings, scope: Scope)   // .global or .widget(id)
-  func clear(scope: Scope)
+  func set(_ settings: WidgetServerUpdateSettings, scope: WidgetScope?)   // nil = global
+  func clear(scope: WidgetScope?)
 }
 ```
 
@@ -297,6 +304,9 @@ final class WidgetServerSettingsStore {        // the only write API
 - Adding a layer later, for example an instance layer above `widget`, is a
   new `WidgetServerSettingsLayer` plus one entry in the order. The resolver
   API and every caller stay as they are.
+- `WidgetScope` is the key type for every per-widget store this ADR adds:
+  the widget settings layer, the server props store, the ETag, fetch
+  coalescing, and the revision. Not a bare `widgetId` string.
 
 **iOS**: new folder `packages/ios-client/ios/shared/WidgetServer/`.
 
@@ -338,12 +348,12 @@ URLs and non-GET requests too.
   `VoltraJSRenderer`, commits only if that succeeds, then returns one entry
   with `.after(nextDate)`.
 - `DynamicWidgetServerPropsStore`: `{props, etag, etagUrl, fetchedAt,
-status, error, settingsRevision}` per widget id in the App Group under
+status, error, settingsRevision}` per `WidgetScope` in the App Group under
   `Voltra_DynamicWidgetServer_v1_<id>`. On commit it writes the existing
   `DynamicWidgetPropsStore` slot, so the render path does not know where
   props came from.
 - `DynamicWidgetServerFetchResolver`: coalesces concurrent `getTimeline`
-  calls for one widget id into one fetch per 3 s window, the way the payload
+  calls for one scope into one fetch per 3 s window, the way the payload
   engine already does.
 
 **Android**: new package `voltra.dynamicwidget.serverupdate`.
@@ -369,8 +379,9 @@ status, error, settingsRevision}` per widget id in the App Group under
   `VoltraClientWidgetReceiver` that schedules on first `onUpdate` and cancels
   on the last `onDeleted`.
 
-"Fetch, parse, trial-render, commit" is the rule on both platforms. Props
-that do not render are never committed. The trial render uses one
+"Fetch, parse, trial-render, commit" is the rule on both platforms, and the
+unit of all four steps is a `WidgetScope`. Props that do not render are never
+committed. The trial render uses one
 environment (the widget's first supported family on iOS, the target cell
 size on Android); a widget that only throws for another size slips through,
 and that is accepted.
@@ -390,7 +401,8 @@ env.serverUpdate?: {
 }
 ```
 
-`undefined` on widgets without `serverUpdate`. Stale props never expire on
+`undefined` on widgets without `serverUpdate`. `env.instance` is reserved
+and absent today. Stale props never expire on
 their own; the widget has `fetchedAt` and decides. This is the only touch on
 the existing Dynamic render path: an environment-source seam (Swift protocol
 / Kotlin interface) that the default provider leaves empty.
@@ -465,17 +477,8 @@ What is rendered, in order:
 
 ### Later, on purpose
 
-- Per-instance requests and props. There is no `instanceId` in the codebase
-  today. The open Android PR
-  [#218](https://github.com/callstackincubator/voltra/pull/218) scopes
-  `env.configuration` per placement using the system `appWidgetId`, Android
-  only, and its author notes that per-instance server fetches need
-  instance-keyed URL and cache storage plus cleanup on delete and recycled
-  id safety. iOS has no equivalent: WidgetKit's `WidgetInfo` is identified
-  by kind, family, and configuration, so two identical placements are
-  indistinguishable. When instances become a first-class concept, they slot
-  in as a fifth settings layer above `widget` and `family` returns to the
-  request.
+- Per-instance requests and props. Own ADR; see "Instance-ready" below for
+  what this ADR fixes in advance.
 - A failure event to the app (`dynamicWidgetServerUpdateFailed`, one per
   widget per error kind, reusing the Dynamic Live Activity failure queue).
   `env.serverUpdate` is enough for widgets; the event is for dashboards.
@@ -483,6 +486,41 @@ What is rendered, in order:
 - A watchdog for a JS render that never returns. Helps every Dynamic Widget.
 - Runtime `refresh` toggle. Needs the button to be drawn from a runtime
   flag instead of generated code.
+
+### Instance-ready
+
+There is no `instanceId` in the codebase today. The open Android PR
+[#218](https://github.com/callstackincubator/voltra/pull/218) scopes
+`env.configuration` per placement using the system `appWidgetId`, Android
+only, and its author notes that per-instance server fetches need
+instance-keyed URL and cache storage plus cleanup on delete and recycled id
+safety. iOS has no equivalent: WidgetKit's `WidgetInfo` is identified by
+kind, family, and configuration, so an iOS "instance" can only mean a
+distinct configuration. Reconciling the two models, and the reload budget
+cost of fetching per placement, is a later ADR that builds on #218's
+configuration layer and supersedes the note above.
+
+This ADR does not implement instances but fixes the six things that would
+be expensive to change afterwards:
+
+1. **Key type.** Every per-widget store is keyed by `WidgetScope`, never by
+   a bare widget id. Today the only case is `.widget(id)`. Adding
+   `.instance(id, key)` changes no caller.
+2. **Resolver signature.** `resolve(scope)` and `revision(scope)` from day
+   one. The instance layer slots in above `widget` in the fixed order.
+3. **Unit of fetch.** Fetch, trial-render, commit, and coalescing are per
+   scope. With widget scopes only, that is exactly the design above; with
+   instance scopes it becomes per placement with no restructuring.
+4. **Reserved names.** `instance` as a query parameter and `env.instance`
+   are reserved and unused. Nothing else in the request or env changes when
+   they arrive.
+5. **Props slot.** The commit target stays the existing
+   `DynamicWidgetPropsStore`, keyed like the settings store. #218 already
+   reads per-instance configuration at render time through `appWidgetId`;
+   per-instance props follow the same read path.
+6. **Ordering.** Instance work lands after #218 (rebased over the package
+   split from #262, which moved the files it edits) and after this ADR is
+   implemented.
 
 ### Out of scope
 
