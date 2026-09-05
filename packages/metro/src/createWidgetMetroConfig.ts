@@ -40,6 +40,20 @@ function asWidgetModulePlatform(platform: string | null): WidgetModulePlatform |
   return platform === 'ios' || platform === 'android' ? platform : null
 }
 
+/** Report each redirect once per bundler config, matching what the build-time loaders log. */
+function createWarnOnce(): (message: string) => void {
+  const seen = new Set<string>()
+
+  return (message: string) => {
+    if (seen.has(message)) {
+      return
+    }
+
+    seen.add(message)
+    console.warn(`[voltra] ${message}`)
+  }
+}
+
 export async function createWidgetMetroConfig({
   projectRoot,
   appConfig,
@@ -61,6 +75,7 @@ export async function createWidgetMetroConfig({
   const pnpmTransitiveModules = Object.fromEntries(
     Object.entries(pnpmTransitives).filter((entry): entry is [string, string] => entry[1] !== null)
   )
+  const warnOnce = createWarnOnce()
 
   return {
     ...config,
@@ -102,6 +117,10 @@ export async function createWidgetMetroConfig({
 
         if (resolution.kind === 'passthrough') {
           return context.resolveRequest(context, moduleName, requestedPlatform)
+        }
+
+        if (resolution.warning) {
+          warnOnce(resolution.warning)
         }
 
         if (resolution.specifier.startsWith(`${WIDGET_REACT_NATIVE_SHIM_PACKAGE}/`)) {

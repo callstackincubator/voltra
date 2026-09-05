@@ -4,8 +4,8 @@ import os from 'node:os'
 import path from 'node:path'
 import { after, describe, it } from 'node:test'
 
-import { createWidgetModuleLoader } from './loader'
-import type { WidgetModulePlatform } from './policy'
+import { createWidgetModuleLoader } from './loader.js'
+import type { WidgetModulePlatform } from './policy.js'
 
 const temporaryRoots: string[] = []
 
@@ -19,21 +19,28 @@ after(() => {
  * Create a throwaway project whose Babel setup mirrors what an app provides, so the
  * loader exercises the same transpile path it takes in a real project.
  */
-function createProject(files: Record<string, string>): string {
+function createProject(files: Record<string, string>, babelConfigFilename: string | null = 'babel.config.js'): string {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-widget-module-'))
   temporaryRoots.push(projectRoot)
 
   fs.writeFileSync(path.join(projectRoot, 'package.json'), JSON.stringify({ name: 'fixture-project' }))
-  fs.writeFileSync(
-    path.join(projectRoot, 'babel.config.js'),
-    `module.exports = { presets: [${JSON.stringify(require.resolve('@react-native/babel-preset'))}] }\n`
-  )
+
+  if (babelConfigFilename) {
+    const presets = [require.resolve('@react-native/babel-preset')]
+    fs.writeFileSync(
+      path.join(projectRoot, babelConfigFilename),
+      babelConfigFilename.endsWith('.json')
+        ? JSON.stringify({ presets })
+        : `module.exports = { presets: ${JSON.stringify(presets)} }\n`
+    )
+  }
 
   // Babel's runtime helpers are injected into the transpiled output, so the fixture has to
   // resolve them the way a real app does.
   const runtimeDir = path.dirname(require.resolve('@babel/runtime/package.json'))
   const runtimeLink = path.join(projectRoot, 'node_modules', '@babel', 'runtime')
   fs.mkdirSync(path.dirname(runtimeLink), { recursive: true })
+  fs.mkdirSync(path.join(projectRoot, 'node_modules', '@react-native'), { recursive: true })
   fs.symlinkSync(runtimeDir, runtimeLink, 'dir')
 
   for (const [relativePath, contents] of Object.entries(files)) {
@@ -93,12 +100,23 @@ describe('createWidgetModuleLoader', () => {
     assert.deepEqual({ ...load(projectRoot, 'widget.ts').exports.flat }, { a: 3, b: 2 })
   })
 
-  it('rejects a react-native symbol the shim does not implement', () => {
+  it('rejects a react-native symbol the shim does not name at all', () => {
     const projectRoot = createProject({
-      'widget.ts': ["import { Animated } from 'react-native'", 'export default Animated', ''].join('\n'),
+      'widget.ts': ["import { YellowBox } from 'react-native'", 'export default YellowBox', ''].join('\n'),
     })
 
-    assert.throws(() => load(projectRoot, 'widget.ts'), /'Animated' is not available to Voltra widget code/)
+    assert.throws(() => load(projectRoot, 'widget.ts'), /'YellowBox' is not available to Voltra widget code/)
+  })
+
+  it('lets a known-unsupported symbol import, then rejects it on use', () => {
+    // The shim names these so a Metro bundle — which has no loader to intercept reads —
+    // fails loudly too. Importing stays harmless; using it does not.
+    const projectRoot = createProject({
+      'widget.ts': ["import { Animated } from 'react-native'", 'export default () => Animated.timing', ''].join('\n'),
+    })
+
+    const widget = load(projectRoot, 'widget.ts').exports.default as () => unknown
+    assert.throws(() => widget(), /'Animated' is not available to Voltra widget code/)
   })
 
   it('rejects a deep react-native import', () => {
@@ -147,6 +165,20 @@ describe('createWidgetModuleLoader', () => {
 
     assert.deepEqual({ ...(loader.loadDefaultExport(path.join(projectRoot, 'default.ts')) as any) }, { variants: 1 })
     assert.equal((loader.loadDefaultExport(path.join(projectRoot, 'named.ts')) as any).variants, 2)
+  })
+
+  it("honours a project's babel.config.json, which Babel discovers on its own", () => {
+    const projectRoot = createProject({ 'widget.ts': 'export const answer: number = 42\n' }, 'babel.config.json')
+
+    assert.equal(load(projectRoot, 'widget.ts').exports.answer, 42)
+  })
+
+  it('falls back to an installed preset when the project defines no Babel configuration', () => {
+    const projectRoot = createProject({ 'widget.ts': 'export const answer: number = 42\n' }, null)
+    const runtimeDir = path.dirname(require.resolve('@react-native/babel-preset/package.json'))
+    fs.symlinkSync(runtimeDir, path.join(projectRoot, 'node_modules', '@react-native', 'babel-preset'), 'dir')
+
+    assert.equal(load(projectRoot, 'widget.ts').exports.answer, 42)
   })
 
   it('wraps failures with the caller-supplied error factory', () => {

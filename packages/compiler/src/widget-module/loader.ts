@@ -5,23 +5,25 @@ import vm from 'node:vm'
 
 import * as babel from '@babel/core'
 
-import * as reactNativeAndroid from '../react-native/android'
-import * as reactNativeIos from '../react-native/ios'
+import * as reactNativeAndroid from '../react-native/android.js'
+import * as reactNativeIos from '../react-native/ios.js'
 import {
   describeUnsupportedReactNativeExport,
   getWidgetReactNativeShimSpecifier,
   resolveWidgetImport,
   type WidgetModulePlatform,
-} from './policy'
+} from './policy.js'
 
 /** Extensions tried when resolving a relative import from widget code. */
 const MODULE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '']
 
-/** Project Babel configurations honoured when transpiling widget code. */
-const BABEL_CONFIG_FILENAMES = ['babel.config.js', 'babel.config.cjs', 'babel.config.mjs']
-
-/** Presets used when the project does not define its own Babel configuration. */
-const FALLBACK_BABEL_PRESETS = ['@react-native/babel-preset', 'babel-preset-expo']
+/**
+ * Presets used when the project defines no Babel configuration at all.
+ *
+ * `babel-preset-expo` comes first because it wraps `@react-native/babel-preset` and adds the
+ * transforms an Expo app needs; a bare React Native project resolves only the latter.
+ */
+const FALLBACK_BABEL_PRESETS = ['babel-preset-expo', '@react-native/babel-preset']
 
 export interface CreateWidgetModuleLoaderOptions {
   /** Root of the app project. Bare imports and Babel configuration resolve from here. */
@@ -141,13 +143,20 @@ export function createWidgetModuleLoader({
 
   function transpile(filePath: string): string {
     const source = fs.readFileSync(filePath, 'utf8')
-    const projectBabelConfigPath = resolveProjectBabelConfig(projectRoot)
-    const result = babel.transformSync(source, {
+    // Let Babel find the project's root configuration itself rather than guessing at
+    // filenames: it knows about babel.config.json, .cjs, .mjs and .ts, and a project that
+    // uses one expects its plugins to apply to widget code too.
+    const baseOptions: babel.TransformOptions = {
       babelrc: false,
       cwd: projectRoot,
       filename: filePath,
-      ...(projectBabelConfigPath
-        ? { configFile: projectBabelConfigPath }
+      root: projectRoot,
+    }
+    const hasProjectConfig = Boolean(babel.loadPartialConfig(baseOptions)?.config)
+    const result = babel.transformSync(source, {
+      ...baseOptions,
+      ...(hasProjectConfig
+        ? {}
         : { configFile: false, presets: [resolveFallbackBabelPreset(projectRequire, createError)] }),
     })
 
@@ -181,7 +190,12 @@ export function createWidgetModuleLoader({
  */
 function createReactNativeShimExports(platform: WidgetModulePlatform): unknown {
   const shim = platform === 'ios' ? reactNativeIos : reactNativeAndroid
-  const shimExports: Record<string, unknown> = { __esModule: true, ...shim }
+  // Copy descriptors rather than values so the shim's rejecting stubs are carried over
+  // without being invoked, and so the proxy target is an ordinary extensible object.
+  const shimExports = Object.defineProperties(
+    {},
+    { ...Object.getOwnPropertyDescriptors(shim), __esModule: { value: true } }
+  ) as Record<string, unknown>
 
   return new Proxy(shimExports, {
     get(target, property) {
@@ -232,18 +246,6 @@ function isDirectory(candidate: string): boolean {
   return fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()
 }
 
-function resolveProjectBabelConfig(projectRoot: string): string | undefined {
-  for (const filename of BABEL_CONFIG_FILENAMES) {
-    const candidatePath = path.join(projectRoot, filename)
-
-    if (fs.existsSync(candidatePath)) {
-      return candidatePath
-    }
-  }
-
-  return undefined
-}
-
 function resolveFallbackBabelPreset(projectRequire: NodeRequire, createError: (message: string) => Error): string {
   for (const preset of FALLBACK_BABEL_PRESETS) {
     try {
@@ -254,6 +256,8 @@ function resolveFallbackBabelPreset(projectRequire: NodeRequire, createError: (m
   }
 
   throw createError(
-    `Could not resolve a Babel preset for widget evaluation. Add a project babel.config.js or install ${FALLBACK_BABEL_PRESETS[0]}.`
+    `Could not resolve a Babel preset for widget evaluation. Add a project Babel configuration or install one of ${FALLBACK_BABEL_PRESETS.join(
+      ', '
+    )}.`
   )
 }

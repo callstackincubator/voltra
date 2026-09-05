@@ -9,13 +9,39 @@
  * silently handing back `undefined`.
  */
 
-import { describeUnsupportedReactNativeExport, type WidgetModulePlatform } from '../widget-module/policy'
+import { describeUnsupportedReactNativeExport } from '../widget-module/policy.js'
 
 type Style = Record<string, unknown>
 type StyleInput = Style | false | null | undefined | ReadonlyArray<StyleInput>
 
 function unsupported(symbol: string): never {
   throw new Error(describeUnsupportedReactNativeExport(symbol))
+}
+
+/**
+ * Stand-in for a React Native export widget code cannot use.
+ *
+ * Importing it is harmless; rendering it, calling it, or reading anything off it throws.
+ * A function proxy covers all three, so `<View />`, `Animated.timing(...)`, and
+ * `new NativeEventEmitter()` all fail with the same message.
+ */
+function createRejectedExport(symbol: string): any {
+  const reject = (): never => unsupported(symbol)
+
+  return new Proxy(
+    function rejectedReactNativeExport(): never {
+      return reject()
+    },
+    {
+      apply: reject,
+      construct: reject,
+      get(target, property) {
+        // Symbols are read by tooling (React's element check, `util.inspect`) before anything
+        // renders, so answering those keeps the error at the point of actual use.
+        return typeof property === 'symbol' ? Reflect.get(target, property) : reject()
+      },
+    }
+  )
 }
 
 const absoluteFillObject: Style = Object.freeze({
@@ -73,43 +99,51 @@ export const StyleSheet = Object.freeze({
   hairlineWidth: 1,
 })
 
-export type WidgetPlatform = {
-  readonly OS: WidgetModulePlatform
-  select<T>(specifics: PlatformSelectSpec<T>): T | undefined
-}
-
-type PlatformSelectSpec<T> = {
-  ios?: T
-  android?: T
-  native?: T
-  default?: T
-}
-
-export function createPlatform(platform: WidgetModulePlatform): WidgetPlatform {
-  return Object.freeze({
-    OS: platform,
-    select<T>(specifics: PlatformSelectSpec<T>): T | undefined {
-      if (specifics && platform in specifics) {
-        return specifics[platform]
-      }
-
-      if (specifics && 'native' in specifics) {
-        return specifics.native
-      }
-
-      return specifics?.default
-    },
-    get Version(): never {
-      return unsupported('Platform.Version')
-    },
-    get constants(): never {
-      return unsupported('Platform.constants')
-    },
-    get isTV(): never {
-      return unsupported('Platform.isTV')
-    },
-    get isTesting(): never {
-      return unsupported('Platform.isTesting')
-    },
-  }) as WidgetPlatform
-}
+export const ActivityIndicator = createRejectedExport('ActivityIndicator')
+export const Alert = createRejectedExport('Alert')
+export const Animated = createRejectedExport('Animated')
+export const AppRegistry = createRejectedExport('AppRegistry')
+export const AppState = createRejectedExport('AppState')
+export const Appearance = createRejectedExport('Appearance')
+export const Button = createRejectedExport('Button')
+export const DeviceEventEmitter = createRejectedExport('DeviceEventEmitter')
+export const Dimensions = createRejectedExport('Dimensions')
+export const Easing = createRejectedExport('Easing')
+export const FlatList = createRejectedExport('FlatList')
+export const I18nManager = createRejectedExport('I18nManager')
+export const Image = createRejectedExport('Image')
+export const ImageBackground = createRejectedExport('ImageBackground')
+export const InteractionManager = createRejectedExport('InteractionManager')
+export const Keyboard = createRejectedExport('Keyboard')
+export const KeyboardAvoidingView = createRejectedExport('KeyboardAvoidingView')
+export const LayoutAnimation = createRejectedExport('LayoutAnimation')
+export const Linking = createRejectedExport('Linking')
+export const Modal = createRejectedExport('Modal')
+export const NativeEventEmitter = createRejectedExport('NativeEventEmitter')
+export const NativeModules = createRejectedExport('NativeModules')
+export const PanResponder = createRejectedExport('PanResponder')
+export const PermissionsAndroid = createRejectedExport('PermissionsAndroid')
+export const PixelRatio = createRejectedExport('PixelRatio')
+export const Pressable = createRejectedExport('Pressable')
+export const SafeAreaView = createRejectedExport('SafeAreaView')
+export const ScrollView = createRejectedExport('ScrollView')
+export const SectionList = createRejectedExport('SectionList')
+export const Share = createRejectedExport('Share')
+export const StatusBar = createRejectedExport('StatusBar')
+export const Switch = createRejectedExport('Switch')
+export const Text = createRejectedExport('Text')
+export const TextInput = createRejectedExport('TextInput')
+export const ToastAndroid = createRejectedExport('ToastAndroid')
+export const TouchableHighlight = createRejectedExport('TouchableHighlight')
+export const TouchableOpacity = createRejectedExport('TouchableOpacity')
+export const TouchableWithoutFeedback = createRejectedExport('TouchableWithoutFeedback')
+export const TurboModuleRegistry = createRejectedExport('TurboModuleRegistry')
+export const UIManager = createRejectedExport('UIManager')
+export const Vibration = createRejectedExport('Vibration')
+export const View = createRejectedExport('View')
+export const VirtualizedList = createRejectedExport('VirtualizedList')
+export const findNodeHandle = createRejectedExport('findNodeHandle')
+export const processColor = createRejectedExport('processColor')
+export const requireNativeComponent = createRejectedExport('requireNativeComponent')
+export const useColorScheme = createRejectedExport('useColorScheme')
+export const useWindowDimensions = createRejectedExport('useWindowDimensions')

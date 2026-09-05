@@ -1,5 +1,5 @@
 /** The `react-native` surface served to iOS widget code. */
-import { createPlatform, StyleSheet } from './shim'
+import { createPlatform } from './platform.js'
 
 export const Platform = createPlatform('ios')
-export { StyleSheet }
+export * from './shim.js'

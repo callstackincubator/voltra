@@ -171,6 +171,9 @@ parts of `react-native` that are pure data manipulation are therefore available:
 - `Platform.OS` and `Platform.select`. Inside a widget, `Platform.OS` is the platform the widget is
   being built for, so `Platform.select` picks the same branch at build time and on device.
 
-Anything else imported from `react-native` — components, `Dimensions`, `Animated`, `PixelRatio`,
-deep imports such as `react-native/Libraries/...` — fails the build with an explicit error rather
-than misbehaving at render time. Use the `Voltra` components for everything visual.
+Anything else imported from `react-native` — components, `Dimensions`, `Animated`, `PixelRatio` —
+is rejected with a message naming the symbol. Build steps that evaluate your widget
+(`voltra apply` and `expo prebuild`) fail outright; a symbol that only appears on a branch those
+steps never reach throws the same message when the widget renders, rather than reading as
+`undefined`. Deep imports such as `react-native/Libraries/...` always fail the build. Use the
+`Voltra` components for everything visual.

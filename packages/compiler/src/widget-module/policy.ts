@@ -37,6 +37,65 @@ export function getWidgetReactNativeShimSpecifier(platform: WidgetModulePlatform
 /** Symbols the `react-native` shim implements. Anything else is rejected. */
 export const SUPPORTED_REACT_NATIVE_EXPORTS = ['Platform', 'StyleSheet'] as const
 
+/**
+ * React Native exports widget code is most likely to reach for by mistake.
+ *
+ * The Node loader rejects *any* unimplemented symbol, but a Metro bundle resolves the shim
+ * file directly and has no such interception point. Naming these explicitly means a widget
+ * that slips one past build-time evaluation still fails loudly on device with the same
+ * message, rather than silently reading `undefined`.
+ */
+export const REJECTED_REACT_NATIVE_EXPORTS = [
+  'ActivityIndicator',
+  'Alert',
+  'Animated',
+  'AppRegistry',
+  'AppState',
+  'Appearance',
+  'Button',
+  'DeviceEventEmitter',
+  'Dimensions',
+  'Easing',
+  'FlatList',
+  'I18nManager',
+  'Image',
+  'ImageBackground',
+  'InteractionManager',
+  'Keyboard',
+  'KeyboardAvoidingView',
+  'LayoutAnimation',
+  'Linking',
+  'Modal',
+  'NativeEventEmitter',
+  'NativeModules',
+  'PanResponder',
+  'PermissionsAndroid',
+  'PixelRatio',
+  'Pressable',
+  'SafeAreaView',
+  'ScrollView',
+  'SectionList',
+  'Share',
+  'StatusBar',
+  'Switch',
+  'Text',
+  'TextInput',
+  'ToastAndroid',
+  'TouchableHighlight',
+  'TouchableOpacity',
+  'TouchableWithoutFeedback',
+  'TurboModuleRegistry',
+  'UIManager',
+  'Vibration',
+  'View',
+  'VirtualizedList',
+  'findNodeHandle',
+  'processColor',
+  'requireNativeComponent',
+  'useColorScheme',
+  'useWindowDimensions',
+] as const
+
 /** How an import from widget code should be handled. */
 export type WidgetImportResolution =
   /** Resolve the specifier as written. */

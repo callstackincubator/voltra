@@ -47,8 +47,17 @@ from.
 The shim is an allowlist, not a blocklist. It implements `StyleSheet` (`create` as identity,
 `flatten`, `compose`, `absoluteFill`, `absoluteFillObject`, `hairlineWidth`) and `Platform`
 (`OS`, `select`). Every other symbol — components, `Dimensions`, `Animated`, `PixelRatio`,
-`Platform.Version` — throws a message naming the symbol and pointing at the Voltra
+`Platform.Version` — is rejected with a message naming the symbol and pointing at the Voltra
 equivalent.
+
+Rejection happens at two levels, because the two environments offer different interception
+points. The Node loader hands widget code a proxy over the shim, so _any_ unimplemented symbol
+fails the moment the module is evaluated. Metro resolves the shim file directly and has no
+such hook, so the shim additionally names the React Native exports widget code is most likely
+to reach for and exports each as a stub that throws on use. Importing a stub is harmless;
+rendering, calling, or reading a property off it is not. Build-time evaluation therefore
+catches everything, and a symbol that survives to the device because it sits on a branch the
+placeholder render never took still fails loudly instead of reading as `undefined`.
 
 `Platform.OS` is the platform the widget is being built for, which every call site already
 knows, so the loader takes it explicitly rather than guessing.
