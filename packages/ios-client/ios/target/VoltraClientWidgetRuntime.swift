@@ -41,6 +41,12 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
   /// process, where the provider's process-static JSContext is empty. The View re-evaluates from
   /// this source so `render()` always has the widget's function available in its own process.
   public let bundleSource: String?
+  /// How the last server fetch went, as `env.serverUpdate`, for a widget that has a `serverUpdate`
+  /// in app.json. `nil` for every other Dynamic Widget, and the reason `env.serverUpdate` is
+  /// `undefined` there. Carried on the entry rather than read at render time because the provider
+  /// is the thing that knows the fetch outcome, and WidgetKit re-renders archived entries in a
+  /// fresh process.
+  public let serverUpdateJSON: String?
 
   public init(
     date: Date,
@@ -48,7 +54,8 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     bundleReady: Bool,
     errorMessage: String? = nil,
     configuration: [String: String] = [:],
-    bundleSource: String? = nil
+    bundleSource: String? = nil,
+    serverUpdateJSON: String? = nil
   ) {
     self.date = date
     self.widgetId = widgetId
@@ -56,6 +63,20 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     self.errorMessage = errorMessage
     self.configuration = configuration
     self.bundleSource = bundleSource
+    self.serverUpdateJSON = serverUpdateJSON
+  }
+
+  /// The same entry, told how the server side is doing.
+  public func withServerUpdate(_ serverUpdateJSON: String?) -> VoltraClientWidgetEntry {
+    VoltraClientWidgetEntry(
+      date: date,
+      widgetId: widgetId,
+      bundleReady: bundleReady,
+      errorMessage: errorMessage,
+      configuration: configuration,
+      bundleSource: bundleSource,
+      serverUpdateJSON: serverUpdateJSON
+    )
   }
 }
 
@@ -234,7 +255,8 @@ public enum VoltraClientWidgetEnvBuilder {
     widgetRenderingMode: WidgetRenderingMode,
     showsWidgetContainerBackground: Bool,
     locale: Locale,
-    configuration: [String: String]
+    configuration: [String: String],
+    serverUpdateJSON: String? = nil
   ) -> String {
     let timestampMs = Int(date.timeIntervalSince1970 * 1000)
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
@@ -268,6 +290,10 @@ public enum VoltraClientWidgetEnvBuilder {
       configurationJSON = "{ \(entries) }"
     }
 
+    // Only a server-driven widget gets env.serverUpdate; leaving the key out entirely is what
+    // makes it `undefined` for every other Dynamic Widget.
+    let serverUpdateEntry = serverUpdateJSON.map { ",\n  \"serverUpdate\": \($0)" } ?? ""
+
     return """
     {
       "date": \(timestampMs),
@@ -277,7 +303,7 @@ public enum VoltraClientWidgetEnvBuilder {
       "widgetRenderingMode": \(jsonString(renderingModeString(widgetRenderingMode))),
       "showsWidgetContainerBackground": \(showsWidgetContainerBackground),
       "configuration": \(configurationJSON),
-      "build": \(buildJSON)
+      "build": \(buildJSON)\(serverUpdateEntry)
     }
     """
   }
@@ -350,7 +376,8 @@ public struct VoltraClientWidgetContentView: View {
         widgetRenderingMode: widgetRenderingMode,
         showsWidgetContainerBackground: showsWidgetContainerBackground,
         locale: locale,
-        configuration: entry.configuration
+        configuration: entry.configuration,
+        serverUpdateJSON: entry.serverUpdateJSON
       )
       let dynamicWidgetPropsStore = DynamicWidgetPropsStore()
       let dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator(
