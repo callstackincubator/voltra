@@ -268,6 +268,16 @@ Mix mark types when one chart needs both context and emphasis, such as bars for 
 </VoltraAndroid.Chart>
 ```
 
+## Value Range
+
+The y-axis frames the values a chart is given:
+
+- `LineMark` and `PointMark` scale to the data range, so a series that varies within a narrow band — exchange rates, ratios, temperatures — fills the plot instead of flattening against the top edge. Axis labels carry as many decimals as the distance between ticks needs.
+- `BarMark` and `AreaMark` keep zero on the axis, because their height is read against the baseline.
+- `RuleMark` values count as part of the range, so a reference line always stays in view.
+
+Data that nearly reaches zero keeps zero on the axis either way, so a series sitting just above the baseline is not exaggerated.
+
 ## Sizing
 
 Chart dimensions are read from the `style` prop:

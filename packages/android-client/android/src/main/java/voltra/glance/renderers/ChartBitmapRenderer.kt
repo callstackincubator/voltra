@@ -24,6 +24,21 @@ private val DEFAULT_PALETTE =
         0xFFBAB0AC.toInt(), // grey
     )
 
+/** Number of horizontal grid bands, and therefore of y-axis ticks minus one. */
+private const val GRID_STEPS = 4
+
+/** Share of the data range left as breathing room above and below a data-framed domain. */
+private const val Y_DOMAIN_PADDING_RATIO = 0.1
+
+/** Distance to zero, as a share of the domain, under which the domain snaps back to the baseline. */
+private const val ZERO_SNAP_RATIO = 0.25
+
+/** Beyond this many decimals axis ticks switch to scientific notation. */
+private const val MAX_AXIS_DECIMALS = 8
+
+/** Upper bound for the y-axis label gutter, so long labels cannot squeeze the plot away. */
+private const val MAX_Y_AXIS_WIDTH_RATIO = 0.4f
+
 data class WireMark(
     val type: String,
     val data: List<List<Any>>?,
@@ -110,6 +125,101 @@ private fun seriesColorMap(
     return map
 }
 
+internal data class YDomain(
+    val min: Double,
+    val max: Double,
+)
+
+/**
+ * Resolves the vertical domain of a plot.
+ *
+ * Marks that are [anchoredAtZero] - bars and areas - encode their value as the distance from the
+ * baseline, so zero always stays in range. Lines and points frame the data itself instead, with a
+ * margin around it, which is what lets a series varying only in its fifth decimal place fill the
+ * plot rather than collapse into a flat line at the top.
+ */
+internal fun computeYDomain(
+    values: List<Double>,
+    anchoredAtZero: Boolean,
+): YDomain {
+    val finite = values.filter { it.isFinite() }
+    val dataMin = finite.minOrNull() ?: return YDomain(0.0, 1.0)
+    val dataMax = finite.maxOrNull() ?: return YDomain(0.0, 1.0)
+
+    if (anchoredAtZero) {
+        val min = dataMin.coerceAtMost(0.0)
+        val max = dataMax.coerceAtLeast(0.0)
+        return if (max > min) YDomain(min, max) else YDomain(min, min + 1.0)
+    }
+
+    if (dataMax <= dataMin) {
+        // A flat series has no range to frame, so pad relative to the value itself.
+        val padding = if (dataMin == 0.0) 1.0 else kotlin.math.abs(dataMin) * Y_DOMAIN_PADDING_RATIO
+        return YDomain(dataMin - padding, dataMax + padding)
+    }
+
+    val padding = (dataMax - dataMin) * Y_DOMAIN_PADDING_RATIO
+    var min = dataMin - padding
+    var max = dataMax + padding
+
+    // Padding must not invent values on the other side of the baseline.
+    if (dataMin >= 0.0 && min < 0.0) min = 0.0
+    if (dataMax <= 0.0 && max > 0.0) max = 0.0
+
+    // Data that almost reaches zero is read against zero, so keep the baseline in view instead of
+    // magnifying the noise just above it.
+    val span = max - min
+    if (min > 0.0 && min < span * ZERO_SNAP_RATIO) min = 0.0
+    if (max < 0.0 && -max < span * ZERO_SNAP_RATIO) max = 0.0
+
+    return YDomain(min, max)
+}
+
+/**
+ * Formats axis ticks with just enough decimals for neighbouring ticks to read differently: the
+ * distance between ticks ([step]) sets the precision, so a step of 25 reads "50" and a step of
+ * 0.0000017 reads "0.0005657".
+ */
+internal fun formatAxisLabels(
+    values: List<Double>,
+    step: Double,
+): List<String> {
+    val needed =
+        if (step.isFinite() && step > 0.0) {
+            -kotlin.math.floor(kotlin.math.log10(step)).toInt() + 1
+        } else {
+            1
+        }
+    if (needed > MAX_AXIS_DECIMALS) {
+        return values.map { String.format("%.2e", it) }
+    }
+
+    // Trim decimals the ticks do not need, so a whole-numbered axis still reads "0, 25, 50".
+    var decimals = needed.coerceAtLeast(0)
+    while (decimals > 0 && values.all { isExactAt(it, decimals - 1) }) {
+        decimals--
+    }
+    return values.map { formatFixed(it, decimals) }
+}
+
+private fun isExactAt(
+    value: Double,
+    decimals: Int,
+): Boolean {
+    val scaled = value * Math.pow(10.0, decimals.toDouble())
+    if (!scaled.isFinite() || kotlin.math.abs(scaled) > 1e15) return false
+    return kotlin.math.abs(scaled - Math.round(scaled).toDouble()) < 1e-6
+}
+
+private fun formatFixed(
+    value: Double,
+    decimals: Int,
+): String {
+    val text = String.format("%.${decimals}f", value)
+    // Rounding pulls values just below zero to "-0.0"; drop the sign so the tick reads as zero.
+    return if (text.startsWith("-") && text.none { it in '1'..'9' }) text.drop(1) else text
+}
+
 fun renderChartBitmap(
     marks: List<WireMark>,
     width: Int,
@@ -124,27 +234,6 @@ fun renderChartBitmap(
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     canvas.drawColor(0x00000000)
-
-    // Stroke extends half its width beyond the path center — use that as edge safety margin
-    val maxStrokeWidth =
-        marks
-            .filter { it.type == "line" || it.type == "area" }
-            .maxOfOrNull { (it.props["lw"] as? Number)?.toFloat() ?: 2f }
-            ?: 2f
-    val strokeSafety = maxStrokeWidth / 2f
-    val paddingLeft = if (yAxisVisible) 36f * dpScale else strokeSafety
-    val paddingBottom = if (xAxisVisible) 24f * dpScale else strokeSafety
-    val paddingTop = if (yAxisVisible) 12f * dpScale else strokeSafety
-    val paddingRight = if (xAxisVisible) 12f * dpScale else strokeSafety
-
-    val chartLeft = paddingLeft
-    val chartTop = paddingTop
-    val chartRight = width - paddingRight
-    val chartBottom = height - paddingBottom
-    val chartWidth = chartRight - chartLeft
-    val chartHeight = chartBottom - chartTop
-
-    if (chartWidth <= 0 || chartHeight <= 0) return bitmap
 
     val allPoints = marks.flatMap { extractChartPoints(it.data) }
     val hasSectors = marks.any { it.type == "sector" }
@@ -179,20 +268,62 @@ fun renderChartBitmap(
         xMax = (nums.maxOrNull() ?: 1.0).let { if (it == xMin) it + 1.0 else it }
     }
 
-    val yValues = allPoints.map { it.y }
-    val yMin = (yValues.minOrNull() ?: 0.0).coerceAtMost(0.0)
-    val yMax = (yValues.maxOrNull() ?: 1.0).let { if (it == yMin) it + 1.0 else it }
+    // Reference lines are part of the plot, so they widen the domain rather than falling outside it.
+    val ruleYValues =
+        marks.mapNotNull { if (it.type == "rule") (it.props["yv"] as? Number)?.toDouble() else null }
+    val anchoredAtZero = marks.any { it.type == "bar" || it.type == "area" }
+    val (yMin, yMax) = computeYDomain(allPoints.map { it.y } + ruleYValues, anchoredAtZero)
 
+    val labelPaint =
+        Paint().apply {
+            color = 0xFF888888.toInt()
+            textSize = 12f * dpScale
+            isAntiAlias = true
+        }
+    val yTickValues = List(GRID_STEPS + 1) { i -> yMin + (yMax - yMin) * (GRID_STEPS - i) / GRID_STEPS }
+    val yTickLabels = formatAxisLabels(yTickValues, (yMax - yMin) / GRID_STEPS)
+
+    // Stroke extends half its width beyond the path center — use that as edge safety margin
+    val maxStrokeWidth =
+        marks
+            .filter { it.type == "line" || it.type == "area" }
+            .maxOfOrNull { (it.props["lw"] as? Number)?.toFloat() ?: 2f }
+            ?: 2f
+    val strokeSafety = maxStrokeWidth / 2f
+    // Ticks of small values need more room than the default gutter, so it grows with the labels.
+    val minLabelGutter = 36f * dpScale
+    val maxLabelGutter = (width * MAX_Y_AXIS_WIDTH_RATIO).coerceAtLeast(minLabelGutter)
+    val paddingLeft =
+        if (yAxisVisible) {
+            (yTickLabels.maxOf { labelPaint.measureText(it) } + 8f * dpScale)
+                .coerceIn(minLabelGutter, maxLabelGutter)
+        } else {
+            strokeSafety
+        }
+    val paddingBottom = if (xAxisVisible) 24f * dpScale else strokeSafety
+    val paddingTop = if (yAxisVisible) 12f * dpScale else strokeSafety
+    val paddingRight = if (xAxisVisible) 12f * dpScale else strokeSafety
+
+    val chartLeft = paddingLeft
+    val chartTop = paddingTop
+    val chartRight = width - paddingRight
+    val chartBottom = height - paddingBottom
+    val chartWidth = chartRight - chartLeft
+    val chartHeight = chartBottom - chartTop
+
+    if (chartWidth <= 0 || chartHeight <= 0) return bitmap
+
+    // Mapping stays in double precision: small values and large timestamps both lose meaningful
+    // resolution when the subtraction happens in float.
     fun mapX(pt: ChartPoint): Float =
         if (hasStringX) {
             val idx = categories.indexOf(pt.xStr ?: "")
             chartLeft + (idx.toFloat() / (categories.size - 1).coerceAtLeast(1).toFloat()) * chartWidth
         } else {
-            chartLeft + ((pt.xNum ?: 0.0).toFloat() - xMin.toFloat()) / (xMax.toFloat() - xMin.toFloat()) * chartWidth
+            chartLeft + (((pt.xNum ?: 0.0) - xMin) / (xMax - xMin) * chartWidth).toFloat()
         }
 
-    fun mapY(y: Double): Float =
-        chartBottom - ((y.toFloat() - yMin.toFloat()) / (yMax.toFloat() - yMin.toFloat()) * chartHeight)
+    fun mapY(y: Double): Float = chartBottom - ((y - yMin) / (yMax - yMin) * chartHeight).toFloat()
 
     val gridPaint =
         Paint().apply {
@@ -201,10 +332,9 @@ fun renderChartBitmap(
             strokeWidth = 1f * dpScale
             pathEffect = DashPathEffect(floatArrayOf(4f * dpScale, 4f * dpScale), 0f)
         }
-    val gridSteps = 4
     if (yAxisGridVisible) {
-        for (i in 0..gridSteps) {
-            val y = chartTop + (chartHeight * i / gridSteps)
+        for (i in 0..GRID_STEPS) {
+            val y = chartTop + (chartHeight * i / GRID_STEPS)
             canvas.drawLine(chartLeft, y, chartRight, y, gridPaint)
         }
     }
@@ -222,24 +352,10 @@ fun renderChartBitmap(
         canvas.drawLine(chartLeft, chartBottom, chartRight, chartBottom, axisPaint)
     }
 
-    val labelPaint =
-        Paint().apply {
-            color = 0xFF888888.toInt()
-            textSize = 12f * dpScale
-            isAntiAlias = true
-        }
-
     if (yAxisVisible) {
-        for (i in 0..gridSteps) {
-            val yVal = yMin + (yMax - yMin) * (gridSteps - i) / gridSteps
-            val y = chartTop + (chartHeight * i / gridSteps)
-            val label =
-                if (yVal == yVal.toLong().toDouble()) {
-                    yVal.toLong().toString()
-                } else {
-                    String.format("%.1f", yVal)
-                }
-            canvas.drawText(label, 4f * dpScale, y + labelPaint.textSize / 3, labelPaint)
+        for (i in 0..GRID_STEPS) {
+            val y = chartTop + (chartHeight * i / GRID_STEPS)
+            canvas.drawText(yTickLabels[i], 4f * dpScale, y + labelPaint.textSize / 3, labelPaint)
         }
     }
 
@@ -373,8 +489,7 @@ private fun drawBars(
             isAntiAlias = true
         }
 
-    fun yToCanvas(y: Double): Float =
-        chartBottom - ((y.toFloat() - yMin.toFloat()) / (yMax.toFloat() - yMin.toFloat()) * chartHeight)
+    fun yToCanvas(y: Double): Float = chartBottom - ((y - yMin) / (yMax - yMin) * chartHeight).toFloat()
 
     val zeroY = yToCanvas(0.0.coerceIn(yMin, yMax))
 
@@ -747,7 +862,7 @@ private fun drawRule(
     val xvNum = (props["xv"] as? Number)?.toDouble()
 
     if (yv != null) {
-        val y = chartBottom - ((yv.toFloat() - yMin.toFloat()) / (yMax.toFloat() - yMin.toFloat()) * chartHeight)
+        val y = chartBottom - ((yv - yMin) / (yMax - yMin) * chartHeight).toFloat()
         canvas.drawLine(chartLeft, y, chartRight, y, paint)
     } else if (xvStr != null && hasStringX) {
         val idx = categories.indexOf(xvStr)
@@ -756,7 +871,7 @@ private fun drawRule(
             canvas.drawLine(x, chartTop, x, chartBottom, paint)
         }
     } else if (xvNum != null) {
-        val x = chartLeft + ((xvNum.toFloat() - xMin.toFloat()) / (xMax.toFloat() - xMin.toFloat()) * chartWidth)
+        val x = chartLeft + ((xvNum - xMin) / (xMax - xMin) * chartWidth).toFloat()
         canvas.drawLine(x, chartTop, x, chartBottom, paint)
     }
 }
