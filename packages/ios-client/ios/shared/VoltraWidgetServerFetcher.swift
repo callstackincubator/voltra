@@ -1,8 +1,12 @@
 import Foundation
-import UIKit
 
-/// Handles fetching widget content from a remote Voltra SSR server.
-/// Used by the TimelineProvider to pull server-driven widget updates.
+/// Fetches a Voltra payload from the server for a payload-driven widget.
+///
+/// Since ADR 0002 the request itself is built by `shared/WidgetServer`, the same code the Dynamic
+/// engine uses. With no runtime settings set, that produces the request this fetcher always sent,
+/// plus `locale` and a conditional `If-None-Match`; with settings set, this widget gains the
+/// runtime URL, method, headers, query and body too. What the timeline does with the response is
+/// unchanged.
 public enum VoltraWidgetServerFetcher {
   /// Errors that can occur during server fetch
   public enum FetchError: Error, LocalizedError {
@@ -12,6 +16,8 @@ public enum VoltraWidgetServerFetcher {
     case httpError(statusCode: Int)
     case invalidResponse
     case emptyResponse
+    /// `304`: what is already stored is still current, so there is nothing new to render.
+    case notModified
 
     public var errorDescription: String? {
       switch self {
@@ -27,142 +33,76 @@ public enum VoltraWidgetServerFetcher {
         return "Invalid response from server"
       case .emptyResponse:
         return "Empty response from server"
+      case .notModified:
+        return "Server content is unchanged"
       }
     }
   }
 
-  /// Read the server update URL for a widget from Info.plist / UserDefaults config.
+  /// The URL this widget will fetch from, after runtime overrides. Callers use it to decide
+  /// whether a widget is server-driven at all before starting a timeline.
   public static func serverUrl(for widgetId: String) -> String? {
-    // Check Info.plist first (set at build time by config plugin)
-    if let urls = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetServerUrls) as? [String: String],
-       let url = urls[widgetId]
-    {
-      return url
-    }
-
-    // Fallback to UserDefaults (can be set at runtime)
-    if let group = VoltraConfig.groupIdentifier(),
-       let defaults = UserDefaults(suiteName: group)
-    {
-      return defaults.string(forKey: VoltraStorageKeys.widgetServerUrl(widgetId))
-    }
-
-    return nil
+    VoltraWidgetServer.resolver.resolve(.of(widgetId)).url
   }
 
-  /// Read the update interval (in minutes) for a widget.
+  /// The resolved interval, in minutes. Runtime settings win over app.json.
   public static func updateInterval(for widgetId: String) -> Int {
-    if let intervals = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetServerIntervals) as? [String: Int],
-       let interval = intervals[widgetId]
-    {
-      return interval
-    }
-    return 60 // default: 1 hour
+    VoltraWidgetServer.resolver.resolve(.of(widgetId)).intervalMinutes
   }
 
+  /// Whether the widget draws a refresh button. Build-time only: the button is generated UI
+  /// structure, so unlike the URL and the interval it cannot be changed at runtime.
   public static func isRefreshEnabled(for widgetId: String) -> Bool {
-    if let refreshDict = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetServerRefresh) as? [String: Bool],
-       let enabled = refreshDict[widgetId]
-    {
-      return enabled
-    }
-    return false
-  }
-
-  private static func currentColorScheme() -> String {
-    if #available(iOSApplicationExtension 13.0, *) {
-      switch UITraitCollection.current.userInterfaceStyle {
-      case .dark:
-        return "dark"
-      case .light:
-        return "light"
-      default:
-        return "light"
-      }
-    }
-    return "light"
+    VoltraWidgetServer.isRefreshEnabled(for: widgetId)
   }
 
   /// Fetch widget content from the remote Voltra SSR server.
   ///
-  /// The request includes:
-  /// - `widgetId` query parameter
-  /// - `family` query parameter (e.g., "systemSmall")
-  /// - `platform` query parameter (`ios`)
-  /// - `theme` query parameter (`light` or `dark`)
-  /// - `Authorization: Bearer <token>` header (if credentials stored in Keychain)
-  /// - Any custom headers stored in Keychain
+  /// The request carries `widgetId`, `family`, `platform`, `theme` and `locale` as query
+  /// parameters, `Accept: application/json`, a Voltra user agent, whatever headers the app has set
+  /// — including `Authorization` from the deprecated credential API — and `If-None-Match` when a
+  /// stored ETag belongs to the URL being fetched.
   ///
   /// Returns the raw JSON data from the server, ready to be parsed by VoltraNode.
   public static func fetchWidgetContent(
     widgetId: String,
     family: String
   ) async throws -> Data {
-    guard let baseUrl = serverUrl(for: widgetId) else {
+    let scope = WidgetScope.of(widgetId)
+    let settings = VoltraWidgetServer.resolver.resolve(scope)
+
+    guard let url = settings.url else {
       throw FetchError.noServerUrl
     }
 
-    // Build URL with query parameters
-    guard var components = URLComponents(string: baseUrl) else {
-      throw FetchError.invalidUrl(baseUrl)
+    guard let request = WidgetServerRequestBuilder.build(
+      scope: scope,
+      settings: settings,
+      context: VoltraWidgetAppearance.requestContext(family: family),
+      etag: WidgetServerEtagStore.etag(for: scope, url: url)
+    ) else {
+      throw FetchError.invalidUrl(url)
     }
 
-    let theme = currentColorScheme()
-
-    var queryItems = components.queryItems ?? []
-    queryItems.append(URLQueryItem(name: "widgetId", value: widgetId))
-    queryItems.append(URLQueryItem(name: "family", value: family))
-    queryItems.append(URLQueryItem(name: "platform", value: "ios"))
-    queryItems.append(URLQueryItem(name: "theme", value: theme))
-    components.queryItems = queryItems
-
-    guard let url = components.url else {
-      throw FetchError.invalidUrl(baseUrl)
-    }
-
-    var request = URLRequest(url: url)
-    request.httpMethod = "GET"
-    request.timeoutInterval = 15 // Widgets have limited execution time
-
-    // Add auth token from Keychain if available
-    if let token = VoltraKeychainHelper.readToken() {
-      request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-    }
-
-    // Add custom headers from Keychain if available
-    if let headers = VoltraKeychainHelper.readHeaders() {
-      for (key, value) in headers {
-        request.setValue(value, forHTTPHeaderField: key)
-      }
-    }
-
-    // Add Voltra-specific headers
-    let systemVersion = await MainActor.run {
-      UIDevice.current.systemVersion
-    }
-    request.setValue("application/json", forHTTPHeaderField: "Accept")
-    request.setValue("VoltraWidget/1.0 (iOS/\(systemVersion))", forHTTPHeaderField: "User-Agent")
-
-    do {
-      let (data, response) = try await URLSession.shared.data(for: request)
-
-      guard let httpResponse = response as? HTTPURLResponse else {
-        throw FetchError.invalidResponse
-      }
-
-      guard (200 ... 299).contains(httpResponse.statusCode) else {
-        throw FetchError.httpError(statusCode: httpResponse.statusCode)
-      }
-
-      guard !data.isEmpty else {
+    switch await WidgetServerFetcher.fetch(request) {
+    case let .success(body, etag, _, _):
+      guard !body.isEmpty else {
         throw FetchError.emptyResponse
       }
 
-      return data
-    } catch let error as FetchError {
-      throw error
-    } catch {
-      throw FetchError.networkError(error)
+      WidgetServerEtagStore.put(etag, for: scope, url: url)
+      return body
+
+    case .notModified:
+      throw FetchError.notModified
+
+    case let .httpFailure(statusCode, _):
+      throw FetchError.httpError(statusCode: statusCode)
+
+    case let .networkFailure(message):
+      throw FetchError.networkError(NSError(domain: "VoltraWidgetServerFetcher", code: -1, userInfo: [
+        NSLocalizedDescriptionKey: message,
+      ]))
     }
   }
 }

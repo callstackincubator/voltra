@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 /// Build-time server-update defaults, read from the Info.plist keys the config plugin and the CLI
 /// write.
@@ -88,19 +87,16 @@ public enum VoltraWidgetServer {
     #endif
   }
 
-  /// The device state a request carries. Read here rather than in the request builder so the
-  /// builder stays free of UIKit and the contract can be tested without a simulator.
-  public static func requestContext(family: String? = nil) -> WidgetServerRequestContext {
+  /// The device state a request carries. The theme is passed in rather than read here so this
+  /// whole module stays free of UIKit and the request contract can be tested without a simulator;
+  /// `VoltraWidgetAppearance` is the UIKit-side helper that supplies it.
+  public static func requestContext(theme: String, family: String? = nil) -> WidgetServerRequestContext {
     WidgetServerRequestContext(
-      theme: currentTheme(),
+      theme: theme,
       locale: Locale.current.identifier,
       userAgent: userAgent(),
       family: family
     )
-  }
-
-  static func currentTheme() -> String {
-    UITraitCollection.current.userInterfaceStyle == .dark ? "dark" : "light"
   }
 
   static func userAgent() -> String {
@@ -115,27 +111,18 @@ public enum VoltraWidgetServer {
     return "\(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
   }
 
-  private static func buildRequest(
-    scope: WidgetScope,
-    settings: ResolvedWidgetServerSettings,
-    family: String?,
-    etag: String?
-  ) -> URLRequest? {
-    WidgetServerRequestBuilder.build(
-      scope: scope,
-      settings: settings,
-      context: requestContext(family: family),
-      etag: etag
-    )
-  }
-
   /// Resolves settings and builds the request for one scope, or returns nil when there is nothing
   /// to fetch.
   public static func request(
     for scope: WidgetScope,
-    family: String? = nil,
+    context: WidgetServerRequestContext,
     etag: String? = nil
   ) -> URLRequest? {
-    buildRequest(scope: scope, settings: resolver.resolve(scope), family: family, etag: etag)
+    WidgetServerRequestBuilder.build(
+      scope: scope,
+      settings: resolver.resolve(scope),
+      context: context,
+      etag: etag
+    )
   }
 }
