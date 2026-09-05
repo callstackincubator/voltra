@@ -50,6 +50,7 @@ import java.net.URL
  */
 class VoltraClientGlanceWidget(
     private val widgetId: String = "default",
+    private val environmentSource: DynamicWidgetEnvironmentSource? = null,
 ) : GlanceAppWidget() {
     companion object {
         private const val TAG = "VoltraClientGlanceWidget"
@@ -125,13 +126,47 @@ class VoltraClientGlanceWidget(
             (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
         /**
+         * Loads and evaluates the widget's bundle if it is not already in the runtime.
+         *
+         * The Hermes runtime is one per process, so a bundle evaluated for an on-screen render is
+         * still there for a background trial render, and vice versa. Exposed for the server-update
+         * engine, which has to render fetched props before committing them.
+         */
+        internal suspend fun ensureBundleEvaluated(
+            context: Context,
+            widgetId: String,
+        ): Boolean {
+            val source =
+                if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
+
+            return source != null && VoltraJSRenderer.evaluateBundle(source, widgetId)
+        }
+
+        /**
+         * The env a trial render runs with: the real theme, locale and configuration, and a size
+         * the caller picked from the widget's placements.
+         *
+         * `env.serverUpdate` is deliberately absent. The trial is asking whether the props render,
+         * and a widget that only fails when it is told the fetch went badly is a different problem
+         * from props that cannot be drawn.
+         */
+        internal fun buildTrialEnvJson(
+            context: Context,
+            widgetId: String,
+            size: DpSize,
+            configuration: Map<String, String>,
+        ): String = buildEnvJson(context, widgetId, size, configuration, environmentSource = null)
+
+        /**
          * Build the WidgetEnvironment JSON (see packages/core/src/widget-environment.ts) for the
          * current render.
          */
         private fun buildEnvJson(
             context: Context,
+            widgetId: String,
             size: DpSize,
             configuration: Map<String, String>,
+            environmentSource: DynamicWidgetEnvironmentSource?,
         ): String {
             val family = "${size.width.value.toInt()}x${size.height.value.toInt()}"
             val nightMode =
@@ -160,14 +195,22 @@ class VoltraClientGlanceWidget(
             val configObject = JSONObject()
             configuration.forEach { (key, value) -> configObject.put(key, value) }
 
-            return JSONObject()
-                .put("date", System.currentTimeMillis())
-                .put("widgetFamily", family)
-                .put("colorScheme", colorScheme)
-                .put("locale", locale)
-                .put("configuration", configObject)
-                .put("build", build)
-                .toString()
+            val env =
+                JSONObject()
+                    .put("date", System.currentTimeMillis())
+                    .put("widgetFamily", family)
+                    .put("colorScheme", colorScheme)
+                    .put("locale", locale)
+                    .put("configuration", configObject)
+                    .put("build", build)
+
+            // Whatever drives this widget's props gets to describe itself. A plain Dynamic Widget
+            // has no source and its env is exactly what it was before ADR 0002.
+            environmentSource?.environmentFields(context, widgetId)?.forEach { (key, value) ->
+                env.put(key, value)
+            }
+
+            return env.toString()
         }
     }
 
@@ -227,7 +270,7 @@ class VoltraClientGlanceWidget(
         configuration: Map<String, String>,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
     ): VoltraNode? {
-        val envJson = buildEnvJson(context, size, configuration)
+        val envJson = buildEnvJson(context, widgetId, size, configuration, environmentSource)
         val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
         return dynamicWidgetRenderCoordinator.renderDynamicWidget(
             dynamicWidgetId = widgetId,
