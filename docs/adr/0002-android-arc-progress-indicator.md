@@ -31,7 +31,8 @@ documentation alone. Three routes exist:
 1. **A `Bitmap` drawn with `Canvas.drawArc` and delivered through a Glance
    `Image`.** Works on every API level the client supports (24+). Supports
    round caps, arbitrary stroke width, start angle, sweep, and gradients. It
-   is the route the existing `Chart` component already takes. Its cost is
+   is the same mechanism as the existing `Chart` component, which draws a
+   bitmap but hands it to Glance as an `Icon`. Its cost is
    bitmap memory: the framework caps the bitmap bytes of one widget instance
    at 1.5 times the screen in ARGB, computed once from the real display size
    in `AppWidgetServiceImpl` (`6 * width * height` bytes, about 15.5 MB on a
@@ -112,8 +113,10 @@ Within `packages/android-client/android/src/main/java/voltra`:
 - `glance/renderers/arc/ArcBitmapCache.kt` is an `LruCache<ArcSpec, Bitmap>`
   bounded in bytes. Identical specs return the same `Bitmap` instance. This
   is what lets `RemoteViews.BitmapCache` deduplicate the image across the
-  size variants of a responsive widget, so a gauge costs its bytes once per
-  widget, not once per variant.
+  size variants of a responsive widget, so a fixed-size gauge costs its
+  bytes once per widget, not once per variant. A gauge sized relative to the
+  widget resolves to a different pixel size per variant and is cached per
+  variant.
 - `glance/renderers/arc/ArcSizing.kt` is the single place that maps a
   requested dp size to a pixel size: the smaller of the style width and
   height (or the smaller widget dimension when the style says fill, or
@@ -170,9 +173,9 @@ separate change.
   any angles, and gradients, on every supported Android version, with one
   code path.
 - The cost is bitmap memory that scales with pixel size squared. The sizing
-  policy keeps a single gauge under 1 MB at the 512 px cap and typical
-  gauges around a quarter of that; the cache keeps the cost per widget, not
-  per size variant. Very large or very many arcs remain the app author's
+  policy keeps a single gauge at most 1 MiB at the 512 px cap and typical
+  gauges around a quarter of that; the cache keeps the cost of a fixed-size
+  gauge per widget, not per size variant. Very large or very many arcs remain the app author's
   responsibility, and the docs say so.
 - The prop contract is renderer-independent. A RemoteCompose backend can
   replace the bitmap on API 36+ later without a breaking change.
