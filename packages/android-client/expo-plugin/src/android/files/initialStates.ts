@@ -39,7 +39,8 @@ export async function generateAndroidInitialStates(options: GenerateInitialState
   const prerenderedStates: PrerenderedWidgetStates = await prerenderWidgetState(
     serverWidgets,
     projectRoot,
-    renderAndroidWidgetToString
+    renderAndroidWidgetToString,
+    'android'
   )
 
   // Single-node placeholders for Dynamic Widgets (first paint / offline fallback).

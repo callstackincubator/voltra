@@ -7,9 +7,11 @@ import { getPlatformClientPackageVersion, requirePlatformPackage } from '../../d
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
-import { createDynamicWidgetBuildInfo, evaluateWidgetModuleExports } from '../shared/widgetModule'
+import { createDynamicWidgetBuildInfo, createGeneratedWidgetModuleLoader } from '../shared/widgetModule'
 import { buildPlistXml, parsePlistFile } from './plist'
 import { resolveIOSWidgetTargetName } from './targetName'
+
+import type { WidgetModuleLoader } from '@use-voltra/compiler'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
 import type {
@@ -155,11 +157,17 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
   const voltraVersion = getPlatformClientPackageVersion(projectRoot, 'ios')
   const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const targetPath = path.join(discovery.iosRoot, targetName)
-  const detectedWidgets = detectClientRenderedWidgets(projectRoot, ios.widgets)
   const mainAppMetadata = await readMainAppMetadata(discovery.infoPlistPath)
   const changes: ReportedChange[] = []
   const warnings: string[] = [...(await getDivergentMainAppMetadataWarnings(discovery, mainAppMetadata))]
   const generatedFiles = new Set<string>()
+  const widgetModuleLoader = createGeneratedWidgetModuleLoader(
+    projectRoot,
+    'ios',
+    createGeneratedFilesError,
+    (message) => warnings.push(message)
+  )
+  const detectedWidgets = detectClientRenderedWidgets(projectRoot, widgetModuleLoader, ios.widgets)
 
   mergeSingleResult(
     await writeGeneratedTextFile(
@@ -191,7 +199,12 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
   const fontsResult = await copyIOSFonts(projectRoot, targetPath, ios.fonts)
   mergeResult(fontsResult, changes, warnings, generatedFiles)
 
-  const initialStatesResult = await generateInitialStatesSwift(projectRoot, detectedWidgets, voltraVersion)
+  const initialStatesResult = await generateInitialStatesSwift(
+    projectRoot,
+    widgetModuleLoader,
+    detectedWidgets,
+    voltraVersion
+  )
   mergeSingleResult(
     await writeGeneratedTextFile(
       projectRoot,
@@ -476,6 +489,7 @@ async function readMainAppMetadata(infoPlistPath: string): Promise<MainAppMetada
 
 async function generateInitialStatesSwift(
   projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: DetectedIOSWidget[],
   voltraVersion: string
 ): Promise<string> {
@@ -484,11 +498,11 @@ async function generateInitialStatesSwift(
   )
   const prerenderableServerWidgets = serverWidgets.filter((widget) => widget.initialStatePath)
   const serverStates = await prerenderWidgetStates(
-    projectRoot,
+    loader,
     prerenderableServerWidgets,
     loadIOSWidgetRenderer(projectRoot)
   )
-  const clientStates = await prerenderClientRenderedWidgets(projectRoot, widgets, voltraVersion)
+  const clientStates = await prerenderClientRenderedWidgets(projectRoot, loader, widgets, voltraVersion)
   const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   if (prerenderedStates.size === 0) {
@@ -794,7 +808,7 @@ function createSwiftDictionaryLiteral(entries: string[]): string {
 }
 
 async function prerenderWidgetStates(
-  projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: NormalizedIOSWidgetConfig[],
   renderer: IOSWidgetRenderer
 ): Promise<PrerenderedWidgetStates> {
@@ -816,7 +830,7 @@ async function prerenderWidgetStates(
         throw new IOSGeneratedFilesError(`Initial state file not found for widget '${widget.id}' at ${modulePath}`)
       }
 
-      const widgetVariants = evaluateLegacyWidgetModule(projectRoot, modulePath)
+      const widgetVariants = evaluateLegacyWidgetModule(loader, modulePath)
       localeStates.set(localeKey, renderer(widgetVariants))
     }
 
@@ -826,9 +840,8 @@ async function prerenderWidgetStates(
   return prerenderedStates
 }
 
-function evaluateLegacyWidgetModule(projectRoot: string, filePath: string): WidgetVariants {
-  const exports = evaluateWidgetModuleExports(projectRoot, filePath, createGeneratedFilesError) as { default?: unknown }
-  const widgetVariants = exports.default ?? exports
+function evaluateLegacyWidgetModule(loader: WidgetModuleLoader, filePath: string): WidgetVariants {
+  const widgetVariants = loader.loadDefaultExport(filePath)
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {
     throw new IOSGeneratedFilesError(`Widget file must export widget variants: ${filePath}`)
@@ -870,11 +883,19 @@ function createDynamicWidgetsManifest(widgets: DetectedIOSWidget[]): DynamicWidg
   }
 }
 
-function detectClientRenderedWidgets(projectRoot: string, widgets: NormalizedIOSWidgetConfig[]): DetectedIOSWidget[] {
-  return widgets.map((widget) => detectSingleWidget(projectRoot, widget))
+function detectClientRenderedWidgets(
+  projectRoot: string,
+  loader: WidgetModuleLoader,
+  widgets: NormalizedIOSWidgetConfig[]
+): DetectedIOSWidget[] {
+  return widgets.map((widget) => detectSingleWidget(projectRoot, loader, widget))
 }
 
-function detectSingleWidget(projectRoot: string, widget: NormalizedIOSWidgetConfig): DetectedIOSWidget {
+function detectSingleWidget(
+  projectRoot: string,
+  loader: WidgetModuleLoader,
+  widget: NormalizedIOSWidgetConfig
+): DetectedIOSWidget {
   if (!widget.entry) {
     return {
       ...widget,
@@ -888,7 +909,7 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedIOSWidgetConf
     throw createGeneratedFilesError(`[voltra] Dynamic Widget "${widget.id}" entry not found at ${widget.entry}`)
   }
 
-  const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, clientSourcePath)
+  const widgetModule = safelyEvaluateDynamicWidget(loader, widget.id, widget.entry, clientSourcePath)
   const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
 
   if (typeof widgetFn !== 'function') {
@@ -907,6 +928,7 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedIOSWidgetConf
 
 async function prerenderClientRenderedWidgets(
   projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: DetectedIOSWidget[],
   voltraVersion: string
 ): Promise<PrerenderedWidgetStates> {
@@ -933,7 +955,7 @@ async function prerenderClientRenderedWidgets(
 
   for (const widget of clientWidgets) {
     try {
-      const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, widget.clientSourcePath)
+      const widgetModule = safelyEvaluateDynamicWidget(loader, widget.id, widget.entry, widget.clientSourcePath)
       const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
       const element = widgetFn({}, placeholderEnv)
       prerenderedStates.set(widget.id, new Map([[DEFAULT_INITIAL_STATE_LOCALE, JSON.stringify(renderer(element))]]))
@@ -954,13 +976,13 @@ async function prerenderClientRenderedWidgets(
 }
 
 function safelyEvaluateDynamicWidget(
-  projectRoot: string,
+  loader: WidgetModuleLoader,
   widgetId: string,
   widgetEntry: string,
   clientSourcePath: string
 ): unknown {
   try {
-    return evaluateWidgetModuleExports(projectRoot, clientSourcePath, createGeneratedFilesError)
+    return loader.load(clientSourcePath)
   } catch (error) {
     if (error instanceof IOSGeneratedFilesError) {
       throw error

@@ -239,3 +239,16 @@ export function scanVoltraDirectives({
 
   return widgets
 }
+
+export { createWidgetModuleLoader } from './widget-module/loader.js'
+export type { CreateWidgetModuleLoaderOptions, WidgetModuleLoader } from './widget-module/loader.js'
+export {
+  describeBlockedWidgetImport,
+  describeUnsupportedReactNativeExport,
+  getWidgetReactNativeShimSpecifier,
+  isReactNativeImport,
+  resolveWidgetImport,
+  SUPPORTED_REACT_NATIVE_EXPORTS,
+  WIDGET_REACT_NATIVE_SHIM_PACKAGE,
+} from './widget-module/policy.js'
+export type { WidgetImportResolution, WidgetModulePlatform } from './widget-module/policy.js'

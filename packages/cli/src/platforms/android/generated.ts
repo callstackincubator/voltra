@@ -8,8 +8,10 @@ import { getPlatformClientPackageVersion, requirePlatformPackage } from '../../d
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
-import { createDynamicWidgetBuildInfo, evaluateWidgetModuleExports } from '../shared/widgetModule'
+import { createDynamicWidgetBuildInfo, createGeneratedWidgetModuleLoader } from '../shared/widgetModule'
 import { androidWidgetSizingAttributes, androidWidgetSizingWarnings } from './widgetSizing'
+
+import type { WidgetModuleLoader } from '@use-voltra/compiler'
 
 import type { AndroidProjectDiscovery } from '../../discovery/android'
 import type {
@@ -79,10 +81,16 @@ export async function generateAndroidFiles(options: GenerateAndroidFilesOptions)
   const { projectRoot, android, discovery } = options
   const voltraVersion = getPlatformClientPackageVersion(projectRoot, 'android')
   const resourceRoot = path.join(discovery.appModuleRoot, 'src', 'main')
-  const detectedWidgets = detectClientRenderedWidgets(projectRoot, android.widgets)
   const changes: ReportedChange[] = []
   const warnings: string[] = []
   const generatedFiles = new Set<string>()
+  const widgetModuleLoader = createGeneratedWidgetModuleLoader(
+    projectRoot,
+    'android',
+    createAndroidGeneratedFilesError,
+    (message) => warnings.push(message)
+  )
+  const detectedWidgets = detectClientRenderedWidgets(projectRoot, widgetModuleLoader, android.widgets)
 
   mergeSingleResult(
     await writeGeneratedTextFile(
@@ -108,6 +116,7 @@ export async function generateAndroidFiles(options: GenerateAndroidFilesOptions)
 
   const initialStateFiles = await generateAndroidInitialStates(
     projectRoot,
+    widgetModuleLoader,
     resourceRoot,
     detectedWidgets,
     voltraVersion
@@ -416,6 +425,7 @@ async function copyAndroidFonts(
 
 async function generateAndroidInitialStates(
   projectRoot: string,
+  loader: WidgetModuleLoader,
   resourceRoot: string,
   widgets: DetectedAndroidWidget[],
   voltraVersion: string
@@ -425,11 +435,11 @@ async function generateAndroidInitialStates(
   )
   const prerenderableServerWidgets = serverWidgets.filter((widget) => widget.initialStatePath)
   const serverStates = await prerenderWidgetStates(
-    projectRoot,
+    loader,
     prerenderableServerWidgets,
     loadAndroidWidgetRenderer(projectRoot)
   )
-  const clientStates = await prerenderClientRenderedAndroidWidgets(projectRoot, widgets, voltraVersion)
+  const clientStates = await prerenderClientRenderedAndroidWidgets(projectRoot, loader, widgets, voltraVersion)
   const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   if (prerenderedStates.size === 0) {
@@ -452,7 +462,7 @@ async function generateAndroidInitialStates(
 }
 
 async function prerenderWidgetStates(
-  projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: NormalizedAndroidWidgetConfig[],
   renderer: AndroidWidgetRenderer
 ): Promise<PrerenderedWidgetStates> {
@@ -477,7 +487,7 @@ async function prerenderWidgetStates(
         throw new AndroidGeneratedFilesError(`Initial state file not found for widget '${widget.id}' at ${modulePath}`)
       }
 
-      const widgetVariants = evaluateLegacyWidgetModule(projectRoot, modulePath)
+      const widgetVariants = evaluateLegacyWidgetModule(loader, modulePath)
       localeStates.set(localeKey, renderer(widgetVariants))
     }
 
@@ -487,11 +497,8 @@ async function prerenderWidgetStates(
   return prerenderedStates
 }
 
-function evaluateLegacyWidgetModule(projectRoot: string, filePath: string): AndroidWidgetVariants {
-  const exports = evaluateWidgetModuleExports(projectRoot, filePath, createAndroidGeneratedFilesError) as {
-    default?: unknown
-  }
-  const widgetVariants = exports.default ?? exports
+function evaluateLegacyWidgetModule(loader: WidgetModuleLoader, filePath: string): AndroidWidgetVariants {
+  const widgetVariants = loader.loadDefaultExport(filePath)
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {
     throw new AndroidGeneratedFilesError(`Widget file must export widget variants: ${filePath}`)
@@ -539,12 +546,17 @@ function createDynamicWidgetsManifest(widgets: DetectedAndroidWidget[]): Dynamic
 
 function detectClientRenderedWidgets(
   projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: NormalizedAndroidWidgetConfig[]
 ): DetectedAndroidWidget[] {
-  return widgets.map((widget) => detectSingleWidget(projectRoot, widget))
+  return widgets.map((widget) => detectSingleWidget(projectRoot, loader, widget))
 }
 
-function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidgetConfig): DetectedAndroidWidget {
+function detectSingleWidget(
+  projectRoot: string,
+  loader: WidgetModuleLoader,
+  widget: NormalizedAndroidWidgetConfig
+): DetectedAndroidWidget {
   if (!widget.entry) {
     return {
       ...widget,
@@ -558,7 +570,7 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidget
     throw createAndroidGeneratedFilesError(`[voltra] Dynamic Widget "${widget.id}" entry not found at ${widget.entry}`)
   }
 
-  const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, clientSourcePath)
+  const widgetModule = safelyEvaluateDynamicWidget(loader, widget.id, widget.entry, clientSourcePath)
   const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
 
   if (typeof widgetFn !== 'function') {
@@ -577,6 +589,7 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidget
 
 async function prerenderClientRenderedAndroidWidgets(
   projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: DetectedAndroidWidget[],
   voltraVersion: string
 ): Promise<PrerenderedWidgetStates> {
@@ -601,7 +614,7 @@ async function prerenderClientRenderedAndroidWidgets(
 
   for (const widget of clientWidgets) {
     try {
-      const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, widget.clientSourcePath)
+      const widgetModule = safelyEvaluateDynamicWidget(loader, widget.id, widget.entry, widget.clientSourcePath)
       const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
       const element = widgetFn({}, placeholderEnv)
       prerenderedStates.set(widget.id, new Map([[DEFAULT_INITIAL_STATE_LOCALE, JSON.stringify(renderer(element))]]))
@@ -622,13 +635,13 @@ async function prerenderClientRenderedAndroidWidgets(
 }
 
 function safelyEvaluateDynamicWidget(
-  projectRoot: string,
+  loader: WidgetModuleLoader,
   widgetId: string,
   widgetEntry: string,
   clientSourcePath: string
 ): unknown {
   try {
-    return evaluateWidgetModuleExports(projectRoot, clientSourcePath, createAndroidGeneratedFilesError)
+    return loader.load(clientSourcePath)
   } catch (error) {
     if (error instanceof AndroidGeneratedFilesError) {
       throw error

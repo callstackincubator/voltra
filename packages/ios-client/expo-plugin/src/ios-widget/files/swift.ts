@@ -67,7 +67,7 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
   // stringify). Both produce entries in the same map shape so
   // VoltraWidgetInitialStates.swift can read either via the same lookup at runtime.
   const serverWidgets = detectedWidgets.filter((w) => !w.clientRendered)
-  const serverStates = await prerenderWidgetState(serverWidgets, projectRoot, renderWidgetToString)
+  const serverStates = await prerenderWidgetState(serverWidgets, projectRoot, renderWidgetToString, 'ios')
   const clientStates = await prerenderClientRenderedWidgets(detectedWidgets, projectRoot)
   const prerenderedStates = new Map([...serverStates, ...clientStates])
 

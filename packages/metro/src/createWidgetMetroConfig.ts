@@ -1,9 +1,16 @@
+import { createRequire } from 'node:module'
 import path from 'node:path'
+
+import {
+  describeBlockedWidgetImport,
+  isReactNativeImport,
+  resolveWidgetImport,
+  WIDGET_REACT_NATIVE_SHIM_PACKAGE,
+  type WidgetModulePlatform,
+} from '@use-voltra/compiler'
 
 import { requireProjectModule, resolveProjectModulePath } from './resolveProjectModule'
 import { createErrorOnlyMetroReporter } from './createErrorOnlyMetroReporter'
-
-const blockedModules = new Set(['react-native'])
 
 function unique<T>(items: Array<T | null | undefined>): T[] {
   return Array.from(new Set(items.filter((item): item is T => item !== null && item !== undefined)))
@@ -14,6 +21,36 @@ function resolvePnpmTransitive(name: string, projectRoot: string): string | null
     return path.dirname(resolveProjectModulePath(`${name}/package.json`, projectRoot))
   } catch {
     return null
+  }
+}
+
+/**
+ * Locate a `@use-voltra/compiler` entry point from this package's own installation.
+ *
+ * The shim it hosts is a transitive dependency of the app, so it cannot be resolved from
+ * the project root; going through `@use-voltra/metro` — which the app does depend on —
+ * finds the copy that pairs with this bundler.
+ */
+function resolveWidgetShim(specifier: string, projectRoot: string): string {
+  const metroPackagePath = resolveProjectModulePath('@use-voltra/metro/package.json', projectRoot)
+  return createRequire(metroPackagePath).resolve(specifier)
+}
+
+function asWidgetModulePlatform(platform: string | null): WidgetModulePlatform | null {
+  return platform === 'ios' || platform === 'android' ? platform : null
+}
+
+/** Report each redirect once per bundler config, matching what the build-time loaders log. */
+function createWarnOnce(): (message: string) => void {
+  const seen = new Set<string>()
+
+  return (message: string) => {
+    if (seen.has(message)) {
+      return
+    }
+
+    seen.add(message)
+    console.warn(`[voltra] ${message}`)
   }
 }
 
@@ -38,6 +75,7 @@ export async function createWidgetMetroConfig({
   const pnpmTransitiveModules = Object.fromEntries(
     Object.entries(pnpmTransitives).filter((entry): entry is [string, string] => entry[1] !== null)
   )
+  const warnOnce = createWarnOnce()
 
   return {
     ...config,
@@ -57,12 +95,39 @@ export async function createWidgetMetroConfig({
         ...(config.resolver?.nodeModulesPaths ?? []),
         ...(appConfig.resolver?.nodeModulesPaths ?? []),
       ]),
-      resolveRequest(context: any, moduleName: string, platform: string | null) {
-        if (blockedModules.has(moduleName) || moduleName.startsWith('react-native/')) {
-          throw new Error(`Voltra widget bundles cannot import "${moduleName}"`)
+      resolveRequest(context: any, moduleName: string, requestedPlatform: string | null) {
+        // The same import policy the CLI and the Expo plugins apply when they evaluate
+        // widget source at build time, so a widget that prerenders also bundles.
+        const widgetPlatform = asWidgetModulePlatform(requestedPlatform)
+
+        if (!widgetPlatform) {
+          // Without a target platform there is no honest `Platform.OS` to serve.
+          if (isReactNativeImport(moduleName)) {
+            throw new Error(describeBlockedWidgetImport(moduleName))
+          }
+
+          return context.resolveRequest(context, moduleName, requestedPlatform)
         }
 
-        return context.resolveRequest(context, moduleName, platform)
+        const resolution = resolveWidgetImport(moduleName, widgetPlatform)
+
+        if (resolution.kind === 'blocked') {
+          throw new Error(resolution.reason)
+        }
+
+        if (resolution.kind === 'passthrough') {
+          return context.resolveRequest(context, moduleName, requestedPlatform)
+        }
+
+        if (resolution.warning) {
+          warnOnce(resolution.warning)
+        }
+
+        if (resolution.specifier.startsWith(`${WIDGET_REACT_NATIVE_SHIM_PACKAGE}/`)) {
+          return { type: 'sourceFile', filePath: resolveWidgetShim(resolution.specifier, projectRoot) }
+        }
+
+        return context.resolveRequest(context, resolution.specifier, requestedPlatform)
       },
     },
     serializer: {
