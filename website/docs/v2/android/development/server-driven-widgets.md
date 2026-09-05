@@ -15,6 +15,8 @@ Android semantic color tokens from [`AndroidDynamicColors`](./dynamic-colors) wo
 
 Your app doesn't need to be running. WorkManager handles everything in the background.
 
+A widget that also has an `entry` works the other way round: your server returns plain JSON data and the widget renders it on the device, so the backend can be written in any language. See [Returning data instead of UI](#returning-data-instead-of-ui).
+
 ## Plugin configuration
 
 Add the `serverUpdate` option to your Android widget in `app.json` or `app.config.js`:
@@ -48,8 +50,8 @@ Add the `serverUpdate` option to your Android widget in `app.json` or `app.confi
 
 **`serverUpdate` options:**
 
-- `url`: The Voltra SSR endpoint that returns widget JSON. Voltra appends `widgetId`, `platform`, and `theme` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android&theme=dark`).
-- `intervalMinutes`: How often the widget fetches updates. Defaults to `15`. The minimum effective interval is 15 minutes (WorkManager requirement).
+- `url`: The endpoint the widget fetches from. Voltra appends `widgetId`, `platform`, `theme`, and `locale` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android&theme=dark&locale=en-US`). Optional — leave it out to mark the widget server-driven and supply the URL after login with [`setWidgetServerUpdate`](#changing-settings-at-runtime).
+- `intervalMinutes`: How often the widget fetches updates. Defaults to `60`, or `15` for a widget that has an `entry`. The minimum is 15 minutes, which is as often as WorkManager will run periodic work.
 - `refresh`: Whether to show a native refresh button in the top-right corner of the widget. When tapped, triggers an immediate server fetch. Defaults to `false`.
 
 After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native widget code picks up the new server update settings.
@@ -121,12 +123,116 @@ The handler responds to GET requests with these query parameters:
 | `platform` | The requesting platform. Must be `android` (required). |
 | `family` | Not used on Android |
 | `theme` | The system color scheme (`light` or `dark`) |
+| `locale` | The device locale as a BCP-47 tag, e.g. `en-US` |
 
 The `User-Agent` header is set to `VoltraWidget/<version> (Android/<version>)`.
+
+## Returning data instead of UI
+
+Everything above assumes your server renders Voltra components and returns a UI payload, which means it has to run Node. If you give the widget an `entry`, it renders on the device instead and your server returns plain JSON — so it can be written in any language.
+
+Add both keys to the same widget:
+
+```json
+{
+  "id": "portfolio",
+  "displayName": "Portfolio",
+  "description": "Your holdings",
+  "targetCellWidth": 2,
+  "targetCellHeight": 2,
+  "entry": "./widgets/android/portfolio.tsx",
+  "initialStatePath": "./widgets/android/portfolio.tsx",
+  "serverUpdate": {
+    "url": "https://api.example.com/widgets/portfolio",
+    "intervalMinutes": 30
+  }
+}
+```
+
+The response body becomes the widget's props, verbatim:
+
+```php
+<?php
+header('Content-Type: application/json');
+
+echo json_encode([
+  'total' => 12480.55,
+  'change' => 1.8,
+  'holdings' => [
+    ['symbol' => 'AAPL', 'value' => 8200.00],
+    ['symbol' => 'MSFT', 'value' => 4280.55],
+  ],
+]);
+```
+
+Your widget entry receives that object as its first argument, the same shape you would pass to `updateAndroidDynamicWidget`:
+
+```tsx
+export default function PortfolioWidget(props, env) {
+  return (
+    <VoltraAndroid.Column style={{ padding: 16 }}>
+      <VoltraAndroid.Text style={{ fontSize: 28 }}>${props.total.toFixed(2)}</VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ fontSize: 14 }}>{props.change}% today</VoltraAndroid.Text>
+    </VoltraAndroid.Column>
+  )
+}
+```
+
+Check the endpoint with curl before wiring up the widget:
+
+```bash
+curl "https://api.example.com/widgets/portfolio?widgetId=portfolio&platform=android&theme=dark&locale=en-US" \
+  -H "Accept: application/json"
+```
+
+### What the response has to be
+
+- Status `200` with `Content-Type: application/json` and a JSON **object**. An array, a string, a number or `null` at the top level is rejected.
+- At most 256 KB.
+- Return `ETag` and Voltra sends it back as `If-None-Match` on the next fetch. A `304` means the widget keeps what it has and counts as fresh.
+- `Cache-Control: max-age=N` moves the next fetch, clamped between 15 minutes and 24 hours. `Retry-After` on a `429` or `503` is honoured the same way.
+
+Returning a rendered Voltra payload from an endpoint whose widget has an `entry` is rejected with a log line naming the mismatch. The widget has an entry, so it wants the data, not the picture.
+
+### Telling fresh data from stale
+
+The widget is never blanked by a failed fetch: it keeps rendering the last props that arrived, whether from the server or from `updateAndroidDynamicWidget`. `env.serverUpdate` says which:
+
+```tsx
+export default function PortfolioWidget(props, env) {
+  const stale = env.serverUpdate?.status === 'stale'
+
+  return (
+    <VoltraAndroid.Column style={{ padding: 16, alpha: stale ? 0.6 : 1 }}>
+      <VoltraAndroid.Text style={{ fontSize: 28 }}>${props.total?.toFixed(2) ?? '—'}</VoltraAndroid.Text>
+      {env.serverUpdate?.fetchedAt && (
+        <VoltraAndroid.Text style={{ fontSize: 12 }}>
+          Updated {new Date(env.serverUpdate.fetchedAt).toLocaleTimeString()}
+        </VoltraAndroid.Text>
+      )}
+    </VoltraAndroid.Column>
+  )
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `status` | `fresh` after a `200` or `304`; `stale` when a fetch has succeeded before but the last one failed; `never` before the first success; `disabled` while your app has taken the widget over |
+| `fetchedAt` | Epoch milliseconds of the last `200` or `304`. Absent until a fetch succeeds. |
+| `error` | `network`, `http`, `unauthorized`, `parse`, or `render`. Absent when `status` is `fresh`. |
+| `httpStatus` | Status code of the last response, when there was one |
+
+`env.serverUpdate` is `undefined` on widgets without a `serverUpdate`.
+
+Props that throw during rendering are never committed — Voltra renders them once off screen first, and keeps the previous props when that fails. `env.serverUpdate.error` is `render` while that lasts.
 
 ## Authentication
 
 Widgets on Android are part of the main app binary, so the WorkManager background worker can access credential storage directly. Voltra credentials are encrypted at rest on-device.
+
+:::note
+`setWidgetServerCredentials` is deprecated in favour of [`setWidgetServerUpdate`](#changing-settings-at-runtime) with an `Authorization` header, which can also set the URL, the interval, the method, query parameters and a body. Both write the same encrypted records, so switching is a one-line change and nothing has to be migrated on device.
+:::
 
 ### Setting credentials
 
@@ -156,6 +262,73 @@ await clearWidgetServerCredentials()
 ```
 
 All widgets are automatically reloaded after credentials are cleared, so they revert to their default/unauthenticated state immediately.
+
+## Changing settings at runtime
+
+`serverUpdate` in `app.json` is the default. Once the app runs it can change any of it, per widget or for all of them, without a rebuild:
+
+```typescript
+import { setWidgetServerUpdate } from '@use-voltra/android-client'
+
+await setWidgetServerUpdate(
+  {
+    url: `https://${tenant}.example.com/widgets/portfolio`,
+    intervalMinutes: 30,
+    headers: { Authorization: `Bearer ${accessToken}` },
+  },
+  { widgetId: 'portfolio' }
+)
+```
+
+| Setting | |
+|---------|--|
+| `url` | Must be `https`, or `http` to `localhost`, `127.0.0.1` or `10.0.2.2` in a debug build |
+| `intervalMinutes` | Clamped between 15 minutes and 24 hours |
+| `enabled` | `false` stops fetching until you set it back |
+| `method` | `GET` (default), `POST`, `PUT`, `PATCH` or `DELETE` |
+| `query` | Extra query parameters |
+| `headers` | Extra request headers |
+| `body` | Sent as `application/json` |
+
+Leave out `widgetId` to set the same values for every server-driven widget. A widget-scoped call wins over a global one; `headers` and `query` merge per key across the two, everything else takes the more specific value.
+
+Each call replaces everything it set last time, so pass every field you want to keep. Setting anything reschedules the widgets it affects and fetches once straight away.
+
+Use this instead of `setWidgetServerCredentials`, which does the same thing for the `Authorization` header alone:
+
+```typescript
+// Before
+await setWidgetServerCredentials({ token: accessToken, headers: { 'X-App-Version': '1.0.0' } })
+
+// After
+await setWidgetServerUpdate({
+  headers: { Authorization: `Bearer ${accessToken}`, 'X-App-Version': '1.0.0' },
+})
+```
+
+To go back to what `app.json` configured, clear the settings. Clearing the global settings is the logout gesture — it drops the credentials the widgets were fetching with and reloads them:
+
+```typescript
+import { clearWidgetServerUpdate } from '@use-voltra/android-client'
+
+await clearWidgetServerUpdate({ widgetId: 'portfolio' })
+await clearWidgetServerUpdate()
+```
+
+Calling either function for a widget that has no `serverUpdate` in `app.json` throws. Whether a widget is server-driven is decided when the native project is generated, so a runtime URL cannot turn a local widget into one — add `serverUpdate` to `app.json` and rebuild.
+
+A `body` set alongside `GET` or `HEAD` is dropped with a warning, because neither platform's HTTP stack can send one.
+
+### Driving a widget from the app
+
+`updateAndroidWidget` and `updateAndroidDynamicWidget` work on server-driven widgets, but the next scheduled fetch overwrites what you wrote. To keep it, turn fetching off first:
+
+```typescript
+await setWidgetServerUpdate({ enabled: false }, { widgetId: 'portfolio' })
+await updateAndroidDynamicWidget('portfolio', localProps)
+```
+
+While fetching is off, `env.serverUpdate.status` is `disabled`, so the widget can hide its "updated N minutes ago" line. Set `enabled: true`, or clear the settings, to hand it back to the server.
 
 ## Refresh button
 
@@ -255,3 +428,6 @@ WorkManager automatically handles failures with exponential backoff. After 5 con
 - **Server errors (non-2xx):** The worker retries with exponential backoff, up to 3 attempts.
 - **Empty response:** The worker retries with exponential backoff, up to 3 attempts.
 - **Parse errors:** If the JSON is stored but parsing fails, the data is still saved so Glance can attempt to use it later. This counts as a success since the data is persisted.
+- **`401` or `403`:** The worker stops rather than backing off — the status will not change until you set a new token, and doing so reloads the widget anyway.
+
+For widgets that return props rather than UI, the widget keeps rendering the last props it has through every one of these, and `env.serverUpdate` says what went wrong.

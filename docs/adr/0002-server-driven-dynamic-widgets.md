@@ -1,6 +1,6 @@
 # ADR 0002: Server-driven Dynamic Widgets
 
-Status: Accepted — not yet implemented
+Status: Accepted
 
 Tracks [#176](https://github.com/callstackincubator/voltra/issues/176).
 
