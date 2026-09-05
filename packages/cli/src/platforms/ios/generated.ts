@@ -234,7 +234,13 @@ async function generateInfoPlistFile(
   const fontNames = ios.fonts.map((fontPath) => path.basename(fontPath)).sort()
   const serverWidgets = widgets.filter((widget) => widget.serverUpdate)
   const hasClientRenderedWidget = widgets.some((widget) => widget.clientRendered)
-  const serverUrls = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.url]))
+  // Keys of the intervals dictionary are the set of server-driven widget ids; a URL appears only
+  // when app.json set one, because it may instead arrive at runtime via setWidgetServerUpdate.
+  const serverUrls = Object.fromEntries(
+    serverWidgets
+      .filter((widget) => widget.serverUpdate?.url !== undefined)
+      .map((widget) => [widget.id, widget.serverUpdate?.url])
+  )
   const serverIntervals = Object.fromEntries(
     serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes])
   )

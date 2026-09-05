@@ -3,7 +3,10 @@ import {
   validateInitialStatePath,
   validateWidgetEntry,
   validateWidgetLabel,
+  validateWidgetServerUpdate,
 } from '@use-voltra/expo-plugin'
+
+import { iosServerUpdateRules } from './ios/serverUpdate'
 import { getDynamicLiveActivityAttributesType } from '@use-voltra/expo-plugin'
 
 import type { IOSConfigPluginProps, IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetFamily } from './types'
@@ -46,6 +49,8 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: s
   if (widget.entry !== undefined) {
     validateWidgetEntry(widget.entry, widget.id, projectRoot)
   }
+
+  validateWidgetServerUpdate(widget.serverUpdate, widget.id, iosServerUpdateRules(widget))
 
   if (widget.supportedFamilies) {
     if (!Array.isArray(widget.supportedFamilies)) {

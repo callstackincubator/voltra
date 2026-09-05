@@ -410,6 +410,165 @@ test('android config normalization rejects missing widget dimensions', () => {
   )
 })
 
+function normalizeWidgetConfig(config) {
+  const { normalizeVoltraConfig } = loadCliModule()
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
+
+  return normalizeVoltraConfig({
+    configDir: tempDir,
+    configPath: path.join(tempDir, 'voltra.config.json'),
+    config,
+  })
+}
+
+function androidWidgetConfig(widget) {
+  return {
+    android: {
+      widgets: [
+        {
+          id: 'portfolio',
+          displayName: 'Portfolio',
+          description: 'Track holdings',
+          targetCellWidth: 2,
+          targetCellHeight: 2,
+          ...widget,
+        },
+      ],
+    },
+  }
+}
+
+test('the CLI copy of the serverUpdate rules matches the one shared by the Expo plugins', () => {
+  const cliCopy = fs.readFileSync(path.join(packageRoot, 'src/config/serverUpdate.ts'), 'utf8')
+  const pluginCopy = fs.readFileSync(path.join(packageRoot, '..', 'expo-plugin/src/serverUpdate.ts'), 'utf8')
+
+  // Only the pointer at the other copy differs; everything below the header must be identical.
+  const body = (source) => source.slice(source.indexOf('*/'))
+
+  assert.equal(body(cliCopy), body(pluginCopy))
+})
+
+test('serverUpdate without a url marks the widget server-driven and leaves the url unset', () => {
+  const normalized = normalizeWidgetConfig(androidWidgetConfig({ serverUpdate: {} }))
+
+  assert.deepEqual(normalized.android.widgets[0].serverUpdate, {
+    url: undefined,
+    intervalMinutes: 60,
+    refresh: false,
+  })
+})
+
+test('serverUpdate on a widget with an entry defaults to a 15 minute interval', () => {
+  const normalized = normalizeWidgetConfig(
+    androidWidgetConfig({
+      entry: './widgets/portfolio.tsx',
+      serverUpdate: { url: 'https://api.example.com/portfolio' },
+    })
+  )
+
+  assert.equal(normalized.android.widgets[0].serverUpdate.intervalMinutes, 15)
+})
+
+test('serverUpdate on a widget with an entry clamps a short interval and warns', () => {
+  const normalized = normalizeWidgetConfig(
+    androidWidgetConfig({
+      entry: './widgets/portfolio.tsx',
+      serverUpdate: { url: 'https://api.example.com/portfolio', intervalMinutes: 5 },
+    })
+  )
+
+  assert.equal(normalized.android.widgets[0].serverUpdate.intervalMinutes, 15)
+  assert.equal(normalized.warnings.length, 1)
+  assert.match(normalized.warnings[0], /below the 15 minute floor/)
+})
+
+test('serverUpdate on an iOS widget with an entry keeps the 15 minute floor, not the payload floor of 1', () => {
+  const normalized = normalizeWidgetConfig({
+    ios: {
+      groupIdentifier: 'group.com.example.app',
+      widgets: [
+        {
+          id: 'portfolio',
+          displayName: 'Portfolio',
+          description: 'Track holdings',
+          entry: './widgets/portfolio.tsx',
+          serverUpdate: { url: 'https://api.example.com/portfolio', intervalMinutes: 2 },
+        },
+      ],
+    },
+  })
+
+  assert.equal(normalized.ios.widgets[0].serverUpdate.intervalMinutes, 15)
+})
+
+test('serverUpdate on a payload widget keeps the platform floor and still rejects short intervals', () => {
+  const { VoltraConfigNormalizationError } = loadCliModule()
+
+  assert.throws(
+    () =>
+      normalizeWidgetConfig(
+        androidWidgetConfig({ serverUpdate: { url: 'https://a.example.com', intervalMinutes: 5 } })
+      ),
+    (error) => {
+      assert.ok(error instanceof VoltraConfigNormalizationError)
+      assert.match(error.message, /must be at least 15/)
+      return true
+    }
+  )
+})
+
+test('serverUpdate rejects a url that no HTTP stack can reach', () => {
+  const { VoltraConfigNormalizationError } = loadCliModule()
+
+  assert.throws(
+    () => normalizeWidgetConfig(androidWidgetConfig({ serverUpdate: { url: 'api.example.com/portfolio' } })),
+    (error) => {
+      assert.ok(error instanceof VoltraConfigNormalizationError)
+      assert.match(error.message, /absolute http\(s\) URL/)
+      return true
+    }
+  )
+})
+
+test('serverUpdate warns rather than failing on plain http to a non-local host', () => {
+  const normalized = normalizeWidgetConfig(androidWidgetConfig({ serverUpdate: { url: 'http://192.168.1.5:3333' } }))
+
+  assert.equal(normalized.android.widgets[0].serverUpdate.url, 'http://192.168.1.5:3333')
+  assert.match(normalized.warnings[0], /cleartext/)
+})
+
+test('serverUpdate accepts the emulator dev host over plain http without warning', () => {
+  const normalized = normalizeWidgetConfig(androidWidgetConfig({ serverUpdate: { url: 'http://10.0.2.2:3333' } }))
+
+  assert.deepEqual(normalized.warnings, [])
+})
+
+test('an iOS widget with entry and serverUpdate requires a groupIdentifier for the props it commits', () => {
+  const { VoltraConfigNormalizationError } = loadCliModule()
+
+  assert.throws(
+    () =>
+      normalizeWidgetConfig({
+        ios: {
+          widgets: [
+            {
+              id: 'portfolio',
+              displayName: 'Portfolio',
+              description: 'Track holdings',
+              entry: './widgets/portfolio.tsx',
+              serverUpdate: { url: 'https://api.example.com/portfolio' },
+            },
+          ],
+        },
+      }),
+    (error) => {
+      assert.ok(error instanceof VoltraConfigNormalizationError)
+      assert.match(error.message, /requires ios\.groupIdentifier/)
+      return true
+    }
+  )
+})
+
 test('config normalization keeps Dynamic Widget entry project-relative', () => {
   const { normalizeVoltraConfig } = loadCliModule()
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))

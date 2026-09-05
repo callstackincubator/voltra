@@ -16,8 +16,11 @@ export type WidgetLabel = string | WidgetLocalizedValue
 export type WidgetInitialStatePath = string | WidgetLocalizedValue
 
 export interface AndroidWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
+  /**
+   * Server endpoint that returns widget state updates. Optional — omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
   /** Refresh interval, in minutes, for fetching server updates. */
   intervalMinutes?: number
   /** Whether fetched updates should trigger an immediate widget refresh. */
@@ -103,8 +106,11 @@ export type IOSWidgetFamily =
   | 'accessoryInline'
 
 export interface IOSWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
+  /**
+   * Server endpoint that returns widget state updates. Optional — omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
   /** Refresh interval, in minutes, for fetching server updates. */
   intervalMinutes?: number
   /** Whether fetched updates should trigger an immediate widget refresh. */
@@ -239,28 +245,27 @@ export interface LoadedVoltraConfig {
   configDir: string
 }
 
-export interface NormalizedAndroidWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
+/**
+ * Build-time server-update defaults after normalization. The device treats these as the lowest
+ * settings layer; `setWidgetServerUpdate` overrides `url` and `intervalMinutes` at runtime.
+ */
+export interface NormalizedWidgetServerUpdateConfig {
+  /** Server endpoint, when app.json set one. Absent means "URL supplied at runtime". */
+  url?: string
   /** Refresh interval, in minutes, for fetching server updates. */
   intervalMinutes: number
-  /** Whether fetched updates should trigger an immediate widget refresh. */
+  /** Whether the widget draws a refresh button. Build-time only: it is generated UI structure. */
   refresh: boolean
 }
+
+export type NormalizedAndroidWidgetServerUpdateConfig = NormalizedWidgetServerUpdateConfig
 
 export interface NormalizedAndroidWidgetConfig extends Omit<AndroidWidgetConfig, 'serverUpdate'> {
   /** Server-driven update settings after defaults have been applied. */
   serverUpdate?: NormalizedAndroidWidgetServerUpdateConfig
 }
 
-export interface NormalizedIOSWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
-  /** Refresh interval, in minutes, for fetching server updates. */
-  intervalMinutes: number
-  /** Whether fetched updates should trigger an immediate widget refresh. */
-  refresh: boolean
-}
+export type NormalizedIOSWidgetServerUpdateConfig = NormalizedWidgetServerUpdateConfig
 
 export interface NormalizedIOSWidgetConfig extends Omit<IOSWidgetConfig, 'serverUpdate' | 'supportedFamilies'> {
   /** Supported iOS widget families after defaults have been applied. */
@@ -366,6 +371,8 @@ export interface NormalizedVoltraConfig {
   android?: NormalizedVoltraAndroidConfig
   /** Normalized iOS-specific Voltra configuration. */
   ios?: NormalizedVoltraIOSConfig
+  /** Non-fatal config problems, surfaced in the `voltra apply` summary. */
+  warnings?: string[]
 }
 
 export type CliDefaults = typeof CLI_DEFAULTS

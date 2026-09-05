@@ -12,6 +12,20 @@ export type {
   WidgetLabel,
   WidgetLocalizedCopy,
 } from './types'
+export type { ServerUpdateIntervalResolution, ServerUpdateUrlResolution } from './serverUpdate'
+export {
+  DYNAMIC_WIDGET_SERVER_UPDATE_INTERVAL_MINUTES,
+  isLocalHttpHost,
+  resolveServerUpdateInterval,
+  resolveServerUpdateUrl,
+  validateServerUpdateRefresh,
+} from './serverUpdate'
+export type {
+  ResolvedWidgetServerUpdateConfig,
+  WidgetServerUpdateConfig,
+  WidgetServerUpdateRules,
+} from './widgetServerUpdate'
+export { resolveWidgetServerUpdate, validateWidgetServerUpdate } from './widgetServerUpdate'
 export {
   assertValidLocaleKey,
   normalizeWidgetEntryPath,

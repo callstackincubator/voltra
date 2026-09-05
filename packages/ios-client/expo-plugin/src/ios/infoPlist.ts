@@ -1,6 +1,7 @@
 import { ConfigPlugin, withInfoPlist } from '@expo/config-plugins'
 
 import type { IOSWidgetConfig } from '../types'
+import { resolveIOSWidgetServerUpdate } from './serverUpdate'
 
 export interface ConfigureInfoPlistProps {
   groupIdentifier?: string
@@ -43,15 +44,28 @@ export const configureInfoPlist: ConfigPlugin<ConfigureInfoPlistProps> = (config
       const serverIntervals: Record<string, number> = {}
 
       for (const widget of props.widgets) {
-        if (widget.serverUpdate) {
-          serverUrls[widget.id] = widget.serverUpdate.url
-          serverIntervals[widget.id] = widget.serverUpdate.intervalMinutes ?? 15
+        const serverUpdate = resolveIOSWidgetServerUpdate(widget)
+
+        if (!serverUpdate) {
+          continue
         }
+
+        // Every server-driven widget gets an interval, so this dictionary's keys are the set of
+        // server-driven widget ids the runtime settings store validates against. A URL is written
+        // only when app.json set one; otherwise the app supplies it with setWidgetServerUpdate.
+        serverIntervals[widget.id] = serverUpdate.intervalMinutes
+
+        if (serverUpdate.url !== undefined) {
+          serverUrls[widget.id] = serverUpdate.url
+        }
+      }
+
+      if (Object.keys(serverIntervals).length > 0) {
+        mod.modResults.Voltra_WidgetServerIntervals = serverIntervals
       }
 
       if (Object.keys(serverUrls).length > 0) {
         mod.modResults.Voltra_WidgetServerUrls = serverUrls
-        mod.modResults.Voltra_WidgetServerIntervals = serverIntervals
       }
     }
 
