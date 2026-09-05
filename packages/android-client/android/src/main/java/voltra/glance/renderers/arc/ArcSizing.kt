@@ -25,6 +25,8 @@ const val MAX_ARC_DENSITY_SCALE = 3.5f
 data class ArcSize(
     val sizePx: Int,
     val scale: Float,
+    /** The requested edge in dp, used to give an otherwise unsized arc a layout size. */
+    val requestedDp: Float,
 )
 
 /**
@@ -55,7 +57,7 @@ fun resolveArcSize(
     val densityScale = density.coerceIn(MIN_ARC_DENSITY_SCALE, MAX_ARC_DENSITY_SCALE)
     val sizePx = (requestedDp * densityScale).roundToInt().coerceIn(1, MAX_ARC_EDGE_PX)
 
-    return ArcSize(sizePx = sizePx, scale = sizePx / requestedDp)
+    return ArcSize(sizePx = sizePx, scale = sizePx / requestedDp, requestedDp = requestedDp)
 }
 
 private fun resolveEdgeDp(

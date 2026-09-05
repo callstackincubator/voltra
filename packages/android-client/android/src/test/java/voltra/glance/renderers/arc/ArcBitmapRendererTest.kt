@@ -194,6 +194,60 @@ class ArcBitmapRendererTest {
     }
 
     @Test
+    fun spreadsTheGradientOverTheSweepRatherThanTheWholeCircle() {
+        // A 270 degree gauge: the last gradient color must land on the end of the arc, not 90
+        // degrees past it where nothing is drawn.
+        val spec =
+            spec(
+                progress = 1f,
+                startAngle = 135f,
+                sweepAngle = 270f,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(red, blue),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        assertMostly(red, pixelAt(bitmap, spec, 137f), "gradient start at the arc start")
+        // 135 + 270 = 405, i.e. 45 degrees.
+        assertMostly(blue, pixelAt(bitmap, spec, 43f), "gradient end at the arc end")
+    }
+
+    @Test
+    fun reversesTheGradientForACounterClockwiseSweep() {
+        val spec =
+            spec(
+                progress = 1f,
+                startAngle = 45f,
+                sweepAngle = -270f,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(red, blue),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        // The first color still sits at the start angle, the last at the far end (45 - 270 = 135).
+        assertMostly(red, pixelAt(bitmap, spec, 43f), "gradient start at the arc start")
+        assertMostly(blue, pixelAt(bitmap, spec, 137f), "gradient end at the arc end")
+    }
+
+    @Test
+    fun clampsAStrokeWiderThanTheRadiusInsteadOfDrawingNothing() {
+        val spec =
+            spec(
+                sizePx = 100,
+                progress = 1f,
+                sweepAngle = 360f,
+                strokePx = 500f,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        // Clamped to size / 2, the ring becomes a filled disc, so the center is painted.
+        assertMostly(red, bitmap.getPixel(50, 50), "center of the clamped ring")
+    }
+
+    @Test
     fun hidesTheTrackWhenTheTrackColorIsTransparent() {
         val spec = spec(progress = 0.25f, trackColorArgb = AndroidColor.TRANSPARENT)
         val bitmap = renderArcBitmap(spec)

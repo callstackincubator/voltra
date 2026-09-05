@@ -11,7 +11,10 @@ import android.util.LruCache
  * widget, so one gauge costs its bytes once per widget rather than once per variant.
  */
 object ArcBitmapCache {
-    private const val MAX_BYTES = 4 * 1024 * 1024
+    // A responsive widget composes up to six size variants per update. A fill-sized arc resolves
+    // to a different pixel size in each of them, so the bound holds a full set of arcs at the
+    // 512 px cap (1 MiB each) without the update evicting its own entries.
+    private const val MAX_BYTES = 8 * 1024 * 1024
 
     private val cache =
         object : LruCache<ArcSpec, Bitmap>(MAX_BYTES) {
@@ -24,10 +27,7 @@ object ArcBitmapCache {
     /** Returns the cached bitmap for [spec], rendering and storing one when absent. */
     @Synchronized
     fun get(spec: ArcSpec): Bitmap {
-        val cached = cache.get(spec)
-        if (cached != null && !cached.isRecycled) {
-            return cached
-        }
+        cache.get(spec)?.let { return it }
 
         val bitmap = renderArcBitmap(spec)
         cache.put(spec, bitmap)

@@ -20,6 +20,20 @@ class ArcSizingTest {
 
         assertEquals(160, size.sizePx)
         assertEquals(2f, size.scale, 0.001f)
+        assertEquals(80f, size.requestedDp, 0.001f)
+    }
+
+    @Test
+    fun reportsTheDefaultEdgeAsTheRequestedLayoutSize() {
+        val size =
+            resolveArcSize(
+                width = SizeValue.Wrap,
+                height = SizeValue.Wrap,
+                widgetSize = null,
+                density = 2f,
+            )
+
+        assertEquals(DEFAULT_ARC_SIZE_DP, size.requestedDp, 0.001f)
     }
 
     @Test
