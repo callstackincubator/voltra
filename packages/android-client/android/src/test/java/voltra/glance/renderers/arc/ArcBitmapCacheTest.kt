@@ -45,6 +45,13 @@ class ArcBitmapCacheTest {
         assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(progress = 0.25f)))
         assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(colorArgb = AndroidColor.GREEN)))
         assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(cap = Paint.Cap.BUTT)))
+        // The responsive-variant argument turns on this one: a fill-sized arc resolves to a
+        // different pixel size per variant and must not reuse another variant's bitmap.
+        assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(sizePx = 128)))
+        assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(trackColorArgb = AndroidColor.GREEN)))
+        assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(startAngle = 0f)))
+        assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(sweepAngle = 360f)))
+        assertNotSame(first, ArcBitmapCache.get(baseSpec.copy(strokePx = 4f)))
         assertNotSame(
             first,
             ArcBitmapCache.get(baseSpec.copy(gradientColorsArgb = listOf(AndroidColor.RED, AndroidColor.BLUE))),

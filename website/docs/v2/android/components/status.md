@@ -61,8 +61,9 @@ Unlike the other two indicators, this one works on every supported Android versi
 drawn as a bitmap rather than composed from a Glance progress primitive.
 
 Give the component a width and a height. When you leave an axis unsized it falls back to 64 dp,
-which is rarely what you want. Because the arc occupies one of the ten child slots a Glance `Box`
-allows, you can nest at most nine elements inside it.
+which is rarely what you want, and when you give it a `flex` weight the parent controls both axes,
+so size the arc through the parent instead. Because the arc occupies one of the ten child slots a
+Glance `Box` allows, you can nest at most nine elements inside it.
 
 :::warning Bitmap Memory
 The arc is a bitmap, so it costs memory that grows with the square of its pixel size. Voltra sizes

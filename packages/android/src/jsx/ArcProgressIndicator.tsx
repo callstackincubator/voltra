@@ -14,4 +14,12 @@ export const ArcProgressIndicator = createVoltraComponent<ArcProgressIndicatorPr
     }
     return result
   },
+  validate: ({ children }) => {
+    // The arc itself occupies one of the ten child slots a Glance Box allows.
+    if (children.length > 9) {
+      console.warn(
+        `ArcProgressIndicator supports at most 9 direct children in Jetpack Glance, got ${children.length}. The arc itself takes the tenth slot, so extra children will be truncated.`
+      )
+    }
+  },
 })

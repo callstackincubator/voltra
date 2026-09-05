@@ -125,15 +125,20 @@ fun RenderArcProgressIndicator(
     val bitmap = ArcBitmapCache.get(spec)
 
     // The image fills the box, so an axis the style leaves unsized would collapse to nothing.
-    // Give those axes the resolved edge, which is what the default size exists for. A weighted
-    // child gets its height from the parent, so leave that axis alone.
+    // Give those axes the resolved edge, which is what the default size exists for.
+    //
+    // A weighted child is left entirely alone: weight expands the parent's main axis with its own
+    // size modifier, and a renderer cannot tell whether the parent is a Row or a Column, so
+    // setting either axis here could override it.
     val hasWeight = (compositeStyle?.layout?.weight ?: 0f) > 0f
     var sizedModifier = finalModifier
-    if (!isSized(styleWidth)) {
-        sizedModifier = sizedModifier.then(GlanceModifier.width(arcSize.requestedDp.dp))
-    }
-    if (!isSized(styleHeight) && !hasWeight) {
-        sizedModifier = sizedModifier.then(GlanceModifier.height(arcSize.requestedDp.dp))
+    if (!hasWeight) {
+        if (!isSized(styleWidth)) {
+            sizedModifier = sizedModifier.then(GlanceModifier.width(arcSize.requestedDp.dp))
+        }
+        if (!isSized(styleHeight)) {
+            sizedModifier = sizedModifier.then(GlanceModifier.height(arcSize.requestedDp.dp))
+        }
     }
 
     Box(
@@ -144,7 +149,7 @@ fun RenderArcProgressIndicator(
         // counted against the widget's bitmap budget and deduplicated by RemoteViews.BitmapCache.
         Image(
             provider = ImageProvider(bitmap),
-            contentDescription = null,
+            contentDescription = "Progress indicator",
             contentScale = ContentScale.Fit,
             modifier = GlanceModifier.fillMaxSize(),
         )

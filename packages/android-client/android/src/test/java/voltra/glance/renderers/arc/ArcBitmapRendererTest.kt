@@ -91,6 +91,20 @@ class ArcBitmapRendererTest {
 
         assertMostly(red, pixelAt(bitmap, spec, 140f), "fill near the start")
         assertMostly(red, pixelAt(bitmap, spec, 265f), "fill near the filled end")
+        // The fill must stop at startAngle + sweepAngle * progress = 135 + 135 = 270 degrees, so
+        // just past it the track shows through. Without this, a fill sweeping 360 * progress
+        // would satisfy the assertions above.
+        assertMostly(blue, pixelAt(bitmap, spec, 280f), "track just past the filled end")
+    }
+
+    @Test
+    fun growsTheFilledArcWithProgress() {
+        val quarter = spec(progress = 0.25f)
+        val threeQuarters = spec(progress = 0.75f)
+
+        // 135 + 270 * 0.5 = 270 degrees is filled at 0.75 progress but still track at 0.25.
+        assertMostly(blue, pixelAt(renderArcBitmap(quarter), quarter, 265f), "track at 0.25 progress")
+        assertMostly(red, pixelAt(renderArcBitmap(threeQuarters), threeQuarters, 265f), "fill at 0.75 progress")
     }
 
     @Test
