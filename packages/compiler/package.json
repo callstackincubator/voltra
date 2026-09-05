@@ -12,6 +12,18 @@
       "import": "./build/esm/index.js",
       "default": "./build/esm/index.js"
     },
+    "./react-native/ios": {
+      "types": "./build/types/react-native/ios.d.ts",
+      "require": "./build/cjs/react-native/ios.js",
+      "import": "./build/esm/react-native/ios.js",
+      "default": "./build/esm/react-native/ios.js"
+    },
+    "./react-native/android": {
+      "types": "./build/types/react-native/android.d.ts",
+      "require": "./build/cjs/react-native/android.js",
+      "import": "./build/esm/react-native/android.js",
+      "default": "./build/esm/react-native/android.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -23,9 +35,10 @@
     "clean": "rm -rf build",
     "lint": "oxlint src",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
-    "test": "node --test"
+    "test": "node --import tsx --test"
   },
   "dependencies": {
+    "@babel/core": "^7.27.4",
     "@babel/parser": "^7.27.4",
     "@babel/types": "^7.27.4"
   },
@@ -44,5 +57,11 @@
     "url": "https://github.com/callstackincubator/voltra/issues"
   },
   "license": "MIT",
-  "homepage": "https://use-voltra.dev"
+  "homepage": "https://use-voltra.dev",
+  "devDependencies": {
+    "@babel/runtime": "^7.27.4",
+    "@react-native/babel-preset": "0.83.2",
+    "@types/babel__core": "^7.20.5",
+    "tsx": "^4.19.0"
+  }
 }

@@ -22,3 +22,4 @@ Status values:
 | ---------------------------------------------- | -------------------------------------------------------- | -------- |
 | [0000](0000-android-widget-kind-separation.md) | Separate payload-driven and Dynamic Android widget paths | Accepted |
 | [0001](0001-dynamic-live-activities.md)        | Dynamic Live Activities rendering                        | Accepted |
+| [0002](0002-widget-module-resolution.md)       | Widget module resolution                                 | Accepted |

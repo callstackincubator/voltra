@@ -54,7 +54,8 @@ describe('prerenderWidgetState', () => {
       const states = await prerenderWidgetState(
         [{ id: 'demo', initialStatePath: './widgets/state.ts' }],
         tempRoot,
-        (variants) => JSON.stringify(variants)
+        (variants) => JSON.stringify(variants),
+        targetLabel
       )
 
       expect(states.get('demo')?.get('__default')).toBe(JSON.stringify({ label: targetLabel }))

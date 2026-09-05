@@ -1,11 +1,7 @@
-import fs from 'node:fs'
 import path from 'node:path'
-import { createRequire } from 'node:module'
-import vm from 'node:vm'
 
-import * as babel from '@babel/core'
+import { createWidgetModuleLoader, type WidgetModuleLoader, type WidgetModulePlatform } from '@use-voltra/compiler'
 
-import { MODULE_EXTENSIONS } from '../constants'
 import type { WidgetInitialStatePath, WidgetLabel } from '../types'
 import { logger } from './logger'
 import { isWidgetLocalizedMap } from './widgetLabel'
@@ -26,170 +22,51 @@ export interface PrerenderableWidget {
 /** widgetId -> locale key -> prerendered JSON string (single-file widgets use `__default`) */
 export type PrerenderedWidgetStates = Map<string, Map<string, string>>
 
-const PRERENDER_PACKAGE_REDIRECTS: Record<string, string> = {
-  '@use-voltra/ios-client': '@use-voltra/ios',
-  '@use-voltra/android-client': '@use-voltra/android',
+export interface WidgetModuleEvaluationOptions {
+  projectRoot: string
+  /** Platform being prebuilt. Determines `Platform.OS` inside widget code. */
+  platform: WidgetModulePlatform
+  /** Reuse a loader across several widgets so warnings are reported once per prebuild. */
+  loader?: WidgetModuleLoader
 }
 
 /**
- * Check if a module specifier is a relative or absolute path (local file)
+ * Create the loader used to evaluate widget source during prebuild.
+ *
+ * Evaluation rules live in `@use-voltra/compiler` so that prebuild, `voltra apply`, and
+ * the Metro widget bundler agree on what widget code may import.
  */
-function isLocalModule(moduleSpecifier: string): boolean {
-  return moduleSpecifier.startsWith('.') || moduleSpecifier.startsWith('/')
-}
-
-/**
- * Resolve a module path, trying different extensions
- */
-function resolveModulePath(moduleSpecifier: string, fromDir: string): string | null {
-  const basePath = path.resolve(fromDir, moduleSpecifier)
-
-  for (const ext of MODULE_EXTENSIONS) {
-    const fullPath = basePath + ext
-    if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
-      return fullPath
-    }
-  }
-
-  // Try index files if it's a directory
-  if (fs.existsSync(basePath) && fs.statSync(basePath).isDirectory()) {
-    for (const ext of MODULE_EXTENSIONS) {
-      const indexPath = path.join(basePath, 'index' + ext)
-      if (fs.existsSync(indexPath)) {
-        return indexPath
-      }
-    }
-  }
-
-  return null
-}
-
-function getProjectBabelConfigPath(projectRoot: string): string | null {
-  const configPath = path.join(projectRoot, 'babel.config.js')
-  return fs.existsSync(configPath) ? configPath : null
-}
-
-function getFallbackExpoPreset(projectRoot: string): string {
-  return require.resolve('babel-preset-expo', { paths: [projectRoot] })
-}
-
-/**
- * Transpile a file with Babel
- */
-function transpileFile(filePath: string, projectRoot: string): string {
-  const code = fs.readFileSync(filePath, 'utf8')
-  const projectBabelConfigPath = getProjectBabelConfigPath(projectRoot)
-
-  const result = babel.transformSync(code, {
-    cwd: projectRoot,
-    filename: filePath,
-    ...(projectBabelConfigPath
-      ? { configFile: projectBabelConfigPath }
-      : {
-          babelrc: false,
-          configFile: false,
-          presets: [getFallbackExpoPreset(projectRoot)],
-        }),
+export function createPrerenderWidgetModuleLoader(
+  projectRoot: string,
+  platform: WidgetModulePlatform
+): WidgetModuleLoader {
+  return createWidgetModuleLoader({
+    projectRoot,
+    platform,
+    onWarning: (message) => logger.warn(message),
   })
+}
 
-  if (!result || !result.code) {
-    throw new Error(`Babel transpilation failed for ${filePath}`)
-  }
-
-  return result.code
+function resolveLoader({ projectRoot, platform, loader }: WidgetModuleEvaluationOptions): WidgetModuleLoader {
+  return loader ?? createPrerenderWidgetModuleLoader(projectRoot, platform)
 }
 
 /**
- * Evaluate a widget module using Babel transpilation and Node.js VM.
- * This allows executing widget code that uses JSX and React components.
- * Local module dependencies are also transpiled with the same Babel settings.
+ * Evaluate a widget module and return its exports object.
  *
  * Exported so platform-specific prerender flows can reuse the same module loader rather
- * than duplicating the Babel + VM scaffolding. The returned value is the module's exports
- * object — callers decide whether to read `.default`, a named export, etc.
+ * than duplicating the Babel + VM scaffolding. Callers decide whether to read `.default`,
+ * a named export, etc.
  */
-export function evaluateWidgetModuleExports(
-  projectRoot: string,
-  filePath: string,
-  warnedRedirects = new Set<string>()
-): any {
-  // Cache for already-evaluated modules to handle circular dependencies
-  const moduleCache = new Map<string, any>()
-  const projectRequire = createRequire(path.join(projectRoot, 'package.json'))
-
-  /**
-   * Custom require that transpiles local modules with Babel
-   */
-  function customRequire(moduleSpecifier: string, currentDir: string): any {
-    // For non-local modules (npm packages), use native require
-    if (!isLocalModule(moduleSpecifier)) {
-      const redirectedSpecifier = PRERENDER_PACKAGE_REDIRECTS[moduleSpecifier]
-
-      if (redirectedSpecifier) {
-        if (!warnedRedirects.has(moduleSpecifier)) {
-          warnedRedirects.add(moduleSpecifier)
-          logger.warn(
-            `Prerendering initial state imported '${moduleSpecifier}'. Using '${redirectedSpecifier}' instead.`
-          )
-        }
-
-        return projectRequire(redirectedSpecifier)
-      }
-
-      return projectRequire(moduleSpecifier)
-    }
-
-    // Resolve the local module path
-    const resolvedPath = resolveModulePath(moduleSpecifier, currentDir)
-    if (!resolvedPath) {
-      throw new Error(`Cannot resolve module '${moduleSpecifier}' from '${currentDir}'`)
-    }
-
-    // Return cached module if already evaluated
-    if (moduleCache.has(resolvedPath)) {
-      return moduleCache.get(resolvedPath)
-    }
-
-    // Transpile and evaluate the module
-    const transpiledCode = transpileFile(resolvedPath, projectRoot)
-    const moduleDir = path.dirname(resolvedPath)
-
-    const mockModule = { exports: {} as any }
-
-    // Create require function bound to the module's directory
-    const boundRequire = (spec: string) => customRequire(spec, moduleDir)
-
-    const context = vm.createContext({
-      exports: mockModule.exports,
-      module: mockModule,
-      require: boundRequire,
-      __filename: resolvedPath,
-      __dirname: moduleDir,
-      console: console,
-      process: process,
-    })
-
-    // Cache before evaluation to handle circular dependencies
-    moduleCache.set(resolvedPath, mockModule.exports)
-
-    const script = new vm.Script(transpiledCode, { filename: resolvedPath })
-    script.runInContext(context)
-
-    // Update cache with final exports (in case module.exports was reassigned)
-    moduleCache.set(resolvedPath, mockModule.exports)
-
-    return mockModule.exports
-  }
-
-  return customRequire(filePath, path.dirname(filePath))
+export function evaluateWidgetModuleExports(filePath: string, options: WidgetModuleEvaluationOptions): any {
+  return resolveLoader(options).load(filePath)
 }
 
 /**
  * Evaluate a widget file as a server-style WidgetVariants module and return its object export.
  */
-export function evaluateWidgetModule(projectRoot: string, filePath: string, warnedRedirects = new Set<string>()): any {
-  const exports = evaluateWidgetModuleExports(projectRoot, filePath, warnedRedirects)
-  const widgetVariants: any = exports.default || exports
+export function evaluateWidgetModule(filePath: string, options: WidgetModuleEvaluationOptions): any {
+  const widgetVariants = resolveLoader(options).loadDefaultExport(filePath)
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {
     throw new Error('Widget file must export a WidgetVariants object or have a default export of WidgetVariants')
@@ -208,15 +85,17 @@ export function evaluateWidgetModule(projectRoot: string, filePath: string, warn
  * @param widgets - Array of widget configurations
  * @param projectRoot - Root directory of the Expo project
  * @param renderer - The renderer function to use (voltra/server or voltra/android/server)
+ * @param platform - Platform being prebuilt
  * @returns Map of widgetId -> (locale key -> prerendered JSON string)
  */
 export async function prerenderWidgetState(
   widgets: PrerenderableWidget[],
   projectRoot: string,
-  renderer: WidgetRenderer
+  renderer: WidgetRenderer,
+  platform: WidgetModulePlatform
 ): Promise<PrerenderedWidgetStates> {
   const prerenderedStates: PrerenderedWidgetStates = new Map()
-  const warnedRedirects = new Set<string>()
+  const loader = createPrerenderWidgetModuleLoader(projectRoot, platform)
 
   for (const widget of widgets) {
     if (!widget.initialStatePath) {
@@ -233,7 +112,7 @@ export async function prerenderWidgetState(
     try {
       for (const [localeKey, relativePath] of Object.entries(perLocalePaths)) {
         const absoluteWidgetPath = path.resolve(projectRoot, relativePath)
-        const widgetVariants = evaluateWidgetModule(projectRoot, absoluteWidgetPath, warnedRedirects)
+        const widgetVariants = evaluateWidgetModule(absoluteWidgetPath, { projectRoot, platform, loader })
         const prerenderedState = renderer(widgetVariants)
         inner.set(localeKey, prerenderedState)
       }

@@ -47,16 +47,15 @@
   "license": "MIT",
   "homepage": "https://use-voltra.dev",
   "dependencies": {
-    "@babel/core": "^7.27.4",
     "@bacons/xcode": "^1.0.0-alpha.33",
     "@clack/prompts": "^1.0.0-alpha.5",
+    "@use-voltra/compiler": "workspace:^",
     "commander": "^12.1.0",
     "cosmiconfig": "^9.0.0",
     "vd-tool": "^4.0.2",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "@types/babel__core": "^7.20.5",
     "tsx": "^4.19.0"
   }
 }

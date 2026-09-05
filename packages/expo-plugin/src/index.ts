@@ -1,4 +1,4 @@
-export { MAX_IMAGE_SIZE_BYTES, MODULE_EXTENSIONS } from './constants'
+export { MAX_IMAGE_SIZE_BYTES } from './constants'
 export { getDynamicLiveActivityAttributesType } from './dynamic-live-activity'
 export type {
   DynamicWidgetEntryConfig,
@@ -25,6 +25,17 @@ export { resolveFontPaths } from './utils/fonts'
 export { normalizeLocaleTag, pickLocalizedValue } from './utils/localePick'
 export { logger } from './utils/logger'
 export { resolveInstalledPackageVersion } from './utils/packageVersion'
-export type { PrerenderableWidget, PrerenderedWidgetStates, WidgetRenderer } from './utils/prerender'
-export { evaluateWidgetModule, evaluateWidgetModuleExports, prerenderWidgetState } from './utils/prerender'
+export type {
+  PrerenderableWidget,
+  PrerenderedWidgetStates,
+  WidgetModuleEvaluationOptions,
+  WidgetRenderer,
+} from './utils/prerender'
+export {
+  createPrerenderWidgetModuleLoader,
+  evaluateWidgetModule,
+  evaluateWidgetModuleExports,
+  prerenderWidgetState,
+} from './utils/prerender'
+export type { WidgetModuleLoader, WidgetModulePlatform } from '@use-voltra/compiler'
 export { isWidgetLocalizedMap, widgetLabelEnglish } from './utils/widgetLabel'

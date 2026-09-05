@@ -1,5 +1,5 @@
 import {
-  evaluateWidgetModuleExports,
+  createPrerenderWidgetModuleLoader,
   logger,
   resolveInstalledPackageVersion,
   type PrerenderedWidgetStates,
@@ -58,11 +58,11 @@ export async function prerenderClientRenderedAndroidWidgets(
   }
 
   const placeholderEnv = buildPlaceholderEnv(resolveInstalledPackageVersion(projectRoot, '@use-voltra/android-client'))
+  const loader = createPrerenderWidgetModuleLoader(projectRoot, 'android')
 
   for (const widget of clientWidgets) {
     try {
-      const widgetModule = evaluateWidgetModuleExports(projectRoot, widget.clientSourcePath)
-      const widgetFn = widgetModule?.default ?? widgetModule
+      const widgetFn = loader.loadDefaultExport(widget.clientSourcePath)
       if (typeof widgetFn !== 'function') {
         throw new Error(
           `Expected the entry module at ${widget.clientSourcePath} to default-export a function or component.`
