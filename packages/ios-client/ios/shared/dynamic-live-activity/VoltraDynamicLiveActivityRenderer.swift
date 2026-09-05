@@ -236,10 +236,18 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
       locale: locale,
       widgetRenderingMode: widgetRenderingMode
     )
+    familyContent(content: content)
+      .voltraIfLet(content.payload?.activityBackgroundTint.flatMap { JSColorParser.parse($0) }) { view, color in
+        view.activityBackgroundTint(color)
+      }
+  }
+
+  @ViewBuilder
+  private func familyContent(content: VoltraDynamicLiveActivityResolvedContent) -> some View {
     if activityFamily == .small {
       smallFamilyContent(content: content)
     } else {
-      lockScreenContent(content: content)
+      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
     }
   }
 
@@ -258,16 +266,6 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
         content.view(for: .islandCompactTrailing, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
       }
       .frame(maxWidth: .infinity)
-    }
-  }
-
-  @ViewBuilder
-  private func lockScreenContent(content: VoltraDynamicLiveActivityResolvedContent) -> some View {
-    if let tint = content.payload?.activityBackgroundTint, let color = JSColorParser.parse(tint) {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
-        .activityBackgroundTint(color)
-    } else {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
     }
   }
 }
