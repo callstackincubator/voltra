@@ -26,6 +26,7 @@ import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.dynamicwidget.VoltraConfigurationStore
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
+import voltra.glance.renderers.arc.ArcBitmapCache
 import voltra.images.VoltraImageManager
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
@@ -111,6 +112,10 @@ class VoltraModule(
                 val nightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
                 if (nightMode == lastNightMode) return
                 lastNightMode = nightMode
+                // Arc bitmaps are keyed by their resolved colors, so entries rendered for the old
+                // scheme stay correct but are unlikely to be requested again. Drop them here so
+                // the cache does not hold both schemes' bitmaps for the life of the process.
+                ArcBitmapCache.clear()
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         widgetOrchestrator.reloadClientWidgets()
