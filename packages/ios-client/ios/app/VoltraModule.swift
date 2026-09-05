@@ -307,6 +307,17 @@ public enum VoltraErrors: Error, CustomNSError {
     }
   }
 
+  // MARK: - Widget Server Update Settings
+
+  /// - Returns: an error message when the settings were rejected, or nil when they were applied.
+  @objc public func setWidgetServerUpdate(_ settingsJson: String, widgetId: String?) -> NSString? {
+    impl.setWidgetServerUpdate(settingsJson: settingsJson, widgetId: widgetId) as NSString?
+  }
+
+  @objc public func clearWidgetServerUpdate(_ widgetId: String?) -> NSString? {
+    impl.clearWidgetServerUpdate(widgetId: widgetId) as NSString?
+  }
+
   // MARK: - Widget Server Credentials
 
   @objc public func setWidgetServerCredentials(_ token: String, headers: NSDictionary?) {

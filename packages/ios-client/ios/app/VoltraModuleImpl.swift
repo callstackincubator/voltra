@@ -369,16 +369,31 @@ public class VoltraModuleImpl {
 
   func clearWidget(widgetId: String) async {
     VoltraWidgetService.removeAllData(for: widgetId)
+    VoltraWidgetService.clearWidgetServerState(for: widgetId)
     VoltraWidgetService.reloadTimeline(for: widgetId)
   }
 
   func clearAllWidgets() async {
     VoltraWidgetService.removeAllWidgets()
+
+    for widgetId in VoltraWidgetServer.serverDrivenWidgetIds {
+      VoltraWidgetService.clearWidgetServerState(for: widgetId)
+    }
+
     VoltraWidgetService.reloadAllTimelines()
   }
 
   func getActiveWidgets() async throws -> [[String: String]] {
     try await VoltraWidgetService.getActiveWidgets()
+  }
+
+  /// - Returns: an error message when the settings were rejected, or nil when they were applied.
+  func setWidgetServerUpdate(settingsJson: String, widgetId: String?) -> String? {
+    VoltraWidgetService.setWidgetServerUpdate(settingsJson: settingsJson, widgetId: widgetId)
+  }
+
+  func clearWidgetServerUpdate(widgetId: String?) -> String? {
+    VoltraWidgetService.clearWidgetServerUpdate(widgetId: widgetId)
   }
 
   func setWidgetServerCredentials(token: String, headers: [String: String]?) {

@@ -57,6 +57,7 @@ let package = Package(
         "WidgetServer/WidgetServerEtagStore.swift",
         "WidgetServer/VoltraKeychainHelper.swift",
         "WidgetServer/VoltraWidgetServer.swift",
+        "WidgetServer/WidgetServerUpdateSettingsJson.swift",
         "DynamicWidgetServerUpdate/DynamicWidgetServerProps.swift",
         "DynamicWidgetServerUpdate/DynamicWidgetServerPropsStore.swift",
         "DynamicWidgetServerUpdate/DynamicWidgetServerFetchResolver.swift",
