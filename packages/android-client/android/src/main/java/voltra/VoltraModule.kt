@@ -35,8 +35,8 @@ import voltra.widget.VoltraWidgetReceivers
 import voltra.widget.payload.PayloadWidgetUpdateRejection
 import voltra.widget.payload.PayloadWidgetUpdater
 import voltra.widget.payload.VoltraGlanceWidget
-import voltra.widget.payload.VoltraWidgetCredentialStore
 import voltra.widget.payload.VoltraWidgetManager
+import voltra.widget.server.VoltraWidgetCredentialStore
 
 class VoltraModule(
     reactContext: ReactApplicationContext,

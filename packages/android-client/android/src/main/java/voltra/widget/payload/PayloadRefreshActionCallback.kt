@@ -14,6 +14,7 @@ import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.VoltraWidgetKindResolver
 import voltra.widget.VoltraWidgetReceivers
+import voltra.widget.server.VoltraWidgetCredentialStore
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection

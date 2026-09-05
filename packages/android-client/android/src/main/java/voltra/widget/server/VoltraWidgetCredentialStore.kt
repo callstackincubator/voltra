@@ -1,4 +1,4 @@
-package voltra.widget.payload
+package voltra.widget.server
 
 import android.content.Context
 import android.util.Log
@@ -21,7 +21,7 @@ import kotlinx.coroutines.runBlocking
  * this storage; no special grouping or sharing configuration is required.
  */
 
-private val Context.voltraCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(
+internal val Context.voltraCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "voltra_widget_credentials",
 )
 
