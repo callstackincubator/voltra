@@ -204,6 +204,66 @@ test('renders LazyVerticalGrid adaptive columns as compact grid cell config', ()
   )
 })
 
+test('renders ArcProgressIndicator with its children and JSON-encoded gradient colors', () => {
+  assert.deepEqual(
+    renderAndroidViewToJson(
+      React.createElement(
+        VoltraAndroid.ArcProgressIndicator,
+        {
+          progress: 0.75,
+          color: '#22C55E',
+          trackColor: '#1F2937',
+          strokeWidth: 12,
+          startAngle: 135,
+          sweepAngle: 270,
+          lineCap: 'round',
+          gradientColors: ['#22C55E', '#3B82F6'],
+        },
+        React.createElement(VoltraAndroid.Text, null, '75%')
+      )
+    ),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidArcProgressIndicator'),
+          c: {
+            t: getAndroidComponentId('AndroidText'),
+            c: '75%',
+          },
+          p: {
+            prg: 0.75,
+            c: '#22C55E',
+            trc: '#1F2937',
+            sw: 12,
+            sa: 135,
+            swa: 270,
+            lc: 'round',
+            gc: JSON.stringify(['#22C55E', '#3B82F6']),
+          },
+        },
+      },
+    }
+  )
+})
+
+test('omits gradientColors from the ArcProgressIndicator payload when it is not provided', () => {
+  assert.deepEqual(
+    renderAndroidViewToJson(React.createElement(VoltraAndroid.ArcProgressIndicator, { progress: 0.5 })),
+    {
+      v: 1,
+      variants: {
+        content: {
+          t: getAndroidComponentId('AndroidArcProgressIndicator'),
+          p: {
+            prg: 0.5,
+          },
+        },
+      },
+    }
+  )
+})
+
 test('renders Android live update roots and metadata into the expected fields', () => {
   const liveUpdate = {
     collapsed: React.createElement(VoltraAndroid.Text, null, 'Collapsed'),

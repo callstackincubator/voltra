@@ -31,6 +31,13 @@ const AVAILABLE_WIDGETS = [
     defaultPreviewHeight: 150,
   },
   {
+    id: 'arc_progress',
+    name: 'Arc Progress Widget',
+    description: 'Battery gauge and a row of activity gauges drawn with ArcProgressIndicator',
+    defaultPreviewWidth: 250,
+    defaultPreviewHeight: 250,
+  },
+  {
     id: DYNAMIC_WIDGET_ID,
     name: 'Dynamic Widget Demo',
     description: 'On-device JSX render (Hermes) with runtime props and live env',

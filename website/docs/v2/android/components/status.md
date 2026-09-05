@@ -25,3 +25,55 @@ A circular progress indicator.
 :::warning Indeterminate Only
 Due to Jetpack Compose Glance limitations, the `CircularProgressIndicator` on Android renders in **indeterminate** mode.
 :::
+
+---
+
+### ArcProgressIndicator
+
+A determinate arc gauge: a partial ring whose stroke fills clockwise, with rounded ends and a gap
+at the bottom by default. Children are centered on top of the arc, so a label, an icon, or nothing
+goes in the middle.
+
+**Parameters:**
+
+- `progress` (number, optional): Fill fraction, clamped to 0.0–1.0. Defaults to `0`.
+- `color` (string, optional): Stroke color of the filled arc. Defaults to the widget theme's progress color.
+- `trackColor` (string, optional): Stroke color of the unfilled arc. Defaults to the widget theme's track color; use `transparent` to hide the track.
+- `strokeWidth` (number, optional): Stroke width in dp of both arcs. Defaults to `8`.
+- `startAngle` (number, optional): Angle in degrees where the arc begins. `0` is 3 o'clock and positive is clockwise. Defaults to `135`.
+- `sweepAngle` (number, optional): Total angular length of the track in degrees. `360` makes a closed ring. Defaults to `270`.
+- `lineCap` (`'round' | 'butt'`, optional): End shape of both arcs. Defaults to `'round'`.
+- `gradientColors` (string[], optional): Sweep gradient spread across the track, starting at `startAngle`. Overrides `color`. Needs at least two colors; a single color is drawn as a solid stroke, and the gradient is ignored if any color fails to parse.
+
+```tsx
+<VoltraAndroid.ArcProgressIndicator
+  progress={0.75}
+  color="#22C55E"
+  trackColor="#1F2937"
+  strokeWidth={14}
+  style={{ width: 140, height: 140 }}
+>
+  <VoltraAndroid.Text style={{ fontSize: 28, fontWeight: 'bold' }}>75%</VoltraAndroid.Text>
+</VoltraAndroid.ArcProgressIndicator>
+```
+
+Unlike the other two indicators, this one works on every supported Android version, because it is
+drawn as a bitmap rather than composed from a Glance progress primitive.
+
+Give the component a width and a height. When you leave an axis unsized it falls back to 64 dp,
+which is rarely what you want, and when you give it a `flex` weight the parent controls both axes,
+so size the arc through the parent instead. Because the arc occupies one of the ten child slots a
+Glance `Box` allows, you can nest at most nine elements inside it.
+
+:::warning Bitmap Memory
+The arc is a bitmap, so it costs memory that grows with the square of its pixel size. Voltra sizes
+it from the smaller of the component's width and height, multiplies by the display density clamped
+to 1–3.5, and caps each edge at 512 px, so one gauge costs at most 1 MiB and a typical one around a
+quarter of that. Identical gauges share a single bitmap, so a fixed-size gauge costs its bytes once
+per widget no matter how many responsive size variants it appears in; a gauge sized with `'100%'`
+resolves to a different bitmap per variant. The system caps the bitmaps of one widget instance at
+roughly 1.5 screens' worth of pixels, so very large or very many arcs in a single widget remain
+your responsibility.
+:::
+
+The indicator does not animate. Changing `progress` redraws it.
