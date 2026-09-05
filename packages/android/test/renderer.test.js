@@ -269,3 +269,29 @@ test('fails loudly for unknown Android component names', () => {
     }
   )
 })
+
+test('encodes pinned chart bounds for the native renderer', () => {
+  const chart = React.createElement(
+    VoltraAndroid.Chart,
+    { yScale: { min: 0, max: 100 } },
+    React.createElement(VoltraAndroid.LineMark, { data: [{ x: 'a', y: 1 }] })
+  )
+
+  assert.equal(renderAndroidViewToJson(chart).variants.content.p.ysc, '{"mn":0,"mx":100}')
+})
+
+test('omits chart bounds the caller left open', () => {
+  const lowerOnly = React.createElement(
+    VoltraAndroid.Chart,
+    { yScale: { min: 0 } },
+    React.createElement(VoltraAndroid.LineMark, { data: [{ x: 'a', y: 1 }] })
+  )
+  const empty = React.createElement(
+    VoltraAndroid.Chart,
+    { yScale: {} },
+    React.createElement(VoltraAndroid.LineMark, { data: [{ x: 'a', y: 1 }] })
+  )
+
+  assert.equal(renderAndroidViewToJson(lowerOnly).variants.content.p.ysc, '{"mn":0}')
+  assert.equal(renderAndroidViewToJson(empty).variants.content.p.ysc, undefined)
+})

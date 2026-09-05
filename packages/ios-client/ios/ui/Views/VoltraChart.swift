@@ -161,6 +161,103 @@ public struct VoltraChart: VoltraView {
     }
   }
 
+  // MARK: - Y scale
+
+  /// Y-axis bounds pinned by the `yScale` prop; either side may be left to the data.
+  private struct YScale {
+    let min: Double?
+    let max: Double?
+  }
+
+  private func parseYScale(from raw: String?) -> YScale? {
+    guard let raw,
+          let data = raw.data(using: .utf8),
+          let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else { return nil }
+
+    let props = dict.compactMapValues { jsonValue(from: $0) }
+    let min = (props["mn"] ?? props["min"]).flatMap(num)
+    let max = (props["mx"] ?? props["max"]).flatMap(num)
+    if min == nil, max == nil {
+      return nil
+    }
+    return YScale(min: min, max: max)
+  }
+
+  /// Domain to hand SwiftUI when `yScale` pins a bound. The open side follows the data exactly as
+  /// `computeYDomain` in Android's ChartBitmapRenderer.kt frames it, so both platforms agree.
+  private func yScaleDomain(_ marks: [WireMark], pinned: YScale) -> ClosedRange<Double> {
+    let auto = autoYDomain(marks)
+    var lower = pinned.min ?? auto.lowerBound
+    var upper = pinned.max ?? auto.upperBound
+
+    if upper <= lower {
+      // A pin that inverts the domain still has to leave something to draw in: keep the span the
+      // data asked for on the side the caller left open, and ignore a pair that cannot be drawn.
+      let span = auto.upperBound - auto.lowerBound
+      if pinned.max == nil {
+        upper = lower + span
+      } else if pinned.min == nil {
+        lower = upper - span
+      } else {
+        return auto
+      }
+      if upper <= lower {
+        upper = lower + 1
+      }
+    }
+
+    return lower ... upper
+  }
+
+  private func autoYDomain(_ marks: [WireMark]) -> ClosedRange<Double> {
+    var values = marks.flatMap { mark -> [Double] in
+      guard mark.type != "sector" else { return [] }
+      return (mark.data ?? []).map { xy($0).y }
+    }
+    values += marks.compactMap { $0.type == "rule" ? $0.props["yv"].flatMap(num) : nil }
+
+    let finite = values.filter(\.isFinite)
+    guard let dataMin = finite.min(), let dataMax = finite.max() else { return 0 ... 1 }
+
+    // Bars and areas measure their value against the baseline, so zero stays in range.
+    if marks.contains(where: { $0.type == "bar" || $0.type == "area" }) {
+      let lower = Swift.min(dataMin, 0)
+      let upper = Swift.max(dataMax, 0)
+      return upper > lower ? lower ... upper : lower ... (lower + 1)
+    }
+
+    guard dataMax > dataMin else {
+      let padding = dataMin == 0 ? 1 : abs(dataMin) * Self.yDomainPaddingRatio
+      return (dataMin - padding) ... (dataMax + padding)
+    }
+
+    let padding = (dataMax - dataMin) * Self.yDomainPaddingRatio
+    var lower = dataMin - padding
+    var upper = dataMax + padding
+
+    // Padding must not invent values on the other side of the baseline, and data that almost
+    // reaches zero keeps it in view.
+    if dataMin >= 0, lower < 0 {
+      lower = 0
+    }
+    if dataMax <= 0, upper > 0 {
+      upper = 0
+    }
+    let span = upper - lower
+    if lower > 0, lower < span * Self.zeroSnapRatio {
+      lower = 0
+    }
+    if upper < 0, -upper < span * Self.zeroSnapRatio {
+      upper = 0
+    }
+
+    return lower ... upper
+  }
+
+  private static let yDomainPaddingRatio = 0.1
+  private static let zeroSnapRatio = 0.25
+
   // MARK: - body
 
   public var body: some View {
@@ -171,10 +268,12 @@ public struct VoltraChart: VoltraView {
     let yAxisGridStyle = parseAxisGridStyle(from: params.yAxisGridStyle)
     let legendVis = visibility(params.legendVisibility)
     let legendItems = parseLegendItems(from: params.foregroundStyleScale)
+    let yDomain = parseYScale(from: params.yScale).map { yScaleDomain(wireMarks, pinned: $0) }
 
     Chart {
       buildAll(wireMarks)
     }
+    .applyChartYScale(domain: yDomain)
     .applyForegroundStyleScale(params.foregroundStyleScale)
     .applyChartStyle(
       element.style,
@@ -731,6 +830,15 @@ private extension View {
         .applyChartYAxis(visibility: yAxisVisibility, labelColor: nil, gridStyle: yAxisGridStyle)
         .applyChartLegend(visibility: legendVisibility, labelColor: nil, items: legendItems)
         .applyChartInsets(xAxisVisibility: xAxisVisibility, yAxisVisibility: yAxisVisibility)
+    }
+  }
+
+  @ViewBuilder
+  func applyChartYScale(domain: ClosedRange<Double>?) -> some View {
+    if let domain {
+      chartYScale(domain: domain)
+    } else {
+      self
     }
   }
 

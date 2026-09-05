@@ -22,6 +22,7 @@ Use this reference for Voltra chart UI, chart docs, or chart API questions.
   - `yAxisGridStyle`
   - `legendVisibility`
   - `foregroundStyleScale`
+  - `yScale` with `min` and `max`, either optional
 - `BarMark` supports grouped bars with `stacking="grouped"`.
 - `LineMark` and `AreaMark` support interpolation.
 - `LineMark` and `PointMark` support symbols.
@@ -37,12 +38,14 @@ Use this reference for Voltra chart UI, chart docs, or chart API questions.
   - `xAxisGridStyle` with visibility-only behavior
   - `yAxisGridStyle` with visibility-only behavior
   - `foregroundStyleScale`
+  - `yScale` with `min` and `max`, either optional
 - Do not document `legendVisibility` as supported on Android charts.
 - `LineMark` and `AreaMark` support interpolation.
 - `PointMark` renders circular markers on Android.
 - `SectorMark` supports ratio-based radii and fixed radii values greater than `1`.
 - Grouped bars are supported with `stacking="grouped"`. Do not claim other stacking modes unless the renderer supports them.
 - The y-axis scales to the data range for `LineMark` and `PointMark`, and keeps zero for `BarMark` and `AreaMark`. `RuleMark` values are part of the range.
+- `yScale` pins either bound of the y-axis on both platforms and wins over those defaults; the side left open still follows the data.
 
 ## Verification Targets
 

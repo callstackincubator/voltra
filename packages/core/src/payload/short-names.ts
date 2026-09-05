@@ -180,6 +180,7 @@ export const NAME_TO_SHORT: Record<string, string> = {
   xAxisVisibility: 'xav',
   yAxisGridStyle: 'ygs',
   yAxisVisibility: 'yav',
+  yScale: 'ysc',
   zIndex: 'zi',
 }
 
@@ -359,6 +360,7 @@ export const SHORT_TO_NAME: Record<string, string> = {
   xav: 'xAxisVisibility',
   ygs: 'yAxisGridStyle',
   yav: 'yAxisVisibility',
+  ysc: 'yScale',
   zi: 'zIndex',
 }
 

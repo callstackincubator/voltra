@@ -57,6 +57,22 @@ data class SectorPoint(
     val category: String,
 )
 
+/** Y-axis bounds pinned by the `yScale` prop; either side may be left to the data. */
+data class YScaleOverride(
+    val min: Double? = null,
+    val max: Double? = null,
+)
+
+/** Parses the `yScale` prop, encoded as `{"mn": 0, "mx": 1}` with both keys optional. */
+fun parseYScale(json: String?): YScaleOverride? {
+    if (json.isNullOrEmpty()) return null
+    val map = parseRendererJsonObject(json, "yScale") ?: return null
+    val min = (map["mn"] ?: map["min"]) as? Number
+    val max = (map["mx"] ?: map["max"]) as? Number
+    if (min == null && max == null) return null
+    return YScaleOverride(min?.toDouble(), max?.toDouble())
+}
+
 fun parseMarksJson(marksJson: String): List<WireMark> {
     return parseMarksTuples(marksJson).mapNotNull { row ->
         if (row.size < 3) return@mapNotNull null
@@ -131,14 +147,42 @@ internal data class YDomain(
 )
 
 /**
- * Resolves the vertical domain of a plot.
+ * Resolves the vertical domain of a plot. Bounds [pinned] by the `yScale` prop win; whichever side
+ * is left open follows the data.
+ */
+internal fun computeYDomain(
+    values: List<Double>,
+    anchoredAtZero: Boolean,
+    pinned: YScaleOverride? = null,
+): YDomain {
+    val auto = autoYDomain(values, anchoredAtZero)
+    if (pinned == null) return auto
+
+    var min = pinned.min ?: auto.min
+    var max = pinned.max ?: auto.max
+    if (max <= min) {
+        // A pin that inverts the domain still has to leave something to draw in: keep the span the
+        // data asked for on the side the caller left open, and ignore a pair that cannot be drawn.
+        val span = auto.max - auto.min
+        when {
+            pinned.max == null -> max = min + span
+            pinned.min == null -> min = max - span
+            else -> return auto
+        }
+        if (max <= min) max = min + 1.0
+    }
+    return YDomain(min, max)
+}
+
+/**
+ * Domain for a plot with no pinned bounds.
  *
  * Marks that are [anchoredAtZero] - bars and areas - encode their value as the distance from the
  * baseline, so zero always stays in range. Lines and points frame the data itself instead, with a
  * margin around it, which is what lets a series varying only in its fifth decimal place fill the
  * plot rather than collapse into a flat line at the top.
  */
-internal fun computeYDomain(
+private fun autoYDomain(
     values: List<Double>,
     anchoredAtZero: Boolean,
 ): YDomain {
@@ -230,6 +274,7 @@ fun renderChartBitmap(
     xAxisGridVisible: Boolean = true,
     yAxisGridVisible: Boolean = true,
     dpScale: Float = 1f,
+    yScale: YScaleOverride? = null,
 ): Bitmap {
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
@@ -272,7 +317,7 @@ fun renderChartBitmap(
     val ruleYValues =
         marks.mapNotNull { if (it.type == "rule") (it.props["yv"] as? Number)?.toDouble() else null }
     val anchoredAtZero = marks.any { it.type == "bar" || it.type == "area" }
-    val (yMin, yMax) = computeYDomain(allPoints.map { it.y } + ruleYValues, anchoredAtZero)
+    val (yMin, yMax) = computeYDomain(allPoints.map { it.y } + ruleYValues, anchoredAtZero, yScale)
 
     val labelPaint =
         Paint().apply {
@@ -367,6 +412,12 @@ fun renderChartBitmap(
         }
     }
 
+    // A pinned axis can leave data outside the plot, so keep the marks inside it.
+    if (yScale != null) {
+        canvas.save()
+        canvas.clipRect(chartLeft, chartTop, chartRight, chartBottom)
+    }
+
     for (m in marks) {
         val points = extractChartPoints(m.data)
         val color = wireColor(m.props)
@@ -448,6 +499,10 @@ fun renderChartBitmap(
                 )
             }
         }
+    }
+
+    if (yScale != null) {
+        canvas.restore()
     }
 
     return bitmap

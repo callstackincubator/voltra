@@ -15,6 +15,8 @@ export type ChartProps = VoltraBaseProps & {
   yAxisVisibility?: 'automatic' | 'visible' | 'hidden'
   /** Configure y-axis grid line style */
   yAxisGridStyle?: Record<string, any>
+  /** Pin the y-axis lower and/or upper bound */
+  yScale?: Record<string, any>
   /** Show or hide the chart legend */
   legendVisibility?: 'automatic' | 'visible' | 'hidden'
   /** Map of series name to color string */

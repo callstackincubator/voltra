@@ -2,6 +2,7 @@ package voltra.glance.renderers
 
 import android.graphics.Bitmap
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -81,6 +82,95 @@ class ChartBitmapRendererTest {
 
         assertEquals(0.0, domain.min, 0.0)
         assertEquals(1.0, domain.max, 0.0)
+    }
+
+    // MARK: - Pinned bounds
+
+    @Test
+    fun pinsTheBoundsTheCallerAsksFor() {
+        val values = currency.map { it[1] as Double }
+
+        assertEquals(0.0, computeYDomain(values, anchoredAtZero = false, pinned = YScaleOverride(min = 0.0)).min, 0.0)
+        assertEquals(
+            0.001,
+            computeYDomain(values, anchoredAtZero = false, pinned = YScaleOverride(max = 0.001)).max,
+            0.0,
+        )
+
+        val both = computeYDomain(values, anchoredAtZero = false, pinned = YScaleOverride(0.0005, 0.0006))
+        assertEquals(0.0005, both.min, 0.0)
+        assertEquals(0.0006, both.max, 0.0)
+    }
+
+    @Test
+    fun leavesTheOpenSideToTheData() {
+        val values = currency.map { it[1] as Double }
+        val auto = computeYDomain(values, anchoredAtZero = false)
+
+        val pinned = computeYDomain(values, anchoredAtZero = false, pinned = YScaleOverride(min = 0.0))
+
+        assertEquals(auto.max, pinned.max, 0.0)
+    }
+
+    @Test
+    fun pinnedBoundsBeatTheZeroAnchor() {
+        val values = currency.map { it[1] as Double }
+
+        val domain = computeYDomain(values, anchoredAtZero = true, pinned = YScaleOverride(min = 0.0005))
+
+        assertEquals(0.0005, domain.min, 0.0)
+    }
+
+    @Test
+    fun keepsARangeToDrawInWhenAPinExcludesTheData() {
+        val values = currency.map { it[1] as Double }
+
+        val above = computeYDomain(values, anchoredAtZero = false, pinned = YScaleOverride(min = 0.001))
+        assertTrue("domain $above", above.max > above.min)
+
+        val below = computeYDomain(values, anchoredAtZero = false, pinned = YScaleOverride(max = 0.0001))
+        assertTrue("domain $below", below.max > below.min)
+    }
+
+    @Test
+    fun ignoresAnInvertedPin() {
+        val values = listOf(1.0, 5.0)
+
+        val domain = computeYDomain(values, anchoredAtZero = false, pinned = YScaleOverride(10.0, 2.0))
+
+        assertEquals(computeYDomain(values, anchoredAtZero = false), domain)
+    }
+
+    @Test
+    fun parsesThePinnedBoundsProp() {
+        assertEquals(YScaleOverride(0.0, 1.0), parseYScale("""{"mn":0,"mx":1}"""))
+        assertEquals(YScaleOverride(min = 0.5), parseYScale("""{"min":0.5}"""))
+        assertNull(parseYScale("""{}"""))
+        assertNull(parseYScale("not json"))
+        assertNull(parseYScale(null))
+    }
+
+    @Test
+    fun keepsPinnedChartsInsideThePlot() {
+        val overshooting =
+            listOf(
+                listOf<Any>("a", 2.0),
+                listOf<Any>("b", 6.0),
+                listOf<Any>("c", 10.5),
+            )
+
+        val bitmap =
+            renderChartBitmap(
+                marks = listOf(WireMark("point", overshooting, emptyMap())),
+                width = 400,
+                height = 240,
+                yScale = YScaleOverride(0.0, 10.0),
+            )
+
+        val rows = rowsWithSeriesColor(bitmap)
+        assertTrue("points inside the domain were drawn", rows.isNotEmpty())
+        // The plot starts 12px below the top edge; the 10.5 point must not spill above it.
+        assertTrue("rows $rows stay inside the plot", rows.first() >= 12)
     }
 
     // MARK: - Axis labels

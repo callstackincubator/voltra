@@ -167,6 +167,7 @@
     "xAxisVisibility": "xav",
     "yAxisGridStyle": "ygs",
     "yAxisVisibility": "yav",
+    "yScale": "ysc",
     "colorFilter": "cf",
     "thumbCheckedColor": "thc",
     "thumbUncheckedColor": "thu",
@@ -1416,6 +1417,12 @@
           "jsonEncoded": true,
           "description": "Configure y-axis grid line style"
         },
+        "yScale": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Pin the y-axis lower and/or upper bound"
+        },
         "legendVisibility": {
           "type": "string",
           "optional": true,
@@ -1454,6 +1461,12 @@
           "optional": true,
           "enum": ["automatic", "visible", "hidden"],
           "description": "Show or hide the y-axis"
+        },
+        "yScale": {
+          "type": "object",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Pin the y-axis lower and/or upper bound"
         },
         "legendVisibility": {
           "type": "string",

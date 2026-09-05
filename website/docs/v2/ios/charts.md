@@ -256,6 +256,23 @@ The `<Voltra.Chart>` container accepts these props in addition to the standard V
 | `yAxisGridStyle` | `{ visible?: boolean; color?: string; lineWidth?: number; dash?: number[] }` | Control y-axis grid lines |
 | `legendVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the legend |
 | `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
+| `yScale` | `{ min?: number; max?: number }` | Pin the y-axis lower and/or upper bound |
+
+## Value Range
+
+By default the y-axis follows the data. Use `yScale` when a chart needs a fixed window instead — a
+percentage that should always read against 100, or a series whose swings you want to keep
+comparable between updates:
+
+```tsx
+<Voltra.Chart yScale={{ min: 0, max: 100 }}>
+  <Voltra.LineMark data={completionRate} color="#4285f4" />
+</Voltra.Chart>
+```
+
+Either bound can stand alone. `yScale={{ min: 0 }}` keeps the baseline at zero and lets the top
+follow the data, which is the usual way to stop a line chart from exaggerating small changes.
+Values outside the pinned range are clipped to the plot.
 
 ## Grid Lines
 
