@@ -11,6 +11,8 @@ export type AndroidChartProps = VoltraBaseProps & {
   xAxisVisibility?: 'automatic' | 'visible' | 'hidden'
   /** Show or hide the y-axis */
   yAxisVisibility?: 'automatic' | 'visible' | 'hidden'
+  /** Pin the y-axis lower and/or upper bound */
+  yScale?: Record<string, any>
   /** Show or hide the chart legend */
   legendVisibility?: 'automatic' | 'visible' | 'hidden'
   /** Map of series name to color string */

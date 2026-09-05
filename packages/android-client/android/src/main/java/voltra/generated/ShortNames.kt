@@ -187,6 +187,7 @@ object ShortNames {
             "xav" to "xAxisVisibility",
             "ygs" to "yAxisGridStyle",
             "yav" to "yAxisVisibility",
+            "ysc" to "yScale",
             "zi" to "zIndex",
         )
 

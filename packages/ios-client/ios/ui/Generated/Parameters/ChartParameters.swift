@@ -25,6 +25,9 @@ public struct ChartParameters: ComponentParameters {
   /// Configure y-axis grid line style
   public let yAxisGridStyle: String?
 
+  /// Pin the y-axis lower and/or upper bound
+  public let yScale: String?
+
   /// Show or hide the chart legend
   public let legendVisibility: String?
 

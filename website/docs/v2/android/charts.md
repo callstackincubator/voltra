@@ -221,6 +221,7 @@ The `<VoltraAndroid.Chart>` container accepts these props in addition to the sta
 | `yAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the y-axis |
 | `yAxisGridStyle` | `{ visible?: boolean }` | Show or hide y-axis grid lines |
 | `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
+| `yScale` | `{ min?: number; max?: number }` | Pin the y-axis lower and/or upper bound |
 
 ## Multi-Series Charts
 
@@ -267,6 +268,26 @@ Mix mark types when one chart needs both context and emphasis, such as bars for 
   <VoltraAndroid.RuleMark yValue={averageValue} color="#fbbc04" lineWidth={1} />
 </VoltraAndroid.Chart>
 ```
+
+## Value Range
+
+The y-axis frames the values a chart is given:
+
+- `LineMark` and `PointMark` scale to the data range, so a series that varies within a narrow band — exchange rates, ratios, temperatures — fills the plot instead of flattening against the top edge. Axis labels carry as many decimals as the distance between ticks needs.
+- `BarMark` and `AreaMark` keep zero on the axis, because their height is read against the baseline.
+- `RuleMark` values count as part of the range, so a reference line always stays in view.
+
+Data that nearly reaches zero keeps zero on the axis either way, so a series sitting just above the baseline is not exaggerated.
+
+Use `yScale` when a chart needs a fixed window rather than one that follows the data:
+
+```tsx
+<VoltraAndroid.Chart style={{ width: '100%', height: '100%' }} yScale={{ min: 0, max: 100 }}>
+  <VoltraAndroid.LineMark data={completionRate} color="#4285f4" />
+</VoltraAndroid.Chart>
+```
+
+Either bound can stand alone: `yScale={{ min: 0 }}` keeps the baseline at zero and lets the top follow the data. A pinned bound wins over the rules above, including the zero baseline bars and areas otherwise keep, and values outside the pinned range are clipped to the plot.
 
 ## Sizing
 
