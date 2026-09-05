@@ -155,7 +155,7 @@ jobs:
           git push --no-verify "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
 
       - name: Publish missing packages
-        run: pnpm run release -- --no-git-tag
+        run: pnpm exec changeset publish --no-git-tag
 
       - name: Create and push release tag
         env:
