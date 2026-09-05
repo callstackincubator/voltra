@@ -44,6 +44,15 @@ let package = Package(
         "DynamicWidgetUpdater.swift",
         "ServerWidgetContentResolver.swift",
         "ServerWidgetResponseStore.swift",
+        // The settings stack's pure half. The Keychain-, Bundle- and URLSession-backed files in
+        // this folder are compiled only by the podspec, which ships the whole tree.
+        "WidgetServer/WidgetScope.swift",
+        "WidgetServer/WidgetServerUpdateSettings.swift",
+        "WidgetServer/WidgetServerSettingsResolver.swift",
+        "WidgetServer/WidgetServerSettingsCodec.swift",
+        "WidgetServer/WidgetServerSettingsValidator.swift",
+        "WidgetServer/WidgetServerRequestBuilder.swift",
+        "VoltraLogger.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityTypes.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityPayloadValidator.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityRenderFailureQueue.swift",
