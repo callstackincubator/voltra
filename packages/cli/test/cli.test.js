@@ -710,7 +710,7 @@ test('generateIOSFiles writes Dynamic Widget manifest and AppIntent Swift scaffo
   assert.ok(result.files.includes('.voltra/manifest.ios.json'))
 })
 
-test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and config defaults', async () => {
+test('generateAndroidFiles writes Dynamic Widget manifest, receivers, and generated defaults', async () => {
   const { generateAndroidFiles } = loadCliModule()
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
   const appModuleRoot = path.join(tempDir, 'android', 'app')
@@ -786,6 +786,19 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
             parameters: [{ name: 'label', title: 'Label', default: 'Hello' }],
           },
         },
+        {
+          id: 'portfolio',
+          displayName: 'Portfolio',
+          description: 'Client rendered from fetched props',
+          targetCellWidth: 2,
+          targetCellHeight: 2,
+          entry: 'widgets/dynamic.js',
+          serverUpdate: {
+            url: 'https://example.com/portfolio',
+            intervalMinutes: 15,
+            refresh: false,
+          },
+        },
       ],
     },
     discovery: {
@@ -802,7 +815,10 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
   assert.deepEqual(manifest, {
     version: 1,
     platform: 'android',
-    widgets: [{ id: 'dynamic', entry: 'widgets/dynamic.js' }],
+    widgets: [
+      { id: 'dynamic', entry: 'widgets/dynamic.js' },
+      { id: 'portfolio', entry: 'widgets/dynamic.js' },
+    ],
   })
 
   const dynamicReceiver = fs.readFileSync(
@@ -826,6 +842,30 @@ test('generateAndroidFiles writes Dynamic Widget manifest, client receiver, and 
   assert.match(serverReceiver, /^import voltra\.widget\.payload\.VoltraPayloadWidgetReceiver$/m)
   assert.match(serverReceiver, /^import voltra\.widget\.payload\.VoltraWidgetUpdateScheduler$/m)
   assert.match(serverReceiver, /^class VoltraWidget_serverReceiver : VoltraPayloadWidgetReceiver\(\) \{$/m)
+  // The url and the interval are resolved at runtime now, so they must not be baked into the class.
+  assert.doesNotMatch(serverReceiver, /https:\/\/example\.com\/widget/)
+  assert.doesNotMatch(serverReceiver, /intervalMinutes/)
+
+  const serverDrivenDynamicReceiver = fs.readFileSync(
+    path.join(resourceRoot, 'java', 'com', 'example', 'app', 'widget', 'VoltraWidget_portfolioReceiver.kt'),
+    'utf8'
+  )
+  assert.match(
+    serverDrivenDynamicReceiver,
+    /^import voltra\.dynamicwidget\.serverupdate\.VoltraServerDrivenClientWidgetReceiver$/m
+  )
+  assert.match(
+    serverDrivenDynamicReceiver,
+    /^class VoltraWidget_portfolioReceiver : VoltraServerDrivenClientWidgetReceiver\(\) \{$/m
+  )
+
+  const serverDefaults = JSON.parse(
+    fs.readFileSync(path.join(resourceRoot, 'assets', 'voltra', 'widget_server_defaults.json'), 'utf8')
+  )
+  assert.deepEqual(serverDefaults, {
+    server: { url: 'https://example.com/widget', intervalMinutes: 30, refresh: true },
+    portfolio: { url: 'https://example.com/portfolio', intervalMinutes: 15, refresh: false },
+  })
 
   const defaults = JSON.parse(
     fs.readFileSync(path.join(resourceRoot, 'assets', 'voltra', 'widget_config_defaults.json'), 'utf8')

@@ -47,14 +47,37 @@ export async function generateWidgetReceivers(props: GenerateKotlinFilesProps): 
 
 /**
  * Generates Kotlin code for a single widget receiver class.
- * If the widget has serverUpdate configured, includes WorkManager scheduling.
+ *
+ * `entry` picks the render engine and `serverUpdate` picks where the data comes from, so the two
+ * keys together select one of four base classes. Runtime code never asks "is this server-driven?" —
+ * the answer is baked in here, once, at generate time.
  */
 function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName: string): string {
   const className = `VoltraWidget_${widget.id}Receiver`
   const labelForComment = widgetLabelEnglish(widget.displayName)
 
-  // Dynamic Widgets host VoltraClientGlanceWidget (on-device JS render) and have no
-  // server payload, so they never schedule WorkManager server updates.
+  // A widget with an entry and a serverUpdate renders bundled JS from props fetched in the
+  // background. The scheduling lives in the base class, so the generated receiver stays a name
+  // and an id — the URL and the interval come from widget_server_defaults.json at runtime, where
+  // setWidgetServerUpdate can override them.
+  if (widget.clientRendered && widget.serverUpdate) {
+    return dedent`
+      package ${packageName}.widget
+
+      import voltra.dynamicwidget.serverupdate.VoltraServerDrivenClientWidgetReceiver
+
+      /**
+       * Auto-generated server-driven Dynamic Widget receiver for ${labelForComment}
+       * Widget ID: ${widget.id}
+       */
+      class ${className} : VoltraServerDrivenClientWidgetReceiver() {
+          override val widgetId: String = "${widget.id}"
+      }
+    `
+  }
+
+  // Dynamic Widgets without a serverUpdate host VoltraClientGlanceWidget (on-device JS render)
+  // and are driven entirely by the app, so they never schedule background work.
   if (widget.clientRendered) {
     return dedent`
       package ${packageName}.widget
@@ -72,21 +95,23 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
   }
 
   if (widget.serverUpdate) {
-    const refreshEnabled = widget.serverUpdate.refresh === true
-    // Widget with server-driven updates: schedule WorkManager periodic task
+    // Payload widget with server-driven updates: schedule WorkManager periodic work. The URL and
+    // the interval are resolved from widget_server_defaults.json plus any runtime overrides, so
+    // they are deliberately not inlined here.
     return dedent`
       package ${packageName}.widget
 
       import android.appwidget.AppWidgetManager
       import android.content.Context
+      import kotlinx.coroutines.CoroutineScope
+      import kotlinx.coroutines.Dispatchers
+      import kotlinx.coroutines.launch
       import voltra.widget.payload.VoltraPayloadWidgetReceiver
       import voltra.widget.payload.VoltraWidgetUpdateScheduler
 
       /**
        * Auto-generated widget receiver for ${labelForComment}
        * Widget ID: ${widget.id}
-       * Server Update: ${widget.serverUpdate.url} (every ${widget.serverUpdate.intervalMinutes ?? 15} minutes)
-       * Refresh Button: ${refreshEnabled}
        */
       class ${className} : VoltraPayloadWidgetReceiver() {
           override val widgetId: String = "${widget.id}"
@@ -94,14 +119,10 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
           override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
               super.onUpdate(context, appWidgetManager, appWidgetIds)
 
-              // Schedule periodic server updates via WorkManager
-              VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(
-                  context = context,
-                  widgetId = "${widget.id}",
-                  serverUrl = "${widget.serverUpdate.url}",
-                  intervalMinutes = ${widget.serverUpdate.intervalMinutes ?? 15}L,
-                  refreshEnabled = ${refreshEnabled}
-              )
+              val applicationContext = context.applicationContext
+              CoroutineScope(Dispatchers.Default).launch {
+                  VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(applicationContext, "${widget.id}")
+              }
           }
 
           override fun onDeleted(context: Context, appWidgetIds: IntArray) {

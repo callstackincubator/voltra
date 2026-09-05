@@ -21,8 +21,20 @@ import org.json.JSONObject
  * `serverUpdate` without one, meaning the app supplies it at runtime.
  */
 class WidgetServerDefaultsStore(
-    private val context: Context,
+    private val readAsset: () -> String?,
 ) {
+    constructor(context: Context) : this({
+        try {
+            context.assets
+                .open(ASSET_PATH)
+                .bufferedReader()
+                .use { it.readText() }
+        } catch (_: Exception) {
+            // No server-driven widgets in this app: the generator writes no asset at all.
+            null
+        }
+    })
+
     @Volatile
     private var cached: Map<String, Defaults>? = null
 
@@ -51,16 +63,7 @@ class WidgetServerDefaultsStore(
     }
 
     private fun read(): Map<String, Defaults> {
-        val raw =
-            try {
-                context.assets
-                    .open(ASSET_PATH)
-                    .bufferedReader()
-                    .use { it.readText() }
-            } catch (_: Exception) {
-                // No server-driven widgets in this app: the generator writes no asset at all.
-                return emptyMap()
-            }
+        val raw = readAsset() ?: return emptyMap()
 
         return try {
             val json = JSONObject(raw)
