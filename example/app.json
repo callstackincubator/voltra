@@ -235,6 +235,20 @@
               }
             },
             {
+              "id": "arc_progress",
+              "displayName": {
+                "en": "Arc Progress Widget"
+              },
+              "description": {
+                "en": "Battery gauge and a row of activity gauges drawn with ArcProgressIndicator"
+              },
+              "targetCellWidth": 3,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-arc-progress-initial.tsx"
+            },
+            {
               "id": "AndroidClientDemoWidget",
               "entry": "./widgets/android/AndroidClientDemoWidget.tsx",
               "displayName": {

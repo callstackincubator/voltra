@@ -1,6 +1,8 @@
 # ADR 0002: Bitmap-rendered arc progress indicator for Android widgets
 
-Status: Accepted — not yet implemented
+Status: Accepted
+
+Implemented by #268.
 
 Resolves [#204](https://github.com/callstackincubator/voltra/issues/204).
 
