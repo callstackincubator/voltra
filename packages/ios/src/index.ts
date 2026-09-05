@@ -36,6 +36,9 @@ export type {
   VoltraNodeJson,
   VoltraPropValue,
   WidgetServerCredentials,
+  WidgetServerUpdateBody,
+  WidgetServerUpdateOptions,
+  WidgetServerUpdateSettings,
 } from './types.js'
 export { renderWidgetToJson, renderWidgetToString } from './widgets/renderer.js'
 export type { ScheduledWidgetEntry, WidgetFamily, WidgetInfo, WidgetVariants } from './widgets/types.js'

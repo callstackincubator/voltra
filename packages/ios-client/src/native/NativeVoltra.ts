@@ -123,6 +123,9 @@ export interface Spec extends TurboModule {
   clearWidget(widgetId: string): Promise<void>
   clearAllWidgets(): Promise<void>
   getActiveWidgets<T = unknown>(): Promise<T[]>
+  /** Settings are passed as JSON so an arbitrary `body` survives the bridge unchanged. */
+  setWidgetServerUpdate(settingsJson: string, widgetId?: string | null): Promise<void>
+  clearWidgetServerUpdate(widgetId?: string | null): Promise<void>
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
 }

@@ -301,6 +301,12 @@ function iosWidgetGalleryLabelSwiftExpr(
  *  - Dynamic Widget → `VoltraClientWidgetProvider` + `VoltraClientWidgetContentView`
  *    (the content view internally renders via VoltraHomeWidgetView so the UI layer is
  *    identical to the fallback state path — see VoltraClientWidgetRuntime.swift)
+ *  - Dynamic Widget with a `serverUpdate` → `VoltraDynamicWidgetServerUpdateProvider`, which wraps
+ *    the one above and adds the fetch, the commit and the schedule
+ *
+ * `entry` picks the render engine and `serverUpdate` picks where the data comes from, so the two
+ * keys together select one of four providers. Runtime code never asks "is this server-driven?" —
+ * the answer is baked in here, once, at generate time.
  */
 function widgetUsesAppIntent(widget: DetectedIOSWidget): boolean {
   return widget.clientRendered && !!widget.appIntent && widget.appIntent.parameters.length > 0
@@ -322,9 +328,13 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
 
+  const clientProviderName = widget.serverUpdate
+    ? 'VoltraDynamicWidgetServerUpdateProvider'
+    : 'VoltraClientWidgetProvider'
+
   const providerAndContent = widget.clientRendered
     ? dedent`
-        provider: VoltraClientWidgetProvider(
+        provider: ${clientProviderName}(
           widgetId: widgetId,
           initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
         )
@@ -393,6 +403,18 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
   const initBody = params.map((p) => `    self.${p.name} = ${p.name}`).join('\n')
   const configuredDict = dictLiteral(params.map((p) => `"${p.name}": configuration.${p.name}`))
   const defaultDict = dictLiteral(params.map((p) => `"${p.name}": ${swiftDefault(p)}`))
+  // A server-driven Dynamic Widget fetches on every timeline request and schedules the next one
+  // from its resolved interval; a plain one has nothing to ask again for, so its policy is .never.
+  const appIntentTimelineBody = widget.serverUpdate
+    ? dedent`
+        return await VoltraDynamicWidgetServerUpdateProvider.timeline(
+          widgetId: widgetId,
+          family: context.family,
+          configuration: ${configuredDict}
+        )`
+    : dedent`
+        let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
+        return Timeline(entries: [entry], policy: .never)`
 
   return dedent`
     // MARK: - Client-rendered AppIntent widget: ${widget.id}
@@ -424,9 +446,8 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
         await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
       }
 
-      func timeline(for configuration: ${intentName}, in _: Context) async -> Timeline<VoltraClientWidgetEntry> {
-        let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
-        return Timeline(entries: [entry], policy: .never)
+      func timeline(for configuration: ${intentName}, in context: Context) async -> Timeline<VoltraClientWidgetEntry> {
+    ${appIntentTimelineBody}
       }
     }
 

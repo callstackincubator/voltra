@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import voltra.dynamicwidget.serverupdate.DynamicWidgetServerUpdateScheduler
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
@@ -13,6 +14,8 @@ import voltra.widget.VoltraWidgetReceiver
 import voltra.widget.VoltraWidgetReceivers
 import voltra.widget.payload.VoltraWidgetManager
 import voltra.widget.payload.VoltraWidgetUpdateScheduler
+import voltra.widget.server.VoltraWidgetServer
+import voltra.widget.server.WidgetScope
 
 /**
  * Resolves a widget id's [VoltraWidgetKind], or null if it can't be resolved. Injectable so
@@ -58,6 +61,20 @@ internal class WidgetOrchestrator(
     // were Dynamic Widgets, without a real registered Glance receiver for the id to update.
     private val dynamicWidgetGlanceUpdateTrigger: suspend (String) -> Unit =
         { dynamicWidgetId -> triggerDynamicWidgetGlanceUpdate(context, dynamicWidgetId) },
+    // Injectable for the same reason: a test can observe which Dynamic Widgets were asked to
+    // refetch without WorkManager being initialised.
+    private val dynamicWidgetServerFetchTrigger: (String) -> Boolean =
+        { dynamicWidgetId ->
+            if (VoltraWidgetServer.defaults(context).isServerDriven(dynamicWidgetId)) {
+                DynamicWidgetServerUpdateScheduler.requestImmediateUpdate(
+                    context,
+                    WidgetScope.of(dynamicWidgetId),
+                )
+                true
+            } else {
+                false
+            }
+        },
     private val clientWidgetGlanceUpdateTrigger: suspend (String) -> Unit =
         { widgetId -> VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId) },
 ) {
@@ -96,7 +113,7 @@ internal class WidgetOrchestrator(
      */
     private suspend fun reloadSingleWidget(widgetId: String) {
         if (widgetKindClassifier.classify(widgetId) == VoltraWidgetKind.Dynamic) {
-            dynamicWidgetGlanceUpdateTrigger(widgetId)
+            reloadDynamicWidget(widgetId)
             return
         }
 
@@ -131,13 +148,16 @@ internal class WidgetOrchestrator(
                 for (widgetId in cachedAndServerIds) {
                     when (widgetKindClassifier.classify(widgetId)) {
                         VoltraWidgetKind.Dynamic -> {
-                            Log.w(
-                                TAG,
-                                "reloadAllWidgets: $widgetId has a cached payload but resolves as " +
-                                    "a Dynamic Widget; purging the stale payload instead of " +
-                                    "pushing it onto the widget",
-                            )
+                            // Server-driven Dynamic Widgets are in this set too, and they have no
+                            // cached payload; only a widget that actually has one is worth warning
+                            // about, because that payload was left by an older app version.
                             if (widgetId in cachedPayloadIds) {
+                                Log.w(
+                                    TAG,
+                                    "reloadAllWidgets: $widgetId has a cached payload but resolves as " +
+                                        "a Dynamic Widget; purging the stale payload instead of " +
+                                        "pushing it onto the widget",
+                                )
                                 payloadWidgetManager.clearWidgetData(widgetId)
                             }
                             dynamicIds.add(widgetId)
@@ -195,12 +215,24 @@ internal class WidgetOrchestrator(
             }
             for (widgetId in dynamicIds) {
                 try {
-                    dynamicWidgetGlanceUpdateTrigger(widgetId)
+                    reloadDynamicWidget(widgetId)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to update client widget $widgetId: ${e.message}")
                 }
             }
         }
+    }
+
+    /**
+     * Re-renders a Dynamic Widget, and refetches first when it is server-driven.
+     *
+     * A reload means "show me the current state", and for a server-driven widget that includes
+     * asking the server. The render still happens straight away so the widget reflects whatever it
+     * already has rather than waiting for the network.
+     */
+    private suspend fun reloadDynamicWidget(widgetId: String) {
+        dynamicWidgetServerFetchTrigger(widgetId)
+        dynamicWidgetGlanceUpdateTrigger(widgetId)
     }
 
     /**

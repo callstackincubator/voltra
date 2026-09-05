@@ -50,6 +50,13 @@ export { useUpdateOnHMR } from './utils/useUpdateOnHMR.js'
 export * from './utils/helpers.js'
 export type { VoltraElementJson, VoltraNodeJson } from './types.js'
 export {
+  clearWidgetServerUpdate,
+  setWidgetServerUpdate,
+  type WidgetServerUpdateBody,
+  type WidgetServerUpdateOptions,
+  type WidgetServerUpdateSettings,
+} from './widgets/server-update.js'
+export {
   clearWidgetServerCredentials,
   setWidgetServerCredentials,
   type WidgetServerCredentials,

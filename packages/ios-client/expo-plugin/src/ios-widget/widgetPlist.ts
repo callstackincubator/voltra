@@ -6,6 +6,7 @@ import { join as joinPath } from 'path'
 import type { IOSWidgetConfig } from '../types'
 import { detectClientRenderedWidgets } from './clientRendered'
 import { logger } from '@use-voltra/expo-plugin'
+import { resolveIOSWidgetServerUpdate } from '../ios/serverUpdate'
 
 export interface ConfigureMainAppPlistProps {
   targetName: string
@@ -105,18 +106,31 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
           const serverRefresh: Record<string, boolean> = {}
 
           for (const widget of widgets) {
-            if (widget.serverUpdate) {
-              serverUrls[widget.id] = widget.serverUpdate.url
-              serverIntervals[widget.id] = widget.serverUpdate.intervalMinutes ?? 15
-              if (widget.serverUpdate.refresh) {
-                serverRefresh[widget.id] = true
-              }
+            const serverUpdate = resolveIOSWidgetServerUpdate(widget)
+
+            if (!serverUpdate) {
+              continue
             }
+
+            // Every server-driven widget gets an interval, so this dictionary's keys are the set
+            // of server-driven widget ids. A URL is written only when app.json set one.
+            serverIntervals[widget.id] = serverUpdate.intervalMinutes
+
+            if (serverUpdate.url !== undefined) {
+              serverUrls[widget.id] = serverUpdate.url
+            }
+
+            if (serverUpdate.refresh) {
+              serverRefresh[widget.id] = true
+            }
+          }
+
+          if (Object.keys(serverIntervals).length > 0) {
+            ;(content as any)['Voltra_WidgetServerIntervals'] = serverIntervals
           }
 
           if (Object.keys(serverUrls).length > 0) {
             ;(content as any)['Voltra_WidgetServerUrls'] = serverUrls
-            ;(content as any)['Voltra_WidgetServerIntervals'] = serverIntervals
           }
 
           if (Object.keys(serverRefresh).length > 0) {

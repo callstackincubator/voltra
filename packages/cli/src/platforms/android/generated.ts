@@ -28,6 +28,7 @@ const LOCALIZED_INITIAL_STATE_KEY = '__voltraLocales'
 const DEFAULT_WIDGET_LOCALE_QUALIFIER = 'en'
 const ANDROID_DYNAMIC_WIDGET_MANIFEST_PATH = path.join('.voltra', 'manifest.android.json')
 const ANDROID_WIDGET_CONFIG_DEFAULTS_PATH = path.join('assets', 'voltra', 'widget_config_defaults.json')
+const ANDROID_WIDGET_SERVER_DEFAULTS_PATH = path.join('assets', 'voltra', 'widget_server_defaults.json')
 
 export interface GenerateAndroidFilesOptions {
   projectRoot: string
@@ -117,6 +118,11 @@ export async function generateAndroidFiles(options: GenerateAndroidFilesOptions)
   const configDefaultsResult = await generateAndroidConfigDefaults(projectRoot, resourceRoot, detectedWidgets)
   if (configDefaultsResult) {
     mergeSingleResult(configDefaultsResult, changes, generatedFiles)
+  }
+
+  const serverDefaultsResult = await generateAndroidServerDefaults(projectRoot, resourceRoot, detectedWidgets)
+  if (serverDefaultsResult) {
+    mergeSingleResult(serverDefaultsResult, changes, generatedFiles)
   }
 
   return {
@@ -680,6 +686,59 @@ async function generateAndroidConfigDefaults(
   )
 }
 
+/**
+ * Emits the build-time `serverUpdate` defaults the runtime settings resolver reads as its lowest
+ * layer.
+ *
+ * These used to be Kotlin literals inside each generated receiver. They live in an asset now
+ * because the app can override the URL and the interval with `setWidgetServerUpdate`, and a
+ * receiver compiled at build time cannot be asked what the interval is today.
+ *
+ * A widget id present in this file is server-driven. `url` is omitted when app.json declared
+ * `serverUpdate` without one, which means the app supplies it at runtime.
+ */
+async function generateAndroidServerDefaults(
+  projectRoot: string,
+  resourceRoot: string,
+  widgets: DetectedAndroidWidget[]
+): Promise<GeneratedFileResult | undefined> {
+  const defaults = createWidgetServerDefaults(widgets)
+
+  if (Object.keys(defaults).length === 0) {
+    return undefined
+  }
+
+  return writeGeneratedTextFile(
+    projectRoot,
+    path.join(resourceRoot, ANDROID_WIDGET_SERVER_DEFAULTS_PATH),
+    `${JSON.stringify(defaults, null, 2)}\n`
+  )
+}
+
+interface WidgetServerDefaults {
+  url?: string
+  intervalMinutes: number
+  refresh: boolean
+}
+
+function createWidgetServerDefaults(widgets: DetectedAndroidWidget[]): Record<string, WidgetServerDefaults> {
+  const defaults: Record<string, WidgetServerDefaults> = {}
+
+  for (const widget of widgets) {
+    if (!widget.serverUpdate) {
+      continue
+    }
+
+    defaults[widget.id] = {
+      ...(widget.serverUpdate.url !== undefined ? { url: widget.serverUpdate.url } : {}),
+      intervalMinutes: widget.serverUpdate.intervalMinutes,
+      refresh: widget.serverUpdate.refresh,
+    }
+  }
+
+  return defaults
+}
+
 function createWidgetConfigDefaults(widgets: DetectedAndroidWidget[]): WidgetConfigDefaults {
   const defaults: WidgetConfigDefaults = {}
 
@@ -926,9 +985,35 @@ async function getLargeImageWarning(imagePath: string, fileName: string): Promis
   return `Image '${fileName}' is ${stat.size} bytes. Large Android widget images may not display correctly.`
 }
 
+/**
+ * `entry` picks the render engine and `serverUpdate` picks where the data comes from, so the two
+ * keys together select one of four base classes. Runtime code never asks "is this server-driven?" —
+ * the answer is baked in here, once, at generate time.
+ */
 function generateWidgetReceiverContent(widget: DetectedAndroidWidget, packageName: string): string {
   const className = `VoltraWidget_${widget.id}Receiver`
   const labelForComment = widgetLabelEnglish(widget.displayName)
+
+  // A widget with an entry and a serverUpdate renders bundled JS from props fetched in the
+  // background. The scheduling lives in the base class, so the generated receiver stays a name and
+  // an id — the URL and the interval come from widget_server_defaults.json at runtime, where
+  // setWidgetServerUpdate can override them.
+  if (widget.clientRendered && widget.serverUpdate) {
+    return [
+      `package ${packageName}.widget`,
+      '',
+      'import voltra.dynamicwidget.serverupdate.VoltraServerDrivenClientWidgetReceiver',
+      '',
+      '/**',
+      ` * Auto-generated server-driven Dynamic Widget receiver for ${labelForComment}`,
+      ` * Widget ID: ${widget.id}`,
+      ' */',
+      `class ${className} : VoltraServerDrivenClientWidgetReceiver() {`,
+      `    override val widgetId: String = "${widget.id}"`,
+      '}',
+      '',
+    ].join('\n')
+  }
 
   if (widget.clientRendered) {
     return [
@@ -948,21 +1033,20 @@ function generateWidgetReceiverContent(widget: DetectedAndroidWidget, packageNam
   }
 
   if (widget.serverUpdate) {
-    const refreshEnabled = widget.serverUpdate.refresh === true
-
     return [
       `package ${packageName}.widget`,
       '',
       'import android.appwidget.AppWidgetManager',
       'import android.content.Context',
+      'import kotlinx.coroutines.CoroutineScope',
+      'import kotlinx.coroutines.Dispatchers',
+      'import kotlinx.coroutines.launch',
       'import voltra.widget.payload.VoltraPayloadWidgetReceiver',
       'import voltra.widget.payload.VoltraWidgetUpdateScheduler',
       '',
       '/**',
       ` * Auto-generated widget receiver for ${labelForComment}`,
       ` * Widget ID: ${widget.id}`,
-      ` * Server Update: ${widget.serverUpdate.url} (every ${widget.serverUpdate.intervalMinutes} minutes)`,
-      ` * Refresh Button: ${String(refreshEnabled)}`,
       ' */',
       `class ${className} : VoltraPayloadWidgetReceiver() {`,
       `    override val widgetId: String = "${widget.id}"`,
@@ -970,13 +1054,17 @@ function generateWidgetReceiverContent(widget: DetectedAndroidWidget, packageNam
       '    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {',
       '        super.onUpdate(context, appWidgetManager, appWidgetIds)',
       '',
-      '        VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(',
-      '            context = context,',
-      `            widgetId = "${widget.id}",`,
-      `            serverUrl = "${widget.serverUpdate.url}",`,
-      `            intervalMinutes = ${widget.serverUpdate.intervalMinutes}L,`,
-      `            refreshEnabled = ${String(refreshEnabled)}`,
-      '        )',
+      '        // goAsync() keeps the process alive until the work is enqueued: without it a widget',
+      '        // added while the app is not running can lose its schedule entirely.',
+      '        val pendingResult = goAsync()',
+      '        val applicationContext = context.applicationContext',
+      '        CoroutineScope(Dispatchers.Default).launch {',
+      '            try {',
+      `                VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(applicationContext, "${widget.id}")`,
+      '            } finally {',
+      '                pendingResult.finish()',
+      '            }',
+      '        }',
       '    }',
       '',
       '    override fun onDeleted(context: Context, appWidgetIds: IntArray) {',

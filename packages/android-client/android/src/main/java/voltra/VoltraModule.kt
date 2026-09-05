@@ -35,8 +35,9 @@ import voltra.widget.VoltraWidgetReceivers
 import voltra.widget.payload.PayloadWidgetUpdateRejection
 import voltra.widget.payload.PayloadWidgetUpdater
 import voltra.widget.payload.VoltraGlanceWidget
-import voltra.widget.payload.VoltraWidgetCredentialStore
 import voltra.widget.payload.VoltraWidgetManager
+import voltra.widget.server.VoltraWidgetCredentialStore
+import voltra.widget.server.VoltraWidgetServer
 
 class VoltraModule(
     reactContext: ReactApplicationContext,
@@ -51,6 +52,10 @@ class VoltraModule(
 
     private val widgetManager by lazy {
         VoltraWidgetManager(reactApplicationContext)
+    }
+
+    private val widgetServerUpdateCoordinator by lazy {
+        WidgetServerUpdateCoordinator(reactApplicationContext)
     }
 
     private val widgetOrchestrator by lazy {
@@ -371,6 +376,7 @@ class VoltraModule(
         Log.d(TAG, "clearAndroidWidget called with widgetId=$widgetId")
         widgetManager.clearWidgetData(widgetId)
         dynamicWidgetPropsStore.clearDynamicWidgetProps(widgetId)
+        runBlocking { widgetServerUpdateCoordinator.dropWidgetLayer(widgetId) }
         runBlocking {
             when (val resolution = VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)) {
                 is VoltraWidgetKindResolution.Resolved -> {
@@ -398,6 +404,11 @@ class VoltraModule(
         Log.d(TAG, "clearAllAndroidWidgets called")
         widgetManager.clearAllWidgetData()
         dynamicWidgetPropsStore.clearAllDynamicWidgetProps()
+        runBlocking {
+            for (widgetId in VoltraWidgetServer.serverDrivenWidgetIds(reactApplicationContext)) {
+                widgetServerUpdateCoordinator.dropWidgetLayer(widgetId)
+            }
+        }
         runBlocking { widgetOrchestrator.reloadAllWidgets() }
         Log.d(TAG, "clearAllAndroidWidgets completed")
         promise.resolve(null)
@@ -567,6 +578,50 @@ class VoltraModule(
         promise.resolve(null)
     }
 
+    override fun setWidgetServerUpdate(
+        settingsJson: String,
+        widgetId: String?,
+        promise: Promise,
+    ) {
+        Log.d(TAG, "setWidgetServerUpdate called for widgetId=${widgetId ?: "<all>"}")
+
+        runBlocking {
+            when (val result = widgetServerUpdateCoordinator.set(settingsJson, widgetId)) {
+                is WidgetServerUpdateCoordinator.Result.Applied -> {
+                    promise.resolve(null)
+                }
+
+                is WidgetServerUpdateCoordinator.Result.Rejected -> {
+                    promise.reject("VOLTRA_INVALID_SERVER_UPDATE_SETTINGS", result.reason)
+                }
+            }
+        }
+    }
+
+    override fun clearWidgetServerUpdate(
+        widgetId: String?,
+        promise: Promise,
+    ) {
+        Log.d(TAG, "clearWidgetServerUpdate called for widgetId=${widgetId ?: "<all>"}")
+
+        runBlocking {
+            when (val result = widgetServerUpdateCoordinator.clear(widgetId)) {
+                is WidgetServerUpdateCoordinator.Result.Applied -> {
+                    promise.resolve(null)
+                }
+
+                is WidgetServerUpdateCoordinator.Result.Rejected -> {
+                    promise.reject("VOLTRA_INVALID_SERVER_UPDATE_SETTINGS", result.reason)
+                }
+            }
+        }
+    }
+
+    /**
+     * Deprecated in favour of [setWidgetServerUpdate] with an `Authorization` header. Kept as a
+     * wrapper over the same encrypted records, so an app that has not migrated keeps working and
+     * nothing has to be moved on device.
+     */
     override fun setWidgetServerCredentials(
         credentials: ReadableMap,
         promise: Promise,
@@ -594,15 +649,18 @@ class VoltraModule(
             }
         }
 
-        runBlocking { widgetOrchestrator.reloadAllWidgets() }
+        runBlocking { widgetServerUpdateCoordinator.onCredentialsChanged() }
         Log.d(TAG, "Widget server credentials saved")
         promise.resolve(null)
     }
 
+    /** Deprecated alongside [setWidgetServerCredentials]. */
     override fun clearWidgetServerCredentials(promise: Promise) {
         Log.d(TAG, "clearWidgetServerCredentials called")
-        runBlocking { VoltraWidgetCredentialStore.clearAll(reactApplicationContext) }
-        runBlocking { widgetOrchestrator.reloadAllWidgets() }
+        runBlocking {
+            VoltraWidgetCredentialStore.clearAll(reactApplicationContext)
+            widgetServerUpdateCoordinator.onCredentialsChanged()
+        }
         Log.d(TAG, "Widget server credentials cleared")
         promise.resolve(null)
     }

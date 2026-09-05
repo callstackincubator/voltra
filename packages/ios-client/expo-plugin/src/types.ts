@@ -75,8 +75,12 @@ export interface IOSDynamicLiveActivityConfig extends DynamicLiveActivityEntryCo
  * Server-driven iOS widget updates (WidgetKit background refresh).
  */
 export interface IOSWidgetServerUpdateConfig {
-  url: string
-  /** @default 15 */
+  /**
+   * Server endpoint that returns widget state updates. Omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
+  /** @default 15, or 15 when the widget has an `entry` */
   intervalMinutes?: number
   /** @default false */
   refresh?: boolean

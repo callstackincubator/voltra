@@ -50,6 +50,13 @@ export {
   type AndroidDynamicWidgetPropsValue,
 } from './dynamic-widget/api.js'
 export {
+  clearWidgetServerUpdate,
+  setWidgetServerUpdate,
+  type WidgetServerUpdateBody,
+  type WidgetServerUpdateOptions,
+  type WidgetServerUpdateSettings,
+} from './widgets/server-update.js'
+export {
   clearAllAndroidWidgets,
   clearAndroidWidget,
   getActiveWidgets,

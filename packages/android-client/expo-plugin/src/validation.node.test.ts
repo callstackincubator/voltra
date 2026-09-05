@@ -132,3 +132,47 @@ describe('validateAndroidConfigPluginProps', () => {
     }
   })
 })
+
+describe('validateAndroidConfigPluginProps serverUpdate', () => {
+  const widget = {
+    id: 'portfolio',
+    displayName: 'Portfolio',
+    description: 'Track holdings',
+    targetCellWidth: 2,
+    targetCellHeight: 2,
+  }
+
+  function validate(overrides: Record<string, unknown>): void {
+    validateAndroidConfigPluginProps({ widgets: [{ ...widget, ...overrides }] } as never)
+  }
+
+  it('accepts a serverUpdate with no url, which the app supplies at runtime', () => {
+    expect(() => validate({ serverUpdate: {} })).not.toThrow()
+  })
+
+  it('rejects a url no HTTP stack can reach', () => {
+    expect(() => validate({ serverUpdate: { url: 'api.example.com' } })).toThrow(/absolute http\(s\) URL/)
+  })
+
+  it('rejects an interval below the payload floor', () => {
+    expect(() => validate({ serverUpdate: { url: 'https://a.example.com', intervalMinutes: 5 } })).toThrow(
+      /at least 15/
+    )
+  })
+
+  it('clamps rather than rejects a short interval on a widget with an entry', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    try {
+      expect(() =>
+        validate({
+          entry: './widgets/portfolio.tsx',
+          serverUpdate: { url: 'https://a.example.com', intervalMinutes: 5 },
+        })
+      ).not.toThrow()
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('below the 15 minute floor'))
+    } finally {
+      warn.mockRestore()
+    }
+  })
+})

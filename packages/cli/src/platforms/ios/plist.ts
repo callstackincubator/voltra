@@ -71,8 +71,15 @@ async function ensureSingleInfoPlist(
   const widgetIds = ios.widgets.map((widget) => widget.id)
   setOrDeleteVoltraKey(infoPlist, 'Voltra_WidgetIds', widgetIds.length > 0 ? widgetIds : undefined)
 
+  // Every server-driven widget gets an interval, so this dictionary's keys are the set of
+  // server-driven widget ids the runtime settings store validates against. A URL is written only
+  // when app.json set one; otherwise the app supplies it with setWidgetServerUpdate.
   const serverWidgets = ios.widgets.filter((widget) => widget.serverUpdate)
-  const serverUrls = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.url]))
+  const serverUrls = Object.fromEntries(
+    serverWidgets
+      .filter((widget) => widget.serverUpdate?.url !== undefined)
+      .map((widget) => [widget.id, widget.serverUpdate?.url])
+  )
   const serverIntervals = Object.fromEntries(
     serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes])
   )

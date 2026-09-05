@@ -4,6 +4,7 @@ import type { AndroidWidgetConfig } from '../../types'
 import { detectClientRenderedWidgets } from '../clientRendered'
 import { generateAndroidAssets } from './assets'
 import { generateAndroidConfigDefaults } from './configDefaults'
+import { generateAndroidServerDefaults } from './serverDefaults'
 import { copyAndroidFonts } from './fonts'
 import { generateAndroidInitialStates } from './initialStates'
 import { generateWidgetReceivers } from './kotlin'
@@ -100,6 +101,12 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
 
       // Emit code-declared client widget configuration defaults (env.configuration).
       await generateAndroidConfigDefaults({
+        platformProjectRoot,
+        widgets,
+      })
+
+      // Emit the build-time serverUpdate defaults the runtime settings resolver reads.
+      await generateAndroidServerDefaults({
         platformProjectRoot,
         widgets,
       })

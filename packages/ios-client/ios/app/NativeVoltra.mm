@@ -407,6 +407,31 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
   }];
 }
 
+- (void)setWidgetServerUpdate:(NSString *)settingsJson
+                     widgetId:(NSString *)widgetId
+                      resolve:(RCTPromiseResolveBlock)resolve
+                       reject:(RCTPromiseRejectBlock)reject
+{
+  NSString *error = [self.module setWidgetServerUpdate:settingsJson widgetId:widgetId];
+  if (error) {
+    reject(@"VOLTRA_INVALID_SERVER_UPDATE_SETTINGS", error, nil);
+  } else {
+    resolve(nil);
+  }
+}
+
+- (void)clearWidgetServerUpdate:(NSString *)widgetId
+                        resolve:(RCTPromiseResolveBlock)resolve
+                         reject:(RCTPromiseRejectBlock)reject
+{
+  NSString *error = [self.module clearWidgetServerUpdate:widgetId];
+  if (error) {
+    reject(@"VOLTRA_INVALID_SERVER_UPDATE_SETTINGS", error, nil);
+  } else {
+    resolve(nil);
+  }
+}
+
 - (void)setWidgetServerCredentials:(JS::NativeVoltra::WidgetServerCredentials &)credentials
                            resolve:(RCTPromiseResolveBlock)resolve
                             reject:(RCTPromiseRejectBlock)reject

@@ -167,6 +167,14 @@ public struct VoltraHomeWidgetProvider: TimelineProvider {
       let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? retryDate
       return serverTimeline(from: data, in: context, policy: .after(nextUpdate))
     case let .lastKnown(data, error):
+      // A 304 is not a failure: the server confirmed what we already have is current, so the next
+      // fetch belongs at the normal interval rather than the shorter retry one.
+      if case VoltraWidgetServerFetcher.FetchError.notModified = error {
+        let intervalMinutes = VoltraWidgetServerFetcher.updateInterval(for: widgetId)
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: intervalMinutes, to: Date()) ?? retryDate
+        return serverTimeline(from: data, in: context, policy: .after(nextUpdate))
+      }
+
       VoltraLogger.widget.error("Server-driven update failed for '\(widgetId)', keeping last server content: \(error.localizedDescription)")
       return serverTimeline(from: data, in: context, policy: .after(retryDate))
     case let .unavailable(error):
