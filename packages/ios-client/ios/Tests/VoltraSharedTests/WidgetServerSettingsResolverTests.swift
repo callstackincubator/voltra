@@ -64,12 +64,27 @@ final class WidgetServerSettingsResolverTests: XCTestCase {
     XCTAssertTrue(resolved.query.isEmpty)
   }
 
-  func testClampsTheIntervalToWhatWidgetKitCanHonour() {
-    let tooShort = resolver([StubLayer("config", .init(intervalMinutes: 1), serverDriven: true)]).resolve(scope)
-    let tooLong = resolver([StubLayer("config", .init(intervalMinutes: 60 * 24 * 30), serverDriven: true)]).resolve(scope)
+  func testClampsARuntimeIntervalOverrideToWhatWidgetKitCanHonour() {
+    let tooShort = resolver([
+      StubLayer("config", .init(intervalMinutes: 60), serverDriven: true),
+      StubLayer("widget", .init(intervalMinutes: 1)),
+    ]).resolve(scope)
+    let tooLong = resolver([
+      StubLayer("config", .init(intervalMinutes: 60), serverDriven: true),
+      StubLayer("widget", .init(intervalMinutes: 60 * 24 * 30)),
+    ]).resolve(scope)
 
     XCTAssertEqual(tooShort.intervalMinutes, WidgetServerUpdateDefaults.minIntervalMinutes)
     XCTAssertEqual(tooLong.intervalMinutes, WidgetServerUpdateDefaults.maxIntervalMinutes)
+  }
+
+  func testLeavesAnIntervalFromAppJsonAloneSoAnExistingWidgetKeepsItsSchedule() {
+    // The generators already validated this against the platform's own rules — iOS allows a
+    // payload widget down to 1 minute — so clamping it again here would silently change the
+    // schedule of a widget that has been shipping for months.
+    let resolved = resolver([StubLayer("config", .init(intervalMinutes: 5), serverDriven: true)]).resolve(scope)
+
+    XCTAssertEqual(resolved.intervalMinutes, 5)
   }
 
   func testAWidgetTheConfigLayerDoesNotKnowIsNeverFetched() {

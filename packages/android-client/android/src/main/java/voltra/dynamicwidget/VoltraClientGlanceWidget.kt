@@ -8,18 +8,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.Action
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
+import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
 import com.facebook.react.modules.systeminfo.AndroidInfoHelpers
 import kotlinx.coroutines.Dispatchers
@@ -126,11 +134,12 @@ class VoltraClientGlanceWidget(
             (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
         /**
-         * Loads and evaluates the widget's bundle if it is not already in the runtime.
+         * Loads the widget's bundle and evaluates it into the shared Hermes runtime, the same way
+         * an on-screen render does — reading Metro in a debug build and the baked asset otherwise.
          *
-         * The Hermes runtime is one per process, so a bundle evaluated for an on-screen render is
-         * still there for a background trial render, and vice versa. Exposed for the server-update
-         * engine, which has to render fetched props before committing them.
+         * Exposed for the server-update engine, which has to render fetched props before
+         * committing them. It costs what a render already costs, including the Metro round trip in
+         * a debug build.
          */
         internal suspend fun ensureBundleEvaluated(
             context: Context,
@@ -261,6 +270,54 @@ class VoltraClientGlanceWidget(
             GlanceFactory(widgetId, null, null, size).Render(node)
         } else {
             Fallback()
+        }
+
+        // Drawn over the widget's own content, so an entry does not have to leave room for it.
+        // Only a server-driven widget configured with `refresh: true` has a source that offers one.
+        environmentSource?.refreshAction(context, widgetId)?.let { action ->
+            RefreshButton(action)
+        }
+    }
+
+    /**
+     * The same overlay the payload engine draws, so the two engines' refresh buttons look and sit
+     * identically. Tapping it enqueues a fetch rather than running one inline: the tap then
+     * survives a moment without connectivity instead of failing silently.
+     */
+    @Composable
+    private fun RefreshButton(action: Action) {
+        Box(
+            modifier = GlanceModifier.fillMaxSize().padding(12.dp),
+            contentAlignment = Alignment.TopEnd,
+        ) {
+            Box(
+                modifier =
+                    GlanceModifier
+                        .size(28.dp)
+                        .cornerRadius(14.dp)
+                        .background(
+                            androidx.glance.color.ColorProvider(
+                                day = Color(0x32787880),
+                                night = Color(0x32787880),
+                            ),
+                        ).clickable(action),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "↻",
+                    style =
+                        androidx.glance.text.TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color =
+                                androidx.glance.color.ColorProvider(
+                                    day = Color(0x993C3C43),
+                                    night = Color(0x99EBEBF5),
+                                ),
+                        ),
+                )
+            }
         }
     }
 

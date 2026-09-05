@@ -119,9 +119,16 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
           override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
               super.onUpdate(context, appWidgetManager, appWidgetIds)
 
+              // goAsync() keeps the process alive until the work is enqueued: without it a widget
+              // added while the app is not running can lose its schedule entirely.
+              val pendingResult = goAsync()
               val applicationContext = context.applicationContext
               CoroutineScope(Dispatchers.Default).launch {
-                  VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(applicationContext, "${widget.id}")
+                  try {
+                      VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(applicationContext, "${widget.id}")
+                  } finally {
+                      pendingResult.finish()
+                  }
               }
           }
 

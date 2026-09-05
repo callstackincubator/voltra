@@ -33,10 +33,15 @@ class DynamicWidgetServerUpdateWorker(
                 ?: return Result.failure()
 
         val scope = WidgetScope.of(widgetId)
-        val outcome = runner(applicationContext).run(scope)
+        val result = runner(applicationContext).run(scope)
 
-        return when (outcome) {
+        return when (result.outcome) {
             DynamicWidgetServerUpdateOutcome.Committed -> {
+                // Cache-Control: max-age moves the next fetch. Rescheduling the periodic work is
+                // how that reaches WorkManager; the UPDATE policy keeps the same unique work.
+                result.nextIntervalMinutes?.let { minutes ->
+                    DynamicWidgetServerUpdateScheduler.reschedule(applicationContext, scope, minutes)
+                }
                 Result.success()
             }
 
@@ -44,12 +49,28 @@ class DynamicWidgetServerUpdateWorker(
                 Result.success()
             }
 
+            // The server answered with something no retry will change: a body that is not props,
+            // an oversized one, or a 4xx. The periodic run continues at the normal interval, so
+            // this run reports success rather than spending the chain's retry budget.
             DynamicWidgetServerUpdateOutcome.Failed -> {
-                Result.failure()
+                Result.success()
             }
 
             DynamicWidgetServerUpdateOutcome.Retry -> {
-                Result.retry()
+                // Retry-After on a 429 or 503 is longer than WorkManager's backoff would be, so it
+                // is honoured with an explicitly delayed run instead of the default 30s chain.
+                val retryAfterMinutes = result.nextIntervalMinutes
+
+                if (retryAfterMinutes != null) {
+                    DynamicWidgetServerUpdateScheduler.requestDelayedUpdate(
+                        applicationContext,
+                        scope,
+                        retryAfterMinutes,
+                    )
+                    Result.success()
+                } else {
+                    Result.retry()
+                }
             }
 
             DynamicWidgetServerUpdateOutcome.Skipped -> {

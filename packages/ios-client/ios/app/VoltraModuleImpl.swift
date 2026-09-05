@@ -326,6 +326,13 @@ public class VoltraModuleImpl {
     let dynamicWidgetUpdater = DynamicWidgetUpdater(
       dynamicWidgetPropsPersistence: DynamicWidgetPropsStore(),
       dynamicWidgetTimelineReload: { dynamicWidgetId in
+        // On a server-driven widget the reload below runs getTimeline, which would otherwise
+        // fetch and overwrite what was just written. ADR 0002 says the *next scheduled* fetch
+        // overwrites app-written props, not the reload the write itself caused.
+        if VoltraWidgetServer.isServerDriven(dynamicWidgetId) {
+          DynamicWidgetServerPropsStore().noteAppWrite(for: .of(dynamicWidgetId))
+        }
+
         VoltraWidgetService.reloadTimeline(for: dynamicWidgetId)
       }
     )

@@ -148,13 +148,16 @@ internal class WidgetOrchestrator(
                 for (widgetId in cachedAndServerIds) {
                     when (widgetKindClassifier.classify(widgetId)) {
                         VoltraWidgetKind.Dynamic -> {
-                            Log.w(
-                                TAG,
-                                "reloadAllWidgets: $widgetId has a cached payload but resolves as " +
-                                    "a Dynamic Widget; purging the stale payload instead of " +
-                                    "pushing it onto the widget",
-                            )
+                            // Server-driven Dynamic Widgets are in this set too, and they have no
+                            // cached payload; only a widget that actually has one is worth warning
+                            // about, because that payload was left by an older app version.
                             if (widgetId in cachedPayloadIds) {
+                                Log.w(
+                                    TAG,
+                                    "reloadAllWidgets: $widgetId has a cached payload but resolves as " +
+                                        "a Dynamic Widget; purging the stale payload instead of " +
+                                        "pushing it onto the widget",
+                                )
                                 payloadWidgetManager.clearWidgetData(widgetId)
                             }
                             dynamicIds.add(widgetId)

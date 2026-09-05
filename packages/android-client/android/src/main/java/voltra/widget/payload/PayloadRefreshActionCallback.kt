@@ -105,7 +105,14 @@ internal class PayloadRefreshActionCallback {
                     }
 
                     is WidgetServerFetchResult.NotModified -> {
+                        // Only reachable if the server answers 304 unprompted; a refresh tap never
+                        // sends a conditional request.
                         Log.d(TAG, "Widget '$widgetId' is unchanged")
+                        null
+                    }
+
+                    is WidgetServerFetchResult.TooLarge -> {
+                        Log.e(TAG, "Response for widget '$widgetId' is too large to render")
                         null
                     }
                 }

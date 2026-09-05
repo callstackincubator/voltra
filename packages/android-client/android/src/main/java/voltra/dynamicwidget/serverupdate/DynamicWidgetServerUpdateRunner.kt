@@ -8,6 +8,7 @@ import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.server.ResolvedWidgetServerSettings
 import voltra.widget.server.WidgetScope
 import voltra.widget.server.WidgetServerFetchResult
+import voltra.widget.server.WidgetServerUpdateDefaults
 
 /**
  * Fetch, parse, trial-render, commit — the four steps ADR 0002 requires of every server-driven
@@ -31,7 +32,7 @@ internal class DynamicWidgetServerUpdateRunner(
     private val notifyWidget: suspend (WidgetScope) -> Unit,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
-    suspend fun run(scope: WidgetScope): DynamicWidgetServerUpdateOutcome {
+    suspend fun run(scope: WidgetScope): DynamicWidgetServerUpdateResult {
         // Kind first, before anything opens a connection (ADR 0000). A release that turns a
         // Dynamic Widget back into a payload widget leaves this work scheduled, and it has to
         // notice rather than write props into a widget that does not read them.
@@ -39,14 +40,14 @@ internal class DynamicWidgetServerUpdateRunner(
 
         if (kind !is VoltraWidgetKindResolution.Resolved || kind.kind != VoltraWidgetKind.Dynamic) {
             Log.w(TAG, "Widget '${scope.widgetId}' is not a Dynamic Widget; cancelling its server updates")
-            return DynamicWidgetServerUpdateOutcome.Skipped
+            return DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Skipped)
         }
 
         val settings = resolveSettings(scope)
 
         if (!settings.shouldFetch) {
             statusStore.markDisabledIfNeeded(scope, settings.enabled)
-            return DynamicWidgetServerUpdateOutcome.Skipped
+            return DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Skipped)
         }
 
         val revision = currentRevision(scope)
@@ -57,21 +58,33 @@ internal class DynamicWidgetServerUpdateRunner(
         // nobody is asking any more.
         if (currentRevision(scope) != revision) {
             Log.d(TAG, "Dropping server update for '${scope.widgetId}': settings changed mid-fetch")
-            return DynamicWidgetServerUpdateOutcome.Dropped
+            return DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Dropped)
         }
 
         return when (result) {
             is WidgetServerFetchResult.NotModified -> {
                 statusStore.recordSuccess(scope, now(), HTTP_NOT_MODIFIED)
                 notifyWidget(scope)
-                DynamicWidgetServerUpdateOutcome.Committed
+                DynamicWidgetServerUpdateResult(
+                    DynamicWidgetServerUpdateOutcome.Committed,
+                    clampServerInterval(result.nextIntervalMinutes),
+                )
             }
 
             is WidgetServerFetchResult.NetworkFailure -> {
                 Log.w(TAG, "Server update for '${scope.widgetId}' failed: ${result.message}")
                 statusStore.recordFailure(scope, DynamicWidgetServerStatus.ERROR_NETWORK)
                 notifyWidget(scope)
-                DynamicWidgetServerUpdateOutcome.Retry
+                DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Retry)
+            }
+
+            is WidgetServerFetchResult.TooLarge -> {
+                // The server answered, with a body the device will not hold. Asking again returns
+                // the same one, so this is a parse failure rather than something to back off from.
+                Log.e(TAG, "Server update for '${scope.widgetId}' returned a body that is too large")
+                statusStore.recordFailure(scope, DynamicWidgetServerStatus.ERROR_PARSE, result.httpStatus)
+                notifyWidget(scope)
+                DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Failed)
             }
 
             is WidgetServerFetchResult.HttpFailure -> {
@@ -89,9 +102,12 @@ internal class DynamicWidgetServerUpdateRunner(
                 // A 401 will keep being a 401 until the app sets a fresh token, and setting one
                 // reloads the widget. Backing off would only burn battery.
                 if (result.isTransient) {
-                    DynamicWidgetServerUpdateOutcome.Retry
+                    DynamicWidgetServerUpdateResult(
+                        DynamicWidgetServerUpdateOutcome.Retry,
+                        clampServerInterval(result.retryAfterMinutes),
+                    )
                 } else {
-                    DynamicWidgetServerUpdateOutcome.Failed
+                    DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Failed)
                 }
             }
 
@@ -105,14 +121,16 @@ internal class DynamicWidgetServerUpdateRunner(
         scope: WidgetScope,
         url: String,
         result: WidgetServerFetchResult.Success,
-    ): DynamicWidgetServerUpdateOutcome {
+    ): DynamicWidgetServerUpdateResult {
+        val nextIntervalMinutes = clampServerInterval(result.nextIntervalMinutes)
+
         when (val parsed = DynamicWidgetServerProps.parse(result.body)) {
             is DynamicWidgetPropsParseResult.Invalid -> {
                 Log.e(TAG, "Server update for '${scope.widgetId}' rejected: ${parsed.reason}")
                 statusStore.recordFailure(scope, DynamicWidgetServerStatus.ERROR_PARSE, result.httpStatus)
                 notifyWidget(scope)
                 // Asking again returns the same body, so this is not something to retry.
-                return DynamicWidgetServerUpdateOutcome.Failed
+                return DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Failed)
             }
 
             is DynamicWidgetPropsParseResult.Props -> {
@@ -120,7 +138,7 @@ internal class DynamicWidgetServerUpdateRunner(
                     Log.e(TAG, "Server update for '${scope.widgetId}' did not render; keeping the previous props")
                     statusStore.recordFailure(scope, DynamicWidgetServerStatus.ERROR_RENDER, result.httpStatus)
                     notifyWidget(scope)
-                    return DynamicWidgetServerUpdateOutcome.Failed
+                    return DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Failed)
                 }
 
                 commitProps.persistDynamicWidgetProps(scope.widgetId, parsed.json)
@@ -128,10 +146,20 @@ internal class DynamicWidgetServerUpdateRunner(
                 statusStore.recordSuccess(scope, now(), result.httpStatus)
                 notifyWidget(scope)
 
-                return DynamicWidgetServerUpdateOutcome.Committed
+                return DynamicWidgetServerUpdateResult(
+                    DynamicWidgetServerUpdateOutcome.Committed,
+                    nextIntervalMinutes,
+                )
             }
         }
     }
+
+    /**
+     * What the server asked for, held to what the platform can honour: never sooner than
+     * WorkManager will run periodic work, never further out than a day.
+     */
+    private fun clampServerInterval(minutes: Long?): Long? =
+        minutes?.let { WidgetServerUpdateDefaults.clampIntervalMinutes(it) }
 
     private companion object {
         private const val TAG = "VoltraDynamicServerUpdate"

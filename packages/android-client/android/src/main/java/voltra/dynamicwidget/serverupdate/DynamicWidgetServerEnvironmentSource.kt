@@ -1,7 +1,11 @@
 package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
+import androidx.glance.action.Action
+import androidx.glance.action.actionParametersOf
+import androidx.glance.appwidget.action.actionRunCallback
 import voltra.dynamicwidget.DynamicWidgetEnvironmentSource
+import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
 
 /**
@@ -19,5 +23,18 @@ internal class DynamicWidgetServerEnvironmentSource : DynamicWidgetEnvironmentSo
         val status = DynamicWidgetServerPropsStore(context).status(WidgetScope.of(dynamicWidgetId))
 
         return mapOf("serverUpdate" to status.toJson())
+    }
+
+    override fun refreshAction(
+        context: Context,
+        dynamicWidgetId: String,
+    ): Action? {
+        if (VoltraWidgetServer.defaults(context).defaults(dynamicWidgetId)?.refresh != true) {
+            return null
+        }
+
+        return actionRunCallback<DynamicWidgetRefreshActionCallback>(
+            actionParametersOf(DynamicWidgetRefreshActionCallback.KEY_WIDGET_ID to dynamicWidgetId),
+        )
     }
 }

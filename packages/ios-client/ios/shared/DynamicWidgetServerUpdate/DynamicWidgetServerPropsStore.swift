@@ -117,11 +117,30 @@ public struct DynamicWidgetServerPropsStore {
     )
   }
 
+  /// Records that the app just wrote props itself, so the reload that write triggers renders them
+  /// instead of racing a fetch that would immediately overwrite them.
+  public func noteAppWrite(for scope: WidgetScope, at date: Date = Date()) {
+    defaults?.set(date.timeIntervalSince1970, forKey: appWriteKey(scope))
+  }
+
+  public func appWriteAt(for scope: WidgetScope) -> Date? {
+    guard let seconds = defaults?.object(forKey: appWriteKey(scope)) as? TimeInterval else {
+      return nil
+    }
+
+    return Date(timeIntervalSince1970: seconds)
+  }
+
   public func clear(_ scope: WidgetScope) {
     defaults?.removeObject(forKey: key(scope))
+    defaults?.removeObject(forKey: appWriteKey(scope))
   }
 
   private func key(_ scope: WidgetScope) -> String {
     "Voltra_DynamicWidgetServer_v1_\(scope.storageKey)"
+  }
+
+  private func appWriteKey(_ scope: WidgetScope) -> String {
+    "Voltra_DynamicWidgetServer_AppWrite_v1_\(scope.storageKey)"
   }
 }

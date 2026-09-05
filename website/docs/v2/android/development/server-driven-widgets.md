@@ -189,7 +189,7 @@ curl "https://api.example.com/widgets/portfolio?widgetId=portfolio&platform=andr
 
 - Status `200` with `Content-Type: application/json` and a JSON **object**. An array, a string, a number or `null` at the top level is rejected.
 - At most 256 KB.
-- Return `ETag` and Voltra sends it back as `If-None-Match` on the next fetch. A `304` means the widget keeps what it has and counts as fresh.
+- Return `ETag` and Voltra sends it back as `If-None-Match` on the next fetch. A `304` means the widget keeps what it has and counts as fresh. This applies to widgets with an `entry`; a payload widget's request is unconditional.
 - `Cache-Control: max-age=N` moves the next fetch, clamped between 15 minutes and 24 hours. `Retry-After` on a `429` or `503` is honoured the same way.
 
 Returning a rendered Voltra payload from an endpoint whose widget has an `entry` is rejected with a log line naming the mismatch. The widget has an entry, so it wants the data, not the picture.
@@ -306,7 +306,7 @@ await setWidgetServerUpdate({
 })
 ```
 
-To go back to what `app.json` configured, clear the settings. Clearing the global settings is the logout gesture — it drops the credentials the widgets were fetching with and reloads them:
+To go back to what `app.json` configured, clear the settings:
 
 ```typescript
 import { clearWidgetServerUpdate } from '@use-voltra/android-client'
@@ -314,6 +314,10 @@ import { clearWidgetServerUpdate } from '@use-voltra/android-client'
 await clearWidgetServerUpdate({ widgetId: 'portfolio' })
 await clearWidgetServerUpdate()
 ```
+
+Clearing the global settings is the logout gesture. Along with the settings it drops what the server last sent — the props and the "updated at" of every server-driven widget — so a Dynamic Widget goes back to rendering `{}` with `env.serverUpdate.status` of `never` rather than showing the previous account's data. A widget-scoped clear only drops that widget's overrides and leaves its props alone.
+
+Credentials set with the deprecated `setWidgetServerCredentials` are stored separately and are not affected; clear those with `clearWidgetServerCredentials`.
 
 Calling either function for a widget that has no `serverUpdate` in `app.json` throws. Whether a widget is server-driven is decided when the native project is generated, so a runtime URL cannot turn a local widget into one — add `serverUpdate` to `app.json` and rebuild.
 
@@ -344,7 +348,9 @@ Server-driven widgets can display a native refresh button that lets users trigge
 }
 ```
 
-When enabled, a small circular button (↻) appears in the top-right corner of the widget. Tapping it performs an inline HTTP fetch and pushes the update directly to the widget—all without waiting for the next WorkManager cycle.
+When enabled, a small circular button (↻) appears in the top-right corner of the widget.
+
+On a payload widget, tapping it performs an inline HTTP fetch and pushes the update directly—without waiting for the next WorkManager cycle. On a widget with an `entry`, the tap enqueues expedited work instead, so a tap with no signal waits for connectivity and retries rather than failing silently.
 
 ## Resize handling
 

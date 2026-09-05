@@ -75,7 +75,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
     let outcome = await runner(
       recorder,
       result: .success(body: Data(#"{"total":42}"#.utf8), etag: "\"abc\"", httpStatus: 200, nextIntervalMinutes: nil)
-    ).run(scope)
+    ).run(scope).outcome
 
     XCTAssertEqual(outcome, .committed)
     XCTAssertEqual(recorder.committed, [#"{"total":42}"#])
@@ -103,7 +103,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
 
   func testTreats304AsFreshWithoutTouchingTheProps() async {
     let recorder = Recorder()
-    let outcome = await runner(recorder, result: .notModified(nextIntervalMinutes: nil)).run(scope)
+    let outcome = await runner(recorder, result: .notModified(nextIntervalMinutes: nil)).run(scope).outcome
 
     XCTAssertEqual(outcome, .committed)
     XCTAssertTrue(recorder.committed.isEmpty)
@@ -116,7 +116,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
       recorder,
       result: .success(body: Data(#"{"total":42}"#.utf8), etag: nil, httpStatus: 200, nextIntervalMinutes: nil),
       trialRenders: false
-    ).run(scope)
+    ).run(scope).outcome
 
     XCTAssertEqual(outcome, .failed)
     XCTAssertTrue(recorder.committed.isEmpty)
@@ -128,7 +128,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
     let outcome = await runner(
       recorder,
       result: .success(body: Data(#"{"v":1,"variants":{}}"#.utf8), etag: nil, httpStatus: 200, nextIntervalMinutes: nil)
-    ).run(scope)
+    ).run(scope).outcome
 
     XCTAssertEqual(outcome, .failed)
     XCTAssertTrue(recorder.committed.isEmpty)
@@ -139,7 +139,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
     let recorder = Recorder()
     recorder.commitThrows = true
 
-    let outcome = await runner(recorder).run(scope)
+    let outcome = await runner(recorder).run(scope).outcome
 
     XCTAssertEqual(outcome, .failed)
     XCTAssertEqual(recorder.successes, 0)
@@ -148,7 +148,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
 
   func testRetriesANetworkFailureAndKeepsThePreviousProps() async {
     let recorder = Recorder()
-    let outcome = await runner(recorder, result: .networkFailure(message: "timeout")).run(scope)
+    let outcome = await runner(recorder, result: .networkFailure(message: "timeout")).run(scope).outcome
 
     XCTAssertEqual(outcome, .retry)
     XCTAssertTrue(recorder.committed.isEmpty)
@@ -156,16 +156,53 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
   }
 
   func testRetriesA5xxAndA429() async {
-    let outcome503 = await runner(Recorder(), result: .httpFailure(httpStatus: 503, retryAfterMinutes: 2)).run(scope)
-    let outcome429 = await runner(Recorder(), result: .httpFailure(httpStatus: 429, retryAfterMinutes: nil)).run(scope)
+    let outcome503 = await runner(Recorder(), result: .httpFailure(httpStatus: 503, retryAfterMinutes: 2)).run(scope).outcome
+    let outcome429 = await runner(Recorder(), result: .httpFailure(httpStatus: 429, retryAfterMinutes: nil)).run(scope).outcome
 
     XCTAssertEqual(outcome503, .retry)
     XCTAssertEqual(outcome429, .retry)
   }
 
+  func testPassesRetryAfterOnClampedToWhatWidgetKitCanHonour() async {
+    let soon = await runner(Recorder(), result: .httpFailure(httpStatus: 503, retryAfterMinutes: 2)).run(scope)
+    let far = await runner(Recorder(), result: .httpFailure(httpStatus: 503, retryAfterMinutes: 60 * 24 * 30)).run(scope)
+    let none = await runner(Recorder(), result: .httpFailure(httpStatus: 503, retryAfterMinutes: nil)).run(scope)
+
+    XCTAssertEqual(soon.nextIntervalMinutes, WidgetServerUpdateDefaults.minIntervalMinutes)
+    XCTAssertEqual(far.nextIntervalMinutes, WidgetServerUpdateDefaults.maxIntervalMinutes)
+    XCTAssertNil(none.nextIntervalMinutes)
+  }
+
+  func testPassesCacheControlMaxAgeOnSoTheServerCanMoveItsOwnNextFetch() async {
+    let committed = await runner(
+      Recorder(),
+      result: .success(body: Data(#"{"total":42}"#.utf8), etag: nil, httpStatus: 200, nextIntervalMinutes: 360)
+    ).run(scope)
+
+    XCTAssertEqual(committed.nextIntervalMinutes, 360)
+  }
+
+  func testDoesNotAskAgainForABodyThatIsTooLargeToHold() async {
+    let recorder = Recorder()
+    let outcome = await runner(recorder, result: .tooLarge(httpStatus: 200)).run(scope).outcome
+
+    XCTAssertEqual(outcome, .failed)
+    XCTAssertTrue(recorder.committed.isEmpty)
+    XCTAssertEqual(recorder.failures.first?.0, DynamicWidgetServerStatus.errorParse)
+  }
+
+  func testKeepsThePreviousPropsAndReportsRenderWhenTheCommitFails() async {
+    let recorder = Recorder()
+    recorder.commitThrows = true
+
+    _ = await runner(recorder).run(scope)
+
+    XCTAssertEqual(recorder.failures.first?.0, DynamicWidgetServerStatus.errorRender)
+  }
+
   func testDoesNotRetryA401WhichStaysA401UntilTheAppSetsANewToken() async {
     let recorder = Recorder()
-    let outcome = await runner(recorder, result: .httpFailure(httpStatus: 401, retryAfterMinutes: nil)).run(scope)
+    let outcome = await runner(recorder, result: .httpFailure(httpStatus: 401, retryAfterMinutes: nil)).run(scope).outcome
 
     XCTAssertEqual(outcome, .failed)
     XCTAssertEqual(recorder.failures.first?.0, DynamicWidgetServerStatus.errorUnauthorized)
@@ -174,7 +211,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
 
   func testDoesNotRetryAnother4xxWhichIsAMisconfiguration() async {
     let recorder = Recorder()
-    let outcome = await runner(recorder, result: .httpFailure(httpStatus: 404, retryAfterMinutes: nil)).run(scope)
+    let outcome = await runner(recorder, result: .httpFailure(httpStatus: 404, retryAfterMinutes: nil)).run(scope).outcome
 
     XCTAssertEqual(outcome, .failed)
     XCTAssertEqual(recorder.failures.first?.0, DynamicWidgetServerStatus.errorHttp)
@@ -186,7 +223,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
       recorder,
       result: .success(body: Data(#"{"total":42}"#.utf8), etag: nil, httpStatus: 200, nextIntervalMinutes: nil),
       revisions: [1, 2]
-    ).run(scope)
+    ).run(scope).outcome
 
     XCTAssertEqual(outcome, .dropped)
     XCTAssertTrue(recorder.committed.isEmpty)
@@ -195,7 +232,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
 
   func testDoesNotFetchForAWidgetWithNoUrlYet() async {
     let recorder = Recorder()
-    let outcome = await runner(recorder, settings: settings(url: nil)).run(scope)
+    let outcome = await runner(recorder, settings: settings(url: nil)).run(scope).outcome
 
     XCTAssertEqual(outcome, .skipped)
     XCTAssertNil(recorder.disabledFor)
@@ -203,7 +240,7 @@ final class DynamicWidgetServerUpdateRunnerTests: XCTestCase {
 
   func testReportsDisabledWhenTheAppHasTakenTheWidgetOver() async {
     let recorder = Recorder()
-    let outcome = await runner(recorder, settings: settings(enabled: false)).run(scope)
+    let outcome = await runner(recorder, settings: settings(enabled: false)).run(scope).outcome
 
     XCTAssertEqual(outcome, .skipped)
     XCTAssertEqual(recorder.disabledFor, scope)

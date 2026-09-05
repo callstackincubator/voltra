@@ -6,6 +6,7 @@ import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
@@ -52,9 +53,34 @@ object DynamicWidgetServerUpdateScheduler {
             return
         }
 
+        enqueuePeriodic(context, scope, settings.intervalMinutes)
+
+        if (runImmediately) {
+            requestImmediateUpdate(context, scope)
+        }
+    }
+
+    /**
+     * Moves the periodic schedule to what the server asked for with `Cache-Control: max-age`,
+     * without re-resolving settings or running a fetch.
+     */
+    fun reschedule(
+        context: Context,
+        scope: WidgetScope,
+        intervalMinutes: Long,
+    ) {
+        enqueuePeriodic(context, scope, intervalMinutes)
+        Log.d(TAG, "Server asked '${scope.widgetId}' to come back in ${intervalMinutes}min")
+    }
+
+    private fun enqueuePeriodic(
+        context: Context,
+        scope: WidgetScope,
+        intervalMinutes: Long,
+    ) {
         val request =
             PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
-                settings.intervalMinutes,
+                intervalMinutes,
                 TimeUnit.MINUTES,
             ).setInputData(inputData(scope))
                 .setConstraints(networkConstraints())
@@ -66,11 +92,7 @@ object DynamicWidgetServerUpdateScheduler {
             .getInstance(context)
             .enqueueUniquePeriodicWork(workName(scope), ExistingPeriodicWorkPolicy.UPDATE, request)
 
-        Log.d(TAG, "Scheduled server updates for '${scope.widgetId}' every ${settings.intervalMinutes}min")
-
-        if (runImmediately) {
-            requestImmediateUpdate(context, scope)
-        }
+        Log.d(TAG, "Scheduled server updates for '${scope.widgetId}' every ${intervalMinutes}min")
     }
 
     /**
@@ -82,16 +104,46 @@ object DynamicWidgetServerUpdateScheduler {
         context: Context,
         scope: WidgetScope,
     ) {
-        val request =
+        enqueueOneTime(context, scope, delayMinutes = 0L, expedited = true)
+    }
+
+    /**
+     * Runs a fetch after the delay the server asked for with `Retry-After`. Used instead of
+     * WorkManager's own backoff, which starts at 30 seconds and would ignore what the server said.
+     */
+    fun requestDelayedUpdate(
+        context: Context,
+        scope: WidgetScope,
+        delayMinutes: Long,
+    ) {
+        enqueueOneTime(context, scope, delayMinutes = delayMinutes, expedited = false)
+    }
+
+    private fun enqueueOneTime(
+        context: Context,
+        scope: WidgetScope,
+        delayMinutes: Long,
+        expedited: Boolean,
+    ) {
+        val builder =
             OneTimeWorkRequestBuilder<DynamicWidgetServerUpdateWorker>()
                 .setInputData(inputData(scope))
                 .setConstraints(networkConstraints())
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .addTag(WORK_TAG)
-                .build()
 
-        WorkManager.getInstance(context).enqueue(request)
+        if (delayMinutes > 0) {
+            builder.setInitialDelay(delayMinutes, TimeUnit.MINUTES)
+        } else if (expedited) {
+            builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        }
+
+        // Unique per scope, so a settings change plus a reload plus a refresh tap collapse into
+        // one fetch rather than three. REPLACE rather than KEEP because the newest request is the
+        // one carrying the caller's intent -- a fresh URL, or a delay the server asked for.
+        WorkManager
+            .getInstance(context)
+            .enqueueUniqueWork(oneTimeWorkName(scope), ExistingWorkPolicy.REPLACE, builder.build())
     }
 
     fun cancel(
@@ -99,9 +151,12 @@ object DynamicWidgetServerUpdateScheduler {
         scope: WidgetScope,
     ) {
         WorkManager.getInstance(context).cancelUniqueWork(workName(scope))
+        WorkManager.getInstance(context).cancelUniqueWork(oneTimeWorkName(scope))
     }
 
     internal fun workName(scope: WidgetScope): String = "$WORK_NAME_PREFIX${scope.storageKey}"
+
+    private fun oneTimeWorkName(scope: WidgetScope): String = "$WORK_NAME_PREFIX${scope.storageKey}_once"
 
     private fun inputData(scope: WidgetScope): Data = Data.Builder().putString(KEY_WIDGET_ID, scope.widgetId).build()
 

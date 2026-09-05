@@ -75,26 +75,31 @@ public enum VoltraWidgetServerFetcher {
       throw FetchError.noServerUrl
     }
 
+    // No If-None-Match: a payload widget sends the request it always sent, plus locale. The last
+    // successful response is kept only for this extension process, so a 304 could arrive with
+    // nothing to fall back on and leave the widget on its initial state.
     guard let request = WidgetServerRequestBuilder.build(
       scope: scope,
       settings: settings,
-      context: VoltraWidgetAppearance.requestContext(family: family),
-      etag: WidgetServerEtagStore.etag(for: scope, url: url)
+      context: VoltraWidgetAppearance.requestContext(family: family)
     ) else {
       throw FetchError.invalidUrl(url)
     }
 
     switch await WidgetServerFetcher.fetch(request) {
-    case let .success(body, etag, _, _):
+    case let .success(body, _, _, _):
       guard !body.isEmpty else {
         throw FetchError.emptyResponse
       }
 
-      WidgetServerEtagStore.put(etag, for: scope, url: url)
       return body
 
     case .notModified:
+      // Only reachable if the server answers 304 unprompted; nothing was requested conditionally.
       throw FetchError.notModified
+
+    case let .tooLarge(statusCode):
+      throw FetchError.httpError(statusCode: statusCode)
 
     case let .httpFailure(statusCode, _):
       throw FetchError.httpError(statusCode: statusCode)

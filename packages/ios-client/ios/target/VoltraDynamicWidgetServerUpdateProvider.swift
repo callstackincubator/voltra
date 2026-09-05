@@ -63,14 +63,42 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
       return Timeline(entries: [await localEntry(configuration: configuration)], policy: .never)
     }
 
-    if await DynamicWidgetServerFetchCoordinator.shared.shouldFetch(scope) {
-      _ = await runner(family: family, configuration: configuration).run(scope)
+    var nextIntervalMinutes = settings.intervalMinutes
+
+    if await shouldFetch() {
+      let result = await runner(family: family, configuration: configuration).run(scope)
+
+      // What the server asked for wins over the configured interval: `Cache-Control: max-age` on a
+      // success, `Retry-After` on a 429 or 503.
+      if let asked = result.nextIntervalMinutes {
+        nextIntervalMinutes = asked
+      } else if result.outcome == .retry || result.outcome == .failed {
+        // A failure the server did not put a number on. Coming back sooner than the widget's own
+        // interval would spend the reload budget on an endpoint that is already unhappy, so the
+        // floor is used rather than the configured value only when that is shorter.
+        nextIntervalMinutes = max(settings.intervalMinutes, WidgetServerUpdateDefaults.minIntervalMinutes)
+      }
     }
 
     let entry = await localEntry(configuration: configuration)
-    let nextUpdate = Date().addingTimeInterval(TimeInterval(settings.intervalMinutes * 60))
+    let nextUpdate = Date().addingTimeInterval(TimeInterval(nextIntervalMinutes * 60))
 
     return Timeline(entries: [entry], policy: .after(nextUpdate))
+  }
+
+  /// Whether this timeline request should fetch, or ride on one that just happened.
+  ///
+  /// Skipped for a moment after `updateDynamicWidget` writes props, so an optimistic update is not
+  /// wiped out by the very reload it triggered. ADR 0002 says the *next scheduled* fetch overwrites
+  /// app-written props, not the one the write itself caused.
+  private func shouldFetch() async -> Bool {
+    if let writtenAt = DynamicWidgetServerPropsStore().appWriteAt(for: scope),
+       Date().timeIntervalSince(writtenAt) < DynamicWidgetServerFetchCoordinator.defaultCoalesceInterval
+    {
+      return false
+    }
+
+    return await DynamicWidgetServerFetchCoordinator.shared.shouldFetch(scope)
   }
 
   /// The entry a widget renders from: the bundle, the configuration, and how the last fetch went.

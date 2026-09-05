@@ -1,9 +1,4 @@
-import {
-  DYNAMIC_WIDGET_SERVER_UPDATE_INTERVAL_MINUTES,
-  resolveServerUpdateInterval,
-  resolveServerUpdateUrl,
-  validateServerUpdateRefresh,
-} from './serverUpdate'
+import { resolveServerUpdateInterval, resolveServerUpdateUrl, validateServerUpdateRefresh } from './serverUpdate'
 import { logger } from './utils/logger'
 
 /**
@@ -105,8 +100,10 @@ export function resolveWidgetServerUpdate(
 
   return {
     url: serverUpdate.url,
-    intervalMinutes:
-      interval.kind === 'invalid' ? DYNAMIC_WIDGET_SERVER_UPDATE_INTERVAL_MINUTES : interval.intervalMinutes,
+    // An invalid interval cannot reach here — validateWidgetServerUpdate throws on it first — but
+    // if the two are ever called out of order, falling back to the platform's own default is less
+    // surprising than silently switching a payload widget to the Dynamic one.
+    intervalMinutes: interval.kind === 'invalid' ? rules.defaultIntervalMinutes : interval.intervalMinutes,
     refresh: serverUpdate.refresh === true,
   }
 }

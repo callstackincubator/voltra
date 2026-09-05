@@ -92,19 +92,35 @@ class WidgetServerSettingsResolverTest {
         }
 
     @Test
-    fun `clamps the interval to what the platform can honour`() =
+    fun `clamps a runtime interval override to what the platform can honour`() =
         runTest {
             val tooShort =
                 resolver(
-                    layer("config", WidgetServerUpdateSettings(intervalMinutes = 1), serverDriven = true),
+                    layer("config", WidgetServerUpdateSettings(intervalMinutes = 60), serverDriven = true),
+                    layer("widget", WidgetServerUpdateSettings(intervalMinutes = 1)),
                 ).resolve(scope)
             val tooLong =
                 resolver(
-                    layer("config", WidgetServerUpdateSettings(intervalMinutes = 60 * 24 * 30), serverDriven = true),
+                    layer("config", WidgetServerUpdateSettings(intervalMinutes = 60), serverDriven = true),
+                    layer("widget", WidgetServerUpdateSettings(intervalMinutes = 60 * 24 * 30)),
                 ).resolve(scope)
 
             assertEquals(WidgetServerUpdateDefaults.MIN_INTERVAL_MINUTES, tooShort.intervalMinutes)
             assertEquals(WidgetServerUpdateDefaults.MAX_INTERVAL_MINUTES, tooLong.intervalMinutes)
+        }
+
+    @Test
+    fun `leaves an interval from app_json alone, so an existing widget keeps its schedule`() =
+        runTest {
+            // The generators already validated this against the platform's own rules -- iOS allows
+            // a payload widget down to 1 minute -- so clamping it again here would silently change
+            // the schedule of a widget that has been shipping for months.
+            val resolved =
+                resolver(
+                    layer("config", WidgetServerUpdateSettings(intervalMinutes = 5), serverDriven = true),
+                ).resolve(scope)
+
+            assertEquals(5L, resolved.intervalMinutes)
         }
 
     @Test

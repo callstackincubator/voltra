@@ -42,8 +42,11 @@ export async function setWidgetServerUpdate(
  * Drops the runtime settings for one widget, or the global ones when no `widgetId` is given, so
  * the widget falls back to what app.json configured.
  *
- * Clearing the global settings is the logout gesture: it removes the credentials the widgets were
- * fetching with and reloads them.
+ * Clearing the global settings is the logout gesture: along with the settings it drops what the
+ * server last sent for every server-driven widget, so a Dynamic Widget goes back to `{}` with
+ * `env.serverUpdate.status` of `never` rather than showing the previous account's data. Credentials
+ * set with the deprecated `setWidgetServerCredentials` are stored separately — clear those with
+ * `clearWidgetServerCredentials`.
  */
 export async function clearWidgetServerUpdate(options?: WidgetServerUpdateOptions): Promise<void> {
   return getNativeVoltra().clearWidgetServerUpdate(options?.widgetId ?? null)

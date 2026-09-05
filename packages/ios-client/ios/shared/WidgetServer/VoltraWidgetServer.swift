@@ -93,10 +93,20 @@ public enum VoltraWidgetServer {
   public static func requestContext(theme: String, family: String? = nil) -> WidgetServerRequestContext {
     WidgetServerRequestContext(
       theme: theme,
-      locale: Locale.current.identifier,
+      locale: bcp47Locale(),
       userAgent: userAgent(),
       family: family
     )
+  }
+
+  /// The device locale as a BCP-47 tag, so a backend sees `en-US` from both platforms.
+  /// `Locale.identifier` is the ICU form (`en_US`), which is not what the contract promises.
+  static func bcp47Locale(_ locale: Locale = .current) -> String {
+    if #available(iOS 16.0, macOS 13.0, *) {
+      return locale.identifier(.bcp47)
+    }
+
+    return locale.identifier.replacingOccurrences(of: "_", with: "-")
   }
 
   static func userAgent() -> String {

@@ -91,9 +91,33 @@ enum VoltraWidgetService {
     }
 
     WidgetServerSettingsStore.clear(scope: widgetId.map { .of($0) })
+
+    // Clearing the global settings is logout: what the previous account's server sent has to go
+    // with it, or the widget keeps showing their data. A widget-scoped clear only drops that
+    // widget's overrides, so its props are left alone.
+    if widgetId == nil {
+      clearFetchedState()
+    }
+
     reloadServerDrivenWidgets(widgetId: widgetId)
 
     return nil
+  }
+
+  /// Drops what the server last sent for every server-driven widget, so a Dynamic Widget falls
+  /// back to `{}` with `env.serverUpdate.status` of `never` — the state it is in before its first
+  /// fetch.
+  private static func clearFetchedState() {
+    let statuses = DynamicWidgetServerPropsStore()
+    let propsStore = DynamicWidgetPropsStore()
+
+    for widgetId in VoltraWidgetServer.serverDrivenWidgetIds {
+      let scope = WidgetScope.of(widgetId)
+
+      try? propsStore.clearDynamicWidgetProps(for: widgetId)
+      statuses.clear(scope)
+      WidgetServerEtagStore.clear(scope)
+    }
   }
 
   /// The engine is chosen at generate time, so a runtime URL cannot turn a locally-driven widget

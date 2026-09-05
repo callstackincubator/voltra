@@ -13,6 +13,7 @@ import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.server.ResolvedWidgetServerSettings
 import voltra.widget.server.WidgetScope
 import voltra.widget.server.WidgetServerFetchResult
+import voltra.widget.server.WidgetServerUpdateDefaults
 
 /**
  * The ADR 0002 failure table, one row at a time. Every collaborator is a fake, so what is under
@@ -121,7 +122,7 @@ class DynamicWidgetServerUpdateRunnerTest {
                 runner(
                     harness,
                     result = WidgetServerFetchResult.Success("""{"total":42}""", "\"abc\"", 200, null),
-                ).run(scope)
+                ).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Committed, outcome)
             assertEquals(listOf("""{"total":42}"""), harness.props.committed)
@@ -134,7 +135,7 @@ class DynamicWidgetServerUpdateRunnerTest {
         runTest {
             val harness = Harness()
 
-            runner(harness, result = WidgetServerFetchResult.Success("{}", "\"abc\"", 200, null)).run(scope)
+            runner(harness, result = WidgetServerFetchResult.Success("{}", "\"abc\"", 200, null)).run(scope).outcome
 
             assertEquals(
                 listOf(Triple("portfolio", "https://api.example.com/portfolio", "\"abc\"")),
@@ -147,7 +148,7 @@ class DynamicWidgetServerUpdateRunnerTest {
         runTest {
             var sent: String? = null
 
-            runner(Harness(), storedEtag = "\"abc\"", onRequestEtag = { sent = it }).run(scope)
+            runner(Harness(), storedEtag = "\"abc\"", onRequestEtag = { sent = it }).run(scope).outcome
 
             assertEquals("\"abc\"", sent)
         }
@@ -156,7 +157,7 @@ class DynamicWidgetServerUpdateRunnerTest {
     fun `treats 304 as fresh without touching the props`() =
         runTest {
             val harness = Harness()
-            val outcome = runner(harness, result = WidgetServerFetchResult.NotModified(null)).run(scope)
+            val outcome = runner(harness, result = WidgetServerFetchResult.NotModified(null)).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Committed, outcome)
             assertTrue(harness.props.committed.isEmpty())
@@ -172,7 +173,7 @@ class DynamicWidgetServerUpdateRunnerTest {
                     harness,
                     result = WidgetServerFetchResult.Success("""{"total":42}""", null, 200, null),
                     trialRenders = false,
-                ).run(scope)
+                ).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Failed, outcome)
             assertTrue(harness.props.committed.isEmpty())
@@ -192,7 +193,7 @@ class DynamicWidgetServerUpdateRunnerTest {
                 runner(
                     harness,
                     result = WidgetServerFetchResult.Success("""{"v":1,"variants":{}}""", null, 200, null),
-                ).run(scope)
+                ).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Failed, outcome)
             assertTrue(harness.props.committed.isEmpty())
@@ -208,7 +209,7 @@ class DynamicWidgetServerUpdateRunnerTest {
     fun `retries a network failure and keeps the previous props`() =
         runTest {
             val harness = Harness()
-            val outcome = runner(harness, result = WidgetServerFetchResult.NetworkFailure("timeout")).run(scope)
+            val outcome = runner(harness, result = WidgetServerFetchResult.NetworkFailure("timeout")).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Retry, outcome)
             assertTrue(harness.props.committed.isEmpty())
@@ -225,11 +226,51 @@ class DynamicWidgetServerUpdateRunnerTest {
         runTest {
             assertEquals(
                 DynamicWidgetServerUpdateOutcome.Retry,
-                runner(Harness(), result = WidgetServerFetchResult.HttpFailure(503, 2)).run(scope),
+                runner(Harness(), result = WidgetServerFetchResult.HttpFailure(503, 2)).run(scope).outcome,
             )
             assertEquals(
                 DynamicWidgetServerUpdateOutcome.Retry,
-                runner(Harness(), result = WidgetServerFetchResult.HttpFailure(429, null)).run(scope),
+                runner(Harness(), result = WidgetServerFetchResult.HttpFailure(429, null)).run(scope).outcome,
+            )
+        }
+
+    @Test
+    fun `passes Retry-After on, clamped to what WorkManager can honour`() =
+        runTest {
+            val soon = runner(Harness(), result = WidgetServerFetchResult.HttpFailure(503, 2)).run(scope)
+            val far = runner(Harness(), result = WidgetServerFetchResult.HttpFailure(503, 60 * 24 * 30)).run(scope)
+            val none = runner(Harness(), result = WidgetServerFetchResult.HttpFailure(503, null)).run(scope)
+
+            assertEquals(WidgetServerUpdateDefaults.MIN_INTERVAL_MINUTES, soon.nextIntervalMinutes)
+            assertEquals(WidgetServerUpdateDefaults.MAX_INTERVAL_MINUTES, far.nextIntervalMinutes)
+            assertNull(none.nextIntervalMinutes)
+        }
+
+    @Test
+    fun `passes Cache-Control max-age on, so the server can move its own next fetch`() =
+        runTest {
+            val committed =
+                runner(
+                    Harness(),
+                    result = WidgetServerFetchResult.Success("{\"total\":42}", null, 200, 360),
+                ).run(scope)
+
+            assertEquals(360L, committed.nextIntervalMinutes)
+        }
+
+    @Test
+    fun `does not ask again for a body that is too large to hold`() =
+        runTest {
+            val harness = Harness()
+            val outcome = runner(harness, result = WidgetServerFetchResult.TooLarge(200)).run(scope).outcome
+
+            assertEquals(DynamicWidgetServerUpdateOutcome.Failed, outcome)
+            assertTrue(harness.props.committed.isEmpty())
+            assertEquals(
+                DynamicWidgetServerStatus.ERROR_PARSE,
+                harness.statuses.failures
+                    .single()
+                    .first,
             )
         }
 
@@ -237,7 +278,7 @@ class DynamicWidgetServerUpdateRunnerTest {
     fun `does not retry a 401, which stays a 401 until the app sets a new token`() =
         runTest {
             val harness = Harness()
-            val outcome = runner(harness, result = WidgetServerFetchResult.HttpFailure(401, null)).run(scope)
+            val outcome = runner(harness, result = WidgetServerFetchResult.HttpFailure(401, null)).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Failed, outcome)
             assertEquals(
@@ -250,7 +291,7 @@ class DynamicWidgetServerUpdateRunnerTest {
     fun `does not retry another 4xx, which is a misconfiguration`() =
         runTest {
             val harness = Harness()
-            val outcome = runner(harness, result = WidgetServerFetchResult.HttpFailure(404, null)).run(scope)
+            val outcome = runner(harness, result = WidgetServerFetchResult.HttpFailure(404, null)).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Failed, outcome)
             assertEquals(DynamicWidgetServerStatus.ERROR_HTTP to 404, harness.statuses.failures.single())
@@ -265,7 +306,7 @@ class DynamicWidgetServerUpdateRunnerTest {
                     harness,
                     result = WidgetServerFetchResult.Success("""{"total":42}""", null, 200, null),
                     revisions = listOf(1L, 2L),
-                ).run(scope)
+                ).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Dropped, outcome)
             assertTrue(harness.props.committed.isEmpty())
@@ -277,7 +318,7 @@ class DynamicWidgetServerUpdateRunnerTest {
     fun `does not fetch for a widget with no url yet`() =
         runTest {
             val harness = Harness()
-            val outcome = runner(harness, settings = settings(url = null)).run(scope)
+            val outcome = runner(harness, settings = settings(url = null)).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Skipped, outcome)
             assertNull(harness.statuses.disabledFor)
@@ -287,7 +328,7 @@ class DynamicWidgetServerUpdateRunnerTest {
     fun `reports disabled when the app has taken the widget over`() =
         runTest {
             val harness = Harness()
-            val outcome = runner(harness, settings = settings(enabled = false)).run(scope)
+            val outcome = runner(harness, settings = settings(enabled = false)).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Skipped, outcome)
             assertEquals(scope, harness.statuses.disabledFor)
@@ -301,7 +342,7 @@ class DynamicWidgetServerUpdateRunnerTest {
                 runner(
                     harness,
                     kind = VoltraWidgetKindResolution.Resolved(VoltraWidgetKind.Payload),
-                ).run(scope)
+                ).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Skipped, outcome)
             assertTrue(harness.props.committed.isEmpty())
@@ -311,7 +352,7 @@ class DynamicWidgetServerUpdateRunnerTest {
     fun `refuses to touch a widget whose kind cannot be resolved`() =
         runTest {
             val harness = Harness()
-            val outcome = runner(harness, kind = VoltraWidgetKindResolution.Unresolved("gone")).run(scope)
+            val outcome = runner(harness, kind = VoltraWidgetKindResolution.Unresolved("gone")).run(scope).outcome
 
             assertEquals(DynamicWidgetServerUpdateOutcome.Skipped, outcome)
             assertTrue(harness.props.committed.isEmpty())

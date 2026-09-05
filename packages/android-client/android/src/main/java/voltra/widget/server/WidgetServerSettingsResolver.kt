@@ -22,20 +22,32 @@ class WidgetServerSettingsResolver(
      */
     suspend fun resolve(scope: WidgetScope): ResolvedWidgetServerSettings {
         var merged = WidgetServerUpdateSettings.EMPTY
+        var intervalFromConfig = false
 
-        for (layer in layers) {
+        for ((index, layer) in layers.withIndex()) {
             val settings = layer.settings(scope) ?: continue
+
+            if (settings.intervalMinutes != null) {
+                // Index 0 is the config layer. An interval that came from app.json was already
+                // validated against this platform's rules when the native project was generated,
+                // so clamping it again here would silently change an existing widget's schedule.
+                intervalFromConfig = index == 0
+            }
+
             merged = merge(merged, settings)
         }
 
         val serverDriven = isServerDriven(scope)
+        val intervalMinutes = merged.intervalMinutes ?: WidgetServerUpdateDefaults.DEFAULT_INTERVAL_MINUTES
 
         return ResolvedWidgetServerSettings(
             url = if (serverDriven) merged.url?.takeIf { it.isNotBlank() } else null,
             intervalMinutes =
-                WidgetServerUpdateDefaults.clampIntervalMinutes(
-                    merged.intervalMinutes ?: WidgetServerUpdateDefaults.DEFAULT_INTERVAL_MINUTES,
-                ),
+                if (intervalFromConfig) {
+                    intervalMinutes
+                } else {
+                    WidgetServerUpdateDefaults.clampIntervalMinutes(intervalMinutes)
+                },
             enabled = serverDriven && (merged.enabled ?: true),
             method = merged.method ?: WidgetServerUpdateDefaults.DEFAULT_METHOD,
             query = merged.query ?: emptyMap(),

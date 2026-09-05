@@ -7,6 +7,16 @@ package voltra.dynamicwidget.serverupdate
  * rules for "retry", "give up", and "keep what we have" are the interesting part, and none of them
  * need WorkManager to be exercised.
  */
+internal data class DynamicWidgetServerUpdateResult(
+    val outcome: DynamicWidgetServerUpdateOutcome,
+    /**
+     * What the server asked for about the next fetch, in minutes: `Cache-Control: max-age` on a
+     * success, `Retry-After` on a `429` or `503`. Already clamped to what the platform can honour.
+     * Null when the server said nothing and the widget's own interval stands.
+     */
+    val nextIntervalMinutes: Long? = null,
+)
+
 internal enum class DynamicWidgetServerUpdateOutcome {
     /** Props were committed, or the server said `304` and what we have is still current. */
     Committed,

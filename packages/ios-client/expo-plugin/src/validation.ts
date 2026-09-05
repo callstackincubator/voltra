@@ -88,6 +88,15 @@ export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projec
     for (const widget of props.widgets) {
       validateIOSWidgetConfig(widget, projectRoot)
 
+      // A server-driven Dynamic Widget commits fetched props to the App Group so the widget
+      // extension can read them. Without one it would fetch and have nowhere to put the result.
+      if (widget.entry !== undefined && widget.serverUpdate !== undefined && !props.groupIdentifier) {
+        throw new Error(
+          `Widget '${widget.id}' has both entry and serverUpdate, which requires groupIdentifier ` +
+            'so fetched props can be shared with the widget extension.'
+        )
+      }
+
       if (seenIds.has(widget.id)) {
         throw new Error(`Duplicate widget ID: '${widget.id}'`)
       }

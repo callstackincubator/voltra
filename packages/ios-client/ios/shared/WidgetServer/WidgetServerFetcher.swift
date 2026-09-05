@@ -13,6 +13,10 @@ public enum WidgetServerFetchResult: Sendable {
   case networkFailure(message: String)
   /// The server answered with a status we cannot use.
   case httpFailure(httpStatus: Int, retryAfterMinutes: Int?)
+  /// A `2xx` whose body is over `WidgetServerUpdateDefaults.maxBodyBytes`. Kept apart from
+  /// `httpFailure` because the server did answer: this is a body the device refuses, so it is
+  /// reported as a parse failure and asking again is pointless.
+  case tooLarge(httpStatus: Int)
 
   public var isUnauthorized: Bool {
     if case let .httpFailure(status, _) = self {
@@ -37,12 +41,42 @@ public enum WidgetServerFetchResult: Sendable {
 /// Executes a request built by `WidgetServerRequestBuilder` and reports what happened, without
 /// deciding what to do about it.
 public enum WidgetServerFetcher {
+  /// Refuses to leave the host the app configured, so an `Authorization` header or a request body
+  /// cannot be replayed somewhere the app never agreed to send it.
+  private final class SameHostRedirectDelegate: NSObject, URLSessionTaskDelegate {
+    func urlSession(
+      _: URLSession,
+      task: URLSessionTask,
+      willPerformHTTPRedirection _: HTTPURLResponse,
+      newRequest request: URLRequest,
+      completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+      guard let originalHost = task.originalRequest?.url?.host,
+            let originalScheme = task.originalRequest?.url?.scheme,
+            let nextHost = request.url?.host,
+            nextHost.caseInsensitiveCompare(originalHost) == .orderedSame,
+            request.url?.scheme == originalScheme
+      else {
+        VoltraLogger.widget.warning("Refusing cross-host redirect for a widget server request")
+        completionHandler(nil)
+        return
+      }
+
+      completionHandler(request)
+    }
+  }
+
+  private static let redirectDelegate = SameHostRedirectDelegate()
+
   public static func fetch(
     _ request: URLRequest,
     session: URLSession = .shared
   ) async -> WidgetServerFetchResult {
     do {
-      let (data, response) = try await session.data(for: request)
+      // bytes(for:) rather than data(for:) so an oversized body is abandoned mid-stream. A widget
+      // extension has a 30 MB ceiling for the whole render, and buffering first would spend it
+      // before we ever got to check.
+      let (stream, response) = try await session.bytes(for: request, delegate: redirectDelegate)
 
       guard let http = response as? HTTPURLResponse else {
         return .networkFailure(message: "Response was not an HTTP response")
@@ -61,17 +95,17 @@ public enum WidgetServerFetcher {
         )
       }
 
-      guard data.count <= WidgetServerUpdateDefaults.maxBodyBytes else {
+      guard let body = try await readBody(stream) else {
         // Asking again returns the same oversized body, so this is a failure the app has to fix
         // rather than one to back off from.
         VoltraLogger.widget.error(
           "Response is larger than \(WidgetServerUpdateDefaults.maxBodyBytes, privacy: .public) bytes"
         )
-        return .httpFailure(httpStatus: http.statusCode, retryAfterMinutes: nil)
+        return .tooLarge(httpStatus: http.statusCode)
       }
 
       return .success(
-        body: data,
+        body: body,
         etag: http.value(forHTTPHeaderField: "ETag"),
         httpStatus: http.statusCode,
         nextIntervalMinutes: nextIntervalMinutes
@@ -79,6 +113,22 @@ public enum WidgetServerFetcher {
     } catch {
       return .networkFailure(message: error.localizedDescription)
     }
+  }
+
+  /// Returns nil as soon as the body passes the cap, without holding the rest of it.
+  private static func readBody(_ stream: URLSession.AsyncBytes) async throws -> Data? {
+    var body = Data()
+    body.reserveCapacity(16 * 1024)
+
+    for try await byte in stream {
+      if body.count >= WidgetServerUpdateDefaults.maxBodyBytes {
+        return nil
+      }
+
+      body.append(byte)
+    }
+
+    return body
   }
 
   /// `Cache-Control: max-age=N`, in minutes, rounded down.
@@ -98,12 +148,32 @@ public enum WidgetServerFetcher {
     return seconds / 60
   }
 
-  /// `Retry-After` as delta-seconds, in minutes, rounded up so we never retry early.
-  static func retryAfterMinutes(_ header: String?) -> Int? {
-    guard let seconds = header.flatMap({ Int($0.trimmingCharacters(in: .whitespaces)) }), seconds > 0 else {
+  /// `Retry-After`, in minutes, rounded up so we never retry early.
+  ///
+  /// The header is delta-seconds or an HTTP date; both are in the wild, so both are read.
+  static func retryAfterMinutes(_ header: String?, now: Date = Date()) -> Int? {
+    guard let value = header?.trimmingCharacters(in: .whitespaces), !value.isEmpty else {
       return nil
     }
 
-    return (seconds + 59) / 60
+    if let seconds = Int(value) {
+      return seconds > 0 ? (seconds + 59) / 60 : nil
+    }
+
+    guard let date = httpDateFormatter.date(from: value) else {
+      return nil
+    }
+
+    let seconds = Int(date.timeIntervalSince(now))
+
+    return seconds > 0 ? (seconds + 59) / 60 : nil
   }
+
+  private static let httpDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(identifier: "GMT")
+    formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+    return formatter
+  }()
 }

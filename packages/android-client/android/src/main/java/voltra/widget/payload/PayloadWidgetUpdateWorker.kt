@@ -15,7 +15,6 @@ import voltra.widget.VoltraWidgetReceivers
 import voltra.widget.VoltraWidgetUpdateWorker
 import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
-import voltra.widget.server.WidgetServerEtagStore
 import voltra.widget.server.WidgetServerFetchResult
 import voltra.widget.server.WidgetServerFetcher
 import voltra.widget.server.WidgetServerRequestBuilder
@@ -83,18 +82,28 @@ internal object PayloadWidgetUpdateWorker {
 
             val revision = resolver.revision(scope)
             val url = settings.url!!
-            val etags = WidgetServerEtagStore(applicationContext)
 
             Log.d(TAG, "Starting server update for widget '$widgetId' from $url")
 
+            // No If-None-Match: a payload widget sends the request it always sent, plus locale. A
+            // 304 would mean committing nothing, and the payload store is cleared by clearWidget
+            // and by an app upgrade, so there is no way to be sure "unchanged" still matches what
+            // is on screen.
             val request =
-                WidgetServerRequestBuilder.build(applicationContext, scope, settings, etags.etag(scope, url))
+                WidgetServerRequestBuilder.build(applicationContext, scope, settings)
                     ?: return@withContext Result.success()
 
             when (val result = WidgetServerFetcher.fetch(request)) {
                 is WidgetServerFetchResult.NotModified -> {
+                    // Only reachable if the server answers 304 unprompted; nothing was requested
+                    // conditionally, so there is nothing to commit.
                     Log.d(TAG, "Widget '$widgetId' is unchanged since the last fetch")
                     Result.success()
+                }
+
+                is WidgetServerFetchResult.TooLarge -> {
+                    Log.e(TAG, "Response for widget '$widgetId' is too large to render")
+                    Result.failure()
                 }
 
                 is WidgetServerFetchResult.NetworkFailure -> {
@@ -123,7 +132,6 @@ internal object PayloadWidgetUpdateWorker {
                     }
 
                     commit(applicationContext, widgetId, result.body)
-                    etags.put(scope, url, result.etag)
                     Result.success()
                 }
             }

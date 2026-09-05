@@ -5,8 +5,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * The two response headers that move the next fetch. Both are clamped where they are applied, so
- * here we only pin down the parsing.
+ * The two response headers that move the next fetch. Parsing only: the clamp and the rescheduling
+ * they feed are pinned down by DynamicWidgetServerUpdateRunnerTest.
  */
 class WidgetServerFetcherHeaderTest {
     @Test
@@ -37,9 +37,23 @@ class WidgetServerFetcherHeaderTest {
     }
 
     @Test
-    fun `ignores a Retry-After we cannot read as seconds`() {
+    fun `reads Retry-After as an HTTP date, which servers send as often as seconds`() {
+        // 2015-10-21T07:28:00Z, asked for 90 seconds before that.
+        val now = 1_445_412_480_000L - 90_000L
+
+        assertEquals(2L, WidgetServerFetcher.retryAfterMinutes("Wed, 21 Oct 2015 07:28:00 GMT", now = now))
+    }
+
+    @Test
+    fun `ignores a Retry-After already in the past, or one we cannot read at all`() {
         assertNull(WidgetServerFetcher.retryAfterMinutes(null))
-        assertNull(WidgetServerFetcher.retryAfterMinutes("Wed, 21 Oct 2015 07:28:00 GMT"))
+        assertNull(WidgetServerFetcher.retryAfterMinutes("soon"))
         assertNull(WidgetServerFetcher.retryAfterMinutes("0"))
+        assertNull(
+            WidgetServerFetcher.retryAfterMinutes(
+                "Wed, 21 Oct 2015 07:28:00 GMT",
+                now = 1_445_412_480_000L + 60_000L,
+            ),
+        )
     }
 }

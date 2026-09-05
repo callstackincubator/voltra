@@ -5,6 +5,9 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * What came back from the server, before either engine decides what it means.
@@ -29,6 +32,15 @@ sealed class WidgetServerFetchResult {
     /** The request never completed: no connectivity, DNS, TLS, or a timeout. */
     data class NetworkFailure(
         val message: String,
+    ) : WidgetServerFetchResult()
+
+    /**
+     * A `2xx` whose body is over [WidgetServerFetcher.MAX_BODY_BYTES]. Kept apart from
+     * [HttpFailure] because the server did answer: this is a body the device refuses, so it is
+     * reported as a parse failure and asking again is pointless.
+     */
+    data class TooLarge(
+        val httpStatus: Int,
     ) : WidgetServerFetchResult()
 
     /**
@@ -128,7 +140,7 @@ object WidgetServerFetcher {
                     // Over the size cap. Retrying returns the same oversized body, so this is a
                     // failure the app has to fix rather than one to back off from.
                     Log.e(TAG, "Response from ${current.url} is larger than $MAX_BODY_BYTES bytes")
-                    return WidgetServerFetchResult.HttpFailure(status, null)
+                    return WidgetServerFetchResult.TooLarge(status)
                 }
 
                 return WidgetServerFetchResult.Success(
@@ -204,12 +216,34 @@ object WidgetServerFetcher {
         return seconds / 60
     }
 
-    /** `Retry-After` as delta-seconds, in minutes, rounded up so we never retry early. */
-    internal fun retryAfterMinutes(header: String?): Long? {
-        val seconds = header?.trim()?.toLongOrNull() ?: return null
+    /**
+     * `Retry-After`, in minutes, rounded up so we never retry early.
+     *
+     * The header is delta-seconds or an HTTP date; both are in the wild, so both are read.
+     */
+    internal fun retryAfterMinutes(
+        header: String?,
+        now: Long = System.currentTimeMillis(),
+    ): Long? {
+        val value = header?.trim()?.takeIf { it.isNotEmpty() } ?: return null
 
-        if (seconds <= 0) return null
+        value.toLongOrNull()?.let { seconds ->
+            return if (seconds <= 0) null else (seconds + 59) / 60
+        }
 
-        return (seconds + 59) / 60
+        val date =
+            try {
+                SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US)
+                    .apply { timeZone = TimeZone.getTimeZone("GMT") }
+                    .parse(value)
+            } catch (_: Exception) {
+                null
+            } ?: return null
+
+        val seconds = (date.time - now) / 1000
+
+        return if (seconds <= 0) null else (seconds + 59) / 60
     }
+
+    private const val HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz"
 }

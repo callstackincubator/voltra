@@ -46,20 +46,30 @@ public struct WidgetServerSettingsResolver: Sendable {
   /// does nothing rather than guessing.
   public func resolve(_ scope: WidgetScope) -> ResolvedWidgetServerSettings {
     var merged = WidgetServerUpdateSettings.empty
+    var intervalFromConfig = false
 
-    for layer in layers {
+    for (index, layer) in layers.enumerated() {
       guard let settings = layer.settings(for: scope) else { continue }
+
+      if settings.intervalMinutes != nil {
+        // Index 0 is the config layer. An interval that came from app.json was already validated
+        // against this platform's rules when the native project was generated, so clamping it
+        // again here would silently change an existing widget's schedule.
+        intervalFromConfig = index == 0
+      }
+
       merged = Self.merge(lower: merged, higher: settings)
     }
 
     let serverDriven = isServerDriven(scope)
     let url = serverDriven ? merged.url.flatMap { $0.isEmpty ? nil : $0 } : nil
+    let intervalMinutes = merged.intervalMinutes ?? WidgetServerUpdateDefaults.defaultIntervalMinutes
 
     return ResolvedWidgetServerSettings(
       url: url,
-      intervalMinutes: WidgetServerUpdateDefaults.clampIntervalMinutes(
-        merged.intervalMinutes ?? WidgetServerUpdateDefaults.defaultIntervalMinutes
-      ),
+      intervalMinutes: intervalFromConfig
+        ? intervalMinutes
+        : WidgetServerUpdateDefaults.clampIntervalMinutes(intervalMinutes),
       enabled: serverDriven && (merged.enabled ?? true),
       method: merged.method ?? WidgetServerUpdateDefaults.defaultMethod,
       query: merged.query ?? [:],

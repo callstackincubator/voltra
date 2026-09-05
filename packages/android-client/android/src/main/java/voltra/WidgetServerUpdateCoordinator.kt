@@ -2,6 +2,8 @@ package voltra
 
 import android.content.Context
 import android.util.Log
+import voltra.dynamicwidget.DynamicWidgetPropsStore
+import voltra.dynamicwidget.serverupdate.DynamicWidgetServerPropsStore
 import voltra.dynamicwidget.serverupdate.DynamicWidgetServerUpdateScheduler
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
@@ -9,6 +11,7 @@ import voltra.widget.VoltraWidgetKindResolver
 import voltra.widget.payload.VoltraWidgetUpdateScheduler
 import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
+import voltra.widget.server.WidgetServerEtagStore
 import voltra.widget.server.WidgetServerSettingsValidator
 import voltra.widget.server.WidgetServerUpdateSettings
 import voltra.widget.server.WidgetServerUpdateSettingsJson
@@ -66,9 +69,43 @@ internal class WidgetServerUpdateCoordinator(
         }
 
         VoltraWidgetServer.store(context).clear(widgetId?.let { WidgetScope.of(it) })
+
+        // Clearing the global layer is logout: what the previous account's server sent has to go
+        // with it, or the widget keeps showing their data. A widget-scoped clear only drops that
+        // widget's overrides, so its props are left alone.
+        if (widgetId == null) {
+            clearFetchedState()
+        }
+
         applyToAffectedWidgets(widgetId)
 
         return Result.Applied
+    }
+
+    /**
+     * Drops what the server last sent for every server-driven Dynamic Widget, so they fall back to
+     * `{}` with `env.serverUpdate.status` of `never` — the state a widget is in before its first
+     * fetch.
+     */
+    private fun clearFetchedState() {
+        val propsStore = DynamicWidgetPropsStore(context)
+        val statusStore = DynamicWidgetServerPropsStore(context)
+        val etags = WidgetServerEtagStore(context)
+
+        for (widgetId in VoltraWidgetServer.serverDrivenWidgetIds(context)) {
+            if (classifyKind(widgetId) != VoltraWidgetKind.Dynamic) continue
+
+            val scope = WidgetScope.of(widgetId)
+
+            try {
+                propsStore.clearDynamicWidgetProps(widgetId)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to clear fetched props for '$widgetId': ${e.message}", e)
+            }
+
+            statusStore.clear(scope)
+            etags.clear(scope)
+        }
     }
 
     /**
@@ -81,11 +118,19 @@ internal class WidgetServerUpdateCoordinator(
         applyToAffectedWidgets(widgetId = null)
     }
 
-    /** Drops one widget's runtime settings, for `clearWidget` and `clearAllWidgets`. */
+    /**
+     * Drops one widget's runtime settings and everything the server left behind for it, so
+     * `clearWidget` really clears it rather than leaving a stored ETag that turns the next fetch
+     * into a `304` against content that is no longer there.
+     */
     suspend fun dropWidgetLayer(widgetId: String) {
         if (!VoltraWidgetServer.defaults(context).isServerDriven(widgetId)) return
 
-        VoltraWidgetServer.store(context).clear(WidgetScope.of(widgetId))
+        val scope = WidgetScope.of(widgetId)
+
+        VoltraWidgetServer.store(context).clear(scope)
+        DynamicWidgetServerPropsStore(context).clear(scope)
+        WidgetServerEtagStore(context).clear(scope)
     }
 
     private fun validate(

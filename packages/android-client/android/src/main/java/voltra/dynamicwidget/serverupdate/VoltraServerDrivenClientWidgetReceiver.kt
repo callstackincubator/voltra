@@ -33,11 +33,21 @@ abstract class VoltraServerDrivenClientWidgetReceiver : VoltraClientWidgetReceiv
         // Scheduling on every onUpdate rather than only onEnabled: WorkManager's UPDATE policy
         // makes it idempotent, and it is how a widget picks up an interval the app changed while
         // the widget was not being drawn.
+        //
+        // goAsync() keeps the process alive until the work is enqueued. Without it, a widget added
+        // while the app is not running can lose its schedule entirely: onUpdate returns, Android
+        // is free to reclaim the process, and updatePeriodMillis is 0 so nothing asks again until
+        // a reboot.
+        val pendingResult = goAsync()
+        val applicationContext = context.applicationContext
+
         CoroutineScope(Dispatchers.Default).launch {
             try {
-                DynamicWidgetServerUpdateScheduler.schedule(context.applicationContext, WidgetScope.of(widgetId))
+                DynamicWidgetServerUpdateScheduler.schedule(applicationContext, WidgetScope.of(widgetId))
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to schedule server updates for '$widgetId': ${e.message}", e)
+            } finally {
+                pendingResult.finish()
             }
         }
     }
