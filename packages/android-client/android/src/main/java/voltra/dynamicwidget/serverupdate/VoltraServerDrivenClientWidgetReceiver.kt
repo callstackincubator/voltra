@@ -5,9 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidget
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import voltra.dynamicwidget.VoltraClientGlanceWidget
 import voltra.dynamicwidget.VoltraClientWidgetReceiver
 import voltra.widget.server.WidgetScope
@@ -34,21 +32,17 @@ abstract class VoltraServerDrivenClientWidgetReceiver : VoltraClientWidgetReceiv
         // makes it idempotent, and it is how a widget picks up an interval the app changed while
         // the widget was not being drawn.
         //
-        // goAsync() keeps the process alive until the work is enqueued. Without it, a widget added
-        // while the app is not running can lose its schedule entirely: onUpdate returns, Android
-        // is free to reclaim the process, and updatePeriodMillis is 0 so nothing asks again until
-        // a reboot.
-        val pendingResult = goAsync()
-        val applicationContext = context.applicationContext
-
-        CoroutineScope(Dispatchers.Default).launch {
-            try {
-                DynamicWidgetServerUpdateScheduler.schedule(applicationContext, WidgetScope.of(widgetId))
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to schedule server updates for '$widgetId': ${e.message}", e)
-            } finally {
-                pendingResult.finish()
+        // Blocking rather than launching: onReceive must not return before the work is enqueued,
+        // or a widget added while the app is not running can lose its schedule entirely -- the
+        // process is reclaimed and updatePeriodMillis is 0, so nothing asks again until a reboot.
+        // goAsync() is not an option here: GlanceAppWidgetReceiver already consumed it in its own
+        // onReceive, and a second call returns null.
+        try {
+            runBlocking {
+                DynamicWidgetServerUpdateScheduler.schedule(context.applicationContext, WidgetScope.of(widgetId))
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule server updates for '$widgetId': ${e.message}", e)
         }
     }
 

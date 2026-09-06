@@ -103,9 +103,7 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
 
       import android.appwidget.AppWidgetManager
       import android.content.Context
-      import kotlinx.coroutines.CoroutineScope
-      import kotlinx.coroutines.Dispatchers
-      import kotlinx.coroutines.launch
+      import kotlinx.coroutines.runBlocking
       import voltra.widget.payload.VoltraPayloadWidgetReceiver
       import voltra.widget.payload.VoltraWidgetUpdateScheduler
 
@@ -119,16 +117,10 @@ function generateWidgetReceiverClass(widget: DetectedAndroidWidget, packageName:
           override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
               super.onUpdate(context, appWidgetManager, appWidgetIds)
 
-              // goAsync() keeps the process alive until the work is enqueued: without it a widget
-              // added while the app is not running can lose its schedule entirely.
-              val pendingResult = goAsync()
-              val applicationContext = context.applicationContext
-              CoroutineScope(Dispatchers.Default).launch {
-                  try {
-                      VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(applicationContext, "${widget.id}")
-                  } finally {
-                      pendingResult.finish()
-                  }
+              // Blocking rather than launching: onReceive must not return before the work is
+              // enqueued, or a widget added while the app is not running loses its schedule.
+              runBlocking {
+                  VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(context.applicationContext, "${widget.id}")
               }
           }
 
