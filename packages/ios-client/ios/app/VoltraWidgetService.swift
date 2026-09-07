@@ -40,7 +40,7 @@ enum VoltraWidgetService {
   // MARK: - Reload
 
   static func reloadTimeline(for widgetId: String) {
-    WidgetCenter.shared.reloadTimelines(ofKind: "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)")
+    WidgetCenter.shared.reloadTimelines(ofKind: VoltraWidgetKind.kind(for: widgetId))
     VoltraLogger.widget.info("Reloaded timeline for '\(widgetId)'")
   }
 
@@ -222,10 +222,7 @@ enum VoltraWidgetService {
         switch result {
         case let .success(widgetInfos):
           let mapped = widgetInfos.map { widget -> [String: String] in
-            let prefix = VoltraStorageKeys.widgetKindPrefix
-            let name = widget.kind.hasPrefix(prefix)
-              ? String(widget.kind.dropFirst(prefix.count))
-              : widget.kind
+            let name = VoltraWidgetKind.widgetId(for: widget.kind) ?? widget.kind
 
             return [
               "name": name,
@@ -242,17 +239,13 @@ enum VoltraWidgetService {
   }
 
   /// Returns the set of widget IDs currently installed on the device.
-  /// Only IDs whose kind carries the Voltra prefix are included.
+  /// Only Voltra widgets (default `Voltra_Widget_` kind or a pinned `kind`) are included.
   static func getInstalledWidgetIds() async throws -> Set<String> {
     try await withCheckedThrowingContinuation { continuation in
       WidgetCenter.shared.getCurrentConfigurations { result in
         switch result {
         case let .success(configs):
-          let ids = Set(configs.compactMap { config -> String? in
-            let prefix = VoltraStorageKeys.widgetKindPrefix
-            guard config.kind.hasPrefix(prefix) else { return nil }
-            return String(config.kind.dropFirst(prefix.count))
-          })
+          let ids = Set(configs.compactMap { VoltraWidgetKind.widgetId(for: $0.kind) })
           continuation.resume(returning: ids)
         case let .failure(error):
           continuation.resume(throwing: error)

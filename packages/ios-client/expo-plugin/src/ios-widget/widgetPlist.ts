@@ -3,6 +3,7 @@ import plist from '@expo/plist'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join as joinPath } from 'path'
 
+import { widgetKindOverrides } from '../constants'
 import type { IOSWidgetConfig } from '../types'
 import { detectClientRenderedWidgets } from './clientRendered'
 import { logger } from '@use-voltra/expo-plugin'
@@ -136,6 +137,12 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
           if (Object.keys(serverRefresh).length > 0) {
             ;(content as any)['Voltra_WidgetServerRefresh'] = serverRefresh
           }
+        }
+
+        // Custom widget kinds, so the extension maps ids to kinds too (see VoltraWidgetKind.swift)
+        const widgetKinds = widgetKindOverrides(widgets)
+        if (widgetKinds) {
+          ;(content as any)['Voltra_WidgetKinds'] = widgetKinds
         }
 
         // Add Keychain group for shared credential access
