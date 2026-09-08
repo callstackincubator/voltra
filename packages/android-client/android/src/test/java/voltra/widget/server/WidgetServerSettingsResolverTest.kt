@@ -6,11 +6,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 
 /**
  * The merge rule from ADR 0002 lives in the resolver and nowhere else, so this is where it is
  * pinned down.
  */
+@RunWith(RobolectricTestRunner::class)
 class WidgetServerSettingsResolverTest {
     private val scope = WidgetScope.of("portfolio")
 
@@ -177,5 +181,34 @@ class WidgetServerSettingsResolverTest {
     fun `revision comes from the store so a fetcher can tell whether settings moved under it`() =
         runTest {
             assertEquals(7L, resolver(layer("config", null), revision = 7L).revision(scope))
+        }
+
+    @Test
+    fun `globalSettings returns the global layer's raw contents, with no defaulting`() =
+        runTest {
+            val store = WidgetServerSettingsStore(RuntimeEnvironment.getApplication())
+            store.set(WidgetServerUpdateSettings(url = "https://global"), scope = null)
+
+            val resolved =
+                WidgetServerSettingsResolver(
+                    layers = listOf(GlobalWidgetServerSettingsLayer(store)),
+                    revisionSource = { store.revision() },
+                ).globalSettings()
+
+            assertEquals(WidgetServerUpdateSettings(url = "https://global"), resolved)
+        }
+
+    @Test
+    fun `globalSettings is null when nothing has been set globally`() =
+        runTest {
+            val store = WidgetServerSettingsStore(RuntimeEnvironment.getApplication())
+
+            val resolved =
+                WidgetServerSettingsResolver(
+                    layers = listOf(GlobalWidgetServerSettingsLayer(store)),
+                    revisionSource = { store.revision() },
+                ).globalSettings()
+
+            assertNull(resolved)
         }
 }

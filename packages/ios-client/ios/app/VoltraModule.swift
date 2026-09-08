@@ -318,6 +318,11 @@ public enum VoltraErrors: Error, CustomNSError {
     impl.clearWidgetServerUpdate(widgetId: widgetId) as NSString?
   }
 
+  /// - Returns: settings as JSON (resolved for a `widgetId`, raw global otherwise), or nil.
+  @objc public func getWidgetServerUpdate(_ widgetId: String?) -> NSString? {
+    impl.getWidgetServerUpdate(widgetId: widgetId) as NSString?
+  }
+
   // MARK: - Widget Server Credentials
 
   @objc public func setWidgetServerCredentials(_ token: String, headers: NSDictionary?) {

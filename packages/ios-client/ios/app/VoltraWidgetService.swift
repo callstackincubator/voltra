@@ -141,6 +141,34 @@ enum VoltraWidgetService {
     reloadTimeline(for: widgetId)
   }
 
+  /// Reads settings back rather than reasoning about what was set: with a `widgetId`, the fully
+  /// resolved settings that widget would fetch with right now (nil if it is not server-driven);
+  /// with none, the raw global layer only, no defaults applied.
+  static func getWidgetServerUpdate(widgetId: String?) -> String? {
+    if let widgetId {
+      let scope = WidgetScope.of(widgetId)
+
+      guard VoltraWidgetServer.resolver.isServerDriven(scope) else { return nil }
+
+      let resolved = VoltraWidgetServer.resolver.resolve(scope)
+      let settings = WidgetServerUpdateSettings(
+        url: resolved.url,
+        intervalMinutes: resolved.intervalMinutes,
+        enabled: resolved.enabled,
+        method: resolved.method,
+        query: resolved.query,
+        headers: resolved.headers,
+        body: resolved.body
+      )
+
+      return WidgetServerUpdateSettingsJson.stringify(settings)
+    }
+
+    guard let global = VoltraWidgetServer.resolver.globalSettings() else { return nil }
+
+    return WidgetServerUpdateSettingsJson.stringify(global)
+  }
+
   /// Drops one widget's runtime settings and its fetch history, for `clearWidget`.
   static func clearWidgetServerState(for widgetId: String) {
     guard VoltraWidgetServer.isServerDriven(widgetId) else { return }

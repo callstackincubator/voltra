@@ -432,6 +432,14 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
   }
 }
 
+- (void)getWidgetServerUpdate:(NSString *)widgetId
+                       resolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject
+{
+  NSString *json = [self.module getWidgetServerUpdate:widgetId];
+  resolve(json);
+}
+
 - (void)setWidgetServerCredentials:(JS::NativeVoltra::WidgetServerCredentials &)credentials
                            resolve:(RCTPromiseResolveBlock)resolve
                             reject:(RCTPromiseRejectBlock)reject

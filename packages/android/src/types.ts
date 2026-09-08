@@ -80,3 +80,18 @@ export type WidgetServerUpdateOptions = {
   /** Widget id to scope the settings to. Omit to set them for every server-driven widget. */
   widgetId?: string
 }
+
+/**
+ * Fully resolved settings for one widget: every layer flattened and app.json's defaults applied,
+ * exactly what it would fetch with right now.
+ */
+export type WidgetServerUpdateSnapshot = {
+  /** Absent when the widget is server-driven but has no URL yet. */
+  url?: string
+  intervalMinutes: number
+  enabled: boolean
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  query: Record<string, string>
+  headers: Record<string, string>
+  body?: WidgetServerUpdateBody
+}

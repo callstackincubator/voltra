@@ -51,10 +51,12 @@ export * from './utils/helpers.js'
 export type { VoltraElementJson, VoltraNodeJson } from './types.js'
 export {
   clearWidgetServerUpdate,
+  getWidgetServerUpdate,
   setWidgetServerUpdate,
   type WidgetServerUpdateBody,
   type WidgetServerUpdateOptions,
   type WidgetServerUpdateSettings,
+  type WidgetServerUpdateSnapshot,
 } from './widgets/server-update.js'
 export {
   clearWidgetServerCredentials,

@@ -129,6 +129,11 @@ struct GlobalWidgetServerSettingsLayer: WidgetServerSettingsLayer {
   func settings(for _: WidgetScope) -> WidgetServerUpdateSettings? {
     WidgetServerSettingsStore.settings(scope: nil)
   }
+
+  /// Raw contents of this layer, for reading back what was set — no scope to resolve against.
+  func raw() -> WidgetServerUpdateSettings? {
+    WidgetServerSettingsStore.settings(scope: nil)
+  }
 }
 
 /// Settings the app set for one widget. Highest layer until instance scopes arrive.

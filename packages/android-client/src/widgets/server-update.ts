@@ -1,7 +1,12 @@
-import type { WidgetServerUpdateOptions, WidgetServerUpdateSettings } from '../types.js'
+import type { WidgetServerUpdateOptions, WidgetServerUpdateSettings, WidgetServerUpdateSnapshot } from '../types.js'
 import { getNativeVoltraAndroid } from '../native/NativeVoltraAndroid.js'
 
-export type { WidgetServerUpdateBody, WidgetServerUpdateOptions, WidgetServerUpdateSettings } from '../types.js'
+export type {
+  WidgetServerUpdateBody,
+  WidgetServerUpdateOptions,
+  WidgetServerUpdateSettings,
+  WidgetServerUpdateSnapshot,
+} from '../types.js'
 
 /**
  * Overrides a server-driven widget's `serverUpdate` settings at runtime.
@@ -50,4 +55,30 @@ export async function setWidgetServerUpdate(
  */
 export async function clearWidgetServerUpdate(options?: WidgetServerUpdateOptions): Promise<void> {
   return getNativeVoltraAndroid().clearWidgetServerUpdate(options?.widgetId ?? null)
+}
+
+/**
+ * Reads a widget's `serverUpdate` settings back, without reasoning about what was set where.
+ *
+ * With a `widgetId`, this is the fully resolved settings that widget would fetch with right now:
+ * every layer flattened and app.json's defaults applied — `null` if the widget is not
+ * server-driven. Without one, this is the raw contents of the global layer only — what the last
+ * `setWidgetServerUpdate(settings)` call (with no `widgetId`) wrote, with no defaults applied and
+ * every field optional — `null` if nothing has been set globally.
+ *
+ * @example Check what a widget is about to fetch from.
+ * ```ts
+ * const snapshot = await getWidgetServerUpdate({ widgetId: 'portfolio' })
+ * if (snapshot?.enabled) {
+ *   console.log(`portfolio fetches ${snapshot.url} every ${snapshot.intervalMinutes}m`)
+ * }
+ * ```
+ */
+export async function getWidgetServerUpdate(options: { widgetId: string }): Promise<WidgetServerUpdateSnapshot | null>
+export async function getWidgetServerUpdate(options?: undefined): Promise<WidgetServerUpdateSettings | null>
+export async function getWidgetServerUpdate(
+  options?: WidgetServerUpdateOptions
+): Promise<WidgetServerUpdateSnapshot | WidgetServerUpdateSettings | null> {
+  const json = await getNativeVoltraAndroid().getWidgetServerUpdate(options?.widgetId ?? null)
+  return json == null ? null : JSON.parse(json)
 }

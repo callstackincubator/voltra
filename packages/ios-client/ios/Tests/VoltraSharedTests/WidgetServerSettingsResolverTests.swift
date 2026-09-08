@@ -119,4 +119,21 @@ final class WidgetServerSettingsResolverTests: XCTestCase {
   func testRevisionComesFromTheStoreSoAFetcherCanTellWhetherSettingsMoved() {
     XCTAssertEqual(resolver([StubLayer("config", nil)], revision: 7).revision(scope), 7)
   }
+
+  func testGlobalSettingsReturnsTheGlobalLayersRawContentsWithNoDefaulting() {
+    WidgetServerSettingsStore.set(WidgetServerUpdateSettings(url: "https://global"), scope: nil)
+    defer { WidgetServerSettingsStore.clear(scope: nil) }
+
+    let resolved = resolver([GlobalWidgetServerSettingsLayer()]).globalSettings()
+
+    XCTAssertEqual(resolved, WidgetServerUpdateSettings(url: "https://global"))
+  }
+
+  func testGlobalSettingsIsNilWhenNothingHasBeenSetGlobally() {
+    WidgetServerSettingsStore.clear(scope: nil)
+
+    let resolved = resolver([GlobalWidgetServerSettingsLayer()]).globalSettings()
+
+    XCTAssertNil(resolved)
+  }
 }

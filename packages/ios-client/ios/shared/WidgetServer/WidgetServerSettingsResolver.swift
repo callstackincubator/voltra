@@ -85,6 +85,12 @@ public struct WidgetServerSettingsResolver: Sendable {
     layers.contains { $0.isServerDriven(scope) }
   }
 
+  /// Raw contents of the global layer: no defaulting, no merge — there is nothing to resolve
+  /// against without a widget scope. Nil when nothing has been set globally.
+  public func globalSettings() -> WidgetServerUpdateSettings? {
+    layers.lazy.compactMap { $0 as? GlobalWidgetServerSettingsLayer }.first?.raw()
+  }
+
   /// Monotonic counter of settings changes. A fetcher records it before fetching and commits only
   /// if it is still current, so settings changed mid-flight cannot commit a response built from
   /// the old ones.

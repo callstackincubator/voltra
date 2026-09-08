@@ -23,4 +23,5 @@ export type {
   WidgetServerUpdateBody,
   WidgetServerUpdateOptions,
   WidgetServerUpdateSettings,
+  WidgetServerUpdateSnapshot,
 } from '@use-voltra/android'

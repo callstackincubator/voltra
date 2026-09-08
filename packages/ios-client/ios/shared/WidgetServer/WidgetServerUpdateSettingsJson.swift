@@ -48,6 +48,46 @@ public enum WidgetServerUpdateSettingsJson {
     )
   }
 
+  /// The other direction of `parse`: serializes settings back to the same JSON shape, for
+  /// `getWidgetServerUpdate` to hand across the bridge. No envelope — that is
+  /// `WidgetServerSettingsCodec`'s job for storage, not this one's for a single read.
+  public static func stringify(_ settings: WidgetServerUpdateSettings) -> String? {
+    var object: [String: Any] = [:]
+
+    if let url = settings.url {
+      object["url"] = url
+    }
+    if let intervalMinutes = settings.intervalMinutes {
+      object["intervalMinutes"] = intervalMinutes
+    }
+    if let enabled = settings.enabled {
+      object["enabled"] = enabled
+    }
+    if let method = settings.method {
+      object["method"] = method
+    }
+    if let query = settings.query {
+      object["query"] = query
+    }
+    if let headers = settings.headers {
+      object["headers"] = headers
+    }
+
+    if let body = settings.body {
+      guard let bodyData = body.data(using: .utf8),
+            let bodyValue = try? JSONSerialization.jsonObject(with: bodyData, options: [.fragmentsAllowed])
+      else {
+        return nil
+      }
+
+      object["body"] = bodyValue
+    }
+
+    guard let data = try? JSONSerialization.data(withJSONObject: object) else { return nil }
+
+    return String(data: data, encoding: .utf8)
+  }
+
   /// Re-serializes a parsed value back to JSON text. A string body has to keep its quotes: without
   /// them the request would carry something that is not JSON at all.
   private static func jsonText(_ value: Any) -> String? {

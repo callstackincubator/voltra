@@ -64,6 +64,13 @@ class WidgetServerSettingsResolver(
     suspend fun isServerDriven(scope: WidgetScope): Boolean = layers.any { it.isServerDriven(scope) }
 
     /**
+     * Raw contents of the global layer: no defaulting, no merge — there is nothing to resolve
+     * against without a widget scope. Null when nothing has been set globally.
+     */
+    suspend fun globalSettings(): WidgetServerUpdateSettings? =
+        layers.filterIsInstance<GlobalWidgetServerSettingsLayer>().firstOrNull()?.raw()
+
+    /**
      * Monotonic counter of settings changes. A fetcher records it before fetching and commits only
      * if it is still current, so settings changed mid-flight cannot commit a response built from
      * the old ones.

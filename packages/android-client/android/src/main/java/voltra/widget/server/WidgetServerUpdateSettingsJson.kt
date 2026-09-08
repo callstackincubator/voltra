@@ -2,6 +2,7 @@ package voltra.widget.server
 
 import org.json.JSONArray
 import org.json.JSONObject
+import org.json.JSONTokener
 
 /**
  * Reads the settings object an app passes to `setWidgetServerUpdate`.
@@ -44,6 +45,25 @@ object WidgetServerUpdateSettingsJson {
                 body = if (root.has("body") && !root.isNull("body")) jsonText(root.get("body")) else null,
             ),
         )
+    }
+
+    /**
+     * The other direction of [parse]: serializes settings back to the same JSON shape, for
+     * `getWidgetServerUpdate` to hand across the bridge. No envelope — that is
+     * [WidgetServerSettingsCodec]'s job for storage, not this one's for a single read.
+     */
+    fun stringify(settings: WidgetServerUpdateSettings): String {
+        val root = JSONObject()
+
+        settings.url?.let { root.put("url", it) }
+        settings.intervalMinutes?.let { root.put("intervalMinutes", it) }
+        settings.enabled?.let { root.put("enabled", it) }
+        settings.method?.let { root.put("method", it) }
+        settings.query?.let { root.put("query", JSONObject(it as Map<*, *>)) }
+        settings.headers?.let { root.put("headers", JSONObject(it as Map<*, *>)) }
+        settings.body?.let { root.put("body", JSONTokener(it).nextValue()) }
+
+        return root.toString()
     }
 
     /**

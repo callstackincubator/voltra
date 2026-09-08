@@ -126,6 +126,9 @@ class GlobalWidgetServerSettingsLayer(
 
     override suspend fun settings(scope: WidgetScope): WidgetServerUpdateSettings? =
         store.read(WidgetServerSettingsStore.KEY_GLOBAL)
+
+    /** Raw contents of this layer, for reading back what was set — no scope to resolve against. */
+    suspend fun raw(): WidgetServerUpdateSettings? = store.read(WidgetServerSettingsStore.KEY_GLOBAL)
 }
 
 /** Settings the app set for one widget. Highest layer until instance scopes arrive. */

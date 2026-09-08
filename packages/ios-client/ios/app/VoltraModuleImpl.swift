@@ -403,6 +403,10 @@ public class VoltraModuleImpl {
     VoltraWidgetService.clearWidgetServerUpdate(widgetId: widgetId)
   }
 
+  func getWidgetServerUpdate(widgetId: String?) -> String? {
+    VoltraWidgetService.getWidgetServerUpdate(widgetId: widgetId)
+  }
+
   func setWidgetServerCredentials(token: String, headers: [String: String]?) {
     VoltraWidgetService.setWidgetServerCredentials(token: token, headers: headers)
   }

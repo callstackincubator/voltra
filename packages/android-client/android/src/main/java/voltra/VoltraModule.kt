@@ -38,6 +38,9 @@ import voltra.widget.payload.VoltraGlanceWidget
 import voltra.widget.payload.VoltraWidgetManager
 import voltra.widget.server.VoltraWidgetCredentialStore
 import voltra.widget.server.VoltraWidgetServer
+import voltra.widget.server.WidgetScope
+import voltra.widget.server.WidgetServerUpdateSettings
+import voltra.widget.server.WidgetServerUpdateSettingsJson
 
 class VoltraModule(
     reactContext: ReactApplicationContext,
@@ -613,6 +616,53 @@ class VoltraModule(
                 is WidgetServerUpdateCoordinator.Result.Rejected -> {
                     promise.reject("VOLTRA_INVALID_SERVER_UPDATE_SETTINGS", result.reason)
                 }
+            }
+        }
+    }
+
+    /**
+     * Reads settings back rather than reasoning about what was set: with [widgetId] given, the
+     * fully resolved settings that widget would fetch with right now (or null if it is not
+     * server-driven); with none, the raw global layer only, no defaults applied.
+     */
+    override fun getWidgetServerUpdate(
+        widgetId: String?,
+        promise: Promise,
+    ) {
+        Log.d(TAG, "getWidgetServerUpdate called for widgetId=${widgetId ?: "<all>"}")
+
+        runBlocking {
+            try {
+                val resolver = VoltraWidgetServer.resolver(reactApplicationContext)
+
+                if (widgetId != null) {
+                    val scope = WidgetScope.of(widgetId)
+
+                    if (!resolver.isServerDriven(scope)) {
+                        promise.resolve(null)
+                        return@runBlocking
+                    }
+
+                    val resolved = resolver.resolve(scope)
+                    val settings =
+                        WidgetServerUpdateSettings(
+                            url = resolved.url,
+                            intervalMinutes = resolved.intervalMinutes,
+                            enabled = resolved.enabled,
+                            method = resolved.method,
+                            query = resolved.query,
+                            headers = resolved.headers,
+                            body = resolved.body,
+                        )
+
+                    promise.resolve(WidgetServerUpdateSettingsJson.stringify(settings))
+                } else {
+                    val global = resolver.globalSettings()
+                    promise.resolve(global?.let { WidgetServerUpdateSettingsJson.stringify(it) })
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to read widget server settings: ${e.message}", e)
+                promise.reject("VOLTRA_GET_SERVER_UPDATE_FAILED", e.message, e)
             }
         }
     }
