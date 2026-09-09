@@ -189,6 +189,7 @@ public enum ShortNames {
     "xav": "xAxisVisibility",
     "ygs": "yAxisGridStyle",
     "yav": "yAxisVisibility",
+    "ysc": "yScale",
     "zi": "zIndex",
   ]
 

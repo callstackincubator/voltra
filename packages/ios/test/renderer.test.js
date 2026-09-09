@@ -211,3 +211,19 @@ test('fails loudly for unknown generated component names', () => {
     message: /Unknown component name: "UnknownWidget"/,
   })
 })
+
+test('encodes pinned chart bounds for the native renderer', () => {
+  const chart = React.createElement(
+    Voltra.Chart,
+    { yScale: { min: 0, max: 100 } },
+    React.createElement(Voltra.LineMark, { data: [{ x: 'a', y: 1 }] })
+  )
+  const lowerOnly = React.createElement(
+    Voltra.Chart,
+    { yScale: { min: 0 } },
+    React.createElement(Voltra.LineMark, { data: [{ x: 'a', y: 1 }] })
+  )
+
+  assert.equal(renderVoltraVariantToJson(chart).p.ysc, '{"mn":0,"mx":100}')
+  assert.equal(renderVoltraVariantToJson(lowerOnly).p.ysc, '{"mn":0}')
+})
