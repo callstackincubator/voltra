@@ -51,7 +51,7 @@ Add the `serverUpdate` option to your Android widget in `app.json` or `app.confi
 **`serverUpdate` options:**
 
 - `url`: The endpoint the widget fetches from. Voltra appends `widgetId`, `platform`, `theme`, and `locale` query parameters automatically (e.g. `?widgetId=dynamic_weather&platform=android&theme=dark&locale=en-US`). Optional — leave it out to mark the widget server-driven and supply the URL after login with [`setWidgetServerUpdate`](#changing-settings-at-runtime).
-- `intervalMinutes`: How often the widget fetches updates. Defaults to `60`, or `15` for a widget that has an `entry`. The minimum is 15 minutes, which is as often as WorkManager will run periodic work.
+- `intervalMinutes`: How often the widget fetches updates. Defaults to `60`, or `15` for a widget that has an `entry`. The minimum is 15 minutes.
 - `refresh`: Whether to show a native refresh button in the top-right corner of the widget. When tapped, triggers an immediate server fetch. Defaults to `false`.
 
 After updating plugin configuration, run `npx expo prebuild` if you're using Continuous Native Generation, then rebuild the app so the generated native widget code picks up the new server update settings.
@@ -282,7 +282,7 @@ await setWidgetServerUpdate(
 
 | Setting | |
 |---------|--|
-| `url` | Must be `https`, or `http` to `localhost`, `127.0.0.1` or `10.0.2.2` in a debug build |
+| `url` | Must be `https`, or `http` to a local dev host (`localhost`, `127.0.0.1`, `::1`, `10.0.2.2`, `10.0.3.2`) in a debug build |
 | `intervalMinutes` | Clamped between 15 minutes and 24 hours |
 | `enabled` | `false` stops fetching until you set it back |
 | `method` | `GET` (default), `POST`, `PUT`, `PATCH` or `DELETE` |
@@ -317,6 +317,19 @@ await clearWidgetServerUpdate()
 
 Clearing the global settings is the logout gesture. Along with the settings it drops what the server last sent — the props and the "updated at" of every server-driven widget — so a Dynamic Widget goes back to rendering `{}` with `env.serverUpdate.status` of `never` rather than showing the previous account's data. A widget-scoped clear only drops that widget's overrides and leaves its props alone.
 
+Read the settings back with `getWidgetServerUpdate`:
+
+```typescript
+import { getWidgetServerUpdate } from '@use-voltra/android-client'
+
+const snapshot = await getWidgetServerUpdate({ widgetId: 'portfolio' })
+if (snapshot?.enabled) {
+  console.log(`portfolio fetches ${snapshot.url} every ${snapshot.intervalMinutes}m`)
+}
+```
+
+With a `widgetId`, this is the fully resolved settings that widget would fetch with right now — every layer flattened and `app.json`'s defaults applied, or `null` if the widget isn't server-driven. Without one, it's the raw global layer only: what the last widget-less `setWidgetServerUpdate` call wrote, with no defaults applied, or `null` if nothing has been set globally.
+
 Credentials set with the deprecated `setWidgetServerCredentials` are stored separately and are not affected; clear those with `clearWidgetServerCredentials`.
 
 Calling either function for a widget that has no `serverUpdate` in `app.json` throws. Whether a widget is server-driven is decided when the native project is generated, so a runtime URL cannot turn a local widget into one — add `serverUpdate` to `app.json` and rebuild.
@@ -350,7 +363,7 @@ Server-driven widgets can display a native refresh button that lets users trigge
 
 When enabled, a small circular button (↻) appears in the top-right corner of the widget.
 
-On a payload widget, tapping it performs an inline HTTP fetch and pushes the update directly—without waiting for the next WorkManager cycle. On a widget with an `entry`, the tap enqueues expedited work instead, so a tap with no signal waits for connectivity and retries rather than failing silently.
+On a payload widget, tapping it performs an inline HTTP fetch and pushes the update directly—without waiting for the next scheduled fetch. On a widget with an `entry`, a tap with no signal is queued and retries until it succeeds, rather than failing silently.
 
 ## Resize handling
 

@@ -306,7 +306,7 @@ await setWidgetServerUpdate(
 
 | Setting | |
 |---------|--|
-| `url` | Must be `https`, or `http` to `localhost` or `127.0.0.1` in a debug build |
+| `url` | Must be `https`, or `http` to a local dev host (`localhost`, `127.0.0.1`, `::1`, `10.0.2.2`, `10.0.3.2`) in a debug build |
 | `intervalMinutes` | Clamped between 15 minutes and 24 hours |
 | `enabled` | `false` stops fetching until you set it back |
 | `method` | `GET` (default), `POST`, `PUT`, `PATCH` or `DELETE` |
@@ -340,6 +340,19 @@ await clearWidgetServerUpdate()
 ```
 
 Clearing the global settings is the logout gesture. Along with the settings it drops what the server last sent — the props and the "updated at" of every server-driven widget — so a Dynamic Widget goes back to rendering `{}` with `env.serverUpdate.status` of `never` rather than showing the previous account's data. A widget-scoped clear only drops that widget's overrides and leaves its props alone.
+
+Read the settings back with `getWidgetServerUpdate`:
+
+```typescript
+import { getWidgetServerUpdate } from '@use-voltra/ios-client'
+
+const snapshot = await getWidgetServerUpdate({ widgetId: 'portfolio' })
+if (snapshot?.enabled) {
+  console.log(`portfolio fetches ${snapshot.url} every ${snapshot.intervalMinutes}m`)
+}
+```
+
+With a `widgetId`, this is the fully resolved settings that widget would fetch with right now — every layer flattened and `app.json`'s defaults applied, or `null` if the widget isn't server-driven. Without one, it's the raw global layer only: what the last widget-less `setWidgetServerUpdate` call wrote, with no defaults applied, or `null` if nothing has been set globally.
 
 Credentials set with the deprecated `setWidgetServerCredentials` are stored separately and are not affected; clear those with `clearWidgetServerCredentials`.
 

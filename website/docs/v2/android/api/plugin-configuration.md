@@ -70,7 +70,7 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `previewLayout`: (optional) Path to custom XML layout for widget picker preview (Android 12+)
 - `serverUpdate`: (optional) Fetch the widget's content on a schedule. Without `entry` the server returns a rendered payload; with `entry` it returns plain JSON that the widget renders on the device. `url` is optional — leave it out to supply one at runtime. See [Server-driven widgets](../development/server-driven-widgets) for full details.
   - `url`: The Voltra SSR endpoint URL
-  - `intervalMinutes`: Update interval in minutes (default: `15`, minimum 15 per WorkManager)
+  - `intervalMinutes`: Update interval in minutes (default: `60`, or `15` for a widget with `entry`; minimum 15)
   - `refresh`: Show a native refresh button (default: `false`)
 
 ### Localizing `displayName` and `description`
