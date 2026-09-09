@@ -20,4 +20,8 @@ export type {
   VoltraPropValue,
   WidgetInfo,
   WidgetServerCredentials,
+  WidgetServerUpdateBody,
+  WidgetServerUpdateOptions,
+  WidgetServerUpdateSettings,
+  WidgetServerUpdateSnapshot,
 } from '@use-voltra/android'

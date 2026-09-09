@@ -8,18 +8,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.action.Action
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
+import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
 import com.facebook.react.modules.systeminfo.AndroidInfoHelpers
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +58,7 @@ import java.net.URL
  */
 class VoltraClientGlanceWidget(
     private val widgetId: String = "default",
+    private val environmentSource: DynamicWidgetEnvironmentSource? = null,
 ) : GlanceAppWidget() {
     companion object {
         private const val TAG = "VoltraClientGlanceWidget"
@@ -125,13 +134,48 @@ class VoltraClientGlanceWidget(
             (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
         /**
+         * Loads the widget's bundle and evaluates it into the shared Hermes runtime, the same way
+         * an on-screen render does — reading Metro in a debug build and the baked asset otherwise.
+         *
+         * Exposed for the server-update engine, which has to render fetched props before
+         * committing them. It costs what a render already costs, including the Metro round trip in
+         * a debug build.
+         */
+        internal suspend fun ensureBundleEvaluated(
+            context: Context,
+            widgetId: String,
+        ): Boolean {
+            val source =
+                if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
+
+            return source != null && VoltraJSRenderer.evaluateBundle(source, widgetId)
+        }
+
+        /**
+         * The env a trial render runs with: the real theme, locale and configuration, and a size
+         * the caller picked from the widget's placements.
+         *
+         * `env.serverUpdate` is deliberately absent. The trial is asking whether the props render,
+         * and a widget that only fails when it is told the fetch went badly is a different problem
+         * from props that cannot be drawn.
+         */
+        internal fun buildTrialEnvJson(
+            context: Context,
+            widgetId: String,
+            size: DpSize,
+            configuration: Map<String, String>,
+        ): String = buildEnvJson(context, widgetId, size, configuration, environmentSource = null)
+
+        /**
          * Build the WidgetEnvironment JSON (see packages/core/src/widget-environment.ts) for the
          * current render.
          */
         private fun buildEnvJson(
             context: Context,
+            widgetId: String,
             size: DpSize,
             configuration: Map<String, String>,
+            environmentSource: DynamicWidgetEnvironmentSource?,
         ): String {
             val family = "${size.width.value.toInt()}x${size.height.value.toInt()}"
             val nightMode =
@@ -160,14 +204,22 @@ class VoltraClientGlanceWidget(
             val configObject = JSONObject()
             configuration.forEach { (key, value) -> configObject.put(key, value) }
 
-            return JSONObject()
-                .put("date", System.currentTimeMillis())
-                .put("widgetFamily", family)
-                .put("colorScheme", colorScheme)
-                .put("locale", locale)
-                .put("configuration", configObject)
-                .put("build", build)
-                .toString()
+            val env =
+                JSONObject()
+                    .put("date", System.currentTimeMillis())
+                    .put("widgetFamily", family)
+                    .put("colorScheme", colorScheme)
+                    .put("locale", locale)
+                    .put("configuration", configObject)
+                    .put("build", build)
+
+            // Whatever drives this widget's props gets to describe itself. A plain Dynamic Widget
+            // has no source and its env is exactly what it was before ADR 0002.
+            environmentSource?.environmentFields(context, widgetId)?.forEach { (key, value) ->
+                env.put(key, value)
+            }
+
+            return env.toString()
         }
     }
 
@@ -219,6 +271,54 @@ class VoltraClientGlanceWidget(
         } else {
             Fallback()
         }
+
+        // Drawn over the widget's own content, so an entry does not have to leave room for it.
+        // Only a server-driven widget configured with `refresh: true` has a source that offers one.
+        environmentSource?.refreshAction(context, widgetId)?.let { action ->
+            RefreshButton(action)
+        }
+    }
+
+    /**
+     * The same overlay the payload engine draws, so the two engines' refresh buttons look and sit
+     * identically. Tapping it enqueues a fetch rather than running one inline: the tap then
+     * survives a moment without connectivity instead of failing silently.
+     */
+    @Composable
+    private fun RefreshButton(action: Action) {
+        Box(
+            modifier = GlanceModifier.fillMaxSize().padding(12.dp),
+            contentAlignment = Alignment.TopEnd,
+        ) {
+            Box(
+                modifier =
+                    GlanceModifier
+                        .size(28.dp)
+                        .cornerRadius(14.dp)
+                        .background(
+                            androidx.glance.color.ColorProvider(
+                                day = Color(0x32787880),
+                                night = Color(0x32787880),
+                            ),
+                        ).clickable(action),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "↻",
+                    style =
+                        androidx.glance.text.TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color =
+                                androidx.glance.color.ColorProvider(
+                                    day = Color(0x993C3C43),
+                                    night = Color(0x99EBEBF5),
+                                ),
+                        ),
+                )
+            }
+        }
     }
 
     private fun renderNode(
@@ -227,7 +327,7 @@ class VoltraClientGlanceWidget(
         configuration: Map<String, String>,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
     ): VoltraNode? {
-        val envJson = buildEnvJson(context, size, configuration)
+        val envJson = buildEnvJson(context, widgetId, size, configuration, environmentSource)
         val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
         return dynamicWidgetRenderCoordinator.renderDynamicWidget(
             dynamicWidgetId = widgetId,

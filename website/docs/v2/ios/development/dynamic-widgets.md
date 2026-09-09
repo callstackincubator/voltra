@@ -136,6 +136,25 @@ Before the first call to `updateDynamicWidget`, the entry component receives `{}
 `updateDynamicWidget` updates an entry-based Dynamic Widget by passing runtime props to its entry component. The legacy `updateWidget` API sends pre-rendered variant payloads to a payload-driven widget and cannot update an entry-based Dynamic Widget.
 :::
 
+## Fetching props from a server
+
+Props do not have to come from the app. Add a `serverUpdate` alongside `entry` and the widget fetches a JSON object on a schedule and renders it, without the app running:
+
+```json
+{
+  "id": "portfolio",
+  "entry": "./widgets/ios/portfolio.tsx",
+  "serverUpdate": {
+    "url": "https://api.example.com/widgets/portfolio",
+    "intervalMinutes": 30
+  }
+}
+```
+
+The response object becomes the same first argument `updateDynamicWidget` passes, so the entry component does not change. Because the server returns data rather than a rendered payload, the backend can be written in any language.
+
+`updateDynamicWidget` keeps working on a server-driven widget — the next fetch simply overwrites what you wrote. See [Server-driven widgets](./server-driven-widgets) for the response contract, the `env.serverUpdate` fields, and how to take a widget over.
+
 ## Runtime props and configuration are separate
 
 Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, edited by the user in the native iOS Edit Widget sheet, and read from `env.configuration`. Updating runtime props does not replace configuration.

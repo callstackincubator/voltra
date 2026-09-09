@@ -100,6 +100,11 @@ export interface Spec extends TurboModule {
   requestPinGlanceAppWidget(widgetId: string, options?: RequestPinGlanceAppWidgetOptionsSpec): Promise<boolean>
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>
   clearPreloadedImages(keys?: string[] | null): Promise<void>
+  /** Settings are passed as JSON so an arbitrary `body` survives the bridge unchanged. */
+  setWidgetServerUpdate(settingsJson: string, widgetId?: string | null): Promise<void>
+  clearWidgetServerUpdate(widgetId?: string | null): Promise<void>
+  /** Result is JSON so an arbitrary `body` survives the bridge unchanged, or null. */
+  getWidgetServerUpdate(widgetId?: string | null): Promise<string | null>
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
   getActiveWidgets(): Promise<ReadonlyArray<object>>

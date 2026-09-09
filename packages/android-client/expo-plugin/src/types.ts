@@ -70,8 +70,12 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
  * Server-driven Android widget updates (WorkManager).
  */
 export interface AndroidWidgetServerUpdateConfig {
-  url: string
-  /** @default 60 */
+  /**
+   * Server endpoint that returns widget state updates. Omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
+  /** @default 60, or 15 when the widget has an `entry` */
   intervalMinutes?: number
   /** @default false */
   refresh?: boolean

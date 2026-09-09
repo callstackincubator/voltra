@@ -158,6 +158,40 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     expect(swift).toContain('["label": configuration.label]')
   })
 
+  it('emits VoltraDynamicWidgetServerUpdateProvider for a Dynamic Widget with a serverUpdate', () => {
+    const swift = __test__.generateWidgetBundleSwift([
+      {
+        ...plainClientWidget,
+        serverUpdate: { url: 'https://example.com/weather', intervalMinutes: 15, refresh: false },
+      },
+    ])
+
+    expect(swift).toContain('VoltraDynamicWidgetServerUpdateProvider(')
+    expect(swift).toContain('VoltraClientWidgetContentView(')
+    // The provider wraps the plain one; the widget must not also be given it directly.
+    expect(swift).not.toContain('provider: VoltraClientWidgetProvider(')
+  })
+
+  it('fetches on every timeline request for a configurable server-driven Dynamic Widget', () => {
+    const swift = __test__.generateWidgetBundleSwift([
+      {
+        ...configurableWidget,
+        serverUpdate: { url: 'https://example.com/weather', intervalMinutes: 15, refresh: false },
+      },
+    ])
+
+    expect(swift).toContain('VoltraDynamicWidgetServerUpdateProvider.timeline(')
+    expect(swift).toContain('family: context.family')
+    expect(swift).not.toContain('policy: .never')
+  })
+
+  it('keeps a Dynamic Widget without a serverUpdate on the never policy', () => {
+    const swift = __test__.generateWidgetBundleSwift([configurableWidget])
+
+    expect(swift).toContain('policy: .never')
+    expect(swift).not.toContain('VoltraDynamicWidgetServerUpdateProvider')
+  })
+
   it('does NOT emit AppIntent code for a client widget without appIntent', () => {
     const swift = __test__.generateWidgetBundleSwift([plainClientWidget])
     expect(swift).toContain('VoltraClientWidgetProvider(')

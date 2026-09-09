@@ -3,6 +3,7 @@ import path from 'node:path'
 import { resolveFromRoot } from '../fs/path'
 import { CLI_DEFAULTS } from './defaults'
 import { isPerConfigurationMap } from './perConfiguration'
+import { resolveServerUpdateInterval, resolveServerUpdateUrl, validateServerUpdateRefresh } from './serverUpdate'
 
 import type { PerConfiguration } from './perConfiguration'
 
@@ -13,6 +14,7 @@ import type {
   IOSWidgetConfig,
   LoadedVoltraConfig,
   NormalizedAndroidWidgetConfig,
+  NormalizedWidgetServerUpdateConfig,
   NormalizedVoltraAndroidConfig,
   NormalizedVoltraConfig,
   NormalizedVoltraIOSConfig,
@@ -344,42 +346,68 @@ function normalizeIOSAppIntent(
   return { parameters }
 }
 
-function normalizeServerUpdate(
-  serverUpdate: { url: string; intervalMinutes?: number; refresh?: boolean },
-  context: string,
-  defaultIntervalMinutes: number,
-  defaultRefresh: boolean,
+interface NormalizeServerUpdateOptions {
+  context: string
+  /** True when the widget has an `entry`, so the response is props rather than a payload. */
+  hasEntry: boolean
+  defaultIntervalMinutes: number
+  defaultRefresh: boolean
   minimumIntervalMinutes: number
-): { url: string; intervalMinutes: number; refresh: boolean } {
+  warnings: string[]
+}
+
+function normalizeServerUpdate(
+  serverUpdate: { url?: string; intervalMinutes?: number; refresh?: boolean },
+  options: NormalizeServerUpdateOptions
+): NormalizedWidgetServerUpdateConfig {
+  const { context, hasEntry, defaultIntervalMinutes, defaultRefresh, minimumIntervalMinutes, warnings } = options
+
   assertObject(serverUpdate, context)
-  assertNonEmptyString(serverUpdate.url, `${context}.url`)
 
-  if (serverUpdate.intervalMinutes !== undefined) {
-    if (typeof serverUpdate.intervalMinutes !== 'number' || !Number.isFinite(serverUpdate.intervalMinutes)) {
-      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be a number`)
-    }
+  const url = resolveServerUpdateUrl(serverUpdate.url, context)
 
-    if (!Number.isInteger(serverUpdate.intervalMinutes)) {
-      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be an integer`)
-    }
-
-    if (serverUpdate.intervalMinutes < minimumIntervalMinutes) {
-      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be at least ${minimumIntervalMinutes}`)
-    }
+  if (url.kind === 'invalid') {
+    throw new VoltraConfigNormalizationError(url.error)
   }
 
-  if (serverUpdate.refresh !== undefined && typeof serverUpdate.refresh !== 'boolean') {
-    throw new VoltraConfigNormalizationError(`${context}.refresh must be a boolean`)
+  if (url.kind === 'insecure') {
+    warnings.push(url.warning)
+  }
+
+  const interval = resolveServerUpdateInterval({
+    intervalMinutes: serverUpdate.intervalMinutes,
+    context,
+    hasEntry,
+    defaultIntervalMinutes,
+    minimumIntervalMinutes,
+  })
+
+  if (interval.kind === 'invalid') {
+    throw new VoltraConfigNormalizationError(interval.error)
+  }
+
+  if (interval.kind === 'clamped') {
+    warnings.push(interval.warning)
+  }
+
+  const refreshError = validateServerUpdateRefresh(serverUpdate.refresh, context)
+
+  if (refreshError) {
+    throw new VoltraConfigNormalizationError(refreshError)
   }
 
   return {
     url: serverUpdate.url,
-    intervalMinutes: serverUpdate.intervalMinutes ?? defaultIntervalMinutes,
+    intervalMinutes: interval.intervalMinutes,
     refresh: serverUpdate.refresh ?? defaultRefresh,
   }
 }
 
-function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig): NormalizedAndroidWidgetConfig {
+function normalizeAndroidWidget(
+  projectRoot: string,
+  widget: AndroidWidgetConfig,
+  warnings: string[]
+): NormalizedAndroidWidgetConfig {
   assertObject(widget, 'android.widgets[]')
   assertNonEmptyString(widget.id, 'android.widgets[].id')
   assertValidWidgetId(widget.id, 'android.widgets[].id')
@@ -408,18 +436,23 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
     previewLayout: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewLayout),
     appIntent: normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`),
     serverUpdate: widget.serverUpdate
-      ? normalizeServerUpdate(
-          widget.serverUpdate,
-          `android.widgets[${widget.id}].serverUpdate`,
-          CLI_DEFAULTS.android.serverUpdateIntervalMinutes,
-          CLI_DEFAULTS.android.serverUpdateRefresh,
-          15
-        )
+      ? normalizeServerUpdate(widget.serverUpdate, {
+          context: `android.widgets[${widget.id}].serverUpdate`,
+          hasEntry: widget.entry !== undefined,
+          defaultIntervalMinutes: CLI_DEFAULTS.android.serverUpdateIntervalMinutes,
+          defaultRefresh: CLI_DEFAULTS.android.serverUpdateRefresh,
+          minimumIntervalMinutes: 15,
+          warnings,
+        })
       : undefined,
   }
 }
 
-function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): NormalizedIOSWidgetConfig {
+function normalizeIOSWidget(
+  projectRoot: string,
+  widget: IOSWidgetConfig,
+  warnings: string[]
+): NormalizedIOSWidgetConfig {
   assertObject(widget, 'ios.widgets[]')
   assertNonEmptyString(widget.id, 'ios.widgets[].id')
   assertValidWidgetId(widget.id, 'ios.widgets[].id')
@@ -451,13 +484,14 @@ function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): Norma
     ),
     appIntent: normalizeIOSAppIntent(widget.appIntent, `ios.widgets[${widget.id}].appIntent`),
     serverUpdate: widget.serverUpdate
-      ? normalizeServerUpdate(
-          widget.serverUpdate,
-          `ios.widgets[${widget.id}].serverUpdate`,
-          CLI_DEFAULTS.ios.serverUpdateIntervalMinutes,
-          CLI_DEFAULTS.ios.serverUpdateRefresh,
-          1
-        )
+      ? normalizeServerUpdate(widget.serverUpdate, {
+          context: `ios.widgets[${widget.id}].serverUpdate`,
+          hasEntry: widget.entry !== undefined,
+          defaultIntervalMinutes: CLI_DEFAULTS.ios.serverUpdateIntervalMinutes,
+          defaultRefresh: CLI_DEFAULTS.ios.serverUpdateRefresh,
+          minimumIntervalMinutes: 1,
+          warnings,
+        })
       : undefined,
   }
 }
@@ -491,6 +525,7 @@ function assertValidIOSTargetName(targetName: string, context: string): void {
 }
 
 function normalizeAndroidConfig(
+  warnings: string[],
   projectRoot: string,
   config: LoadedVoltraConfig['config']['android']
 ): NormalizedVoltraAndroidConfig | undefined {
@@ -515,7 +550,7 @@ function normalizeAndroidConfig(
     throw new VoltraConfigNormalizationError('android.widgets must be an array')
   }
 
-  const widgets = (config.widgets ?? []).map((widget) => normalizeAndroidWidget(projectRoot, widget))
+  const widgets = (config.widgets ?? []).map((widget) => normalizeAndroidWidget(projectRoot, widget, warnings))
   assertUniqueWidgetIds(
     widgets.map((widget) => widget.id),
     'android'
@@ -539,6 +574,7 @@ function normalizeAndroidConfig(
 }
 
 function normalizeIOSConfig(
+  warnings: string[],
   projectRoot: string,
   config: LoadedVoltraConfig['config']['ios']
 ): NormalizedVoltraIOSConfig | undefined {
@@ -573,7 +609,7 @@ function normalizeIOSConfig(
     assertValidIOSTargetName(config.targetName, 'ios.targetName')
   }
 
-  const widgets = (config.widgets ?? []).map((widget) => normalizeIOSWidget(projectRoot, widget))
+  const widgets = (config.widgets ?? []).map((widget) => normalizeIOSWidget(projectRoot, widget, warnings))
   assertUniqueWidgetIds(
     widgets.map((widget) => widget.id),
     'ios'
@@ -608,11 +644,38 @@ export function normalizeVoltraConfig(loadedConfig: LoadedVoltraConfig): Normali
     loadedConfig.config.projectRoot ?? loadedConfig.configDir
   )
 
+  const warnings: string[] = []
+  const android = normalizeAndroidConfig(warnings, projectRoot, loadedConfig.config.android)
+  const ios = normalizeIOSConfig(warnings, projectRoot, loadedConfig.config.ios)
+
+  assertServerDrivenDynamicWidgetsAreSupported(ios)
+
   return {
     configPath: loadedConfig.configPath,
     configDir: loadedConfig.configDir,
     projectRoot,
-    android: normalizeAndroidConfig(projectRoot, loadedConfig.config.android),
-    ios: normalizeIOSConfig(projectRoot, loadedConfig.config.ios),
+    android,
+    ios,
+    warnings,
+  }
+}
+
+/**
+ * A Dynamic Widget commits fetched props to the App Group so the widget extension can read them,
+ * so a server-driven one without a `groupIdentifier` would fetch and have nowhere to put the
+ * result.
+ */
+function assertServerDrivenDynamicWidgetsAreSupported(ios: NormalizedVoltraIOSConfig | undefined): void {
+  if (ios === undefined || ios.groupIdentifier !== undefined) {
+    return
+  }
+
+  for (const widget of ios.widgets) {
+    if (widget.entry !== undefined && widget.serverUpdate !== undefined) {
+      throw new VoltraConfigNormalizationError(
+        `ios.widgets[${widget.id}] has both entry and serverUpdate, which requires ios.groupIdentifier ` +
+          'so fetched props can be shared with the widget extension.'
+      )
+    }
   }
 }

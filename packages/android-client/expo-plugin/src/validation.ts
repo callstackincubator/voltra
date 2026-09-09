@@ -6,7 +6,10 @@ import {
   validateInitialStatePath,
   validateWidgetEntry,
   validateWidgetLabel,
+  validateWidgetServerUpdate,
 } from '@use-voltra/expo-plugin'
+
+import { androidServerUpdateRules } from './android/serverUpdate'
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
 
@@ -26,6 +29,8 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
   if (widget.entry !== undefined) {
     validateWidgetEntry(widget.entry, widget.id, projectRoot)
   }
+
+  validateWidgetServerUpdate(widget.serverUpdate, widget.id, androidServerUpdateRules(widget))
 
   if (typeof widget.targetCellWidth !== 'number') {
     throw new Error(`Widget '${widget.id}': targetCellWidth is required and must be a number`)
