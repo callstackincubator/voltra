@@ -65,6 +65,53 @@ export type WidgetEnvironment<TConfig extends Record<string, unknown> | undefine
   /** Build / process-level metadata, populated by the runtime once per process. Static for
    * the JS runtime's lifetime; does not change between renders. */
   build: WidgetBuildEnvironment
+
+  // ---------------------------------------------------------------------------
+  // Server-driven updates
+  // ---------------------------------------------------------------------------
+
+  /** Outcome of the last server fetch, on widgets configured with `serverUpdate`. `undefined`
+   * on every other widget. See {@link WidgetServerUpdateEnvironment}. */
+  serverUpdate?: WidgetServerUpdateEnvironment
+}
+
+/**
+ * What the device knows about the last attempt to fetch this widget's props from the server.
+ *
+ * A server-driven Dynamic Widget renders whatever props were last committed, so a fetch that
+ * fails leaves the previous props on screen rather than blanking it. This is how the widget tells
+ * the difference: show an "updated 3 min ago" line from `fetchedAt`, dim the UI when `status` is
+ * `stale`, or hide the freshness line entirely while the app has taken the widget over
+ * (`disabled`).
+ */
+export type WidgetServerUpdateEnvironment = {
+  /**
+   * - `fresh` — the last fetch succeeded (`200` or `304`).
+   * - `stale` — a fetch has succeeded before, but the most recent one failed. `error` says how.
+   * - `never` — no fetch has succeeded yet, so props are `{}` or whatever the app last wrote.
+   * - `disabled` — fetching is off for this widget, because the app called
+   *   `setWidgetServerUpdate({ enabled: false })` or no URL has been configured.
+   */
+  status: 'fresh' | 'stale' | 'never' | 'disabled'
+
+  /** Epoch ms of the last `200` or `304`. Absent until a fetch has succeeded. */
+  fetchedAt?: number
+
+  /**
+   * How the most recent fetch failed. Absent when `status` is `fresh`.
+   *
+   * - `network` — the request never completed (no connectivity, DNS, TLS, timeout).
+   * - `http` — the server answered with a status the device cannot use.
+   * - `unauthorized` — `401` or `403`; the app most likely needs to set a fresh token.
+   * - `parse` — the body was not a JSON object, was too large, or looked like a Voltra payload
+   *   rather than props.
+   * - `render` — the props arrived but the widget threw while rendering them, so they were
+   *   discarded rather than committed.
+   */
+  error?: 'network' | 'http' | 'unauthorized' | 'parse' | 'render'
+
+  /** HTTP status of the last response, when there was one. */
+  httpStatus?: number
 }
 
 /**

@@ -7,16 +7,17 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import voltra.BuildConfig
 import voltra.parsing.VoltraPayloadParser
 import voltra.widget.VoltraRefreshActionCallback
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.VoltraWidgetKindResolver
 import voltra.widget.VoltraWidgetReceivers
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
+import voltra.widget.server.VoltraWidgetServer
+import voltra.widget.server.WidgetScope
+import voltra.widget.server.WidgetServerFetchResult
+import voltra.widget.server.WidgetServerFetcher
+import voltra.widget.server.WidgetServerRequestBuilder
 
 /**
  * Real implementation behind the pinned [voltra.widget.VoltraRefreshActionCallback] (ADR 0000):
@@ -27,6 +28,11 @@ import java.net.HttpURLConnection
  * provideGlance() from ActionCallbacks. Instead we use GlanceRemoteViews.compose() (via
  * [RemoteViewsGenerator]) to generate RemoteViews that include both the widget content and the
  * refresh button overlay, then push them directly.
+ *
+ * The fetch is inline rather than enqueued, so a tap redraws the widget as fast as the network
+ * allows and a failed tap simply leaves what is on screen. That is unchanged; what ADR 0002
+ * changes is that the request comes from the shared settings resolver, so a runtime URL, method
+ * or header applies to the refresh button too.
  */
 internal class PayloadRefreshActionCallback {
     companion object {
@@ -48,12 +54,6 @@ internal class PayloadRefreshActionCallback {
 
         Log.d(TAG, "Refresh requested for widget '$widgetId'")
 
-        val serverUrl = VoltraWidgetUpdateScheduler.readServerUrl(context, widgetId)
-        if (serverUrl == null) {
-            Log.w(TAG, "No server URL registered for widget '$widgetId', skipping refresh")
-            return
-        }
-
         // Resolve the widget's kind before opening any connection (ADR 0000, mirroring
         // VoltraWidgetUpdateWorker): a Dynamic Widget's placeholder reader never consults this
         // payload store, so fetching for the wrong kind is wasted work.
@@ -74,54 +74,47 @@ internal class PayloadRefreshActionCallback {
             }
         }
 
+        val scope = WidgetScope.of(widgetId)
+        val settings = VoltraWidgetServer.resolver(context).resolve(scope)
+
+        if (!settings.shouldFetch) {
+            Log.w(TAG, "No server url for widget '$widgetId', skipping refresh")
+            return
+        }
+
+        // A tap is an explicit "give me the current data", so the stored ETag is deliberately not
+        // sent: a 304 would leave the user staring at an unchanged widget with no way to tell
+        // whether the tap did anything.
+        val request = WidgetServerRequestBuilder.build(context, scope, settings) ?: return
+
         val jsonString =
             withContext(Dispatchers.IO) {
-                try {
-                    val url = VoltraWidgetUpdateRequest.buildUrl(serverUrl, widgetId, context)
-                    val connection = url.openConnection() as HttpURLConnection
-
-                    try {
-                        connection.requestMethod = "GET"
-                        connection.connectTimeout = 10000
-                        connection.readTimeout = 10000
-                        connection.setRequestProperty("Accept", "application/json")
-                        val androidVersion = android.os.Build.VERSION.RELEASE
-                        connection.setRequestProperty(
-                            "User-Agent",
-                            "VoltraWidget/${BuildConfig.VOLTRA_VERSION} (Android/$androidVersion)",
-                        )
-
-                        val token = VoltraWidgetCredentialStore.readToken(context)
-                        if (token != null) {
-                            connection.setRequestProperty("Authorization", "Bearer $token")
-                        }
-                        VoltraWidgetCredentialStore.readHeaders(context).forEach { (key, value) ->
-                            connection.setRequestProperty(key, value)
-                        }
-
-                        val responseCode = connection.responseCode
-                        if (responseCode !in 200..299) {
-                            Log.e(TAG, "Server returned HTTP $responseCode for widget '$widgetId'")
-                            return@withContext null
-                        }
-
-                        val reader = BufferedReader(InputStreamReader(connection.inputStream))
-                        val json = reader.readText()
-                        reader.close()
-
-                        if (json.isEmpty()) {
-                            Log.e(TAG, "Empty response from server for widget '$widgetId'")
-                            return@withContext null
-                        }
-
-                        Log.d(TAG, "Received ${json.length} bytes for widget '$widgetId'")
-                        json
-                    } finally {
-                        connection.disconnect()
+                when (val result = WidgetServerFetcher.fetch(request)) {
+                    is WidgetServerFetchResult.Success -> {
+                        result.body
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Refresh failed for widget '$widgetId': ${e.message}", e)
-                    null
+
+                    is WidgetServerFetchResult.HttpFailure -> {
+                        Log.e(TAG, "Server returned HTTP ${result.httpStatus} for widget '$widgetId'")
+                        null
+                    }
+
+                    is WidgetServerFetchResult.NetworkFailure -> {
+                        Log.e(TAG, "Refresh failed for widget '$widgetId': ${result.message}")
+                        null
+                    }
+
+                    is WidgetServerFetchResult.NotModified -> {
+                        // Only reachable if the server answers 304 unprompted; a refresh tap never
+                        // sends a conditional request.
+                        Log.d(TAG, "Widget '$widgetId' is unchanged")
+                        null
+                    }
+
+                    is WidgetServerFetchResult.TooLarge -> {
+                        Log.e(TAG, "Response for widget '$widgetId' is too large to render")
+                        null
+                    }
                 }
             } ?: return
 

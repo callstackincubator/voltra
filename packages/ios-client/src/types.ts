@@ -9,4 +9,8 @@ export type {
   VoltraNodeJson,
   VoltraPropValue,
   WidgetServerCredentials,
+  WidgetServerUpdateBody,
+  WidgetServerUpdateOptions,
+  WidgetServerUpdateSettings,
+  WidgetServerUpdateSnapshot,
 } from '@use-voltra/ios'

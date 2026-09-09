@@ -2,13 +2,6 @@ package voltra.widget.payload
 
 import android.content.Context
 import android.util.Log
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -16,259 +9,126 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
 import voltra.widget.VoltraWidgetUpdateWorker
+import voltra.widget.server.VoltraWidgetServer
+import voltra.widget.server.WidgetScope
 import java.util.concurrent.TimeUnit
 
-private val Context.voltraServerUrlsDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "voltra_widget_server_urls",
-)
-
 /**
- * Schedules and manages periodic WorkManager tasks for server-driven widget updates.
+ * Schedules periodic WorkManager tasks for payload-driven widgets that fetch from a server.
  *
- * Each widget with a serverUpdate configuration gets its own periodic work request
- * that runs at the configured interval to fetch new content from the server.
- *
- * Server URLs are persisted in Jetpack DataStore so that [requestImmediateUpdate]
- * can trigger an on-demand fetch without needing the generated receiver code.
+ * The URL and interval used to be inlined into each generated receiver and copied into a
+ * DataStore. They now come from the settings resolver, which is what lets an app change either at
+ * runtime with `setWidgetServerUpdate`: a receiver compiled months ago cannot be asked what the
+ * interval is now.
  */
 object VoltraWidgetUpdateScheduler {
     private const val TAG = "VoltraWidgetScheduler"
 
-    /** DataStore key that holds the set of all registered widget IDs. */
-    private val KEY_WIDGET_IDS = stringSetPreferencesKey("registered_widget_ids")
-
-    /** Prefix used to build per-widget server URL keys. */
-    private const val KEY_SERVER_URL_PREFIX = "server_url_"
-
-    /** Prefix used to build per-widget refresh-enabled keys. */
-    private const val KEY_REFRESH_ENABLED_PREFIX = "refresh_enabled_"
-
     /**
-     * Schedule periodic server updates for a widget.
-     *
-     * @param context Application context
-     * @param widgetId The widget identifier
-     * @param serverUrl The Voltra SSR server URL
-     * @param intervalMinutes How often to fetch updates (minimum 15 minutes per WorkManager)
-     * @param refreshEnabled Whether the native refresh button should be shown
+     * Schedules — or reschedules — periodic updates from the widget's resolved settings, and
+     * cancels instead when it has nothing to fetch. Called from the generated receiver's
+     * `onUpdate`, and again whenever settings change.
      */
-    fun schedulePeriodicUpdate(
+    suspend fun schedulePeriodicUpdate(
         context: Context,
         widgetId: String,
-        serverUrl: String,
-        intervalMinutes: Long = 15,
-        refreshEnabled: Boolean = false,
     ) {
-        // Persist the server URL and refresh flag
-        runBlocking {
-            saveServerUrl(context, widgetId, serverUrl)
-            saveRefreshEnabled(context, widgetId, refreshEnabled)
+        val scope = WidgetScope.of(widgetId)
+        val settings = VoltraWidgetServer.resolver(context).resolve(scope)
+
+        if (!settings.shouldFetch) {
+            cancelPeriodicUpdate(context, widgetId)
+            Log.d(TAG, "Not scheduling '$widgetId': no url, or fetching is disabled")
+            return
         }
 
-        val workName = "${VoltraWidgetUpdateWorker.WORK_NAME_PREFIX}$widgetId"
-
-        // Ensure minimum interval is 15 minutes (WorkManager requirement)
-        val effectiveInterval = maxOf(intervalMinutes, 15L)
-
-        val inputData =
-            Data
-                .Builder()
-                .putString(VoltraWidgetUpdateWorker.KEY_WIDGET_ID, widgetId)
-                .putString(VoltraWidgetUpdateWorker.KEY_SERVER_URL, serverUrl)
-                .build()
-
-        val constraints =
-            Constraints
-                .Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
-        val workRequest =
-            PeriodicWorkRequestBuilder<VoltraWidgetUpdateWorker>(
-                effectiveInterval,
-                TimeUnit.MINUTES,
-            ).setInputData(inputData)
-                .setConstraints(constraints)
+        val request =
+            PeriodicWorkRequestBuilder<VoltraWidgetUpdateWorker>(settings.intervalMinutes, TimeUnit.MINUTES)
+                .setInputData(inputData(widgetId))
+                .setConstraints(networkConstraints())
                 .addTag(VoltraWidgetUpdateWorker.TAG)
                 .build()
 
         WorkManager
             .getInstance(context)
-            .enqueueUniquePeriodicWork(
-                workName,
-                ExistingPeriodicWorkPolicy.UPDATE,
-                workRequest,
-            )
+            .enqueueUniquePeriodicWork(workName(widgetId), ExistingPeriodicWorkPolicy.UPDATE, request)
 
-        Log.d(TAG, "Scheduled periodic update for widget '$widgetId' every ${effectiveInterval}min from $serverUrl")
+        Log.d(TAG, "Scheduled periodic update for widget '$widgetId' every ${settings.intervalMinutes}min")
     }
 
     /**
-     * Enqueue a one-time WorkManager request to immediately fetch fresh content
-     * from the server for the given widget.
+     * Enqueues a one-time fetch.
      *
-     * @return true if the request was enqueued, false if no server URL is known for this widget.
+     * @return false when the widget has nothing to fetch, so the caller can fall back to
+     *   re-rendering whatever payload it already has.
      */
     suspend fun requestImmediateUpdate(
         context: Context,
         widgetId: String,
     ): Boolean {
-        val serverUrl = readServerUrl(context, widgetId)
-        if (serverUrl == null) {
-            Log.d(TAG, "No server URL registered for widget '$widgetId', skipping immediate update")
+        val settings = VoltraWidgetServer.resolver(context).resolve(WidgetScope.of(widgetId))
+
+        if (!settings.shouldFetch) {
+            Log.d(TAG, "No server url for widget '$widgetId', skipping immediate update")
             return false
         }
 
-        val inputData =
-            Data
-                .Builder()
-                .putString(VoltraWidgetUpdateWorker.KEY_WIDGET_ID, widgetId)
-                .putString(VoltraWidgetUpdateWorker.KEY_SERVER_URL, serverUrl)
-                .build()
-
-        val constraints =
-            Constraints
-                .Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
-        val workRequest =
+        val request =
             OneTimeWorkRequestBuilder<VoltraWidgetUpdateWorker>()
-                .setInputData(inputData)
-                .setConstraints(constraints)
+                .setInputData(inputData(widgetId))
+                .setConstraints(networkConstraints())
                 .addTag(VoltraWidgetUpdateWorker.TAG)
                 .build()
 
-        WorkManager.getInstance(context).enqueue(workRequest)
+        WorkManager.getInstance(context).enqueue(request)
 
-        Log.d(TAG, "Enqueued immediate update for widget '$widgetId' from $serverUrl")
+        Log.d(TAG, "Enqueued immediate update for widget '$widgetId'")
         return true
     }
 
-    /**
-     * Check whether a widget has a server URL registered (i.e. is server-driven).
-     */
+    /** Whether this widget has somewhere to fetch from and permission to do it. */
     suspend fun hasServerUrl(
         context: Context,
         widgetId: String,
-    ): Boolean = readServerUrl(context, widgetId) != null
+    ): Boolean = VoltraWidgetServer.resolver(context).resolve(WidgetScope.of(widgetId)).shouldFetch
 
-    /**
-     * Cancel periodic server updates for a widget.
-     */
     fun cancelPeriodicUpdate(
         context: Context,
         widgetId: String,
     ) {
-        val workName = "${VoltraWidgetUpdateWorker.WORK_NAME_PREFIX}$widgetId"
-        WorkManager.getInstance(context).cancelUniqueWork(workName)
-        runBlocking { removeServerUrl(context, widgetId) }
+        WorkManager.getInstance(context).cancelUniqueWork(workName(widgetId))
         Log.d(TAG, "Cancelled periodic update for widget '$widgetId'")
     }
 
-    /**
-     * Cancel all periodic widget updates.
-     */
     fun cancelAllPeriodicUpdates(context: Context) {
         WorkManager.getInstance(context).cancelAllWorkByTag(VoltraWidgetUpdateWorker.TAG)
-        runBlocking { clearAllServerUrls(context) }
         Log.d(TAG, "Cancelled all periodic widget updates")
     }
 
-    // -- DataStore helpers for server URL persistence --
-
-    private suspend fun saveServerUrl(
-        context: Context,
-        widgetId: String,
-        serverUrl: String,
-    ) {
-        val urlKey = stringPreferencesKey("$KEY_SERVER_URL_PREFIX$widgetId")
-        context.voltraServerUrlsDataStore.edit { prefs ->
-            prefs[urlKey] = serverUrl
-            // Also track the widget ID in the index set
-            val currentIds = prefs[KEY_WIDGET_IDS] ?: emptySet()
-            prefs[KEY_WIDGET_IDS] = currentIds + widgetId
-        }
-    }
-
-    suspend fun readServerUrl(
-        context: Context,
-        widgetId: String,
-    ): String? {
-        val urlKey = stringPreferencesKey("$KEY_SERVER_URL_PREFIX$widgetId")
-        return try {
-            context.voltraServerUrlsDataStore.data
-                .map { prefs -> prefs[urlKey] }
-                .firstOrNull()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to read server URL for widget '$widgetId': ${e.message}", e)
-            null
-        }
-    }
-
-    private suspend fun saveRefreshEnabled(
-        context: Context,
-        widgetId: String,
-        enabled: Boolean,
-    ) {
-        val key = booleanPreferencesKey("$KEY_REFRESH_ENABLED_PREFIX$widgetId")
-        context.voltraServerUrlsDataStore.edit { prefs ->
-            prefs[key] = enabled
-        }
-    }
-
     /**
-     * Check whether the native refresh button is enabled for this widget.
+     * Whether the widget draws a refresh button. Build-time only: the button is generated UI
+     * structure, so unlike the URL and the interval it cannot be changed at runtime.
      */
-    suspend fun isRefreshEnabled(
+    fun isRefreshEnabled(
         context: Context,
         widgetId: String,
-    ): Boolean {
-        val key = booleanPreferencesKey("$KEY_REFRESH_ENABLED_PREFIX$widgetId")
-        return try {
-            context.voltraServerUrlsDataStore.data
-                .map { prefs -> prefs[key] ?: false }
-                .firstOrNull() ?: false
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to read refresh flag for widget '$widgetId': ${e.message}", e)
-            false
-        }
-    }
+    ): Boolean = VoltraWidgetServer.defaults(context).defaults(widgetId)?.refresh ?: false
 
-    /**
-     * Return all widget IDs that have a server URL registered.
-     */
-    suspend fun getAllServerDrivenWidgetIds(context: Context): Set<String> =
-        try {
-            context.voltraServerUrlsDataStore.data
-                .map { prefs -> prefs[KEY_WIDGET_IDS] ?: emptySet() }
-                .firstOrNull() ?: emptySet()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to read server-driven widget IDs: ${e.message}", e)
-            emptySet()
-        }
+    /** Every widget app.json marked server-driven, whichever engine renders it. */
+    fun getAllServerDrivenWidgetIds(context: Context): Set<String> = VoltraWidgetServer.serverDrivenWidgetIds(context)
 
-    private suspend fun removeServerUrl(
-        context: Context,
-        widgetId: String,
-    ) {
-        val urlKey = stringPreferencesKey("$KEY_SERVER_URL_PREFIX$widgetId")
-        val refreshKey = booleanPreferencesKey("$KEY_REFRESH_ENABLED_PREFIX$widgetId")
-        context.voltraServerUrlsDataStore.edit { prefs ->
-            prefs.remove(urlKey)
-            prefs.remove(refreshKey)
-            val currentIds = prefs[KEY_WIDGET_IDS] ?: emptySet()
-            prefs[KEY_WIDGET_IDS] = currentIds - widgetId
-        }
-    }
+    private fun workName(widgetId: String) = "${VoltraWidgetUpdateWorker.WORK_NAME_PREFIX}$widgetId"
 
-    private suspend fun clearAllServerUrls(context: Context) {
-        context.voltraServerUrlsDataStore.edit { prefs ->
-            prefs.clear()
-        }
-    }
+    private fun inputData(widgetId: String): Data =
+        Data
+            .Builder()
+            .putString(VoltraWidgetUpdateWorker.KEY_WIDGET_ID, widgetId)
+            .build()
+
+    private fun networkConstraints(): Constraints =
+        Constraints
+            .Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
 }

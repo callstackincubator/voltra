@@ -1,4 +1,4 @@
-# ADR 0002: Bitmap-rendered arc progress indicator for Android widgets
+# ADR 0004: Bitmap-rendered arc progress indicator for Android widgets
 
 Status: Accepted
 

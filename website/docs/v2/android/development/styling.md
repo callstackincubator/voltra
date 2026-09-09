@@ -124,3 +124,47 @@ const element = (
   </VoltraAndroid.Column>
 )
 ```
+
+## Sharing styles with `StyleSheet`
+
+Widget files can import `StyleSheet` and `Platform` from `react-native`, so styles can live
+outside the element tree exactly as they do in the rest of your app:
+
+```tsx
+import { Platform, StyleSheet } from 'react-native'
+import { VoltraAndroid } from '@use-voltra/android'
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    backgroundColor: '#101828',
+  },
+  title: {
+    color: '#F8FAFC',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+})
+
+const element = (
+  <VoltraAndroid.Column style={styles.container}>
+    <VoltraAndroid.Text style={styles.title}>{Platform.OS}</VoltraAndroid.Text>
+  </VoltraAndroid.Column>
+)
+```
+
+Widget code does not run against the React Native runtime — at build time it is evaluated in a
+Node sandbox, and Dynamic Widgets run on device in a separate JS engine with no bridge. Only the
+parts of `react-native` that are pure data manipulation are therefore available:
+
+- `StyleSheet.create`, `StyleSheet.flatten`, `StyleSheet.compose`, `StyleSheet.absoluteFill`,
+  `StyleSheet.absoluteFillObject`, and `StyleSheet.hairlineWidth`.
+- `Platform.OS` and `Platform.select`. Inside a widget, `Platform.OS` is the platform the widget is
+  being built for, so `Platform.select` picks the same branch at build time and on device.
+
+Anything else imported from `react-native` — components, `Dimensions`, `Animated`, `PixelRatio` —
+is rejected with a message naming the symbol. Build steps that evaluate your widget
+(`voltra apply` and `expo prebuild`) fail outright; a symbol that only appears on a branch those
+steps never reach throws the same message when the widget renders, rather than reading as
+`undefined`. Deep imports such as `react-native/Libraries/...` always fail the build. Use the
+`VoltraAndroid` components for everything visual.

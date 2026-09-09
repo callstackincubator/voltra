@@ -22,4 +22,6 @@ Status values:
 | ---------------------------------------------- | ---------------------------------------------------------- | -------- |
 | [0000](0000-android-widget-kind-separation.md) | Separate payload-driven and Dynamic Android widget paths   | Accepted |
 | [0001](0001-dynamic-live-activities.md)        | Dynamic Live Activities rendering                          | Accepted |
-| [0002](0002-android-arc-progress-indicator.md) | Bitmap-rendered arc progress indicator for Android widgets | Accepted |
+| [0002](0002-server-driven-dynamic-widgets.md)  | Server-driven Dynamic Widgets                              | Accepted |
+| [0003](0003-widget-module-resolution.md)       | Widget module resolution                                   | Accepted |
+| [0004](0004-android-arc-progress-indicator.md) | Bitmap-rendered arc progress indicator for Android widgets | Accepted |
