@@ -151,7 +151,7 @@ WidgetKit identifies a widget placed on the Home Screen by its extension bundle 
 }
 ```
 
-The `id` stays the handle you use from JavaScript (`updateWidget('streak', ...)`), only the WidgetKit kind changes. Kinds must be unique across widgets.
+The `id` stays the handle you use from JavaScript (`updateWidget('streak', ...)`), only the WidgetKit kind changes. Kinds must be unique across widgets. This works the same way in `voltra.config.ts` when you use the [React Native CLI setup](/getting-started/react-native-cli).
 
 ### Localizing `displayName` and `description`
 

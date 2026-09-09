@@ -8,6 +8,7 @@ import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 import { createDynamicWidgetBuildInfo, createGeneratedWidgetModuleLoader } from '../shared/widgetModule'
+import { iosWidgetKindOverrides, iosWidgetKind } from '../../config/widgetKind'
 import { buildPlistXml, parsePlistFile } from './plist'
 import { resolveIOSWidgetTargetName } from './targetName'
 
@@ -280,6 +281,9 @@ async function generateInfoPlistFile(
       Voltra_AppGroupIdentifier: ios.groupIdentifier,
       Voltra_KeychainGroup: ios.keychainGroup,
       Voltra_Version: voltraVersion,
+      // The extension resolves its own kinds too, and Bundle.main there is the extension bundle,
+      // so the map has to be written here as well as into the app's Info.plist.
+      Voltra_WidgetKinds: iosWidgetKindOverrides(widgets),
       Voltra_WidgetServerIntervals: Object.keys(serverIntervals).length > 0 ? serverIntervals : undefined,
       Voltra_WidgetServerRefresh: Object.keys(serverRefresh).length > 0 ? serverRefresh : undefined,
       NSAppTransportSecurity: createWidgetAppTransportSecurity(hasClientRenderedWidget, serverWidgets.length > 0),
@@ -682,7 +686,7 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
     '',
     '  public var body: some WidgetConfiguration {',
     '    StaticConfiguration(',
-    `      kind: ${JSON.stringify(`Voltra_Widget_${widget.id}`)},`,
+    `      kind: ${JSON.stringify(iosWidgetKind(widget))},`,
     providerAndContent,
     '    }',
     `    .configurationDisplayName(${displayNameExpr})`,
@@ -789,7 +793,7 @@ function generateClientAppIntentWidgetCode(
     '',
     '  public var body: some WidgetConfiguration {',
     '    AppIntentConfiguration(',
-    `      kind: ${JSON.stringify(`Voltra_Widget_${widget.id}`)},`,
+    `      kind: ${JSON.stringify(iosWidgetKind(widget))},`,
     `      intent: ${intentName}.self,`,
     `      provider: ${providerName}()`,
     '    ) { entry in',
