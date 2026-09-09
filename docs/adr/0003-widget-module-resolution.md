@@ -1,4 +1,4 @@
-# 0002 — Widget module resolution
+# 0003 — Widget module resolution
 
 **Status:** Accepted
 

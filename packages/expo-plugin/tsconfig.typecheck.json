@@ -5,6 +5,7 @@
     "rootDir": "../..",
     "baseUrl": "../..",
     "paths": {
+      "@use-voltra/compiler": ["packages/compiler/src/index.ts"],
       "@use-voltra/core/dynamic-live-activity": ["packages/core/src/dynamic-live-activity.ts"]
     }
   }
