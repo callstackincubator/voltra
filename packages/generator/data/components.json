@@ -173,7 +173,12 @@
     "trackCheckedColor": "trkc",
     "trackUncheckedColor": "trku",
     "checkedColor": "chc",
-    "uncheckedColor": "uchc"
+    "uncheckedColor": "uchc",
+    "strokeWidth": "sw",
+    "startAngle": "sa",
+    "sweepAngle": "swa",
+    "lineCap": "lc",
+    "gradientColors": "gc"
   },
   "styleProperties": [
     "padding",
@@ -1472,6 +1477,57 @@
           "optional": true,
           "enum": ["horizontal", "vertical"],
           "description": "Enable scrolling on the given axis"
+        }
+      }
+    },
+    {
+      "name": "AndroidArcProgressIndicator",
+      "description": "Android arc progress indicator drawn as a bitmap",
+      "swiftAvailability": "Not available",
+      "androidAvailability": "Android 7+",
+      "hasChildren": true,
+      "parameters": {
+        "progress": {
+          "type": "number",
+          "optional": true,
+          "description": "Fill fraction from 0 to 1, clamped"
+        },
+        "color": {
+          "type": "string",
+          "optional": true,
+          "description": "Stroke color of the filled arc"
+        },
+        "trackColor": {
+          "type": "string",
+          "optional": true,
+          "description": "Stroke color of the unfilled arc; transparent hides the track"
+        },
+        "strokeWidth": {
+          "type": "number",
+          "optional": true,
+          "description": "Stroke width in dp of both arcs"
+        },
+        "startAngle": {
+          "type": "number",
+          "optional": true,
+          "description": "Angle in degrees where the arc begins; 0 is 3 o'clock, positive is clockwise"
+        },
+        "sweepAngle": {
+          "type": "number",
+          "optional": true,
+          "description": "Total angular length of the track in degrees; 360 makes a closed ring"
+        },
+        "lineCap": {
+          "type": "string",
+          "optional": true,
+          "enum": ["round", "butt"],
+          "description": "End shape of both arcs"
+        },
+        "gradientColors": {
+          "type": "array",
+          "optional": true,
+          "jsonEncoded": true,
+          "description": "Sweep gradient colors along the filled arc, from startAngle; overrides color"
         }
       }
     }

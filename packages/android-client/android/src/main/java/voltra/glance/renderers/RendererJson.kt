@@ -87,6 +87,17 @@ internal fun parseForegroundStyleScaleEntries(json: String?): List<List<String>>
     }
 }
 
+/** Parses a JSON-encoded array of color strings, such as the arc indicator's `gradientColors`. */
+internal fun parseColorStringList(json: String?): List<String>? {
+    if (json.isNullOrEmpty()) return null
+    return try {
+        rendererJson.decodeFromString(ListSerializer(String.serializer()), json)
+    } catch (error: Exception) {
+        warn("Failed to parse color list", error)
+        null
+    }
+}
+
 internal fun parseMarksTuples(marksJson: String): List<List<Any?>> {
     return try {
         val element = rendererJson.parseToJsonElement(marksJson)
