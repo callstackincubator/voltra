@@ -35,7 +35,9 @@ export const widgetKind = (widget: Pick<IOSWidgetConfig, 'id' | 'kind'>): string
  * `{ id: kind }` for the widgets that pin a custom `kind`, or undefined when none does.
  * Written to both Info.plists (`Voltra_WidgetKinds`) so native code maps ids to kinds and back.
  */
-export const widgetKindOverrides = (widgets?: IOSWidgetConfig[]): Record<string, string> | undefined => {
+export const widgetKindOverrides = (
+  widgets?: Pick<IOSWidgetConfig, 'id' | 'kind'>[]
+): Record<string, string> | undefined => {
   const overrides: Record<string, string> = {}
   for (const widget of widgets ?? []) {
     if (widget.kind !== undefined) {

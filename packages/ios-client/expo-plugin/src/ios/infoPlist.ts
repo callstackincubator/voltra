@@ -40,10 +40,14 @@ export const configureInfoPlist: ConfigPlugin<ConfigureInfoPlistProps> = (config
       mod.modResults.Voltra_WidgetIds = props.widgetIds
     }
 
-    // Store custom widget kinds so native code can map ids to kinds and back
+    // Store custom widget kinds so native code can map ids to kinds and back. A prebuild over an
+    // existing ios/ directory keeps whatever the plist already holds, so a `kind` that was removed
+    // from the config has to be deleted here or the widget would keep a kind nobody configured.
     const widgetKinds = widgetKindOverrides(props.widgets)
     if (widgetKinds) {
       mod.modResults.Voltra_WidgetKinds = widgetKinds
+    } else {
+      delete mod.modResults.Voltra_WidgetKinds
     }
 
     // Configure server update URLs and intervals for widgets

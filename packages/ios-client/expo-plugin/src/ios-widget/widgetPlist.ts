@@ -139,10 +139,14 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
           }
         }
 
-        // Custom widget kinds, so the extension maps ids to kinds too (see VoltraWidgetKind.swift)
+        // Custom widget kinds, so the extension maps ids to kinds too (see VoltraWidgetKind.swift).
+        // Deleted when no widget pins one, so a `kind` dropped from the config does not linger in
+        // an Info.plist that a previous prebuild wrote.
         const widgetKinds = widgetKindOverrides(widgets)
         if (widgetKinds) {
           ;(content as any)['Voltra_WidgetKinds'] = widgetKinds
+        } else {
+          delete (content as any)['Voltra_WidgetKinds']
         }
 
         // Add Keychain group for shared credential access
