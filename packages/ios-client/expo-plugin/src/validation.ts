@@ -3,7 +3,10 @@ import {
   validateInitialStatePath,
   validateWidgetEntry,
   validateWidgetLabel,
+  validateWidgetServerUpdate,
 } from '@use-voltra/expo-plugin'
+
+import { iosServerUpdateRules } from './ios/serverUpdate'
 import { getDynamicLiveActivityAttributesType } from '@use-voltra/expo-plugin'
 
 import type { IOSConfigPluginProps, IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetFamily } from './types'
@@ -47,6 +50,8 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: s
     validateWidgetEntry(widget.entry, widget.id, projectRoot)
   }
 
+  validateWidgetServerUpdate(widget.serverUpdate, widget.id, iosServerUpdateRules(widget))
+
   if (widget.supportedFamilies) {
     if (!Array.isArray(widget.supportedFamilies)) {
       throw new Error(`Widget '${widget.id}': supportedFamilies must be an array`)
@@ -82,6 +87,15 @@ export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projec
     const seenIds = new Set<string>()
     for (const widget of props.widgets) {
       validateIOSWidgetConfig(widget, projectRoot)
+
+      // A server-driven Dynamic Widget commits fetched props to the App Group so the widget
+      // extension can read them. Without one it would fetch and have nowhere to put the result.
+      if (widget.entry !== undefined && widget.serverUpdate !== undefined && !props.groupIdentifier) {
+        throw new Error(
+          `Widget '${widget.id}' has both entry and serverUpdate, which requires groupIdentifier ` +
+            'so fetched props can be shared with the widget extension.'
+        )
+      }
 
       if (seenIds.has(widget.id)) {
         throw new Error(`Duplicate widget ID: '${widget.id}'`)

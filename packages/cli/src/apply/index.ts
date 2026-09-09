@@ -108,7 +108,10 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   const deletedChanges = await removeStaleGeneratedFiles(normalizedConfig.projectRoot, stateDiff.staleFiles)
   await saveVoltraState(normalizedConfig.projectRoot, { files: stateDiff.nextFiles })
 
-  const summaryWarnings = platformResults.flatMap((result) => result.warnings ?? []).filter(isDefined)
+  const summaryWarnings = [
+    ...(normalizedConfig.warnings ?? []),
+    ...platformResults.flatMap((result) => result.warnings ?? []),
+  ].filter(isDefined)
   const summaryChanges = [...platformResults.flatMap((result) => result.changes), ...deletedChanges]
 
   await resolvedDependencies.writeSummary({ changes: summaryChanges, warnings: summaryWarnings })

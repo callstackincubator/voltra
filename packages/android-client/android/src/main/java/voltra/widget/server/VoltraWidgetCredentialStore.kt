@@ -1,4 +1,4 @@
-package voltra.widget.payload
+package voltra.widget.server
 
 import android.content.Context
 import android.util.Log
@@ -21,7 +21,7 @@ import kotlinx.coroutines.runBlocking
  * this storage; no special grouping or sharing configuration is required.
  */
 
-private val Context.voltraCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(
+internal val Context.voltraCredentialsDataStore: DataStore<Preferences> by preferencesDataStore(
     name = "voltra_widget_credentials",
 )
 
@@ -158,12 +158,22 @@ object VoltraWidgetCredentialStore {
         }
 
     /**
-     * Clear all stored credentials.
+     * Clear the stored token and headers.
+     *
+     * Only those: this DataStore is shared with the runtime server-update settings layers, so
+     * clearing it wholesale would silently drop a URL or an interval the app set through
+     * `setWidgetServerUpdate` — and reset the revision counter that tells an in-flight fetch its
+     * settings have moved.
      */
     suspend fun clearAll(context: Context): Boolean =
         try {
             context.voltraCredentialsDataStore.edit { prefs ->
-                prefs.clear()
+                val headerKeys = prefs[KEY_HEADER_KEYS] ?: emptySet()
+                headerKeys.forEach { key ->
+                    prefs.remove(stringPreferencesKey("$KEY_HEADERS_PREFIX$key"))
+                }
+                prefs.remove(KEY_HEADER_KEYS)
+                prefs.remove(KEY_TOKEN)
             }
             Log.d(TAG, "All credentials cleared")
             true

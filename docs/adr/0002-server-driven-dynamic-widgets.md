@@ -1,6 +1,6 @@
 # ADR 0002: Server-driven Dynamic Widgets
 
-Status: Accepted — not yet implemented
+Status: Accepted
 
 Tracks [#176](https://github.com/callstackincubator/voltra/issues/176).
 
@@ -196,6 +196,11 @@ type WidgetServerUpdateSettings = {
 
 setWidgetServerUpdate(settings: WidgetServerUpdateSettings, options?: { widgetId?: string }): Promise<void>
 clearWidgetServerUpdate(options?: { widgetId?: string }): Promise<void>
+
+// widgetId given: fully resolved (defaults applied), or null if the widget is not server-driven.
+getWidgetServerUpdate(options: { widgetId: string }): Promise<WidgetServerUpdateSnapshot | null>
+// no widgetId: raw GLOBAL layer contents only (no defaults applied), or null if nothing set globally.
+getWidgetServerUpdate(options?: undefined): Promise<WidgetServerUpdateSettings | null>
 
 /** @deprecated use setWidgetServerUpdate with an Authorization header */
 setWidgetServerCredentials({ token, headers? }): Promise<void>

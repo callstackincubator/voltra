@@ -234,7 +234,13 @@ async function generateInfoPlistFile(
   const fontNames = ios.fonts.map((fontPath) => path.basename(fontPath)).sort()
   const serverWidgets = widgets.filter((widget) => widget.serverUpdate)
   const hasClientRenderedWidget = widgets.some((widget) => widget.clientRendered)
-  const serverUrls = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.url]))
+  // Keys of the intervals dictionary are the set of server-driven widget ids; a URL appears only
+  // when app.json set one, because it may instead arrive at runtime via setWidgetServerUpdate.
+  const serverUrls = Object.fromEntries(
+    serverWidgets
+      .filter((widget) => widget.serverUpdate?.url !== undefined)
+      .map((widget) => [widget.id, widget.serverUpdate?.url])
+  )
   const serverIntervals = Object.fromEntries(
     serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes])
   )
@@ -628,9 +634,14 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
   const familiesSwift = widget.supportedFamilies.map((family) => IOS_WIDGET_FAMILY_MAP[family]).join(', ')
   const displayNameExpr = createSwiftLabelExpression(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = createSwiftLabelExpression(widget.id, 'description', widget.description)
+  // `entry` picks the render engine and `serverUpdate` picks where the data comes from, so the two
+  // keys together select one of four providers. Runtime code never asks "is this server-driven?" —
+  // the answer is baked in here, once, at generate time.
   const providerAndContent = widget.clientRendered
     ? [
-        '      provider: VoltraClientWidgetProvider(',
+        `      provider: ${
+          widget.serverUpdate ? 'VoltraDynamicWidgetServerUpdateProvider' : 'VoltraClientWidgetProvider'
+        }(`,
         '        widgetId: widgetId,',
         '        initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)',
         '      )',
@@ -707,6 +718,22 @@ function generateClientAppIntentWidgetCode(
   const defaultDictionary = createSwiftDictionaryLiteral(
     widget.appIntent.parameters.map((parameter) => `${JSON.stringify(parameter.name)}: ${swiftDefaultValue(parameter)}`)
   )
+  // A server-driven Dynamic Widget fetches on every timeline request and schedules the next one
+  // from its resolved interval; a plain one has nothing to ask again for, so its policy is .never.
+  const timelineBody = widget.serverUpdate
+    ? [
+        '    return await VoltraDynamicWidgetServerUpdateProvider.timeline(',
+        '      widgetId: widgetId,',
+        '      family: context.family,',
+        `      configuration: ${configuredDictionary}`,
+        '    )',
+        '  }',
+      ]
+    : [
+        `    let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDictionary})`,
+        '    return Timeline(entries: [entry], policy: .never)',
+        '  }',
+      ]
 
   return [
     `@available(iOS 17.0, *)`,
@@ -736,10 +763,8 @@ function generateClientAppIntentWidgetCode(
     `    await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDictionary})`,
     '  }',
     '',
-    `  func timeline(for configuration: ${intentName}, in _: Context) async -> Timeline<VoltraClientWidgetEntry> {`,
-    `    let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDictionary})`,
-    '    return Timeline(entries: [entry], policy: .never)',
-    '  }',
+    `  func timeline(for configuration: ${intentName}, in context: Context) async -> Timeline<VoltraClientWidgetEntry> {`,
+    ...timelineBody,
     '}',
     '',
     `@available(iOS 17.0, *)`,

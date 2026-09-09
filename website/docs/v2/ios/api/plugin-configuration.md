@@ -103,7 +103,7 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `description`: Description shown in the widget gallery (same localization rules as `displayName`)
 - `supportedFamilies`: Array of supported widget sizes (`systemSmall`, `systemMedium`, `systemLarge`)
 - `initialStatePath`: (optional) Project-relative path to a file that exports initial widget state, **or** a locale map of paths for localized build-time pre-rendering (see [Widget Pre-rendering](../development/widget-pre-rendering))
-- `serverUpdate`: (optional) Enable server-driven updates. See [Server-driven widgets](../development/server-driven-widgets) for full details.
+- `serverUpdate`: (optional) Fetch the widget's content on a schedule. Without `entry` the server returns a rendered payload; with `entry` it returns plain JSON that the widget renders on the device. `url` is optional — leave it out to supply one at runtime. See [Server-driven widgets](../development/server-driven-widgets) for full details.
   - `url`: The Voltra SSR endpoint URL
   - `intervalMinutes`: Update interval in minutes (default: `15`)
   - `refresh`: Show a native refresh button (default: `false`, requires iOS 17+)

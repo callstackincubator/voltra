@@ -80,7 +80,45 @@ describe('generateWidgetReceivers', () => {
     }
   })
 
-  it('generates a serverUpdate receiver extending voltra.widget.payload.VoltraPayloadWidgetReceiver', async () => {
+  it('generates a server-driven Dynamic Widget receiver when a widget has both entry and serverUpdate', async () => {
+    const { platformProjectRoot, cleanup } = makeTempPlatformRoot()
+
+    try {
+      const widget: DetectedAndroidWidget = {
+        ...baseWidget('portfolio'),
+        clientRendered: true,
+        clientSourcePath: '/tmp/does-not-matter.js',
+        entry: 'widgets/portfolio.tsx',
+        serverUpdate: {
+          url: 'https://example.com/portfolio',
+          intervalMinutes: 30,
+          refresh: true,
+        },
+      }
+
+      const content = await generateReceiverFile(platformProjectRoot, 'com.example.app', widget)
+
+      expect(content).toBe(
+        [
+          'package com.example.app.widget',
+          '',
+          'import voltra.dynamicwidget.serverupdate.VoltraServerDrivenClientWidgetReceiver',
+          '',
+          '/**',
+          ' * Auto-generated server-driven Dynamic Widget receiver for Widget portfolio',
+          ' * Widget ID: portfolio',
+          ' */',
+          'class VoltraWidget_portfolioReceiver : VoltraServerDrivenClientWidgetReceiver() {',
+          '    override val widgetId: String = "portfolio"',
+          '}',
+        ].join('\n')
+      )
+    } finally {
+      cleanup()
+    }
+  })
+
+  it('generates a payload serverUpdate receiver that schedules without inlining the url or interval', async () => {
     const { platformProjectRoot, cleanup } = makeTempPlatformRoot()
 
     try {
@@ -102,14 +140,13 @@ describe('generateWidgetReceivers', () => {
           '',
           'import android.appwidget.AppWidgetManager',
           'import android.content.Context',
+          'import kotlinx.coroutines.runBlocking',
           'import voltra.widget.payload.VoltraPayloadWidgetReceiver',
           'import voltra.widget.payload.VoltraWidgetUpdateScheduler',
           '',
           '/**',
           ' * Auto-generated widget receiver for Widget server',
           ' * Widget ID: server',
-          ' * Server Update: https://example.com/widget (every 30 minutes)',
-          ' * Refresh Button: true',
           ' */',
           'class VoltraWidget_serverReceiver : VoltraPayloadWidgetReceiver() {',
           '    override val widgetId: String = "server"',
@@ -117,14 +154,11 @@ describe('generateWidgetReceivers', () => {
           '    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {',
           '        super.onUpdate(context, appWidgetManager, appWidgetIds)',
           '',
-          '        // Schedule periodic server updates via WorkManager',
-          '        VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(',
-          '            context = context,',
-          '            widgetId = "server",',
-          '            serverUrl = "https://example.com/widget",',
-          '            intervalMinutes = 30L,',
-          '            refreshEnabled = true',
-          '        )',
+          '        // Blocking rather than launching: onReceive must not return before the work is',
+          '        // enqueued, or a widget added while the app is not running loses its schedule.',
+          '        runBlocking {',
+          '            VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(context.applicationContext, "server")',
+          '        }',
           '    }',
           '',
           '    override fun onDeleted(context: Context, appWidgetIds: IntArray) {',

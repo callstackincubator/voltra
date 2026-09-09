@@ -40,6 +40,47 @@ class WidgetOrchestratorTest {
     }
 
     @Test
+    fun reloadWidgetsRefetchesAServerDrivenDynamicWidgetBeforeRerendering() =
+        runTest {
+            val fetched = mutableListOf<String>()
+            val rendered = mutableListOf<String>()
+            val orchestrator =
+                WidgetOrchestrator(
+                    context = RuntimeEnvironment.getApplication(),
+                    widgetKindClassifier = { VoltraWidgetKind.Dynamic },
+                    dynamicWidgetGlanceUpdateTrigger = { widgetId -> rendered += widgetId },
+                    dynamicWidgetServerFetchTrigger = { widgetId ->
+                        fetched += widgetId
+                        true
+                    },
+                )
+
+            orchestrator.reloadWidgets(listOf("server-driven-dynamic"))
+
+            // The fetch is asked for first, but the render does not wait for it: the widget shows
+            // what it already has and updates again when the fetch lands.
+            assertEquals(listOf("server-driven-dynamic"), fetched)
+            assertEquals(listOf("server-driven-dynamic"), rendered)
+        }
+
+    @Test
+    fun reloadWidgetsStillRerendersADynamicWidgetThatIsNotServerDriven() =
+        runTest {
+            val rendered = mutableListOf<String>()
+            val orchestrator =
+                WidgetOrchestrator(
+                    context = RuntimeEnvironment.getApplication(),
+                    widgetKindClassifier = { VoltraWidgetKind.Dynamic },
+                    dynamicWidgetGlanceUpdateTrigger = { widgetId -> rendered += widgetId },
+                    dynamicWidgetServerFetchTrigger = { false },
+                )
+
+            orchestrator.reloadWidgets(listOf("local-dynamic"))
+
+            assertEquals(listOf("local-dynamic"), rendered)
+        }
+
+    @Test
     fun reloadClientWidgetsOnlyTriggersWidgetsTheResolverClassifiesAsDynamic() =
         runTest {
             val dynamicWidgetUpdateCalls = mutableListOf<String>()
