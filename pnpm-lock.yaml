@@ -293,15 +293,15 @@ importers:
 
   packages/cli:
     dependencies:
-      '@babel/core':
-        specifier: ^7.27.4
-        version: 7.29.0
       '@bacons/xcode':
         specifier: ^1.0.0-alpha.33
         version: 1.0.0-alpha.33
       '@clack/prompts':
         specifier: ^1.0.0-alpha.5
         version: 1.4.0
+      '@use-voltra/compiler':
+        specifier: workspace:^
+        version: link:../compiler
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -315,21 +315,34 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2
     devDependencies:
-      '@types/babel__core':
-        specifier: ^7.20.5
-        version: 7.20.5
       tsx:
         specifier: ^4.19.0
         version: 4.22.3
 
   packages/compiler:
     dependencies:
+      '@babel/core':
+        specifier: ^7.27.4
+        version: 7.29.0
       '@babel/parser':
         specifier: ^7.27.4
         version: 7.29.3
       '@babel/types':
         specifier: ^7.27.4
         version: 7.29.0
+    devDependencies:
+      '@babel/runtime':
+        specifier: ^7.27.4
+        version: 7.29.2
+      '@react-native/babel-preset':
+        specifier: 0.83.2
+        version: 0.83.2(@babel/core@7.29.0)
+      '@types/babel__core':
+        specifier: ^7.20.5
+        version: 7.20.5
+      tsx:
+        specifier: ^4.19.0
+        version: 4.22.3
 
   packages/core:
     dependencies:
@@ -342,9 +355,9 @@ importers:
 
   packages/expo-plugin:
     dependencies:
-      '@babel/core':
-        specifier: ^7.27.4
-        version: 7.29.0
+      '@use-voltra/compiler':
+        specifier: workspace:^
+        version: link:../compiler
       '@use-voltra/core':
         specifier: workspace:^
         version: link:../core
@@ -358,9 +371,6 @@ importers:
         specifier: '*'
         version: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4)
     devDependencies:
-      '@types/babel__core':
-        specifier: ^7.20.5
-        version: 7.20.5
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14

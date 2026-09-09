@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { evaluateWidgetModuleExports } from '@use-voltra/expo-plugin'
+import { createPrerenderWidgetModuleLoader, type WidgetModuleLoader } from '@use-voltra/expo-plugin'
 
 import type { AndroidWidgetConfig } from '../types'
 
@@ -27,7 +27,8 @@ export function detectClientRenderedWidgets(
   widgets: AndroidWidgetConfig[],
   projectRoot: string
 ): DetectedAndroidWidget[] {
-  const detected = widgets.map((widget) => detectSingleWidget(widget, projectRoot))
+  const loader = createPrerenderWidgetModuleLoader(projectRoot, 'android')
+  const detected = widgets.map((widget) => detectSingleWidget(widget, projectRoot, loader))
 
   if (!hasWarnedExperimental) {
     const clientWidgetIds = detected.filter((widget) => widget.clientRendered).map((widget) => widget.id)
@@ -44,7 +45,11 @@ export function detectClientRenderedWidgets(
   return detected
 }
 
-function detectSingleWidget(widget: AndroidWidgetConfig, projectRoot: string): DetectedAndroidWidget {
+function detectSingleWidget(
+  widget: AndroidWidgetConfig,
+  projectRoot: string,
+  loader: WidgetModuleLoader
+): DetectedAndroidWidget {
   if (widget.entry === undefined) {
     return {
       ...widget,
@@ -62,8 +67,7 @@ function detectSingleWidget(widget: AndroidWidgetConfig, projectRoot: string): D
     )
   }
 
-  const widgetModule = evaluateWidgetModuleExports(projectRoot, sourcePath)
-  const widgetFn = widgetModule?.default ?? widgetModule
+  const widgetFn = loader.loadDefaultExport(sourcePath)
   if (typeof widgetFn !== 'function') {
     throw new Error(
       `[voltra] Dynamic Widget "${widget.id}" at ${path.relative(
