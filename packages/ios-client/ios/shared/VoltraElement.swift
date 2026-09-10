@@ -22,18 +22,26 @@ public struct VoltraElement: Hashable {
 
   // MARK: - Hashable
 
+  // `_props` only carries the stylesheet *index* of a deduplicated style, and the same index
+  // means different things in two different payloads. Identity therefore has to include the
+  // resolved style: `VoltraNode` is an Equatable `View`, so SwiftUI takes its fast path and skips
+  // re-evaluating a node it considers unchanged — leaving the old style on screen when only the
+  // stylesheet moved under it.
+
   public func hash(into hasher: inout Hasher) {
     hasher.combine(type)
     hasher.combine(id)
     hasher.combine(children)
     hasher.combine(_props)
+    hasher.combine(style)
   }
 
   public static func == (lhs: VoltraElement, rhs: VoltraElement) -> Bool {
     lhs.type == rhs.type &&
       lhs.id == rhs.id &&
       lhs.children == rhs.children &&
-      lhs._props == rhs._props
+      lhs._props == rhs._props &&
+      lhs.style == rhs.style
   }
 
   // MARK: - Computed Properties
