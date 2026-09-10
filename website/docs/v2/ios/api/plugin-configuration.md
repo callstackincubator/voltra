@@ -101,6 +101,7 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
 - `id`: Unique identifier for the widget (alphanumeric with underscores only)
 - `displayName`: Name shown in the widget gallery (plain string, or per-locale map like `{ "en": "Weather", "pl": "Pogoda" }`; locale keys are BCP‑47-style tags)
 - `description`: Description shown in the widget gallery (same localization rules as `displayName`)
+- `kind` (optional): WidgetKit kind of the widget. Defaults to `Voltra_Widget_<id>`; see [Keeping the kind of an existing widget](#keeping-the-kind-of-an-existing-widget)
 - `supportedFamilies`: Array of supported widget sizes (`systemSmall`, `systemMedium`, `systemLarge`)
 - `initialStatePath`: (optional) Project-relative path to a file that exports initial widget state, **or** a locale map of paths for localized build-time pre-rendering (see [Widget Pre-rendering](../development/widget-pre-rendering))
 - `serverUpdate`: (optional) Fetch the widget's content on a schedule. Without `entry` the server returns a rendered payload; with `entry` it returns plain JSON that the widget renders on the device. `url` is optional — leave it out to supply one at runtime. See [Server-driven widgets](../development/server-driven-widgets) for full details.
@@ -131,6 +132,26 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   ]
 }
 ```
+
+### Keeping the kind of an existing widget
+
+WidgetKit identifies a widget placed on the Home Screen by its extension bundle identifier and its `kind`. When you migrate an existing WidgetKit widget to Voltra, keep both so users don't have to remove and re-add the widget: set `targetName` to the name of your existing extension target and `kind` to the `kind` your `WidgetConfiguration` used.
+
+```json
+{
+  "targetName": "MyWidgets",
+  "widgets": [
+    {
+      "id": "streak",
+      "kind": "StreakWidget",
+      "displayName": "Streak",
+      "description": "Your daily streak"
+    }
+  ]
+}
+```
+
+The `id` stays the handle you use from JavaScript (`updateWidget('streak', ...)`), only the WidgetKit kind changes. Kinds must be unique across widgets. This works the same way in `voltra.config.ts` when you use the [React Native CLI setup](/getting-started/react-native-cli).
 
 ### Localizing `displayName` and `description`
 

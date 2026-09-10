@@ -43,6 +43,8 @@ public enum VoltraStorageKeys {
   // MARK: - Info.plist keys
 
   public static let widgetIds = "Voltra_WidgetIds"
+  /// `{ widgetId: kind }` for widgets that pin a custom WidgetKit kind (plugin `kind` option)
+  public static let widgetKinds = "Voltra_WidgetKinds"
   public static let enablePushNotifications = "Voltra_EnablePushNotifications"
   public static let widgetServerUrls = "Voltra_WidgetServerUrls"
   public static let widgetServerIntervals = "Voltra_WidgetServerIntervals"

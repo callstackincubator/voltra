@@ -19,7 +19,7 @@ public struct VoltraRefreshIntent: AppIntent {
 
   public func perform() async throws -> some IntentResult {
     if let widgetId = widgetId {
-      let kind = "\(VoltraStorageKeys.widgetKindPrefix)\(widgetId)"
+      let kind = VoltraWidgetKind.kind(for: widgetId)
       WidgetCenter.shared.reloadTimelines(ofKind: kind)
     } else {
       WidgetCenter.shared.reloadAllTimelines()
