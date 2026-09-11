@@ -2,6 +2,8 @@
 
 Status: Proposed
 
+Tracks [#275](https://github.com/callstackincubator/voltra/issues/275).
+
 ## Introduction
 
 Voltra's `style` prop is a React Native flavoured subset of what SwiftUI and
@@ -16,8 +18,9 @@ This ADR adds a `modifiers` prop to every component. It carries an ordered
 list of platform-native modifiers to the device, where the renderer applies
 them on top of the component. The catalog is typed per platform, so
 `Voltra.Text` accepts only SwiftUI modifiers and `VoltraAndroid.Text`
-accepts only Glance modifiers. Users can register their own modifiers in
-Swift and Kotlin and call them from JSX with the same mechanism.
+accepts only Glance modifiers. The registries on both platforms are built
+so that user-registered modifiers can be added later without changing the
+JSX contract; that is future work, not part of this decision.
 
 Native modifiers are designed for Dynamic rendering (ADR 0001, ADR 0002),
 where the tree is produced on the device and never pushed. Every renderer
@@ -194,18 +197,48 @@ type AndroidModifier = { readonly $type: string; readonly [MODIFIER_BRAND]: 'and
 both in the hand-written `baseProps.tsx` that the generated component props
 already extend. A `VoltraAndroid` modifier on a `Voltra` component fails to
 compile. Nothing at runtime branches on platform; each package only knows
-its own catalog. The first version has no per-component scope: every
-modifier in the catalog applies to any view, and text-typed SwiftUI
-modifiers are excluded (see Open questions).
+its own catalog.
 
-The list is ordered and applied in order on iOS. On Android order is
-irrelevant except that repeated `padding` sums, which is Glance's own rule.
-Modifiers are applied after `style`, wrapping the fully styled component.
-Where a native modifier and a style key set the same thing, the modifier
-wins, because it is applied last on iOS and Glance keeps the last value on
-Android. The one exception is Glance padding, which adds. Nesting a `View`
-or `Box` is the way to place a modifier inside the style chain; the
-documentation says so.
+There is no distinction between view and text modifiers in the type
+system, and none is needed. On iOS every text-related modifier in the
+catalog (`lineLimit`, `truncationMode`, `multilineTextAlignment`,
+`minimumScaleFactor`, `monospacedDigit`, `bold`, `italic`, `kerning`) has a
+`View` overload since iOS 16, and the deployment target is 17. Applied to a
+container, these set the environment for every `Text` below it, which is
+ordinary SwiftUI and often what the author wants. Only the `Text`-returning
+overloads used for text concatenation are `Text`-specific, and Voltra never
+concatenates `Text` values. Image-only modifiers such as `resizable` and
+`widgetAccentedRenderingMode` return `Image` and are already component
+props (`Image.accentedRenderingMode`), so they stay out of the catalog. On
+Android, Glance has no text modifiers at all: text attributes are
+`TextStyle` parameters of `Text`, which `style` already covers. A
+per-component scope can be added later as a `modifierScope` field on
+`components.json` entries if a modifier ever exists on one component type
+only.
+
+On iOS the list is applied outside the styled component, in array order:
+the first element is innermost and the last is outermost, so
+`modifiers={[a(), b()]}` renders as `styled.a().b()`. `style` today expands
+to a fixed chain, `TextStyleModifier` then `CompositeStyleModifier`
+(padding, frame, background, corner radius, border, shadow, opacity,
+transform). Native modifiers wrap that whole chain. Three consequences the
+documentation spells out:
+
+- `clipShape`, `blur`, `containerBackground`, `widgetURL`, `privacySensitive`
+  and every transition apply to the finished component, background
+  included. That is the intent for most of the catalog.
+- A native `padding` sits outside the style background, so it behaves like
+  a margin. Padding inside the background is `style.padding`.
+- A modifier that has to run between two style steps, such as a clip before
+  the shadow, is expressed by nesting a `View` with the inner style and
+  putting the modifier on it. There is no marker to splice modifiers into
+  the style chain in the first version.
+
+On Android order is irrelevant except that repeated `padding` sums, which
+is Glance's own rule. Where a native modifier and a style key set the same
+thing, the modifier wins, because it is applied last on iOS and Glance
+keeps the last value on Android. The one exception is Glance padding,
+which adds.
 
 ### Wire format
 
@@ -293,7 +326,7 @@ A modifier added on one side without the other fails CI. The wire prop name
 
 - `VoltraModifierRegistry`: a string-keyed table of factories
   `([String: Any]) throws -> any ViewModifier`, populated by a hand-written
-  built-in table and open to `register(_:factory:)` for user code.
+  built-in table. `register(_:factory:)` is internal in the first version.
 - `VoltraStableModifier`: one `ViewModifier` whose `body` looks up the
   `$type`, decodes the parameters, and applies the result through a
   type-erased wrapper; unknown or failing entries return `content`
@@ -327,7 +360,7 @@ wait for accessory families.
 
 - `VoltraModifierRegistry`: a string-keyed table of
   `@Composable (Map<String, Any?>) -> GlanceModifier` factories, populated
-  by a hand-written table and open to `register` for user code. Factories are
+  by a hand-written table; `register` is internal in the first version. Factories are
   composable so they can read `LocalContext`, `GlanceTheme` and build
   actions.
 - `GlanceModifier.applyNativeModifiers(descriptors)`: a fold that calls
@@ -346,8 +379,8 @@ The Android catalog is the public `GlanceModifier` surface minus what
 `style` already covers or what cannot be typed on the child: `padding`,
 `absolutePadding`, `width`, `height`, `size`, `fillMaxWidth`,
 `fillMaxHeight`, `fillMaxSize`, `wrapContentWidth`, `wrapContentHeight`,
-`wrapContentSize`, `background` (color, day/night pair, or preloaded image
-with content scale and alpha), `cornerRadius`, `visibility`, `semantics`,
+`wrapContentSize`, `background` (color or day/night pair; the image
+overload is out of the first version), `cornerRadius`, `visibility`, `semantics`,
 `appWidgetBackground`, and `clickable`. `clickable` takes an action value
 built by `startActivity` (component name or deep link intent),
 `sendBroadcast`, `startService`, or `runCallback` (fully qualified
@@ -357,29 +390,6 @@ survives without a live composition; lambda actions are not exposed because
 a JS closure cannot cross the boundary. `defaultWeight` stays behind
 `style.flex`, and `selectableGroup` is excluded because both depend on the
 parent, which the child's type cannot see.
-
-### User-defined modifiers
-
-The same registries accept user code, which is the point of the feature.
-
-- JS: `createIosModifier<Params>(name)` and `createAndroidModifier<Params>(name)`
-  return a typed factory with the right brand, so a custom modifier is as
-  type-safe at the call site as a built-in one. They are the same helpers
-  the built-in catalog is written with.
-- iOS: the user adds a Swift file to the widget target directory; the config
-  plugin already compiles it. The file registers its modifiers through a
-  `VoltraModifierProvider` conformance that the generated
-  `VoltraWidgetBundle.swift` invokes at startup, listed under a new
-  `nativeModifiers.ios` entry in the plugin config so registration is
-  compile-checked rather than discovered by reflection.
-- Android: a `nativeModifiers.android` entry names Kotlin classes in the
-  app module implementing `VoltraModifierProvider`; the CLI generates a
-  registration call in the generated receiver setup, next to where widget
-  receivers are generated today. The Kotlin file lives in the user's app
-  module and is not touched by prebuild.
-
-Parity between the JS factory and the native decoder is the user's
-responsibility for custom modifiers, and the documentation says so.
 
 ### Documentation
 
@@ -408,23 +418,18 @@ to them.
    Robolectric render tests through `RemoteViews.apply` as ADR 0004 does.
 2. **Catalog.** Write the lists above on both sides, gate availability,
    write both website pages, and add example Dynamic Widgets using them.
-3. **Custom modifiers.** The `VoltraModifierProvider` protocols, config
-   validation in the shared module, generated registration on both
-   platforms, and the walkthrough.
 
 Each step is its own pull request with a version plan touching
 `@use-voltra/core`, `@use-voltra/ios`, `@use-voltra/android`,
-`@use-voltra/ios-client`, `@use-voltra/android-client`, and, for step 3,
-`@use-voltra/expo-plugin` and `@use-voltra/cli`. The payload schema
+`@use-voltra/ios-client`, and `@use-voltra/android-client`. The payload schema
 version does not change: the new prop is optional, and an older client
 meeting it ignores an unknown prop and renders the component without its
 modifiers.
 
 ## Consequences
 
-- Widgets gain the full value-bearing SwiftUI and Glance modifier surface,
-  and a documented door to user-written native code, without touching any
-  component file when the catalog grows.
+- Widgets gain the full value-bearing SwiftUI and Glance modifier surface
+  without touching any component file when the catalog grows.
 - The type system carries the platform split. There is no `Platform.select`
   and no `if (isIos)` in user code or in Voltra's renderer.
 - iOS pays one `AnyView` per modifier link. The stable-link design keeps
@@ -441,6 +446,21 @@ modifiers.
 - Contributors adding a modifier write one TypeScript factory and one
   native implementation, then update the parity fixture. The generator is
   untouched.
+
+## Future work
+
+**User-defined modifiers.** The registries are string-keyed so that a user
+can register a Swift `ViewModifier` or a Kotlin `GlanceModifier` factory
+under a name and call it from JSX through `createIosModifier` or
+`createAndroidModifier`, the same helpers the built-in catalog is written
+with. What is missing is the delivery mechanism: user native files must
+live outside `ios/` and `android/` and be copied in by the config plugin
+and the CLI, the way fonts are, because a clean prebuild deletes both
+directories; and registration must be generated from config so that a
+missing class is a compile error rather than a silent no-op. On Android a
+custom modifier can only compose Glance's built-in modifiers and known
+`Action` types, because `applyModifiers` drops unknown elements. This is a
+separate ADR once the built-in catalog has shipped.
 
 ## Alternatives considered
 
@@ -511,14 +531,16 @@ payloads. It can be revisited if real payload usage appears.
 
 ## Open questions
 
-1. Should `modifiers` on iOS also support a `Text`-typed path (`bold`,
-   `italic`, `kerning`) in the first version, or is `style` enough? If it
-   comes later, per-component scope can be added as a `modifierScope` field
-   on `components.json` entries, flowing into the generated props, without
-   a separate modifier manifest.
-2. Should user modifier registration be config-driven, as decided above, or
-   convention-driven (a class with a well-known name found at startup)?
-   Config-driven fails at compile time; convention-driven needs no plugin
-   change.
-3. Is `runCallback` with a class name string an acceptable API on Android,
-   or should the CLI generate a typed enum of callbacks declared in config?
+1. **How `runCallback` names its callback on Android.** Glance's
+   `actionRunCallback<T : ActionCallback>()` runs a Kotlin class the app
+   ships, instantiated by class name through reflection, when the user taps
+   the view. It is the only way for a tap to run app code without opening
+   the app. From JSX the class can only be named as a string, so the
+   proposed factory is `runCallback('com.example.RefreshCallback', params)`:
+   a typo is caught at render time and logged, not at compile time. The
+   alternative is to declare callbacks in `app.json`, have the CLI verify
+   the class exists in the app module and emit a typed union so the factory
+   only accepts declared names. The string form matches Glance one-to-one
+   and needs no config; the typed form catches mistakes earlier and costs a
+   config key plus generated code. Recommendation: ship the string form and
+   revisit if typos turn out to be a real problem.
