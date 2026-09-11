@@ -22,7 +22,6 @@ let package = Package(
       name: "VoltraSharedCore",
       path: "shared",
       exclude: [
-        "BrotliCompression.swift",
         "Data+hexString.swift",
         "Date+toTimerInterval.swift",
         "ShortNames.swift",
@@ -37,6 +36,7 @@ let package = Package(
         "VoltraPersistentEventQueue.swift",
       ],
       sources: [
+        "BrotliCompression.swift",
         "DynamicWidgetPropsCodec.swift",
         "DynamicWidgetPropsStorage.swift",
         "DynamicWidgetPropsStore.swift",

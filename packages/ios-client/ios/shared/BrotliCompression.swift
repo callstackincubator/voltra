@@ -22,7 +22,8 @@ public enum BrotliCompression {
     let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: jsonData.count * 2)
     defer { buffer.deallocate() }
 
-    // Compress using brotli level 2 (iOS only supports level 2)
+    // Compress using brotli level 2 (Apple's encoder has a single fixed level). The decoder
+    // accepts any quality, so payloads produced by the server at quality 11 decode unchanged.
     let compressedSize = compression_encode_buffer(
       buffer,
       jsonData.count * 2,
@@ -51,28 +52,21 @@ public enum BrotliCompression {
       throw BrotliCompressionError.base64DecodingFailed
     }
 
-    // Estimate decompressed size (brotli typically compresses to 20-30% of original)
-    // Using 8x to ensure we have enough buffer space
-    let estimatedSize = compressedData.count * 8
-    let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: estimatedSize)
-    defer { buffer.deallocate() }
+    // Foundation sizes the output buffer itself, so the result is complete however large the
+    // decompressed payload is relative to the compressed bytes. A fixed multiple of the input
+    // (the previous approach) silently truncated payloads that compressed better than it assumed.
+    let decompressedData: Data
+    do {
+      decompressedData = try (compressedData as NSData).decompressed(using: .brotli) as Data
+    } catch {
+      throw BrotliCompressionError.decompressionFailed
+    }
 
-    // Decompress using brotli algorithm
-    let decompressedSize = compression_decode_buffer(
-      buffer,
-      estimatedSize,
-      compressedData.withUnsafeBytes { $0.baseAddress!.assumingMemoryBound(to: UInt8.self) },
-      compressedData.count,
-      nil,
-      COMPRESSION_BROTLI
-    )
-
-    guard decompressedSize > 0 else {
+    guard !decompressedData.isEmpty else {
       throw BrotliCompressionError.decompressionFailed
     }
 
     // Convert decompressed data to String
-    let decompressedData = Data(bytes: buffer, count: decompressedSize)
     guard let jsonString = String(data: decompressedData, encoding: .utf8) else {
       throw BrotliCompressionError.stringConversionFailed
     }
