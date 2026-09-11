@@ -8,9 +8,9 @@ Tracks [#275](https://github.com/callstackincubator/voltra/issues/275).
 
 Voltra's `style` prop is a React Native flavoured subset of what SwiftUI and
 Jetpack Glance can do. When a widget needs something outside that subset,
-such as `widgetURL`, `privacySensitive`, `containerBackground`, a Glance
-`semantics { contentDescription }`, or a click that runs the app's own
-`ActionCallback`, there is no way to express it from JSX today. The only
+such as `widgetURL`, `privacySensitive`, `containerBackground`, or a
+Glance `semantics { contentDescription }`, there is no way to express it
+from JSX today. The only
 escape hatches are per-component props and hand-edited generated files,
 which prebuild overwrites.
 
@@ -45,14 +45,12 @@ export default function Portfolio({ balance }: { balance: string }) {
 ```tsx
 import { VoltraAndroid } from '@use-voltra/android'
 
-const { appWidgetBackground, semantics, clickable, runCallback } = VoltraAndroid.modifiers
+const { appWidgetBackground, semantics, visibility } = VoltraAndroid.modifiers
 
-export default function Portfolio() {
+export default function Portfolio({ stale }: { stale: boolean }) {
   return (
     <VoltraAndroid.Box modifiers={[appWidgetBackground(), semantics({ contentDescription: 'Portfolio' })]}>
-      <VoltraAndroid.Text modifiers={[clickable(runCallback('com.example.RefreshCallback', { scope: 'all' }))]}>
-        Refresh
-      </VoltraAndroid.Text>
+      <VoltraAndroid.Text modifiers={[visibility(stale ? 'visible' : 'gone')]}>Updating…</VoltraAndroid.Text>
     </VoltraAndroid.Box>
   )
 }
@@ -367,11 +365,9 @@ wait for accessory families.
   `then` on each factory result and logs and skips unknown types.
 
 The single insertion point is `resolveAndApplyStyle` in
-`glance/StyleUtils.kt`, after `applyStyle` and before the caller's
-`applyClickableIfNeeded`. Because Glance keeps the last action,
-`applyClickableIfNeeded` skips when the descriptors already contain a
-`clickable`; that is the one line of coordination between the two and it
-lives in `StyleUtils.kt`. The scoped weight path in `LayoutRenderers.kt`
+`glance/StyleUtils.kt`, after `applyStyle`. `applyClickableIfNeeded` is
+untouched: the catalog has no action modifier, so `deepLinkUrl` remains the
+only source of a click. The scoped weight path in `LayoutRenderers.kt`
 already goes through `resolveAndApplyStyle`, so children of `Row` and
 `Column` get modifiers without further changes.
 
@@ -381,15 +377,15 @@ The Android catalog is the public `GlanceModifier` surface minus what
 `fillMaxHeight`, `fillMaxSize`, `wrapContentWidth`, `wrapContentHeight`,
 `wrapContentSize`, `background` (color or day/night pair; the image
 overload is out of the first version), `cornerRadius`, `visibility`, `semantics`,
-`appWidgetBackground`, and `clickable`. `clickable` takes an action value
-built by `startActivity` (component name or deep link intent),
-`sendBroadcast`, `startService`, or `runCallback` (fully qualified
-`ActionCallback` class name plus string, number and boolean parameters).
-`runCallback` is the Android escape hatch to arbitrary native code that
-survives without a live composition; lambda actions are not exposed because
-a JS closure cannot cross the boundary. `defaultWeight` stays behind
-`style.flex`, and `selectableGroup` is excluded because both depend on the
-parent, which the child's type cannot see.
+and `appWidgetBackground`. `clickable` and Glance's `Action` family
+(`actionStartActivity`, `actionSendBroadcast`, `actionStartService`,
+`actionRunCallback`, lambda actions) are out of the first version:
+`deepLinkUrl` already covers opening the app, and callback-style clicks are
+the subject of [#276](https://github.com/callstackincubator/voltra/issues/276),
+which should decide the JSX shape before any modifier commits to one.
+`defaultWeight` stays behind `style.flex`, and `selectableGroup` is
+excluded because both depend on the parent, which the child's type cannot
+see.
 
 ### Documentation
 
@@ -411,7 +407,7 @@ to them.
    short-name entry, the Swift and Kotlin registries and their single
    insertion points, and three modifiers per platform to prove the path end
    to end (`widgetURL`, `privacySensitive`, `clipShape`; `padding`,
-   `cornerRadius`, `clickable(startActivity)`). Tests: renderer output in
+   `cornerRadius`, `visibility`). Tests: renderer output in
    both the single-root and the multi-root renderer, a payload-size
    snapshot for a modifier-heavy Live Activity so the cost is visible, the
    fixture-based parity tests, Swift registry unit tests, Kotlin unit and
@@ -448,6 +444,12 @@ modifiers.
   untouched.
 
 ## Future work
+
+**Click actions.** A `clickable` modifier taking a Glance `Action` is the
+natural way to expose `actionSendBroadcast`, `actionStartService` and
+`actionRunCallback`. It waits for #276, which decides how a tap reaches JS
+on both platforms; whatever it decides, this registry can carry the Android
+half as one more modifier.
 
 **User-defined modifiers.** The registries are string-keyed so that a user
 can register a Swift `ViewModifier` or a Kotlin `GlanceModifier` factory
@@ -531,16 +533,4 @@ payloads. It can be revisited if real payload usage appears.
 
 ## Open questions
 
-1. **How `runCallback` names its callback on Android.** Glance's
-   `actionRunCallback<T : ActionCallback>()` runs a Kotlin class the app
-   ships, instantiated by class name through reflection, when the user taps
-   the view. It is the only way for a tap to run app code without opening
-   the app. From JSX the class can only be named as a string, so the
-   proposed factory is `runCallback('com.example.RefreshCallback', params)`:
-   a typo is caught at render time and logged, not at compile time. The
-   alternative is to declare callbacks in `app.json`, have the CLI verify
-   the class exists in the app module and emit a typed union so the factory
-   only accepts declared names. The string form matches Glance one-to-one
-   and needs no config; the typed form catches mistakes earlier and costs a
-   config key plus generated code. Recommendation: ship the string form and
-   revisit if typos turn out to be a real problem.
+None at the time of writing.
