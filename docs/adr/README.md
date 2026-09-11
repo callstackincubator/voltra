@@ -25,3 +25,4 @@ Status values:
 | [0002](0002-server-driven-dynamic-widgets.md)  | Server-driven Dynamic Widgets                              | Accepted |
 | [0003](0003-widget-module-resolution.md)       | Widget module resolution                                   | Accepted |
 | [0004](0004-android-arc-progress-indicator.md) | Bitmap-rendered arc progress indicator for Android widgets | Accepted |
+| [0005](0005-native-modifiers.md)               | Native modifiers for Dynamic rendering                     | Proposed |
