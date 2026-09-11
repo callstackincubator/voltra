@@ -1,4 +1,4 @@
-# ADR 0005: Native modifiers for Dynamic rendering
+# ADR 0005: Native modifiers
 
 Status: Proposed
 
@@ -19,9 +19,11 @@ them on top of the component. The catalog is typed per platform, so
 accepts only Glance modifiers. Users can register their own modifiers in
 Swift and Kotlin and call them from JSX with the same mechanism.
 
-Native modifiers are a Dynamic feature (ADR 0001, ADR 0002): they are only
-accepted when rendering happens on the device from bundled JS. Payload
-renderers reject them.
+Native modifiers are designed for Dynamic rendering (ADR 0001, ADR 0002),
+where the tree is produced on the device and never pushed. Every renderer
+accepts them, including the payload renderers, but the documentation is
+explicit that using them in a pushed Live Activity or a payload widget is
+unsafe because of the payload size limit.
 
 ```tsx
 import { Voltra } from '@use-voltra/ios'
@@ -154,9 +156,10 @@ own. No public library serializes Glance modifiers from JSON.
 3. One source of truth. A manifest drives the TypeScript factories, the
    native parameter decoders, and the parity tests, the same way
    `components.json` drives components.
-4. Dynamic only. Payload renderers reject modifiers with a clear error.
-   Native code stays kind-agnostic (ADR 0000) because payload renderers
-   never emit them.
+4. One renderer, one contract. Every renderer accepts modifiers and emits
+   the same wire format, so native code stays kind-agnostic (ADR 0000) and
+   no entry point branches on engine. The size risk of the payload engine is
+   handled by documentation and the existing budget check, not by a gate.
 5. Never crash the widget. Unknown or unavailable modifiers log and no-op
    on the device.
 
@@ -215,29 +218,35 @@ name; params are the manifest's parameter names with plain JSON values.
 Colors, sizes and insets use the same string and number forms as `style`,
 so `JSColorParser` and `JSStyleParser` on each platform decode them.
 
-Payload size is not a concern. The feature is Dynamic-only, and Dynamic
-trees are produced on the device and never pushed.
+The descriptors are not short-named or deduplicated. Payload size is not a
+concern where the feature is meant to be used: Dynamic trees are produced
+on the device and never pushed, and the prerendered `initialStatePath` for a
+widget with `entry` ships inside the app.
 
-### Dynamic-only enforcement
+### Engine support and payload size
 
-The core rendering context gains a `nativeModifiers: boolean` option,
-default `false`. Only `transformProps` reads it: with the option off, a
-`modifiers` prop throws
-`Native modifiers are only supported in Dynamic Widgets and Dynamic Live Activities`.
+No renderer rejects modifiers. The Dynamic entries
+(`renderVoltraVariantToJson`, `renderAndroidVariantToJson`, the in-app
+`VoltraView` preview, and the Metro-generated Dynamic Live Activity entry)
+and the payload entries (`renderWidgetToString`, `renderAndroidWidgetToJson`,
+`renderLiveActivityToString`, and the app-side `startLiveActivity` and
+`updateLiveActivity`) all emit the same prop. The same JSX therefore renders
+the same way in both engines, and a component shared between engines needs
+no branch.
 
-The entry points that set it to `true` are the Dynamic ones:
-`renderVoltraVariantToJson`, `renderAndroidVariantToJson` (these also back
-the in-app `VoltraView` preview, which should show modifiers), and
-`renderLiveActivityToJson` when called with `{ dynamic: true }` from the
-Metro-generated Dynamic Live Activity entry. The CLI and Expo plugin
-prerender of `initialStatePath` for a widget with `entry` already uses the
-Dynamic single-root renderer, so a prerendered first paint carries the same
-modifiers as the live render. `renderWidgetToString`,
-`renderAndroidWidgetToJson`, `renderLiveActivityToString`, and the
-app-side `startLiveActivity`/`updateLiveActivity` never set the option and
-reject. Rejecting instead of dropping is deliberate: a modifier that
-silently disappears in one engine and works in the other is the kind of
-footgun ADR 0002 refuses.
+What differs is the cost. A pushed Live Activity update has a hard 4 KB
+ActivityKit limit and Voltra's enforced budget of 3345 bytes after brotli
+compression (`packages/core/src/payload.ts`), and payload widgets travel
+through the same compression and storage path. A modifier list is a
+JSON-encoded string with full parameter names, so a handful of modifiers
+can consume a meaningful share of that budget, and every update carries
+them again. The existing `ensurePayloadWithinBudget` check still throws when
+a payload goes over, and the payload-size snapshot test in CI still fails
+when an example grows. The documentation states that native modifiers are
+not safe on payload widgets and pushed Live Activities for this reason, and
+recommends the Dynamic engine for any UI that needs them. This is the
+maintainers' call: an escape hatch that works everywhere and warns is
+preferred over one that refuses.
 
 ### Manifest and generator
 
@@ -363,20 +372,25 @@ responsibility for custom modifiers, and the documentation says so.
 
 New pages `ios/development/native-modifiers.md` and
 `android/development/native-modifiers.md` on the website, each listing the
-catalog with availability, the ordering rules, the Dynamic-only rule, and
-the custom-modifier walkthrough. The Dynamic Widgets and Dynamic Live
-Activities pages link to them.
+catalog with availability, the ordering rules, and the custom-modifier
+walkthrough. Each page opens with a warning box: native modifiers are meant
+for Dynamic Widgets and Dynamic Live Activities; on payload widgets and
+pushed Live Activities they count against the payload size limit and can
+push an update over the 4 KB ActivityKit cap, so they are not safe there.
+The Dynamic Widgets, Dynamic Live Activities, and payload-size pages link
+to them.
 
 ## Implementation plan
 
 1. **Plumbing.** Manifest schema and validation, generator outputs, the
-   `modifiers` branch in `transformProps` with the `nativeModifiers`
-   option, the Swift and Kotlin registries and their single insertion
-   points, and three modifiers per platform to prove the path end to end
-   (`widgetURL`, `privacySensitive`, `clipShape`; `padding`, `cornerRadius`,
-   `clickable(startActivity)`). Tests: renderer rejection and acceptance,
-   generator parity, Swift registry unit tests, Kotlin unit and Robolectric
-   render tests through `RemoteViews.apply` as ADR 0004 does.
+   `modifiers` branch in `transformProps`, the Swift and Kotlin registries
+   and their single insertion points, and three modifiers per platform to
+   prove the path end to end (`widgetURL`, `privacySensitive`, `clipShape`;
+   `padding`, `cornerRadius`, `clickable(startActivity)`). Tests: renderer
+   output in both the single-root and the multi-root renderer, a
+   payload-size snapshot for a modifier-heavy Live Activity so the cost is
+   visible, generator parity, Swift registry unit tests, Kotlin unit and
+   Robolectric render tests through `RemoteViews.apply` as ADR 0004 does.
 2. **Catalog.** Fill the manifest with the lists above, gate availability,
    write both website pages, and add example Dynamic Widgets using them.
 3. **Custom modifiers.** `createIosModifier`/`createAndroidModifier`, the
@@ -387,8 +401,9 @@ Each step is its own pull request with a version plan touching
 `@use-voltra/core`, `@use-voltra/ios`, `@use-voltra/android`,
 `@use-voltra/ios-client`, `@use-voltra/android-client`, and, for step 3,
 `@use-voltra/expo-plugin` and `@use-voltra/cli`. The payload schema
-version does not change: payload renderers never emit the new prop, and an
-older client meeting it would ignore an unknown prop.
+version does not change: the new prop is optional, and an older client
+meeting it ignores an unknown prop and renders the component without its
+modifiers.
 
 ## Consequences
 
@@ -403,9 +418,11 @@ older client meeting it would ignore an unknown prop.
 - Glance semantics leak through by design: order does not matter on
   Android, padding sums, and `cornerRadius` does nothing below API 31.
   Documenting this is cheaper than emulating SwiftUI on RemoteViews.
-- Payload widgets and pushed Live Activities cannot use modifiers, and the
-  error says so. Extending them later would need the size budget and the
-  payload version to be reconsidered.
+- Payload widgets and pushed Live Activities can use modifiers, at the
+  cost of payload bytes on every update. The documentation says they are
+  unsafe there; the budget check and the size snapshots are the guard
+  rails. An older client receiving a modifier-bearing payload renders the
+  component without the modifiers.
 - The generator gains a second manifest; contributors adding a modifier
   edit the manifest, add one native file per platform, and run
   `npm run generate`.
@@ -441,12 +458,23 @@ Glance's `applyModifiers` is closed. A registry of hand-written
 implementations driven by a manifest is the only mechanism that both
 platforms support and that a test can verify.
 
-### Warn and drop in payload renderers instead of throwing
+### Reject modifiers in payload renderers
 
-Considered. Dropping keeps a widget rendering when a component shared
-between engines uses a modifier. Rejected because the same JSX would then
-look different per engine with no signal beyond a console line. A shared
-component can branch on `env` if it must.
+Considered: a `nativeModifiers` option on the rendering context, set only
+by the Dynamic entries, with `transformProps` throwing otherwise. It would
+make the Dynamic-only intent mechanical. Rejected by the maintainers in
+favour of allowing the feature everywhere and documenting the size risk:
+the payload renderers already enforce a byte budget, a shared component
+should render the same in both engines, and a refusal would need an
+`env`-based branch in user code that this ADR set out to avoid.
+
+### Short-name the modifier descriptors
+
+Considered, since payload renderers now accept modifiers. Rejected for the
+first version: brotli already removes most of the repetition, the manifest
+would need a second short-name table on three platforms, and the point of
+the documentation warning is that modifiers do not belong in pushed
+payloads. It can be revisited if real payload usage appears.
 
 ## Open questions
 
