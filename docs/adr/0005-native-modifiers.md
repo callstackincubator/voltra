@@ -27,7 +27,8 @@ unsafe because of the payload size limit.
 
 ```tsx
 import { Voltra } from '@use-voltra/ios'
-import { widgetURL, privacySensitive, containerBackground } from '@use-voltra/ios/modifiers'
+
+const { containerBackground, widgetURL, privacySensitive } = Voltra.modifiers
 
 export default function Portfolio({ balance }: { balance: string }) {
   return (
@@ -40,7 +41,8 @@ export default function Portfolio({ balance }: { balance: string }) {
 
 ```tsx
 import { VoltraAndroid } from '@use-voltra/android'
-import { clickable, runCallback, semantics, appWidgetBackground } from '@use-voltra/android/modifiers'
+
+const { appWidgetBackground, semantics, clickable, runCallback } = VoltraAndroid.modifiers
 
 export default function Portfolio() {
   return (
@@ -151,11 +153,12 @@ own. No public library serializes Glance modifiers from JSON.
 1. One insertion point per layer. The JS renderer, the Swift view tree, and
    the Kotlin renderer each gain exactly one place that knows about
    modifiers. No component file changes on any platform.
-2. Type safety by construction. The wrong platform's modifier, or a modifier
-   in the wrong scope, is a TypeScript error, not a runtime warning.
-3. One source of truth. A manifest drives the TypeScript factories, the
-   native parameter decoders, and the parity tests, the same way
-   `components.json` drives components.
+2. Type safety by construction. The wrong platform's modifier is a
+   TypeScript error, not a runtime warning.
+3. Hand-written on both sides, tested for parity. A modifier is one
+   TypeScript factory and one native implementation. A fixture produced by
+   the TypeScript tests and decoded by the native tests keeps them in step;
+   there is no second manifest and no generator target.
 4. One renderer, one contract. Every renderer accepts modifiers and emits
    the same wire format, so native code stays kind-agnostic (ADR 0000) and
    no entry point branches on engine. The size risk of the payload engine is
@@ -168,29 +171,32 @@ own. No public library serializes Glance modifiers from JSON.
 ### JSX API
 
 Every component gains `modifiers?: readonly Modifier[]` in its base props.
-Modifiers are values produced by factory functions exported from a
-per-platform subpath:
-
-- `@use-voltra/ios/modifiers` exports `IosModifier` factories.
-- `@use-voltra/android/modifiers` exports `AndroidModifier` factories.
+Modifiers are values produced by factory functions that live on the
+existing component namespaces, `Voltra.modifiers` and
+`VoltraAndroid.modifiers`. There is no new package entry point: subpaths in
+this repository mark runtime boundaries (`./server` is Node-only), and
+modifier factories are pure functions with no such boundary. Placing them
+on the namespace rather than as flat exports keeps generic names such as
+`padding`, `size`, `background` and `clickable` from colliding with user
+identifiers, and one import brings both components and modifiers.
 
 Factories return frozen plain objects, `{ $type: 'padding', all: 8 }`, with
-a type-only brand. The brand carries the platform and a scope:
+a type-only brand that carries the platform:
 
 ```ts
-type IosModifier<Scope extends 'view' | 'text' | 'image' = 'view'> = {
-  readonly $type: string
-  readonly [MODIFIER_BRAND]: { platform: 'ios'; scope: Scope }
-}
+declare const MODIFIER_BRAND: unique symbol
+type IosModifier = { readonly $type: string; readonly [MODIFIER_BRAND]: 'ios' }
+type AndroidModifier = { readonly $type: string; readonly [MODIFIER_BRAND]: 'android' }
 ```
 
-`VoltraBaseProps` on iOS declares `modifiers?: readonly IosModifier<'view'>[]`;
-`VoltraAndroidBaseProps` declares the Android counterpart. Generated
-component props widen the scope where a component accepts more:
-`Voltra.Text` accepts `IosModifier<'view' | 'text'>`. A `VoltraAndroid`
-modifier on a `Voltra` component, or a text-scoped modifier on a `View`,
-fails to compile. Nothing at runtime branches on platform; each package
-only knows its own catalog.
+`VoltraBaseProps` on iOS declares `modifiers?: readonly IosModifier[]` and
+`VoltraAndroidBaseProps` declares `modifiers?: readonly AndroidModifier[]`,
+both in the hand-written `baseProps.tsx` that the generated component props
+already extend. A `VoltraAndroid` modifier on a `Voltra` component fails to
+compile. Nothing at runtime branches on platform; each package only knows
+its own catalog. The first version has no per-component scope: every
+modifier in the catalog applies to any view, and text-typed SwiftUI
+modifiers are excluded (see Open questions).
 
 The list is ordered and applied in order on iOS. On Android order is
 irrelevant except that repeated `padding` sums, which is Glance's own rule.
@@ -213,8 +219,9 @@ decompressor does not rewrite its keys, and both `VoltraElement`
 implementations pass it through as a prop. The native side parses the string
 with its platform JSON decoder at the single application point.
 
-Each entry is `{ "$type": "<name>", ...params }`. `$type` is the manifest
-name; params are the manifest's parameter names with plain JSON values.
+Each entry is `{ "$type": "<name>", ...params }`. `$type` is the name the
+factory was created with; params are the factory's parameter names with
+plain JSON values.
 Colors, sizes and insets use the same string and number forms as `style`,
 so `JSColorParser` and `JSStyleParser` on each platform decode them.
 
@@ -248,39 +255,44 @@ recommends the Dynamic engine for any UI that needs them. This is the
 maintainers' call: an escape hatch that works everywhere and warns is
 preferred over one that refuses.
 
-### Manifest and generator
+### Definition in TypeScript and native code
 
-A new `packages/generator/data/modifiers.json` lists every built-in
-modifier with `name`, `platform`, `scope`, `availability`, `description`,
-and typed `parameters` using the same parameter vocabulary as
-`components.json` plus `color`, `size` and `insets` value kinds so the
-native decoders reuse the style parsers. The generator emits:
+There is no manifest and no generator output for modifiers. The generator
+exists because a component prop must agree across TypeScript, Swift and
+Kotlin at once; a modifier exists on one platform only, so it is defined
+twice, by hand:
 
-| Output                                   | Path                                                                     |
-| ---------------------------------------- | ------------------------------------------------------------------------ |
-| TypeScript factories and types (iOS)     | `packages/ios/src/modifiers/generated.ts`                                |
-| TypeScript factories and types (Android) | `packages/android/src/modifiers/generated.ts`                            |
-| Swift parameter structs                  | `packages/ios-client/ios/ui/Generated/Modifiers/*.swift`                 |
-| Kotlin parameter classes                 | `packages/android-client/android/src/main/java/voltra/models/modifiers/` |
-| Built-in registration tables             | one generated Swift file and one generated Kotlin file                   |
-| Component modifier scopes                | `modifierScopes` on `components.json` entries, into generated props      |
+- TypeScript: one factory per modifier in `packages/ios/src/modifiers/` or
+  `packages/android/src/modifiers/`, typed parameters, a JSDoc comment with
+  the availability (`@since iOS 17.0`, `@since Android 12`), collected in
+  the namespace's `index.ts`.
+- Swift: one `ViewModifier` struct per modifier under
+  `packages/ios-client/ios/ui/Modifiers/`, decoding its parameters from the
+  descriptor dictionary with the existing `JSColorParser` and
+  `JSStyleParser`, gated with `#available` in `body`, and returning
+  `content` unchanged when unavailable, following the `glassEffect`
+  precedent.
+- Kotlin: one factory per modifier under
+  `packages/android-client/android/src/main/java/voltra/modifiers/`,
+  decoding with the existing style parsers and gating on
+  `Build.VERSION.SDK_INT` as `cornerRadius` does today.
 
-The modifier implementations (`body` in Swift, the `GlanceModifier`
-expression in Kotlin) are hand-written, one small file per modifier, the way
-components are. The generated registration table references them by name,
-so a manifest entry without an implementation fails to compile, and a unit
-test on each platform checks that the registry keys equal the manifest.
-`availability` is emitted as a JSDoc `@since` on the factory and enforced
-natively with `#available` and `Build.VERSION.SDK_INT` inside the
-implementation, following the existing `glassEffect` and `cornerRadius`
-precedent; an unavailable modifier is a no-op with a log line.
+Parity is a test, not a code generator. The TypeScript test suite calls
+every factory with representative arguments and writes the results to a
+checked-in fixture, one per platform, next to the Swift and Kotlin test
+targets. The Swift test in `ios/Tests/VoltraSharedTests` and the Kotlin
+test under `android/src/test` decode every fixture entry through the
+registry and fail on an unknown `$type` or a parameter that does not decode.
+A modifier added on one side without the other fails CI. The wire prop name
+`modifiers` gets one short-name entry in `components.json`, the same way
+`style` has one, so both native `props` accessors expand it.
 
 ### iOS application
 
 `packages/ios-client/ios/ui/Modifiers/` holds:
 
 - `VoltraModifierRegistry`: a string-keyed table of factories
-  `([String: Any]) throws -> any ViewModifier`, populated by the generated
+  `([String: Any]) throws -> any ViewModifier`, populated by a hand-written
   built-in table and open to `register(_:factory:)` for user code.
 - `VoltraStableModifier`: one `ViewModifier` whose `body` looks up the
   `$type`, decodes the parameters, and applies the result through a
@@ -315,7 +327,7 @@ wait for accessory families.
 
 - `VoltraModifierRegistry`: a string-keyed table of
   `@Composable (Map<String, Any?>) -> GlanceModifier` factories, populated
-  by the generated table and open to `register` for user code. Factories are
+  by a hand-written table and open to `register` for user code. Factories are
   composable so they can read `LocalContext`, `GlanceTheme` and build
   actions.
 - `GlanceModifier.applyNativeModifiers(descriptors)`: a fold that calls
@@ -351,8 +363,9 @@ parent, which the child's type cannot see.
 The same registries accept user code, which is the point of the feature.
 
 - JS: `createIosModifier<Params>(name)` and `createAndroidModifier<Params>(name)`
-  return a typed factory with the right brand and scope, so a custom
-  modifier is as type-safe at the call site as a built-in one.
+  return a typed factory with the right brand, so a custom modifier is as
+  type-safe at the call site as a built-in one. They are the same helpers
+  the built-in catalog is written with.
 - iOS: the user adds a Swift file to the widget target directory; the config
   plugin already compiles it. The file registers its modifiers through a
   `VoltraModifierProvider` conformance that the generated
@@ -382,20 +395,22 @@ to them.
 
 ## Implementation plan
 
-1. **Plumbing.** Manifest schema and validation, generator outputs, the
-   `modifiers` branch in `transformProps`, the Swift and Kotlin registries
-   and their single insertion points, and three modifiers per platform to
-   prove the path end to end (`widgetURL`, `privacySensitive`, `clipShape`;
-   `padding`, `cornerRadius`, `clickable(startActivity)`). Tests: renderer
-   output in both the single-root and the multi-root renderer, a
-   payload-size snapshot for a modifier-heavy Live Activity so the cost is
-   visible, generator parity, Swift registry unit tests, Kotlin unit and
+1. **Plumbing.** The branded types and `createIosModifier` /
+   `createAndroidModifier` helpers, the `modifiers` namespace on `Voltra`
+   and `VoltraAndroid`, the `modifiers` branch in `transformProps`, the
+   short-name entry, the Swift and Kotlin registries and their single
+   insertion points, and three modifiers per platform to prove the path end
+   to end (`widgetURL`, `privacySensitive`, `clipShape`; `padding`,
+   `cornerRadius`, `clickable(startActivity)`). Tests: renderer output in
+   both the single-root and the multi-root renderer, a payload-size
+   snapshot for a modifier-heavy Live Activity so the cost is visible, the
+   fixture-based parity tests, Swift registry unit tests, Kotlin unit and
    Robolectric render tests through `RemoteViews.apply` as ADR 0004 does.
-2. **Catalog.** Fill the manifest with the lists above, gate availability,
+2. **Catalog.** Write the lists above on both sides, gate availability,
    write both website pages, and add example Dynamic Widgets using them.
-3. **Custom modifiers.** `createIosModifier`/`createAndroidModifier`, the
-   `VoltraModifierProvider` protocols, config validation in the shared
-   module, generated registration on both platforms, and the walkthrough.
+3. **Custom modifiers.** The `VoltraModifierProvider` protocols, config
+   validation in the shared module, generated registration on both
+   platforms, and the walkthrough.
 
 Each step is its own pull request with a version plan touching
 `@use-voltra/core`, `@use-voltra/ios`, `@use-voltra/android`,
@@ -423,9 +438,9 @@ modifiers.
   unsafe there; the budget check and the size snapshots are the guard
   rails. An older client receiving a modifier-bearing payload renders the
   component without the modifiers.
-- The generator gains a second manifest; contributors adding a modifier
-  edit the manifest, add one native file per platform, and run
-  `npm run generate`.
+- Contributors adding a modifier write one TypeScript factory and one
+  native implementation, then update the parity fixture. The generator is
+  untouched.
 
 ## Alternatives considered
 
@@ -451,11 +466,29 @@ padding accumulation, actions). A shared vocabulary would either hide those
 differences or reintroduce platform branches. Portable styling is `style`'s
 job.
 
+### A `modifiers.json` manifest and generator target
+
+Considered, mirroring `components.json`: it would emit the TypeScript
+factories, native parameter decoders and registration tables from one
+file. Rejected because a modifier lives on one platform, so there are two
+definitions to keep in step rather than three, each a few lines. A
+generator would add a schema, a validator, three emitters and a formatting
+step to save that. The fixture-based parity test gives the same guarantee
+with no tooling.
+
+### A `@use-voltra/ios/modifiers` subpath entry point
+
+Considered. Rejected because subpaths in this repository separate runtime
+boundaries (`./server`), and modifier factories have none. A namespace on
+`Voltra` and `VoltraAndroid` needs no `package.json` change and avoids the
+name collisions that flat exports of `padding`, `size` and `clickable`
+would cause.
+
 ### Reflection-based dispatch to SwiftUI or Glance functions by name
 
 Rejected. SwiftUI modifiers are generic functions with no runtime lookup;
 Glance's `applyModifiers` is closed. A registry of hand-written
-implementations driven by a manifest is the only mechanism that both
+implementations keyed by name is the only mechanism that both
 platforms support and that a test can verify.
 
 ### Reject modifiers in payload renderers
@@ -471,15 +504,18 @@ should render the same in both engines, and a refusal would need an
 ### Short-name the modifier descriptors
 
 Considered, since payload renderers now accept modifiers. Rejected for the
-first version: brotli already removes most of the repetition, the manifest
-would need a second short-name table on three platforms, and the point of
+first version: brotli already removes most of the repetition, it would
+need a second short-name table kept in step by hand, and the point of
 the documentation warning is that modifiers do not belong in pushed
 payloads. It can be revisited if real payload usage appears.
 
 ## Open questions
 
 1. Should `modifiers` on iOS also support a `Text`-typed path (`bold`,
-   `italic`, `kerning`) in the first version, or is `style` enough?
+   `italic`, `kerning`) in the first version, or is `style` enough? If it
+   comes later, per-component scope can be added as a `modifierScope` field
+   on `components.json` entries, flowing into the generated props, without
+   a separate modifier manifest.
 2. Should user modifier registration be config-driven, as decided above, or
    convention-driven (a class with a well-known name found at startup)?
    Config-driven fails at compile time; convention-driven needs no plugin
