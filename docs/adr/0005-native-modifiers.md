@@ -395,8 +395,8 @@ parent, which the child's type cannot see.
 
 New pages `ios/development/native-modifiers.md` and
 `android/development/native-modifiers.md` on the website, each listing the
-catalog with availability, the ordering rules, and the custom-modifier
-walkthrough. Each page opens with a warning box: native modifiers are meant
+catalog with availability and the ordering rules. Each page opens with a
+warning box: native modifiers are meant
 for Dynamic Widgets and Dynamic Live Activities; on payload widgets and
 pushed Live Activities they count against the payload size limit and can
 push an update over the 4 KB ActivityKit cap, so they are not safe there.
