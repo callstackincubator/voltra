@@ -313,7 +313,9 @@ public struct VoltraHomeWidgetView: View {
         placeholderView(widgetId: entry.widgetId)
       }
     }
-    .disableWidgetMarginsIfAvailable()
+    // A `containerBackground` native modifier in the tree replaces the default clear background;
+    // the outer one would otherwise win (ADR 0005).
+    .disableWidgetMarginsIfAvailable(unless: entry.rootNode?.containsNativeModifier("containerBackground") == true)
   }
 
   private func mapWidgetRenderingMode(_ mode: WidgetRenderingMode) -> VoltraWidgetRenderingMode {
@@ -446,8 +448,10 @@ private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Dat
 
 private extension View {
   @ViewBuilder
-  func disableWidgetMarginsIfAvailable() -> some View {
-    if #available(iOSApplicationExtension 17.0, *) {
+  func disableWidgetMarginsIfAvailable(unless treeSetsContainerBackground: Bool = false) -> some View {
+    if treeSetsContainerBackground {
+      self
+    } else if #available(iOSApplicationExtension 17.0, *) {
       containerBackground(.clear, for: .widget)
     } else {
       self

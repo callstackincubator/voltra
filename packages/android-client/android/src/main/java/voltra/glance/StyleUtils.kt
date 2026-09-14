@@ -45,7 +45,9 @@ fun resolveAndApplyStyle(
     val modifier =
         styledModifier.applyNativeModifiers(
             VoltraModifierRegistry.parseDescriptors(props?.get("modifiers") as? String),
-            VoltraModifierScope { role -> role.toColorProvider(themeColors) },
+            VoltraModifierScope(
+                claimAppWidgetBackground = { props?.let { renderContext.claimAppWidgetBackground(it) } ?: true },
+            ) { role -> role.toColorProvider(themeColors) },
         )
     return ResolvedStyle(modifier, compositeStyle)
 }

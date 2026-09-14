@@ -99,7 +99,14 @@ internal val builtInModifierDefinitions: Map<String, VoltraModifierDefinition> =
                     tag?.let { testTag = it }
                 }
             },
-        "appWidgetBackground" to VoltraModifierDefinition(emptySet()) { _, _ -> GlanceModifier.appWidgetBackground() },
+        "appWidgetBackground" to
+            VoltraModifierDefinition(emptySet()) { _, scope ->
+                // Glance fails the whole widget when two views are marked; keep the first one.
+                if (!scope.claimAppWidgetBackground()) {
+                    throw VoltraModifierException("appWidgetBackground is already set on another component")
+                }
+                GlanceModifier.appWidgetBackground()
+            },
     )
 
 /** Start, top, end, bottom in dp; the most specific key wins over its axis, which wins over `all`. */

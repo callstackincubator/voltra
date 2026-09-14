@@ -35,9 +35,11 @@ class VoltraModifierDefinition(
 
 /**
  * What a factory may need from the composition, read once at the composable insertion point so
- * factories stay plain functions. Today that is the Glance theme for dynamic color tokens.
+ * factories stay plain functions: the Glance theme for dynamic color tokens, and whether this
+ * element may take the widget's single `appWidgetBackground`.
  */
 class VoltraModifierScope(
+    private val claimAppWidgetBackground: () -> Boolean = { true },
     private val resolveThemeColor: (VoltraThemeColorRole) -> ColorProvider,
 ) {
     fun colorProvider(value: VoltraColorValue): ColorProvider =
@@ -45,6 +47,8 @@ class VoltraModifierScope(
             is VoltraColorValue.Static -> ColorProvider(value.color)
             is VoltraColorValue.Dynamic -> resolveThemeColor(value.role)
         }
+
+    fun claimAppWidgetBackground(): Boolean = claimAppWidgetBackground.invoke()
 
     companion object {
         /** For callers outside composition: static colors resolve, theme tokens are rejected. */

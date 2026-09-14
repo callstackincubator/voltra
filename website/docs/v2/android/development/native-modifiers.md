@@ -38,7 +38,7 @@ export default function PortfolioWidget({ balance, stale }: { balance: string; s
 
 Glance applies modifiers after `style`, and it does not care about their order:
 
-- Where a modifier and a `style` property set the same thing, such as a width or a background, the modifier wins.
+- Where a modifier and a `style` property set the same thing, such as a width or a background, the modifier wins. The exception is `style.flex` on a child of a `Row` or `Column`: it replaces the child's `width`, `height`, `size`, `fillMax…` and `wrapContent…` modifiers along the row or column.
 - Padding adds up. `style={{ padding: 8 }}` with `modifiers={[padding(8)]}` gives 16 dp.
 - Using the same modifier twice keeps the last one, except for `padding` and `absolutePadding`, which add up.
 
@@ -55,7 +55,7 @@ Glance applies modifiers after `style`, and it does not care about their order:
 | `cornerRadius(dp)` | Rounds the corners. | 12 |
 | `visibility('visible' \| 'invisible' \| 'gone')` | Shows the component, hides it but keeps its space, or removes it from layout. | 7.0 |
 | `semantics({ contentDescription?, testTag? })` | Sets the text read by accessibility services and a tag for UI tests. | 7.0 |
-| `appWidgetBackground()` | Marks the widget background so the launcher can animate it when the widget opens your app. Use it once, on the outermost component. | 12 |
+| `appWidgetBackground()` | Marks the widget background so the launcher can animate it when the widget opens your app. Use it once, on the outermost component; if several components set it, only the first one keeps it. | 12 |
 
 For light and dark colors, `background({ day, night })` takes two color strings. To follow the device's Material You theme instead, pass an `AndroidDynamicColors` token. See [Dynamic Colors](./dynamic-colors.md).
 

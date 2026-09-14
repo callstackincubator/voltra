@@ -56,7 +56,7 @@ Modifiers that need a newer iOS version than the device runs leave the component
 | `redacted(reason)` | Renders the component redacted: `placeholder`, `privacy`, or `invalidated` (iOS 17). | 14.0 |
 | `unredacted()` | Keeps the component visible inside a redacted container. | 14.0 |
 | `invalidatableContent(invalidatable?)` | Marks content that goes stale while an interactive widget updates. | 17.0 |
-| `activityBackgroundTint(color \| null)` | Tints the Live Activity's Lock Screen background. | 16.1 |
+| `activityBackgroundTint(color \| null)` | Tints the Live Activity's Lock Screen background. A tint passed when starting or updating the Live Activity takes precedence. | 16.1 |
 | `activitySystemActionForegroundColor(color \| null)` | Colors the system action button next to the Live Activity. | 16.1 |
 
 ### Transitions and animation
@@ -64,15 +64,15 @@ Modifiers that need a newer iOS version than the device runs leave the component
 | Modifier | What it does | iOS |
 | --- | --- | --- |
 | `contentTransition(kind, { countsDown? })` | Animates content changes: `identity`, `opacity`, `interpolate`, `numericText`, or `symbolEffect` (iOS 17). | 16.0 |
-| `transition(kind, { edge? })` | Animates the component in and out between updates: `identity`, `opacity`, `scale`, `slide`, `push`, `move`. | 16.0 |
-| `animation(curve, { value, duration? })` | Animates the component when `value` changes. `bouncy`, `smooth` and `snappy` need iOS 17. | 13.0 |
-| `symbolEffect(effect)` | Plays an indefinite effect on `Symbol` components: `pulse`, `variableColor`, or `breathe`, `rotate`, `wiggle` (iOS 18). | 17.0 |
+| `transition(kind, { edge? })` | Animates a component that appears or disappears between two updates: `identity`, `opacity`, `scale`, `slide`, `push`, `move`. | 16.0 |
+| `animation(curve, { value, duration? })` | Animates the component when `value` changes. `duration` does not apply to `default` and `spring`. `bouncy`, `smooth` and `snappy` need iOS 17. | 13.0 |
+| `symbolEffect(effect)` | Applies an indefinite effect to `Symbol` components: `pulse`, `variableColor`, or `breathe`, `rotate`, `wiggle` (iOS 18). Widgets and Live Activities may show it as a still frame. | 17.0 |
 
 ### Visual effects
 
 | Modifier | What it does | iOS |
 | --- | --- | --- |
-| `clipShape(shape, { cornerRadius?, cornerStyle? })` | Clips to `rectangle`, `roundedRectangle`, `circle`, `capsule`, or `ellipse`. | 13.0 |
+| `clipShape(shape, { cornerRadius?, cornerStyle? })` | Clips to `rectangle`, `roundedRectangle`, `circle`, `capsule`, or `ellipse`. `cornerRadius` only applies to `roundedRectangle`. | 13.0 |
 | `blur(radius, { opaque? })` | Applies a Gaussian blur. | 13.0 |
 | `grayscale(amount)`, `saturation(amount)`, `brightness(amount)`, `contrast(amount)` | Adjusts colors. | 13.0 |
 | `blendMode(mode)` | Sets how the component blends with what is behind it. | 13.0 |
@@ -103,6 +103,8 @@ Modifiers that need a newer iOS version than the device runs leave the component
 **A modifier has no effect.** Check the iOS version in the table. On older systems the component renders without the modifier. An invalid value, such as an unknown color string, is also skipped; the widget extension logs `Ignoring modifier <name>` under the `com.voltra` subsystem in Console.
 
 **Tapping the widget opens the wrong URL.** A `deepLinkUrl` configured for the widget takes precedence over `widgetURL`. Remove one of them, and use `widgetURL` only once per widget.
+
+**The widget background does not change.** Put `containerBackground` on the widget's outermost component, and use it only once. It needs iOS 17; on iOS 16 use `style.backgroundColor` instead.
 
 **Values change without animating.** SwiftUI animates between updates only when each position in the list keeps the same modifier. Changing the modifier at a position, or adding and removing the whole list, redraws the component instead.
 

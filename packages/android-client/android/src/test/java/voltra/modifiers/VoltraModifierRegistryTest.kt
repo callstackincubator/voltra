@@ -157,6 +157,27 @@ class VoltraModifierRegistryTest {
     }
 
     @Test
+    fun keepsOnlyTheFirstAppWidgetBackground() {
+        val context = voltra.glance.VoltraRenderContext(widgetId = "widget")
+        val first = mapOf<String, Any?>("id" to "first")
+        val second = mapOf<String, Any?>("id" to "second")
+        val descriptors = listOf(VoltraModifierDescriptor("appWidgetBackground", emptyMap()))
+
+        fun render(owner: Map<String, Any?>) =
+            GlanceModifier
+                .applyNativeModifiers(
+                    descriptors,
+                    VoltraModifierScope(claimAppWidgetBackground = { context.claimAppWidgetBackground(owner) }) {
+                        ColorProvider(Color.Magenta)
+                    },
+                ).elementNames()
+
+        assertEquals(1, render(first).size)
+        assertTrue("A second component must not mark the widget background again", render(second).isEmpty())
+        assertEquals("The same component keeps it on recomposition", 1, render(first).size)
+    }
+
+    @Test
     fun appliesSizeSemanticsAndWidgetBackground() {
         val names =
             GlanceModifier

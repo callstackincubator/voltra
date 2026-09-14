@@ -124,7 +124,9 @@ export const invalidatableContent = (invalidatable: boolean = true) =>
   createIosModifier('invalidatableContent', { invalidatable })
 
 /**
- * Tints the Live Activity's Lock Screen background. `null` uses the system default.
+ * Tints the Live Activity's Lock Screen background. `null` uses the system default. It has no
+ * effect in the Dynamic Island or in widgets, and an `activityBackgroundTint` passed when starting
+ * or updating the Live Activity takes precedence.
  *
  * @since iOS 16.1
  */
@@ -150,15 +152,18 @@ export const contentTransition = (transition: ContentTransition, options: { coun
   createIosModifier('contentTransition', { transition, countsDown: options.countsDown })
 
 /**
- * Animates the component in and out when it is added or removed between updates.
+ * Animates the component in or out when it appears or disappears between two timeline entries or
+ * activity states. It has no effect on a component that is present in both.
  *
- * @since iOS 13.0. `push` requires iOS 16.0.
+ * @since iOS 16.0
  */
 export const transition = (transition: Transition, options: { edge?: Edge } = {}) =>
   createIosModifier('transition', { transition, edge: options.edge })
 
 /**
- * Animates the component when `value` changes between updates.
+ * Animates the component when `value` changes between updates. `duration` applies to `linear`,
+ * `easeIn`, `easeOut`, `easeInOut`, `bouncy`, `smooth` and `snappy`; `default` and `spring` use
+ * the system timing.
  *
  * @since iOS 13.0. `bouncy`, `smooth` and `snappy` require iOS 17.0.
  */
@@ -166,7 +171,8 @@ export const animation = (curve: AnimationCurve, options: { value: string | numb
   createIosModifier('animation', { curve, value: options.value, duration: options.duration })
 
 /**
- * Plays an indefinite SF Symbol effect on `Symbol` components inside.
+ * Applies an indefinite SF Symbol effect to `Symbol` components inside. The system decides whether
+ * it animates: in-app previews play it, while widgets and Live Activities may show a still frame.
  *
  * @since iOS 17.0. `breathe`, `rotate` and `wiggle` require iOS 18.0.
  */
@@ -254,7 +260,7 @@ export const containerRelativeFrame = (axes: 'horizontal' | 'vertical' | 'both')
   createIosModifier('containerRelativeFrame', { axes })
 
 /**
- * Caps the Dynamic Type size used by text inside the component.
+ * Uses a fixed Dynamic Type size for text inside the component, regardless of the system setting.
  *
  * @since iOS 15.0
  */

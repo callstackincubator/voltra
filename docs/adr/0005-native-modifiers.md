@@ -363,7 +363,12 @@ configured. Apple leaves more than one `widgetURL` in a hierarchy undefined,
 and in practice the root one wins, so the roots now set it only when a deep
 link resolves, the way the Dynamic Live Activity renderer already did, and
 the home widget skips its synthetic fallback when the rendered tree carries
-a `widgetURL` modifier. A `widgetURL` modifier is therefore the only one in
+a `widgetURL` modifier. The same rule covers `containerBackground`: the home
+widget root sets `containerBackground(.clear, for: .widget)` only when the
+tree carries no `containerBackground` modifier. Values configured
+explicitly outside the tree keep precedence: a widget's `deepLinkUrl`, and
+an `activityBackgroundTint` passed when starting or updating a Live
+Activity. A `widgetURL` modifier is therefore the only one in
 the tree unless the widget also configures an explicit deep link, which the
 documentation calls out.
 
@@ -420,7 +425,12 @@ the subject of [#276](https://github.com/callstackincubator/voltra/issues/276),
 which should decide the JSX shape before any modifier commits to one.
 `defaultWeight` stays behind `style.flex`, and `selectableGroup` is
 excluded because both depend on the parent, which the child's type cannot
-see.
+see. Because the Row and Column renderers append `defaultWeight` after
+`resolveAndApplyStyle`, `style.flex` replaces a child's native size
+modifiers along the main axis; the documentation states this exception to
+"the modifier wins". Glance fails the whole widget when two views carry
+`appWidgetBackground`, so the render context records the first element that
+claims it and later claims are logged and skipped.
 
 ### Documentation
 
