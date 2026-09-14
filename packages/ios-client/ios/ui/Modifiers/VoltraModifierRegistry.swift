@@ -115,13 +115,41 @@ extension [String: Any] {
   }
 
   func optionalString(_ key: String) throws -> String? {
-    guard let value = self[key] else { return nil }
+    guard let value = self[key], !(value is NSNull) else { return nil }
     guard let string = value as? String else { throw VoltraModifierError.invalidParameter(key) }
     return string
   }
 
+  func requiredNumber(_ key: String) throws -> CGFloat {
+    guard let number = try optionalNumber(key) else { throw VoltraModifierError.missingParameter(key) }
+    return number
+  }
+
+  /// A color string in any form `style` accepts; JSON `null` means "system default".
+  func optionalColor(_ key: String) throws -> Color? {
+    guard let string = try optionalString(key) else { return nil }
+    guard let color = JSColorParser.parse(string) else { throw VoltraModifierError.invalidParameter(key) }
+    return color
+  }
+
+  func requiredColor(_ key: String) throws -> Color {
+    guard let color = try optionalColor(key) else { throw VoltraModifierError.missingParameter(key) }
+    return color
+  }
+
+  func requiredEnum<Option: RawRepresentable>(_ key: String, as _: Option.Type = Option.self) throws -> Option where Option.RawValue == String {
+    guard let option = try Option(rawValue: requiredString(key)) else { throw VoltraModifierError.invalidParameter(key) }
+    return option
+  }
+
+  func optionalEnum<Option: RawRepresentable>(_ key: String, as _: Option.Type = Option.self) throws -> Option? where Option.RawValue == String {
+    guard let string = try optionalString(key) else { return nil }
+    guard let option = Option(rawValue: string) else { throw VoltraModifierError.invalidParameter(key) }
+    return option
+  }
+
   func optionalBool(_ key: String) throws -> Bool? {
-    guard let value = self[key] else { return nil }
+    guard let value = self[key], !(value is NSNull) else { return nil }
     // JSONSerialization bridges JSON booleans to NSNumber; reject plain numbers.
     guard let number = value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else {
       throw VoltraModifierError.invalidParameter(key)
@@ -130,7 +158,7 @@ extension [String: Any] {
   }
 
   func optionalNumber(_ key: String) throws -> CGFloat? {
-    guard let value = self[key] else { return nil }
+    guard let value = self[key], !(value is NSNull) else { return nil }
     guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID() else {
       throw VoltraModifierError.invalidParameter(key)
     }

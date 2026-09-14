@@ -1,6 +1,8 @@
 package voltra.modifiers
 
+import androidx.compose.ui.graphics.Color
 import androidx.glance.GlanceModifier
+import androidx.glance.unit.ColorProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
@@ -9,6 +11,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import voltra.styling.VoltraThemeColorRole
 
 /**
  * Parity between `VoltraAndroid.modifiers` and the Kotlin registry. The fixture is written by the
@@ -16,6 +19,15 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 class VoltraModifierRegistryTest {
+    private val resolvedRoles = mutableListOf<VoltraThemeColorRole>()
+
+    /** Stands in for the Glance theme, which only exists inside a composition. */
+    private val themeScope =
+        VoltraModifierScope { role ->
+            resolvedRoles += role
+            ColorProvider(Color.Magenta)
+        }
+
     private fun fixtureDescriptors(): List<VoltraModifierDescriptor> {
         val json =
             requireNotNull(javaClass.classLoader?.getResource("native-modifiers.json")) {
@@ -30,12 +42,20 @@ class VoltraModifierRegistryTest {
                 element.javaClass.simpleName
         }
 
+    private fun modifierFor(
+        type: String,
+        params: Map<String, Any?> = emptyMap(),
+    ): GlanceModifier = VoltraModifierRegistry.create(VoltraModifierDescriptor(type, params), themeScope)
+
     @Test
     fun everyTypeScriptModifierIsRegisteredAndDecodes() {
         val descriptors = fixtureDescriptors()
         assertTrue(descriptors.isNotEmpty())
         for (descriptor in descriptors) {
-            assertNotNull("Modifier ${descriptor.type} did not decode", VoltraModifierRegistry.create(descriptor))
+            assertNotNull(
+                "Modifier ${descriptor.type} did not decode",
+                VoltraModifierRegistry.create(descriptor, themeScope),
+            )
         }
     }
 
@@ -64,7 +84,7 @@ class VoltraModifierRegistryTest {
     @Test(expected = VoltraModifierException::class)
     fun rejectsUnexpectedParameters() {
         // A parameter renamed on the TypeScript side must not fall back to a default silently.
-        VoltraModifierRegistry.create(VoltraModifierDescriptor("padding", mapOf("value" to 8)))
+        modifierFor("padding", mapOf("value" to 8))
     }
 
     @Test
@@ -77,7 +97,10 @@ class VoltraModifierRegistryTest {
                     VoltraModifierDescriptor("visibility", mapOf("visibility" to "sideways")),
                     VoltraModifierDescriptor("padding", mapOf("all" to "wide")),
                     VoltraModifierDescriptor("padding", mapOf("value" to 8)),
+                    VoltraModifierDescriptor("background", mapOf("color" to "not-a-color")),
+                    VoltraModifierDescriptor("semantics", emptyMap()),
                 ),
+                themeScope,
             )
         assertSame(base, result)
     }
@@ -90,6 +113,7 @@ class VoltraModifierRegistryTest {
                     VoltraModifierDescriptor("padding", mapOf("all" to 8)),
                     VoltraModifierDescriptor("visibility", mapOf("visibility" to "gone")),
                 ),
+                themeScope,
             )
         assertEquals(listOf("PaddingModifier", "VisibilityModifier"), result.elementNames())
     }
@@ -97,30 +121,57 @@ class VoltraModifierRegistryTest {
     @Test
     @Config(sdk = [31])
     fun appliesCornerRadiusFromAndroid12() {
-        val result =
-            GlanceModifier.applyNativeModifiers(
-                listOf(
-                    VoltraModifierDescriptor(
-                        "cornerRadius",
-                        mapOf("radius" to 12),
-                    ),
-                ),
-            )
-        assertEquals(listOf("CornerRadiusModifier"), result.elementNames())
+        assertEquals(listOf("CornerRadiusModifier"), modifierFor("cornerRadius", mapOf("radius" to 12)).elementNames())
     }
 
     @Test
     @Config(sdk = [30])
     fun skipsCornerRadiusBeforeAndroid12() {
+        assertTrue(modifierFor("cornerRadius", mapOf("radius" to 12)).elementNames().isEmpty())
+    }
+
+    @Test
+    fun resolvesThemeColorTokensThroughTheScope() {
+        val result = modifierFor("background", mapOf("color" to "~pc"))
+        assertEquals(listOf(VoltraThemeColorRole.PRIMARY_CONTAINER), resolvedRoles)
+        assertEquals(1, result.elementNames().size)
+    }
+
+    @Test
+    fun rejectsThemeColorTokensWithoutAComposition() {
         val result =
             GlanceModifier.applyNativeModifiers(
-                listOf(
-                    VoltraModifierDescriptor(
-                        "cornerRadius",
-                        mapOf("radius" to 12),
-                    ),
-                ),
+                listOf(VoltraModifierDescriptor("background", mapOf("color" to "~p"))),
             )
-        assertTrue(result.elementNames().isEmpty())
+        assertSame(GlanceModifier, result)
+    }
+
+    @Test
+    fun rejectsMixingColorWithDayAndNight() {
+        val result =
+            GlanceModifier.applyNativeModifiers(
+                listOf(VoltraModifierDescriptor("background", mapOf("color" to "#000000", "day" to "#FFFFFF"))),
+                themeScope,
+            )
+        assertSame(GlanceModifier, result)
+    }
+
+    @Test
+    fun appliesSizeSemanticsAndWidgetBackground() {
+        val names =
+            GlanceModifier
+                .applyNativeModifiers(
+                    listOf(
+                        VoltraModifierDescriptor("size", mapOf("width" to 64, "height" to 32)),
+                        VoltraModifierDescriptor("fillMaxWidth", emptyMap()),
+                        VoltraModifierDescriptor("semantics", mapOf("contentDescription" to "Portfolio")),
+                        VoltraModifierDescriptor("appWidgetBackground", emptyMap()),
+                    ),
+                    themeScope,
+                ).elementNames()
+        assertTrue(names.any { it.contains("Width") })
+        assertTrue(names.any { it.contains("Height") })
+        assertTrue(names.any { it.contains("Semantics") })
+        assertTrue(names.any { it.contains("AppWidgetBackground") })
     }
 }

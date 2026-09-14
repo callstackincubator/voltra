@@ -13,7 +13,8 @@ const {
 
 const FIXTURE_PATH = path.join(__dirname, '../../ios-client/ios/Tests/Fixtures/native-modifiers.json')
 
-const { widgetURL, privacySensitive, clipShape } = Voltra.modifiers
+const m = Voltra.modifiers
+const { widgetURL, privacySensitive, clipShape } = m
 
 /**
  * Representative calls for every factory. The Swift test decodes each one through the registry, so
@@ -21,7 +22,41 @@ const { widgetURL, privacySensitive, clipShape } = Voltra.modifiers
  */
 const SAMPLES = {
   widgetURL: [widgetURL('myapp://portfolio')],
+  containerBackground: [m.containerBackground('#101828')],
+  widgetAccentable: [m.widgetAccentable(), m.widgetAccentable(false)],
   privacySensitive: [privacySensitive(), privacySensitive(false)],
+  redacted: [m.redacted('placeholder'), m.redacted('privacy'), m.redacted('invalidated')],
+  unredacted: [m.unredacted()],
+  invalidatableContent: [m.invalidatableContent()],
+  activityBackgroundTint: [m.activityBackgroundTint('rgba(16, 24, 40, 0.8)'), m.activityBackgroundTint(null)],
+  activitySystemActionForegroundColor: [m.activitySystemActionForegroundColor('#FFFFFF')],
+  contentTransition: [
+    m.contentTransition('identity'),
+    m.contentTransition('opacity'),
+    m.contentTransition('interpolate'),
+    m.contentTransition('numericText', { countsDown: true }),
+    m.contentTransition('symbolEffect'),
+  ],
+  transition: [
+    m.transition('identity'),
+    m.transition('opacity'),
+    m.transition('scale'),
+    m.transition('slide'),
+    m.transition('push', { edge: 'top' }),
+    m.transition('move', { edge: 'leading' }),
+  ],
+  animation: [
+    m.animation('default', { value: 42 }),
+    m.animation('easeInOut', { value: 'price', duration: 0.5 }),
+    m.animation('bouncy', { value: true }),
+  ],
+  symbolEffect: [
+    m.symbolEffect('pulse'),
+    m.symbolEffect('variableColor'),
+    m.symbolEffect('breathe'),
+    m.symbolEffect('rotate'),
+    m.symbolEffect('wiggle'),
+  ],
   clipShape: [
     clipShape('circle'),
     clipShape('capsule', { cornerStyle: 'continuous' }),
@@ -29,6 +64,23 @@ const SAMPLES = {
     clipShape('rectangle'),
     clipShape('ellipse'),
   ],
+  blur: [m.blur(4), m.blur(8, { opaque: true })],
+  grayscale: [m.grayscale(1)],
+  saturation: [m.saturation(0.5)],
+  brightness: [m.brightness(0.1)],
+  contrast: [m.contrast(1.2)],
+  blendMode: [m.blendMode('multiply'), m.blendMode('plusLighter')],
+  rotationEffect: [m.rotationEffect(-15)],
+  scaleEffect: [m.scaleEffect(0.9), m.scaleEffect({ x: 1.2 })],
+  offset: [m.offset({ x: 4, y: -2 })],
+  fixedSize: [m.fixedSize(), m.fixedSize({ horizontal: false })],
+  layoutPriority: [m.layoutPriority(1)],
+  containerRelativeFrame: [m.containerRelativeFrame('horizontal'), m.containerRelativeFrame('both')],
+  dynamicTypeSize: [m.dynamicTypeSize('xxLarge'), m.dynamicTypeSize('accessibility2')],
+  minimumScaleFactor: [m.minimumScaleFactor(0.6)],
+  truncationMode: [m.truncationMode('middle')],
+  multilineTextAlignment: [m.multilineTextAlignment('center')],
+  monospacedDigit: [m.monospacedDigit()],
 }
 
 test('has a parity sample for every modifier factory', () => {

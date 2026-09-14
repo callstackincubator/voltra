@@ -4,11 +4,33 @@ const path = require('node:path')
 const test = require('node:test')
 const React = require('react')
 
-const { VoltraAndroid, renderAndroidVariantToJson, renderAndroidWidgetToJson } = require('../build/commonjs/index.js')
+const {
+  AndroidDynamicColors,
+  VoltraAndroid,
+  renderAndroidVariantToJson,
+  renderAndroidWidgetToJson,
+} = require('../build/commonjs/index.js')
 
 const FIXTURE_PATH = path.join(__dirname, '../../android-client/android/src/test/resources/native-modifiers.json')
 
-const { padding, cornerRadius, visibility } = VoltraAndroid.modifiers
+const {
+  padding,
+  absolutePadding,
+  width,
+  height,
+  size,
+  fillMaxWidth,
+  fillMaxHeight,
+  fillMaxSize,
+  wrapContentWidth,
+  wrapContentHeight,
+  wrapContentSize,
+  background,
+  cornerRadius,
+  visibility,
+  semantics,
+  appWidgetBackground,
+} = VoltraAndroid.modifiers
 
 /**
  * Representative calls for every factory. The Kotlin test decodes each one through the registry,
@@ -20,8 +42,28 @@ const SAMPLES = {
     padding({ horizontal: 12, vertical: 4 }),
     padding({ all: 2, start: 6, top: 1, end: 3, bottom: 5 }),
   ],
+  absolutePadding: [absolutePadding(4), absolutePadding({ left: 6, top: 1, right: 3, bottom: 5 })],
+  width: [width(120)],
+  height: [height(48)],
+  size: [size(24), size({ width: 64, height: 32 })],
+  fillMaxWidth: [fillMaxWidth()],
+  fillMaxHeight: [fillMaxHeight()],
+  fillMaxSize: [fillMaxSize()],
+  wrapContentWidth: [wrapContentWidth()],
+  wrapContentHeight: [wrapContentHeight()],
+  wrapContentSize: [wrapContentSize()],
+  background: [
+    background('#101828'),
+    background(AndroidDynamicColors.primaryContainer),
+    background({ day: '#FFFFFF', night: '#000000' }),
+  ],
   cornerRadius: [cornerRadius(12)],
   visibility: [visibility('visible'), visibility('invisible'), visibility('gone')],
+  semantics: [
+    semantics({ contentDescription: 'Portfolio' }),
+    semantics({ contentDescription: 'Chart', testTag: 'chart' }),
+  ],
+  appWidgetBackground: [appWidgetBackground()],
 }
 
 test('has a parity sample for every modifier factory', () => {

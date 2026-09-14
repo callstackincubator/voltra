@@ -70,6 +70,31 @@ final class NativeModifierTests: XCTestCase {
     }
   }
 
+  func testNullColorMeansSystemDefault() throws {
+    let json = #"[{"color":null,"$type":"activityBackgroundTint"}]"#
+    let descriptor = try XCTUnwrap(VoltraModifierRegistry.parseDescriptors(json).first)
+    let modifier = try XCTUnwrap(VoltraModifierRegistry.makeModifier(descriptor) as? ActivityBackgroundTintModifier)
+    XCTAssertNil(modifier.color)
+  }
+
+  func testInvalidColorAndEnumValuesThrow() {
+    let badColor = VoltraModifierDescriptor(type: "containerBackground", params: ["color": "not-a-color"])
+    XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(badColor)) { error in
+      XCTAssertEqual(error as? VoltraModifierError, .invalidParameter("color"))
+    }
+    let badEnum = VoltraModifierDescriptor(type: "symbolEffect", params: ["effect": "explode"])
+    XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(badEnum)) { error in
+      XCTAssertEqual(error as? VoltraModifierError, .invalidParameter("effect"))
+    }
+  }
+
+  func testAnimationRequiresAValue() {
+    let descriptor = VoltraModifierDescriptor(type: "animation", params: ["curve": "linear"])
+    XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor)) { error in
+      XCTAssertEqual(error as? VoltraModifierError, .missingParameter("value"))
+    }
+  }
+
   func testBooleanParameterRejectsNumbers() {
     let descriptor = VoltraModifierDescriptor(type: "privacySensitive", params: ["sensitive": NSNumber(value: 1)])
     XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor))

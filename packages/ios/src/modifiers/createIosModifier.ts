@@ -13,4 +13,8 @@ export const createIosModifier = <Params extends Record<string, unknown>>(
   type: string,
   params?: Params
 ): IosModifier & Readonly<Params> =>
-  Object.freeze({ ...params, $type: type }) as unknown as IosModifier & Readonly<Params>
+  // Omitted options stay out of the descriptor instead of appearing as `undefined` keys.
+  Object.freeze({
+    ...Object.fromEntries(Object.entries(params ?? {}).filter(([, value]) => value !== undefined)),
+    $type: type,
+  }) as unknown as IosModifier & Readonly<Params>

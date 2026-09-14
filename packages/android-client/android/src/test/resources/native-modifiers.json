@@ -17,6 +17,66 @@
     "$type": "padding"
   },
   {
+    "all": 4,
+    "$type": "absolutePadding"
+  },
+  {
+    "left": 6,
+    "top": 1,
+    "right": 3,
+    "bottom": 5,
+    "$type": "absolutePadding"
+  },
+  {
+    "width": 120,
+    "$type": "width"
+  },
+  {
+    "height": 48,
+    "$type": "height"
+  },
+  {
+    "width": 24,
+    "height": 24,
+    "$type": "size"
+  },
+  {
+    "width": 64,
+    "height": 32,
+    "$type": "size"
+  },
+  {
+    "$type": "fillMaxWidth"
+  },
+  {
+    "$type": "fillMaxHeight"
+  },
+  {
+    "$type": "fillMaxSize"
+  },
+  {
+    "$type": "wrapContentWidth"
+  },
+  {
+    "$type": "wrapContentHeight"
+  },
+  {
+    "$type": "wrapContentSize"
+  },
+  {
+    "color": "#101828",
+    "$type": "background"
+  },
+  {
+    "color": "~pc",
+    "$type": "background"
+  },
+  {
+    "day": "#FFFFFF",
+    "night": "#000000",
+    "$type": "background"
+  },
+  {
     "radius": 12,
     "$type": "cornerRadius"
   },
@@ -31,5 +91,17 @@
   {
     "visibility": "gone",
     "$type": "visibility"
+  },
+  {
+    "contentDescription": "Portfolio",
+    "$type": "semantics"
+  },
+  {
+    "contentDescription": "Chart",
+    "testTag": "chart",
+    "$type": "semantics"
+  },
+  {
+    "$type": "appWidgetBackground"
   }
 ]

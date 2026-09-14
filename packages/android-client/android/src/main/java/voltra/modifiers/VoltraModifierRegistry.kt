@@ -2,10 +2,14 @@ package voltra.modifiers
 
 import android.util.Log
 import androidx.glance.GlanceModifier
+import androidx.glance.unit.ColorProvider
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import voltra.parsing.toDynamicObject
+import voltra.styling.JSColorParser
+import voltra.styling.VoltraColorValue
+import voltra.styling.VoltraThemeColorRole
 
 /**
  * One entry of a component's `modifiers` prop: `{ "$type": "<name>", ...params }` (ADR 0005).
@@ -26,8 +30,30 @@ class VoltraModifierException(
  */
 class VoltraModifierDefinition(
     val parameters: Set<String>,
-    val make: (Map<String, Any?>) -> GlanceModifier,
+    val make: (Map<String, Any?>, VoltraModifierScope) -> GlanceModifier,
 )
+
+/**
+ * What a factory may need from the composition, read once at the composable insertion point so
+ * factories stay plain functions. Today that is the Glance theme for dynamic color tokens.
+ */
+class VoltraModifierScope(
+    private val resolveThemeColor: (VoltraThemeColorRole) -> ColorProvider,
+) {
+    fun colorProvider(value: VoltraColorValue): ColorProvider =
+        when (value) {
+            is VoltraColorValue.Static -> ColorProvider(value.color)
+            is VoltraColorValue.Dynamic -> resolveThemeColor(value.role)
+        }
+
+    companion object {
+        /** For callers outside composition: static colors resolve, theme tokens are rejected. */
+        val StaticColorsOnly =
+            VoltraModifierScope { role ->
+                throw VoltraModifierException("Theme color ${role.token} needs a Glance composition")
+            }
+    }
+}
 
 /**
  * String-keyed table of native modifiers. Unknown types and parameters that do not decode are
@@ -70,19 +96,25 @@ object VoltraModifierRegistry {
      * unexpected parameter, or a parameter that does not decode; [applyNativeModifiers] turns any
      * failure into a logged no-op.
      */
-    fun create(descriptor: VoltraModifierDescriptor): GlanceModifier {
+    fun create(
+        descriptor: VoltraModifierDescriptor,
+        scope: VoltraModifierScope = VoltraModifierScope.StaticColorsOnly,
+    ): GlanceModifier {
         val definition =
             definitions[descriptor.type]
                 ?: throw VoltraModifierException("Unknown modifier ${descriptor.type}")
         descriptor.params.keys.sorted().firstOrNull { it !in definition.parameters }?.let {
             throw VoltraModifierException("Unexpected parameter $it")
         }
-        return definition.make(descriptor.params)
+        return definition.make(descriptor.params, scope)
     }
 
-    internal fun createOrNull(descriptor: VoltraModifierDescriptor): GlanceModifier? =
+    internal fun createOrNull(
+        descriptor: VoltraModifierDescriptor,
+        scope: VoltraModifierScope,
+    ): GlanceModifier? =
         try {
-            create(descriptor)
+            create(descriptor, scope)
         } catch (error: Exception) {
             warn("Ignoring modifier ${descriptor.type}", error)
             null
@@ -104,10 +136,21 @@ object VoltraModifierRegistry {
  * Appends native modifiers after `style`. Glance reads the chain as a set keyed by modifier kind,
  * so order does not matter except that padding adds up.
  */
-fun GlanceModifier.applyNativeModifiers(descriptors: List<VoltraModifierDescriptor>): GlanceModifier =
+fun GlanceModifier.applyNativeModifiers(
+    descriptors: List<VoltraModifierDescriptor>,
+    scope: VoltraModifierScope = VoltraModifierScope.StaticColorsOnly,
+): GlanceModifier =
     descriptors.fold(this) { modifier, descriptor ->
-        VoltraModifierRegistry.createOrNull(descriptor)?.let { modifier.then(it) } ?: modifier
+        VoltraModifierRegistry.createOrNull(descriptor, scope)?.let { modifier.then(it) } ?: modifier
     }
+
+internal fun Map<String, Any?>.optionalString(key: String): String? {
+    val value = this[key] ?: return null
+    return value as? String ?: throw VoltraModifierException("Invalid $key")
+}
+
+internal fun Map<String, Any?>.requiredColor(key: String): VoltraColorValue =
+    JSColorParser.parse(requiredString(key)) ?: throw VoltraModifierException("Invalid $key")
 
 internal fun Map<String, Any?>.optionalDp(key: String): Float? {
     val value = this[key] ?: return null
