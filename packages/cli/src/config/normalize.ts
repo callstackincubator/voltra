@@ -4,6 +4,7 @@ import { resolveFromRoot } from '../fs/path'
 import { CLI_DEFAULTS } from './defaults'
 import { isPerConfigurationMap } from './perConfiguration'
 import { resolveServerUpdateInterval, resolveServerUpdateUrl, validateServerUpdateRefresh } from './serverUpdate'
+import { iosWidgetKind } from './widgetKind'
 
 import type { PerConfiguration } from './perConfiguration'
 
@@ -457,6 +458,10 @@ function normalizeIOSWidget(
   assertNonEmptyString(widget.id, 'ios.widgets[].id')
   assertValidWidgetId(widget.id, 'ios.widgets[].id')
 
+  if (widget.kind !== undefined) {
+    assertNonEmptyString(widget.kind, `ios.widgets[${widget.id}].kind`)
+  }
+
   if (widget.supportedFamilies !== undefined) {
     if (!Array.isArray(widget.supportedFamilies)) {
       throw new VoltraConfigNormalizationError(`ios.widgets[${widget.id}].supportedFamilies must be an array`)
@@ -505,6 +510,25 @@ function assertUniqueWidgetIds(widgetIds: string[], context: string): void {
     }
 
     seen.add(widgetId)
+  }
+}
+
+/**
+ * WidgetKit identifies a placed widget by extension bundle id + kind, so two widgets sharing a kind
+ * would fight over the same Home Screen instances. Compared after defaulting, which also catches a
+ * custom kind that collides with another widget's `Voltra_Widget_<id>`.
+ */
+function assertUniqueIOSWidgetKinds(widgets: Pick<IOSWidgetConfig, 'id' | 'kind'>[]): void {
+  const seen = new Set<string>()
+
+  for (const widget of widgets) {
+    const kind = iosWidgetKind(widget)
+
+    if (seen.has(kind)) {
+      throw new VoltraConfigNormalizationError(`Duplicate ios widget kind '${kind}'`)
+    }
+
+    seen.add(kind)
   }
 }
 
@@ -614,6 +638,7 @@ function normalizeIOSConfig(
     widgets.map((widget) => widget.id),
     'ios'
   )
+  assertUniqueIOSWidgetKinds(widgets)
 
   return {
     enablePushNotifications: config.enablePushNotifications ?? CLI_DEFAULTS.ios.enablePushNotifications,

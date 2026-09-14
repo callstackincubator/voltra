@@ -1,5 +1,6 @@
 import { parseStringPromise } from 'xml2js'
 
+import { iosWidgetKindOverrides } from '../../config/widgetKind'
 import { readTextFile, writeTextFile } from '../../fs/readWrite'
 import { toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
@@ -70,6 +71,9 @@ async function ensureSingleInfoPlist(
 
   const widgetIds = ios.widgets.map((widget) => widget.id)
   setOrDeleteVoltraKey(infoPlist, 'Voltra_WidgetIds', widgetIds.length > 0 ? widgetIds : undefined)
+
+  // Widgets that pin a custom WidgetKit kind, so VoltraWidgetKind can map ids to kinds and back.
+  setOrDeleteVoltraKey(infoPlist, 'Voltra_WidgetKinds', iosWidgetKindOverrides(ios.widgets))
 
   // Every server-driven widget gets an interval, so this dictionary's keys are the set of
   // server-driven widget ids the runtime settings store validates against. A URL is written only

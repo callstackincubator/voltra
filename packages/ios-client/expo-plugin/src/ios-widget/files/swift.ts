@@ -11,7 +11,7 @@ import {
   type WidgetLabel,
 } from '@use-voltra/expo-plugin'
 
-import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
+import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP, widgetKind } from '../../constants'
 import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 import { detectClientRenderedWidgets, type DetectedIOSWidget } from '../clientRendered'
@@ -361,7 +361,7 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
 
       public var body: some WidgetConfiguration {
         StaticConfiguration(
-          kind: "Voltra_Widget_${widget.id}",
+          kind: "${widgetKind(widget)}",
           ${providerAndContent}
         .configurationDisplayName(${displayNameExpr})
         .description(${descriptionExpr})
@@ -459,7 +459,7 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
 
       public var body: some WidgetConfiguration {
         AppIntentConfiguration(
-          kind: "Voltra_Widget_${widget.id}",
+          kind: "${widgetKind(widget)}",
           intent: ${intentName}.self,
           provider: ${providerName}()
         ) { entry in

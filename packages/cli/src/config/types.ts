@@ -134,6 +134,12 @@ export interface IOSWidgetAppIntentConfig {
 export interface IOSWidgetConfig {
   /** Stable widget identifier used in generated files and registrations. */
   id: string
+  /**
+   * WidgetKit `kind` of the generated widget. Defaults to `Voltra_Widget_<id>`.
+   * Pin it to the kind of a pre-Voltra widget so already placed instances survive the migration
+   * (WidgetKit identifies a placed widget by extension bundle id + kind).
+   */
+  kind?: string
   /** User-facing widget name shown in iOS widget configuration UI. */
   displayName: WidgetLabel
   /** User-facing widget description shown in iOS widget configuration UI. */

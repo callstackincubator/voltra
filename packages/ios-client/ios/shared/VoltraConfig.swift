@@ -35,4 +35,25 @@ public enum VoltraConfig {
 
     return version
   }
+
+  /// Get the `{ widgetId: kind }` map of widgets that pin a custom WidgetKit kind from Info.plist
+  /// Written at prebuild (`expo prebuild`) or apply (`voltra apply`) time from the `kind` option.
+  /// Absent when every widget keeps the default `Voltra_Widget_<id>` kind.
+  public static func widgetKinds(bundle: Bundle = .main) -> [String: String] {
+    normalizeWidgetKinds(bundle.object(forInfoDictionaryKey: VoltraStorageKeys.widgetKinds))
+  }
+
+  /// Value handling for `widgetKinds(bundle:)`, split out so every malformed shape the plist can
+  /// hold is covered without building a bundle per case. Entries that are not non-empty strings
+  /// are dropped, leaving those widgets on the default kind.
+  static func normalizeWidgetKinds(_ rawValue: Any?) -> [String: String] {
+    guard let rawMap = rawValue as? [String: Any] else {
+      return [:]
+    }
+
+    return rawMap.compactMapValues { value in
+      guard let kind = value as? String, !kind.isEmpty else { return nil }
+      return kind
+    }
+  }
 }

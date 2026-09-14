@@ -74,6 +74,16 @@ describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
       expect(swift).toContain('.contentMarginsDisabled()')
     }
   })
+
+  it('uses the `kind` option as the WidgetKit kind when set', () => {
+    const swift = __test__.generateWidgetBundleSwift([
+      { ...serverWidget, kind: 'Widgets' },
+      { ...clientWidget, kind: 'LegacyWeather' },
+    ])
+    expect(swift).toMatch(/StaticConfiguration\(\s*\n\s*kind: "Widgets",/)
+    expect(swift).toMatch(/StaticConfiguration\(\s*\n\s*kind: "LegacyWeather",/)
+    expect(swift).not.toContain('Voltra_Widget_')
+  })
 })
 
 describe('Dynamic Live Activity Swift generation', () => {

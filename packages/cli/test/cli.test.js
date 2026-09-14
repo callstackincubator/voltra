@@ -1431,6 +1431,51 @@ test('ensureInfoPlist writes Voltra keys into every build configuration Info.pli
   }
 })
 
+test('ensureInfoPlist writes the widget kinds a config pins, and clears them when it stops', async () => {
+  const { discoverIOSProject, ensureInfoPlist } = loadCliModule()
+  const { tempDir, iosRoot } = writeMultiConfigurationIosProject()
+  const discovery = await discoverIOSProject(tempDir, {})
+  const infoPlistPaths = ['Info.plist', 'Info-Debug.plist'].map((name) => path.join(iosRoot, 'TestApp', name))
+
+  await ensureInfoPlist({
+    projectRoot: tempDir,
+    ios: multiConfigurationIosConfig({
+      widgets: [
+        { id: 'streak', kind: 'StreakWidget', displayName: 'Streak', description: 'Streak', supportedFamilies: [] },
+        { id: 'weather', displayName: 'Weather', description: 'Weather', supportedFamilies: [] },
+      ],
+    }),
+    discovery,
+  })
+
+  for (const infoPlistPath of infoPlistPaths) {
+    const content = fs.readFileSync(infoPlistPath, 'utf8')
+    assert.match(content, /Voltra_WidgetKinds/)
+    assert.match(content, /StreakWidget/)
+    // Only widgets that pin a kind appear; the rest stay on Voltra_Widget_<id>.
+    assert.ok(!content.includes('Voltra_Widget_weather'))
+  }
+
+  // `voltra apply` runs against a native project it does not own, so dropping `kind` from the
+  // config has to remove the entry rather than leave the widget answering to a stale kind.
+  await ensureInfoPlist({
+    projectRoot: tempDir,
+    ios: multiConfigurationIosConfig({
+      widgets: [
+        { id: 'streak', displayName: 'Streak', description: 'Streak', supportedFamilies: [] },
+        { id: 'weather', displayName: 'Weather', description: 'Weather', supportedFamilies: [] },
+      ],
+    }),
+    discovery,
+  })
+
+  for (const infoPlistPath of infoPlistPaths) {
+    const content = fs.readFileSync(infoPlistPath, 'utf8')
+    assert.ok(!content.includes('Voltra_WidgetKinds'))
+    assert.ok(!content.includes('StreakWidget'))
+  }
+})
+
 test('ensureIOSWidgetTarget matches the widget to each build configuration of the app', async () => {
   const { discoverIOSProject, ensureIOSWidgetTarget } = loadCliModule()
   const { tempDir, pbxprojPath } = writeMultiConfigurationIosProject()

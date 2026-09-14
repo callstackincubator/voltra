@@ -99,6 +99,42 @@ describe('validateIOSConfigPluginProps', () => {
     }
   })
 
+  it('accepts a custom widget kind', () => {
+    expect(() =>
+      validateIOSConfigPluginProps({
+        widgets: [{ id: 'streak', kind: 'Widgets', displayName: 'Streak', description: 'Streak widget' }],
+      })
+    ).not.toThrow()
+  })
+
+  it('rejects an empty widget kind', () => {
+    expect(() =>
+      validateIOSConfigPluginProps({
+        widgets: [{ id: 'streak', kind: ' ', displayName: 'Streak', description: 'Streak widget' }],
+      })
+    ).toThrow(/kind must be a non-empty string/)
+  })
+
+  it('rejects duplicate widget kinds, including a custom kind colliding with a default one', () => {
+    expect(() =>
+      validateIOSConfigPluginProps({
+        widgets: [
+          { id: 'a', kind: 'Widgets', displayName: 'A', description: 'A' },
+          { id: 'b', kind: 'Widgets', displayName: 'B', description: 'B' },
+        ],
+      })
+    ).toThrow(/Duplicate widget kind: 'Widgets'/)
+
+    expect(() =>
+      validateIOSConfigPluginProps({
+        widgets: [
+          { id: 'a', kind: 'Voltra_Widget_b', displayName: 'A', description: 'A' },
+          { id: 'b', displayName: 'B', description: 'B' },
+        ],
+      })
+    ).toThrow(/Duplicate widget kind: 'Voltra_Widget_b'/)
+  })
+
   it('accepts Dynamic Live Activities independently from widget IDs', () => {
     const projectRoot = createProjectRoot({
       'widgets/order-finished.tsx': 'export default function OrderFinished() {}',
