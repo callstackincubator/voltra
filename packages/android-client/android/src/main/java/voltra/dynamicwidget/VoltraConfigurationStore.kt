@@ -127,6 +127,46 @@ internal class VoltraConfigurationStore(
         }
     }
 
+    /**
+     * Move each placement's instance values from its old `appWidgetId` to the new one the launcher
+     * assigned in `onRestored`, in a single transaction. A new id that already holds values keeps
+     * them only where the old placement had none for the same key: the restored placement is the
+     * one the user configured, so its values win. Old keys are removed. Pairs whose ids are equal
+     * are no-ops.
+     */
+    suspend fun remapInstances(
+        widgetId: String,
+        oldAppWidgetIds: List<Int>,
+        newAppWidgetIds: List<Int>,
+    ) {
+        val pairs = oldAppWidgetIds.zip(newAppWidgetIds).filter { (old, new) -> old != new }
+        if (pairs.isEmpty()) return
+        dataStore.edit { preferences ->
+            // Read every old placement first so a chain like 1→2, 2→3 does not read what the
+            // previous pair just wrote.
+            val moved =
+                pairs.map { (old, new) ->
+                    val oldPrefix = instanceKeyPrefix(widgetId, old)
+                    val entries =
+                        preferences
+                            .asMap()
+                            .filter { (key, value) -> key.name.startsWith(oldPrefix) && value is String }
+                            .map { (key, value) -> key.name.substring(oldPrefix.length) to value as String }
+                    Triple(oldPrefix, instanceKeyPrefix(widgetId, new), entries)
+                }
+            moved.forEach { (oldPrefix, _, _) ->
+                preferences
+                    .asMap()
+                    .keys
+                    .filter { it.name.startsWith(oldPrefix) }
+                    .forEach { preferences.remove(it) }
+            }
+            moved.forEach { (_, newPrefix, entries) ->
+                entries.forEach { (key, value) -> preferences[stringPreferencesKey(newPrefix + key)] = value }
+            }
+        }
+    }
+
     /** Every value stored under [prefix], keyed by the part of the key that follows it. */
     private fun readPrefixed(
         snapshot: Preferences,
