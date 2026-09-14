@@ -138,6 +138,18 @@ call throws, the widget logs a warning and renders with the type-level values,
 so a Glance edge case degrades to today's behaviour rather than to a blank
 widget.
 
+The configuration the composition renders with is keyed on a Glance state
+revision, alongside the props revision ADR 0002 added.
+`GlanceAppWidget.update` on a widget whose Glance session is still alive only
+reloads Glance state and recomposes; it does not re-run `provideGlance`. A
+value read in `provideGlance` and captured by the `provideContent` lambda is
+therefore frozen for the life of that session, so a write stayed invisible
+until the session idled out. Every configuration write advances that
+placement's revision before asking Glance to update, and the composition
+re-reads the store whenever it changes. `provideGlance`'s read remains the
+value the first composition of a session uses, so first paint costs no
+blocking read.
+
 `renderDynamicWidgetForTrial` keeps reading type-level values. It renders once
 per widget id to decide whether fetched props render at all, and ADR 0002
 already fixes it at that granularity.

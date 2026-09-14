@@ -255,22 +255,32 @@ class VoltraClientGlanceWidget(
             }
 
         // Read user-configured params (DataStore) off the composition so env.configuration is
-        // available synchronously during render.
+        // available synchronously during the first render of this session. Later writes reach the
+        // composition through the configuration revision, not through this value: Glance does not
+        // re-run provideGlance for a widget whose session is still alive.
         val configuration = VoltraConfigurationStore(context).get(widgetId, appWidgetId)
 
         provideContent {
-            Content(bundleReady, configuration)
+            Content(bundleReady, configuration, appWidgetId)
         }
     }
 
     @Composable
     private fun Content(
         bundleReady: Boolean,
-        configuration: Map<String, String>,
+        initialConfiguration: Map<String, String>,
+        appWidgetId: Int?,
     ) {
         val context = LocalContext.current
         val size = LocalSize.current
         val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId)
+        val configuration =
+            currentDynamicWidgetConfiguration(
+                context = context,
+                dynamicWidgetId = widgetId,
+                dynamicWidgetAppWidgetId = appWidgetId,
+                initialConfiguration = initialConfiguration,
+            )
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
         // placeholder node (first paint / offline / Metro down).

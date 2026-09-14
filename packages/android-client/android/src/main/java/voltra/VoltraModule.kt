@@ -29,7 +29,9 @@ import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.dynamicwidget.VoltraConfigurationStore
+import voltra.dynamicwidget.triggerDynamicWidgetConfigurationGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
+import voltra.dynamicwidget.triggerDynamicWidgetInstanceConfigurationGlanceUpdate
 import voltra.glance.renderers.arc.ArcBitmapCache
 import voltra.images.VoltraImageManager
 import voltra.widget.VoltraWidgetKind
@@ -380,7 +382,9 @@ class VoltraModule(
         runBlocking {
             try {
                 VoltraConfigurationStore(reactApplicationContext).set(widgetId, key, value)
-                VoltraWidgetReceiver.triggerGlanceUpdateOrThrow(reactApplicationContext, widgetId)
+                // Advances each placement's configuration revision before updating it, so a live
+                // Glance session re-reads the store instead of redrawing its captured values.
+                triggerDynamicWidgetConfigurationGlanceUpdate(reactApplicationContext, widgetId)
                 promise.resolve(null)
             } catch (e: Exception) {
                 Log.e(TAG, "setWidgetConfiguration failed", e)
@@ -552,14 +556,17 @@ class VoltraModule(
 
     /**
      * Re-render only the placement that changed, using the single-`GlanceId` overload, so sibling
-     * placements of the same widget are not redrawn.
+     * placements of the same widget are not redrawn. The placement's configuration revision is
+     * advanced first: Glance does not re-run `provideGlance` for a widget whose session is still
+     * alive, so without the bump the widget would redraw the values it captured when its session
+     * began and only pick the new ones up once that session idled out.
      *
      * Dispatched rather than awaited: a Dynamic Widget render evaluates the widget's JS bundle in
      * the Hermes runtime, and in a debug build fetches it from Metro first, so awaiting it would
      * block the calling thread for as long as that takes (the ANR risk the pin-preview path in this
      * file already calls out). ADR 0006 decouples the two — the value is persisted before this
-     * runs, and a re-render that never happens is picked up by the next render, exactly as when the
-     * app writes while the launcher is not showing the widget.
+     * runs, and a re-render that never happens is picked up when the widget next renders from
+     * scratch, exactly as when the app writes while the launcher is not showing the widget.
      *
      * Failure is logged, never surfaced. Caught as [Throwable], not [Exception]: this path reaches
      * the JNI renderer, whose missing native dependency surfaces as [NoClassDefFoundError] or
@@ -571,8 +578,11 @@ class VoltraModule(
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val glanceId = GlanceAppWidgetManager(reactApplicationContext).getGlanceIdBy(appWidgetId)
-                VoltraWidgetReceiver.triggerGlanceUpdate(reactApplicationContext, widgetId, glanceId)
+                triggerDynamicWidgetInstanceConfigurationGlanceUpdate(
+                    context = reactApplicationContext,
+                    dynamicWidgetId = widgetId,
+                    dynamicWidgetAppWidgetId = appWidgetId,
+                )
             } catch (e: Throwable) {
                 Log.w(TAG, "Could not re-render widget '$widgetId' instance $appWidgetId: ${e.message}")
             }
