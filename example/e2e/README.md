@@ -118,12 +118,26 @@ wiped `~/Library/Developer/Xcode/DerivedData`, regenerated Codegen via `pod inst
 could not be found. Verify that a module by this name is registered in the native binary.
 ```
 
-This is a native TurboModule registration failure, not a JS/bundle issue — Metro served the
-correct bundle and the server contract worked correctly when exercised directly with curl (see
-below). It reproduced across multiple clean rebuilds and is very likely pre-existing in this
-environment/branch rather than caused by this change (this change is JS/app.json/server only). If
-you hit the same error, it is worth checking independently of this feature before assuming this
-change broke something.
+**Ruled out: a Metro port conflict.** A plausible theory was that the app connected to a _different_
+project's Metro already running on the default port 8081 (there was an unrelated `cordierite`
+project bound to 8081 on this machine) and got served a mismatched bundle. This was retested
+directly: Metro was started dedicated on port 9999
+(`npx expo start --clear --port 9999` from `example/`), the widget bundle was confirmed served from
+it (`curl -s -o /dev/null -w '%{http_code}\n'
+"http://localhost:9999/voltra/widgets/ClientRenderedDemoWidget.bundle?platform=ios&dev=true"` → `200`),
+and the app was rebuilt against that port (`npx expo run:ios --device "iPhone 16 Pro" --port 9999`,
+manually `xcrun simctl install`/`launch`-ed after `expo run:ios`'s own install step failed with an
+unrelated `devicectl`/"Install Application not supported" quirk caused by two same-named "iPhone 16
+Pro" simulators on this machine). The same `PlatformConstants` error reproduced immediately, **and
+Metro's own log shows zero incoming bundle requests from the app** — the crash happens during
+native module registration, before the app ever asks Metro for a bundle. That rules out a bundle
+mismatch/wrong-Metro theory conclusively: the failure is in the native binary's TurboModule
+registry, not in what JS it was served. It reproduced across multiple from-scratch rebuilds
+(including with a dedicated, verified-correct Metro instance) and is very likely a pre-existing
+environment issue (possibly related to this repo's `React-Core-prebuilt` precompiled binary
+distribution not matching the local Xcode/toolchain) rather than anything caused by this ADR 0007
+change, which touches only JS/app.json/the fake server. Screenshot:
+`ios-port9999-platformconstants-error.png`.
 
 What _was_ verified for iOS given this blocker:
 
