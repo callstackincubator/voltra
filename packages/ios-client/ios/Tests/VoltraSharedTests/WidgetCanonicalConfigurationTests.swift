@@ -56,4 +56,11 @@ final class WidgetCanonicalConfigurationTests: XCTestCase {
 
     XCTAssertEqual(WidgetCanonicalConfiguration.canonicalize(configuration), #"{"n":"42","q":"a b"}"#)
   }
+
+  func testEscapingVectorMatchesAndroidSlashQuotesBackslashControlsAndNonASCII() {
+    let configuration = ["path": "a/b", "text": "say \"hi\"\t\n", "unicode": "Zürich", "ctrl": "\u{0001}", "back": "a\\b"]
+
+    XCTAssertEqual(WidgetCanonicalConfiguration.canonicalize(configuration), #"{"back":"a\\b","ctrl":"\u0001","path":"a/b","text":"say \"hi\"\t\n","unicode":"Zürich"}"#)
+    XCTAssertEqual(WidgetCanonicalConfiguration.key(configuration), "0647aa90")
+  }
 }

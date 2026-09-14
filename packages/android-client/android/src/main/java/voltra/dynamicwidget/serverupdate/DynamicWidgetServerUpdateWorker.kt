@@ -40,6 +40,14 @@ class DynamicWidgetServerUpdateWorker(
         // The instance's own merged configuration (ADR 0007): read once here so the request, the
         // trial render and the widget-matching re-render all agree on the same map for this run.
         val configuration = DynamicWidgetInstanceScopes.configurationForKey(applicationContext, widgetId, instanceKey)
+        if (instanceKey != null && configuration.isEmpty()) {
+            // No placement renders this configuration any more: the recompute that cancels this
+            // work may still be pending, or raced with this run. Fetching would commit props nobody
+            // reads, so the work cancels itself instead.
+            Log.d(TAG, "No placement of '$widgetId' has instance '$instanceKey'; cancelling its server updates")
+            DynamicWidgetServerUpdateScheduler.cancel(applicationContext, scope)
+            return Result.success()
+        }
         val result = runner(applicationContext, configuration).run(scope)
 
         return when (result.outcome) {

@@ -80,7 +80,11 @@ object DynamicWidgetServerUpdateScheduler {
         val currentStorageKeys = currentScopes.map { it.storageKey }.toSet()
         val previousStorageKeys = DynamicWidgetScheduleIndex.storageKeys(context, widgetId)
 
-        val orphaned = previousStorageKeys - currentStorageKeys
+        // A release before ADR 0007 scheduled every widget under its plain widget scope and kept no
+        // index, so that name is treated as always previously scheduled: it is cancelled here
+        // unless the widget still resolves to the widget scope (no configuration parameters).
+        val legacyStorageKey = WidgetScope.of(widgetId).storageKey
+        val orphaned = (previousStorageKeys + legacyStorageKey) - currentStorageKeys
         orphaned.forEach { storageKey -> cancelStorageKey(context, storageKey) }
 
         currentScopes.forEach { scope ->

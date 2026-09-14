@@ -1,7 +1,5 @@
 package voltra.widget.server
 
-import org.json.JSONObject
-
 /**
  * Turns a merged `env.configuration` map into the canonical form ADR 0007 sends on the wire and
  * hashes into an instance key.
@@ -19,15 +17,30 @@ object WidgetCanonicalConfiguration {
      */
     fun canonicalize(configuration: Map<String, String>): String? {
         if (configuration.isEmpty()) return null
-
         val sortedKeys = configuration.keys.sortedWith(codePointOrder)
-        val json = JSONObject()
-        sortedKeys.forEach { key -> json.put(key, configuration.getValue(key)) }
+        // Hand-rolled rather than org.json: Android's JSONObject escapes `/` as `\/` and control
+        // characters as `\b` / `\f`, which the Swift encoder does not, and the two platforms must
+        // produce the same bytes for the same map (ADR 0007). Escapes: `"`, `\`, `\n`, `\r`,
+        // `\t`, other C0 controls as `\u00XX`; everything else verbatim.
+        return sortedKeys.joinToString(prefix = "{", separator = ",", postfix = "}") { key ->
+            "${encodeJsonString(key)}:${encodeJsonString(configuration.getValue(key))}"
+        }
+    }
 
-        // org.json does not insert whitespace by default, and JSONObject preserves the insertion
-        // order of a LinkedHashMap-backed instance in modern Android, so the keys above were
-        // inserted in the order the wire format requires.
-        return json.toString()
+    private fun encodeJsonString(value: String): String {
+        val out = StringBuilder(value.length + 2).append('"')
+        value.forEach { ch ->
+            when {
+                ch == '"' -> out.append("\\\"")
+                ch == '\\' -> out.append("\\\\")
+                ch == '\n' -> out.append("\\n")
+                ch == '\r' -> out.append("\\r")
+                ch == '\t' -> out.append("\\t")
+                ch < ' ' -> out.append(String.format("\\u%04x", ch.code))
+                else -> out.append(ch)
+            }
+        }
+        return out.append('"').toString()
     }
 
     /**

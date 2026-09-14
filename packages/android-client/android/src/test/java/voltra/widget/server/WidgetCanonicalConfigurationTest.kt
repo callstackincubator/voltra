@@ -78,4 +78,22 @@ class WidgetCanonicalConfigurationTest {
 
         assertEquals("""{"n":"42","q":"a b"}""", WidgetCanonicalConfiguration.canonicalize(configuration))
     }
+
+    @Test
+    fun `escaping vector matches iOS -- slash, quotes, backslash, controls and non-ASCII`() {
+        val configuration =
+            mapOf(
+                "path" to "a/b",
+                "text" to "say \"hi\"\t\n",
+                "unicode" to "Zürich",
+                "ctrl" to "\u0001",
+                "back" to "a\\b",
+            )
+
+        assertEquals(
+            "{\"back\":\"a\\\\b\",\"ctrl\":\"\\u0001\",\"path\":\"a/b\",\"text\":\"say \\\"hi\\\"\\t\\n\",\"unicode\":\"Zürich\"}",
+            WidgetCanonicalConfiguration.canonicalize(configuration),
+        )
+        assertEquals("0647aa90", WidgetCanonicalConfiguration.key(configuration))
+    }
 }
