@@ -1,37 +1,37 @@
 [
   {
-    "$type": "widgetURL",
-    "url": "myapp://portfolio"
+    "url": "myapp://portfolio",
+    "$type": "widgetURL"
   },
   {
-    "$type": "privacySensitive",
-    "sensitive": true
+    "sensitive": true,
+    "$type": "privacySensitive"
   },
   {
-    "$type": "privacySensitive",
-    "sensitive": false
+    "sensitive": false,
+    "$type": "privacySensitive"
   },
   {
-    "$type": "clipShape",
-    "shape": "circle"
+    "shape": "circle",
+    "$type": "clipShape"
   },
   {
-    "$type": "clipShape",
     "shape": "capsule",
-    "cornerStyle": "continuous"
+    "cornerStyle": "continuous",
+    "$type": "clipShape"
   },
   {
-    "$type": "clipShape",
     "shape": "roundedRectangle",
     "cornerRadius": 12,
-    "cornerStyle": "continuous"
+    "cornerStyle": "continuous",
+    "$type": "clipShape"
   },
   {
-    "$type": "clipShape",
-    "shape": "rectangle"
+    "shape": "rectangle",
+    "$type": "clipShape"
   },
   {
-    "$type": "clipShape",
-    "shape": "ellipse"
+    "shape": "ellipse",
+    "$type": "clipShape"
   }
 ]

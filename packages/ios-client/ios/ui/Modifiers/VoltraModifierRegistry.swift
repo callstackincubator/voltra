@@ -11,24 +11,31 @@ struct VoltraModifierDescriptor {
 enum VoltraModifierError: Error, Equatable {
   case missingParameter(String)
   case invalidParameter(String)
+  case unexpectedParameter(String)
 }
 
-/// String-keyed table of native modifier factories. Unknown types and parameters that do not
-/// decode are logged and skipped, so a bad descriptor never breaks the widget.
-enum VoltraModifierRegistry {
-  typealias Factory = ([String: Any]) throws -> any ViewModifier
+/// A native modifier: the parameter names its TypeScript factory may send, and how to build it.
+/// Declaring the names makes a renamed parameter fail the parity test instead of silently
+/// falling back to a default.
+struct VoltraModifierDefinition {
+  let parameters: Set<String>
+  let make: ([String: Any]) throws -> any ViewModifier
+}
 
+/// String-keyed table of native modifiers. Unknown types and parameters that do not decode are
+/// logged and skipped, so a bad descriptor never breaks the widget.
+enum VoltraModifierRegistry {
   private static let logger = Logger(subsystem: "com.voltra", category: "modifier")
 
-  private(set) static var factories: [String: Factory] = builtInModifierFactories
+  private(set) static var definitions: [String: VoltraModifierDefinition] = builtInModifierDefinitions
 
   static var registeredTypes: Set<String> {
-    Set(factories.keys)
+    Set(definitions.keys)
   }
 
   /// Not public yet: user-registered modifiers are future work (ADR 0005).
-  static func register(_ type: String, factory: @escaping Factory) {
-    factories[type] = factory
+  static func register(_ type: String, definition: VoltraModifierDefinition) {
+    definitions[type] = definition
   }
 
   /// Decodes the JSON-encoded `modifiers` prop. Entries without a string `$type` are dropped.
@@ -48,8 +55,11 @@ enum VoltraModifierRegistry {
 
   /// Builds the modifier for a descriptor, or `nil` when the type is unknown.
   static func makeModifier(_ descriptor: VoltraModifierDescriptor) throws -> (any ViewModifier)? {
-    guard let factory = factories[descriptor.type] else { return nil }
-    return try factory(descriptor.params)
+    guard let definition = definitions[descriptor.type] else { return nil }
+    if let unexpected = descriptor.params.keys.sorted().first(where: { !definition.parameters.contains($0) }) {
+      throw VoltraModifierError.unexpectedParameter(unexpected)
+    }
+    return try definition.make(descriptor.params)
   }
 
   static func apply<Content: View>(_ descriptor: VoltraModifierDescriptor, to content: Content) -> AnyView {
@@ -70,9 +80,10 @@ enum VoltraModifierRegistry {
   }
 }
 
-/// Every link of a native modifier chain has this one type, so the erased shape of the view
-/// depends only on the length of the list. Value changes between timeline entries or activity
-/// states therefore diff instead of rebuilding the subtree.
+/// Every link of a native modifier chain has this one type, so the outer shape of the view
+/// depends only on the length of the list. Inside a link, the erased type is the concrete
+/// modifier: value changes of the same modifier diff and animate, while a different `$type` at a
+/// position (or an entry that stops decoding) rebuilds the wrapped component.
 struct VoltraStableModifier: ViewModifier {
   let descriptor: VoltraModifierDescriptor
 
@@ -99,7 +110,12 @@ extension View {
 
 extension [String: Any] {
   func requiredString(_ key: String) throws -> String {
-    guard let value = self[key] else { throw VoltraModifierError.missingParameter(key) }
+    guard let string = try optionalString(key) else { throw VoltraModifierError.missingParameter(key) }
+    return string
+  }
+
+  func optionalString(_ key: String) throws -> String? {
+    guard let value = self[key] else { return nil }
     guard let string = value as? String else { throw VoltraModifierError.invalidParameter(key) }
     return string
   }

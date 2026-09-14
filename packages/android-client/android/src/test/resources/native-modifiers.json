@@ -1,35 +1,35 @@
 [
   {
-    "$type": "padding",
-    "all": 8
+    "all": 8,
+    "$type": "padding"
   },
   {
-    "$type": "padding",
     "horizontal": 12,
-    "vertical": 4
+    "vertical": 4,
+    "$type": "padding"
   },
   {
-    "$type": "padding",
     "all": 2,
     "start": 6,
     "top": 1,
     "end": 3,
-    "bottom": 5
+    "bottom": 5,
+    "$type": "padding"
   },
   {
-    "$type": "cornerRadius",
-    "radius": 12
+    "radius": 12,
+    "$type": "cornerRadius"
   },
   {
-    "$type": "visibility",
-    "visibility": "visible"
+    "visibility": "visible",
+    "$type": "visibility"
   },
   {
-    "$type": "visibility",
-    "visibility": "invisible"
+    "visibility": "invisible",
+    "$type": "visibility"
   },
   {
-    "$type": "visibility",
-    "visibility": "gone"
+    "visibility": "gone",
+    "$type": "visibility"
   }
 ]

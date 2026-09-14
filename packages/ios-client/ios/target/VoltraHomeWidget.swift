@@ -298,7 +298,9 @@ public struct VoltraHomeWidgetView: View {
           )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .widgetURL(resolveDeepLinkURL(entry))
+        // Only set a root URL when there is one, so a `widgetURL` native modifier is not
+        // shadowed by `.widgetURL(nil)` (ADR 0005).
+        .voltraIfLet(resolveDeepLinkURL(entry)) { view, url in view.widgetURL(url) }
 
         if showRefreshButton {
           content.overlay(alignment: .topTrailing) {

@@ -14,4 +14,4 @@ export const createAndroidModifier = <Params extends Record<string, unknown>>(
   type: string,
   params?: Params
 ): AndroidModifier & Readonly<Params> =>
-  Object.freeze({ $type: type, ...params }) as unknown as AndroidModifier & Readonly<Params>
+  Object.freeze({ ...params, $type: type }) as unknown as AndroidModifier & Readonly<Params>

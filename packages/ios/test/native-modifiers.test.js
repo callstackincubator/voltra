@@ -73,3 +73,27 @@ test('Dynamic and payload renderers emit the same modifiers prop', () => {
   const activity = renderLiveActivityToJson({ lockScreen: tree })
   assert.equal(activity.ls.p.mods, expectedStack)
 })
+
+test('a modifier-heavy pushed Live Activity stays within the payload budget', async () => {
+  const { renderLiveActivityToString } = require('../build/commonjs/server.js')
+  const row = (label) =>
+    React.createElement(
+      Voltra.HStack,
+      {
+        modifiers: [clipShape('roundedRectangle', { cornerRadius: 8, cornerStyle: 'continuous' }), privacySensitive()],
+      },
+      React.createElement(Voltra.Text, { modifiers: [privacySensitive()] }, label)
+    )
+  const tree = React.createElement(
+    Voltra.VStack,
+    { modifiers: [widgetURL('myapp://portfolio'), clipShape('capsule')] },
+    ...Array.from({ length: 12 }, (_, index) => row(`Row ${index}`))
+  )
+
+  const plain = await renderLiveActivityToString({ lockScreen: React.createElement(Voltra.VStack, null, row('Row')) })
+  const heavy = await renderLiveActivityToString({ lockScreen: tree })
+
+  // Record the cost so a change in encoding shows up in review; the budget check itself throws.
+  assert.ok(heavy.length > plain.length)
+  assert.ok(heavy.length < 1000, `modifier-heavy payload grew to ${heavy.length} base64 bytes`)
+})

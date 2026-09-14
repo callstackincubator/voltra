@@ -12,11 +12,15 @@ import androidx.glance.visibility
  * The built-in catalog. Each entry mirrors one factory in `packages/android/src/modifiers`, and the
  * shared fixture test fails when the two sides drift apart.
  */
-internal val builtInModifierFactories: Map<String, VoltraModifierFactory> =
+internal val builtInModifierDefinitions: Map<String, VoltraModifierDefinition> =
     mapOf(
-        "padding" to ::paddingModifier,
-        "cornerRadius" to ::cornerRadiusModifier,
-        "visibility" to ::visibilityModifier,
+        "padding" to
+            VoltraModifierDefinition(
+                setOf("all", "horizontal", "vertical", "start", "top", "end", "bottom"),
+                ::paddingModifier,
+            ),
+        "cornerRadius" to VoltraModifierDefinition(setOf("radius"), ::cornerRadiusModifier),
+        "visibility" to VoltraModifierDefinition(setOf("visibility"), ::visibilityModifier),
     )
 
 private fun paddingModifier(params: Map<String, Any?>): GlanceModifier {

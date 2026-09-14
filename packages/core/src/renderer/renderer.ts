@@ -391,21 +391,26 @@ function isReactNode(value: unknown): value is ReactNode {
   return false
 }
 
+const isSkippedModifier = (value: unknown) => value === undefined || value === null || value === false
+
 function encodeNativeModifiers(value: unknown): string | undefined {
-  if (value === undefined || value === null) {
+  // `modifiers={condition && [...]}` and `[condition && modifier]` are common in untyped JS; they
+  // mean "no modifier", not a render error.
+  if (isSkippedModifier(value)) {
     return undefined
   }
   if (!Array.isArray(value)) {
     throw new Error('The `modifiers` prop must be an array of native modifiers.')
   }
-  for (const modifier of value) {
-    if (typeof modifier !== 'object' || modifier === null || typeof modifier.$type !== 'string') {
+  const modifiers = value.filter((modifier) => !isSkippedModifier(modifier))
+  for (const modifier of modifiers) {
+    if (typeof modifier !== 'object' || typeof modifier.$type !== 'string') {
       throw new Error(
         'The `modifiers` prop only accepts values created by `Voltra.modifiers` or `VoltraAndroid.modifiers`.'
       )
     }
   }
-  return value.length > 0 ? JSON.stringify(value) : undefined
+  return modifiers.length > 0 ? JSON.stringify(modifiers) : undefined
 }
 
 export function transformProps(

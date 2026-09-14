@@ -61,6 +61,12 @@ class VoltraModifierRegistryTest {
         assertTrue(VoltraModifierRegistry.parseDescriptors(null).isEmpty())
     }
 
+    @Test(expected = VoltraModifierException::class)
+    fun rejectsUnexpectedParameters() {
+        // A parameter renamed on the TypeScript side must not fall back to a default silently.
+        VoltraModifierRegistry.create(VoltraModifierDescriptor("padding", mapOf("value" to 8)))
+    }
+
     @Test
     fun unknownAndInvalidModifiersAreSkipped() {
         val base = GlanceModifier
@@ -70,6 +76,7 @@ class VoltraModifierRegistryTest {
                     VoltraModifierDescriptor("doesNotExist", emptyMap()),
                     VoltraModifierDescriptor("visibility", mapOf("visibility" to "sideways")),
                     VoltraModifierDescriptor("padding", mapOf("all" to "wide")),
+                    VoltraModifierDescriptor("padding", mapOf("value" to 8)),
                 ),
             )
         assertSame(base, result)

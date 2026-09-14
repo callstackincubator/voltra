@@ -55,6 +55,21 @@ final class NativeModifierTests: XCTestCase {
     XCTAssertTrue(VoltraModifierRegistry.parseDescriptors(nil).isEmpty)
   }
 
+  func testUnexpectedParameterThrows() {
+    // A parameter renamed on the TypeScript side must not fall back to a default silently.
+    let descriptor = VoltraModifierDescriptor(type: "clipShape", params: ["shape": "circle", "radius": 4])
+    XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor)) { error in
+      XCTAssertEqual(error as? VoltraModifierError, .unexpectedParameter("radius"))
+    }
+  }
+
+  func testOptionalStringRejectsWrongType() {
+    let descriptor = VoltraModifierDescriptor(type: "clipShape", params: ["shape": "capsule", "cornerStyle": 1])
+    XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor)) { error in
+      XCTAssertEqual(error as? VoltraModifierError, .invalidParameter("cornerStyle"))
+    }
+  }
+
   func testBooleanParameterRejectsNumbers() {
     let descriptor = VoltraModifierDescriptor(type: "privacySensitive", params: ["sensitive": NSNumber(value: 1)])
     XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor))

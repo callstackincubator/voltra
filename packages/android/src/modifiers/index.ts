@@ -18,8 +18,14 @@ export type PaddingValues = {
  *
  * @since Android 7.0
  */
-export const padding = (values: number | PaddingValues) =>
-  createAndroidModifier('padding', typeof values === 'number' ? { all: values } : values)
+export const padding = (values: number | PaddingValues) => {
+  if (typeof values === 'number') {
+    return createAndroidModifier('padding', { all: values })
+  }
+  // Copy only the known edges so extra keys on a caller's object never reach the device.
+  const { all, horizontal, vertical, start, top, end, bottom } = values
+  return createAndroidModifier('padding', { all, horizontal, vertical, start, top, end, bottom })
+}
 
 /**
  * Rounds the corners in dp. Glance ignores it below Android 12 (API 31).

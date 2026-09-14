@@ -28,6 +28,19 @@ test('encodes modifiers as an ordered JSON string next to style', () => {
   })
 })
 
+test('treats false and falsy entries as no modifier', () => {
+  assert.deepStrictEqual(renderVariantToJson(React.createElement(View, { modifiers: false }), componentRegistry), {
+    t: 1,
+  })
+  assert.deepStrictEqual(
+    renderVariantToJson(React.createElement(View, { modifiers: [false, padding, null, undefined] }), componentRegistry),
+    { t: 1, p: { mods: JSON.stringify([padding]) } }
+  )
+  assert.deepStrictEqual(renderVariantToJson(React.createElement(View, { modifiers: [false] }), componentRegistry), {
+    t: 1,
+  })
+})
+
 test('omits empty and missing modifier lists', () => {
   assert.deepStrictEqual(renderVariantToJson(React.createElement(View, { modifiers: [] }), componentRegistry), { t: 1 })
   assert.deepStrictEqual(renderVariantToJson(React.createElement(View, { modifiers: undefined }), componentRegistry), {

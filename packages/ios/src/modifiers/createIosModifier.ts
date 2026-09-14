@@ -13,4 +13,4 @@ export const createIosModifier = <Params extends Record<string, unknown>>(
   type: string,
   params?: Params
 ): IosModifier & Readonly<Params> =>
-  Object.freeze({ $type: type, ...params }) as unknown as IosModifier & Readonly<Params>
+  Object.freeze({ ...params, $type: type }) as unknown as IosModifier & Readonly<Params>

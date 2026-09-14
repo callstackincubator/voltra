@@ -241,9 +241,13 @@ which adds.
 ### Wire format
 
 The renderer's `transformProps` gains a second special case next to `style`:
-when it meets the `modifiers` key it emits a JSON-encoded string under a
-new short name registered in `components.json`. `m` is taken by `margin`;
-the generator's short-name validation picks and checks the new one. A
+when it meets the `modifiers` key it emits a JSON-encoded string under the
+short name `mods`, registered in `components.json` (`m` is taken by
+`margin`). `false`, `null` and `undefined`, for the whole prop or for an
+entry, mean "no modifier", so `modifiers={[stale && visibility('gone')]}`
+from untyped code does not fail a render on the device; an empty list emits
+nothing. Anything else that is not a descriptor is a programming error and
+throws. A
 string survives every existing parsing layer on both platforms without
 changes: the core renderer does not treat it as children, the Kotlin
 decompressor does not rewrite its keys, and both `VoltraElement`
@@ -309,12 +313,16 @@ twice, by hand:
   `Build.VERSION.SDK_INT` as `cornerRadius` does today.
 
 Parity is a test, not a code generator. The TypeScript test suite calls
-every factory with representative arguments and writes the results to a
-checked-in fixture, one per platform, next to the Swift and Kotlin test
-targets. The Swift test in `ios/Tests/VoltraSharedTests` and the Kotlin
-test under `android/src/test` decode every fixture entry through the
-registry and fail on an unknown `$type` or a parameter that does not decode.
-A modifier added on one side without the other fails CI. The wire prop name
+every factory with representative arguments and compares the results with a
+checked-in fixture, one per platform (`ios/Tests/Fixtures` and
+`android/src/test/resources`); `UPDATE_MODIFIER_FIXTURES=1` rewrites it. The
+Swift test in the `VoltraStyleTests` target, which already compiles the
+color parsers the modifiers use, and the Kotlin test under
+`android/src/test` decode every fixture entry through the registry and fail
+on an unknown `$type`, an unexpected parameter name, or a parameter that
+does not decode. They also require the registry and the fixture to name the
+same set of modifiers. A modifier added, or a parameter renamed, on one side
+without the other fails CI. The wire prop name
 `modifiers` gets one short-name entry in `components.json`, the same way
 `style` has one, so both native `props` accessors expand it.
 
@@ -322,21 +330,36 @@ A modifier added on one side without the other fails CI. The wire prop name
 
 `packages/ios-client/ios/ui/Modifiers/` holds:
 
-- `VoltraModifierRegistry`: a string-keyed table of factories
-  `([String: Any]) throws -> any ViewModifier`, populated by a hand-written
-  built-in table. `register(_:factory:)` is internal in the first version.
+- `VoltraModifierRegistry`: a string-keyed table of definitions. A
+  definition is the set of parameter names the TypeScript factory may send
+  plus a factory `([String: Any]) throws -> any ViewModifier`, populated by
+  a hand-written built-in table. A descriptor carrying a parameter outside
+  that set is rejected, so a parameter renamed on one side fails the parity
+  test instead of silently decoding to a default. `register(_:definition:)`
+  is internal in the first version.
 - `VoltraStableModifier`: one `ViewModifier` whose `body` looks up the
   `$type`, decodes the parameters, and applies the result through a
   type-erased wrapper; unknown or failing entries return `content`
-  unchanged. Every link in the chain has this same type, so the erased
-  shape of the view depends only on the list length, and timeline-entry
-  and activity-state diffs still animate when only values change.
-- `View.applyNativeModifiers(_:)`: a `reduce` over the decoded list.
+  unchanged. Every link in the chain has this same outer type, so the
+  shape of the view depends only on the list length. Inside a link the
+  erased type is the concrete modifier: value changes of the same modifier
+  diff and animate between timeline entries and activity states, while a
+  different `$type` at a position, an entry that stops decoding, or a list
+  that becomes empty or non-empty rebuilds the wrapped component.
+- `View.applyNativeModifiers(_:)`: a `reduce` over the decoded list, skipped
+  entirely for an empty list so components without modifiers pay nothing.
 
 The single insertion point is `VoltraElementView` in `shared/VoltraNode.swift`:
-the existing `switch` is wrapped in a `Group` with
-`.applyNativeModifiers(element.nativeModifiers)`. No view under `ui/Views`
-changes, and `applyStyle` keeps its signature.
+the existing `switch` moves into a `@ViewBuilder` property and `body` returns
+it with `.applyNativeModifiers(element.nativeModifiers)`. No view under
+`ui/Views` changes, and `applyStyle` keeps its signature.
+
+The widget and Live Activity roots used to apply `.widgetURL(...)` with a
+possibly `nil` URL on every render. Apple leaves more than one `widgetURL` in
+a hierarchy undefined, so the roots now set it only when a deep link
+resolves, the way the Dynamic Live Activity renderer already did. A
+`widgetURL` modifier is therefore the only one in the tree unless the
+widget also sets a deep link, which the documentation calls out.
 
 The initial iOS catalog is limited to value-only modifiers that matter in
 widgets and Live Activities: `widgetURL`, `containerBackground`,
@@ -356,13 +379,19 @@ wait for accessory families.
 
 `packages/android-client/android/src/main/java/voltra/modifiers/` holds:
 
-- `VoltraModifierRegistry`: a string-keyed table of
-  `@Composable (Map<String, Any?>) -> GlanceModifier` factories, populated
-  by a hand-written table; `register` is internal in the first version. Factories are
-  composable so they can read `LocalContext`, `GlanceTheme` and build
-  actions.
+- `VoltraModifierRegistry`: a string-keyed table of definitions, each the
+  set of accepted parameter names plus a plain
+  `(Map<String, Any?>) -> GlanceModifier` factory, populated by a
+  hand-written table; `register` is internal in the first version.
+  Factories are not `@Composable`: nothing in the catalog needs
+  composition locals (day/night colors are `ColorProvider(day, night)`),
+  and plain functions can be unit-tested without a Glance composition
+  harness, which this module does not have. A modifier that needs
+  `LocalContext` later can resolve it at the insertion point, which is
+  composable, and pass it in.
 - `GlanceModifier.applyNativeModifiers(descriptors)`: a fold that calls
-  `then` on each factory result and logs and skips unknown types.
+  `then` on each factory result and logs and skips unknown types, unexpected
+  parameters, and any exception a factory throws.
 
 The single insertion point is `resolveAndApplyStyle` in
 `glance/StyleUtils.kt`, after `applyStyle`. `applyClickableIfNeeded` is
@@ -409,9 +438,14 @@ to them.
    to end (`widgetURL`, `privacySensitive`, `clipShape`; `padding`,
    `cornerRadius`, `visibility`). Tests: renderer output in
    both the single-root and the multi-root renderer, a payload-size
-   snapshot for a modifier-heavy Live Activity so the cost is visible, the
-   fixture-based parity tests, Swift registry unit tests, Kotlin unit and
-   Robolectric render tests through `RemoteViews.apply` as ADR 0004 does.
+   test for a modifier-heavy pushed Live Activity so the cost is visible,
+   the fixture-based parity tests, Swift registry unit tests, and Kotlin
+   Robolectric tests of the resulting `GlanceModifier` chain across API
+   levels. The element-to-view insertion points on both platforms are not
+   reachable from the existing SwiftPM and JVM test targets (the Swift
+   views compile only in the pod, and the module has no Glance composition
+   harness), so they are verified end to end on a simulator and an emulator
+   with a playground screen in the example app.
 2. **Catalog.** Write the lists above on both sides, gate availability,
    write both website pages, and add example Dynamic Widgets using them.
 

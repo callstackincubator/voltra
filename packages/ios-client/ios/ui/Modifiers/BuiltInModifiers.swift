@@ -3,16 +3,16 @@ import WidgetKit
 
 /// The built-in catalog. Each entry mirrors one factory in `packages/ios/src/modifiers`, and the
 /// shared fixture test fails when the two sides drift apart.
-let builtInModifierFactories: [String: VoltraModifierRegistry.Factory] = [
-  "widgetURL": { params in
+let builtInModifierDefinitions: [String: VoltraModifierDefinition] = [
+  "widgetURL": VoltraModifierDefinition(parameters: ["url"]) { params in
     let string = try params.requiredString("url")
     guard let url = URL(string: string) else { throw VoltraModifierError.invalidParameter("url") }
     return WidgetURLModifier(url: url)
   },
-  "privacySensitive": { params in
+  "privacySensitive": VoltraModifierDefinition(parameters: ["sensitive"]) { params in
     try PrivacySensitiveModifier(sensitive: params.optionalBool("sensitive") ?? true)
   },
-  "clipShape": { params in
+  "clipShape": VoltraModifierDefinition(parameters: ["shape", "cornerRadius", "cornerStyle"]) { params in
     try ClipShapeModifier(params)
   },
 ]
@@ -48,7 +48,7 @@ struct ClipShapeModifier: ViewModifier {
     }
     self.shape = shape
     cornerRadius = try params.optionalNumber("cornerRadius") ?? 0
-    switch params["cornerStyle"] as? String {
+    switch try params.optionalString("cornerStyle") {
     case nil, "circular": cornerStyle = .circular
     case "continuous": cornerStyle = .continuous
     default: throw VoltraModifierError.invalidParameter("cornerStyle")

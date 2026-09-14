@@ -19,61 +19,71 @@ class VoltraModifierException(
     message: String,
 ) : IllegalArgumentException(message)
 
-typealias VoltraModifierFactory = (Map<String, Any?>) -> GlanceModifier
+/**
+ * A native modifier: the parameter names its TypeScript factory may send, and how to build it.
+ * Declaring the names makes a renamed parameter fail the parity test instead of silently falling
+ * back to a default.
+ */
+class VoltraModifierDefinition(
+    val parameters: Set<String>,
+    val make: (Map<String, Any?>) -> GlanceModifier,
+)
 
 /**
- * String-keyed table of native modifier factories. Unknown types and parameters that do not decode
- * are logged and skipped, so a bad descriptor never breaks the widget.
+ * String-keyed table of native modifiers. Unknown types and parameters that do not decode are
+ * logged and skipped, so a bad descriptor never breaks the widget.
  */
 object VoltraModifierRegistry {
     private const val TAG = "VoltraModifiers"
 
-    private val factories: MutableMap<String, VoltraModifierFactory> = builtInModifierFactories.toMutableMap()
+    private val definitions: MutableMap<String, VoltraModifierDefinition> = builtInModifierDefinitions.toMutableMap()
 
     val registeredTypes: Set<String>
-        get() = factories.keys.toSet()
+        get() = definitions.keys.toSet()
 
     /** Not public yet: user-registered modifiers are future work (ADR 0005). */
     internal fun register(
         type: String,
-        factory: VoltraModifierFactory,
+        definition: VoltraModifierDefinition,
     ) {
-        factories[type] = factory
+        definitions[type] = definition
     }
 
     /** Decodes the JSON-encoded `modifiers` prop. Entries without a string `$type` are dropped. */
     fun parseDescriptors(json: String?): List<VoltraModifierDescriptor> {
         if (json.isNullOrEmpty()) return emptyList()
-        val array =
-            try {
-                Json.parseToJsonElement(json) as? JsonArray
-            } catch (error: Exception) {
-                warn("Ignoring modifiers that are not valid JSON", error)
-                null
-            } ?: return emptyList()
-
-        return array.mapNotNull { entry ->
-            val map = (entry as? JsonObject)?.toDynamicObject() ?: return@mapNotNull null
-            val type = map["\$type"] as? String ?: return@mapNotNull null
-            VoltraModifierDescriptor(type, map - "\$type")
+        return try {
+            val array = Json.parseToJsonElement(json) as? JsonArray ?: return emptyList()
+            array.mapNotNull { entry ->
+                val map = (entry as? JsonObject)?.toDynamicObject() ?: return@mapNotNull null
+                val type = map["\$type"] as? String ?: return@mapNotNull null
+                VoltraModifierDescriptor(type, map - "\$type")
+            }
+        } catch (error: Exception) {
+            warn("Ignoring modifiers that are not valid JSON", error)
+            emptyList()
         }
     }
 
     /**
-     * Builds the modifier for a descriptor. Throws [VoltraModifierException] for an unknown type or
-     * a parameter that does not decode; [applyNativeModifiers] turns that into a logged no-op.
+     * Builds the modifier for a descriptor. Throws [VoltraModifierException] for an unknown type, an
+     * unexpected parameter, or a parameter that does not decode; [applyNativeModifiers] turns any
+     * failure into a logged no-op.
      */
     fun create(descriptor: VoltraModifierDescriptor): GlanceModifier {
-        val factory =
-            factories[descriptor.type]
+        val definition =
+            definitions[descriptor.type]
                 ?: throw VoltraModifierException("Unknown modifier ${descriptor.type}")
-        return factory(descriptor.params)
+        descriptor.params.keys.sorted().firstOrNull { it !in definition.parameters }?.let {
+            throw VoltraModifierException("Unexpected parameter $it")
+        }
+        return definition.make(descriptor.params)
     }
 
     internal fun createOrNull(descriptor: VoltraModifierDescriptor): GlanceModifier? =
         try {
             create(descriptor)
-        } catch (error: IllegalArgumentException) {
+        } catch (error: Exception) {
             warn("Ignoring modifier ${descriptor.type}", error)
             null
         }
