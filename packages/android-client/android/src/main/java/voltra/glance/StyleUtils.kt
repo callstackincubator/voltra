@@ -5,6 +5,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import voltra.glance.renderers.getOnClickAction
+import voltra.modifiers.applyNativeModifiers
 import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
 import voltra.styling.StyleConverter
@@ -28,13 +29,14 @@ fun resolveAndApplyStyle(
         } else {
             null
         }
-    val modifier =
+    val styledModifier =
         if (compositeStyle != null) {
             GlanceModifier.applyStyle(compositeStyle, renderContext.widgetSize)
         } else {
             GlanceModifier
         }
-    return ResolvedStyle(modifier, compositeStyle)
+    // Native modifiers go after style, so Glance keeps their value where both set the same thing.
+    return ResolvedStyle(styledModifier.applyNativeModifiers(props), compositeStyle)
 }
 
 /**

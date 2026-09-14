@@ -88,13 +88,15 @@ let package = Package(
         "Style/BackgroundValue.swift",
         "Style/JSColorParser.swift",
         "Style/JSGradientParser.swift",
+        "Modifiers/VoltraModifierRegistry.swift",
+        "Modifiers/BuiltInModifiers.swift",
       ]
     ),
     .testTarget(
       name: "VoltraStyleTests",
       dependencies: ["VoltraStyleCore"],
       path: "tests",
-      sources: ["JSGradientParserTests.swift"]
+      sources: ["JSGradientParserTests.swift", "NativeModifierTests.swift"]
     ),
   ]
 )

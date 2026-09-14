@@ -60,13 +60,21 @@ export default function AndroidClientDemoWidget(
 
   return (
     <VoltraAndroid.Column
-      style={StyleSheet.flatten([styles.container, { backgroundColor: bg }])}
+      style={styles.container}
       verticalAlignment="center-vertically"
+      modifiers={[
+        VoltraAndroid.modifiers.appWidgetBackground(),
+        VoltraAndroid.modifiers.background(bg),
+        VoltraAndroid.modifiers.semantics({ contentDescription: `Dynamic Widget demo, ${unreadCount} unread` }),
+      ]}
     >
       <VoltraAndroid.Text style={StyleSheet.flatten([styles.title, { color: fg }])}>
         Dynamic Widget demo
       </VoltraAndroid.Text>
-      <VoltraAndroid.Text style={StyleSheet.flatten([styles.marker, { color: accent }])}>
+      <VoltraAndroid.Text
+        style={StyleSheet.flatten([styles.marker, { color: bg, backgroundColor: accent }])}
+        modifiers={[VoltraAndroid.modifiers.padding({ horizontal: 8 }), VoltraAndroid.modifiers.cornerRadius(8)]}
+      >
         {hotReloadMarker}
       </VoltraAndroid.Text>
       <VoltraAndroid.Spacer style={{ height: 6 }} />
