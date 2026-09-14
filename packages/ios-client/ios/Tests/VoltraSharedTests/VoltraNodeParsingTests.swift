@@ -33,7 +33,7 @@ final class VoltraNodeParsingTests: XCTestCase {
   // MARK: - Structure
 
   func testParsesComponentTypeIdAndIdentifier() throws {
-    let text = try rootElement(#"{"t":0,"i":"headline","c":"Hello"}"#)
+    let text = try rootElement(##"{"t":0,"i":"headline","c":"Hello"}"##)
 
     XCTAssertEqual(text.type, "Text")
     XCTAssertEqual(text.id, "headline")
@@ -41,11 +41,11 @@ final class VoltraNodeParsingTests: XCTestCase {
   }
 
   func testReturnsEmptyNodeForUnknownComponentTypeId() throws {
-    XCTAssertEqual(try parse(#"{"t":9999}"#), .empty)
+    XCTAssertEqual(try parse(##"{"t":9999}"##), .empty)
   }
 
   func testExpandsShortPropNamesToFullNames() throws {
-    let text = try rootElement(#"{"t":0,"p":{"mt":12}}"#)
+    let text = try rootElement(##"{"t":0,"p":{"mt":12}}"##)
 
     XCTAssertEqual(text.props?["marginTop"]?.intValue, 12)
   }
@@ -53,28 +53,28 @@ final class VoltraNodeParsingTests: XCTestCase {
   // MARK: - Stylesheet resolution
 
   func testResolvesStylesheetIndexIntoExpandedStyle() throws {
-    let text = try rootElement(#"{"t":0,"c":"42","p":{"s":1},"s":[{"fs":14},{"fs":32,"c":"#ff6d39"}]}"#)
+    let text = try rootElement(##"{"t":0,"c":"42","p":{"s":1},"s":[{"fs":14},{"fs":32,"c":"#ff6d39"}]}"##)
 
     XCTAssertEqual(text.style?["fontSize"]?.intValue, 32)
     XCTAssertEqual(text.style?["color"]?.stringValue, "#ff6d39")
   }
 
   func testResolvesInlineStyleObject() throws {
-    let text = try rootElement(#"{"t":0,"c":"42","p":{"s":{"fs":32}}}"#)
+    let text = try rootElement(##"{"t":0,"c":"42","p":{"s":{"fs":32}}}"##)
 
     XCTAssertEqual(text.style?["fontSize"]?.intValue, 32)
   }
 
   func testReturnsNilStyleForOutOfRangeStylesheetIndex() throws {
-    let text = try rootElement(#"{"t":0,"c":"42","p":{"s":7},"s":[{"fs":14}]}"#)
+    let text = try rootElement(##"{"t":0,"c":"42","p":{"s":7},"s":[{"fs":14}]}"##)
 
     XCTAssertNil(text.style)
   }
 
   func testResolvesStylesheetIndicesForNestedChildren() throws {
-    let stack = try rootElement(#"""
+    let stack = try rootElement(##"""
     {"t":11,"c":[{"t":0,"c":"42","p":{"s":0}},{"t":0,"c":"label","p":{"s":1}}],"p":{"s":2},"s":[{"fs":32,"c":"#ff6d39"},{"fs":14},{"fl":1}]}
-    """#)
+    """##)
 
     let children = try arrayChildren(stack)
     XCTAssertEqual(stack.style?["flex"]?.intValue, 1)
@@ -85,7 +85,7 @@ final class VoltraNodeParsingTests: XCTestCase {
   // MARK: - Shared element resolution
 
   func testResolvesSharedElementReferenceInChildren() throws {
-    let stack = try rootElement(#"{"t":11,"c":[{"$r":0},{"$r":0}],"e":[{"t":0,"c":"Uptime"}]}"#)
+    let stack = try rootElement(##"{"t":11,"c":[{"$r":0},{"$r":0}],"e":[{"t":0,"c":"Uptime"}]}"##)
 
     let children = try arrayChildren(stack)
     XCTAssertEqual(children.count, 2)
@@ -95,9 +95,9 @@ final class VoltraNodeParsingTests: XCTestCase {
   }
 
   func testResolvesStylesheetIndexInsideSharedElement() throws {
-    let stack = try rootElement(#"""
+    let stack = try rootElement(##"""
     {"t":11,"c":[{"$r":0}],"e":[{"t":0,"c":"Uptime","p":{"s":0}}],"s":[{"fs":10,"c":"#ff6d39"}]}
-    """#)
+    """##)
 
     let shared = try asElement(arrayChildren(stack)[0])
     XCTAssertEqual(shared.style?["color"]?.stringValue, "#ff6d39")
@@ -106,9 +106,9 @@ final class VoltraNodeParsingTests: XCTestCase {
   // MARK: - Component props
 
   func testResolvesElementValuedPropIntoNode() throws {
-    let gauge = try rootElement(#"""
+    let gauge = try rootElement(##"""
     {"t":8,"p":{"v":0.5,"lbl":{"t":0,"c":"Uptime","p":{"s":0}}},"s":[{"fs":10,"c":"#ff6d39"}]}
-    """#)
+    """##)
 
     let label = try asElement(gauge.componentProp("label"))
     XCTAssertEqual(label.children, .text("Uptime"))
@@ -116,13 +116,13 @@ final class VoltraNodeParsingTests: XCTestCase {
   }
 
   func testTreatsScalarPropAsTextNode() throws {
-    let gauge = try rootElement(#"{"t":8,"p":{"lbl":"Uptime"}}"#)
+    let gauge = try rootElement(##"{"t":8,"p":{"lbl":"Uptime"}}"##)
 
     XCTAssertEqual(gauge.componentProp("label"), .text("Uptime"))
   }
 
   func testReturnsEmptyNodeForAbsentComponentProp() throws {
-    let gauge = try rootElement(#"{"t":8,"p":{"v":0.5}}"#)
+    let gauge = try rootElement(##"{"t":8,"p":{"v":0.5}}"##)
 
     XCTAssertEqual(gauge.componentProp("label"), .empty)
   }

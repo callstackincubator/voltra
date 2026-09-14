@@ -1,10 +1,10 @@
 import Foundation
 import SwiftUI
 
-// The AST itself lives in `shared/` and knows nothing about SwiftUI. Rendering is attached
-// here so `shared/` stays free of any dependency on `ui/` and can be compiled — and tested —
-// on its own. Both directories are built into a single module by the podspecs, so call sites
-// keep using a `VoltraNode` directly as a view.
+/// The AST itself lives in `shared/` and knows nothing about SwiftUI. Rendering is attached
+/// here so `shared/` stays free of any dependency on `ui/` and can be compiled — and tested —
+/// on its own. Both directories are built into a single module by the podspecs, so call sites
+/// keep using a `VoltraNode` directly as a view.
 extension VoltraNode: View {
   public var body: some View {
     switch self {
