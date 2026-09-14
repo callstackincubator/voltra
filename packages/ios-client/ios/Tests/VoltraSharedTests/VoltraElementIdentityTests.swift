@@ -78,7 +78,8 @@ final class VoltraElementIdentityTests: XCTestCase {
     {"t":11,"c":[{"t":8,"p":{"v":0.5,"lbl":{"$r":0}}},{"t":8,"p":{"v":0.5,"cvl":{"$r":0}}}],"e":[{"t":0,"c":"B"}]}
     """##)
 
-    XCTAssertEqual(try child(first, 0).componentProp("label"), .element(try rootElement(##"{"t":0,"c":"A"}"##)))
+    let resolvedLabel = try rootElement(##"{"t":0,"c":"A"}"##)
+    XCTAssertEqual(try child(first, 0).componentProp("label"), .element(resolvedLabel))
     XCTAssertNotEqual(try child(first, 0), try child(second, 0))
     XCTAssertNotEqual(first, second)
   }
