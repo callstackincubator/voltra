@@ -47,6 +47,7 @@ let package = Package(
         // The settings stack's pure half. The Keychain-, Bundle- and URLSession-backed files in
         // this folder are compiled only by the podspec, which ships the whole tree.
         "WidgetServer/WidgetScope.swift",
+        "WidgetServer/WidgetCanonicalConfiguration.swift",
         "WidgetServer/WidgetServerUpdateSettings.swift",
         "WidgetServer/WidgetServerSettingsResolver.swift",
         "WidgetServer/WidgetServerSettingsCodec.swift",

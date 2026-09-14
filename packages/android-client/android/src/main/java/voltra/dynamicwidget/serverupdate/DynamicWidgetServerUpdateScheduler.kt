@@ -29,6 +29,7 @@ object DynamicWidgetServerUpdateScheduler {
     internal const val WORK_NAME_PREFIX = "voltra_dynamic_widget_server_"
     internal const val WORK_TAG = "voltra_dynamic_widget_server_update"
     internal const val KEY_WIDGET_ID = "widgetId"
+    internal const val KEY_INSTANCE_KEY = "instanceKey"
 
     private const val BACKOFF_SECONDS = 30L
 
@@ -58,6 +59,39 @@ object DynamicWidgetServerUpdateScheduler {
         if (runImmediately) {
             requestImmediateUpdate(context, scope)
         }
+    }
+
+    /**
+     * Recomputes the set of scopes to schedule for [widgetId] from its current placements (ADR
+     * 0007): one scope per distinct merged configuration. New keys are scheduled (and run
+     * immediately, since their placement has never fetched); keys with no placement left are
+     * cancelled. Called on `onUpdate`, `onDeleted`, an instance configuration write or clear, a
+     * type-level configuration write, and a settings change — every event that can move a
+     * placement between configurations.
+     *
+     * A widget with no configuration parameters always resolves to the single [WidgetScope.Widget]
+     * scope, so this reduces to today's one-scope-per-widget behaviour for it.
+     */
+    suspend fun recompute(
+        context: Context,
+        widgetId: String,
+    ) {
+        val currentScopes = DynamicWidgetInstanceScopes.scopes(context, widgetId)
+        val currentStorageKeys = currentScopes.map { it.storageKey }.toSet()
+        val previousStorageKeys = DynamicWidgetScheduleIndex.storageKeys(context, widgetId)
+
+        // A release before ADR 0007 scheduled every widget under its plain widget scope and kept no
+        // index, so that name is treated as always previously scheduled: it is cancelled here
+        // unless the widget still resolves to the widget scope (no configuration parameters).
+        val legacyStorageKey = WidgetScope.of(widgetId).storageKey
+        val orphaned = (previousStorageKeys + legacyStorageKey) - currentStorageKeys
+        orphaned.forEach { storageKey -> cancelStorageKey(context, storageKey) }
+
+        currentScopes.forEach { scope ->
+            schedule(context, scope, runImmediately = scope.storageKey !in previousStorageKeys)
+        }
+
+        DynamicWidgetScheduleIndex.put(context, widgetId, currentStorageKeys)
     }
 
     /**
@@ -149,20 +183,91 @@ object DynamicWidgetServerUpdateScheduler {
     fun cancel(
         context: Context,
         scope: WidgetScope,
+    ) = cancelStorageKey(context, scope.storageKey)
+
+    /** Cancels by raw storage key, for a scope [recompute] found no placement for any more. */
+    private fun cancelStorageKey(
+        context: Context,
+        storageKey: String,
     ) {
-        WorkManager.getInstance(context).cancelUniqueWork(workName(scope))
-        WorkManager.getInstance(context).cancelUniqueWork(oneTimeWorkName(scope))
+        WorkManager.getInstance(context).cancelUniqueWork(workNameForStorageKey(storageKey))
+        WorkManager.getInstance(context).cancelUniqueWork(oneTimeWorkNameForStorageKey(storageKey))
     }
 
-    internal fun workName(scope: WidgetScope): String = "$WORK_NAME_PREFIX${scope.storageKey}"
+    /**
+     * Cancels every scope currently scheduled for [widgetId], including ones no longer derivable
+     * from its placements. Used when a widget is removed entirely (`onDeleted` with none left) and
+     * by logout, neither of which can recompute a scope set from placements that are already gone.
+     */
+    suspend fun cancelAll(
+        context: Context,
+        widgetId: String,
+    ) {
+        DynamicWidgetScheduleIndex.storageKeys(context, widgetId).forEach { storageKey ->
+            cancelStorageKey(context, storageKey)
+        }
+        DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
+    }
 
-    private fun oneTimeWorkName(scope: WidgetScope): String = "$WORK_NAME_PREFIX${scope.storageKey}_once"
+    internal fun workName(scope: WidgetScope): String = workNameForStorageKey(scope.storageKey)
 
-    private fun inputData(scope: WidgetScope): Data = Data.Builder().putString(KEY_WIDGET_ID, scope.widgetId).build()
+    private fun oneTimeWorkName(scope: WidgetScope): String = oneTimeWorkNameForStorageKey(scope.storageKey)
+
+    private fun workNameForStorageKey(storageKey: String): String = "$WORK_NAME_PREFIX$storageKey"
+
+    private fun oneTimeWorkNameForStorageKey(storageKey: String): String = "$WORK_NAME_PREFIX${storageKey}_once"
+
+    private fun inputData(scope: WidgetScope): Data =
+        Data
+            .Builder()
+            .putString(KEY_WIDGET_ID, scope.widgetId)
+            .apply {
+                if (scope is WidgetScope.Instance) {
+                    putString(KEY_INSTANCE_KEY, scope.key)
+                }
+            }.build()
 
     private fun networkConstraints(): Constraints =
         Constraints
             .Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
+}
+
+/**
+ * Remembers which [WidgetScope.storageKey]s are currently scheduled for each widget id, so
+ * [DynamicWidgetServerUpdateScheduler.recompute] can tell which keys are new (schedule + run now)
+ * and which have no placement left (cancel) without asking WorkManager to enumerate its own unique
+ * work names, which it has no API for.
+ */
+private object DynamicWidgetScheduleIndex {
+    private const val PREFERENCES_NAME = "voltra_dynamic_widget_server_schedule"
+    private const val KEY_PREFIX = "scheduled_keys."
+
+    fun storageKeys(
+        context: Context,
+        widgetId: String,
+    ): Set<String> {
+        val raw = preferences(context).getStringSet(KEY_PREFIX + widgetId, null)
+        return raw?.toSet() ?: emptySet()
+    }
+
+    fun put(
+        context: Context,
+        widgetId: String,
+        storageKeys: Set<String>,
+    ) {
+        preferences(context)
+            .edit()
+            .apply {
+                if (storageKeys.isEmpty()) {
+                    remove(KEY_PREFIX + widgetId)
+                } else {
+                    putStringSet(KEY_PREFIX + widgetId, storageKeys)
+                }
+            }.apply()
+    }
+
+    private fun preferences(context: Context) =
+        context.applicationContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 }

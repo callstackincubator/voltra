@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import voltra.models.VoltraNode
+import voltra.widget.server.WidgetScope
 
 /**
  * Renders a Dynamic Widget once, outside any composition, to find out whether some props render at
@@ -13,13 +14,22 @@ import voltra.models.VoltraNode
  * bundle evaluation and env construction the on-screen render uses, and neither is public. The
  * server-update engine calls it before committing fetched props.
  *
+ * [configuration] is the trial's own responsibility to supply (ADR 0007): for an instance scope it
+ * is that instance's merged configuration, not the type-level values, so a server response is
+ * judged against the environment it will actually be drawn in. Callers with no instance of their
+ * own pass the type-level configuration, which is what a plain [WidgetScope.Widget] trial render
+ * wants — a suspend call can't be a default parameter value, so there is no implicit fallback here.
+ *
  * @return the rendered node, or null when the bundle is not available or the render failed.
  */
 internal suspend fun renderDynamicWidgetForTrial(
     context: Context,
-    dynamicWidgetId: String,
+    scope: WidgetScope,
     dynamicWidgetPropsJson: String,
+    configuration: Map<String, String>,
 ): VoltraNode? {
+    val dynamicWidgetId = scope.widgetId
+
     if (!VoltraClientGlanceWidget.ensureBundleEvaluated(context, dynamicWidgetId)) {
         // No bundle means every render fails, including the one already on screen. Rejecting the
         // props here would be blaming them for something they did not cause, and the widget falls
@@ -32,7 +42,7 @@ internal suspend fun renderDynamicWidgetForTrial(
             context = context,
             widgetId = dynamicWidgetId,
             size = trialSize(context, dynamicWidgetId),
-            configuration = VoltraConfigurationStore(context).get(dynamicWidgetId),
+            configuration = configuration,
         )
 
     return DynamicWidgetRenderCoordinator().renderDynamicWidget(

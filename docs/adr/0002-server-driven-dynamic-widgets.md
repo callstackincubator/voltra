@@ -496,6 +496,9 @@ What is rendered, in order:
 
 ### Instance-ready
 
+Superseded by [ADR 0007](0007-per-instance-server-fetches.md), which
+implements the instance layer described here.
+
 There is no `instanceId` in the codebase today. The open Android PR
 [#218](https://github.com/callstackincubator/voltra/pull/218) scopes
 `env.configuration` per placement using the system `appWidgetId`, Android

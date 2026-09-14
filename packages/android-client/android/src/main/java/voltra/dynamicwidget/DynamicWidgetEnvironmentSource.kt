@@ -2,6 +2,7 @@ package voltra.dynamicwidget
 
 import android.content.Context
 import androidx.glance.action.Action
+import voltra.widget.server.WidgetScope
 
 /**
  * Extra `env` fields contributed by whatever is driving a Dynamic Widget's props.
@@ -11,13 +12,16 @@ import androidx.glance.action.Action
  * contributes `env.serverUpdate`, so the widget can say "updated 3 min ago" or "offline" without
  * the server having to tell it.
  *
+ * [scope] carries the instance key (ADR 0007): `env.serverUpdate` for a placement comes from its
+ * own instance's status record, not the widget's as a whole.
+ *
  * Values are written straight into the env JSON, so they must be things `org.json` understands:
  * a `JSONObject`, a `String`, a number, or a boolean.
  */
 interface DynamicWidgetEnvironmentSource {
     fun environmentFields(
         context: Context,
-        dynamicWidgetId: String,
+        scope: WidgetScope,
     ): Map<String, Any>
 
     /**

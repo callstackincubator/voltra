@@ -18,9 +18,9 @@ import voltra.widget.server.WidgetScope
 internal class DynamicWidgetServerEnvironmentSource : DynamicWidgetEnvironmentSource {
     override fun environmentFields(
         context: Context,
-        dynamicWidgetId: String,
+        scope: WidgetScope,
     ): Map<String, Any> {
-        val status = DynamicWidgetServerPropsStore(context).status(WidgetScope.of(dynamicWidgetId))
+        val status = DynamicWidgetServerPropsStore(context).status(scope)
 
         return mapOf("serverUpdate" to status.toJson())
     }

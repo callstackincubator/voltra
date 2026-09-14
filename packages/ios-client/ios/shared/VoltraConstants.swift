@@ -32,6 +32,18 @@ public enum VoltraStorageKeys {
     "Voltra_DynamicWidget_Props_v1_\(dynamicWidgetId)"
   }
 
+  /// One placement's own props slot (ADR 0007), keyed by `WidgetScope.Instance.storageKey`
+  /// (`<widgetId>#<key>`).
+  public static func dynamicWidgetInstancePropsV1(_ storageKey: String) -> String {
+    "Voltra_DynamicWidget_Props_v1_\(storageKey)"
+  }
+
+  /// The set of instance keys `dynamicWidgetId` has ever committed props into, so a widget-level
+  /// clear (or logout) can drop every instance slot without enumerating placements.
+  public static func dynamicWidgetPropsInstanceIndexV1(_ dynamicWidgetId: String) -> String {
+    "Voltra_DynamicWidget_Props_Instances_v1_\(dynamicWidgetId)"
+  }
+
   // MARK: - Prefixes / kind identifiers
 
   public static let widgetKindPrefix = "Voltra_Widget_"

@@ -29,6 +29,7 @@ import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.dynamicwidget.VoltraConfigurationStore
+import voltra.dynamicwidget.serverupdate.DynamicWidgetServerUpdateScheduler
 import voltra.dynamicwidget.triggerDynamicWidgetConfigurationGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetInstanceConfigurationGlanceUpdate
@@ -385,6 +386,9 @@ class VoltraModule(
                 // Advances each placement's configuration revision before updating it, so a live
                 // Glance session re-reads the store instead of redrawing its captured values.
                 triggerDynamicWidgetConfigurationGlanceUpdate(reactApplicationContext, widgetId)
+                // A type-level write can move any placement without its own value for `key` to a
+                // different instance (ADR 0007), so the scope set is recomputed from placements.
+                DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
                 promise.resolve(null)
             } catch (e: Exception) {
                 Log.e(TAG, "setWidgetConfiguration failed", e)
@@ -425,6 +429,8 @@ class VoltraModule(
                 try {
                     VoltraConfigurationStore(reactApplicationContext)
                         .setInstanceValues(widgetId, instanceId, values)
+                    // The placement may have moved to a different instance scope (ADR 0007).
+                    DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
                     true
                 } catch (e: Exception) {
                     Log.e(TAG, "setWidgetInstanceConfiguration failed", e)
@@ -512,6 +518,9 @@ class VoltraModule(
             runBlocking {
                 try {
                     VoltraConfigurationStore(reactApplicationContext).clearInstance(widgetId, instanceId)
+                    // The placement fell back to the widget-type configuration, possibly a
+                    // different instance scope (ADR 0007).
+                    DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
                     true
                 } catch (e: Exception) {
                     Log.e(TAG, "clearWidgetInstanceConfiguration failed", e)

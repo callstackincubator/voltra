@@ -26,3 +26,4 @@ Status values:
 | [0003](0003-widget-module-resolution.md)              | Widget module resolution                                   | Accepted |
 | [0004](0004-android-arc-progress-indicator.md)        | Bitmap-rendered arc progress indicator for Android widgets | Accepted |
 | [0006](0006-android-widget-instance-configuration.md) | Per-instance configuration for Android Dynamic Widgets     | Accepted |
+| [0007](0007-per-instance-server-fetches.md)           | Per-instance server fetches for Dynamic Widgets            | Accepted |

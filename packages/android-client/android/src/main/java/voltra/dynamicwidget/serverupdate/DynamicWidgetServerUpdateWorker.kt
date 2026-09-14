@@ -7,9 +7,12 @@ import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import voltra.dynamicwidget.DynamicWidgetPropsStore
+import voltra.dynamicwidget.VoltraConfigurationStore
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
+import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdateForPlacements
 import voltra.widget.VoltraWidgetKindResolver
 import voltra.widget.server.VoltraWidgetServer
+import voltra.widget.server.WidgetCanonicalConfiguration
 import voltra.widget.server.WidgetScope
 import voltra.widget.server.WidgetServerEtagStore
 import voltra.widget.server.WidgetServerFetchResult
@@ -31,9 +34,21 @@ class DynamicWidgetServerUpdateWorker(
         val widgetId =
             inputData.getString(DynamicWidgetServerUpdateScheduler.KEY_WIDGET_ID)
                 ?: return Result.failure()
+        val instanceKey = inputData.getString(DynamicWidgetServerUpdateScheduler.KEY_INSTANCE_KEY)
 
-        val scope = WidgetScope.of(widgetId)
-        val result = runner(applicationContext).run(scope)
+        val scope: WidgetScope = instanceKey?.let { WidgetScope.Instance(widgetId, it) } ?: WidgetScope.Widget(widgetId)
+        // The instance's own merged configuration (ADR 0007): read once here so the request, the
+        // trial render and the widget-matching re-render all agree on the same map for this run.
+        val configuration = DynamicWidgetInstanceScopes.configurationForKey(applicationContext, widgetId, instanceKey)
+        if (instanceKey != null && configuration.isEmpty()) {
+            // No placement renders this configuration any more: the recompute that cancels this
+            // work may still be pending, or raced with this run. Fetching would commit props nobody
+            // reads, so the work cancels itself instead.
+            Log.d(TAG, "No placement of '$widgetId' has instance '$instanceKey'; cancelling its server updates")
+            DynamicWidgetServerUpdateScheduler.cancel(applicationContext, scope)
+            return Result.success()
+        }
+        val result = runner(applicationContext, configuration).run(scope)
 
         return when (result.outcome) {
             DynamicWidgetServerUpdateOutcome.Committed -> {
@@ -82,10 +97,14 @@ class DynamicWidgetServerUpdateWorker(
         }
     }
 
-    private fun runner(context: Context): DynamicWidgetServerUpdateRunner {
+    private fun runner(
+        context: Context,
+        configuration: Map<String, String>,
+    ): DynamicWidgetServerUpdateRunner {
         val resolver = VoltraWidgetServer.resolver(context)
         val etags = WidgetServerEtagStore(context)
         val statuses = DynamicWidgetServerPropsStore(context)
+        val propsStore = DynamicWidgetPropsStore(context)
 
         return DynamicWidgetServerUpdateRunner(
             resolveKind = { id -> VoltraWidgetKindResolver.resolve(context, id) },
@@ -94,7 +113,8 @@ class DynamicWidgetServerUpdateWorker(
             readEtag = { widgetScope, url -> etags.etag(widgetScope, url) },
             fetch = { widgetScope, settings, etag ->
                 withContext(Dispatchers.IO) {
-                    val request = WidgetServerRequestBuilder.build(context, widgetScope, settings, etag)
+                    val request =
+                        WidgetServerRequestBuilder.build(context, widgetScope, settings, etag, configuration)
 
                     if (request == null) {
                         // The runner checks shouldFetch before calling, so this only happens if the
@@ -107,12 +127,34 @@ class DynamicWidgetServerUpdateWorker(
                 }
             },
             writeEtag = { widgetScope, url, etag -> etags.put(widgetScope, url, etag) },
-            trialRender = { widgetScope, props -> DynamicWidgetTrialRender.canRender(context, widgetScope, props) },
-            commitProps = DynamicWidgetPropsStore(context),
+            trialRender = { widgetScope, props ->
+                DynamicWidgetTrialRender.canRender(context, widgetScope, props, configuration)
+            },
+            commitProps = { widgetScope, json ->
+                when (widgetScope) {
+                    is WidgetScope.Widget -> propsStore.persistDynamicWidgetProps(widgetScope.widgetId, json)
+                    is WidgetScope.Instance -> propsStore.persistInstanceDynamicWidgetProps(widgetScope, json)
+                }
+            },
             statusStore = statuses,
             notifyWidget = { widgetScope ->
                 try {
-                    triggerDynamicWidgetGlanceUpdate(context, widgetScope.widgetId)
+                    when (widgetScope) {
+                        is WidgetScope.Widget -> {
+                            triggerDynamicWidgetGlanceUpdate(context, widgetScope.widgetId)
+                        }
+
+                        is WidgetScope.Instance -> {
+                            triggerDynamicWidgetGlanceUpdateForPlacements(
+                                context,
+                                widgetScope.widgetId,
+                            ) { appWidgetId ->
+                                val placementConfiguration =
+                                    VoltraConfigurationStore(context).get(widgetScope.widgetId, appWidgetId)
+                                WidgetCanonicalConfiguration.key(placementConfiguration) == widgetScope.key
+                            }
+                        }
+                    }
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to refresh '${widgetScope.widgetId}' after a server update: ${e.message}")
                 }
