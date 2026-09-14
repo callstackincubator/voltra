@@ -22,9 +22,9 @@ public struct VoltraElement: Hashable {
 
   // MARK: - Hashable
 
-  // `_props` carries fully resolved values, so it alone distinguishes elements that render
-  // differently. Identity deliberately omits `_style`, which is derived from `_props` and would
-  // only restate it.
+  /// `_props` carries fully resolved values, so it alone distinguishes elements that render
+  /// differently. Identity deliberately omits `_style`, which is derived from `_props` and would
+  /// only restate it.
   public func hash(into hasher: inout Hasher) {
     hasher.combine(type)
     hasher.combine(id)

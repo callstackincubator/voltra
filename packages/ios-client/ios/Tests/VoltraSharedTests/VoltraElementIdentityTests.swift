@@ -28,12 +28,12 @@ final class VoltraElementIdentityTests: XCTestCase {
   // MARK: - Deduplicated style on the element itself
 
   func testElementsDifferWhenOnlyTheirOwnStylesheetEntryChanges() throws {
-    let orange = try rootElement(#"""
+    let orange = try rootElement(##"""
     {"t":11,"c":[{"t":0,"c":"42","p":{"s":0}},{"t":0,"c":"same","p":{"s":1}}],"p":{"s":2},"s":[{"fs":32,"c":"#ff6d39"},{"fs":14},{"fl":1}]}
-    """#)
-    let grey = try rootElement(#"""
+    """##)
+    let grey = try rootElement(##"""
     {"t":11,"c":[{"t":0,"c":"42","p":{"s":0}},{"t":0,"c":"same","p":{"s":1}}],"p":{"s":2},"s":[{"fs":32,"c":"#282830"},{"fs":14},{"fl":1}]}
-    """#)
+    """##)
 
     // The counter serializes to the same node in both payloads; only the stylesheet differs.
     XCTAssertEqual(try child(orange, 0).style?["color"]?.stringValue, "#ff6d39")
@@ -45,12 +45,12 @@ final class VoltraElementIdentityTests: XCTestCase {
   // MARK: - Deduplicated style inside an element-valued prop
 
   func testElementsDifferWhenAStylesheetEntryBehindAPropChanges() throws {
-    let orange = try rootElement(#"""
+    let orange = try rootElement(##"""
     {"t":11,"c":[{"t":8,"p":{"v":0.5,"lbl":{"t":0,"c":"Uptime","p":{"s":0}}}}],"p":{"s":1},"s":[{"fs":10,"c":"#ff6d39"},{"fl":1}]}
-    """#)
-    let grey = try rootElement(#"""
+    """##)
+    let grey = try rootElement(##"""
     {"t":11,"c":[{"t":8,"p":{"v":0.5,"lbl":{"t":0,"c":"Uptime","p":{"s":0}}}}],"p":{"s":1},"s":[{"fs":10,"c":"#282830"},{"fl":1}]}
-    """#)
+    """##)
 
     // The gauge has no children and no style of its own - the difference is entirely inside `label`.
     let orangeGauge = try child(orange, 0)
@@ -71,14 +71,14 @@ final class VoltraElementIdentityTests: XCTestCase {
   // MARK: - Shared element behind a prop
 
   func testElementsDifferWhenASharedElementBehindAPropChanges() throws {
-    let first = try rootElement(#"""
+    let first = try rootElement(##"""
     {"t":11,"c":[{"t":8,"p":{"v":0.5,"lbl":{"$r":0}}},{"t":8,"p":{"v":0.5,"cvl":{"$r":0}}}],"e":[{"t":0,"c":"A"}]}
-    """#)
-    let second = try rootElement(#"""
+    """##)
+    let second = try rootElement(##"""
     {"t":11,"c":[{"t":8,"p":{"v":0.5,"lbl":{"$r":0}}},{"t":8,"p":{"v":0.5,"cvl":{"$r":0}}}],"e":[{"t":0,"c":"B"}]}
-    """#)
+    """##)
 
-    XCTAssertEqual(try child(first, 0).componentProp("label"), .element(try rootElement(#"{"t":0,"c":"A"}"#)))
+    XCTAssertEqual(try child(first, 0).componentProp("label"), .element(try rootElement(##"{"t":0,"c":"A"}"##)))
     XCTAssertNotEqual(try child(first, 0), try child(second, 0))
     XCTAssertNotEqual(first, second)
   }
@@ -86,9 +86,9 @@ final class VoltraElementIdentityTests: XCTestCase {
   // MARK: - Equality stays as coarse as it was
 
   func testIdenticalPayloadsStayEqualAndHashAlike() throws {
-    let payload = #"""
+    let payload = ##"""
     {"t":11,"c":[{"t":8,"p":{"v":0.5,"lbl":{"$r":0}}},{"t":0,"c":"42","p":{"s":0}}],"p":{"s":1},"e":[{"t":0,"c":"Uptime","p":{"s":0}}],"s":[{"fs":32,"c":"#ff6d39"},{"fl":1}]}
-    """#
+    """##
 
     let left = try rootElement(payload)
     let right = try rootElement(payload)
@@ -98,8 +98,8 @@ final class VoltraElementIdentityTests: XCTestCase {
   }
 
   func testElementsStayEqualWhenAnUnreferencedStylesheetEntryChanges() throws {
-    let left = try rootElement(#"{"t":0,"c":"42","p":{"s":0},"s":[{"fs":32},{"fs":14}]}"#)
-    let right = try rootElement(#"{"t":0,"c":"42","p":{"s":0},"s":[{"fs":32},{"fs":99}]}"#)
+    let left = try rootElement(##"{"t":0,"c":"42","p":{"s":0},"s":[{"fs":32},{"fs":14}]}"##)
+    let right = try rootElement(##"{"t":0,"c":"42","p":{"s":0},"s":[{"fs":32},{"fs":99}]}"##)
 
     XCTAssertEqual(left, right)
   }
@@ -108,7 +108,7 @@ final class VoltraElementIdentityTests: XCTestCase {
 
   func testSelfReferentialSharedElementTerminates() throws {
     // `e[0]` names itself, so resolution has to stop on its own rather than recurse forever.
-    let element = try rootElement(#"{"t":8,"p":{"lbl":{"$r":0}},"e":[{"$r":0}]}"#)
+    let element = try rootElement(##"{"t":8,"p":{"lbl":{"$r":0}},"e":[{"$r":0}]}"##)
 
     XCTAssertEqual(element.type, "Gauge")
   }
