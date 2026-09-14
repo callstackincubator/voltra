@@ -122,6 +122,13 @@ struct VoltraElementView: View {
   let element: VoltraElement
 
   var body: some View {
+    // Native modifiers wrap the finished, styled component (ADR 0005).
+    component
+      .applyNativeModifiers(element.nativeModifiers)
+  }
+
+  @ViewBuilder
+  private var component: some View {
     switch element.type {
     case "Button":
       VoltraButton(element)

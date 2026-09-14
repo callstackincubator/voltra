@@ -1,0 +1,37 @@
+[
+  {
+    "$type": "widgetURL",
+    "url": "myapp://portfolio"
+  },
+  {
+    "$type": "privacySensitive",
+    "sensitive": true
+  },
+  {
+    "$type": "privacySensitive",
+    "sensitive": false
+  },
+  {
+    "$type": "clipShape",
+    "shape": "circle"
+  },
+  {
+    "$type": "clipShape",
+    "shape": "capsule",
+    "cornerStyle": "continuous"
+  },
+  {
+    "$type": "clipShape",
+    "shape": "roundedRectangle",
+    "cornerRadius": 12,
+    "cornerStyle": "continuous"
+  },
+  {
+    "$type": "clipShape",
+    "shape": "rectangle"
+  },
+  {
+    "$type": "clipShape",
+    "shape": "ellipse"
+  }
+]

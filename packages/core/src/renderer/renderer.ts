@@ -391,6 +391,23 @@ function isReactNode(value: unknown): value is ReactNode {
   return false
 }
 
+function encodeNativeModifiers(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined
+  }
+  if (!Array.isArray(value)) {
+    throw new Error('The `modifiers` prop must be an array of native modifiers.')
+  }
+  for (const modifier of value) {
+    if (typeof modifier !== 'object' || modifier === null || typeof modifier.$type !== 'string') {
+      throw new Error(
+        'The `modifiers` prop only accepts values created by `Voltra.modifiers` or `VoltraAndroid.modifiers`.'
+      )
+    }
+  }
+  return value.length > 0 ? JSON.stringify(value) : undefined
+}
+
 export function transformProps(
   props: Record<string, unknown>,
   context: VoltraRenderingContext
@@ -405,6 +422,13 @@ export function transformProps(
         transformed[shortKey] = index
       } else {
         transformed[shortKey] = compressStyleObject(value)
+      }
+    } else if (key === 'modifiers') {
+      // Native modifiers travel as a JSON-encoded string so that no parsing layer treats the
+      // descriptors as children or rewrites their keys (ADR 0005).
+      const encoded = encodeNativeModifiers(value)
+      if (encoded !== undefined) {
+        transformed[shorten(key)] = encoded
       }
     } else if (isReactNode(value)) {
       const serializedComponent = renderNode(value, {
