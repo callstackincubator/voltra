@@ -1,6 +1,6 @@
 # Querying Active Widgets
 
-On Android, you can detect every active instance of your widgets currently placed on the Home Screen. This is particularly useful for Android since each widget instance can have different dimensions and a unique `widgetId`.
+On Android, you can detect every active instance of your widgets currently placed on the Home Screen. This is particularly useful for Android since each widget instance can have different dimensions and a unique `appWidgetId`.
 
 ## getActiveWidgets API
 
@@ -15,8 +15,8 @@ async function checkAndroidWidgets() {
   console.log(`Found ${activeWidgets.length} active widget instances`)
 
   activeWidgets.forEach(widget => {
-    console.log(`- Widget Name: ${widget.name}`)
-    console.log(`  ID: ${widget.widgetId}`)
+    console.log(`- Widget: ${widget.widgetType}`)
+    console.log(`  Placement: ${widget.appWidgetId}`)
     console.log(`  Size: ${widget.width}x${widget.height}dp`)
   })
 }
@@ -28,9 +28,13 @@ Each object in the returned array contains:
 
 | Property | Type | Description |
 | :--- | :--- | :--- |
-| `name` | `string` | The unique ID of the widget as defined in your Expo config plugin (e.g., `"weather"`). |
-| `widgetId` | `number` | The unique system identifier for this specific widget instance. |
+| `widgetType` | `string` | The Voltra widget ID as defined in your Expo config plugin (e.g., `"weather"`). |
+| `appWidgetId` | `number` | The Android identifier of this placement. Pass it to the [per-instance configuration APIs](./dynamic-widgets#configure-each-placed-widget-separately) to give one placement its own values. |
 | `providerClassName` | `string` | The full class name of the widget provider (e.g., `".widget.VoltraWidget_weatherReceiver"`). |
 | `label` | `string` | The human-readable label shown in the Android widget picker. |
 | `width` | `number` | The current width of the widget instance in dp. |
 | `height` | `number` | The current height of the widget instance in dp. |
+| `name` | `string` | **Deprecated.** Renamed to `widgetType`, which says what it holds. Same value. |
+| `widgetId` | `number` | **Deprecated.** Renamed to `appWidgetId`. It is the Android placement identifier, not the Voltra widget ID that `widgetId` names everywhere else in this package. Same value. |
+
+The same widget placed twice appears twice, with one entry per placement and a different `appWidgetId` on each.

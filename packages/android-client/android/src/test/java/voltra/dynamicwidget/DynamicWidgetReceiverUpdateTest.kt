@@ -260,6 +260,11 @@ class DynamicWidgetReceiverUpdateTest {
             val revision: Long,
         ) : DynamicWidgetUpdateEvent
 
+        data class ConfigurationRevisionAdvanced(
+            val glanceId: GlanceId,
+            val revision: Long,
+        ) : DynamicWidgetUpdateEvent
+
         data class WidgetUpdated(
             val glanceAppWidget: VoltraClientGlanceWidget,
             val glanceId: GlanceId,
@@ -277,6 +282,7 @@ class DynamicWidgetReceiverUpdateTest {
         val convertedDynamicWidgetAppWidgetIds = mutableListOf<Int>()
         val events = mutableListOf<DynamicWidgetUpdateEvent>()
         private val revisions = mutableMapOf<GlanceId, Long>()
+        private val configurationRevisions = mutableMapOf<GlanceId, Long>()
 
         override fun getDynamicWidgetAppWidgetIds(dynamicWidgetReceiverComponentName: ComponentName): IntArray {
             requestedDynamicWidgetReceiverComponentName = dynamicWidgetReceiverComponentName
@@ -295,6 +301,14 @@ class DynamicWidgetReceiverUpdateTest {
             val nextRevision = (revisions[dynamicWidgetGlanceId] ?: 0L) + 1L
             revisions[dynamicWidgetGlanceId] = nextRevision
             events += DynamicWidgetUpdateEvent.RevisionAdvanced(dynamicWidgetGlanceId, nextRevision)
+        }
+
+        override suspend fun advanceDynamicWidgetConfigurationRevision(dynamicWidgetGlanceId: GlanceId) {
+            dynamicWidgetRevisionAdvanceFailure?.let { throw it }
+            val nextRevision = (configurationRevisions[dynamicWidgetGlanceId] ?: 0L) + 1L
+            configurationRevisions[dynamicWidgetGlanceId] = nextRevision
+            events +=
+                DynamicWidgetUpdateEvent.ConfigurationRevisionAdvanced(dynamicWidgetGlanceId, nextRevision)
         }
 
         override suspend fun updateDynamicWidget(

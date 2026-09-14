@@ -168,9 +168,68 @@ The response object becomes the same first argument `updateAndroidDynamicWidget`
 
 `updateAndroidDynamicWidget` keeps working on a server-driven widget — the next fetch simply overwrites what you wrote. See [Server-driven widgets](./server-driven-widgets) for the response contract, the `env.serverUpdate` fields, and how to take a widget over.
 
+## Configure each placed widget separately
+
+Every widget placed on the Home Screen has its own `appWidgetId`. Give one placement its own values and it renders them alone — the usual reason to place a widget twice, like one weather widget on London and another on New York. The widget code does not change: it still reads `env.configuration`, and now gets the values of the placement being drawn.
+
+Three layers feed `env.configuration`, each hiding the same key in the one below it:
+
+```
+defaults (app.json)  <  widget-type values  <  instance values  →  env.configuration
+```
+
+Read the placements, then write to one of them:
+
+```typescript
+import {
+  getActiveWidgets,
+  setWidgetInstanceConfiguration,
+  getWidgetInstanceConfiguration,
+  clearWidgetInstanceConfiguration,
+} from '@use-voltra/android-client'
+
+const placements = await getActiveWidgets()
+const weather = placements.filter(widget => widget.widgetType === 'weather')
+
+if (weather.length > 0) {
+  // One key at a time…
+  await setWidgetInstanceConfiguration(weather[0].appWidgetId, 'city', 'London')
+
+  // What this placement renders with, all three layers merged.
+  const values = await getWidgetInstanceConfiguration(weather[0].appWidgetId)
+
+  // Drop this placement's own values so it follows the widget-type ones again.
+  await clearWidgetInstanceConfiguration(weather[0].appWidgetId)
+}
+
+if (weather.length > 1) {
+  // Several keys at once, which costs one write and one re-render.
+  await setWidgetInstanceConfiguration(weather[1].appWidgetId, {
+    city: 'New York',
+    units: 'fahrenheit',
+  })
+}
+```
+
+Values are strings, and only that placement re-renders.
+
+### How the layers interact
+
+`setWidgetConfiguration(widgetId, key, value)` still writes the widget-type value, which is what every placement without its own value for that key renders. A placement that has its own value keeps showing it, so a later type-level write does not visibly change it. `clearWidgetInstanceConfiguration` drops the placement's values and it follows the type-level ones again. `getWidgetConfiguration(widgetId)` reads the type-level layer — the defaults plus any type-level values — without any placement's own values.
+
+### What happens to the values
+
+Removing a widget from the Home Screen drops that placement's values, so adding the widget again starts from the widget-type values rather than inheriting the old placement's. If the launcher restores a backup and reassigns ids, a placement's values are lost the same way and it falls back to the widget-type or default values.
+
+These APIs reject when the `appWidgetId` is not a placement of one of your own Dynamic Widgets: `VOLTRA_WIDGET_INSTANCE_NOT_FOUND` when nothing of yours is placed with that id, `VOLTRA_WIDGET_KIND_MISMATCH` when the placement is a payload-driven widget, and `VOLTRA_WIDGET_NOT_FOUND` when the widget id cannot be resolved. Nothing is stored unless the call succeeds.
+
+### Platform differences
+
+The Home Screen's own edit gesture does not open a Voltra configuration screen yet, so your app is the only place to change a placement's values on Android. On iOS the system Edit Widget sheet writes them instead, generated from the same `appIntent.parameters`, and the widget reads `env.configuration` exactly as it does here.
+
 ## Runtime props and configuration are separate
 
-Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, updated in-app with `setWidgetConfiguration(widgetId, key, value)`, and read from `env.configuration`. Updating one does not replace the other.
+Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, updated in-app with `setWidgetConfiguration` for every placement or `setWidgetInstanceConfiguration` for one, and read from `env.configuration`. Updating one does not replace the other.
 
 ## Notes
 

@@ -16,6 +16,7 @@ import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -238,23 +239,48 @@ class VoltraClientGlanceWidget(
             Log.w(TAG, "Bundle not ready for widgetId=$widgetId (dev=${isDev(context)})")
         }
 
+        // Which placement is being rendered, so env.configuration carries this placement's own
+        // values rather than the widget-type ones (ADR 0006). A Glance edge case where the id
+        // cannot be mapped degrades to the pre-instance behaviour instead of a blank widget.
+        val appWidgetId =
+            try {
+                GlanceAppWidgetManager(context).getAppWidgetId(id)
+            } catch (e: Exception) {
+                Log.w(
+                    TAG,
+                    "Could not resolve the appWidgetId for widgetId=$widgetId; rendering the " +
+                        "widget-type configuration: ${e.message}",
+                )
+                null
+            }
+
         // Read user-configured params (DataStore) off the composition so env.configuration is
-        // available synchronously during render.
-        val configuration = VoltraConfigurationStore(context).get(widgetId)
+        // available synchronously during the first render of this session. Later writes reach the
+        // composition through the configuration revision, not through this value: Glance does not
+        // re-run provideGlance for a widget whose session is still alive.
+        val configuration = VoltraConfigurationStore(context).get(widgetId, appWidgetId)
 
         provideContent {
-            Content(bundleReady, configuration)
+            Content(bundleReady, configuration, appWidgetId)
         }
     }
 
     @Composable
     private fun Content(
         bundleReady: Boolean,
-        configuration: Map<String, String>,
+        initialConfiguration: Map<String, String>,
+        appWidgetId: Int?,
     ) {
         val context = LocalContext.current
         val size = LocalSize.current
         val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId)
+        val configuration =
+            currentDynamicWidgetConfiguration(
+                context = context,
+                dynamicWidgetId = widgetId,
+                dynamicWidgetAppWidgetId = appWidgetId,
+                initialConfiguration = initialConfiguration,
+            )
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
         // placeholder node (first paint / offline / Metro down).
