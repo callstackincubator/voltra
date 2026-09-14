@@ -123,17 +123,44 @@ help ios-system-ui` documented "search-result rows fall back to unlabeled nodes"
    ```
    `instance` and `city` match exactly what the widget displayed. Screenshot:
    `ios-widget-placed-final.png`.
-5. **Not achieved this run**: driving the Edit Widget sheet to change `city`. A long-press directly
-   on the placed widget (both in and out of jiggle mode, several durations tried) always triggered
-   the whole-screen jiggle/edit mode (or, once, the wrong target — the widget's own "-" remove
-   badge, which was cancelled before anything was deleted) rather than a widget-specific "Edit
-   Widget" context menu; iOS's contextual per-widget menu did not appear for idb's synthetic touch
-   in this simulator/iOS version. This is an automation-tooling gap, not a product gap — the ADR
-   0007 mechanism itself (per-instance `env.configuration`/`env.instance`, the request carrying
-   `instance`/`configuration`, and the server answering per configuration) is proven end to end by
-   steps 3–4 above using the _default_ configuration. Re-attempt with `agent-device` once its
-   device-claim contention clears, or with a real Simulator UI interaction, to also exercise a
-   `city` change through Edit Widget.
+5. **Still not achieved: driving the Edit Widget sheet to change `city`.** Two separate attempts,
+   documented honestly:
+
+   **Attempt 1 — `agent-device` (as requested).** Retried claiming the booted simulator by UDID
+   repeatedly: 8 attempts at 8s intervals, then 2 more at 25s intervals (~10 attempts over ~2.5
+   minutes total). Every single attempt returned the identical error:
+
+   ```
+   Error (DEVICE_IN_USE): Device is already in use by another workspace session.
+   Hint: Use a different device selector, wait for the other workspace to close its session, or run agent-device devices to choose another target.
+   ```
+
+   despite `agent-device devices` showing the simulator as unclaimed immediately before each
+   attempt, and `agent-device close` reporting `Error (SESSION_NOT_FOUND): No active session` for
+   this session. No claim file for this simulator's UDID exists under
+   `~/.agent-device/device-claims/`, so the contention is not visible in that registry — it may be
+   a live `ios-runner` reservation from another concurrent session/daemon on this machine (two
+   separate `agent-device` daemon processes were observed running, one global install and one from
+   an unrelated project's local `node_modules`). The claim never freed in this run. 2. **Attempt 2 — `idb` (fallback, as used for placement above).** With the companion reconnected
+   (`idb connect <udid>` — it had disconnected after being killed earlier), long-pressing the
+   placed widget on the normal, non-edit Home Screen was tried at multiple durations: 0.5s (no
+   effect), 0.7s, 0.9s, 1.0s, 1.2s, 2.0s, and 4.5s. Every duration at or above ~0.7s entered the
+   whole-screen jiggle/edit mode directly (`Edit`/`Done` pills, "-" remove badges on every icon and
+   the widget) — never a widget-specific context menu with "Edit Widget"/"Remove Widget". Once, a
+   tap aimed at the widget body landed on its "-" remove badge instead and opened a "Remove
+   'Voltra'?" system dialog, which was cancelled without removing anything. iOS's per-widget
+   contextual menu simply did not appear for idb's synthetic touch in this simulator/iOS 18.0
+   combination — this looks like an automation-tooling gap (idb's touch synthesis resolving
+   straight to the legacy jiggle gesture recognizer rather than the contextual-menu recognizer),
+   not a product gap.
+
+   The ADR 0007 mechanism itself — per-instance `env.configuration`/`env.instance`, the request
+   carrying `instance`/`configuration`, and the server answering per configuration — is still
+   proven end to end on iOS by steps 3–4 above using the _default_ configuration. Exercising a
+   `city` change through Edit Widget needs either `agent-device`'s device claim to actually free,
+   or a different touch-synthesis path than idb's `ui tap`/`swipe` (e.g. driving the physical
+   Simulator window via the macOS Accessibility APIs / System Events instead of CoreSimulator's
+   synthetic touch injection).
 
 ## Resolved: the `PlatformConstants` launch failure was a stale/duplicate-Metro artifact, not this change
 
