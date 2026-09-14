@@ -215,3 +215,19 @@ sheet to change `city` at runtime through automation — not exercised this run 
 - An iOS Home Screen widget showing real `server city:`/`server temp:`/`env.instance:` values
   matching a server log line (verified: London/33°/`facc2258`, screenshot
   `ios-widget-placed-final.png`).
+
+### iOS Edit Widget step: verified
+
+Driven with the Claude Code iOS Simulator tool plus `idb` for key events (the `agent-device` claim stayed held by another session):
+
+1. Long-press the placed widget (about 1 s) at its centre. This opens the widget's own context menu, not jiggle mode; shorter presses do nothing and `idb` long-presses fell into jiggle mode.
+2. Tap **Edit Widget**, tap the **City** value (tapping the row label does nothing), clear it with `idb ui key 42` (backspace) and `idb ui key 76` (forward delete), then `idb ui text "Paris"`. Text tools that strip control characters cannot clear the field; two spaces become ". " through autocorrect.
+3. Tap **Done**, tap outside the sheet, and wait a few seconds.
+
+Result on iPhone 16 Pro (iOS 18.0): the widget re-rendered with `env.configuration.city: Paris`, `env.instance: 0ab4e6fb`, server city Paris and the server's temperature. The fake server logged:
+
+```
+[19:24:51] [ios] ClientRenderedDemoWidget instance=0ab4e6fb configuration={"city":"Paris","label":"Hello"} → city=Paris
+```
+
+The previous placement with the default configuration had `instance=facc2258`, so editing the configuration moved the placement to a new instance and a new fetch, as ADR 0007 specifies.
