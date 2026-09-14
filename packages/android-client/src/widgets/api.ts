@@ -103,10 +103,7 @@ export const getWidgetConfiguration = async (widgetId: string): Promise<Record<s
  * call succeeds.
  */
 export async function setWidgetInstanceConfiguration(appWidgetId: number, key: string, value: string): Promise<void>
-export async function setWidgetInstanceConfiguration(
-  appWidgetId: number,
-  values: Record<string, string>
-): Promise<void>
+export async function setWidgetInstanceConfiguration(appWidgetId: number, values: Record<string, string>): Promise<void>
 export async function setWidgetInstanceConfiguration(
   appWidgetId: number,
   keyOrValues: string | Record<string, string>,
