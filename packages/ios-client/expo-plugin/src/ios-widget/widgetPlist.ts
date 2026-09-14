@@ -7,6 +7,7 @@ import type { IOSWidgetConfig } from '../types'
 import { detectClientRenderedWidgets } from './clientRendered'
 import { logger } from '@use-voltra/expo-plugin'
 import { resolveIOSWidgetServerUpdate } from '../ios/serverUpdate'
+import { appendMissingURLSchemes, getAppURLSchemes } from '../utils/urlScheme'
 
 export interface ConfigureMainAppPlistProps {
   targetName: string
@@ -36,9 +37,9 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
         return config
       }
 
-      const scheme = typeof expoConfig.scheme === 'string' ? expoConfig.scheme : expoConfig.ios?.bundleIdentifier
+      const schemes = getAppURLSchemes(expoConfig)
 
-      if (scheme) {
+      if (schemes.length > 0) {
         const targetPath = joinPath(config.modRequest.platformProjectRoot, targetName)
         const filePath = joinPath(targetPath, 'Info.plist')
         if (!existsSync(filePath)) {
@@ -79,20 +80,8 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
 
         // Keep URL schemes in the widget extension so Live Activity links can be resolved
         // from relative to absolute URLs (see VoltraDeepLinkResolver.swift).
-        const existingTypes = (content.CFBundleURLTypes as any[]) || []
-        const hasScheme = existingTypes.some(
-          (t) => Array.isArray(t?.CFBundleURLSchemes) && t.CFBundleURLSchemes.includes(scheme)
-        )
-        if (!hasScheme) {
-          content.CFBundleURLTypes = [
-            ...existingTypes,
-            {
-              CFBundleURLSchemes: [scheme],
-            },
-          ]
-        } else {
-          content.CFBundleURLTypes = existingTypes
-        }
+        // Uses the same scheme list as the app, so a relative link resolves to the app's first scheme.
+        content.CFBundleURLTypes = appendMissingURLSchemes((content.CFBundleURLTypes as any[]) || [], schemes)
 
         // Only set group identifier if provided
         if (groupIdentifier) {

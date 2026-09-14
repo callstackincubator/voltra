@@ -1,9 +1,40 @@
 import type { ExpoConfig } from 'expo/config'
 
-function getConfiguredSchemes(config: ExpoConfig): string[] {
-  const schemes = [config.scheme, (config.ios as { scheme?: string | string[] } | undefined)?.scheme].flat()
+type URLType = { CFBundleURLSchemes?: unknown }
 
-  return schemes.filter((scheme): scheme is string => typeof scheme === 'string')
+/**
+ * The URL schemes the app is configured with: every `scheme` and `ios.scheme` value (string or
+ * array), or the bundle identifier when neither is set.
+ */
+export function getAppURLSchemes(config: ExpoConfig): string[] {
+  const configured = [config.scheme, (config.ios as { scheme?: string | string[] } | undefined)?.scheme]
+    .flat()
+    .filter((scheme): scheme is string => typeof scheme === 'string' && scheme.length > 0)
+
+  if (configured.length > 0) {
+    return [...new Set(configured)]
+  }
+
+  return config.ios?.bundleIdentifier ? [config.ios.bundleIdentifier] : []
+}
+
+/**
+ * Appends a URL type for every scheme not already listed. Returns `types` itself when nothing is
+ * missing.
+ */
+export function appendMissingURLSchemes<T extends URLType>(
+  types: T[],
+  schemes: string[]
+): (T | { CFBundleURLSchemes: string[] })[] {
+  const missingSchemes = schemes.filter(
+    (scheme) => !types.some((t) => Array.isArray(t?.CFBundleURLSchemes) && t.CFBundleURLSchemes.includes(scheme))
+  )
+
+  if (missingSchemes.length === 0) {
+    return types
+  }
+
+  return [...types, ...missingSchemes.map((scheme) => ({ CFBundleURLSchemes: [scheme] }))]
 }
 
 /**
@@ -15,7 +46,7 @@ function getConfiguredSchemes(config: ExpoConfig): string[] {
  */
 export function ensureURLScheme(config: ExpoConfig): ExpoConfig {
   const existingInfoPlist = config.ios?.infoPlist
-  const existingTypes = existingInfoPlist?.CFBundleURLTypes as any[] | undefined
+  const existingTypes = existingInfoPlist?.CFBundleURLTypes as URLType[] | undefined
 
   // Expo's own withScheme fills CFBundleURLTypes from `scheme` / `ios.scheme` and always appends
   // ios.bundleIdentifier, but it skips the app entirely once ios.infoPlist.CFBundleURLTypes is set
@@ -25,16 +56,9 @@ export function ensureURLScheme(config: ExpoConfig): ExpoConfig {
     return config
   }
 
-  const configuredSchemes = getConfiguredSchemes(config)
-  const wantedSchemes = configuredSchemes.length > 0 ? configuredSchemes : [config.ios?.bundleIdentifier]
+  const types = appendMissingURLSchemes(existingTypes, getAppURLSchemes(config))
 
-  const missingSchemes = wantedSchemes.filter(
-    (scheme): scheme is string =>
-      !!scheme &&
-      !existingTypes.some((t) => Array.isArray(t?.CFBundleURLSchemes) && t.CFBundleURLSchemes.includes(scheme))
-  )
-
-  if (missingSchemes.length === 0) {
+  if (types === existingTypes) {
     return config
   }
 
@@ -44,12 +68,7 @@ export function ensureURLScheme(config: ExpoConfig): ExpoConfig {
       ...config.ios,
       infoPlist: {
         ...existingInfoPlist,
-        CFBundleURLTypes: [
-          ...existingTypes,
-          ...missingSchemes.map((scheme) => ({
-            CFBundleURLSchemes: [scheme],
-          })),
-        ],
+        CFBundleURLTypes: types,
       },
     },
   }

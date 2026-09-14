@@ -1,6 +1,6 @@
 import type { ExpoConfig } from 'expo/config'
 
-import { ensureURLScheme } from './urlScheme'
+import { appendMissingURLSchemes, ensureURLScheme, getAppURLSchemes } from './urlScheme'
 
 function createConfig(overrides: Partial<ExpoConfig> = {}): ExpoConfig {
   return {
@@ -65,5 +65,46 @@ describe('ensureURLScheme', () => {
     )
 
     expect(schemesOf(config)).toEqual(['fb123', 'com.voltra.example'])
+  })
+})
+
+describe('getAppURLSchemes', () => {
+  it('returns every scheme and ios.scheme value, without duplicates', () => {
+    const schemes = getAppURLSchemes(
+      createConfig({
+        scheme: ['voltraexample', 'voltraexample.debug'],
+        ios: {
+          bundleIdentifier: 'com.voltra.example',
+          scheme: ['voltraexample', 'voltraexample.ios'],
+        } as ExpoConfig['ios'],
+      })
+    )
+
+    expect(schemes).toEqual(['voltraexample', 'voltraexample.debug', 'voltraexample.ios'])
+  })
+
+  it('falls back to the bundle identifier when no scheme is configured', () => {
+    expect(getAppURLSchemes(createConfig({ ios: { bundleIdentifier: 'com.voltra.example' } }))).toEqual([
+      'com.voltra.example',
+    ])
+  })
+
+  it('returns nothing when there is neither a scheme nor a bundle identifier', () => {
+    expect(getAppURLSchemes(createConfig())).toEqual([])
+  })
+})
+
+describe('appendMissingURLSchemes', () => {
+  it('writes every scheme into an empty list, in order', () => {
+    expect(appendMissingURLSchemes([], ['voltraexample', 'voltraexample.debug'])).toEqual([
+      { CFBundleURLSchemes: ['voltraexample'] },
+      { CFBundleURLSchemes: ['voltraexample.debug'] },
+    ])
+  })
+
+  it('returns the same list when every scheme is already present', () => {
+    const types = [{ CFBundleURLSchemes: ['voltraexample', 'voltraexample.debug'] }]
+
+    expect(appendMissingURLSchemes(types, ['voltraexample.debug', 'voltraexample'])).toBe(types)
   })
 })
