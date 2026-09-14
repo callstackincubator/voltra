@@ -478,6 +478,12 @@ private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
     }
   }
 
+  // A `widgetURL` native modifier in the tree replaces the default link; two `widgetURL`s in one
+  // hierarchy are undefined and the root one would win (ADR 0005).
+  if entry.rootNode?.containsNativeModifier("widgetURL") == true {
+    return nil
+  }
+
   // Default deep link with widget info
   guard let scheme = VoltraDeepLinkResolver.deepLinkScheme() else { return nil }
 

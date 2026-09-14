@@ -201,7 +201,9 @@ There is no distinction between view and text modifiers in the type
 system, and none is needed. On iOS every text-related modifier in the
 catalog (`lineLimit`, `truncationMode`, `multilineTextAlignment`,
 `minimumScaleFactor`, `monospacedDigit`, `bold`, `italic`, `kerning`) has a
-`View` overload since iOS 16, and the deployment target is 17. Applied to a
+`View` overload since iOS 16, and the pod's minimum is iOS 16.4. Modifiers
+newer than that (iOS 17 and 18) are gated with `#available` and leave the
+component unchanged on older systems. Applied to a
 container, these set the environment for every `Text` below it, which is
 ordinary SwiftUI and often what the author wants. Only the `Text`-returning
 overloads used for text concatenation are `Text`-specific, and Voltra never
@@ -355,11 +357,15 @@ it with `.applyNativeModifiers(element.nativeModifiers)`. No view under
 `ui/Views` changes, and `applyStyle` keeps its signature.
 
 The widget and Live Activity roots used to apply `.widgetURL(...)` with a
-possibly `nil` URL on every render. Apple leaves more than one `widgetURL` in
-a hierarchy undefined, so the roots now set it only when a deep link
-resolves, the way the Dynamic Live Activity renderer already did. A
-`widgetURL` modifier is therefore the only one in the tree unless the
-widget also sets a deep link, which the documentation calls out.
+possibly `nil` URL on every render, and the home widget fell back to a
+synthetic `<scheme>://voltraui?kind=widget...` link when none was
+configured. Apple leaves more than one `widgetURL` in a hierarchy undefined,
+and in practice the root one wins, so the roots now set it only when a deep
+link resolves, the way the Dynamic Live Activity renderer already did, and
+the home widget skips its synthetic fallback when the rendered tree carries
+a `widgetURL` modifier. A `widgetURL` modifier is therefore the only one in
+the tree unless the widget also configures an explicit deep link, which the
+documentation calls out.
 
 The initial iOS catalog is limited to value-only modifiers that matter in
 widgets and Live Activities: `widgetURL`, `containerBackground`,
