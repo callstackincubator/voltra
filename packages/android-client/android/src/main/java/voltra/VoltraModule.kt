@@ -414,16 +414,21 @@ class VoltraModule(
                 return
             }
 
-        runBlocking {
-            try {
-                VoltraConfigurationStore(reactApplicationContext)
-                    .setInstanceValues(widgetId, instanceId, values)
-            } catch (e: Exception) {
-                Log.e(TAG, "setWidgetInstanceConfiguration failed", e)
-                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
-                return@runBlocking
+        // The promise is settled exactly once: a failed write rejects and returns here, so it is
+        // never followed by a re-render or a resolve (see updateAndroidDynamicWidget).
+        val written =
+            runBlocking {
+                try {
+                    VoltraConfigurationStore(reactApplicationContext)
+                        .setInstanceValues(widgetId, instanceId, values)
+                    true
+                } catch (e: Exception) {
+                    Log.e(TAG, "setWidgetInstanceConfiguration failed", e)
+                    promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+                    false
+                }
             }
-        }
+        if (!written) return
 
         rerenderWidgetInstance(widgetId, instanceId)
         promise.resolve(null)
@@ -498,15 +503,19 @@ class VoltraModule(
         val widgetId =
             resolveDynamicWidgetInstanceOrReject(instanceId, promise) ?: return
 
-        runBlocking {
-            try {
-                VoltraConfigurationStore(reactApplicationContext).clearInstance(widgetId, instanceId)
-            } catch (e: Exception) {
-                Log.e(TAG, "clearWidgetInstanceConfiguration failed", e)
-                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
-                return@runBlocking
+        // Settled exactly once, as in setWidgetInstanceConfiguration.
+        val cleared =
+            runBlocking {
+                try {
+                    VoltraConfigurationStore(reactApplicationContext).clearInstance(widgetId, instanceId)
+                    true
+                } catch (e: Exception) {
+                    Log.e(TAG, "clearWidgetInstanceConfiguration failed", e)
+                    promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+                    false
+                }
             }
-        }
+        if (!cleared) return
 
         rerenderWidgetInstance(widgetId, instanceId)
         promise.resolve(null)
