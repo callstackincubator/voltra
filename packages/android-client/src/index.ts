@@ -61,10 +61,14 @@ export {
 export {
   clearAllAndroidWidgets,
   clearAndroidWidget,
+  clearWidgetInstanceConfiguration,
   getActiveWidgets,
+  getWidgetConfiguration,
+  getWidgetInstanceConfiguration,
   reloadAndroidWidgets,
   requestPinAndroidWidget,
   setWidgetConfiguration,
+  setWidgetInstanceConfiguration,
   updateAndroidWidget,
 } from './widgets/api.js'
 export type {
