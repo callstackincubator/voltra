@@ -125,4 +125,40 @@ class WidgetServerRequestBuilderTest {
         assertNull(WidgetServerRequestBuilder.build(context, scope, settings(url = null)))
         assertNull(WidgetServerRequestBuilder.build(context, scope, settings(enabled = false)))
     }
+
+    // --- ADR 0007: instance + configuration -------------------------------------------------
+
+    @Test
+    fun `sends instance and configuration for an instance scope with a non-empty configuration`() {
+        val configuration = mapOf("city" to "London", "units" to "metric")
+        val instanceScope = WidgetScope.Instance("weather", WidgetCanonicalConfiguration.key(configuration)!!)
+
+        val request =
+            WidgetServerRequestBuilder.build(context, instanceScope, settings(), configuration = configuration)!!
+        val parsedUri = android.net.Uri.parse(request.url.toString())
+
+        assertEquals(instanceScope.key, parsedUri.getQueryParameter("instance"))
+        assertEquals(
+            WidgetCanonicalConfiguration.canonicalize(configuration),
+            parsedUri.getQueryParameter("configuration"),
+        )
+    }
+
+    @Test
+    fun `sends neither instance nor configuration for a widget with no configuration parameters`() {
+        val request = WidgetServerRequestBuilder.build(context, scope, settings(), configuration = emptyMap())!!
+
+        assertFalse(request.url.query.contains("instance="))
+        assertFalse(request.url.query.contains("configuration="))
+    }
+
+    @Test
+    fun `configuration is reserved and rejected by the settings validator`() {
+        val settings = WidgetServerUpdateSettings(query = mapOf("configuration" to "x"))
+
+        assertEquals(
+            "query key 'configuration' is reserved by Voltra and is sent on every request",
+            WidgetServerSettingsValidator.validate(settings, isDebugBuild = true),
+        )
+    }
 }

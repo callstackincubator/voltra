@@ -6,6 +6,7 @@ import androidx.compose.runtime.remember
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.currentState
 import kotlinx.coroutines.runBlocking
+import voltra.widget.server.WidgetScope
 
 internal val dynamicWidgetPropsRevisionKey =
     longPreferencesKey("voltra.dynamic_widget.props_revision")
@@ -31,10 +32,13 @@ internal val dynamicWidgetConfigurationRevisionKey =
 internal fun currentDynamicWidgetRenderInput(
     context: Context,
     dynamicWidgetId: String,
+    scope: WidgetScope = WidgetScope.of(dynamicWidgetId),
 ): DynamicWidgetRenderInput =
     DynamicWidgetRenderInput(
         propsRevision = currentState(dynamicWidgetPropsRevisionKey) ?: 0L,
-        propsJson = DynamicWidgetPropsStore(context).getDynamicWidgetProps(dynamicWidgetId),
+        // Reads the instance slot for `scope`'s key, falling back to the widget slot when the
+        // placement has not fetched yet or has no configuration (ADR 0007).
+        propsJson = DynamicWidgetPropsStore(context).getDynamicWidgetProps(scope),
     )
 
 /**

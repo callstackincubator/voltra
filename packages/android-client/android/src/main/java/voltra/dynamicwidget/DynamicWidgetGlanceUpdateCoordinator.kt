@@ -115,6 +115,44 @@ internal class DynamicWidgetGlanceUpdateCoordinator(
     }
 
     /**
+     * The instance-scoped counterpart of [triggerDynamicWidgetGlanceUpdate] (ADR 0007): a committed
+     * per-instance server fetch re-renders only the placements [includeAppWidgetId] selects, leaving
+     * placements of other configurations untouched.
+     */
+    suspend fun triggerDynamicWidgetGlanceUpdateForPlacements(
+        dynamicWidgetReceiverComponentName: ComponentName,
+        dynamicWidgetId: String,
+        dynamicWidgetGlanceAppWidget: GlanceAppWidget?,
+        includeAppWidgetId: suspend (Int) -> Boolean,
+    ): Int {
+        val validatedDynamicWidgetGlanceAppWidget =
+            requireDynamicWidgetGlanceAppWidget(
+                dynamicWidgetId = dynamicWidgetId,
+                dynamicWidgetGlanceAppWidget = dynamicWidgetGlanceAppWidget,
+            )
+        val dynamicWidgetAppWidgetIds =
+            dynamicWidgetGlanceUpdateBoundary.getDynamicWidgetAppWidgetIds(
+                dynamicWidgetReceiverComponentName,
+            )
+
+        var updated = 0
+        for (dynamicWidgetAppWidgetId in dynamicWidgetAppWidgetIds) {
+            if (!includeAppWidgetId(dynamicWidgetAppWidgetId)) continue
+
+            val dynamicWidgetGlanceId =
+                dynamicWidgetGlanceUpdateBoundary.getDynamicWidgetGlanceId(dynamicWidgetAppWidgetId)
+            dynamicWidgetGlanceUpdateBoundary.advanceDynamicWidgetPropsRevision(dynamicWidgetGlanceId)
+            dynamicWidgetGlanceUpdateBoundary.updateDynamicWidget(
+                dynamicWidgetGlanceAppWidget = validatedDynamicWidgetGlanceAppWidget,
+                dynamicWidgetGlanceId = dynamicWidgetGlanceId,
+            )
+            updated++
+        }
+
+        return updated
+    }
+
+    /**
      * The configuration counterpart of [triggerDynamicWidgetGlanceUpdate]: advance every
      * placement's configuration revision before updating it, so a widget whose Glance session is
      * still alive re-reads the store instead of redrawing the values it captured when its session
@@ -216,6 +254,35 @@ internal suspend fun triggerDynamicWidgetConfigurationGlanceUpdate(
         TAG,
         "Triggered Dynamic Widget configuration update for '$dynamicWidgetId' " +
             "($updatedDynamicWidgetInstanceCount instances)",
+    )
+}
+
+/**
+ * Re-render only the placements [includeAppWidgetId] selects, advancing their props revision first
+ * (ADR 0007: a committed per-instance server fetch re-renders only placements with a matching
+ * configuration key). Lives here, rather than in `voltra.dynamicwidget.serverupdate`, so the update
+ * boundary is built once, in the same place the other trigger functions build it.
+ */
+internal suspend fun triggerDynamicWidgetGlanceUpdateForPlacements(
+    context: Context,
+    dynamicWidgetId: String,
+    includeAppWidgetId: suspend (Int) -> Boolean,
+) {
+    val updatedDynamicWidgetInstanceCount =
+        DynamicWidgetGlanceUpdateCoordinator(
+            AndroidDynamicWidgetGlanceUpdateBoundary(context),
+        ).triggerDynamicWidgetGlanceUpdateForPlacements(
+            dynamicWidgetReceiverComponentName =
+                VoltraWidgetReceivers.componentName(context, dynamicWidgetId),
+            dynamicWidgetId = dynamicWidgetId,
+            dynamicWidgetGlanceAppWidget = VoltraWidgetReceiver.getWidget(context, dynamicWidgetId),
+            includeAppWidgetId = includeAppWidgetId,
+        )
+
+    Log.d(
+        TAG,
+        "Triggered Dynamic Widget update for '$dynamicWidgetId' " +
+            "($updatedDynamicWidgetInstanceCount matching instances)",
     )
 }
 

@@ -39,6 +39,8 @@ import voltra.BuildConfig
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
+import voltra.widget.server.WidgetCanonicalConfiguration
+import voltra.widget.server.WidgetScope
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -214,9 +216,19 @@ class VoltraClientGlanceWidget(
                     .put("configuration", configObject)
                     .put("build", build)
 
+            // The instance key (ADR 0007): the hash of this placement's merged configuration, or
+            // absent for a widget with no configuration parameters at all — matching what the
+            // request builder sends and what WidgetScope.of(widgetId, configuration) resolves to.
+            WidgetCanonicalConfiguration.key(configuration)?.let { instanceKey ->
+                env.put("instance", instanceKey)
+            }
+
             // Whatever drives this widget's props gets to describe itself. A plain Dynamic Widget
-            // has no source and its env is exactly what it was before ADR 0002.
-            environmentSource?.environmentFields(context, widgetId)?.forEach { (key, value) ->
+            // has no source and its env is exactly what it was before ADR 0002. The scope carries
+            // the instance key (ADR 0007), so a server-driven source can report the fetch status of
+            // the instance actually being rendered rather than the widget as a whole.
+            val scope = WidgetScope.of(widgetId, configuration)
+            environmentSource?.environmentFields(context, scope)?.forEach { (key, value) ->
                 env.put(key, value)
             }
 
@@ -273,7 +285,6 @@ class VoltraClientGlanceWidget(
     ) {
         val context = LocalContext.current
         val size = LocalSize.current
-        val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId)
         val configuration =
             currentDynamicWidgetConfiguration(
                 context = context,
@@ -281,6 +292,10 @@ class VoltraClientGlanceWidget(
                 dynamicWidgetAppWidgetId = appWidgetId,
                 initialConfiguration = initialConfiguration,
             )
+        // This placement's scope (ADR 0007): an Instance of its merged configuration, or the plain
+        // Widget scope when it has none — which is also every widget's scope before this ADR.
+        val scope = WidgetScope.of(widgetId, configuration)
+        val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId, scope)
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
         // placeholder node (first paint / offline / Metro down).

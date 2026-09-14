@@ -80,7 +80,8 @@ object WidgetServerUpdateDefaults {
      * Query keys Voltra puts on every request. An app that set one of these would silently shadow
      * what the server relies on, so `setWidgetServerUpdate` rejects them.
      */
-    val RESERVED_QUERY_KEYS = setOf("widgetId", "platform", "family", "theme", "locale", "instance")
+    val RESERVED_QUERY_KEYS =
+        setOf("widgetId", "platform", "family", "theme", "locale", "instance", "configuration")
 
     /** Serialized size cap for one layer, so a runaway `body` cannot fill the settings store. */
     const val MAX_LAYER_BYTES = 16 * 1024
