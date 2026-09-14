@@ -25,15 +25,12 @@ let package = Package(
         "BrotliCompression.swift",
         "Data+hexString.swift",
         "Date+toTimerInterval.swift",
-        "ShortNames.swift",
         "VoltraAttributes.swift",
-        "VoltraElement.swift",
         "VoltraEvent.swift",
         "VoltraEventBus.swift",
         "VoltraImageStore.swift",
         "VoltraInteractionIntent.swift",
         "VoltraLiveActivityPayload.swift",
-        "VoltraNode.swift",
         "VoltraPersistentEventQueue.swift",
       ],
       sources: [
@@ -73,6 +70,11 @@ let package = Package(
         "VoltraPayloadMigrator.swift",
         "VoltraRegion.swift",
         "ComponentTypeID.swift",
+        // The JSON -> AST types. They carry no SwiftUI dependency; rendering is attached
+        // by `ui/VoltraNode+View.swift`, which the podspecs compile alongside them.
+        "ShortNames.swift",
+        "VoltraElement.swift",
+        "VoltraNode.swift",
       ]
     ),
     .testTarget(
