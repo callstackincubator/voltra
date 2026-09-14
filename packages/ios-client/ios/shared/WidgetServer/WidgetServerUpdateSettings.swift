@@ -105,7 +105,9 @@ public enum WidgetServerUpdateDefaults {
 
   /// Query keys Voltra puts on every request. An app that set one of these would silently shadow
   /// what the server relies on, so `setWidgetServerUpdate` rejects them.
-  public static let reservedQueryKeys: Set<String> = ["widgetId", "platform", "family", "theme", "locale", "instance"]
+  public static let reservedQueryKeys: Set<String> = [
+    "widgetId", "platform", "family", "theme", "locale", "instance", "configuration",
+  ]
 
   /// Serialized size cap for one layer, so a runaway `body` cannot fill the settings store.
   public static let maxLayerBytes = 16 * 1024

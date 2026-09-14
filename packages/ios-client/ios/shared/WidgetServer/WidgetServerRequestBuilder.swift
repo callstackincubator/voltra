@@ -39,7 +39,12 @@ public enum WidgetServerRequestBuilder {
     scope: WidgetScope,
     settings: ResolvedWidgetServerSettings,
     context: WidgetServerRequestContext,
-    etag: String? = nil
+    etag: String? = nil,
+    // The placement's merged configuration (ADR 0007). Empty for a widget with no configuration
+    // parameters, or when the caller only knows the scope's key — the caller is responsible for
+    // passing the same map that produced `scope`'s key, since the key alone cannot be reversed
+    // back into the configuration that produced it.
+    configuration: [String: String] = [:]
   ) -> URLRequest? {
     guard settings.shouldFetch, let url = settings.url, var components = URLComponents(string: url) else {
       return nil
@@ -55,6 +60,14 @@ public enum WidgetServerRequestBuilder {
 
     queryItems.append(URLQueryItem(name: "theme", value: context.theme))
     queryItems.append(URLQueryItem(name: "locale", value: context.locale))
+
+    // Present for every method, absent when the widget has no configuration parameters (ADR
+    // 0007). `instance` is the hash of the canonical `configuration`, sent so a backend can cache
+    // or log per instance without recomputing it.
+    if case let .instance(_, key) = scope, let canonicalConfiguration = WidgetCanonicalConfiguration.canonicalize(configuration) {
+      queryItems.append(URLQueryItem(name: "instance", value: key))
+      queryItems.append(URLQueryItem(name: "configuration", value: canonicalConfiguration))
+    }
 
     // Voltra's own keys are appended first and the app's keys are rejected at call time if they
     // collide, so nothing here can shadow what the server relies on.
