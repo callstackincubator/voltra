@@ -72,10 +72,18 @@ internal class DynamicWidgetInstanceResolver(
                         "with getActiveWidgets() and use an entry's appWidgetId.",
                 )
 
+        val installedReceivers = boundary.installedReceivers()
+        if (installedReceivers.isEmpty()) {
+            // The manifest read failed (VoltraWidgetReceivers logs the cause). Saying the provider
+            // is not ours would be actively wrong: we cannot tell either way from an empty map.
+            throw DynamicWidgetInstanceRejection.WidgetNotFound(
+                "Could not read this app's declared widget receivers, so the widget placed with " +
+                    "appWidgetId $appWidgetId cannot be identified.",
+            )
+        }
+
         val widgetId =
-            boundary
-                .installedReceivers()
-                .entries
+            installedReceivers.entries
                 .firstOrNull { it.value == provider }
                 ?.key
                 ?: throw DynamicWidgetInstanceRejection.InstanceNotFound(

@@ -55,6 +55,9 @@ class VoltraConfigurationStoreTest {
     @After
     fun cancelStoreScope() {
         dataStoreScope.cancel()
+        // Process-wide, like the DataStore delegate: a seed left behind would leak into the rest
+        // of the JVM.
+        VoltraConfigurationStore.seedDefaultsForTesting(null)
     }
 
     @Test
@@ -196,5 +199,54 @@ class VoltraConfigurationStoreTest {
             // placements only.
             assertEquals("mine", store.get("shadowing", appWidgetId = 1)["label"])
             assertEquals("everyone", store.get("shadowing", appWidgetId = 2)["label"])
+        }
+
+    @Test
+    fun eachLayerHidesTheSameKeyInTheOneBelowIt() =
+        runBlocking {
+            // The defaults asset a Robolectric application does not ship, stood in for here so the
+            // full defaults < widget-type < instance order is asserted rather than just the two
+            // stored layers.
+            VoltraConfigurationStore.seedDefaultsForTesting(
+                mapOf(
+                    "threeLayers" to
+                        mapOf(
+                            "all" to "default-all",
+                            "defaultAndType" to "default-both",
+                            "onlyDefault" to "default-only",
+                        ),
+                ),
+            )
+
+            store.set("threeLayers", "all", "type-all")
+            store.set("threeLayers", "defaultAndType", "type-both")
+            store.setInstanceValues("threeLayers", 1, mapOf("all" to "instance-all"))
+
+            val placement = store.get("threeLayers", appWidgetId = 1)
+            assertEquals("instance-all", placement["all"])
+            assertEquals("type-both", placement["defaultAndType"])
+            assertEquals("default-only", placement["onlyDefault"])
+        }
+
+    @Test
+    fun anUnconfiguredPlacementFallsAllTheWayBackToTheDefaults() =
+        runBlocking {
+            VoltraConfigurationStore.seedDefaultsForTesting(
+                mapOf("defaultsOnly" to mapOf("label" to "from-defaults")),
+            )
+
+            assertEquals("from-defaults", store.get("defaultsOnly", appWidgetId = 1)["label"])
+            assertEquals("from-defaults", store.get("defaultsOnly")["label"])
+        }
+
+    @Test
+    fun defaultsOfOneWidgetDoNotLeakIntoAnother() =
+        runBlocking {
+            VoltraConfigurationStore.seedDefaultsForTesting(
+                mapOf("defaultsA" to mapOf("label" to "a-default")),
+            )
+
+            assertEquals("a-default", store.get("defaultsA")["label"])
+            assertNull(store.get("defaultsB")["label"])
         }
 }

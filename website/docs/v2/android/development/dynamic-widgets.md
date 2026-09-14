@@ -191,20 +191,24 @@ import {
 const placements = await getActiveWidgets()
 const weather = placements.filter(widget => widget.widgetType === 'weather')
 
-// One key at a time…
-await setWidgetInstanceConfiguration(weather[0].appWidgetId, 'city', 'London')
+if (weather.length > 0) {
+  // One key at a time…
+  await setWidgetInstanceConfiguration(weather[0].appWidgetId, 'city', 'London')
 
-// …or several at once, which costs one write and one re-render.
-await setWidgetInstanceConfiguration(weather[1].appWidgetId, {
-  city: 'New York',
-  units: 'fahrenheit',
-})
+  // What this placement renders with, all three layers merged.
+  const values = await getWidgetInstanceConfiguration(weather[0].appWidgetId)
 
-// What this placement renders with, all three layers merged.
-const values = await getWidgetInstanceConfiguration(weather[0].appWidgetId)
+  // Drop this placement's own values so it follows the widget-type ones again.
+  await clearWidgetInstanceConfiguration(weather[0].appWidgetId)
+}
 
-// Drop this placement's own values so it follows the widget-type ones again.
-await clearWidgetInstanceConfiguration(weather[0].appWidgetId)
+if (weather.length > 1) {
+  // Several keys at once, which costs one write and one re-render.
+  await setWidgetInstanceConfiguration(weather[1].appWidgetId, {
+    city: 'New York',
+    units: 'fahrenheit',
+  })
+}
 ```
 
 Values are strings, and only that placement re-renders.

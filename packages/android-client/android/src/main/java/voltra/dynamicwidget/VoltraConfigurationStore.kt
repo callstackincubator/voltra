@@ -2,6 +2,7 @@ package voltra.dynamicwidget
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -186,6 +187,16 @@ internal class VoltraConfigurationStore(
 
         @Volatile
         private var defaultsCache: Map<String, Map<String, String>>? = null
+
+        /**
+         * Stand in for the plugin-emitted defaults asset, which a Robolectric application does not
+         * ship, so the three-layer precedence can be asserted with a non-empty defaults layer.
+         * Pass null to drop the seed; the cache is process-wide, so tests must reset it.
+         */
+        @VisibleForTesting
+        internal fun seedDefaultsForTesting(defaults: Map<String, Map<String, String>>?) {
+            defaultsCache = defaults
+        }
     }
 }
 

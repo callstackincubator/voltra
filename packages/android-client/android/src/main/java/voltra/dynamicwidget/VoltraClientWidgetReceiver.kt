@@ -62,10 +62,13 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     internal fun clearInstanceConfiguration(
         context: Context,
         appWidgetIds: IntArray,
+        // Injectable for the same reason the store's DataStore is: a test must not leave the
+        // process-wide DataStore singleton running past the Robolectric application that made it.
+        configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
     ) {
         try {
             runBlocking {
-                VoltraConfigurationStore(context).clearInstances(widgetId, appWidgetIds.toList())
+                configurationStore.clearInstances(widgetId, appWidgetIds.toList())
             }
         } catch (e: Exception) {
             Log.w(

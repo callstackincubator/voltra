@@ -423,13 +423,10 @@ class VoltraModule(
                 promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
                 return@runBlocking
             }
-
-            // The value is already persisted, so a re-render that fails is logged rather than
-            // surfaced: the next render picks it up, exactly as it does when the app writes while
-            // the launcher is not showing the widget.
-            rerenderWidgetInstance(widgetId, instanceId)
-            promise.resolve(null)
         }
+
+        rerenderWidgetInstance(widgetId, instanceId)
+        promise.resolve(null)
     }
 
     /** The merged three-layer configuration one placement renders with, as a JSON object. */
@@ -509,10 +506,10 @@ class VoltraModule(
                 promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
                 return@runBlocking
             }
-
-            rerenderWidgetInstance(widgetId, instanceId)
-            promise.resolve(null)
         }
+
+        rerenderWidgetInstance(widgetId, instanceId)
+        promise.resolve(null)
     }
 
     /**
@@ -534,29 +531,67 @@ class VoltraModule(
                 }
             promise.reject(code, rejection.message)
             null
+        } catch (e: Throwable) {
+            // Resolution reaches AppWidgetManager and the PackageManager over Binder, either of
+            // which can fail with a RuntimeException (a dead system process, or an oversized
+            // component list). Without this the exception would escape the module method and leave
+            // the promise neither resolved nor rejected.
+            Log.e(TAG, "Could not resolve widget instance $appWidgetId", e)
+            promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+            null
         }
 
     /**
      * Re-render only the placement that changed, using the single-`GlanceId` overload, so sibling
-     * placements of the same widget are not redrawn. Failure is logged, never surfaced: the value
-     * is already persisted and the next render picks it up.
+     * placements of the same widget are not redrawn.
+     *
+     * Dispatched rather than awaited: a Dynamic Widget render evaluates the widget's JS bundle in
+     * the Hermes runtime, and in a debug build fetches it from Metro first, so awaiting it would
+     * block the calling thread for as long as that takes (the ANR risk the pin-preview path in this
+     * file already calls out). ADR 0006 decouples the two — the value is persisted before this
+     * runs, and a re-render that never happens is picked up by the next render, exactly as when the
+     * app writes while the launcher is not showing the widget.
+     *
+     * Failure is logged, never surfaced. Caught as [Throwable], not [Exception]: this path reaches
+     * the JNI renderer, whose missing native dependency surfaces as [NoClassDefFoundError] or
+     * [UnsatisfiedLinkError], neither of which is an [Exception] (see `VoltraWidgetKindResolver`).
      */
-    private suspend fun rerenderWidgetInstance(
+    private fun rerenderWidgetInstance(
         widgetId: String,
         appWidgetId: Int,
     ) {
-        try {
-            val glanceId = GlanceAppWidgetManager(reactApplicationContext).getGlanceIdBy(appWidgetId)
-            VoltraWidgetReceiver.triggerGlanceUpdate(reactApplicationContext, widgetId, glanceId)
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not re-render widget '$widgetId' instance $appWidgetId: ${e.message}")
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val glanceId = GlanceAppWidgetManager(reactApplicationContext).getGlanceIdBy(appWidgetId)
+                VoltraWidgetReceiver.triggerGlanceUpdate(reactApplicationContext, widgetId, glanceId)
+            } catch (e: Throwable) {
+                Log.w(TAG, "Could not re-render widget '$widgetId' instance $appWidgetId: ${e.message}")
+            }
         }
     }
 
+    /**
+     * Configuration values are strings. `JSONObject.getString` would coerce, storing a number as
+     * its digits and a JSON null as the literal "null", so each value is checked instead — the
+     * store's invariant should not depend on the JS wrapper being the only caller.
+     */
     private fun parseConfigurationValues(valuesJson: String): Map<String, String> {
         val root = JSONObject(valuesJson)
         val values = mutableMapOf<String, String>()
-        root.keys().forEach { key -> values[key] = root.getString(key) }
+        root.keys().forEach { key ->
+            when (val value = root.opt(key)) {
+                is String -> {
+                    values[key] = value
+                }
+
+                else -> {
+                    throw IllegalArgumentException(
+                        "Configuration values must be strings, but '$key' is " +
+                            "${if (value == null || value == JSONObject.NULL) "null" else value.javaClass.simpleName}.",
+                    )
+                }
+            }
+        }
         return values
     }
 
@@ -917,10 +952,9 @@ class VoltraModule(
                 it.provider.packageName == packageName
             }
 
-        // The declared receivers carry the real class name alongside the widget id, so the id is
-        // read from them rather than parsed against the package name — those differ whenever an
-        // app's applicationId and Gradle namespace do (see VoltraWidgetReceivers). The class-name
-        // parse is the fallback for when the manifest read fails.
+        // Prefer the declared receivers, so widgetType only ever names a Voltra widget this app
+        // actually declares. Parsing the class name stays as the fallback for when the manifest
+        // read fails; it reads the simple name, so it is already package-agnostic.
         val widgetIdsByComponent =
             VoltraWidgetReceivers
                 .installedReceivers(reactApplicationContext)

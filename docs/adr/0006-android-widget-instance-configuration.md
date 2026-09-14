@@ -1,6 +1,8 @@
 # ADR 0006: Per-instance configuration for Android Dynamic Widgets
 
-Status: Accepted — not yet implemented
+Status: Accepted
+
+Implemented by [#285](https://github.com/callstackincubator/voltra/pull/285).
 
 Resolves [#206](https://github.com/callstackincubator/voltra/issues/206).
 Supersedes the design of PR
