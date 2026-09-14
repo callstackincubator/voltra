@@ -1,6 +1,8 @@
 # ADR 0007: Per-instance server fetches for Dynamic Widgets
 
-Status: Accepted — not yet implemented
+Status: Accepted
+
+Implemented by [#286](https://github.com/callstackincubator/voltra/pull/286).
 
 Builds on [ADR 0002](0002-server-driven-dynamic-widgets.md) and
 [ADR 0006](0006-android-widget-instance-configuration.md). Supersedes the
