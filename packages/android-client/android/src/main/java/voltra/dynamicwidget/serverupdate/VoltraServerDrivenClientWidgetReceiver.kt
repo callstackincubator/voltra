@@ -45,6 +45,24 @@ abstract class VoltraServerDrivenClientWidgetReceiver : VoltraClientWidgetReceiv
         }
     }
 
+    override fun onRestored(
+        context: Context,
+        oldWidgetIds: IntArray,
+        newWidgetIds: IntArray,
+    ) {
+        // super moves the instance configuration to the new ids first, so the recompute below sees
+        // the restored placements under their new ids and reschedules their fetches.
+        super.onRestored(context, oldWidgetIds, newWidgetIds)
+
+        try {
+            runBlocking {
+                DynamicWidgetServerUpdateScheduler.recompute(context.applicationContext, widgetId)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to recompute server update schedule for '$widgetId' after restore: ${e.message}", e)
+        }
+    }
+
     override fun onDeleted(
         context: Context,
         appWidgetIds: IntArray,

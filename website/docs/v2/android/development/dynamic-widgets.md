@@ -219,7 +219,7 @@ Values are strings, and only that placement re-renders.
 
 ### What happens to the values
 
-Removing a widget from the Home Screen drops that placement's values, so adding the widget again starts from the widget-type values rather than inheriting the old placement's. If the launcher restores a backup and reassigns ids, a placement's values are lost the same way and it falls back to the widget-type or default values.
+Removing a widget from the Home Screen drops that placement's values, so adding the widget again starts from the widget-type values rather than inheriting the old placement's. When the launcher restores its layout from a backup and assigns new ids, each placement's values move with it, so a configured widget survives a device restore.
 
 These APIs reject when the `appWidgetId` is not a placement of one of your own Dynamic Widgets: `VOLTRA_WIDGET_INSTANCE_NOT_FOUND` when nothing of yours is placed with that id, `VOLTRA_WIDGET_KIND_MISMATCH` when the placement is a payload-driven widget, and `VOLTRA_WIDGET_NOT_FOUND` when the widget id cannot be resolved. Nothing is stored unless the call succeeds.
 

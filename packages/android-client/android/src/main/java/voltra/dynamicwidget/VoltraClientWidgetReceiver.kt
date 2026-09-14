@@ -79,4 +79,48 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
             )
         }
     }
+
+    /**
+     * The launcher restored its layout (device restore, launcher backup) and gave every placement a
+     * new `appWidgetId`. Move each placement's instance configuration to its new id so a London
+     * widget is still London after the restore instead of falling back to the widget-type values.
+     * Same threading and failure rules as [onDeleted].
+     */
+    override fun onRestored(
+        context: Context,
+        oldWidgetIds: IntArray,
+        newWidgetIds: IntArray,
+    ) {
+        super.onRestored(context, oldWidgetIds, newWidgetIds)
+        remapInstanceConfiguration(context, oldWidgetIds, newWidgetIds)
+    }
+
+    /** The remap itself, split out of [onRestored] for the same reason as [clearInstanceConfiguration]. */
+    @VisibleForTesting
+    internal fun remapInstanceConfiguration(
+        context: Context,
+        oldWidgetIds: IntArray,
+        newWidgetIds: IntArray,
+        configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
+    ) {
+        if (oldWidgetIds.size != newWidgetIds.size) {
+            Log.w(
+                TAG,
+                "onRestored for '$widgetId' passed ${oldWidgetIds.size} old ids and ${newWidgetIds.size} new ids; skipping remap",
+            )
+            return
+        }
+        try {
+            runBlocking {
+                configurationStore.remapInstances(widgetId, oldWidgetIds.toList(), newWidgetIds.toList())
+            }
+        } catch (e: Exception) {
+            Log.w(
+                TAG,
+                "Could not remap instance configuration for widget '$widgetId' " +
+                    "(${oldWidgetIds.joinToString()} -> ${newWidgetIds.joinToString()}): ${e.message}",
+                e,
+            )
+        }
+    }
 }

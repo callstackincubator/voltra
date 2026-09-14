@@ -294,7 +294,9 @@ provider XML does not change.
   each platform.
 - A placement's values are lost when the launcher restores a backup and
   reassigns ids; the widget then shows type-level or default values. This is
-  documented and left for a later change.
+  documented and left for a later change. _Update: handled by `onRestored` in
+  the Dynamic receiver, which moves each placement's values to its new id
+  (#287 stack, third PR)._
 - The launcher's own edit gesture does nothing until the follow-up that wires
   `android:configure`. Until then the app is the only place to change a
   placement's values.
