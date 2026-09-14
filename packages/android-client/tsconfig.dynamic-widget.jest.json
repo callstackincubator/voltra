@@ -4,5 +4,5 @@
     "noEmit": true,
     "types": ["jest", "node"]
   },
-  "include": ["./src/dynamic-widget/**/*.node.test.ts"]
+  "include": ["./src/dynamic-widget/**/*.node.test.ts", "./src/widgets/**/*.node.test.ts"]
 }
