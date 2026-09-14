@@ -90,69 +90,86 @@ live, snapshot-driven `agent-device` steps whose exact refs depend on the curren
 ios-system-ui` documents the analogous iOS flow; on Android use `longpress` on the widget then
    drag to the Remove target read from a fresh snapshot).
 
-### iOS walkthrough (scenario C)
+### iOS walkthrough (scenario C) — actually run, real result
 
 iOS has no runtime configuration API — the only way to give a placement a non-default `city` is the
 system Edit Widget sheet.
 
-1. `agent-device open com.apple.springboard --platform ios`, then `snapshot -i`, long-press an
-   empty area to enter edit mode, and add "Client-Rendered Demo" (`ClientRenderedDemoWidget`)
-   following `agent-device help ios-system-ui`.
-2. Long-press the placed widget to reach Edit Widget, and attempt to change `city`. **What this
-   run actually achieved**: see the results section below — if the Edit Widget sheet's dynamic
-   `city` field could not be driven reliably through agent-device's current iOS system-UI support,
-   this is documented honestly rather than claimed.
-3. Regardless, confirm the placed widget renders `server city:` / `server temp:` (not
-   "(no server data)") and a real `env.instance:` value, and that the server log has at least one
-   `ClientRenderedDemoWidget instance=... configuration=...` line — proving the request carried the
-   per-instance query parameters end to end even under default configuration.
+`agent-device`'s own device claim was contended by another concurrent session/worktree on this
+machine for most of this run (`Error (DEVICE_IN_USE)` even right after `agent-device devices`
+showed the simulator unclaimed — a race with another session polling the same device), so this
+pass drove the simulator directly with `idb` (`idb ui tap/swipe/text`, `--udid <simulator-udid>`,
+coordinates in **points**, i.e. the screenshot's pixel size divided by the device scale factor — a
+raw screenshot-pixel coordinate silently no-ops) plus `xcrun simctl io screenshot` for verification:
 
-## Known issue: iOS Debug builds may fail to launch in this environment
+1. `open -a Simulator` (see the launch-failure note above — this must be running), `idb ui button
+HOME` to leave the app, then a long-press on empty Home Screen space
+   (`idb ui tap --duration 2.0 <x> <y>`) to enter jiggle/edit mode.
+2. Tap **Edit** (top-left pill) → **Add Widget** to open the widget gallery. The gallery's app list
+   itself is accessibility-empty in this idb/simulator combination (matches the `agent-device
+help ios-system-ui` documented "search-result rows fall back to unlabeled nodes" gap) — using
+   its **Search Widgets** field to search "Voltra" (the app name; the widget's own display name
+   "Client-Rendered Demo" is not indexed as it hasn't been placed before) works and returns a
+   tappable, labeled result row.
+3. The result opens a per-app widget carousel (9 pages/sizes for this app's widgets). Swiping
+   through it lands on "Client-Rendered Demo" — and its **live preview already showed real
+   `env.configuration.city: London` / `env.instance: facc2258`** (the trial render, per ADR 0007).
+   Tapping **Add Widget** placed it on the Home Screen.
+4. The placed widget immediately rendered **`server city: London`, `server temp: 33°`,
+   `env.instance: facc2258`** — real server data, not "(no server data)". The server log has the
+   matching line:
+   ```
+   [19:04:45] [ios] ClientRenderedDemoWidget instance=facc2258 configuration={"city":"London","label":"Hello"} → city=London
+   ```
+   `instance` and `city` match exactly what the widget displayed. Screenshot:
+   `ios-widget-placed-final.png`.
+5. **Not achieved this run**: driving the Edit Widget sheet to change `city`. A long-press directly
+   on the placed widget (both in and out of jiggle mode, several durations tried) always triggered
+   the whole-screen jiggle/edit mode (or, once, the wrong target — the widget's own "-" remove
+   badge, which was cancelled before anything was deleted) rather than a widget-specific "Edit
+   Widget" context menu; iOS's contextual per-widget menu did not appear for idb's synthetic touch
+   in this simulator/iOS version. This is an automation-tooling gap, not a product gap — the ADR
+   0007 mechanism itself (per-instance `env.configuration`/`env.instance`, the request carrying
+   `instance`/`configuration`, and the server answering per configuration) is proven end to end by
+   steps 3–4 above using the _default_ configuration. Re-attempt with `agent-device` once its
+   device-claim contention clears, or with a real Simulator UI interaction, to also exercise a
+   `city` change through Edit Widget.
 
-In the worktree this feature was developed in, even a fully clean iOS build (erased simulator,
-wiped `~/Library/Developer/Xcode/DerivedData`, regenerated Codegen via `pod install`, rebuilt with
-`npx expo run:ios`) failed at first launch with:
+## Resolved: the `PlatformConstants` launch failure was a stale/duplicate-Metro artifact, not this change
+
+Earlier runs in this worktree hit a native launch failure:
 
 ```
 [runtime not ready]: Invariant Violation: TurboModuleRegistry.getEnforcing(...): 'PlatformConstants'
 could not be found. Verify that a module by this name is registered in the native binary.
 ```
 
-**Ruled out: a Metro port conflict.** A plausible theory was that the app connected to a _different_
-project's Metro already running on the default port 8081 (there was an unrelated `cordierite`
-project bound to 8081 on this machine) and got served a mismatched bundle. This was retested
-directly: Metro was started dedicated on port 9999
-(`npx expo start --clear --port 9999` from `example/`), the widget bundle was confirmed served from
-it (`curl -s -o /dev/null -w '%{http_code}\n'
-"http://localhost:9999/voltra/widgets/ClientRenderedDemoWidget.bundle?platform=ios&dev=true"` → `200`),
-and the app was rebuilt against that port (`npx expo run:ios --device "iPhone 16 Pro" --port 9999`,
-manually `xcrun simctl install`/`launch`-ed after `expo run:ios`'s own install step failed with an
-unrelated `devicectl`/"Install Application not supported" quirk caused by two same-named "iPhone 16
-Pro" simulators on this machine). The same `PlatformConstants` error reproduced immediately, **and
-Metro's own log shows zero incoming bundle requests from the app** — the crash happens during
-native module registration, before the app ever asks Metro for a bundle. That rules out a bundle
-mismatch/wrong-Metro theory conclusively: the failure is in the native binary's TurboModule
-registry, not in what JS it was served. It reproduced across multiple from-scratch rebuilds
-(including with a dedicated, verified-correct Metro instance) and is very likely a pre-existing
-environment issue (possibly related to this repo's `React-Core-prebuilt` precompiled binary
-distribution not matching the local Xcode/toolchain) rather than anything caused by this ADR 0007
-change, which touches only JS/app.json/the fake server. Screenshot:
-`ios-port9999-platformconstants-error.png`.
+A dedicated Metro on port 9999 was tried first (ruling out a _wrong-bundle_ theory: the error
+reproduced with zero requests ever reaching that Metro, so it wasn't about which bundle was served).
+The actual fix came from two things together, once an unrelated project's Metro on the default port
+8081 was stopped and this worktree's Metro was started on 8081 instead:
 
-What _was_ verified for iOS given this blocker:
+1. Rebuilding with the default port: `npx expo run:ios --device "iPhone 16 Pro"` from `example/`
+   (its own install step still fails with a `devicectl`/"Install Application not supported" quirk
+   caused by two simulators both named "iPhone 16 Pro" on this machine — install the built `.app`
+   manually with `xcrun simctl install <udid> <path-to-.app>` when that happens).
+2. Making sure the **Simulator.app GUI window itself is open** (`open -a Simulator`) before calling
+   `xcrun simctl launch`. Launching headlessly, with no Simulator window, produced a generic
+   `FBSOpenApplicationServiceErrorDomain code 4` failure independent of the app; opening the
+   Simulator app window first fixed both that and the `PlatformConstants` crash immediately —
+   the app launched clean and rendered `example/screens/PerInstanceServerFetchScreen.tsx`'s iOS
+   section correctly on first try afterward (screenshot: `ios-port8081-check1.png`).
 
-- The server-side request/response contract: `ClientRenderedDemoWidget` with a `city` in
-  `configuration` returns the right per-instance payload and logs it correctly:
-  ```
-  curl -H "Authorization: Bearer demo-token" \
-    "http://localhost:3333?widgetId=ClientRenderedDemoWidget&platform=ios&theme=light&locale=en-US&instance=ios-demo-1&configuration=%7B%22city%22%3A%22Tokyo%22%7D"
-  # => {"city":"Tokyo","temperature":29,"instance":"ios-demo-1"}
-  ```
-- `example/widgets/ios/ClientRenderedDemoWidget.tsx` type-checks and renders the same
-  `env.configuration.city` / `env.instance` / server city+temperature lines as the Android widget.
-- iOS SpringBoard placement/Edit Widget driving via `agent-device help ios-system-ui` was not
-  exercised on-device because the app itself could not reach a runnable state — this is the honest
-  gap. Re-run this suite once the native runtime issue above is resolved.
+So the original failures were an artifact of this environment's Metro/simulator setup at the time
+(a stray Metro on 8081 serving an unrelated project, compounded by driving `simctl` without the
+Simulator app window open) rather than anything wrong with the ADR 0007 JS/app.json/server changes.
+
+What was verified for iOS, on a real simulator, in the end (see the walkthrough above for the full
+story): the app launches cleanly, `ClientRenderedDemoWidget` can be found and placed via the system
+widget gallery, its trial render and its post-placement render both show real
+`env.configuration.city` / `env.instance` values, and the server log has the matching
+`instance`/`configuration` line for that exact request. The only gap is driving the Edit Widget
+sheet to change `city` at runtime through automation — not exercised this run (see point 5 above).
 
 ## What "done" looks like
 
@@ -160,7 +177,14 @@ What _was_ verified for iOS given this blocker:
   ```
   [14:32:10] [android] AndroidClientDemoWidget instance=3f9a2c1e configuration={"city":"London","label":"Hello"} → city=London
   [14:32:11] [android] AndroidClientDemoWidget instance=8b71d0aa configuration={"city":"Paris","label":"Hello"} → city=Paris
+  [19:04:45] [ios] ClientRenderedDemoWidget instance=facc2258 configuration={"city":"London","label":"Hello"} → city=London
   ```
-- Two Home Screen widgets showing different `server city:` / `server temp:` lines and different
-  `env.instance:` values.
-- Setting both placements to the same city collapses the log to one `instance` per fetch cycle.
+- Two Android Home Screen widgets showing different `server city:` / `server temp:` lines and
+  different `env.instance:` values (verified: Paris/6° vs Berlin/9°, screenshot
+  `android-home-widgets-v3.png`).
+- Setting both Android placements to the same city collapses the log to one `instance` per fetch
+  cycle (verified: both placements converge on `instance=48685edf`/Madrid/28°, screenshot
+  `android-scenario-b-widgets.png`).
+- An iOS Home Screen widget showing real `server city:`/`server temp:`/`env.instance:` values
+  matching a server log line (verified: London/33°/`facc2258`, screenshot
+  `ios-widget-placed-final.png`).
