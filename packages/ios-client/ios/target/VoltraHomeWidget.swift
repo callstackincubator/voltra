@@ -298,9 +298,9 @@ public struct VoltraHomeWidgetView: View {
           )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // Only set a root URL when there is one, so a `widgetURL` native modifier is not
-        // shadowed by `.widgetURL(nil)` (ADR 0005).
-        .voltraIfLet(resolveDeepLinkURL(entry)) { view, url in view.widgetURL(url) }
+        .voltraIfLet(
+          VoltraRootDefaults.widgetURL(configured: configuredDeepLinkURL(entry), fallback: { defaultDeepLinkURL(entry) }, root: root)
+        ) { view, url in view.widgetURL(url) }
 
         if showRefreshButton {
           content.overlay(alignment: .topTrailing) {
@@ -313,9 +313,7 @@ public struct VoltraHomeWidgetView: View {
         placeholderView(widgetId: entry.widgetId)
       }
     }
-    // A `containerBackground` native modifier in the tree replaces the default clear background;
-    // the outer one would otherwise win (ADR 0005).
-    .disableWidgetMarginsIfAvailable(unless: entry.rootNode?.containsNativeModifier("containerBackground") == true)
+    .voltraDefaultContainerBackground(root: entry.rootNode)
   }
 
   private func mapWidgetRenderingMode(_ mode: WidgetRenderingMode) -> VoltraWidgetRenderingMode {
@@ -446,20 +444,8 @@ private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Dat
 
 // MARK: - Deep link helpers
 
-private extension View {
-  @ViewBuilder
-  func disableWidgetMarginsIfAvailable(unless treeSetsContainerBackground: Bool = false) -> some View {
-    if treeSetsContainerBackground {
-      self
-    } else if #available(iOSApplicationExtension 17.0, *) {
-      containerBackground(.clear, for: .widget)
-    } else {
-      self
-    }
-  }
-}
-
-private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
+/// The deep link configured for the widget: the timeline entry's, else the stored static one.
+private func configuredDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
   // Prefer the timeline entry's deep link URL if available
   if let entryUrl = entry.deepLinkUrl, !entryUrl.isEmpty {
     if entryUrl.contains("://"), let url = URL(string: entryUrl) {
@@ -482,13 +468,11 @@ private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
     }
   }
 
-  // A `widgetURL` native modifier in the tree replaces the default link; two `widgetURL`s in one
-  // hierarchy are undefined and the root one would win (ADR 0005).
-  if entry.rootNode?.containsNativeModifier("widgetURL") == true {
-    return nil
-  }
+  return nil
+}
 
-  // Default deep link with widget info
+/// The synthetic deep link used when nothing is configured.
+private func defaultDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
   guard let scheme = VoltraDeepLinkResolver.deepLinkScheme() else { return nil }
 
   var tag = "unknown"

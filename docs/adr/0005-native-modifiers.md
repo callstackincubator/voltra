@@ -365,7 +365,9 @@ link resolves, the way the Dynamic Live Activity renderer already did, and
 the home widget skips its synthetic fallback when the rendered tree carries
 a `widgetURL` modifier. The same rule covers `containerBackground`: the home
 widget root sets `containerBackground(.clear, for: .widget)` only when the
-tree carries no `containerBackground` modifier. Values configured
+tree carries no `containerBackground` modifier. Both decisions live in
+`VoltraRootDefaults` under `ui/Modifiers`, so host code never names a
+modifier. Values configured
 explicitly outside the tree keep precedence: a widget's `deepLinkUrl`, and
 an `activityBackgroundTint` passed when starting or updating a Live
 Activity. A `widgetURL` modifier is therefore the only one in
@@ -429,8 +431,11 @@ see. Because the Row and Column renderers append `defaultWeight` after
 `resolveAndApplyStyle`, `style.flex` replaces a child's native size
 modifiers along the main axis; the documentation states this exception to
 "the modifier wins". Glance fails the whole widget when two views carry
-`appWidgetBackground`, so the render context records the first element that
-claims it and later claims are logged and skipped.
+`appWidgetBackground`, so a per-render `VoltraModifierRenderState`, provided
+once at the Glance render root, records the first element that claims it
+and later claims are logged and skipped. The composable
+`GlanceModifier.applyNativeModifiers(props)` in `voltra/modifiers` reads that
+state and the theme, so `resolveAndApplyStyle` makes a single call.
 
 ### Documentation
 

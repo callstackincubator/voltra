@@ -28,6 +28,7 @@ import { shorten } from '../payload/short-names.js'
 import { VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'
 import { ContextRegistry, getContextRegistry } from './context-registry.js'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher.js'
+import { encodeNativeModifiers } from './native-modifiers.js'
 import { createElementRegistry, type ElementRegistry, preScanForDuplicates } from './element-registry.js'
 import { flattenStyle } from './flatten-styles.js'
 import { getRenderCache, type RenderCache } from './render-cache.js'
@@ -389,28 +390,6 @@ function isReactNode(value: unknown): value is ReactNode {
     return true
   }
   return false
-}
-
-const isSkippedModifier = (value: unknown) => value === undefined || value === null || value === false
-
-function encodeNativeModifiers(value: unknown): string | undefined {
-  // `modifiers={condition && [...]}` and `[condition && modifier]` are common in untyped JS; they
-  // mean "no modifier", not a render error.
-  if (isSkippedModifier(value)) {
-    return undefined
-  }
-  if (!Array.isArray(value)) {
-    throw new Error('The `modifiers` prop must be an array of native modifiers.')
-  }
-  const modifiers = value.filter((modifier) => !isSkippedModifier(modifier))
-  for (const modifier of modifiers) {
-    if (typeof modifier !== 'object' || typeof modifier.$type !== 'string') {
-      throw new Error(
-        'The `modifiers` prop only accepts values created by `Voltra.modifiers` or `VoltraAndroid.modifiers`.'
-      )
-    }
-  }
-  return modifiers.length > 0 ? JSON.stringify(modifiers) : undefined
 }
 
 export function transformProps(

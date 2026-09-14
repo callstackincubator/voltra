@@ -2,18 +2,14 @@ package voltra.glance
 
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
-import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import voltra.glance.renderers.getOnClickAction
-import voltra.modifiers.VoltraModifierRegistry
-import voltra.modifiers.VoltraModifierScope
 import voltra.modifiers.applyNativeModifiers
 import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
 import voltra.styling.StyleConverter
 import voltra.styling.applyStyle
-import voltra.styling.toColorProvider
 
 data class ResolvedStyle(
     val modifier: GlanceModifier,
@@ -40,16 +36,7 @@ fun resolveAndApplyStyle(
             GlanceModifier
         }
     // Native modifiers go after style, so Glance keeps their value where both set the same thing.
-    // The theme is read here, inside composition, so the factories themselves stay plain functions.
-    val themeColors = GlanceTheme.colors
-    val modifier =
-        styledModifier.applyNativeModifiers(
-            VoltraModifierRegistry.parseDescriptors(props?.get("modifiers") as? String),
-            VoltraModifierScope(
-                claimAppWidgetBackground = { props?.let { renderContext.claimAppWidgetBackground(it) } ?: true },
-            ) { role -> role.toColorProvider(themeColors) },
-        )
-    return ResolvedStyle(modifier, compositeStyle)
+    return ResolvedStyle(styledModifier.applyNativeModifiers(props), compositeStyle)
 }
 
 /**

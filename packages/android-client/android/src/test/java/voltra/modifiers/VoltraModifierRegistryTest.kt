@@ -158,7 +158,7 @@ class VoltraModifierRegistryTest {
 
     @Test
     fun keepsOnlyTheFirstAppWidgetBackground() {
-        val context = voltra.glance.VoltraRenderContext(widgetId = "widget")
+        val renderState = VoltraModifierRenderState()
         val first = mapOf<String, Any?>("id" to "first")
         val second = mapOf<String, Any?>("id" to "second")
         val descriptors = listOf(VoltraModifierDescriptor("appWidgetBackground", emptyMap()))
@@ -167,7 +167,7 @@ class VoltraModifierRegistryTest {
             GlanceModifier
                 .applyNativeModifiers(
                     descriptors,
-                    VoltraModifierScope(claimAppWidgetBackground = { context.claimAppWidgetBackground(owner) }) {
+                    VoltraModifierScope(claimAppWidgetBackground = { renderState.claimAppWidgetBackground(owner) }) {
                         ColorProvider(Color.Magenta)
                     },
                 ).elementNames()
