@@ -14,6 +14,9 @@ const styles = StyleSheet.create({
 export type AndroidClientDemoWidgetProps = {
   headline?: string
   unreadCount?: number
+  city?: string
+  temperature?: number
+  instance?: string
 }
 
 // This Dynamic Widget runs on-device in Hermes on every render. Runtime props are the first
@@ -24,8 +27,6 @@ export default function AndroidClientDemoWidget(
 ) {
   // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
   const hotReloadMarker = 'edit me'
-  const headline = props.headline ?? 'No headline yet'
-  const unreadCount = props.unreadCount ?? 0
 
   const date = env.date ? new Date(env.date) : new Date()
   const renderedAt = date.toLocaleTimeString('en-US', {
@@ -36,7 +37,10 @@ export default function AndroidClientDemoWidget(
   })
 
   const config = env.configuration as Record<string, unknown> | undefined
-  const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
+  const configCity = typeof config?.city === 'string' ? config.city : '(unset)'
+  const serverCity = props.city ?? '(no server data)'
+  const serverTemp = typeof props.temperature === 'number' ? `${props.temperature}°` : '(no server data)'
+  const instanceKey = env.instance ?? '(no instance)'
 
   // Material You tokens — resolved natively from the system dynamic color scheme.
   const bg = AndroidDynamicColors.surface
@@ -54,10 +58,6 @@ export default function AndroidClientDemoWidget(
     </VoltraAndroid.Row>
   )
 
-  const swatch = (color: string) => (
-    <VoltraAndroid.Box style={StyleSheet.flatten([styles.swatch, { backgroundColor: color }])} />
-  )
-
   return (
     <VoltraAndroid.Column
       style={StyleSheet.flatten([styles.container, { backgroundColor: bg }])}
@@ -69,24 +69,14 @@ export default function AndroidClientDemoWidget(
       <VoltraAndroid.Text style={StyleSheet.flatten([styles.marker, { color: accent }])}>
         {hotReloadMarker}
       </VoltraAndroid.Text>
-      <VoltraAndroid.Spacer style={{ height: 6 }} />
-      {row('size:', env.widgetFamily ?? '?')}
-      {row('scheme:', env.colorScheme ?? '?')}
-      {row('locale:', env.locale ?? '?')}
-      {row('config:', configLabel)}
-      {row('headline:', headline)}
-      {row('unread:', String(unreadCount))}
+      {/* Jetpack Glance truncates a Column past 10 direct children (see prebuild log warning), so
+          this widget keeps only the rows this ADR 0007 demo needs — per-instance city/temperature
+          and the raw env.configuration.city / env.instance values — rather than every env field. */}
+      {row('env.configuration.city:', configCity)}
+      {row('env.instance:', instanceKey)}
+      {row('server city:', serverCity)}
+      {row('server temp:', serverTemp)}
       {row('time:', renderedAt)}
-      <VoltraAndroid.Spacer style={{ height: 8 }} />
-      <VoltraAndroid.Row>
-        {swatch(AndroidDynamicColors.primary)}
-        <VoltraAndroid.Spacer style={{ width: 6 }} />
-        {swatch(AndroidDynamicColors.secondary)}
-        <VoltraAndroid.Spacer style={{ width: 6 }} />
-        {swatch(AndroidDynamicColors.tertiary)}
-        <VoltraAndroid.Spacer style={{ width: 6 }} />
-        {swatch(AndroidDynamicColors.error)}
-      </VoltraAndroid.Row>
     </VoltraAndroid.Column>
   )
 }
