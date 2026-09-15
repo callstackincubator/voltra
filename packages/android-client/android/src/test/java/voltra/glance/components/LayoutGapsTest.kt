@@ -41,11 +41,14 @@ class LayoutGapsTest {
     }
 
     @Test
-    fun flattenChildren_dropsUnresolvedRefsAndNulls() {
+    fun flattenChildren_dropsUnresolvedRefs() {
         val ref = VoltraNode.Ref(5)
-        val array = VoltraNode.Array(listOf(ref, null))
 
-        assertTrue(LayoutGaps.flattenChildren(array, sharedElements = emptyList()).isEmpty())
+        assertTrue(LayoutGaps.flattenChildren(ref, sharedElements = emptyList()).isEmpty())
+    }
+
+    @Test
+    fun flattenChildren_dropsNulls() {
         assertTrue(LayoutGaps.flattenChildren(null, sharedElements = null).isEmpty())
     }
 
