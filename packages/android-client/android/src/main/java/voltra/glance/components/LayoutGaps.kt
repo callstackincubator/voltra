@@ -35,6 +35,9 @@ internal object LayoutGaps {
      * Whether a leaf node is invisible (`display: none` -> Glance [Visibility.Gone]) and
      * should therefore be excluded when computing gap spacer placement. Text leaves have
      * no style and are never Gone.
+     *
+     * This resolves each node's style (including a full [StyleConverter.convert]), so it
+     * is only cheap to call on containers that actually need it - see [visibleChildren].
      */
     fun isGone(
         node: VoltraNode,
@@ -46,9 +49,27 @@ internal object LayoutGaps {
     }
 
     /**
-     * Indices into a list of visible children (Gone children already filtered out) that
-     * should have a gap spacer rendered before them: every index except the first, and
-     * only when [gap] is a positive value.
+     * The children a Column/Row should actually render, in order.
+     *
+     * When [gap] is not a positive value, [children] is returned unchanged: no per-child
+     * style resolution happens, and Gone children stay in the list so they keep being
+     * rendered as Glance `Visibility.Gone` views exactly as before the `gap` style
+     * existed. When [gap] is positive, Gone children are excluded so they neither receive
+     * a spacer nor consume one of Glance's 10 direct-child slots.
+     */
+    fun visibleChildren(
+        children: List<VoltraNode>,
+        gap: Dp?,
+        sharedStyles: List<Map<String, Any?>>?,
+    ): List<VoltraNode> {
+        if (!hasPositiveGap(gap)) return children
+        return children.filterNot { isGone(it, sharedStyles) }
+    }
+
+    /**
+     * Indices into a list of visible children (Gone children already filtered out via
+     * [visibleChildren] when applicable) that should have a gap spacer rendered before
+     * them: every index except the first, and only when [gap] is a positive value.
      */
     fun spacerBeforeIndices(
         visibleChildrenCount: Int,

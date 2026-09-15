@@ -73,6 +73,27 @@ class LayoutGapsTest {
         assertFalse(LayoutGaps.isGone(text("hi"), sharedStyles = null))
     }
 
+    // --- visibleChildren ---
+
+    @Test
+    fun visibleChildren_retainsGoneChildWhenGapIsNullOrZero() {
+        val visible = element()
+        val gone = element(mapOf("style" to mapOf("display" to "none")))
+        val children = listOf(visible, gone)
+
+        assertEquals(children, LayoutGaps.visibleChildren(children, gap = null, sharedStyles = null))
+        assertEquals(children, LayoutGaps.visibleChildren(children, gap = 0.dp, sharedStyles = null))
+    }
+
+    @Test
+    fun visibleChildren_excludesGoneChildWhenGapIsPositive() {
+        val visible = element()
+        val gone = element(mapOf("style" to mapOf("display" to "none")))
+        val children = listOf(visible, gone)
+
+        assertEquals(listOf(visible), LayoutGaps.visibleChildren(children, gap = 8.dp, sharedStyles = null))
+    }
+
     // --- spacerBeforeIndices ---
 
     @Test

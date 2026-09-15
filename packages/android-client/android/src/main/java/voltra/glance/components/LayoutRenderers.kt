@@ -18,9 +18,15 @@ import voltra.styling.applyFlex
 private const val LAYOUT_LOG_TAG = "VoltraLayout"
 
 /**
- * Computes the visible (non-Gone) leaf children for a Column/Row and where gap spacers
- * should be inserted, logging a warning if the resulting view count would exceed
- * Glance's 10-direct-children limit.
+ * Computes the leaf children a Column/Row should render and where gap spacers should be
+ * inserted, logging a warning if the resulting view count would exceed Glance's
+ * 10-direct-children limit.
+ *
+ * When [gap] is null or non-positive, this is a no-op beyond flattening: no per-child
+ * style resolution happens and Gone children are left in place, so rendering stays
+ * identical to before the `gap` style existed. Only when [gap] is positive are Gone
+ * children filtered out (see [LayoutGaps.visibleChildren]) so they don't get a spacer or
+ * consume a child slot.
  */
 private fun resolveGapLayout(
     element: VoltraElement,
@@ -28,10 +34,8 @@ private fun resolveGapLayout(
     gap: androidx.compose.ui.unit.Dp?,
     containerName: String,
 ): Pair<List<VoltraNode>, Set<Int>> {
-    val visibleChildren =
-        LayoutGaps
-            .flattenChildren(element.c, context.sharedElements)
-            .filterNot { LayoutGaps.isGone(it, context.sharedStyles) }
+    val allChildren = LayoutGaps.flattenChildren(element.c, context.sharedElements)
+    val visibleChildren = LayoutGaps.visibleChildren(allChildren, gap, context.sharedStyles)
     val spacerIndices = LayoutGaps.spacerBeforeIndices(visibleChildren.size, gap)
 
     if (spacerIndices.isNotEmpty() &&
