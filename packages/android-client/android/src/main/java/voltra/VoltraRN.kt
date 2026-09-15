@@ -1,10 +1,7 @@
 package voltra
 
 import android.appwidget.AppWidgetHostView
-import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
-import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -30,12 +27,6 @@ class VoltraRN(
     private var lastRenderedWidthDp: Float = 0f
     private var lastRenderedHeightDp: Float = 0f
 
-    // One of this app's own AppWidgetProviderInfo entries, used only to silence the "Error
-    // trying to create the remote context" log that AppWidgetHostView emits without one.
-    // Resolved lazily and cached; absence is harmless (see resolveOwnProviderInfo).
-    private var providerInfoResolved = false
-    private var providerInfo: AppWidgetProviderInfo? = null
-
     fun setViewId(id: String) {
         if (this.viewId == id) return
         this.viewId = id
@@ -49,31 +40,6 @@ class VoltraRN(
     }
 
     private fun currentHostView(): AppWidgetHostView? = getChildAt(0) as? AppWidgetHostView
-
-    /**
-     * Looks up an [AppWidgetProviderInfo] belonging to this app, if any, purely so it can be
-     * handed to [AppWidgetHostView.setAppWidget]. That call is optional: without it,
-     * AppWidgetHostView still renders the composed RemoteViews correctly, it just logs a
-     * cosmetic "Error trying to create the remote context" and falls back to the app's own
-     * context. `getInstalledProvidersForPackage` needs API 26+; apps with no AppWidget
-     * provider of their own simply skip this.
-     */
-    private fun resolveOwnProviderInfo(): AppWidgetProviderInfo? {
-        if (providerInfoResolved) return providerInfo
-        providerInfoResolved = true
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            providerInfo =
-                try {
-                    AppWidgetManager
-                        .getInstance(context)
-                        .getInstalledProvidersForPackage(context.packageName, null)
-                        .firstOrNull()
-                } catch (e: Exception) {
-                    null
-                }
-        }
-        return providerInfo
-    }
 
     private fun updateView() {
         val payloadStr = payload ?: return
@@ -150,12 +116,15 @@ class VoltraRN(
                     withContext(Dispatchers.Main) {
                         try {
                             // Host the composed RemoteViews in an AppWidgetHostView instead of
-                            // manually apply()/reapply()-ing them onto this FrameLayout. Glance
-                            // compiles LazyColumn/LazyVerticalGrid to a setRemoteAdapter action,
-                            // and on API 31 and below RemoteViews.apply refuses to run it unless
-                            // the inflation root parent is an AppWidgetHostView — see the
+                            // manually apply()/reapply()-ing them onto this FrameLayout.
+                            // RemoteViews.apply/reapply refuse to run a setRemoteAdapter action
+                            // (what Glance compiles LazyColumn/LazyVerticalGrid to) unless the
+                            // inflation root parent is an AppWidgetHostView, on every API level
+                            // — this is why lazy lists rendered empty before. On API 32+ that's
+                            // all Glance needs, since it embeds the items in-process; see the
                             // eager-rendering fallback in VoltraLazyColumn/VoltraLazyVerticalGrid
-                            // for versions where that's still not enough.
+                            // for API 31 and below, where Glance instead needs a real widget id
+                            // bound through AppWidgetHost, which no in-app preview can provide.
                             // AppWidgetHostView.updateAppWidget already handles recycle-vs-inflate,
                             // LayoutParams, and error views for us.
                             //
@@ -173,9 +142,6 @@ class VoltraRN(
                             val targetHostView =
                                 reusableHostView ?: run {
                                     val freshHostView = AppWidgetHostView(remoteViewsContext)
-                                    host.resolveOwnProviderInfo()?.let { info ->
-                                        freshHostView.setAppWidget(AppWidgetManager.INVALID_APPWIDGET_ID, info)
-                                    }
                                     freshHostView.layoutParams =
                                         ViewGroup.LayoutParams(
                                             ViewGroup.LayoutParams.MATCH_PARENT,

@@ -33,7 +33,7 @@ const sectorData = [
   { value: 10, category: 'Charts' },
 ]
 
-const LAZY_LIST_ITEMS = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6']
+const LAZY_LIST_ITEMS = Array.from({ length: 12 }, (_, index) => `Item ${index + 1}`)
 
 type ComponentExample = {
   id: string

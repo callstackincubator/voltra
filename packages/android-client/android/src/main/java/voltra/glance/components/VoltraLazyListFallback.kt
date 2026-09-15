@@ -2,6 +2,7 @@ package voltra.glance.components
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import voltra.models.VoltraNode
 import kotlin.math.ceil
@@ -59,11 +60,14 @@ internal fun <T> chunkForNesting(
 
 /**
  * Renders [items] with [renderItem], nesting extra Columns as needed so that no single
- * Column ever receives more than [maxChildren] direct children.
+ * Column ever receives more than [maxChildren] direct children. Overflow Columns carry
+ * [horizontalAlignment] so a long list keeps the alignment the caller set on the outer
+ * container.
  */
 @Composable
 internal fun <T> RenderNestedGroups(
     items: List<T>,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Horizontal.Start,
     maxChildren: Int = VOLTRA_GLANCE_MAX_DIRECT_CHILDREN,
     renderItem: @Composable (T) -> Unit,
 ) {
@@ -72,8 +76,8 @@ internal fun <T> RenderNestedGroups(
         return
     }
     chunkForNesting(items, maxChildren).forEach { group ->
-        Column {
-            RenderNestedGroups(group, maxChildren, renderItem)
+        Column(horizontalAlignment = horizontalAlignment) {
+            RenderNestedGroups(group, horizontalAlignment, maxChildren, renderItem)
         }
     }
 }
