@@ -33,10 +33,12 @@ fun VoltraLazyVerticalGrid(
     val horizontalAlignment = extractHorizontalAlignment(element.p)
     val items = resolveLazyListItems(element.c, context.sharedElements)
 
-    // Glance's setRemoteAdapter action, which LazyVerticalGrid compiles to, requires the
-    // inflation root parent to be a real AppWidgetHostView on API 31 and below (see
-    // VoltraRN.kt). In VoltraWidgetPreview on those versions, approximate the grid with eager
-    // Rows of a fixed column count instead so the preview shows content.
+    // On API 31 and below, Glance delivers LazyVerticalGrid's items through
+    // GlanceRemoteViewsService, which the framework binds via
+    // AppWidgetManager.bindRemoteViewsService — that requires a real widget id bound to the
+    // caller's AppWidgetHost, which no in-app preview can provide (see VoltraRN.kt).
+    // Approximate the grid with eager Rows of a fixed column count instead so the preview
+    // shows content.
     if (context.isPreview && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
         logPreviewApproximation("LazyVerticalGrid")
         val columnCount = deriveFallbackGridColumnCount(element.p, context.widgetSize?.width?.value)
@@ -45,7 +47,7 @@ fun VoltraLazyVerticalGrid(
             modifier = finalModifier,
             horizontalAlignment = horizontalAlignment,
         ) {
-            RenderNestedGroups(rows) { row ->
+            RenderNestedGroups(rows, horizontalAlignment) { row ->
                 Row(horizontalAlignment = horizontalAlignment) {
                     row.forEach { child -> RenderNode(child) }
                 }

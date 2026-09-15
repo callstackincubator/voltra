@@ -31,17 +31,17 @@ fun VoltraLazyColumn(
     val horizontalAlignment = extractHorizontalAlignment(element.p)
     val items = resolveLazyListItems(element.c, context.sharedElements)
 
-    // Glance's setRemoteAdapter action, which LazyColumn compiles to, requires the inflation
-    // root parent to be a real AppWidgetHostView on API 31 and below (see VoltraRN.kt). In
-    // VoltraWidgetPreview on those versions, render the items eagerly instead so the preview
-    // shows content rather than an empty list.
+    // On API 31 and below, Glance delivers LazyColumn's items through GlanceRemoteViewsService,
+    // which the framework binds via AppWidgetManager.bindRemoteViewsService — that requires a
+    // real widget id bound to the caller's AppWidgetHost, which no in-app preview can provide
+    // (see VoltraRN.kt). Render the items eagerly there instead so the preview shows content.
     if (context.isPreview && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
         logPreviewApproximation("LazyColumn")
         Column(
             modifier = finalModifier,
             horizontalAlignment = horizontalAlignment,
         ) {
-            RenderNestedGroups(items) { child -> RenderNode(child) }
+            RenderNestedGroups(items, horizontalAlignment) { child -> RenderNode(child) }
         }
         return
     }
