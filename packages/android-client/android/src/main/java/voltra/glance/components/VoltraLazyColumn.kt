@@ -1,9 +1,12 @@
 package voltra.glance.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
+import androidx.glance.layout.padding
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderNode
@@ -17,7 +20,7 @@ fun VoltraLazyColumn(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
+    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
             modifier ?: baseModifier,
@@ -27,6 +30,7 @@ fun VoltraLazyColumn(
             element.t,
             element.hashCode(),
         )
+    val gap = compositeStyle?.layout?.gap
 
     LazyColumn(
         modifier = finalModifier,
@@ -34,16 +38,18 @@ fun VoltraLazyColumn(
     ) {
         when (val children = element.c) {
             is VoltraNode.Array -> {
-                items(children.elements.size) { index ->
-                    RenderNode(children.elements[index])
+                val count = children.elements.size
+                items(count) { index ->
+                    RenderLazyItem(children.elements[index], index, count, gap)
                 }
             }
 
             is VoltraNode.Ref -> {
                 val resolved = context.sharedElements?.getOrNull(children.ref)
                 if (resolved is VoltraNode.Array) {
-                    items(resolved.elements.size) { index ->
-                        RenderNode(resolved.elements[index])
+                    val count = resolved.elements.size
+                    items(count) { index ->
+                        RenderLazyItem(resolved.elements[index], index, count, gap)
                     }
                 } else {
                     item { RenderNode(resolved) }
@@ -56,6 +62,26 @@ fun VoltraLazyColumn(
                 item { RenderNode(children) }
             }
         }
+    }
+}
+
+/**
+ * Renders one lazy-list item, padding its bottom edge to simulate the `gap` style
+ * between items without changing the item count or its implicit id.
+ */
+@Composable
+internal fun RenderLazyItem(
+    node: VoltraNode?,
+    index: Int,
+    itemCount: Int,
+    gap: Dp?,
+) {
+    if (LayoutGaps.shouldPadTrailing(index, itemCount, gap)) {
+        Box(modifier = GlanceModifier.padding(bottom = gap!!)) {
+            RenderNode(node)
+        }
+    } else {
+        RenderNode(node)
     }
 }
 

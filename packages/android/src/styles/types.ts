@@ -38,7 +38,12 @@ export type VoltraAndroidViewStyle = {
   paddingVertical?: number
   paddingHorizontal?: number
 
-  /** Gap between children (Note: Supported by specific layouts like LazyColumn/Row) */
+  /**
+   * Gap between children, in dp. Supported on Column, Row, LazyColumn and
+   * LazyVerticalGrid. On LazyVerticalGrid this is applied as half the gap on
+   * every edge of each cell, so adjacent cells get a full gap while the
+   * outer edge of the grid gets a half gap.
+   */
   gap?: number
 
   /** Alignment of children along the cross axis */

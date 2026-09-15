@@ -42,7 +42,7 @@ fun resolveAndApplyStyle(
  * Props may contain {"s": <index>} where index references sharedStyles array,
  * or {"s": {...}} for inline styles.
  */
-private fun resolveStyle(
+internal fun resolveStyle(
     props: Map<String, Any?>?,
     sharedStyles: List<Map<String, Any?>>?,
 ): Map<String, Any?>? {
