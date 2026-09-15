@@ -1,6 +1,7 @@
 package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -168,7 +169,7 @@ object DynamicWidgetServerUpdateScheduler {
 
         if (delayMinutes > 0) {
             builder.setInitialDelay(delayMinutes, TimeUnit.MINUTES)
-        } else if (expedited) {
+        } else if (shouldRunExpedited(expedited, Build.VERSION.SDK_INT)) {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         }
 
@@ -208,6 +209,20 @@ object DynamicWidgetServerUpdateScheduler {
         }
         DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
     }
+
+    /**
+     * On API 30 and below, WorkManager runs expedited work as a foreground service and calls
+     * `CoroutineWorker.getForegroundInfo()`, which [DynamicWidgetServerUpdateWorker] does not
+     * override; the default implementation throws `IllegalStateException`, crashing the process
+     * within a second of any "refresh now" request. Android 12 (API 31, `Build.VERSION_CODES.S`)
+     * added the "quick, transient" expedited path that no longer requires a foreground service, so
+     * expedited scheduling is only safe from there on. Below that, the request still runs, just as
+     * ordinary (non-expedited) one-time work.
+     */
+    internal fun shouldRunExpedited(
+        requestedExpedited: Boolean,
+        sdkInt: Int,
+    ): Boolean = requestedExpedited && sdkInt >= Build.VERSION_CODES.S
 
     internal fun workName(scope: WidgetScope): String = workNameForStorageKey(scope.storageKey)
 
