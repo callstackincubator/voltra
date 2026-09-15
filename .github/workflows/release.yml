@@ -68,18 +68,38 @@ jobs:
       - name: Resolve release state
         run: |
           VERSION=$(node -p "require('./packages/core/package.json').version")
-          SUBJECT=$(git log -1 --format=%s)
 
-          if [ "$SUBJECT" = "chore: release $VERSION" ] || [ "$SUBJECT" = "chore: release v$VERSION" ]; then
-            echo "Retrying release $VERSION from the repository's release commit."
+          # A version on main that npm does not have yet belongs to a release
+          # whose publication failed. Commits may have landed on main since,
+          # so the release commit is looked up rather than assumed to be HEAD.
+          if NPM_OUTPUT=$(npm view "@use-voltra/core@$VERSION" version 2>&1); then
+            echo "RELEASE_RETRY=false" >> "$GITHUB_ENV"
+          elif printf '%s' "$NPM_OUTPUT" | grep -q E404; then
+            RELEASE_COMMIT=$(git log -1 --format=%H -E --grep="^chore: release v?${VERSION//./\\.}$")
+            if [ -z "$RELEASE_COMMIT" ]; then
+              echo "Version $VERSION is not on npm and no release commit for it exists on main." >&2
+              exit 1
+            fi
+
+            echo "Retrying release $VERSION from release commit $RELEASE_COMMIT."
             {
               echo "RELEASE_RETRY=true"
               echo "RELEASE_VERSION=$VERSION"
-              echo "RELEASE_COMMIT=$(git rev-parse HEAD)"
+              echo "RELEASE_COMMIT=$RELEASE_COMMIT"
             } >> "$GITHUB_ENV"
           else
-            echo "RELEASE_RETRY=false" >> "$GITHUB_ENV"
+            echo "$NPM_OUTPUT" >&2
+            echo "Could not check whether version $VERSION is published." >&2
+            exit 1
           fi
+
+      - name: Check out release commit
+        if: ${{ env.RELEASE_RETRY == 'true' }}
+        run: |
+          # Publish exactly what the release commit and its tag describe, not
+          # whatever landed on main after it.
+          git checkout --detach "$RELEASE_COMMIT"
+          pnpm install --frozen-lockfile
 
       - name: Check release plan
         if: ${{ env.RELEASE_RETRY != 'true' }}
@@ -155,7 +175,38 @@ jobs:
           git push --no-verify "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
 
       - name: Publish missing packages
-        run: pnpm run release -- --no-git-tag
+        run: pnpm exec changeset publish --no-git-tag
+
+      - name: Verify published packages
+        run: |
+          # Changesets can report an error and still exit successfully, so the
+          # registry is the source of truth before the release is tagged.
+          PACKAGES=$(node <<'NODE'
+          const fs = require('fs')
+          for (const dir of fs.readdirSync('packages')) {
+            const file = `./packages/${dir}/package.json`
+            if (!fs.existsSync(file)) continue
+            const pkg = require(file)
+            if (!pkg.private) console.log(pkg.name)
+          }
+          NODE
+          )
+
+          MISSING=""
+          for PACKAGE in $PACKAGES; do
+            for _ in 1 2 3 4 5 6; do
+              if npm view "$PACKAGE@$RELEASE_VERSION" version >/dev/null 2>&1; then
+                continue 2
+              fi
+              sleep 10
+            done
+            MISSING="$MISSING $PACKAGE"
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "Not published at $RELEASE_VERSION:$MISSING" >&2
+            exit 1
+          fi
 
       - name: Create and push release tag
         env:
