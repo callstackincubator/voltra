@@ -1,5 +1,6 @@
 package voltra.glance.components
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.layout.*
@@ -14,13 +15,48 @@ import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.styling.applyFlex
 
+private const val LAYOUT_LOG_TAG = "VoltraLayout"
+
+/**
+ * Computes the visible (non-Gone) leaf children for a Column/Row and where gap spacers
+ * should be inserted, logging a warning if the resulting view count would exceed
+ * Glance's 10-direct-children limit.
+ */
+private fun resolveGapLayout(
+    element: VoltraElement,
+    context: VoltraRenderContext,
+    gap: androidx.compose.ui.unit.Dp?,
+    containerName: String,
+): Pair<List<VoltraNode>, Set<Int>> {
+    val visibleChildren =
+        LayoutGaps
+            .flattenChildren(element.c, context.sharedElements)
+            .filterNot { LayoutGaps.isGone(it, context.sharedStyles) }
+    val spacerIndices = LayoutGaps.spacerBeforeIndices(visibleChildren.size, gap)
+
+    if (spacerIndices.isNotEmpty() &&
+        LayoutGaps.exceedsGlanceChildLimit(visibleChildren.size, spacerIndices.size)
+    ) {
+        Log.w(
+            LAYOUT_LOG_TAG,
+            "$containerName renders ${visibleChildren.size} child(ren) plus " +
+                "${spacerIndices.size} gap spacer(s) (${visibleChildren.size + spacerIndices.size} " +
+                "views total), which exceeds Jetpack Glance's limit of " +
+                "${LayoutGaps.GLANCE_CHILD_LIMIT} direct children per container. Glance will " +
+                "truncate the extra views; gap spacers count toward this limit.",
+        )
+    }
+
+    return visibleChildren to spacerIndices
+}
+
 @Composable
 fun RenderColumn(
     element: VoltraElement,
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
+    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
             modifier ?: baseModifier,
@@ -47,21 +83,19 @@ fun RenderColumn(
             else -> Alignment.Vertical.Top
         }
 
+    val gap = compositeStyle?.layout?.gap
+    val (visibleChildren, spacerIndices) = resolveGapLayout(element, context, gap, "Column")
+
     Column(
         modifier = finalModifier,
         horizontalAlignment = horizontalAlignment,
         verticalAlignment = verticalAlignment,
     ) {
-        when (val children = element.c) {
-            is VoltraNode.Array -> {
-                children.elements.forEach { child ->
-                    RenderChildWithWeight(child)
-                }
+        visibleChildren.forEachIndexed { index, child ->
+            if (index in spacerIndices) {
+                Spacer(modifier = GlanceModifier.height(gap!!))
             }
-
-            else -> {
-                RenderChildWithWeight(children)
-            }
+            RenderChildWithWeight(child)
         }
     }
 }
@@ -72,7 +106,7 @@ fun RenderRow(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
+    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
             modifier ?: baseModifier,
@@ -99,21 +133,19 @@ fun RenderRow(
             else -> Alignment.Vertical.CenterVertically
         }
 
+    val gap = compositeStyle?.layout?.gap
+    val (visibleChildren, spacerIndices) = resolveGapLayout(element, context, gap, "Row")
+
     Row(
         modifier = finalModifier,
         horizontalAlignment = horizontalAlignment,
         verticalAlignment = verticalAlignment,
     ) {
-        when (val children = element.c) {
-            is VoltraNode.Array -> {
-                children.elements.forEach { child ->
-                    RenderChildWithWeight(child)
-                }
+        visibleChildren.forEachIndexed { index, child ->
+            if (index in spacerIndices) {
+                Spacer(modifier = GlanceModifier.width(gap!!))
             }
-
-            else -> {
-                RenderChildWithWeight(children)
-            }
+            RenderChildWithWeight(child)
         }
     }
 }

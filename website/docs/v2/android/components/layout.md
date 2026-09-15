@@ -7,13 +7,15 @@ Components that arrange other elements or provide structural grouping using Jetp
 A vertical container that arranges its children in a column.
 
 :::warning Glance limit
-`Column` supports at most 10 direct rendered children. Jetpack Glance truncates extra children. Use `LazyColumn` for dynamic or scrollable collections.
+`Column` supports at most 10 direct rendered children. Jetpack Glance truncates extra children. This includes spacer views inserted by the `gap` style, so a `gap` on a `Column` with many children can push it over the limit. Use `LazyColumn` for dynamic or scrollable collections.
 :::
 
 **Parameters:**
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center-vertically"`, `"bottom"`.
+
+Supports the `gap` style to space children apart vertically.
 
 ---
 
@@ -22,13 +24,15 @@ A vertical container that arranges its children in a column.
 A horizontal container that arranges its children in a row.
 
 :::warning Glance limit
-`Row` supports at most 10 direct rendered children. Jetpack Glance truncates extra children. Use `LazyColumn` for dynamic or scrollable collections.
+`Row` supports at most 10 direct rendered children. Jetpack Glance truncates extra children. This includes spacer views inserted by the `gap` style, so a `gap` on a `Row` with many children can push it over the limit. Use `LazyColumn` for dynamic or scrollable collections.
 :::
 
 **Parameters:**
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center-vertically"`, `"bottom"`.
+
+Supports the `gap` style to space children apart horizontally.
 
 ---
 
@@ -85,6 +89,8 @@ A scrollable vertical list that only renders visible items.
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 
+Supports the `gap` style: each item is padded on its bottom edge to space it from the next item, without changing the item count.
+
 ---
 
 ### LazyVerticalGrid
@@ -97,3 +103,5 @@ A scrollable grid of items.
 - `minSize` (number, optional): Minimum size (in dp) for items in adaptive grid mode.
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center"`, `"bottom"`.
+
+Supports the `gap` style: each cell is padded by half the gap on every edge, so adjacent cells get a full gap between them while the outer edge of the grid gets a half gap.

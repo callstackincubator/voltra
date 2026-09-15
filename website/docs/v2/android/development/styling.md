@@ -19,6 +19,7 @@ The following React Native style properties are supported on Android:
 - `padding` - Uniform padding on all edges.
 - `paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight` - Individual edge padding.
 - `paddingHorizontal`, `paddingVertical` - Horizontal and vertical padding.
+- `gap` - Spacing (in dp) between children. Supported on `Column`, `Row`, `LazyColumn`, and `LazyVerticalGrid`. On `LazyVerticalGrid`, half the gap is applied to every edge of each cell, so adjacent cells get a full gap while the grid's outer edge gets a half gap.
 - `visibility` - Controls component visibility (`"visible"`, `"hidden"`, or `"invisible"`).
 
 ### Visual Style
@@ -91,7 +92,7 @@ Use `backgroundImage`, not `background-image`. Gradient bitmaps are generated na
 
 The following properties are **NOT supported** on Android due to Glance limitations:
 
-- **Margins:** `margin`, `marginTop`, etc. are not part of Android style types. If you need margin-like outside spacing, use `VoltraAndroid.Spacer` between elements.
+- **Margins:** `margin`, `marginTop`, etc. are not part of Android style types. Use `gap` for spacing between the children of a `Column`, `Row`, `LazyColumn`, or `LazyVerticalGrid`, or `VoltraAndroid.Spacer` for other outside-spacing needs.
 - **Borders:** `borderWidth` and `borderColor` are not yet implemented.
 - **Shadows:** `shadowColor`, `shadowOffset`, `shadowOpacity`, and `shadowRadius` are not supported.
 - **Positioning:** Absolute positioning (`top`, `left`, `zIndex`) is not supported. Use stack alignments and spacers.

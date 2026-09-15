@@ -6,6 +6,8 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.lazy.GridCells
 import androidx.glance.appwidget.lazy.LazyVerticalGrid
+import androidx.glance.layout.Box
+import androidx.glance.layout.padding
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderNode
@@ -19,7 +21,7 @@ fun VoltraLazyVerticalGrid(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
+    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
             modifier ?: baseModifier,
@@ -29,6 +31,10 @@ fun VoltraLazyVerticalGrid(
             element.t,
             element.hashCode(),
         )
+    // Wrap every cell in a half-gap padding: this gives a full gap between adjacent cells
+    // and a half gap at the outer edge of the grid.
+    val gap = compositeStyle?.layout?.gap
+    val cellPadding = gap?.takeIf { it.value > 0f }?.let { it / 2 }
 
     LazyVerticalGrid(
         gridCells = extractGridCells(element.p),
@@ -38,7 +44,7 @@ fun VoltraLazyVerticalGrid(
         when (val children = element.c) {
             is VoltraNode.Array -> {
                 items(children.elements.size) { index ->
-                    RenderNode(children.elements[index])
+                    RenderGridCell(children.elements[index], cellPadding)
                 }
             }
 
@@ -46,19 +52,33 @@ fun VoltraLazyVerticalGrid(
                 val resolved = context.sharedElements?.getOrNull(children.ref)
                 if (resolved is VoltraNode.Array) {
                     items(resolved.elements.size) { index ->
-                        RenderNode(resolved.elements[index])
+                        RenderGridCell(resolved.elements[index], cellPadding)
                     }
                 } else {
-                    item { RenderNode(resolved) }
+                    item { RenderGridCell(resolved, cellPadding) }
                 }
             }
 
             null -> { /* Empty grid */ }
 
             else -> {
-                item { RenderNode(children) }
+                item { RenderGridCell(children, cellPadding) }
             }
         }
+    }
+}
+
+@Composable
+private fun RenderGridCell(
+    node: VoltraNode?,
+    cellPadding: androidx.compose.ui.unit.Dp?,
+) {
+    if (cellPadding != null) {
+        Box(modifier = GlanceModifier.padding(all = cellPadding)) {
+            RenderNode(node)
+        }
+    } else {
+        RenderNode(node)
     }
 }
 

@@ -61,8 +61,9 @@ object StyleConverter {
             // Flex Logic (aspectRatio)
             weight = weight,
             aspectRatio = JSStyleParser.number(js["aspectRatio"]),
-            // Spacing (padding)
+            // Spacing (padding, gap)
             padding = JSStyleParser.parseInsets(js, "padding"),
+            gap = JSStyleParser.dp(js["gap"])?.takeIf { it.value >= 0f },
             // Positioning
             position = position,
             zIndex = zIndex,
