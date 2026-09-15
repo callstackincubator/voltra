@@ -105,12 +105,53 @@ final class VoltraElementIdentityTests: XCTestCase {
     XCTAssertEqual(left, right)
   }
 
-  // MARK: - Malformed payloads
+  // MARK: - Deeply nested component props
 
-  func testSelfReferentialSharedElementTerminates() throws {
-    // `e[0]` names itself, so resolution has to stop on its own rather than recurse forever.
-    let element = try rootElement(##"{"t":8,"p":{"lbl":{"$r":0}},"e":[{"$r":0}]}"##)
+  private func nestedStacks(around leaf: String, depth: Int) -> String {
+    var node = leaf
+    for _ in 0 ..< depth {
+      node = #"{"t":11,"c":[\#(node)]}"#
+    }
+    return node
+  }
 
-    XCTAssertEqual(element.type, "Gauge")
+  private func captionLeaf(_ gauge: VoltraElement, depth: Int) throws -> VoltraElement {
+    guard case let .element(caption) = gauge.componentProp("currentValueLabel") else {
+      throw TestFailure("Expected the caption to resolve into an element")
+    }
+    var leaf = caption
+    for _ in 0 ..< depth {
+      leaf = try child(leaf, 0)
+    }
+    return leaf
+  }
+
+  func testDeeplyNestedPropStylesRemainResolvedAndAffectIdentity() throws {
+    // Object and array traversal used to exhaust the resolution limit after 31 stacks.
+    for depth in [31, 64] {
+      let caption = nestedStacks(around: #"{"t":0,"c":"42","p":{"s":0}}"#, depth: depth)
+      let orange = try rootElement(##"{"t":8,"p":{"cvl":\##(caption)},"s":[{"c":"#ff6d39"}]}"##)
+      let grey = try rootElement(##"{"t":8,"p":{"cvl":\##(caption)},"s":[{"c":"#282830"}]}"##)
+      let orangeText = try captionLeaf(orange, depth: depth)
+      let greyText = try captionLeaf(grey, depth: depth)
+
+      XCTAssertEqual(orangeText.children, .text("42"))
+      XCTAssertEqual(orangeText.style?["color"]?.stringValue, "#ff6d39")
+      XCTAssertEqual(greyText.style?["color"]?.stringValue, "#282830")
+      XCTAssertNotEqual(orangeText, greyText)
+      XCTAssertNotEqual(orange, grey)
+    }
+  }
+
+  func testDeeplyNestedSharedPropElementsRemainVisibleAndStyled() throws {
+    for depth in [31, 64] {
+      let caption = nestedStacks(around: #"{"$r":0}"#, depth: depth)
+      let gauge = try rootElement(##"{"t":8,"p":{"cvl":\##(caption)},"e":[{"t":0,"c":"42","p":{"s":0}}],"s":[{"c":"#ff6d39"}]}"##)
+      let text = try captionLeaf(gauge, depth: depth)
+
+      XCTAssertEqual(text.type, "Text")
+      XCTAssertEqual(text.children, .text("42"))
+      XCTAssertEqual(text.style?["color"]?.stringValue, "#ff6d39")
+    }
   }
 }

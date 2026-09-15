@@ -98,8 +98,7 @@ public struct VoltraElement: Hashable {
       resolvedProps = Self.resolvingReferences(
         inProps: propsDict,
         stylesheet: stylesheet,
-        sharedElements: sharedElements,
-        depth: 0
+        sharedElements: sharedElements
       )
     } else {
       resolvedProps = nil
@@ -136,22 +135,20 @@ public struct VoltraElement: Hashable {
 
   // MARK: - Reference Resolution
 
-  /// Caps recursion so a payload whose references form a cycle cannot loop forever.
-  private static let maxResolutionDepth = 64
-
   /// Substitutes the stylesheet entry behind a style index, and the shared element behind a
   /// `$r` reference, throughout a props dictionary.
   ///
   /// Element-valued props carry serialized nodes of their own, and those nodes reference the
   /// same payload-level tables. Leaving them unresolved would make two elements with equal
   /// props compare equal while rendering differently.
+  /// The renderer registers shared elements only after rendering their contents, so generated
+  /// references point to completed entries and cannot form cycles.
   private static func resolvingReferences(
     inProps props: [String: JSONValue],
     stylesheet: [[String: JSONValue]]?,
-    sharedElements: [JSONValue]?,
-    depth: Int
+    sharedElements: [JSONValue]?
   ) -> [String: JSONValue] {
-    guard stylesheet != nil || sharedElements != nil, depth < maxResolutionDepth else {
+    guard stylesheet != nil || sharedElements != nil else {
       return props
     }
 
@@ -168,8 +165,7 @@ public struct VoltraElement: Hashable {
         resolved[key] = resolvingReferences(
           in: value,
           stylesheet: stylesheet,
-          sharedElements: sharedElements,
-          depth: depth + 1
+          sharedElements: sharedElements
         )
       }
     }
@@ -180,15 +176,12 @@ public struct VoltraElement: Hashable {
   private static func resolvingReferences(
     in value: JSONValue,
     stylesheet: [[String: JSONValue]]?,
-    sharedElements: [JSONValue]?,
-    depth: Int
+    sharedElements: [JSONValue]?
   ) -> JSONValue {
-    guard depth < maxResolutionDepth else { return value }
-
     switch value {
     case let .array(items):
       return .array(items.map {
-        resolvingReferences(in: $0, stylesheet: stylesheet, sharedElements: sharedElements, depth: depth + 1)
+        resolvingReferences(in: $0, stylesheet: stylesheet, sharedElements: sharedElements)
       })
 
     case let .object(dict):
@@ -200,8 +193,7 @@ public struct VoltraElement: Hashable {
         return resolvingReferences(
           in: sharedElements[refIndex],
           stylesheet: stylesheet,
-          sharedElements: sharedElements,
-          depth: depth + 1
+          sharedElements: sharedElements
         )
       }
 
@@ -210,16 +202,14 @@ public struct VoltraElement: Hashable {
         resolved["p"] = .object(resolvingReferences(
           inProps: propsDict,
           stylesheet: stylesheet,
-          sharedElements: sharedElements,
-          depth: depth + 1
+          sharedElements: sharedElements
         ))
       }
       if let childrenValue = dict["c"] {
         resolved["c"] = resolvingReferences(
           in: childrenValue,
           stylesheet: stylesheet,
-          sharedElements: sharedElements,
-          depth: depth + 1
+          sharedElements: sharedElements
         )
       }
       return .object(resolved)
