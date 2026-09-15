@@ -28,10 +28,28 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
   id: string
   displayName: WidgetLabel
   description: WidgetLabel
+  /** Minimum widget width in dp. Only affects Android 11 and older. */
   minWidth?: number
+  /** Minimum widget height in dp. Only affects Android 11 and older. */
   minHeight?: number
+  /**
+   * @deprecated Use `minWidth` instead. Approximated in dp for Android 11 and older, since cell
+   * size varies by device, launcher and orientation.
+   */
   minCellWidth?: number
+  /**
+   * @deprecated Use `minHeight` instead. Approximated in dp for Android 11 and older, since cell
+   * size varies by device, launcher and orientation.
+   */
   minCellHeight?: number
+  /** Minimum width, in dp, the widget can be resized down to. */
+  minResizeWidth?: number
+  /** Minimum height, in dp, the widget can be resized down to. */
+  minResizeHeight?: number
+  /** Maximum width, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeWidth?: number
+  /** Maximum height, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeHeight?: number
   targetCellWidth: number
   targetCellHeight: number
   resizeMode?: 'none' | 'horizontal' | 'vertical' | 'horizontal|vertical'
@@ -52,8 +70,12 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
  * Server-driven Android widget updates (WorkManager).
  */
 export interface AndroidWidgetServerUpdateConfig {
-  url: string
-  /** @default 60 */
+  /**
+   * Server endpoint that returns widget state updates. Omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
+  /** @default 60, or 15 when the widget has an `entry` */
   intervalMinutes?: number
   /** @default false */
   refresh?: boolean

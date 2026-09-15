@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
+  # No `branches` filter: stacked PRs (e.g. via gh-stack) target another
+  # feature branch instead of `main`, and the filter would otherwise stop
+  # this workflow from ever running for them.
   pull_request:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -157,6 +158,10 @@ jobs:
       - name: Run Kotlin native tests
         working-directory: example/android
         run: ./gradlew :use-voltra_android-client:testDebugUnitTest
+
+      - name: Run Android Lint
+        working-directory: example/android
+        run: ./gradlew :use-voltra_android-client:lintDebug -PvoltraLintStrict
 
   native-swift-test:
     name: '[Swift] Test'

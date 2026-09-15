@@ -4,11 +4,14 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { vdConvert } from 'vd-tool'
 
-import { requirePlatformPackage } from '../../dependencies/platformPackages'
+import { getPlatformClientPackageVersion, requirePlatformPackage } from '../../dependencies/platformPackages'
 import { ensureDirectory, pathExists, readTextFile, writeTextFile } from '../../fs/readWrite'
 import { normalizeRelativePath, toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
-import { DYNAMIC_WIDGET_BUILD_INFO, evaluateWidgetModuleExports } from '../shared/widgetModule'
+import { createDynamicWidgetBuildInfo, createGeneratedWidgetModuleLoader } from '../shared/widgetModule'
+import { androidWidgetSizingAttributes, androidWidgetSizingWarnings } from './widgetSizing'
+
+import type { WidgetModuleLoader } from '@use-voltra/compiler'
 
 import type { AndroidProjectDiscovery } from '../../discovery/android'
 import type {
@@ -27,6 +30,7 @@ const LOCALIZED_INITIAL_STATE_KEY = '__voltraLocales'
 const DEFAULT_WIDGET_LOCALE_QUALIFIER = 'en'
 const ANDROID_DYNAMIC_WIDGET_MANIFEST_PATH = path.join('.voltra', 'manifest.android.json')
 const ANDROID_WIDGET_CONFIG_DEFAULTS_PATH = path.join('assets', 'voltra', 'widget_config_defaults.json')
+const ANDROID_WIDGET_SERVER_DEFAULTS_PATH = path.join('assets', 'voltra', 'widget_server_defaults.json')
 
 export interface GenerateAndroidFilesOptions {
   projectRoot: string
@@ -76,11 +80,18 @@ type DetectedAndroidWidget =
 
 export async function generateAndroidFiles(options: GenerateAndroidFilesOptions): Promise<GenerateAndroidFilesResult> {
   const { projectRoot, android, discovery } = options
+  const voltraVersion = getPlatformClientPackageVersion(projectRoot, 'android')
   const resourceRoot = path.join(discovery.appModuleRoot, 'src', 'main')
-  const detectedWidgets = detectClientRenderedWidgets(projectRoot, android.widgets)
   const changes: ReportedChange[] = []
   const warnings: string[] = []
   const generatedFiles = new Set<string>()
+  const widgetModuleLoader = createGeneratedWidgetModuleLoader(
+    projectRoot,
+    'android',
+    createAndroidGeneratedFilesError,
+    (message) => warnings.push(message)
+  )
+  const detectedWidgets = detectClientRenderedWidgets(projectRoot, widgetModuleLoader, android.widgets)
 
   mergeSingleResult(
     await writeGeneratedTextFile(
@@ -104,12 +115,23 @@ export async function generateAndroidFiles(options: GenerateAndroidFilesOptions)
   const fontFiles = await copyAndroidFonts(projectRoot, resourceRoot, android.fonts)
   mergeResult(fontFiles, changes, warnings, generatedFiles)
 
-  const initialStateFiles = await generateAndroidInitialStates(projectRoot, resourceRoot, detectedWidgets)
+  const initialStateFiles = await generateAndroidInitialStates(
+    projectRoot,
+    widgetModuleLoader,
+    resourceRoot,
+    detectedWidgets,
+    voltraVersion
+  )
   mergeResult(initialStateFiles, changes, warnings, generatedFiles)
 
   const configDefaultsResult = await generateAndroidConfigDefaults(projectRoot, resourceRoot, detectedWidgets)
   if (configDefaultsResult) {
     mergeSingleResult(configDefaultsResult, changes, generatedFiles)
+  }
+
+  const serverDefaultsResult = await generateAndroidServerDefaults(projectRoot, resourceRoot, detectedWidgets)
+  if (serverDefaultsResult) {
+    mergeSingleResult(serverDefaultsResult, changes, generatedFiles)
   }
 
   return {
@@ -216,6 +238,7 @@ async function generateAndroidXmlFiles(
     const widgetInfoResult = await writeGeneratedTextFile(projectRoot, widgetInfoPath, widgetInfoContent)
     pushChange(changes, widgetInfoResult.change)
     generatedFiles.add(widgetInfoResult.relativePath)
+    warnings.push(...androidWidgetSizingWarnings(widget, widget.id))
   }
 
   return {
@@ -408,19 +431,21 @@ async function copyAndroidFonts(
 
 async function generateAndroidInitialStates(
   projectRoot: string,
+  loader: WidgetModuleLoader,
   resourceRoot: string,
-  widgets: DetectedAndroidWidget[]
+  widgets: DetectedAndroidWidget[],
+  voltraVersion: string
 ): Promise<GenerateAndroidFilesResult> {
   const serverWidgets = widgets.filter(
     (widget): widget is Extract<DetectedAndroidWidget, { clientRendered: false }> => !widget.clientRendered
   )
   const prerenderableServerWidgets = serverWidgets.filter((widget) => widget.initialStatePath)
   const serverStates = await prerenderWidgetStates(
-    projectRoot,
+    loader,
     prerenderableServerWidgets,
     loadAndroidWidgetRenderer(projectRoot)
   )
-  const clientStates = await prerenderClientRenderedAndroidWidgets(projectRoot, widgets)
+  const clientStates = await prerenderClientRenderedAndroidWidgets(projectRoot, loader, widgets, voltraVersion)
   const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   if (prerenderedStates.size === 0) {
@@ -443,7 +468,7 @@ async function generateAndroidInitialStates(
 }
 
 async function prerenderWidgetStates(
-  projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: NormalizedAndroidWidgetConfig[],
   renderer: AndroidWidgetRenderer
 ): Promise<PrerenderedWidgetStates> {
@@ -468,7 +493,7 @@ async function prerenderWidgetStates(
         throw new AndroidGeneratedFilesError(`Initial state file not found for widget '${widget.id}' at ${modulePath}`)
       }
 
-      const widgetVariants = evaluateLegacyWidgetModule(projectRoot, modulePath)
+      const widgetVariants = evaluateLegacyWidgetModule(loader, modulePath)
       localeStates.set(localeKey, renderer(widgetVariants))
     }
 
@@ -478,11 +503,8 @@ async function prerenderWidgetStates(
   return prerenderedStates
 }
 
-function evaluateLegacyWidgetModule(projectRoot: string, filePath: string): AndroidWidgetVariants {
-  const exports = evaluateWidgetModuleExports(projectRoot, filePath, createAndroidGeneratedFilesError) as {
-    default?: unknown
-  }
-  const widgetVariants = exports.default ?? exports
+function evaluateLegacyWidgetModule(loader: WidgetModuleLoader, filePath: string): AndroidWidgetVariants {
+  const widgetVariants = loader.loadDefaultExport(filePath)
 
   if (!widgetVariants || typeof widgetVariants !== 'object') {
     throw new AndroidGeneratedFilesError(`Widget file must export widget variants: ${filePath}`)
@@ -530,12 +552,17 @@ function createDynamicWidgetsManifest(widgets: DetectedAndroidWidget[]): Dynamic
 
 function detectClientRenderedWidgets(
   projectRoot: string,
+  loader: WidgetModuleLoader,
   widgets: NormalizedAndroidWidgetConfig[]
 ): DetectedAndroidWidget[] {
-  return widgets.map((widget) => detectSingleWidget(projectRoot, widget))
+  return widgets.map((widget) => detectSingleWidget(projectRoot, loader, widget))
 }
 
-function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidgetConfig): DetectedAndroidWidget {
+function detectSingleWidget(
+  projectRoot: string,
+  loader: WidgetModuleLoader,
+  widget: NormalizedAndroidWidgetConfig
+): DetectedAndroidWidget {
   if (!widget.entry) {
     return {
       ...widget,
@@ -549,7 +576,7 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidget
     throw createAndroidGeneratedFilesError(`[voltra] Dynamic Widget "${widget.id}" entry not found at ${widget.entry}`)
   }
 
-  const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, clientSourcePath)
+  const widgetModule = safelyEvaluateDynamicWidget(loader, widget.id, widget.entry, clientSourcePath)
   const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
 
   if (typeof widgetFn !== 'function') {
@@ -568,7 +595,9 @@ function detectSingleWidget(projectRoot: string, widget: NormalizedAndroidWidget
 
 async function prerenderClientRenderedAndroidWidgets(
   projectRoot: string,
-  widgets: DetectedAndroidWidget[]
+  loader: WidgetModuleLoader,
+  widgets: DetectedAndroidWidget[],
+  voltraVersion: string
 ): Promise<PrerenderedWidgetStates> {
   const clientWidgets = widgets.filter(
     (widget): widget is Extract<DetectedAndroidWidget, { clientRendered: true }> => widget.clientRendered
@@ -585,13 +614,13 @@ async function prerenderClientRenderedAndroidWidgets(
     colorScheme: 'light',
     locale: 'en-US',
     configuration: undefined,
-    build: DYNAMIC_WIDGET_BUILD_INFO,
+    build: createDynamicWidgetBuildInfo(voltraVersion),
   }
   const prerenderedStates: PrerenderedWidgetStates = new Map()
 
   for (const widget of clientWidgets) {
     try {
-      const widgetModule = safelyEvaluateDynamicWidget(projectRoot, widget.id, widget.entry, widget.clientSourcePath)
+      const widgetModule = safelyEvaluateDynamicWidget(loader, widget.id, widget.entry, widget.clientSourcePath)
       const widgetFn = readDynamicWidgetExport(widget.id, widget.entry, widgetModule)
       const element = widgetFn({}, placeholderEnv)
       prerenderedStates.set(widget.id, new Map([[DEFAULT_INITIAL_STATE_LOCALE, JSON.stringify(renderer(element))]]))
@@ -612,13 +641,13 @@ async function prerenderClientRenderedAndroidWidgets(
 }
 
 function safelyEvaluateDynamicWidget(
-  projectRoot: string,
+  loader: WidgetModuleLoader,
   widgetId: string,
   widgetEntry: string,
   clientSourcePath: string
 ): unknown {
   try {
-    return evaluateWidgetModuleExports(projectRoot, clientSourcePath, createAndroidGeneratedFilesError)
+    return loader.load(clientSourcePath)
   } catch (error) {
     if (error instanceof AndroidGeneratedFilesError) {
       throw error
@@ -668,6 +697,59 @@ async function generateAndroidConfigDefaults(
     path.join(resourceRoot, ANDROID_WIDGET_CONFIG_DEFAULTS_PATH),
     `${JSON.stringify(defaults, null, 2)}\n`
   )
+}
+
+/**
+ * Emits the build-time `serverUpdate` defaults the runtime settings resolver reads as its lowest
+ * layer.
+ *
+ * These used to be Kotlin literals inside each generated receiver. They live in an asset now
+ * because the app can override the URL and the interval with `setWidgetServerUpdate`, and a
+ * receiver compiled at build time cannot be asked what the interval is today.
+ *
+ * A widget id present in this file is server-driven. `url` is omitted when app.json declared
+ * `serverUpdate` without one, which means the app supplies it at runtime.
+ */
+async function generateAndroidServerDefaults(
+  projectRoot: string,
+  resourceRoot: string,
+  widgets: DetectedAndroidWidget[]
+): Promise<GeneratedFileResult | undefined> {
+  const defaults = createWidgetServerDefaults(widgets)
+
+  if (Object.keys(defaults).length === 0) {
+    return undefined
+  }
+
+  return writeGeneratedTextFile(
+    projectRoot,
+    path.join(resourceRoot, ANDROID_WIDGET_SERVER_DEFAULTS_PATH),
+    `${JSON.stringify(defaults, null, 2)}\n`
+  )
+}
+
+interface WidgetServerDefaults {
+  url?: string
+  intervalMinutes: number
+  refresh: boolean
+}
+
+function createWidgetServerDefaults(widgets: DetectedAndroidWidget[]): Record<string, WidgetServerDefaults> {
+  const defaults: Record<string, WidgetServerDefaults> = {}
+
+  for (const widget of widgets) {
+    if (!widget.serverUpdate) {
+      continue
+    }
+
+    defaults[widget.id] = {
+      ...(widget.serverUpdate.url !== undefined ? { url: widget.serverUpdate.url } : {}),
+      intervalMinutes: widget.serverUpdate.intervalMinutes,
+      refresh: widget.serverUpdate.refresh,
+    }
+  }
+
+  return defaults
 }
 
 function createWidgetConfigDefaults(widgets: DetectedAndroidWidget[]): WidgetConfigDefaults {
@@ -916,15 +998,41 @@ async function getLargeImageWarning(imagePath: string, fileName: string): Promis
   return `Image '${fileName}' is ${stat.size} bytes. Large Android widget images may not display correctly.`
 }
 
+/**
+ * `entry` picks the render engine and `serverUpdate` picks where the data comes from, so the two
+ * keys together select one of four base classes. Runtime code never asks "is this server-driven?" —
+ * the answer is baked in here, once, at generate time.
+ */
 function generateWidgetReceiverContent(widget: DetectedAndroidWidget, packageName: string): string {
   const className = `VoltraWidget_${widget.id}Receiver`
   const labelForComment = widgetLabelEnglish(widget.displayName)
+
+  // A widget with an entry and a serverUpdate renders bundled JS from props fetched in the
+  // background. The scheduling lives in the base class, so the generated receiver stays a name and
+  // an id — the URL and the interval come from widget_server_defaults.json at runtime, where
+  // setWidgetServerUpdate can override them.
+  if (widget.clientRendered && widget.serverUpdate) {
+    return [
+      `package ${packageName}.widget`,
+      '',
+      'import voltra.dynamicwidget.serverupdate.VoltraServerDrivenClientWidgetReceiver',
+      '',
+      '/**',
+      ` * Auto-generated server-driven Dynamic Widget receiver for ${labelForComment}`,
+      ` * Widget ID: ${widget.id}`,
+      ' */',
+      `class ${className} : VoltraServerDrivenClientWidgetReceiver() {`,
+      `    override val widgetId: String = "${widget.id}"`,
+      '}',
+      '',
+    ].join('\n')
+  }
 
   if (widget.clientRendered) {
     return [
       `package ${packageName}.widget`,
       '',
-      'import voltra.widget.VoltraClientWidgetReceiver',
+      'import voltra.dynamicwidget.VoltraClientWidgetReceiver',
       '',
       '/**',
       ` * Auto-generated Dynamic Widget receiver for ${labelForComment}`,
@@ -938,35 +1046,30 @@ function generateWidgetReceiverContent(widget: DetectedAndroidWidget, packageNam
   }
 
   if (widget.serverUpdate) {
-    const refreshEnabled = widget.serverUpdate.refresh === true
-
     return [
       `package ${packageName}.widget`,
       '',
       'import android.appwidget.AppWidgetManager',
       'import android.content.Context',
-      'import voltra.widget.VoltraWidgetReceiver',
-      'import voltra.widget.VoltraWidgetUpdateScheduler',
+      'import kotlinx.coroutines.runBlocking',
+      'import voltra.widget.payload.VoltraPayloadWidgetReceiver',
+      'import voltra.widget.payload.VoltraWidgetUpdateScheduler',
       '',
       '/**',
       ` * Auto-generated widget receiver for ${labelForComment}`,
       ` * Widget ID: ${widget.id}`,
-      ` * Server Update: ${widget.serverUpdate.url} (every ${widget.serverUpdate.intervalMinutes} minutes)`,
-      ` * Refresh Button: ${String(refreshEnabled)}`,
       ' */',
-      `class ${className} : VoltraWidgetReceiver() {`,
+      `class ${className} : VoltraPayloadWidgetReceiver() {`,
       `    override val widgetId: String = "${widget.id}"`,
       '',
       '    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {',
       '        super.onUpdate(context, appWidgetManager, appWidgetIds)',
       '',
-      '        VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(',
-      '            context = context,',
-      `            widgetId = "${widget.id}",`,
-      `            serverUrl = "${widget.serverUpdate.url}",`,
-      `            intervalMinutes = ${widget.serverUpdate.intervalMinutes}L,`,
-      `            refreshEnabled = ${String(refreshEnabled)}`,
-      '        )',
+      '        // Blocking rather than launching: onReceive must not return before the work is',
+      '        // enqueued, or a widget added while the app is not running loses its schedule.',
+      '        runBlocking {',
+      `            VoltraWidgetUpdateScheduler.schedulePeriodicUpdate(context.applicationContext, "${widget.id}")`,
+      '        }',
       '    }',
       '',
       '    override fun onDeleted(context: Context, appWidgetIds: IntArray) {',
@@ -992,13 +1095,13 @@ function generateWidgetReceiverContent(widget: DetectedAndroidWidget, packageNam
   return [
     `package ${packageName}.widget`,
     '',
-    'import voltra.widget.VoltraWidgetReceiver',
+    'import voltra.widget.payload.VoltraPayloadWidgetReceiver',
     '',
     '/**',
     ` * Auto-generated widget receiver for ${labelForComment}`,
     ` * Widget ID: ${widget.id}`,
     ' */',
-    `class ${className} : VoltraWidgetReceiver() {`,
+    `class ${className} : VoltraPayloadWidgetReceiver() {`,
     `    override val widgetId: String = "${widget.id}"`,
     '}',
     '',
@@ -1010,18 +1113,12 @@ function generateWidgetInfoXml(
   previewImageResourceName?: string,
   previewLayoutResourceName?: string
 ): string {
-  const minWidth = widget.minWidth ?? (widget.minCellWidth !== undefined ? widget.minCellWidth * 70 - 30 : undefined)
-  const minHeight =
-    widget.minHeight ?? (widget.minCellHeight !== undefined ? widget.minCellHeight * 70 - 30 : undefined)
   const resizeMode = widget.resizeMode ?? 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory ?? 'home_screen'
   const lines = [
     '<?xml version="1.0" encoding="utf-8"?>',
-    `<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"${
-      minWidth !== undefined ? ` android:minWidth="${minWidth}dp"` : ''
-    }${minHeight !== undefined ? ` android:minHeight="${minHeight}dp"` : ''}`,
-    `    android:targetCellWidth="${widget.targetCellWidth}"`,
-    `    android:targetCellHeight="${widget.targetCellHeight}"`,
+    '<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"',
+    ...androidWidgetSizingAttributes(widget).map((attribute) => `    ${attribute}`),
     '    android:updatePeriodMillis="0"',
     '    android:initialLayout="@layout/voltra_widget_placeholder"',
     `    android:resizeMode="${resizeMode}"`,

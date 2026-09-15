@@ -207,6 +207,68 @@ final class DynamicWidgetPropsStoreTests: XCTestCase {
       XCTAssertEqual(error as? DynamicWidgetPropsStoreError, .appGroupNotConfigured)
     }
   }
+
+  // MARK: ADR 0007 — instance slot + fallback
+
+  func testAnInstanceScopeWithNoFetchYetFallsBackToTheWidgetSlot() throws {
+    let storage = InMemoryDynamicWidgetPropsStorage()
+    let store = DynamicWidgetPropsStore(storage: storage)
+    try store.persistDynamicWidgetProps(#"{"city":"default"}"#, for: "weather")
+
+    let instanceScope = WidgetScope.instance(id: "weather", key: "london-key")
+
+    XCTAssertEqual(
+      try JSONValue.parse(from: store.dynamicWidgetProps(for: instanceScope)),
+      try JSONValue.parse(from: #"{"city":"default"}"#)
+    )
+  }
+
+  func testACommittedInstanceFetchIsReadBackForThatInstanceAndDoesNotAffectTheWidgetSlot() throws {
+    let storage = InMemoryDynamicWidgetPropsStorage()
+    let store = DynamicWidgetPropsStore(storage: storage)
+    try store.persistDynamicWidgetProps(#"{"city":"default"}"#, for: "weather")
+
+    let london = WidgetScope.instance(id: "weather", key: "london-key")
+    let paris = WidgetScope.instance(id: "weather", key: "paris-key")
+    try store.persistInstanceDynamicWidgetProps(#"{"city":"London"}"#, for: london)
+
+    XCTAssertEqual(
+      try JSONValue.parse(from: store.dynamicWidgetProps(for: london)),
+      try JSONValue.parse(from: #"{"city":"London"}"#)
+    )
+    // A sibling instance that has not fetched yet still falls back to the widget slot.
+    XCTAssertEqual(
+      try JSONValue.parse(from: store.dynamicWidgetProps(for: paris)),
+      try JSONValue.parse(from: #"{"city":"default"}"#)
+    )
+    XCTAssertEqual(
+      try JSONValue.parse(from: store.dynamicWidgetProps(for: "weather")),
+      try JSONValue.parse(from: #"{"city":"default"}"#)
+    )
+  }
+
+  func testClearingAWidgetsPropsAlsoClearsEveryInstanceSlot() throws {
+    let storage = InMemoryDynamicWidgetPropsStorage()
+    let store = DynamicWidgetPropsStore(storage: storage)
+    let london = WidgetScope.instance(id: "weather", key: "london-key")
+    try store.persistDynamicWidgetProps(#"{"city":"default"}"#, for: "weather")
+    try store.persistInstanceDynamicWidgetProps(#"{"city":"London"}"#, for: london)
+
+    try store.clearDynamicWidgetProps(for: "weather")
+
+    XCTAssertEqual(store.dynamicWidgetProps(for: london), "{}")
+    XCTAssertEqual(store.dynamicWidgetProps(for: "weather"), "{}")
+    XCTAssertTrue(store.instanceKeys(for: "weather").isEmpty)
+  }
+
+  func testInstanceKeysIndexesEveryInstanceAWidgetHasCommittedInto() throws {
+    let storage = InMemoryDynamicWidgetPropsStorage()
+    let store = DynamicWidgetPropsStore(storage: storage)
+    try store.persistInstanceDynamicWidgetProps(#"{"a":1}"#, for: WidgetScope.instance(id: "weather", key: "london-key"))
+    try store.persistInstanceDynamicWidgetProps(#"{"a":2}"#, for: WidgetScope.instance(id: "weather", key: "paris-key"))
+
+    XCTAssertEqual(store.instanceKeys(for: "weather"), ["london-key", "paris-key"])
+  }
 }
 
 private enum TestStorageError: Error, Equatable {

@@ -2,9 +2,13 @@
 
 User interface controls that respond to user interaction on Android widgets.
 
+:::info
+On Android, buttons, toggles, checkboxes, and radio buttons always open the application when clicked. You can provide a `deepLinkUrl` to open a specific screen instead of the main activity.
+:::
+
 ### Button
 
-Standard button component. On Android, all buttons always open the application when clicked. You can provide a `deepLinkUrl` to open a specific screen.
+Standard button component.
 
 **Parameters:**
 
@@ -52,7 +56,7 @@ Most components support being clickable by setting the `pressable` prop (short n
 
 ### Switch
 
-A toggle switch component. On Android, toggles always open the application when clicked.
+A toggle switch component.
 
 **Parameters:**
 
@@ -70,7 +74,7 @@ A toggle switch component. On Android, toggles always open the application when 
 
 ### CheckBox
 
-Standard checkbox component. On Android, checkboxes always open the application when clicked.
+Standard checkbox component.
 
 **Parameters:**
 
@@ -86,7 +90,7 @@ Standard checkbox component. On Android, checkboxes always open the application 
 
 ### RadioButton
 
-Standard radio button component. On Android, radio buttons always open the application when clicked.
+Standard radio button component.
 
 **Parameters:**
 

@@ -2,11 +2,11 @@
 
 :::warning Experimental feature
 
-Dynamic Live Activities and their public APIs are experimental in V1. They are separate from both legacy Live Activities and [Dynamic Widgets](./dynamic-widgets): they have their own configuration collection, generated ActivityKit types, Metro route, runtime registry, and release bundles.
+Dynamic Live Activities and their public APIs are experimental in V1. They're a separate engine from both legacy Live Activities and [Dynamic Widgets](./dynamic-widgets).
 
 :::
 
-A legacy Live Activity sends a fully rendered Voltra UI in every update. A Dynamic Live Activity bundles its rendering definition in the app and receives only a complete, JSON-compatible props record. This keeps update payloads small, but makes the definition ID and its props contract a compatibility boundary between the app and the push producer.
+A legacy Live Activity sends a fully rendered Voltra UI in every update. A Dynamic Live Activity bundles its rendering definition in the app and receives only a complete, JSON-compatible props record. Keep payloads small — but remember the definition ID and its props are basically a contract with whoever sends the push.
 
 ## Configure a definition
 
@@ -163,10 +163,10 @@ const subscription = addVoltraListener('dynamicLiveActivityRenderFailed', (event
 
 ## Rollout and compatibility
 
-- An older app can only accept a push-to-start for a definition whose generated attributes type and ActivityKit configuration it contains. Supporting another Dynamic Live Activity is not enough.
-- An undeclared definition has no generated type, configuration, catalog entry, or bundle; local APIs reject it and ActivityKit does not create it remotely.
-- Keep a definition bundled until all activities using it have ended. End active instances before removing its declaration.
-- Treat an ID as a versioned rendering-and-props contract. Use a new ID such as `order_finished_v2` for breaking prop changes; incompatible props under the old ID are producer error.
-- A broadcast channel cannot tailor format per recipient. Use Dynamic Live Activities only on channels whose recipients support the same definition; otherwise retain the legacy format.
-- A missing/corrupt bundle or late renderer failure leaves a remotely created activity active but empty, records a failure, and can recover on a later successful update. V1 does not cache the last successful UI.
-- ActivityKit can create duplicate remote starts with the same name; V1 does not reconcile them. This differs from local replacement behavior.
+- An older app version can only accept a push-to-start for a definition it actually has bundled. Having some other Dynamic Live Activity isn't enough — the specific definition ID needs to exist in that build.
+- If a definition isn't declared in the app, both local APIs and remote ActivityKit pushes for it will fail.
+- Don't remove a definition's declaration while activities using it might still be running — end those first.
+- Treat each definition ID as a versioned contract for its rendering and props. If you need to make a breaking change to the props shape, ship it under a new ID (e.g. `order_finished_v2`) instead of changing the old one.
+- Broadcast channels send the same payload to every subscriber, so only use Dynamic Live Activities on a channel if every recipient supports that same definition — otherwise stick with the legacy format for that channel.
+- If the bundle is missing or corrupt, or the renderer fails, a remotely-started activity can end up active but empty. It'll recover on the next successful update, but V1 doesn't cache the last good UI in the meantime.
+- ActivityKit can create duplicate remote starts under the same name, and V1 doesn't dedupe them — unlike local starts, where an existing activity with the same name gets replaced.

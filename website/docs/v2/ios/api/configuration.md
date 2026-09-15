@@ -57,8 +57,6 @@ The dismissal policy applies to both programmatic ending (`stopLiveActivity`) an
 
 ## Additional Configuration Options
 
-Voltra provides additional configuration options to control Live Activity behavior and appearance.
-
 ### Stale Date
 
 The `staleDate` option allows you to specify when a Live Activity should be considered stale and automatically dismissed by the system.

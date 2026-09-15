@@ -1,4 +1,5 @@
 import type { CLI_DEFAULTS } from './defaults'
+import type { PerConfiguration } from './perConfiguration'
 
 export type VoltraPlatform = 'android' | 'ios'
 
@@ -15,8 +16,11 @@ export type WidgetLabel = string | WidgetLocalizedValue
 export type WidgetInitialStatePath = string | WidgetLocalizedValue
 
 export interface AndroidWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
+  /**
+   * Server endpoint that returns widget state updates. Optional — omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
   /** Refresh interval, in minutes, for fetching server updates. */
   intervalMinutes?: number
   /** Whether fetched updates should trigger an immediate widget refresh. */
@@ -44,14 +48,32 @@ export interface AndroidWidgetConfig {
   displayName: WidgetLabel
   /** User-facing widget description shown by the launcher. */
   description: WidgetLabel
-  /** Minimum widget width in dp. */
+  /** Minimum widget width in dp. Only affects Android 11 and older. */
   minWidth?: number
-  /** Minimum widget height in dp. */
+  /** Minimum widget height in dp. Only affects Android 11 and older. */
   minHeight?: number
-  /** Minimum widget width in launcher grid cells. */
+  /**
+   * Minimum widget width in launcher grid cells.
+   *
+   * @deprecated Use `minWidth` instead. The value is approximated in dp for Android 11 and
+   * older.
+   */
   minCellWidth?: number
-  /** Minimum widget height in launcher grid cells. */
+  /**
+   * Minimum widget height in launcher grid cells.
+   *
+   * @deprecated Use `minHeight` instead. The value is approximated in dp for Android 11 and
+   * older.
+   */
   minCellHeight?: number
+  /** Minimum width, in dp, the widget can be resized down to. */
+  minResizeWidth?: number
+  /** Minimum height, in dp, the widget can be resized down to. */
+  minResizeHeight?: number
+  /** Maximum width, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeWidth?: number
+  /** Maximum height, in dp, the widget can be resized up to. Honoured on Android 12 and newer. */
+  maxResizeHeight?: number
   /** Default widget width in launcher grid cells. */
   targetCellWidth: number
   /** Default widget height in launcher grid cells. */
@@ -84,8 +106,11 @@ export type IOSWidgetFamily =
   | 'accessoryInline'
 
 export interface IOSWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
+  /**
+   * Server endpoint that returns widget state updates. Optional — omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
   /** Refresh interval, in minutes, for fetching server updates. */
   intervalMinutes?: number
   /** Whether fetched updates should trigger an immediate widget refresh. */
@@ -109,6 +134,12 @@ export interface IOSWidgetAppIntentConfig {
 export interface IOSWidgetConfig {
   /** Stable widget identifier used in generated files and registrations. */
   id: string
+  /**
+   * WidgetKit `kind` of the generated widget. Defaults to `Voltra_Widget_<id>`.
+   * Pin it to the kind of a pre-Voltra widget so already placed instances survive the migration
+   * (WidgetKit identifies a placed widget by extension bundle id + kind).
+   */
+  kind?: string
   /** User-facing widget name shown in iOS widget configuration UI. */
   displayName: WidgetLabel
   /** User-facing widget description shown in iOS widget configuration UI. */
@@ -145,8 +176,11 @@ export interface IOSProjectOverrides {
   mainTargetName?: string
   /** Explicit path to the app target Info.plist file. */
   infoPlistPath?: string
-  /** Explicit path to the main app entitlements file. */
-  entitlementsPath?: string
+  /**
+   * Explicit path to the main app entitlements file, or one path per Xcode build configuration
+   * name when each environment has its own.
+   */
+  entitlementsPath?: PerConfiguration<string>
   /** Explicit path to the Podfile. */
   podfilePath?: string
 }
@@ -175,8 +209,11 @@ export interface VoltraAndroidConfig {
 export interface VoltraIOSConfig {
   /** Whether to enable push-notification-related iOS setup for widgets and Live Activities. */
   enablePushNotifications?: boolean
-  /** App Group identifier used to share data between the app and widget extension. */
-  groupIdentifier?: string
+  /**
+   * App Group identifier used to share data between the app and widget extension, or one per Xcode
+   * build configuration name when each environment has its own.
+   */
+  groupIdentifier?: PerConfiguration<string>
   /** iOS widgets to generate and register. */
   widgets?: IOSWidgetConfig[]
   /** Minimum iOS deployment target for generated widget targets. */
@@ -187,8 +224,11 @@ export interface VoltraIOSConfig {
   fonts?: string[]
   /** Directory containing user-provided images for iOS widgets. */
   userImagesPath?: string
-  /** Keychain access group shared by the app and extension. */
-  keychainGroup?: string
+  /**
+   * Keychain access group shared by the app and extension, or one per Xcode build configuration
+   * name when each environment has its own.
+   */
+  keychainGroup?: PerConfiguration<string>
   /** Native iOS project discovery overrides. */
   project?: IOSProjectOverrides
 }
@@ -211,28 +251,27 @@ export interface LoadedVoltraConfig {
   configDir: string
 }
 
-export interface NormalizedAndroidWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
+/**
+ * Build-time server-update defaults after normalization. The device treats these as the lowest
+ * settings layer; `setWidgetServerUpdate` overrides `url` and `intervalMinutes` at runtime.
+ */
+export interface NormalizedWidgetServerUpdateConfig {
+  /** Server endpoint, when app.json set one. Absent means "URL supplied at runtime". */
+  url?: string
   /** Refresh interval, in minutes, for fetching server updates. */
   intervalMinutes: number
-  /** Whether fetched updates should trigger an immediate widget refresh. */
+  /** Whether the widget draws a refresh button. Build-time only: it is generated UI structure. */
   refresh: boolean
 }
+
+export type NormalizedAndroidWidgetServerUpdateConfig = NormalizedWidgetServerUpdateConfig
 
 export interface NormalizedAndroidWidgetConfig extends Omit<AndroidWidgetConfig, 'serverUpdate'> {
   /** Server-driven update settings after defaults have been applied. */
   serverUpdate?: NormalizedAndroidWidgetServerUpdateConfig
 }
 
-export interface NormalizedIOSWidgetServerUpdateConfig {
-  /** Server endpoint that returns widget state updates. */
-  url: string
-  /** Refresh interval, in minutes, for fetching server updates. */
-  intervalMinutes: number
-  /** Whether fetched updates should trigger an immediate widget refresh. */
-  refresh: boolean
-}
+export type NormalizedIOSWidgetServerUpdateConfig = NormalizedWidgetServerUpdateConfig
 
 export interface NormalizedIOSWidgetConfig extends Omit<IOSWidgetConfig, 'serverUpdate' | 'supportedFamilies'> {
   /** Supported iOS widget families after defaults have been applied. */
@@ -261,8 +300,8 @@ export interface NormalizedIOSProjectConfig {
   mainTargetName?: string
   /** Absolute path to the Info.plist file, if overridden. */
   infoPlistPath?: string
-  /** Absolute path to the entitlements file, if overridden. */
-  entitlementsPath?: string
+  /** Absolute path to the entitlements file, or one per build configuration name, if overridden. */
+  entitlementsPath?: PerConfiguration<string>
   /** Absolute path to the Podfile, if overridden. */
   podfilePath?: string
 }
@@ -284,7 +323,7 @@ export interface NormalizedVoltraIOSConfig {
   /** Whether iOS push-notification-related setup should be applied. */
   enablePushNotifications: boolean
   /** App Group identifier used to share data between the app and extension. */
-  groupIdentifier?: string
+  groupIdentifier?: PerConfiguration<string>
   /** iOS widgets after validation and normalization. */
   widgets: NormalizedIOSWidgetConfig[]
   /** Effective iOS deployment target for generated widget targets. */
@@ -296,9 +335,35 @@ export interface NormalizedVoltraIOSConfig {
   /** Absolute path to the iOS user images directory. */
   userImagesPath: string
   /** Keychain access group shared by the app and extension. */
-  keychainGroup?: string
+  keychainGroup?: PerConfiguration<string>
   /** Normalized iOS native project discovery overrides. */
   project: NormalizedIOSProjectConfig
+}
+
+/**
+ * iOS project overrides after per-build-configuration values have been resolved against the Xcode
+ * project.
+ */
+export type ResolvedIOSProjectConfig = Omit<NormalizedIOSProjectConfig, 'entitlementsPath'> & {
+  /** Absolute path to the entitlements file of the default build configuration, if overridden. */
+  entitlementsPath?: string
+}
+
+/**
+ * iOS config as the platform mutators consume it: every per-build-configuration value has been
+ * collapsed to a single string, either the configured value or a reference to a build setting
+ * Voltra writes per build configuration.
+ */
+export type ResolvedVoltraIOSConfig = Omit<
+  NormalizedVoltraIOSConfig,
+  'groupIdentifier' | 'keychainGroup' | 'project'
+> & {
+  /** App Group identifier used to share data between the app and extension. */
+  groupIdentifier?: string
+  /** Keychain access group shared by the app and extension. */
+  keychainGroup?: string
+  /** Resolved iOS native project discovery overrides. */
+  project: ResolvedIOSProjectConfig
 }
 
 export interface NormalizedVoltraConfig {
@@ -312,6 +377,8 @@ export interface NormalizedVoltraConfig {
   android?: NormalizedVoltraAndroidConfig
   /** Normalized iOS-specific Voltra configuration. */
   ios?: NormalizedVoltraIOSConfig
+  /** Non-fatal config problems, surfaced in the `voltra apply` summary. */
+  warnings?: string[]
 }
 
 export type CliDefaults = typeof CLI_DEFAULTS

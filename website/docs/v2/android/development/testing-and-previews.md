@@ -5,7 +5,7 @@ Voltra provides multiple ways to preview your Android widgets:
 1. **In-App Previews** - Preview layouts within your development app using `VoltraWidgetPreview`
 2. **Widget Picker Previews** - Customize what users see in the Android widget picker when adding your widget
 
-This page covers in-app previews for development. For widget picker previews, see [Plugin Configuration - Widget Picker Previews](../api/plugin-configuration#widget-picker-previews).
+This page covers in-app previews for development. For widget picker previews, see [Widget Sizing & Previews](../api/widget-sizing-and-previews).
 
 ## VoltraWidgetPreview
 
@@ -66,12 +66,7 @@ import { VoltraView } from '@use-voltra/android-client'
 
 ## Accuracy
 
-The Android preview components use the **actual native Glance renderers** under the hood. When you provide JSX to `VoltraWidgetPreview`, it is converted to a native `RemoteViews` object and rendered using the same logic that Android uses on the home screen.
-
-This ensures that:
-- Layout constraints are respected.
-- Styling (colors, fonts, spacing) is accurate.
-- Component mapping is identical to the production widget.
+The Android preview components use the **actual native Glance renderers** under the hood, so the preview matches production rendering — layout, styling, and component mapping are all identical to what shows on the home screen.
 
 :::info
 While layout and styling are accurate, some home-screen specific behaviors (like actual widget resizing by the user) are not simulated by the preview component.

@@ -47,9 +47,15 @@ export interface IOSWidgetAppIntentConfig {
  */
 export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
   /**
-   * Unique identifier for the widget (used as the widget kind and in JS API)
+   * Unique identifier for the widget (used in the JS API and, unless `kind` is set, as the widget kind)
    */
   id: string
+  /**
+   * WidgetKit `kind` of the generated widget. Defaults to `Voltra_Widget_<id>`.
+   * Pin it to the kind of a pre-Voltra widget so already placed instances survive the migration
+   * (WidgetKit identifies a placed widget by extension bundle id + kind).
+   */
+  kind?: string
   displayName: WidgetLabel
   description: WidgetLabel
   /** @default ['systemSmall', 'systemMedium', 'systemLarge'] */
@@ -75,8 +81,12 @@ export interface IOSDynamicLiveActivityConfig extends DynamicLiveActivityEntryCo
  * Server-driven iOS widget updates (WidgetKit background refresh).
  */
 export interface IOSWidgetServerUpdateConfig {
-  url: string
-  /** @default 15 */
+  /**
+   * Server endpoint that returns widget state updates. Omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
+  /** @default 15, or 15 when the widget has an `entry` */
   intervalMinutes?: number
   /** @default false */
   refresh?: boolean

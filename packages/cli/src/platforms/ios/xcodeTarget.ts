@@ -19,15 +19,21 @@ import { resolveIOSWidgetTargetName } from './targetName'
 import { ensureMainGroupChild, openIOSXcodeProject, saveIOSXcodeProject } from './xcode'
 import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
 import { needsEntitlementsMutation } from './entitlements'
+import { VOLTRA_OWNED_BUILD_SETTINGS } from './buildConfigurationValues'
 import { VOLTRA_MIN_IOS_DEPLOYMENT_TARGET, maxIOSDeploymentTarget } from './deploymentTarget'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { NormalizedVoltraIOSConfig } from '../../config/types'
+import type { ResolvedVoltraIOSConfig } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 import type { IOSXcodeProjectContext } from './xcode'
 import type { BuildSettings } from '@bacons/xcode/build/json/types'
 
 const IOS_APP_EXTENSION_PRODUCT_TYPE = 'com.apple.product-type.app-extension'
+const OPTIONAL_WIDGET_CODE_SIGNING_SETTINGS = [
+  'CODE_SIGN_STYLE',
+  'DEVELOPMENT_TEAM',
+  'PROVISIONING_PROFILE_SPECIFIER',
+] as const
 const PRODUCT_FILE_TYPE = 'wrapper.app-extension'
 const SWIFT_FILE_TYPE = 'sourcecode.swift'
 const STRINGS_FILE_TYPE = 'text.plist.strings'
@@ -84,10 +90,12 @@ echo "Voltra: widget bundler resolved to $BUNDLER"
 
 export interface EnsureIOSWidgetTargetOptions {
   projectRoot: string
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
   discovery: IOSProjectDiscovery
   generatedFiles: string[]
   previousGeneratedFiles?: string[]
+  /** User-defined build settings to write at project level, keyed by build configuration name. */
+  buildSettings?: Map<string, Record<string, string>>
 }
 
 export interface EnsureIOSWidgetTargetResult {
@@ -105,7 +113,7 @@ export class IOSWidgetTargetMutationError extends VoltraCliError {
 export async function ensureIOSWidgetTarget(
   options: EnsureIOSWidgetTargetOptions
 ): Promise<EnsureIOSWidgetTargetResult> {
-  const { projectRoot, ios, discovery, generatedFiles, previousGeneratedFiles } = options
+  const { projectRoot, ios, discovery, generatedFiles, previousGeneratedFiles, buildSettings } = options
   const targetName = resolveIOSWidgetTargetName(ios, discovery)
   const context = openIOSXcodeProject(discovery)
   const beforeSerialized = JSON.stringify(context.project.toJSON())
@@ -113,16 +121,22 @@ export async function ensureIOSWidgetTarget(
   const nextGeneratedFiles = normalizeGeneratedFilePaths(generatedFiles, projectRoot, discovery)
   const previousWidgetFiles = normalizeGeneratedFilePaths(previousGeneratedFiles ?? [], projectRoot, discovery)
   const staleTargetNames = getStaleWidgetTargetNames(previousWidgetFiles, targetName)
-  const bundleIdentifier = resolveBundleIdentifier(context, discovery, targetName)
-  const codeSigning = getMainAppCodeSigningSettings(context)
+  const mainAppSettings = getMainAppConfigurationSettings(context, discovery, targetName)
   const mainAppEntitlementsPath = await getMainAppEntitlementsBuildSetting(discovery, ios)
 
   removeStaleWidgetTargets(context, staleTargetNames)
-  ensureMainAppEntitlementsBuildSetting(context, mainAppEntitlementsPath)
+  ensureMainAppEntitlementsBuildSetting(
+    context,
+    mainAppEntitlementsPath,
+    ios.project.entitlementsPath !== undefined,
+    getEntitlementsPathByConfiguration(discovery)
+  )
   ensureMainAppDeploymentTarget(context)
-  ensureWidgetTarget(context, targetName, bundleIdentifier, ios.deploymentTarget, codeSigning)
+  ensureWidgetTarget(context, targetName, ios.deploymentTarget, mainAppSettings)
 
   const widgetTarget = getWidgetTarget(context, targetName)
+
+  ensureVoltraBuildSettings(context, widgetTarget, buildSettings ?? new Map())
   const widgetGroup = ensureWidgetGroup(context, targetName)
   const productFile = ensureProductFile(context, targetName, productPath)
 
@@ -159,24 +173,17 @@ export async function ensureIOSWidgetTarget(
 function ensureWidgetTarget(
   context: IOSXcodeProjectContext,
   targetName: string,
-  bundleIdentifier: string,
   deploymentTarget: string,
-  codeSigning: MainAppCodeSigningSettings
+  mainAppSettings: MainAppSettingsByConfiguration
 ): PBXNativeTarget {
   const existingTarget = getWidgetTargetOptional(context, targetName)
 
   if (existingTarget) {
-    ensureBuildConfigurations(existingTarget, targetName, bundleIdentifier, deploymentTarget, codeSigning)
+    ensureBuildConfigurations(context, existingTarget, targetName, deploymentTarget, mainAppSettings)
     return existingTarget
   }
 
-  const buildConfigurationList = createBuildConfigurationList(
-    context,
-    targetName,
-    bundleIdentifier,
-    deploymentTarget,
-    codeSigning
-  )
+  const buildConfigurationList = createBuildConfigurationList(context, targetName, deploymentTarget, mainAppSettings)
   const target = context.project.rootObject.createNativeTarget({
     buildConfigurationList,
     name: targetName,
@@ -193,19 +200,17 @@ function ensureWidgetTarget(
 function createBuildConfigurationList(
   context: IOSXcodeProjectContext,
   targetName: string,
-  bundleIdentifier: string,
   deploymentTarget: string,
-  codeSigning: MainAppCodeSigningSettings
+  mainAppSettings: MainAppSettingsByConfiguration
 ): XCConfigurationList {
   const configs = context.mainAppTarget.buildConfigurations.all.map((config) => {
     return XCBuildConfiguration.create(context.project, {
       name: config.props.name,
       buildSettings: buildWidgetBuildSettings(
         targetName,
-        bundleIdentifier,
         deploymentTarget,
-        codeSigning,
-        config.props.name
+        config.props.name,
+        getMainAppSettingsFor(mainAppSettings, config.props.name)
       ),
     })
   })
@@ -217,11 +222,11 @@ function createBuildConfigurationList(
 }
 
 function ensureBuildConfigurations(
+  context: IOSXcodeProjectContext,
   target: PBXNativeTarget,
   targetName: string,
-  bundleIdentifier: string,
   minimumDeploymentTarget: string,
-  codeSigning: MainAppCodeSigningSettings
+  mainAppSettings: MainAppSettingsByConfiguration
 ): void {
   const configurationList = target.props.buildConfigurationList
 
@@ -231,23 +236,71 @@ function ensureBuildConfigurations(
     )
   }
 
+  addMissingWidgetBuildConfigurations(context, configurationList, targetName, minimumDeploymentTarget, mainAppSettings)
+
   for (const config of configurationList.props.buildConfigurations) {
     const deploymentTarget = resolveBuildConfigurationDeploymentTarget(config, minimumDeploymentTarget)
 
-    Object.assign(
-      config.props.buildSettings,
-      buildWidgetBuildSettings(targetName, bundleIdentifier, deploymentTarget, codeSigning, config.props.name)
+    const nextBuildSettings = buildWidgetBuildSettings(
+      targetName,
+      deploymentTarget,
+      config.props.name,
+      getMainAppSettingsFor(mainAppSettings, config.props.name)
+    )
+
+    Object.assign(config.props.buildSettings, nextBuildSettings)
+
+    // Signing settings the app configuration no longer sets are dropped rather than left behind,
+    // now that each configuration can change independently of the default one.
+    for (const settingName of OPTIONAL_WIDGET_CODE_SIGNING_SETTINGS) {
+      if (nextBuildSettings[settingName] === undefined) {
+        delete (config.props.buildSettings as unknown as Record<string, unknown>)[settingName]
+      }
+    }
+  }
+}
+
+/**
+ * Mirrors build configurations added to the app since the widget target was created, so an
+ * environment added later still builds the extension.
+ */
+function addMissingWidgetBuildConfigurations(
+  context: IOSXcodeProjectContext,
+  configurationList: XCConfigurationList,
+  targetName: string,
+  minimumDeploymentTarget: string,
+  mainAppSettings: MainAppSettingsByConfiguration
+): void {
+  const existingNames = new Set(configurationList.props.buildConfigurations.map((config) => config.props.name))
+
+  for (const config of context.mainAppTarget.buildConfigurations.all) {
+    const configurationName = config.props.name
+
+    if (existingNames.has(configurationName)) {
+      continue
+    }
+
+    configurationList.props.buildConfigurations.push(
+      XCBuildConfiguration.create(context.project, {
+        name: configurationName,
+        buildSettings: buildWidgetBuildSettings(
+          targetName,
+          resolveBuildConfigurationDeploymentTarget(config, minimumDeploymentTarget),
+          configurationName,
+          getMainAppSettingsFor(mainAppSettings, configurationName)
+        ),
+      })
     )
   }
 }
 
 function buildWidgetBuildSettings(
   targetName: string,
-  bundleIdentifier: string,
   deploymentTarget: string,
-  codeSigning: MainAppCodeSigningSettings,
-  configurationName: string
+  configurationName: string,
+  mainAppSettings: MainAppConfigurationSettings
 ): BuildSettings & Record<string, string | undefined> {
+  const { bundleIdentifier, codeSigning } = mainAppSettings
   const buildSettings: BuildSettings & Record<string, string | undefined> = {
     ASSETCATALOG_COMPILER_APPICON_NAME: '',
     CODE_SIGN_ENTITLEMENTS: `${targetName}/${targetName}.entitlements`,
@@ -792,21 +845,106 @@ function toIOSProjectRelativePath(relativeFilePath: string, iosRootRelativePrefi
   return undefined
 }
 
-function resolveBundleIdentifier(
+/**
+ * Widget settings are derived per build configuration: apps that ship several environments give each
+ * configuration its own bundle identifier and signing setup, and the extension has to match the app
+ * it is embedded in for every one of them.
+ */
+function getMainAppConfigurationSettings(
   context: IOSXcodeProjectContext,
   discovery: IOSProjectDiscovery,
   targetName: string
-): string {
-  const mainTargetBundleIdentifier =
-    context.mainAppTarget.buildConfigurations.default.resolveBuildSetting('PRODUCT_BUNDLE_IDENTIFIER')
+): MainAppSettingsByConfiguration {
+  const defaultConfiguration = context.mainAppTarget.buildConfigurations.default
+  const defaultBundleIdentifier = readMainAppBundleIdentifier(defaultConfiguration)
 
-  if (typeof mainTargetBundleIdentifier !== 'string' || mainTargetBundleIdentifier.length === 0) {
+  if (!defaultBundleIdentifier) {
     throw new IOSWidgetTargetMutationError(
       `Main app target '${discovery.mainTargetName}' is missing PRODUCT_BUNDLE_IDENTIFIER in ${discovery.pbxprojPath}`
     )
   }
 
-  return `${stripQuotes(mainTargetBundleIdentifier)}.${sanitizeBundleIdentifierSegment(targetName)}`
+  const byConfigurationName = new Map<string, MainAppConfigurationSettings>()
+
+  for (const config of context.mainAppTarget.buildConfigurations.all) {
+    const bundleIdentifier = readMainAppBundleIdentifier(config) ?? defaultBundleIdentifier
+
+    byConfigurationName.set(config.props.name, {
+      // The raw value is kept, so an app identifier built from build settings keeps expanding.
+      bundleIdentifier: `${bundleIdentifier}.${sanitizeBundleIdentifierSegment(targetName)}`,
+      codeSigning: getCodeSigningSettings(config),
+    })
+  }
+
+  return {
+    byConfigurationName,
+    fallback: {
+      bundleIdentifier: `${defaultBundleIdentifier}.${sanitizeBundleIdentifierSegment(targetName)}`,
+      codeSigning: getCodeSigningSettings(defaultConfiguration),
+    },
+  }
+}
+
+function getMainAppSettingsFor(
+  mainAppSettings: MainAppSettingsByConfiguration,
+  configurationName: string
+): MainAppConfigurationSettings {
+  return mainAppSettings.byConfigurationName.get(configurationName) ?? mainAppSettings.fallback
+}
+
+function readMainAppBundleIdentifier(config: XCBuildConfiguration): string | undefined {
+  const rawBundleIdentifier = readBuildSettingString(config.props.buildSettings?.PRODUCT_BUNDLE_IDENTIFIER)
+
+  if (rawBundleIdentifier) {
+    return substituteTargetScopedBuildSettings(rawBundleIdentifier, config)
+  }
+
+  const inheritedBundleIdentifier = config.resolveBuildSetting('PRODUCT_BUNDLE_IDENTIFIER')
+
+  if (typeof inheritedBundleIdentifier !== 'string' || inheritedBundleIdentifier.length === 0) {
+    return undefined
+  }
+
+  return stripQuotes(inheritedBundleIdentifier)
+}
+
+/**
+ * Substitutes the build settings whose value depends on the target being built, leaving every other
+ * reference in place.
+ *
+ * An app identifier is routinely assembled from build settings. Those that mean something different
+ * in the widget target have to be resolved against the app now — the React Native template's
+ * `org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)` would otherwise name the widget
+ * after itself and stop being a child of the app's identifier. Everything else is left unexpanded,
+ * so a setting the project defines per build configuration, such as `$(BUNDLE_SUFFIX)`, keeps
+ * expanding per build in the widget target too.
+ */
+function substituteTargetScopedBuildSettings(value: string, config: XCBuildConfiguration): string {
+  return value.replace(/\$\((PRODUCT_NAME|TARGET_NAME)(?::([A-Za-z0-9]+))?\)/g, (match, settingName, modifier) => {
+    const settingValue = config.resolveBuildSetting(settingName)
+
+    if (typeof settingValue !== 'string' || settingValue.length === 0) {
+      return match
+    }
+
+    return applyBuildSettingModifier(stripQuotes(settingValue), modifier) ?? match
+  })
+}
+
+function applyBuildSettingModifier(value: string, modifier: string | undefined): string | undefined {
+  switch (modifier) {
+    case undefined:
+      return value
+    case 'rfc1034identifier':
+      return value.replace(/[^a-zA-Z0-9]/g, '-')
+    case 'lower':
+      return value.toLowerCase()
+    case 'upper':
+      return value.toUpperCase()
+    default:
+      // An unsupported modifier is left for Xcode rather than guessed at.
+      return undefined
+  }
 }
 
 function sanitizeBundleIdentifierSegment(targetName: string): string {
@@ -814,8 +952,8 @@ function sanitizeBundleIdentifierSegment(targetName: string): string {
   return sanitized.replace(/-+/g, '-').replace(/^-+|-+$/g, '')
 }
 
-function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainAppCodeSigningSettings {
-  const buildSettings = context.mainAppTarget.buildConfigurations.default.props.buildSettings ?? {}
+function getCodeSigningSettings(config: XCBuildConfiguration): MainAppCodeSigningSettings {
+  const buildSettings = config.props.buildSettings ?? {}
 
   return {
     codeSignStyle: readBuildSettingString(buildSettings.CODE_SIGN_STYLE),
@@ -828,7 +966,7 @@ function getMainAppCodeSigningSettings(context: IOSXcodeProjectContext): MainApp
 
 async function getMainAppEntitlementsBuildSetting(
   discovery: IOSProjectDiscovery,
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
 ): Promise<string | undefined> {
   if (discovery.entitlementsPath) {
     return normalizeRelativePath(path.relative(discovery.iosRoot, discovery.entitlementsPath))
@@ -847,17 +985,73 @@ async function getMainAppEntitlementsBuildSetting(
   return normalizeRelativePath(path.relative(discovery.iosRoot, entitlementsPath))
 }
 
+/**
+ * Writes the user-defined build settings that hold Voltra's per-build-configuration values.
+ *
+ * They are set on the app and widget targets rather than on the project, so the build
+ * configurations written to are exactly the ones the values were validated against: a target can
+ * carry a configuration the project-level list does not have, and a value silently dropped there
+ * would expand to an empty App Group at build time. Settings Voltra no longer defines are removed.
+ */
+function ensureVoltraBuildSettings(
+  context: IOSXcodeProjectContext,
+  widgetTarget: PBXNativeTarget,
+  buildSettings: Map<string, Record<string, string>>
+): void {
+  const configurations = [
+    ...context.mainAppTarget.buildConfigurations.all,
+    ...(widgetTarget.props.buildConfigurationList?.props.buildConfigurations ?? []),
+  ]
+
+  for (const config of configurations) {
+    const configurationSettings = config.props.buildSettings as unknown as Record<string, string | undefined>
+    const nextSettings = buildSettings.get(config.props.name) ?? {}
+
+    for (const settingName of VOLTRA_OWNED_BUILD_SETTINGS) {
+      if (nextSettings[settingName] === undefined) {
+        delete configurationSettings[settingName]
+      }
+    }
+
+    Object.assign(configurationSettings, nextSettings)
+  }
+}
+
+function getEntitlementsPathByConfiguration(discovery: IOSProjectDiscovery): Map<string, string> {
+  return new Map(
+    [...(discovery.entitlementsPathByConfiguration ?? [])].map(([buildConfigurationName, entitlementsPath]) => [
+      buildConfigurationName,
+      normalizeRelativePath(path.relative(discovery.iosRoot, entitlementsPath)),
+    ])
+  )
+}
+
 function ensureMainAppEntitlementsBuildSetting(
   context: IOSXcodeProjectContext,
-  entitlementsPath: string | undefined
+  entitlementsPath: string | undefined,
+  isConfiguredExplicitly: boolean,
+  entitlementsPathByConfiguration: Map<string, string>
 ): void {
   for (const config of context.mainAppTarget.buildConfigurations.all) {
-    if (entitlementsPath) {
-      config.props.buildSettings.CODE_SIGN_ENTITLEMENTS = entitlementsPath
+    const configuredEntitlementsPath = entitlementsPathByConfiguration.get(config.props.name)
+
+    if (configuredEntitlementsPath) {
+      config.props.buildSettings.CODE_SIGN_ENTITLEMENTS = configuredEntitlementsPath
       continue
     }
 
-    delete config.props.buildSettings.CODE_SIGN_ENTITLEMENTS
+    if (!entitlementsPath) {
+      delete config.props.buildSettings.CODE_SIGN_ENTITLEMENTS
+      continue
+    }
+
+    // A build configuration pointing at its own entitlements file keeps it, unless the config file
+    // named one explicitly.
+    if (!isConfiguredExplicitly && readBuildSettingString(config.props.buildSettings.CODE_SIGN_ENTITLEMENTS)) {
+      continue
+    }
+
+    config.props.buildSettings.CODE_SIGN_ENTITLEMENTS = entitlementsPath
   }
 }
 
@@ -884,6 +1078,17 @@ interface MainAppCodeSigningSettings {
   codeSignStyle?: string
   developmentTeam?: string
   provisioningProfileSpecifier?: string
+}
+
+interface MainAppConfigurationSettings {
+  bundleIdentifier: string
+  codeSigning: MainAppCodeSigningSettings
+}
+
+interface MainAppSettingsByConfiguration {
+  byConfigurationName: Map<string, MainAppConfigurationSettings>
+  /** Used for widget build configurations the main app target does not have. */
+  fallback: MainAppConfigurationSettings
 }
 
 function readBuildSettingString(value: unknown): string | undefined {

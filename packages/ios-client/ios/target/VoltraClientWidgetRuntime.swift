@@ -41,6 +41,12 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
   /// process, where the provider's process-static JSContext is empty. The View re-evaluates from
   /// this source so `render()` always has the widget's function available in its own process.
   public let bundleSource: String?
+  /// How the last server fetch went, as `env.serverUpdate`, for a widget that has a `serverUpdate`
+  /// in app.json. `nil` for every other Dynamic Widget, and the reason `env.serverUpdate` is
+  /// `undefined` there. Carried on the entry rather than read at render time because the provider
+  /// is the thing that knows the fetch outcome, and WidgetKit re-renders archived entries in a
+  /// fresh process.
+  public let serverUpdateJSON: String?
 
   public init(
     date: Date,
@@ -48,7 +54,8 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     bundleReady: Bool,
     errorMessage: String? = nil,
     configuration: [String: String] = [:],
-    bundleSource: String? = nil
+    bundleSource: String? = nil,
+    serverUpdateJSON: String? = nil
   ) {
     self.date = date
     self.widgetId = widgetId
@@ -56,6 +63,20 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     self.errorMessage = errorMessage
     self.configuration = configuration
     self.bundleSource = bundleSource
+    self.serverUpdateJSON = serverUpdateJSON
+  }
+
+  /// The same entry, told how the server side is doing.
+  public func withServerUpdate(_ serverUpdateJSON: String?) -> VoltraClientWidgetEntry {
+    VoltraClientWidgetEntry(
+      date: date,
+      widgetId: widgetId,
+      bundleReady: bundleReady,
+      errorMessage: errorMessage,
+      configuration: configuration,
+      bundleSource: bundleSource,
+      serverUpdateJSON: serverUpdateJSON
+    )
   }
 }
 
@@ -234,10 +255,12 @@ public enum VoltraClientWidgetEnvBuilder {
     widgetRenderingMode: WidgetRenderingMode,
     showsWidgetContainerBackground: Bool,
     locale: Locale,
-    configuration: [String: String]
+    configuration: [String: String],
+    serverUpdateJSON: String? = nil
   ) -> String {
     let timestampMs = Int(date.timeIntervalSince1970 * 1000)
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+    let voltraVersion = VoltraConfig.voltraVersion()
 
     #if DEBUG
       let isDev = true
@@ -253,7 +276,7 @@ public enum VoltraClientWidgetEnvBuilder {
       "isDev": \(isDev),
       "metroUrl": \(metroUrlLiteral),
       "appVersion": \(jsonString(appVersion)),
-      "voltraVersion": \(jsonString("1.4.1"))
+      "voltraVersion": \(jsonString(voltraVersion))
     }
     """
 
@@ -267,6 +290,15 @@ public enum VoltraClientWidgetEnvBuilder {
       configurationJSON = "{ \(entries) }"
     }
 
+    // Only a server-driven widget gets env.serverUpdate; leaving the key out entirely is what
+    // makes it `undefined` for every other Dynamic Widget.
+    let serverUpdateEntry = serverUpdateJSON.map { ",\n  \"serverUpdate\": \($0)" } ?? ""
+
+    // The instance key (ADR 0007): the hash of this placement's merged configuration, or absent
+    // for a widget with no configuration parameters at all — matching what the request builder
+    // sends and what WidgetScope.of(widgetId, configuration:) resolves to.
+    let instanceEntry = WidgetCanonicalConfiguration.key(configuration).map { ",\n  \"instance\": \(jsonString($0))" } ?? ""
+
     return """
     {
       "date": \(timestampMs),
@@ -276,7 +308,7 @@ public enum VoltraClientWidgetEnvBuilder {
       "widgetRenderingMode": \(jsonString(renderingModeString(widgetRenderingMode))),
       "showsWidgetContainerBackground": \(showsWidgetContainerBackground),
       "configuration": \(configurationJSON),
-      "build": \(buildJSON)
+      "build": \(buildJSON)\(serverUpdateEntry)\(instanceEntry)
     }
     """
   }
@@ -349,11 +381,17 @@ public struct VoltraClientWidgetContentView: View {
         widgetRenderingMode: widgetRenderingMode,
         showsWidgetContainerBackground: showsWidgetContainerBackground,
         locale: locale,
-        configuration: entry.configuration
+        configuration: entry.configuration,
+        serverUpdateJSON: entry.serverUpdateJSON
       )
+      // This placement's scope (ADR 0007): an instance of its merged configuration, or the plain
+      // widget scope when it has none — which is also every widget's scope before this ADR.
+      let scope = WidgetScope.of(entry.widgetId, configuration: entry.configuration)
       let dynamicWidgetPropsStore = DynamicWidgetPropsStore()
       let dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator(
-        dynamicWidgetPropsProvider: dynamicWidgetPropsStore.dynamicWidgetProps(for:),
+        // Reads the instance slot for `scope`'s key, falling back to the widget slot when the
+        // placement has not fetched yet or has no configuration.
+        dynamicWidgetPropsProvider: { _ in dynamicWidgetPropsStore.dynamicWidgetProps(for: scope) },
         dynamicWidgetRuntimeBoundary: { dynamicWidgetID, dynamicWidgetPropsJSON, dynamicWidgetEnvironmentJSON in
           VoltraJSRenderer.render(
             widgetId: dynamicWidgetID,

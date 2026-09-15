@@ -61,6 +61,16 @@
   },
   {
     "type": "file",
+    "name": "gradients",
+    "label": "Gradients"
+  },
+  {
+    "type": "file",
+    "name": "custom-fonts",
+    "label": "Custom Fonts"
+  },
+  {
+    "type": "file",
     "name": "flexbox-layout",
     "label": "Flexbox Layout"
   },

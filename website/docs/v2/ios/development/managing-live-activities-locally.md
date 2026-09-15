@@ -2,22 +2,13 @@
 
 Live Activities are dynamic interfaces that display real-time information on iOS devices. Voltra provides a comprehensive set of APIs for managing the complete lifecycle of Live Activities directly from your React Native app, without requiring server-side infrastructure.
 
-## Overview
-
-Managing Live Activities locally involves four main phases:
-
-1. **Starting** a Live Activity with initial content and configuration
-2. **Updating** the content and configuration as data changes
-3. **Monitoring** state changes and user interactions
-4. **Stopping** the Live Activity when it's no longer needed
-
 Voltra offers both imperative APIs for direct control and React hooks for seamless integration with your components.
 
 This page documents the legacy server-rendered engine. For the separate experimental engine that bundles a definition with the app and updates it with props, see [Dynamic Live Activities](./dynamic-live-activities).
 
 ## Imperative APIs
 
-The imperative APIs provide direct, programmatic control over Live Activities. These are the core functions you'll use to manage Live Activity lifecycles.
+The imperative APIs provide direct, programmatic control over Live Activities. These are the core functions you'll use to manage Live Activity lifecycles. For the shape of the `variants` object used below, see [Supported variants](./developing-live-activities#supported-variants).
 
 ### Starting Live Activities
 
@@ -148,23 +139,17 @@ if (isLiveActivityActive('order-123')) {
 #### Platform detection
 
 ```typescript
-import { isGlassSupported, useIsHeadless } from '@use-voltra/ios-client'
+import { isGlassSupported } from '@use-voltra/ios-client'
 
 function App() {
-  const isHeadless = useIsHeadless()
-
   // Check if the device supports Liquid Glass (iOS 26+)
   if (isGlassSupported()) {
     // Use Liquid Glass features
   }
-
-  // Check if app was launched in background
-  if (isHeadless) {
-    // App was launched in background (e.g., from Live Activity interaction)
-    // Perform background tasks without UI
-  }
 }
 ```
+
+Voltra also exposes `useIsHeadless()` for detecting when your app was launched in the background (e.g. to handle a push token refresh without mounting your UI). See [Handling background execution](./server-side-updates#handling-background-execution) for the full explanation and example.
 
 #### Ending all Live Activities
 
@@ -280,20 +265,7 @@ Requires `enablePushNotifications: true` in the Voltra plugin and the Broadcast 
 
 ## Best practices
 
-### Activity lifecycle management
-
-- Always provide meaningful `activityId` values for re-binding on app restart
-- Clean up Live Activities when they're no longer relevant
-- Use appropriate dismissal policies based on your use case
-
-### Performance considerations
-
-- Keep UI variants lightweight and avoid complex component trees
-- Use appropriate relevance scores to ensure important activities are visible
-- Set reasonable stale dates to prevent accumulation of outdated activities
-
-### User experience
-
-- Provide deep link URLs for navigation when Live Activities are tapped
-- Use meaningful compact and minimal variants for Dynamic Island
-- Consider dismissal timing carefully - users may want to see final states
+- Provide an `activityName` when starting a Live Activity, so you can re-bind to it (e.g. via `isLiveActivityActive`) after an app restart.
+- Set a `staleDate` so iOS can automatically dismiss activities you forget to end (e.g. after a delivery is likely already complete).
+- Provide a `deepLinkUrl` so tapping the Live Activity takes users somewhere useful in your app.
+- Pick a `dismissalPolicy` deliberately — `{ after: N }` is useful when you want users to see a final state (like "Delivered") before it disappears.

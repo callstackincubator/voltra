@@ -2,10 +2,6 @@
 
 Use charts in Android widgets to show trends, comparisons, progress, or composition at a glance. You can mix bars, lines, areas, points, rules, and sectors in a single chart.
 
-:::info
-Charts are rendered to a bitmap using the Android Canvas API and displayed as a Glance `Image`. This approach is required because Jetpack Glance has no native charting components.
-:::
-
 :::warning
 Mark components (`BarMark`, `LineMark`, and the other mark types) must be direct children of `<VoltraAndroid.Chart>`. Do not wrap them in a custom component.
 :::
@@ -49,9 +45,9 @@ type SectorDataPoint = {
 
 ## Marks
 
-### BarMark
+Pick the mark that fits your data: bars for comparing values across categories, lines for trends over time, areas for volume, points for sparse or scattered measurements, rules for reference lines, and sectors for pie/donut breakdowns.
 
-Use bars when people need to compare values across categories.
+### BarMark
 
 **Parameters:**
 
@@ -78,8 +74,6 @@ Use bars when people need to compare values across categories.
 ---
 
 ### LineMark
-
-Use a line when the shape of change matters more than individual columns.
 
 **Parameters:**
 
@@ -109,8 +103,6 @@ Use a line when the shape of change matters more than individual columns.
 
 ### AreaMark
 
-Use an area chart when you want the overall volume or rise/fall pattern to read quickly.
-
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
@@ -133,8 +125,6 @@ Use an area chart when you want the overall volume or rise/fall pattern to read 
 ---
 
 ### PointMark
-
-Use points for sparse measurements, scatter plots, or to emphasize exact observations.
 
 **Parameters:**
 
@@ -231,20 +221,7 @@ The `<VoltraAndroid.Chart>` container accepts these props in addition to the sta
 | `yAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the y-axis |
 | `yAxisGridStyle` | `{ visible?: boolean }` | Show or hide y-axis grid lines |
 | `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
-
-## Grid Lines
-
-Hide grid lines when you want the chart to feel more compact:
-
-```tsx
-<VoltraAndroid.Chart
-  style={{ width: '100%', height: '100%' }}
-  xAxisGridStyle={{ visible: false }}
-  yAxisGridStyle={{ visible: false }}
->
-  <VoltraAndroid.LineMark data={data} color="#4285f4" interpolation="monotone" />
-</VoltraAndroid.Chart>
-```
+| `yScale` | `{ min?: number; max?: number }` | Pin the y-axis lower and/or upper bound |
 
 ## Multi-Series Charts
 
@@ -292,22 +269,25 @@ Mix mark types when one chart needs both context and emphasis, such as bars for 
 </VoltraAndroid.Chart>
 ```
 
-## Sparkline / Minimal Style
+## Value Range
 
-Hide axes for a clean, compact visualization:
+The y-axis frames the values a chart is given:
+
+- `LineMark` and `PointMark` scale to the data range, so a series that varies within a narrow band — exchange rates, ratios, temperatures — fills the plot instead of flattening against the top edge. Axis labels carry as many decimals as the distance between ticks needs.
+- `BarMark` and `AreaMark` keep zero on the axis, because their height is read against the baseline.
+- `RuleMark` values count as part of the range, so a reference line always stays in view.
+
+Data that nearly reaches zero keeps zero on the axis either way, so a series sitting just above the baseline is not exaggerated.
+
+Use `yScale` when a chart needs a fixed window rather than one that follows the data:
 
 ```tsx
-<VoltraAndroid.Chart
-  style={{ width: '100%', height: '100%' }}
-  xAxisVisibility="hidden"
-  yAxisVisibility="hidden"
->
-  <VoltraAndroid.AreaMark
-    data={data}
-    color="#4285f4"
-  />
+<VoltraAndroid.Chart style={{ width: '100%', height: '100%' }} yScale={{ min: 0, max: 100 }}>
+  <VoltraAndroid.LineMark data={completionRate} color="#4285f4" />
 </VoltraAndroid.Chart>
 ```
+
+Either bound can stand alone: `yScale={{ min: 0 }}` keeps the baseline at zero and lets the top follow the data. A pinned bound wins over the rules above, including the zero baseline bars and areas otherwise keep, and values outside the pinned range are clipped to the plot.
 
 ## Sizing
 

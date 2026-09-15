@@ -5,7 +5,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
-import voltra.runtime.VoltraJSRenderer
 
 internal fun interface DynamicWidgetRuntimeBoundary {
     fun renderDynamicWidget(

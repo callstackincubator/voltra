@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { Stats } from 'node:fs'
 
 import { VoltraCliError } from '../reporting/summary'
+import { getValuesByBuildConfiguration, isPerConfigurationMap } from '../config/perConfiguration'
 
 import type { NormalizedIOSProjectConfig } from '../config/types'
 
@@ -19,8 +20,18 @@ export interface IOSProjectDiscovery {
   podfilePath: string
   mainTargetName: string
   mainTargetCandidates: string[]
+  /** Build configuration names of the app target, default build configuration first. */
+  buildConfigurationNames: string[]
+  /** Info.plist of the default build configuration. Always the first entry of `infoPlistPaths`. */
   infoPlistPath: string
+  /** Every distinct Info.plist the app target references, default build configuration first. */
+  infoPlistPaths: string[]
+  /** Entitlements file of the default build configuration, when the project references one. */
   entitlementsPath?: string
+  /** Every distinct entitlements file the app target references, default build configuration first. */
+  entitlementsPaths: string[]
+  /** Entitlements file per build configuration, when the config file names one per configuration. */
+  entitlementsPathByConfiguration?: Map<string, string>
 }
 
 interface ParsedPbxNativeTarget {
@@ -72,8 +83,13 @@ export async function discoverIOSProject(
   const mainTargetCandidates = getMainTargetCandidates(parsedProject.targets)
   const mainTarget = resolveMainTarget(mainTargetCandidates, config.mainTargetName, pbxprojPath)
   const mainTargetBuildConfigurations = getTargetBuildConfigurations(parsedProject, mainTarget, pbxprojPath)
-  const infoPlistPath = await resolveInfoPlistPath(iosRoot, config, mainTarget, mainTargetBuildConfigurations)
-  const entitlementsPath = await resolveEntitlementsPath(iosRoot, config, mainTarget, mainTargetBuildConfigurations)
+  const infoPlistPaths = await resolveInfoPlistPaths(iosRoot, config, mainTarget, mainTargetBuildConfigurations)
+  const { entitlementsPaths, entitlementsPathByConfiguration } = await resolveEntitlements(
+    iosRoot,
+    config,
+    mainTarget,
+    mainTargetBuildConfigurations
+  )
 
   return {
     iosRoot,
@@ -82,8 +98,12 @@ export async function discoverIOSProject(
     podfilePath,
     mainTargetName: mainTarget.name,
     mainTargetCandidates: mainTargetCandidates.map((target) => target.name).sort(),
-    infoPlistPath,
-    entitlementsPath,
+    buildConfigurationNames: mainTargetBuildConfigurations.map((configuration) => configuration.name),
+    infoPlistPath: infoPlistPaths[0],
+    infoPlistPaths,
+    entitlementsPath: entitlementsPaths[0],
+    entitlementsPaths,
+    entitlementsPathByConfiguration,
   }
 }
 
@@ -343,75 +363,102 @@ function getTargetBuildConfigurations(
     : buildConfigurations
 }
 
-async function resolveInfoPlistPath(
+async function resolveInfoPlistPaths(
   iosRoot: string,
   config: NormalizedIOSProjectConfig,
   target: ParsedPbxNativeTarget,
   buildConfigurations: ParsedXCBuildConfiguration[]
-): Promise<string> {
-  const infoPlistPath =
-    config.infoPlistPath ??
-    resolveConsistentBuildSettingPath(
-      iosRoot,
-      target,
-      buildConfigurations,
-      'INFOPLIST_FILE',
-      (configuration) => configuration.buildSettings.infoPlistFile
-    )
+): Promise<string[]> {
+  const discoveredPaths = config.infoPlistPath
+    ? new Map<string, string[]>()
+    : resolveBuildSettingPaths(
+        iosRoot,
+        target,
+        buildConfigurations,
+        (configuration) => configuration.buildSettings.infoPlistFile
+      )
+  const infoPlistPaths = config.infoPlistPath ? [config.infoPlistPath] : [...discoveredPaths.keys()]
 
-  if (!infoPlistPath) {
+  if (infoPlistPaths.length === 0) {
     throw new IOSProjectDiscoveryError(
       `Could not determine Info.plist for target '${target.name}'. Set ios.project.infoPlistPath explicitly.`
     )
   }
 
-  await ensureFile(
-    infoPlistPath,
-    config.infoPlistPath
-      ? `Configured Info.plist does not exist: ${infoPlistPath}`
-      : `Discovered Info.plist does not exist: ${infoPlistPath}`
-  )
+  for (const infoPlistPath of infoPlistPaths) {
+    await ensureFile(
+      infoPlistPath,
+      config.infoPlistPath
+        ? `Configured Info.plist does not exist: ${infoPlistPath}`
+        : `Discovered Info.plist does not exist: ${infoPlistPath}${describeReferencingBuildConfigurations(
+            discoveredPaths,
+            infoPlistPath
+          )}. Set ios.project.infoPlistPath to override discovery.`
+    )
+  }
 
-  return infoPlistPath
+  return infoPlistPaths
 }
 
-async function resolveEntitlementsPath(
+interface ResolvedEntitlements {
+  entitlementsPaths: string[]
+  entitlementsPathByConfiguration?: Map<string, string>
+}
+
+async function resolveEntitlements(
   iosRoot: string,
   config: NormalizedIOSProjectConfig,
   target: ParsedPbxNativeTarget,
   buildConfigurations: ParsedXCBuildConfiguration[]
-): Promise<string | undefined> {
-  const entitlementsPath =
-    config.entitlementsPath ??
-    resolveConsistentBuildSettingPath(
-      iosRoot,
-      target,
-      buildConfigurations,
-      'CODE_SIGN_ENTITLEMENTS',
-      (configuration) => configuration.buildSettings.codeSignEntitlements
-    )
+): Promise<ResolvedEntitlements> {
+  const entitlementsPathByConfiguration = isPerConfigurationMap(config.entitlementsPath)
+    ? getValuesByBuildConfiguration(
+        config.entitlementsPath,
+        buildConfigurations.map((configuration) => configuration.name),
+        'ios.project.entitlementsPath',
+        (message) => new IOSProjectDiscoveryError(message)
+      )
+    : undefined
+  const discoveredPaths = config.entitlementsPath
+    ? new Map<string, string[]>()
+    : resolveBuildSettingPaths(
+        iosRoot,
+        target,
+        buildConfigurations,
+        (configuration) => configuration.buildSettings.codeSignEntitlements
+      )
+  const entitlementsPaths = entitlementsPathByConfiguration
+    ? [...new Set(entitlementsPathByConfiguration.values())]
+    : typeof config.entitlementsPath === 'string'
+    ? [config.entitlementsPath]
+    : [...discoveredPaths.keys()]
 
-  if (!entitlementsPath) {
-    return undefined
+  for (const entitlementsPath of entitlementsPaths) {
+    await ensureFile(
+      entitlementsPath,
+      config.entitlementsPath
+        ? `Configured entitlements file does not exist: ${entitlementsPath}`
+        : `Discovered entitlements file does not exist: ${entitlementsPath}${describeReferencingBuildConfigurations(
+            discoveredPaths,
+            entitlementsPath
+          )}. Set ios.project.entitlementsPath to override discovery.`
+    )
   }
 
-  await ensureFile(
-    entitlementsPath,
-    config.entitlementsPath
-      ? `Configured entitlements file does not exist: ${entitlementsPath}`
-      : `Discovered entitlements file does not exist: ${entitlementsPath}`
-  )
-
-  return entitlementsPath
+  return { entitlementsPaths, entitlementsPathByConfiguration }
 }
 
-function resolveConsistentBuildSettingPath(
+/**
+ * Collects the distinct paths a build setting resolves to across the target's build configurations.
+ * Apps that ship several environments point each configuration at its own file, so divergence is
+ * expected rather than an error.
+ */
+function resolveBuildSettingPaths(
   iosRoot: string,
   target: ParsedPbxNativeTarget,
   buildConfigurations: ParsedXCBuildConfiguration[],
-  settingName: string,
   getSettingValue: (configuration: ParsedXCBuildConfiguration) => string | undefined
-): string | undefined {
+): Map<string, string[]> {
   const resolvedPaths = new Map<string, string[]>()
 
   for (const configuration of buildConfigurations) {
@@ -423,25 +470,22 @@ function resolveConsistentBuildSettingPath(
 
     const resolvedPath = resolveXcodePathValue(settingValue, iosRoot, target, configuration)
     const configurationNames = resolvedPaths.get(resolvedPath) ?? []
+
     configurationNames.push(configuration.name)
     resolvedPaths.set(resolvedPath, configurationNames)
   }
 
-  if (resolvedPaths.size === 0) {
-    return undefined
-  }
+  return resolvedPaths
+}
 
-  if (resolvedPaths.size > 1) {
-    throw new IOSProjectDiscoveryError(
-      `Target '${target.name}' resolves ${settingName} to multiple paths: ${[...resolvedPaths.entries()]
-        .map(([resolvedPath, configurationNames]) => `${resolvedPath} (${configurationNames.join(', ')})`)
-        .join('; ')}. Set ios.project.${
-        settingName === 'INFOPLIST_FILE' ? 'infoPlistPath' : 'entitlementsPath'
-      } explicitly.`
-    )
-  }
+/** Names the build configurations that reference a path, so a missing file can be traced back. */
+function describeReferencingBuildConfigurations(
+  pathsByBuildConfiguration: Map<string, string[]>,
+  filePath: string
+): string {
+  const configurationNames = pathsByBuildConfiguration.get(filePath)
 
-  return [...resolvedPaths.keys()][0]
+  return configurationNames?.length ? ` (referenced by ${configurationNames.join(', ')})` : ''
 }
 
 function resolveXcodePathValue(

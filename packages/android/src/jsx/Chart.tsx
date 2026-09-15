@@ -4,7 +4,7 @@ import type { VoltraAndroidBaseProps } from './baseProps.js'
 import type { AreaMarkProps } from './AreaMark.js'
 import type { BarMarkProps } from './BarMark.js'
 import { VOLTRA_MARK_TAG } from './BarMark.js'
-import type { ChartDataPoint, SectorDataPoint } from './chart-types.js'
+import type { ChartDataPoint, SectorDataPoint, YScale } from './chart-types.js'
 import { createVoltraComponent } from './createVoltraComponent.js'
 import type { LineMarkProps } from './LineMark.js'
 import type { PointMarkProps } from './PointMark.js'
@@ -21,6 +21,7 @@ export type AndroidChartProps = VoltraAndroidBaseProps & {
   legendVisibility?: 'automatic' | 'visible' | 'hidden'
   foregroundStyleScale?: Record<string, string>
   chartScrollableAxes?: 'horizontal' | 'vertical'
+  yScale?: YScale
 }
 
 // ---- wire encoding helpers (same as iOS Chart) ----
@@ -33,6 +34,13 @@ const encodeDataPoints = (data: ChartDataPoint[]): CompactDataPoint[] =>
   data.map((pt) => (pt.series != null ? [pt.x, pt.y, pt.series] : [pt.x, pt.y]))
 
 const encodeSectorPoints = (data: SectorDataPoint[]): CompactSectorPoint[] => data.map((pt) => [pt.value, pt.category])
+
+const encodeYScale = (scale: YScale): Record<string, unknown> => {
+  const encoded: Record<string, unknown> = {}
+  if (scale.min != null) encoded.mn = scale.min
+  if (scale.max != null) encoded.mx = scale.max
+  return encoded
+}
 
 const encodeBarMark = (props: BarMarkProps): MarkWire => {
   const p: Record<string, unknown> = {}
@@ -98,7 +106,7 @@ const ENCODERS: Record<string, (props: any) => MarkWire> = {
 // ---- component ----
 
 export const Chart = createVoltraComponent<AndroidChartProps>('AndroidChart', {
-  toJSON: ({ children, foregroundStyleScale, xAxisGridStyle, yAxisGridStyle, ...rest }) => {
+  toJSON: ({ children, foregroundStyleScale, xAxisGridStyle, yAxisGridStyle, yScale, ...rest }) => {
     const marks: MarkWire[] = []
 
     React.Children.forEach(children, (child) => {
@@ -117,6 +125,10 @@ export const Chart = createVoltraComponent<AndroidChartProps>('AndroidChart', {
     }
     if (xAxisGridStyle?.visible === false) result.xAxisGridVisible = false
     if (yAxisGridStyle?.visible === false) result.yAxisGridVisible = false
+    if (yScale != null) {
+      const encoded = encodeYScale(yScale)
+      if (Object.keys(encoded).length > 0) result.yScale = JSON.stringify(encoded)
+    }
 
     return result
   },

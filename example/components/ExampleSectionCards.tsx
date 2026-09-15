@@ -25,6 +25,7 @@ export type ExampleSection = {
     | '/testing-grounds/channel-updates'
     | '/ios-widgets/dynamic-widget'
     | '/android-widgets/dynamic-widget'
+    | '/android-widgets/instance-config'
     | '/android-widgets/pin'
     | '/android-widgets/components'
     | '/android-widgets/image-preloading'

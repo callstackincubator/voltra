@@ -74,8 +74,18 @@
                     "name": "label",
                     "title": "Label",
                     "default": "Hello"
+                  },
+                  {
+                    "name": "city",
+                    "title": "City",
+                    "default": "London"
                   }
                 ]
+              },
+              "serverUpdate": {
+                "url": "http://localhost:3333",
+                "intervalMinutes": 15,
+                "refresh": true
               }
             },
             {
@@ -235,6 +245,20 @@
               }
             },
             {
+              "id": "arc_progress",
+              "displayName": {
+                "en": "Arc Progress Widget"
+              },
+              "description": {
+                "en": "Battery gauge and a row of activity gauges drawn with ArcProgressIndicator"
+              },
+              "targetCellWidth": 3,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-arc-progress-initial.tsx"
+            },
+            {
               "id": "AndroidClientDemoWidget",
               "entry": "./widgets/android/AndroidClientDemoWidget.tsx",
               "displayName": {
@@ -256,8 +280,18 @@
                     "name": "label",
                     "title": "Label",
                     "default": "Hello"
+                  },
+                  {
+                    "name": "city",
+                    "title": "City",
+                    "default": "London"
                   }
                 ]
+              },
+              "serverUpdate": {
+                "url": "http://10.0.2.2:3333",
+                "intervalMinutes": 15,
+                "refresh": true
               }
             }
           ],

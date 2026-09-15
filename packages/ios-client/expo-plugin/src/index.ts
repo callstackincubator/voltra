@@ -1,6 +1,6 @@
 import { IOSConfig } from 'expo/config-plugins'
-import { createRequire } from 'node:module'
-import path from 'node:path'
+
+import { resolveInstalledPackageVersion } from '@use-voltra/expo-plugin'
 
 import { IOS } from './constants'
 import { withIOS, withPushNotifications } from './ios'
@@ -18,12 +18,7 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
   const projectRoot = (config as { modRequest?: { projectRoot?: string } }).modRequest?.projectRoot
   validateIOSConfigPluginProps(props, projectRoot)
 
-  const requireFromProject = createRequire(path.join(projectRoot ?? process.cwd(), 'package.json'))
-  const iosClientPackage = requireFromProject('@use-voltra/ios-client/package.json') as { version?: unknown }
-  if (typeof iosClientPackage.version !== 'string') {
-    throw new Error('Could not determine the installed @use-voltra/ios-client version')
-  }
-  const voltraVersion = iosClientPackage.version
+  const voltraVersion = resolveInstalledPackageVersion(projectRoot ?? process.cwd(), '@use-voltra/ios-client')
 
   const iosBundleIdentifier = config.ios?.bundleIdentifier
   if (!iosBundleIdentifier) {

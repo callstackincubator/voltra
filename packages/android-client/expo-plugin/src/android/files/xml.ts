@@ -6,6 +6,7 @@ import { isWidgetLocalizedMap, logger, widgetLabelEnglish } from '@use-voltra/ex
 
 import type { AndroidWidgetConfig } from '../../types'
 import { androidWidgetResourceId } from '../resourceName'
+import { androidWidgetSizingAttributes, androidWidgetSizingWarnings } from '../widgetSizing'
 
 export interface GenerateXmlFilesProps {
   platformProjectRoot: string
@@ -96,6 +97,10 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
 
   // Write widget info XML for all widgets, including preview references where available
   for (const widget of widgets) {
+    for (const warning of androidWidgetSizingWarnings(widget, widget.id)) {
+      logger.warn(warning)
+    }
+
     const widgetInfoPath = path.join(xmlPath, `voltra_widget_${androidWidgetResourceId(widget.id)}_info.xml`)
     const previewImageResourceName = previewImageMap.get(widget.id)
     const previewLayoutResourceName = previewLayoutMap.get(widget.id)
@@ -116,22 +121,12 @@ function generateWidgetInfoXml(
   previewImageResourceName?: string,
   previewLayoutResourceName?: string
 ): string {
-  const { targetCellWidth, targetCellHeight } = widget
   const resizeMode = widget.resizeMode || 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory || 'home_screen'
 
-  let minWidth = widget.minWidth
-  if (minWidth === undefined && widget.minCellWidth !== undefined) {
-    minWidth = widget.minCellWidth * 70 - 30
-  }
-
-  let minHeight = widget.minHeight
-  if (minHeight === undefined && widget.minCellHeight !== undefined) {
-    minHeight = widget.minCellHeight * 70 - 30
-  }
-
-  const minWidthAttr = minWidth !== undefined ? `\n    android:minWidth="${minWidth}dp"` : ''
-  const minHeightAttr = minHeight !== undefined ? `\n    android:minHeight="${minHeight}dp"` : ''
+  const sizingAttrs = androidWidgetSizingAttributes(widget)
+    .map((attr) => `        ${attr}`)
+    .join('\n')
   const previewImageAttr = previewImageResourceName
     ? `\n    android:previewImage="@drawable/${previewImageResourceName}"`
     : ''
@@ -141,9 +136,8 @@ function generateWidgetInfoXml(
 
   return dedent`
     <?xml version="1.0" encoding="utf-8"?>
-    <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"${minWidthAttr}${minHeightAttr}
-        android:targetCellWidth="${targetCellWidth}"
-        android:targetCellHeight="${targetCellHeight}"
+    <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+${sizingAttrs}
         android:updatePeriodMillis="0"
         android:initialLayout="@layout/voltra_widget_placeholder"
         android:resizeMode="${resizeMode}"
@@ -228,6 +222,7 @@ function localeKeyToAndroidValuesQualifier(localeKey: string): string {
 
 export const __test__ = {
   localeKeyToAndroidValuesQualifier,
+  generateWidgetInfoXml,
 }
 
 function collectAndroidLocaleKeysFromWidgets(widgets: AndroidWidgetConfig[]): Set<string> {

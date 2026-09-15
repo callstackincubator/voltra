@@ -117,6 +117,11 @@ export type { GenerateIOSFilesOptions, GenerateIOSFilesResult } from './platform
 export { resolveIOSWidgetTargetName } from './platforms/ios/targetName'
 export { IOSWidgetTargetMutationError, ensureIOSWidgetTarget } from './platforms/ios/xcodeTarget'
 export { applyIOSPlatform, createIOSPreflightRunner } from './platforms/ios/apply'
+export {
+  IOSBuildConfigurationValueError,
+  VOLTRA_BUILD_SETTING_PREFIX,
+  resolveIOSBuildConfigurationValues,
+} from './platforms/ios/buildConfigurationValues'
 export { IOSEntitlementsMutationError, ensureEntitlements } from './platforms/ios/entitlements'
 export type { EnsureEntitlementsOptions, EnsureEntitlementsResult } from './platforms/ios/entitlements'
 export { IOSInfoPlistMutationError, ensureInfoPlist } from './platforms/ios/plist'
@@ -187,6 +192,8 @@ export type {
   NormalizedVoltraAndroidConfig,
   NormalizedVoltraConfig,
   NormalizedVoltraIOSConfig,
+  ResolvedIOSProjectConfig,
+  ResolvedVoltraIOSConfig,
   VoltraAndroidConfig,
   VoltraConfig,
   VoltraIOSConfig,
@@ -195,6 +202,7 @@ export type {
   WidgetLabel,
   WidgetLocalizedValue,
 } from './config/types'
+export type { PerConfiguration } from './config/perConfiguration'
 export type {
   ApplySummary,
   PreflightFailureReport,

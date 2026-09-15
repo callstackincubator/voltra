@@ -56,6 +56,7 @@ function generateInfoPlistContent(
  * @param targetName - The widget extension target name (used for CFBundleDisplayName)
  * @param version - The app version (CFBundleShortVersionString)
  * @param buildNumber - The build number (CFBundleVersion)
+ * @param voltraVersion - The installed @use-voltra/ios-client package version
  */
 export function generateInfoPlist(
   targetPath: string,

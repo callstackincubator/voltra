@@ -48,8 +48,68 @@ function generatePortfolioData() {
   return { chartData, change, balance: `$${balance}` }
 }
 
+// Deterministic per-city "temperature" so repeated requests for the same city are stable and
+// distinguishable from other cities in a screenshot or log line.
+function temperatureForCity(city: string): number {
+  let hash = 0
+  for (let i = 0; i < city.length; i++) {
+    hash = (hash * 31 + city.charCodeAt(i)) | 0
+  }
+  return 5 + (Math.abs(hash) % 30)
+}
+
+// Widgets under test for ADR 0007 (per-instance server fetches): both have an `entry`, so the
+// response body becomes the widget's props verbatim (see server-driven-widgets docs, "Returning
+// data instead of UI"). We parse `configuration` and `instance` off the query and log both so the
+// e2e suite can assert the server saw distinct requests per placement.
+const INSTANCE_DEMO_WIDGET_IDS = new Set(['AndroidClientDemoWidget', 'ClientRenderedDemoWidget'])
+
+function renderInstanceDemoProps(req: { widgetId: string; platform: string; url: URL }): string | null {
+  if (!INSTANCE_DEMO_WIDGET_IDS.has(req.widgetId)) {
+    return null
+  }
+
+  const instance = req.url.searchParams.get('instance')
+  const configurationRaw = req.url.searchParams.get('configuration')
+
+  let city = 'London'
+  if (configurationRaw) {
+    try {
+      const parsed = JSON.parse(configurationRaw)
+      if (typeof parsed?.city === 'string' && parsed.city.length > 0) {
+        city = parsed.city
+      }
+    } catch {
+      // Fall through to the default city on malformed configuration.
+    }
+  }
+
+  const now = new Date().toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  console.log(
+    `[${now}] [${req.platform}] ${req.widgetId} instance=${instance ?? '(none)'} configuration=${
+      configurationRaw ?? '(none)'
+    } → city=${city}`
+  )
+
+  return JSON.stringify({
+    city,
+    temperature: temperatureForCity(city),
+    instance: instance ?? undefined,
+  })
+}
+
 const handler = createWidgetUpdateNodeHandler({
   renderIos: async (req: any) => {
+    const instanceDemoProps = renderInstanceDemoProps(req)
+    if (instanceDemoProps !== null) {
+      return instanceDemoProps
+    }
+
     if (req.widgetId !== 'portfolio') {
       return null
     }
@@ -72,6 +132,11 @@ const handler = createWidgetUpdateNodeHandler({
   },
 
   renderAndroid: async (req: any) => {
+    const instanceDemoProps = renderInstanceDemoProps(req)
+    if (instanceDemoProps !== null) {
+      return instanceDemoProps
+    }
+
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
 
     if (req.widgetId === 'material_colors') {

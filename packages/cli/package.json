@@ -1,6 +1,6 @@
 {
   "name": "voltra",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "CLI for applying Voltra to native React Native projects",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
@@ -27,7 +27,7 @@
     "clean": "rm -rf build",
     "lint": "oxlint src",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
-    "test": "node --test"
+    "test": "node --import tsx --test"
   },
   "keywords": [
     "react-native",
@@ -47,15 +47,15 @@
   "license": "MIT",
   "homepage": "https://use-voltra.dev",
   "dependencies": {
-    "@babel/core": "^7.27.4",
     "@bacons/xcode": "^1.0.0-alpha.33",
     "@clack/prompts": "^1.0.0-alpha.5",
+    "@use-voltra/compiler": "workspace:^",
     "commander": "^12.1.0",
     "cosmiconfig": "^9.0.0",
     "vd-tool": "^4.0.2",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
-    "@types/babel__core": "^7.20.5"
+    "tsx": "^4.19.0"
   }
 }

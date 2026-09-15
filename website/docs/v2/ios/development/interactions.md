@@ -14,8 +14,6 @@ ActivityKit provides a limited set of interactions with Live Activities. The onl
 
 - **Toggles**: Interactive toggle switches that allow users to change boolean states. Like buttons, toggles use AppIntents and are supported across all Live Activity contexts (iOS 17.0+).
 
-These interactions are powered by Apple's AppIntents framework and SwiftUI's Link component, which enable Live Activities to communicate with your app even when it's not running.
-
 ## Handling interactions
 
 When a user interacts with a button or toggle in your Live Activity, Voltra automatically emits an event containing the identifier of the component that was interacted with. This allows your app to respond appropriately to specific user actions.
@@ -115,8 +113,6 @@ Links support URL normalization:
 For styled navigation buttons, wrap a Link with custom children to achieve button-like appearance while maintaining URL navigation functionality.
 
 ## Limitations
-
-While Live Activities provide powerful interaction capabilities, there are some limitations to be aware of:
 
 - **Limited interactable elements**: Only buttons and toggles are supported as interactive components. Other UI elements like text fields, sliders, or custom controls are not available in Live Activities.
 

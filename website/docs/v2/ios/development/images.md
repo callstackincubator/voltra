@@ -32,14 +32,7 @@ project-root/
 │       └── background-pattern.png
 ```
 
-Here's how build-time asset copying works:
-
-1. Images in `/assets/voltra/` are automatically detected during build
-2. Each image is validated to be under 4KB (ActivityKit limit)
-3. Images are copied to the Live Activity extension's `Assets.xcassets`
-4. Xcode generates proper `.imageset` directories and metadata
-
-You can then reference these images using their assetName:
+Images must be under 4KB (the ActivityKit limit) — anything larger fails the build. You can then reference these images using their assetName:
 
 ```tsx
 <Voltra.Image source={{ assetName: 'logo.png' }} />
@@ -48,41 +41,7 @@ You can then reference these images using their assetName:
 
 ## Runtime preloading
 
-For dynamic images from remote URLs or inline SVG markup, use Voltra's image preloading API to cache images in App Group shared storage. SVG inputs are rasterized to PNG before storage.
-
-The image preloading system works by:
-
-1. Downloading images from URLs to App Group shared storage
-2. Validating that images are under the 4KB ActivityKit limit
-3. Making images available to Live Activities via the `assetName` property
-4. Providing APIs to reload existing Live Activities when new images are available
-
-Once images are preloaded, reference them using the `assetName` property:
-
-```typescript
-import { Voltra } from '@use-voltra/ios'
-
-function MusicPlayerLiveActivity({ song }) {
-  return {
-    lockScreen: (
-      <Voltra.VStack style={{ padding: 16 }}>
-        <Voltra.Image
-          source={{ assetName: 'current-song-artwork' }}
-          style={{ width: 60, height: 60, borderRadius: 8 }}
-        />
-        <Voltra.Text style={{ fontSize: 16, fontWeight: 'bold', marginTop: 8 }}>
-          {song.title}
-        </Voltra.Text>
-        <Voltra.Text style={{ color: '#666', fontSize: 14 }}>
-          {song.artist}
-        </Voltra.Text>
-      </Voltra.VStack>
-    )
-  }
-}
-```
-
-For detailed API documentation, see [Image Preloading](image-preloading).
+For dynamic images from remote URLs or inline SVG markup, use Voltra's image preloading API to cache images (also subject to the 4KB limit) in App Group shared storage, then reference them the same way via `assetName`. See [Image Preloading](image-preloading) for the full API and a usage example.
 
 ## Comparison table
 

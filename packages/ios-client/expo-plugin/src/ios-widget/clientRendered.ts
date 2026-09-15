@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { evaluateWidgetModuleExports } from '@use-voltra/expo-plugin'
+import { createPrerenderWidgetModuleLoader, type WidgetModuleLoader } from '@use-voltra/expo-plugin'
 
 import type { IOSWidgetConfig } from '../types'
 
@@ -30,7 +30,8 @@ let hasWarnedExperimental = false
 
 /** Inspect every widget once and tag entry-backed widgets as Dynamic Widgets. */
 export function detectClientRenderedWidgets(widgets: IOSWidgetConfig[], projectRoot: string): DetectedIOSWidget[] {
-  const detected = widgets.map((widget) => detectSingleWidget(widget, projectRoot))
+  const loader = createPrerenderWidgetModuleLoader(projectRoot, 'ios')
+  const detected = widgets.map((widget) => detectSingleWidget(widget, projectRoot, loader))
 
   if (!hasWarnedExperimental) {
     const clientWidgetIds = detected.filter((widget) => widget.clientRendered).map((widget) => widget.id)
@@ -47,7 +48,11 @@ export function detectClientRenderedWidgets(widgets: IOSWidgetConfig[], projectR
   return detected
 }
 
-function detectSingleWidget(widget: IOSWidgetConfig, projectRoot: string): DetectedIOSWidget {
+function detectSingleWidget(
+  widget: IOSWidgetConfig,
+  projectRoot: string,
+  loader: WidgetModuleLoader
+): DetectedIOSWidget {
   if (widget.entry === undefined) {
     return {
       ...widget,
@@ -65,8 +70,7 @@ function detectSingleWidget(widget: IOSWidgetConfig, projectRoot: string): Detec
     )
   }
 
-  const widgetModule = evaluateWidgetModuleExports(projectRoot, sourcePath)
-  const widgetFn = widgetModule?.default ?? widgetModule
+  const widgetFn = loader.loadDefaultExport(sourcePath)
   if (typeof widgetFn !== 'function') {
     throw new Error(
       `[voltra] Dynamic Widget "${widget.id}" at ${path.relative(

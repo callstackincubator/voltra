@@ -48,6 +48,10 @@ export type {
   VoltraNodeJson,
   VoltraPropValue,
   WidgetServerCredentials,
+  WidgetServerUpdateBody,
+  WidgetServerUpdateOptions,
+  WidgetServerUpdateSettings,
+  WidgetServerUpdateSnapshot,
 } from './types.js'
 export type {
   AndroidWidgetSize,

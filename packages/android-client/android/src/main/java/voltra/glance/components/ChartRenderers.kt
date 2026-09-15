@@ -19,6 +19,7 @@ import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.WireMark
 import voltra.glance.renderers.parseForegroundStyleScaleEntries
 import voltra.glance.renderers.parseMarksJson
+import voltra.glance.renderers.parseYScale
 import voltra.glance.renderers.renderChartBitmap
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
@@ -67,6 +68,7 @@ fun RenderChart(
     val yAxisVisible = (element.p?.get("yAxisVisibility") as? String) != "hidden"
     val xAxisGridVisible = (element.p?.get("xAxisGridVisible") as? Boolean) ?: true
     val yAxisGridVisible = (element.p?.get("yAxisGridVisible") as? Boolean) ?: true
+    val yScale = parseYScale(element.p?.get("yScale") as? String)
 
     val (_, compositeStyle) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
     val styleWidth = compositeStyle?.layout?.width
@@ -121,6 +123,7 @@ fun RenderChart(
             xAxisGridVisible = xAxisGridVisible,
             yAxisGridVisible = yAxisGridVisible,
             dpScale = scale,
+            yScale = yScale,
         )
 
     var sizeModifier = finalModifier

@@ -54,12 +54,7 @@ export default InitialWeatherWidget
 `initialStatePath` files are **not** part of your React Native app bundle. They run in Node.js during prebuild. Import `VoltraAndroid` from `@use-voltra/android`, not `@use-voltra/android-client` — the client package pulls in native modules that are unavailable in the prebuild sandbox.
 :::
 
-## Build Process
-
-During the build process (`npx expo prebuild`), Voltra executes these initial state files in a Node.js environment to generate the static layouts that will be displayed when the widget is first added to the home screen.
-
 ## Limitations
 
-- **Environment**: The code runs in Node.js during build time, not on the device.
 - **Imports**: Use `@use-voltra/android` for JSX and types in `initialStatePath` files. Do not import from `@use-voltra/android-client` or other React Native client APIs.
 - **Static Content**: The initial state should represent a "loading" or "offline" state, as it won't have access to dynamic runtime data until the app runs.

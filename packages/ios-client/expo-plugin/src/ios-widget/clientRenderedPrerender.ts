@@ -1,4 +1,9 @@
-import { evaluateWidgetModuleExports, logger, type PrerenderedWidgetStates } from '@use-voltra/expo-plugin'
+import {
+  createPrerenderWidgetModuleLoader,
+  logger,
+  resolveInstalledPackageVersion,
+  type PrerenderedWidgetStates,
+} from '@use-voltra/expo-plugin'
 
 import type { DetectedIOSWidget } from './clientRendered'
 
@@ -31,7 +36,7 @@ const SINGLE_LOCALE_KEY = '__default'
  * mirror `WidgetEnvironment` from packages/core/src/widget-environment.ts so the widget
  * function sees the same shape it gets at runtime.
  */
-function buildPlaceholderEnv(): Record<string, unknown> {
+function buildPlaceholderEnv(voltraVersion: string): Record<string, unknown> {
   return {
     date: Date.now(),
     widgetFamily: 'systemMedium',
@@ -44,7 +49,7 @@ function buildPlaceholderEnv(): Record<string, unknown> {
       isDev: false,
       metroUrl: null,
       appVersion: 'unknown',
-      voltraVersion: '1.4.1',
+      voltraVersion,
     },
   }
 }
@@ -75,12 +80,12 @@ export async function prerenderClientRenderedWidgets(
     renderVoltraVariantToJson: (element: unknown) => unknown
   }
 
-  const placeholderEnv = buildPlaceholderEnv()
+  const placeholderEnv = buildPlaceholderEnv(resolveInstalledPackageVersion(projectRoot, '@use-voltra/ios-client'))
+  const loader = createPrerenderWidgetModuleLoader(projectRoot, 'ios')
 
   for (const widget of clientWidgets) {
     try {
-      const widgetModule = evaluateWidgetModuleExports(projectRoot, widget.clientSourcePath)
-      const widgetFn = widgetModule?.default ?? widgetModule
+      const widgetFn = loader.loadDefaultExport(widget.clientSourcePath)
       if (typeof widgetFn !== 'function') {
         throw new Error(
           `Expected the entry module at ${widget.clientSourcePath} to default-export a function or component.`

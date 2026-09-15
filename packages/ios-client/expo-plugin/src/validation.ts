@@ -3,9 +3,13 @@ import {
   validateInitialStatePath,
   validateWidgetEntry,
   validateWidgetLabel,
+  validateWidgetServerUpdate,
 } from '@use-voltra/expo-plugin'
+
+import { iosServerUpdateRules } from './ios/serverUpdate'
 import { getDynamicLiveActivityAttributesType } from '@use-voltra/expo-plugin'
 
+import { widgetKind } from './constants'
 import type { IOSConfigPluginProps, IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetFamily } from './types'
 
 const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
@@ -39,6 +43,9 @@ export function validateIOSDynamicLiveActivityConfig(
 
 export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: string): void {
   validateHomeScreenWidgetId(widget.id)
+  if (widget.kind !== undefined && (typeof widget.kind !== 'string' || widget.kind.trim() === '')) {
+    throw new Error(`Widget '${widget.id}': kind must be a non-empty string`)
+  }
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
   validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
@@ -46,6 +53,8 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: s
   if (widget.entry !== undefined) {
     validateWidgetEntry(widget.entry, widget.id, projectRoot)
   }
+
+  validateWidgetServerUpdate(widget.serverUpdate, widget.id, iosServerUpdateRules(widget))
 
   if (widget.supportedFamilies) {
     if (!Array.isArray(widget.supportedFamilies)) {
@@ -80,13 +89,29 @@ export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projec
     }
 
     const seenIds = new Set<string>()
+    const seenKinds = new Set<string>()
     for (const widget of props.widgets) {
       validateIOSWidgetConfig(widget, projectRoot)
+
+      // A server-driven Dynamic Widget commits fetched props to the App Group so the widget
+      // extension can read them. Without one it would fetch and have nowhere to put the result.
+      if (widget.entry !== undefined && widget.serverUpdate !== undefined && !props.groupIdentifier) {
+        throw new Error(
+          `Widget '${widget.id}' has both entry and serverUpdate, which requires groupIdentifier ` +
+            'so fetched props can be shared with the widget extension.'
+        )
+      }
 
       if (seenIds.has(widget.id)) {
         throw new Error(`Duplicate widget ID: '${widget.id}'`)
       }
       seenIds.add(widget.id)
+
+      const kind = widgetKind(widget)
+      if (seenKinds.has(kind)) {
+        throw new Error(`Duplicate widget kind: '${kind}'`)
+      }
+      seenKinds.add(kind)
     }
   }
 

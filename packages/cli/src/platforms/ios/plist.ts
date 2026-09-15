@@ -1,11 +1,12 @@
 import { parseStringPromise } from 'xml2js'
 
+import { iosWidgetKindOverrides } from '../../config/widgetKind'
 import { readTextFile, writeTextFile } from '../../fs/readWrite'
 import { toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { NormalizedVoltraIOSConfig } from '../../config/types'
+import type { ResolvedVoltraIOSConfig } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 
 interface OrderedPlistNode {
@@ -23,12 +24,12 @@ type PlistErrorFactory = (message: string) => Error
 
 export interface EnsureInfoPlistOptions {
   projectRoot: string
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
   discovery: IOSProjectDiscovery
 }
 
 export interface EnsureInfoPlistResult {
-  change?: ReportedChange
+  changes: ReportedChange[]
 }
 
 export class IOSInfoPlistMutationError extends VoltraCliError {
@@ -40,7 +41,26 @@ export class IOSInfoPlistMutationError extends VoltraCliError {
 
 export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<EnsureInfoPlistResult> {
   const { projectRoot, ios, discovery } = options
-  const infoPlist = await parsePlistFile(discovery.infoPlistPath, 'main app Info.plist', createInfoPlistError)
+  const changes: ReportedChange[] = []
+
+  // Build configurations of a multi-environment app can each reference their own Info.plist.
+  for (const infoPlistPath of discovery.infoPlistPaths) {
+    const change = await ensureSingleInfoPlist(projectRoot, ios, infoPlistPath)
+
+    if (change) {
+      changes.push(change)
+    }
+  }
+
+  return { changes }
+}
+
+async function ensureSingleInfoPlist(
+  projectRoot: string,
+  ios: ResolvedVoltraIOSConfig,
+  infoPlistPath: string
+): Promise<ReportedChange | undefined> {
+  const infoPlist = await parsePlistFile(infoPlistPath, 'main app Info.plist', createInfoPlistError)
 
   infoPlist.NSSupportsLiveActivities = true
   infoPlist.NSSupportsLiveActivitiesFrequentUpdates = false
@@ -52,8 +72,18 @@ export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<
   const widgetIds = ios.widgets.map((widget) => widget.id)
   setOrDeleteVoltraKey(infoPlist, 'Voltra_WidgetIds', widgetIds.length > 0 ? widgetIds : undefined)
 
+  // Widgets that pin a custom WidgetKit kind, so VoltraWidgetKind can map ids to kinds and back.
+  setOrDeleteVoltraKey(infoPlist, 'Voltra_WidgetKinds', iosWidgetKindOverrides(ios.widgets))
+
+  // Every server-driven widget gets an interval, so this dictionary's keys are the set of
+  // server-driven widget ids the runtime settings store validates against. A URL is written only
+  // when app.json set one; otherwise the app supplies it with setWidgetServerUpdate.
   const serverWidgets = ios.widgets.filter((widget) => widget.serverUpdate)
-  const serverUrls = Object.fromEntries(serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.url]))
+  const serverUrls = Object.fromEntries(
+    serverWidgets
+      .filter((widget) => widget.serverUpdate?.url !== undefined)
+      .map((widget) => [widget.id, widget.serverUpdate?.url])
+  )
   const serverIntervals = Object.fromEntries(
     serverWidgets.map((widget) => [widget.id, widget.serverUpdate?.intervalMinutes])
   )
@@ -70,9 +100,8 @@ export async function ensureInfoPlist(options: EnsureInfoPlistOptions): Promise<
   )
 
   const nextContent = buildPlistXml(infoPlist, createInfoPlistError)
-  const change = await writePlistIfChanged(projectRoot, discovery.infoPlistPath, nextContent)
 
-  return { change }
+  return await writePlistIfChanged(projectRoot, infoPlistPath, nextContent)
 }
 
 export async function parsePlistFile(

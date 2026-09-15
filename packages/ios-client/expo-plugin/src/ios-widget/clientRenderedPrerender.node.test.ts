@@ -33,12 +33,18 @@ describe('prerenderClientRenderedWidgets', () => {
 
   it('evaluates the entry default export for a Dynamic Widget placeholder', async () => {
     const { projectRoot, cleanup } = makeTempProject({
+      'package.json': '{}\n',
+      'node_modules/@use-voltra/ios-client/package.json': JSON.stringify({
+        name: '@use-voltra/ios-client',
+        version: '9.8.7',
+      }),
       'widgets/Dynamic.tsx': `
         export default function NotTheWidgetId(props, env) {
           return {
             source: 'entry',
             widgetFamily: env.widgetFamily,
             hasProps: typeof props === 'object',
+            voltraVersion: env.build.voltraVersion,
           }
         }
       `,
@@ -59,6 +65,7 @@ describe('prerenderClientRenderedWidgets', () => {
       expect(renderVoltraVariantToJson).toHaveBeenCalledTimes(1)
       expect(result.get('dynamic_widget')?.get('__default')).toContain('"source":"entry"')
       expect(result.get('dynamic_widget')?.get('__default')).toContain('"widgetFamily":"systemMedium"')
+      expect(result.get('dynamic_widget')?.get('__default')).toContain('"voltraVersion":"9.8.7"')
     } finally {
       cleanup()
     }

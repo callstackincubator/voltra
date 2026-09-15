@@ -107,31 +107,7 @@ For more information about using push tokens for starting Live Activity remotely
 
 ## User interactions
 
-When users interact with buttons or toggles in your Live Activity, Voltra emits events that allow your app to respond to these interactions. This works even when your app isn't running, thanks to Apple's AppIntents framework.
-
-### Listening for interactions
-
-Subscribe to interaction events using `addVoltraListener` with the `'interaction'` event type:
-
-```typescript
-import { addVoltraListener } from '@use-voltra/ios-client'
-
-const subscription = addVoltraListener('interaction', (event) => {
-  console.log('Component interacted:', event.identifier)
-  console.log('Payload:', event.payload)
-
-  // Handle the interaction based on the identifier
-  if (event.identifier === 'contact-driver') {
-    // Open contact screen
-  } else if (event.identifier === 'notifications-toggle') {
-    // Handle toggle state change
-  }
-})
-
-subscription.remove()
-```
-
-For detailed information about handling interactions, including component identifiers, deep linking, and app lifecycle considerations, see the [interactions guide](./interactions.md).
+When users interact with buttons or toggles in your Live Activity, Voltra emits an `'interaction'` event via `addVoltraListener` — this works even when your app isn't running. For the full example, component identifiers, deep linking, and app lifecycle considerations, see the [interactions guide](./interactions.md).
 
 ## Best practices
 

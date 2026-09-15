@@ -55,23 +55,7 @@ The following React Native flexbox properties are **not supported** in Voltra:
 
 ## Differences from React Native
 
-If you're coming from React Native, keep these differences in mind:
-
-### Flexbox is opt-in
-
-In React Native, every `View` uses flexbox by default. In Voltra, only `Voltra.View` uses flexbox. Other containers (`VStack`, `HStack`) use native SwiftUI layout.
-
-### Gap is single-axis only
-
-React Native supports `gap`, `rowGap`, and `columnGap`. Voltra only supports `gap`, which applies spacing between children along the main axis (the direction of `flexDirection`).
-
-### No flex wrap
-
-React Native supports `flexWrap: 'wrap'` to flow items onto multiple lines. Voltra does not — all items stay on a single line and will overflow or shrink.
-
-### No percentage dimensions
-
-React Native allows `width: '50%'` and similar percentage values. In Voltra, use `flexGrow` for proportional sizing instead.
+If you're coming from React Native, the biggest difference is that flexbox is opt-in: in React Native every `View` uses flexbox by default, but in Voltra only `Voltra.View` does — other containers (`VStack`, `HStack`) use native SwiftUI layout instead. The rest of the differences are the unsupported/limited properties listed in the tables above (single-axis `gap`, no `flexWrap`, no percentage dimensions).
 
 ## Next Steps
 

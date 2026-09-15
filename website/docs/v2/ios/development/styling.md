@@ -1,10 +1,8 @@
 # Styling
 
-You can style Voltra components using React Native-style `style` props. The `style` prop works with a limited set of React Native properties that are automatically converted to SwiftUI modifiers under the hood.
+You can style Voltra components using React Native-style `style` props. Voltra supports a limited subset of React Native style properties — enough to get you productive quickly if you already know RN styling.
 
 ## React Native style prop
-
-Voltra supports a limited subset of React Native style properties. When you pass a `style` prop to a Voltra component, these properties are automatically converted to SwiftUI modifiers under the hood. This makes it easy to get started if you're familiar with React Native styling.
 
 ### Supported properties
 
@@ -31,7 +29,7 @@ The following React Native style properties are supported:
 
 **Style:**
 
-- `backgroundColor` - Background color (hex strings, color names, or CSS gradient strings — see [Gradients](#gradients))
+- `backgroundColor` - Background color (hex strings, color names, or CSS gradient strings — see [Gradients](./gradients))
 - `opacity` - Opacity value between 0 and 1
 - `borderRadius` - Corner radius value
 - `borderWidth` - Border width
@@ -48,7 +46,7 @@ The following React Native style properties are supported:
 
 - `fontSize` - Font size (maps to `font` modifier)
 - `fontWeight` - Font weight (e.g., `'600'`, `'bold'`, `'regular'`)
-- `fontFamily` - Custom font family name (see [Custom Fonts](#custom-fonts) section below)
+- `fontFamily` - Custom font family name (see [Custom Fonts](./custom-fonts))
 - `color` - Text color (maps to `foregroundStyle` modifier)
 - `letterSpacing` - Spacing between characters (maps to `kerning` modifier)
 - `fontVariant` - Font variant array (e.g., `['small-caps', 'tabular-nums']`). Supported values:
@@ -133,240 +131,49 @@ const element = (
 )
 ```
 
-## Gradients
+For gradients and custom fonts, see the dedicated [Gradients](./gradients) and [Custom Fonts](./custom-fonts) pages.
 
-The `backgroundColor` style property accepts CSS gradient strings in addition to solid colors. Gradients are rendered natively using SwiftUI gradient modifiers and are automatically clipped by `borderRadius`.
+## Sharing styles with `StyleSheet`
 
-Invalid or unsupported gradient syntax is parsed in **strict mode** and results in **no gradient background** (instead of silent best-effort fallback).
-
-### Linear gradients
-
-```tsx
-// Named direction
-<Voltra.View style={{ backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)' }} />
-
-// Diagonal
-<Voltra.View style={{ backgroundColor: 'linear-gradient(to bottom right, #0EA5E9, #8B5CF6)' }} />
-
-// Angle in degrees/radians/turns
-<Voltra.View style={{ backgroundColor: 'linear-gradient(45deg, #FF6B6B, #FFD93D)' }} />
-<Voltra.View style={{ backgroundColor: 'linear-gradient(0.25turn, #FF6B6B, #FFD93D)' }} />
-```
-
-Supported directions: `to right`, `to left`, `to top`, `to bottom`, `to top right`, `to top left`, `to bottom right`, `to bottom left`.
-
-### Color stops
-
-Explicit percentage positions are supported:
+Widget files can import `StyleSheet` and `Platform` from `react-native`, so styles can live
+outside the element tree exactly as they do in the rest of your app:
 
 ```tsx
-<Voltra.View
-  style={{
-    backgroundColor: 'linear-gradient(to right, red 0%, yellow 50%, blue 100%)',
-  }}
-/>
-```
-
-When positions are omitted, Voltra applies CSS-like stop fix-up:
-- First and last unspecified stops default to `0%` and `100%`.
-- Unspecified stops between explicit anchors are linearly interpolated.
-- Non-monotonic explicit positions are clamped forward.
-
-### RGBA colors inside gradients
-
-```tsx
-<Voltra.View
-  style={{
-    backgroundColor: 'linear-gradient(to right, rgba(255,0,0,0.8), rgba(0,0,255,0.3))',
-  }}
-/>
-```
-
-### Radial gradients
-
-```tsx
-<Voltra.View style={{ backgroundColor: 'radial-gradient(#FF6B6B, #6366F1)' }} />
-<Voltra.View style={{ backgroundColor: 'radial-gradient(circle at top right, #FF6B6B, #6366F1)' }} />
-<Voltra.View style={{ backgroundColor: 'radial-gradient(closest-side at left bottom, #FF6B6B, #6366F1)' }} />
-```
-
-:::note
-Radial gradients are rendered with geometry-aware radii computed from the view size (`closest-side`, `farthest-side`, `closest-corner`, `farthest-corner`).
-
-For `ellipse`, SwiftUI does not provide native elliptical radial gradients. Voltra approximates ellipse behavior by scaling a circular radial gradient.
-:::
-
-### Conic gradients
-
-```tsx
-<Voltra.View style={{ backgroundColor: 'conic-gradient(from 45deg, red, blue)' }} />
-<Voltra.View style={{ backgroundColor: 'conic-gradient(from 45deg at top right, red 0%, blue 75%)' }} />
-```
-
-### With border radius
-
-Gradients are clipped by `borderRadius` automatically — no extra configuration needed:
-
-```tsx
-<Voltra.View
-  style={{
-    backgroundColor: 'linear-gradient(to right, #6366F1, #EC4899)',
-    borderRadius: 16,
-    padding: 16,
-  }}
->
-  <Voltra.Text style={{ color: '#FFFFFF' }}>Rounded gradient card</Voltra.Text>
-</Voltra.View>
-```
-
-### Solid colors still work unchanged
-
-Passing a plain color string to `backgroundColor` continues to work exactly as before:
-
-```tsx
-<Voltra.View style={{ backgroundColor: '#3B82F6' }} />
-<Voltra.View style={{ backgroundColor: 'red' }} />
-<Voltra.View style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} />
-```
-
-### Comparison with `<LinearGradient>` component
-
-| Feature | `backgroundColor` gradient | `<LinearGradient>` component |
-|---|---|---|
-| CSS string syntax | ✓ | — |
-| Named directions (`to right`) | ✓ (physical direction) | ✓ |
-| Angle units | `deg`, `rad`, `turn` | ✓ via `{x,y}` |
-| `{x, y}` coordinate control | — | ✓ |
-| Stop positions | `linear/radial`: `%`, `conic`: `%` + angle units | ✓ via `locations` prop |
-| Multi-position stops (`red 20% 40%`) | ✓ | — |
-| `radial-gradient` | ✓ (`circle` / approximated `ellipse`) | — |
-| `conic-gradient` | ✓ (`from` + `at`) | — |
-| Strict invalid syntax handling | ✓ (fails closed) | — |
-| Dithering | — | ✓ |
-| Children layered on top | ✓ (as background) | ✓ (as container) |
-
-Use `backgroundColor` gradient strings for convenience and web-style syntax. Use `<LinearGradient>` when you need precise `{x, y}` coordinate control or dithering.
-
-### Scope and exclusions
-
-- Supported core syntax: `linear-gradient(...)`, `radial-gradient(...)`, `conic-gradient(...)`.
-- Not supported in this parser: `repeating-linear-gradient(...)`, `repeating-radial-gradient(...)`, `repeating-conic-gradient(...)`.
-
-## Custom Fonts
-
-Voltra supports custom fonts through the `fontFamily` style property.
-
-### Adding Custom Fonts to Your Project
-
-Voltra supports custom fonts in your Live Activities and Widgets through two main methods:
-
-#### 1. Using Voltra's Font Configuration (Recommended)
-
-The simplest way is to specify fonts directly in the Voltra plugin configuration. This follows the same pattern as `expo-font`:
-
-```json
-{
-  "expo": {
-    "plugins": [
-      [
-        "@use-voltra/ios-client",
-        {
-          "groupIdentifier": "group.com.example.app",
-          "fonts": ["./assets/fonts", "./assets/custom-font.ttf"]
-        }
-      ]
-    ]
-  }
-}
-```
-
-The `fonts` array can include:
-- Individual font files: `"./assets/fonts/CustomFont.ttf"`
-- Entire directories: `"./assets/fonts"` (all fonts in the directory will be included)
-- Supported formats: `.ttf`, `.otf`, `.woff`, `.woff2`
-
-#### 2. Adding Fonts Manually in Xcode
-
-For non-Expo projects or if you prefer manual configuration, you can add fonts directly to your Xcode project:
-
-1. Add your font files (`.otf` or `.ttf`) to your Xcode project
-2. Ensure they're included in the Live Activity target's "Copy Bundle Resources" build phase
-3. Add the font file names to your `Info.plist` under the `UIAppFonts` key for Live Activity target
-
-For detailed instructions, see Apple's documentation on [Applying custom fonts to text](https://developer.apple.com/documentation/swiftui/applying-custom-fonts-to-text).
-
-### Using Custom Fonts
-
-Once your fonts are added to the project, you can use them with the `fontFamily` style property:
-
-```tsx
+import { Platform, StyleSheet } from 'react-native'
 import { Voltra } from '@use-voltra/ios'
 
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: '#101828',
+  },
+  title: {
+    color: '#F8FAFC',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+})
+
 const element = (
-  <Voltra.Text
-    style={{
-      fontFamily: 'CustomFontName',
-      fontSize: 20,
-      color: '#FFFFFF',
-    }}
-  >
-    Text with Custom Font
-  </Voltra.Text>
+  <Voltra.VStack style={styles.container}>
+    <Voltra.Text style={styles.title}>{Platform.OS}</Voltra.Text>
+  </Voltra.VStack>
 )
 ```
 
-:::tip Font Family Names
+Widget code does not run against the React Native runtime — at build time it is evaluated in a
+Node sandbox, and Dynamic Widgets run on device in a separate JS engine with no bridge. Only the
+parts of `react-native` that are pure data manipulation are therefore available:
 
-The font family name you use in `fontFamily` should match the font's PostScript name, not the file name. You can find the PostScript name:
-- In the Font Book app on macOS
-- Using online tools like [fontdrop.info](https://fontdrop.info)
-- In Xcode's font picker
+- `StyleSheet.create`, `StyleSheet.flatten`, `StyleSheet.compose`, `StyleSheet.absoluteFill`,
+  `StyleSheet.absoluteFillObject`, and `StyleSheet.hairlineWidth`.
+- `Platform.OS` and `Platform.select`. Inside a widget, `Platform.OS` is the platform the widget is
+  being built for, so `Platform.select` picks the same branch at build time and on device.
 
-For example, the font file `Inter-Bold.ttf` has the PostScript name `Inter-Bold`.
-
-:::
-
-### Font Weight with Custom Fonts
-
-When using `fontFamily`, the `fontWeight` style property is ignored since you typically specify the exact font variant (e.g., `Inter-Bold`, `Inter-Regular`). If you need different weights, add multiple font files and specify the complete font name:
-
-```tsx
-// Regular weight
-<Voltra.Text style={{ fontFamily: 'Inter-Regular' }}>
-  Regular Text
-</Voltra.Text>
-
-// Bold weight
-<Voltra.Text style={{ fontFamily: 'Inter-Bold' }}>
-  Bold Text
-</Voltra.Text>
-```
-
-### Example with Google Fonts
-
-If you're using Google Fonts via `@expo-google-fonts`, they work seamlessly with Voltra:
-
-```json
-{
-  "expo": {
-    "plugins": [
-      [
-        "expo-font",
-        {
-          "fonts": ["node_modules/@expo-google-fonts/inter/Inter_400Regular.ttf"]
-        }
-      ]
-    ]
-  }
-}
-```
-
-```tsx
-<Voltra.Text style={{ fontFamily: 'Inter_400Regular' }}>
-  Text using Google Font
-</Voltra.Text>
-```
-
-:::note System Font Fallback
-If `fontFamily` is not specified or the font cannot be found, Voltra will fall back to the system font with the specified `fontWeight`.
-:::
+Anything else imported from `react-native` — components, `Dimensions`, `Animated`, `PixelRatio` —
+is rejected with a message naming the symbol. Build steps that evaluate your widget
+(`voltra apply` and `expo prebuild`) fail outright; a symbol that only appears on a branch those
+steps never reach throws the same message when the widget renders, rather than reading as
+`undefined`. Deep imports such as `react-native/Libraries/...` always fail the build. Use the
+`Voltra` components for everything visual.

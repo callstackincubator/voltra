@@ -6,7 +6,7 @@ import { buildPlistXml, parsePlistFile } from './plist'
 import { resolveMainAppEntitlementsPath } from './mainAppEntitlements'
 
 import type { IOSProjectDiscovery } from '../../discovery/ios'
-import type { NormalizedVoltraIOSConfig } from '../../config/types'
+import type { ResolvedVoltraIOSConfig } from '../../config/types'
 import type { ReportedChange } from '../../reporting/summary'
 
 interface PreviousVoltraEntitlementValues {
@@ -17,12 +17,12 @@ interface PreviousVoltraEntitlementValues {
 
 export interface EnsureEntitlementsOptions {
   projectRoot: string
-  ios: NormalizedVoltraIOSConfig
+  ios: ResolvedVoltraIOSConfig
   discovery: IOSProjectDiscovery
 }
 
 export interface EnsureEntitlementsResult {
-  change?: ReportedChange
+  changes: ReportedChange[]
 }
 
 export class IOSEntitlementsMutationError extends VoltraCliError {
@@ -34,44 +34,68 @@ export class IOSEntitlementsMutationError extends VoltraCliError {
 
 export async function ensureEntitlements(options: EnsureEntitlementsOptions): Promise<EnsureEntitlementsResult> {
   const { projectRoot, ios, discovery } = options
-  const entitlementsPath = resolveMainAppEntitlementsPath(discovery)
+  const entitlementsPaths = resolveEntitlementsPathsToMutate(ios, discovery)
 
-  if (!discovery.entitlementsPath) {
-    if (!needsEntitlementsMutation(ios)) {
-      return {}
+  if (entitlementsPaths.length === 0) {
+    return { changes: [] }
+  }
+
+  const previousVoltraValues = await readPreviousVoltraEntitlementValues(discovery.infoPlistPath)
+  const changes: ReportedChange[] = []
+
+  for (const entitlementsPath of entitlementsPaths) {
+    const entitlements: Record<string, unknown> = (await pathExists(entitlementsPath))
+      ? await parsePlistFile(entitlementsPath, 'main app entitlements', createEntitlementsError)
+      : {}
+
+    ensureStringArrayValue(
+      entitlements,
+      'com.apple.security.application-groups',
+      ios.groupIdentifier,
+      previousVoltraValues.appGroupIdentifier
+    )
+    ensureStringArrayValue(
+      entitlements,
+      'keychain-access-groups',
+      ios.keychainGroup,
+      previousVoltraValues.keychainGroup
+    )
+
+    if (ios.enablePushNotifications && entitlements['aps-environment'] === undefined) {
+      entitlements['aps-environment'] = 'development'
+    } else if (
+      !ios.enablePushNotifications &&
+      previousVoltraValues.pushNotificationsEnabled &&
+      entitlements['aps-environment'] === 'development'
+    ) {
+      delete entitlements['aps-environment']
+    }
+
+    const nextContent = buildPlistXml(entitlements, createEntitlementsError)
+    const change = await writeEntitlementsIfChanged(projectRoot, entitlementsPath, nextContent)
+
+    if (change) {
+      changes.push(change)
     }
   }
 
-  const entitlements: Record<string, unknown> = (await pathExists(entitlementsPath))
-    ? await parsePlistFile(entitlementsPath, 'main app entitlements', createEntitlementsError)
-    : {}
-  const previousVoltraValues = await readPreviousVoltraEntitlementValues(discovery.infoPlistPath)
-
-  ensureStringArrayValue(
-    entitlements,
-    'com.apple.security.application-groups',
-    ios.groupIdentifier,
-    previousVoltraValues.appGroupIdentifier
-  )
-  ensureStringArrayValue(entitlements, 'keychain-access-groups', ios.keychainGroup, previousVoltraValues.keychainGroup)
-
-  if (ios.enablePushNotifications && entitlements['aps-environment'] === undefined) {
-    entitlements['aps-environment'] = 'development'
-  } else if (
-    !ios.enablePushNotifications &&
-    previousVoltraValues.pushNotificationsEnabled &&
-    entitlements['aps-environment'] === 'development'
-  ) {
-    delete entitlements['aps-environment']
-  }
-
-  const nextContent = buildPlistXml(entitlements, createEntitlementsError)
-  const change = await writeEntitlementsIfChanged(projectRoot, entitlementsPath, nextContent)
-
-  return { change }
+  return { changes }
 }
 
-export function needsEntitlementsMutation(ios: NormalizedVoltraIOSConfig): boolean {
+/**
+ * Every entitlements file the app target references, so each build configuration of a
+ * multi-environment app keeps its own file. Falls back to the standard path when the project
+ * references none and Voltra has values to write.
+ */
+function resolveEntitlementsPathsToMutate(ios: ResolvedVoltraIOSConfig, discovery: IOSProjectDiscovery): string[] {
+  if (discovery.entitlementsPaths.length > 0) {
+    return discovery.entitlementsPaths
+  }
+
+  return needsEntitlementsMutation(ios) ? [resolveMainAppEntitlementsPath(discovery)] : []
+}
+
+export function needsEntitlementsMutation(ios: ResolvedVoltraIOSConfig): boolean {
   return ios.enablePushNotifications || ios.groupIdentifier !== undefined || ios.keychainGroup !== undefined
 }
 

@@ -35,13 +35,20 @@ def packageJsonFile = new File(project.projectDir.parentFile, "package.json")
 def packageJson = new groovy.json.JsonSlurper().parseText(packageJsonFile.text)
 def voltraVersion = packageJson.version
 
+def hostMinSdk = safeExtGet("minSdkVersion", 24)
+if (hostMinSdk < 24) {
+  throw new GradleException(
+    "@use-voltra/android-client requires minSdkVersion 24 (Android 7.0); this app sets ${hostMinSdk}."
+  )
+}
+
 android {
   namespace "voltra"
 
   compileSdkVersion safeExtGet("compileSdkVersion", 36)
 
   defaultConfig {
-    minSdkVersion safeExtGet("minSdkVersion", 31)
+    minSdkVersion hostMinSdk
     targetSdkVersion safeExtGet("targetSdkVersion", 36)
     versionCode 1
     versionName "0.1.0"
@@ -86,8 +93,11 @@ android {
     ]
   }
 
-  lintOptions {
-    abortOnError false
+  // Lint's NewApi check is what catches calls to APIs newer than our minSdk floor - the class
+  // of bug that shipped an API 31 RemoteViews constructor to apps running API 24. It is opt-in
+  // via -PvoltraLintStrict so CI enforces it without failing consuming apps' own lint runs.
+  lint {
+    abortOnError = project.hasProperty("voltraLintStrict")
   }
 
   testOptions {
@@ -100,6 +110,9 @@ android {
         showExceptions true
         showStackTraces true
       }
+      // Lets VoltraJSRendererJniNamesTest locate src/main/cpp/voltra_js_renderer.cpp without
+      // guessing at a relative path from the test's working directory.
+      systemProperty "voltra.moduleDir", project.projectDir.absolutePath
     }
   }
 }
@@ -117,6 +130,18 @@ dependencies {
   // Jetpack Glance
   api "androidx.glance:glance:1.2.0-rc01"
   api "androidx.glance:glance-appwidget:1.2.0-rc01"
+
+  // AndroidX Core — ContextCompat.registerReceiver() needs 1.9.0+ for the flags overload
+  // that dispatches to the right registerReceiver() across API levels. 1.9.0 is already the
+  // version resolved transitively via work-runtime-ktx below, so this pin doesn't change what
+  // gets bundled, it just makes the dependency explicit instead of relying on Glance/WorkManager
+  // to keep pulling it in.
+  implementation "androidx.core:core:1.9.0"
+
+  // AndroidX Annotation — @RequiresApi, already on the compile classpath transitively via
+  // Glance (androidx.annotation:annotation:1.8.1); declared explicitly since we now use it
+  // directly.
+  implementation "androidx.annotation:annotation:1.8.1"
 
   // Compose runtime (required for Glance)
   api "androidx.compose.runtime:runtime:1.6.8"

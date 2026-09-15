@@ -7,7 +7,7 @@ Components that arrange other elements or provide structural grouping.
 Voltra uses SwiftUI's native positioning model. Instead of CSS-style `position: absolute` with `top`/`left`/`right`/`bottom`, you use:
 
 1. **Stack `alignment` props** - Position children within their container
-2. **`offsetX`/`offsetY` styles** - Fine-tune individual element positions
+2. **`offsetX`/`offsetY` styles** - Fine-tune individual element positions after alignment (positive `offsetX` moves right, positive `offsetY` moves down)
 
 Each stack type has different alignment options based on its layout direction.
 
@@ -68,8 +68,6 @@ A depth-based stack container that overlays its children on top of each other. U
 
 #### Positioning with ZStack
 
-In SwiftUI (and Voltra), positioning works differently than CSS. The `alignment` prop on ZStack positions **all children** at the same alignment point. The ZStack's size is determined by its largest child.
-
 **Example: Badge overlay**
 
 ```tsx
@@ -98,19 +96,11 @@ In SwiftUI (and Voltra), positioning works differently than CSS. The `alignment`
 </Voltra.ZStack>
 ```
 
-:::tip
-Use `offsetX` and `offsetY` style properties to fine-tune individual element positions after alignment. Positive `offsetX` moves right, positive `offsetY` moves down.
-:::
-
 ---
 
 ### View
 
-A flexible container component that **always uses flexbox layout**. Unlike VStack and HStack which use native SwiftUI stacks by default, View is specifically designed for React Native-style flexbox layouts.
-
-:::tip Flexbox-First Component
-The View component is purpose-built for flexbox layouts and always uses the flexbox layout engine. See the [Flexbox Layout](../development/flexbox-layout) guide for comprehensive documentation.
-:::
+A flexible container that **always uses flexbox layout**, unlike VStack and HStack which use native SwiftUI stacks. See the [Flexbox Layout](../development/flexbox-layout) guide for details.
 
 **Style Properties:**
 

@@ -3,15 +3,22 @@ package voltra.dynamicwidget
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import voltra.widget.VoltraWidgetKind
+import voltra.widget.VoltraWidgetKindResolution
 
 @RunWith(RobolectricTestRunner::class)
 class DynamicWidgetUpdaterTest {
+    private val resolvesToDynamicWidget =
+        DynamicWidgetKindResolver { VoltraWidgetKindResolution.Resolved(VoltraWidgetKind.Dynamic) }
+
     @Test
     fun persistsNestedDynamicWidgetPropsBeforeTriggeringTheDynamicWidgetRefresh() =
         runTest {
@@ -20,6 +27,7 @@ class DynamicWidgetUpdaterTest {
             var dynamicWidgetPropsObservedAtRefresh: String? = null
             val dynamicWidgetUpdater =
                 DynamicWidgetUpdater(
+                    dynamicWidgetKindResolver = resolvesToDynamicWidget,
                     dynamicWidgetPropsPersistence = dynamicWidgetPropsStore,
                     dynamicWidgetUpdateTrigger =
                         DynamicWidgetUpdateTrigger { dynamicWidgetId ->
@@ -55,6 +63,7 @@ class DynamicWidgetUpdaterTest {
             var dynamicWidgetRefreshCount = 0
             val dynamicWidgetUpdater =
                 DynamicWidgetUpdater(
+                    dynamicWidgetKindResolver = resolvesToDynamicWidget,
                     dynamicWidgetPropsPersistence = dynamicWidgetPropsStore,
                     dynamicWidgetUpdateTrigger =
                         DynamicWidgetUpdateTrigger {
@@ -89,6 +98,7 @@ class DynamicWidgetUpdaterTest {
             var dynamicWidgetRefreshTriggered = false
             val dynamicWidgetUpdater =
                 DynamicWidgetUpdater(
+                    dynamicWidgetKindResolver = resolvesToDynamicWidget,
                     dynamicWidgetPropsPersistence =
                         DynamicWidgetPropsPersistence { _, _ ->
                             throw dynamicWidgetPersistenceFailure
@@ -119,6 +129,7 @@ class DynamicWidgetUpdaterTest {
             val dynamicWidgetRefreshFailure = IllegalStateException("Dynamic Widget refresh failed")
             val dynamicWidgetUpdater =
                 DynamicWidgetUpdater(
+                    dynamicWidgetKindResolver = resolvesToDynamicWidget,
                     dynamicWidgetPropsPersistence = dynamicWidgetPropsStore,
                     dynamicWidgetUpdateTrigger =
                         DynamicWidgetUpdateTrigger {
@@ -142,5 +153,63 @@ class DynamicWidgetUpdaterTest {
                     dynamicWidgetPropsStore.getDynamicWidgetProps("refresh-failure-dynamic-widget"),
                 ),
             )
+        }
+
+    @Test
+    fun rejectsAPayloadDrivenWidgetBeforePersistingOrTriggeringARefresh() =
+        runTest {
+            var persisted = false
+            var refreshTriggered = false
+            val dynamicWidgetUpdater =
+                DynamicWidgetUpdater(
+                    dynamicWidgetKindResolver = {
+                        VoltraWidgetKindResolution.Resolved(VoltraWidgetKind.Payload)
+                    },
+                    dynamicWidgetPropsPersistence =
+                        DynamicWidgetPropsPersistence { _, _ -> persisted = true },
+                    dynamicWidgetUpdateTrigger =
+                        DynamicWidgetUpdateTrigger { refreshTriggered = true },
+                )
+
+            val dynamicWidgetUpdateFailure =
+                runCatching {
+                    dynamicWidgetUpdater.updateDynamicWidget(
+                        dynamicWidgetId = "payload-widget",
+                        dynamicWidgetPropsJson = "{}",
+                    )
+                }.exceptionOrNull()
+
+            assertTrue(dynamicWidgetUpdateFailure is DynamicWidgetUpdateRejection.KindMismatch)
+            assertFalse(persisted)
+            assertFalse(refreshTriggered)
+        }
+
+    @Test
+    fun rejectsAnUnresolvedWidgetBeforePersistingOrTriggeringARefresh() =
+        runTest {
+            var persisted = false
+            var refreshTriggered = false
+            val dynamicWidgetUpdater =
+                DynamicWidgetUpdater(
+                    dynamicWidgetKindResolver = {
+                        VoltraWidgetKindResolution.Unresolved("no receiver registered")
+                    },
+                    dynamicWidgetPropsPersistence =
+                        DynamicWidgetPropsPersistence { _, _ -> persisted = true },
+                    dynamicWidgetUpdateTrigger =
+                        DynamicWidgetUpdateTrigger { refreshTriggered = true },
+                )
+
+            val dynamicWidgetUpdateFailure =
+                runCatching {
+                    dynamicWidgetUpdater.updateDynamicWidget(
+                        dynamicWidgetId = "unknown-widget",
+                        dynamicWidgetPropsJson = "{}",
+                    )
+                }.exceptionOrNull()
+
+            assertTrue(dynamicWidgetUpdateFailure is DynamicWidgetUpdateRejection.NotFound)
+            assertFalse(persisted)
+            assertFalse(refreshTriggered)
         }
 }

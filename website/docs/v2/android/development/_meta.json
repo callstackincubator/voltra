@@ -16,8 +16,18 @@
   },
   {
     "type": "file",
+    "name": "remote-ongoing-notifications",
+    "label": "Remote Ongoing Notifications"
+  },
+  {
+    "type": "file",
     "name": "querying-active-widgets",
     "label": "Querying Active Widgets"
+  },
+  {
+    "type": "file",
+    "name": "testing-and-previews",
+    "label": "Testing and Previews"
   },
   {
     "type": "file",
