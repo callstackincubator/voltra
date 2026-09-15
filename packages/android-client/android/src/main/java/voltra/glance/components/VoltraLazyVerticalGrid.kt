@@ -6,12 +6,13 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.lazy.GridCells
 import androidx.glance.appwidget.lazy.LazyVerticalGrid
+import androidx.glance.layout.Column
+import androidx.glance.layout.Row
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderNode
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
-import voltra.models.VoltraNode
 
 @Composable
 fun VoltraLazyVerticalGrid(
@@ -29,35 +30,37 @@ fun VoltraLazyVerticalGrid(
             element.t,
             element.hashCode(),
         )
+    val horizontalAlignment = extractHorizontalAlignment(element.p)
+    val items = resolveLazyListItems(element.c, context.sharedElements)
+
+    // Glance's setRemoteAdapter action, which LazyVerticalGrid compiles to, requires the
+    // inflation root parent to be a real AppWidgetHostView on API 31 and below (see
+    // VoltraRN.kt). In VoltraWidgetPreview on those versions, approximate the grid with eager
+    // Rows of a fixed column count instead so the preview shows content.
+    if (context.isPreview && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
+        logPreviewApproximation("LazyVerticalGrid")
+        val columnCount = deriveFallbackGridColumnCount(element.p, context.widgetSize?.width?.value)
+        val rows = items.chunked(columnCount)
+        Column(
+            modifier = finalModifier,
+            horizontalAlignment = horizontalAlignment,
+        ) {
+            RenderNestedGroups(rows) { row ->
+                Row(horizontalAlignment = horizontalAlignment) {
+                    row.forEach { child -> RenderNode(child) }
+                }
+            }
+        }
+        return
+    }
 
     LazyVerticalGrid(
         gridCells = extractGridCells(element.p),
         modifier = finalModifier,
-        horizontalAlignment = extractHorizontalAlignment(element.p),
+        horizontalAlignment = horizontalAlignment,
     ) {
-        when (val children = element.c) {
-            is VoltraNode.Array -> {
-                items(children.elements.size) { index ->
-                    RenderNode(children.elements[index])
-                }
-            }
-
-            is VoltraNode.Ref -> {
-                val resolved = context.sharedElements?.getOrNull(children.ref)
-                if (resolved is VoltraNode.Array) {
-                    items(resolved.elements.size) { index ->
-                        RenderNode(resolved.elements[index])
-                    }
-                } else {
-                    item { RenderNode(resolved) }
-                }
-            }
-
-            null -> { /* Empty grid */ }
-
-            else -> {
-                item { RenderNode(children) }
-            }
+        items(items.size) { index ->
+            RenderNode(items[index])
         }
     }
 }

@@ -1,7 +1,12 @@
 package voltra
 
+import android.appwidget.AppWidgetHostView
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
+import android.os.Build
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -25,6 +30,12 @@ class VoltraRN(
     private var lastRenderedWidthDp: Float = 0f
     private var lastRenderedHeightDp: Float = 0f
 
+    // One of this app's own AppWidgetProviderInfo entries, used only to silence the "Error
+    // trying to create the remote context" log that AppWidgetHostView emits without one.
+    // Resolved lazily and cached; absence is harmless (see resolveOwnProviderInfo).
+    private var providerInfoResolved = false
+    private var providerInfo: AppWidgetProviderInfo? = null
+
     fun setViewId(id: String) {
         if (this.viewId == id) return
         this.viewId = id
@@ -35,6 +46,33 @@ class VoltraRN(
         if (this.payload == payload) return
         this.payload = payload
         updateView()
+    }
+
+    private fun currentHostView(): AppWidgetHostView? = getChildAt(0) as? AppWidgetHostView
+
+    /**
+     * Looks up an [AppWidgetProviderInfo] belonging to this app, if any, purely so it can be
+     * handed to [AppWidgetHostView.setAppWidget]. That call is optional: without it,
+     * AppWidgetHostView still renders the composed RemoteViews correctly, it just logs a
+     * cosmetic "Error trying to create the remote context" and falls back to the app's own
+     * context. `getInstalledProvidersForPackage` needs API 26+; apps with no AppWidget
+     * provider of their own simply skip this.
+     */
+    private fun resolveOwnProviderInfo(): AppWidgetProviderInfo? {
+        if (providerInfoResolved) return providerInfo
+        providerInfoResolved = true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            providerInfo =
+                try {
+                    AppWidgetManager
+                        .getInstance(context)
+                        .getInstalledProvidersForPackage(context.packageName, null)
+                        .firstOrNull()
+                } catch (e: Exception) {
+                    null
+                }
+        }
+        return providerInfo
     }
 
     private fun updateView() {
@@ -88,7 +126,7 @@ class VoltraRN(
                     val remoteViewsContext = context.applicationContext
 
                     val glanceRemoteViews = GlanceRemoteViews()
-                    val factory = GlanceFactory(id, voltraPayload.e, voltraPayload.s, composeSize)
+                    val factory = GlanceFactory(id, voltraPayload.e, voltraPayload.s, composeSize, isPreview = true)
 
                     val result =
                         withContext(Dispatchers.Default) {
@@ -111,40 +149,59 @@ class VoltraRN(
 
                     withContext(Dispatchers.Main) {
                         try {
-                            // Try to reapply to the existing view first to avoid flickering/replacing.
-                            // IMPORTANT: Only use reapply for dimension-only changes (same payload).
-                            // When the payload changes, always do a fresh apply to prevent stale
-                            // style bleed (e.g. padding from a previous widget persisting because
-                            // the new widget's RemoteViews doesn't explicitly reset it to zero).
-                            var applied = false
-                            if (host.childCount > 0 && payloadStr == lastRenderedPayload) {
-                                try {
-                                    val existingView = host.getChildAt(0)
-                                    remoteViews.reapply(remoteViewsContext, existingView)
-                                    applied = true
-                                } catch (e: Exception) {
+                            // Host the composed RemoteViews in an AppWidgetHostView instead of
+                            // manually apply()/reapply()-ing them onto this FrameLayout. Glance
+                            // compiles LazyColumn/LazyVerticalGrid to a setRemoteAdapter action,
+                            // and on API 31 and below RemoteViews.apply refuses to run it unless
+                            // the inflation root parent is an AppWidgetHostView — see the
+                            // eager-rendering fallback in VoltraLazyColumn/VoltraLazyVerticalGrid
+                            // for versions where that's still not enough.
+                            // AppWidgetHostView.updateAppWidget already handles recycle-vs-inflate,
+                            // LayoutParams, and error views for us.
+                            //
+                            // IMPORTANT: updateAppWidget recycles the existing view whenever
+                            // remoteViews.canRecycleView(...) is true (same root layout id), which
+                            // is normally desirable to avoid flicker. But across two different
+                            // Voltra payloads that happen to compile to the same root layout,
+                            // recycling can leave stale styles behind (e.g. padding from the
+                            // previous widget persisting because the new RemoteViews doesn't
+                            // explicitly reset it to zero). So force a fresh AppWidgetHostView
+                            // whenever the payload itself changed, and only reuse the existing
+                            // host view for dimension-only re-renders of the same payload.
+                            val reusableHostView =
+                                host.currentHostView()?.takeIf { payloadStr == lastRenderedPayload }
+                            val targetHostView =
+                                reusableHostView ?: run {
+                                    val freshHostView = AppWidgetHostView(remoteViewsContext)
+                                    host.resolveOwnProviderInfo()?.let { info ->
+                                        freshHostView.setAppWidget(AppWidgetManager.INVALID_APPWIDGET_ID, info)
+                                    }
+                                    freshHostView.layoutParams =
+                                        ViewGroup.LayoutParams(
+                                            ViewGroup.LayoutParams.MATCH_PARENT,
+                                            ViewGroup.LayoutParams.MATCH_PARENT,
+                                        )
+
+                                    // Add the new host view FIRST, then remove old ones, to prevent flickering.
+                                    host.addView(freshHostView)
+
+                                    val childCount = host.childCount
+                                    if (childCount > 1) {
+                                        host.removeViews(0, childCount - 1)
+                                    }
+
+                                    freshHostView
                                 }
-                            }
 
-                            if (!applied) {
-                                // Inflate with parent to ensure correct LayoutParams, but don't attach yet
-                                val inflatedView = remoteViews.apply(remoteViewsContext, host)
-
-                                // Add new view FIRST, then remove old ones to prevent flickering
-                                host.addView(inflatedView)
-
-                                val childCount = host.childCount
-                                if (childCount > 1) {
-                                    host.removeViews(0, childCount - 1)
-                                }
-                            }
+                            targetHostView.updateAppWidget(remoteViews)
 
                             // Always re-measure and re-layout after applying RemoteViews.
                             // This is critical because:
-                            // 1) After fresh inflate: the view was added asynchronously so the parent
-                            //    won't trigger layout automatically.
-                            // 2) After reapply: text content or styles may have changed, requiring
-                            //    re-measurement to avoid stale layout constraints (e.g. truncated text).
+                            // 1) After adding a fresh host view: it was added asynchronously so
+                            //    the parent won't trigger layout automatically.
+                            // 2) After updating the existing host view: text content or styles may
+                            //    have changed, requiring re-measurement to avoid stale layout
+                            //    constraints (e.g. truncated text).
                             host.measure(
                                 View.MeasureSpec.makeMeasureSpec(host.width, View.MeasureSpec.EXACTLY),
                                 View.MeasureSpec.makeMeasureSpec(host.height, View.MeasureSpec.EXACTLY),
