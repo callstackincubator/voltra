@@ -66,32 +66,65 @@ jobs:
           git config user.email "$GIT_AUTHOR_EMAIL"
 
       - name: Resolve release state
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=$(node -p "require('./packages/core/package.json').version")
+          TAG="v$VERSION"
 
-          # A version on main that npm does not have yet belongs to a release
-          # whose publication failed. Commits may have landed on main since,
-          # so the release commit is looked up rather than assumed to be HEAD.
+          # The version on main belongs to a release that is either finished or
+          # not. Finished means it reached every place a release ends up: npm,
+          # the tag, and the GitHub release. Anything less is a release a
+          # previous run started and did not complete, and this run finishes
+          # it instead of starting a new one. Checking npm alone is not enough:
+          # a run can publish every package and still stop before tagging.
+          INCOMPLETE=""
+
           if NPM_OUTPUT=$(npm view "@use-voltra/core@$VERSION" version 2>&1); then
-            echo "RELEASE_RETRY=false" >> "$GITHUB_ENV"
+            :
           elif printf '%s' "$NPM_OUTPUT" | grep -q E404; then
-            RELEASE_COMMIT=$(git log -1 --format=%H -E --grep="^chore: release v?${VERSION//./\\.}$")
-            if [ -z "$RELEASE_COMMIT" ]; then
-              echo "Version $VERSION is not on npm and no release commit for it exists on main." >&2
-              exit 1
-            fi
-
-            echo "Retrying release $VERSION from release commit $RELEASE_COMMIT."
-            {
-              echo "RELEASE_RETRY=true"
-              echo "RELEASE_VERSION=$VERSION"
-              echo "RELEASE_COMMIT=$RELEASE_COMMIT"
-            } >> "$GITHUB_ENV"
+            INCOMPLETE="$INCOMPLETE npm"
           else
             echo "$NPM_OUTPUT" >&2
             echo "Could not check whether version $VERSION is published." >&2
             exit 1
           fi
+
+          if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            INCOMPLETE="$INCOMPLETE tag"
+          fi
+
+          # Like npm above, only a definite "not found" counts as missing: an API
+          # error must not turn a finished release into one this run re-finishes.
+          if ! GH_OUTPUT=$(gh release view "$TAG" 2>&1); then
+            if printf '%s' "$GH_OUTPUT" | grep -qi "release not found"; then
+              INCOMPLETE="$INCOMPLETE github-release"
+            else
+              echo "$GH_OUTPUT" >&2
+              echo "Could not check whether GitHub release $TAG exists." >&2
+              exit 1
+            fi
+          fi
+
+          if [ -z "$INCOMPLETE" ]; then
+            echo "RELEASE_RETRY=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          # Commits may have landed on main since, so the release commit is
+          # looked up rather than assumed to be HEAD.
+          RELEASE_COMMIT=$(git log -1 --format=%H -E --grep="^chore: release v?${VERSION//./\\.}$")
+          if [ -z "$RELEASE_COMMIT" ]; then
+            echo "Version $VERSION is missing from:$INCOMPLETE, and no release commit for it exists on main." >&2
+            exit 1
+          fi
+
+          echo "Finishing release $VERSION from release commit $RELEASE_COMMIT (missing:$INCOMPLETE)."
+          {
+            echo "RELEASE_RETRY=true"
+            echo "RELEASE_VERSION=$VERSION"
+            echo "RELEASE_COMMIT=$RELEASE_COMMIT"
+          } >> "$GITHUB_ENV"
 
       - name: Check out release commit
         if: ${{ env.RELEASE_RETRY == 'true' }}
@@ -178,6 +211,9 @@ jobs:
         run: pnpm exec changeset publish --no-git-tag
 
       - name: Verify published packages
+        env:
+          VERIFY_TIMEOUT_SECONDS: 900
+          VERIFY_POLL_SECONDS: 15
         run: |
           # Changesets can report an error and still exit successfully, so the
           # registry is the source of truth before the release is tagged.
@@ -192,21 +228,37 @@ jobs:
           NODE
           )
 
-          MISSING=""
-          for PACKAGE in $PACKAGES; do
-            for _ in 1 2 3 4 5 6; do
-              if npm view "$PACKAGE@$RELEASE_VERSION" version >/dev/null 2>&1; then
-                continue 2
-              fi
-              sleep 10
-            done
-            MISSING="$MISSING $PACKAGE"
-          done
+          # npm acknowledges a publish before the version is visible: 2.3.0 took
+          # up to three minutes per package to appear. Every package shares one
+          # deadline and is checked each round, so waiting on one package never
+          # eats into another's time, the way a fixed window per package in
+          # sequence did.
+          DEADLINE=$(( $(date +%s) + VERIFY_TIMEOUT_SECONDS ))
+          MISSING="$PACKAGES"
 
-          if [ -n "$MISSING" ]; then
-            echo "Not published at $RELEASE_VERSION:$MISSING" >&2
-            exit 1
-          fi
+          while :; do
+            STILL_MISSING=""
+            for PACKAGE in $MISSING; do
+              if ! npm view "$PACKAGE@$RELEASE_VERSION" version >/dev/null 2>&1; then
+                STILL_MISSING="$STILL_MISSING $PACKAGE"
+              fi
+            done
+            MISSING="$STILL_MISSING"
+
+            if [ -z "$MISSING" ]; then
+              echo "All packages are published at $RELEASE_VERSION."
+              break
+            fi
+
+            if [ "$(date +%s)" -ge "$DEADLINE" ]; then
+              echo "Not published at $RELEASE_VERSION after ${VERIFY_TIMEOUT_SECONDS}s:$MISSING" >&2
+              echo "Rerun this workflow once they appear: it finishes the release instead of starting a new one." >&2
+              exit 1
+            fi
+
+            echo "Waiting for:$MISSING"
+            sleep "$VERIFY_POLL_SECONDS"
+          done
 
       - name: Create and push release tag
         env:
