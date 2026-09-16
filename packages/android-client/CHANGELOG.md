@@ -1,5 +1,20 @@
 # @use-voltra/android-client
 
+## 2.3.1
+
+### Patch Changes
+
+- 68738f1: Fixed a crash on Android 11 and older where requesting an immediate widget
+  server update (a refresh tap, `reloadAndroidWidgets`, or any settings change)
+  could crash the app within a second of scheduling it.
+- e059f28: The refresh button on a configured server-driven Dynamic Widget now refreshes the placement that
+  drew it. It previously fetched for the widget as a whole, so a placement configured for one value
+  received another's data and its `env.serverUpdate` never left `never`. Widgets with no
+  configuration parameters are unaffected.
+  - @use-voltra/android@2.3.1
+  - @use-voltra/compiler@2.3.1
+  - @use-voltra/expo-plugin@2.3.1
+
 ## 2.3.0
 
 ### Minor Changes

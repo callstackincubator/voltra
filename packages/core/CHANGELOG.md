@@ -1,5 +1,7 @@
 # @use-voltra/core
 
+## 2.3.1
+
 ## 2.3.0
 
 ### Minor Changes
