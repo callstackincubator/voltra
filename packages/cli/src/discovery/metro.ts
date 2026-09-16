@@ -1,47 +1,40 @@
+import { createRequire } from 'node:module'
 import path from 'node:path'
-
-import { pathExists, readTextFile } from '../fs/readWrite'
 
 import type { NormalizedVoltraConfig } from '../config/types'
 
-/** The names Metro itself resolves, in the order it tries them. */
-const METRO_CONFIG_FILENAMES = ['metro.config.js', 'metro.config.cjs', 'metro.config.mjs', 'metro.config.ts']
-
 /**
- * A Dynamic Widget renders on device from a per-widget JS bundle that only exists if the app's
- * Metro config is wrapped with `withVoltra`: the dev server serves it at
- * `/voltra/widgets/<id>.bundle`, and the release bundler reads the same registry. Without the
- * wrapper the bundle never loads, and the widget silently draws its prerendered `initialStatePath`
- * forever while its server updates still fetch — a failure that otherwise only shows up as one
- * `Log.w` line in logcat.
+ * A Dynamic Widget renders on device from a per-widget JS bundle that `@use-voltra/metro` produces:
+ * the dev server serves it at `/voltra/widgets/<id>.bundle`, and the release bundler reads the same
+ * registry. Without the package there is no bundle, and the widget silently draws its prerendered
+ * `initialStatePath` forever while its server updates keep fetching — a failure that otherwise shows
+ * up only as one `Log.w` line in logcat.
  *
- * Reported as a warning rather than an error: the check reads source text, so an app that composes
- * its Metro config in a way this cannot see should not be blocked from applying.
+ * Resolution from the project root is the same signal the generated Xcode build phase and Gradle
+ * task already use (`platforms/ios/xcodeTarget.ts`, `platforms/android/gradle.ts`), so a project
+ * that passes here is a project whose release bundling can run.
+ *
+ * This deliberately does not try to decide whether the app's Metro config is *wired up* — whether
+ * `withVoltra` wraps it. That cannot be read off the config source without warning at correct
+ * projects: a config that delegates to a shared preset (`module.exports =
+ * require('@myorg/metro-config')(__dirname)`) applies the wrapper somewhere this cannot see, and a
+ * config hand-composed from `createVoltraMiddleware` and `createWidgetRegistry` never names
+ * `withVoltra` at all. A warning that fires on a working setup costs more than the one it catches.
  */
-export async function findMissingMetroWrapperWarning(config: NormalizedVoltraConfig): Promise<string | undefined> {
+export function findMissingMetroPackageWarning(config: NormalizedVoltraConfig): string | undefined {
   if (!hasDynamicWidget(config)) {
     return undefined
   }
 
-  const metroConfigPath = await findMetroConfigPath(config.projectRoot)
-
-  if (!metroConfigPath) {
-    // No file to read means no evidence either way, and a project can configure Metro from
-    // somewhere this does not look. Saying nothing beats a warning nobody can act on.
-    return undefined
-  }
-
-  const contents = await readTextFile(metroConfigPath)
-
-  if (contents.includes('withVoltra')) {
+  if (canResolveVoltraMetro(config.projectRoot)) {
     return undefined
   }
 
   return (
-    `${path.basename(metroConfigPath)} does not use 'withVoltra', but this project declares a widget ` +
-    `with an 'entry'. Dynamic Widgets render from a bundle only the Voltra Metro config serves, so ` +
-    `they will keep showing their prerendered initial state. Install '@use-voltra/metro' and wrap the ` +
-    `config: module.exports = withVoltra(config).`
+    `This project declares a widget with an 'entry', but '@use-voltra/metro' cannot be resolved from ` +
+    `${config.projectRoot}. Dynamic Widgets render from a bundle only that package produces, so they ` +
+    `will keep showing their prerendered initial state. Install '@use-voltra/metro' and wrap the app's ` +
+    `Metro config: module.exports = withVoltra(config).`
   )
 }
 
@@ -51,14 +44,11 @@ function hasDynamicWidget(config: NormalizedVoltraConfig): boolean {
   return widgets.some((widget) => widget.entry !== undefined)
 }
 
-async function findMetroConfigPath(projectRoot: string): Promise<string | undefined> {
-  for (const filename of METRO_CONFIG_FILENAMES) {
-    const candidate = path.join(projectRoot, filename)
-
-    if (await pathExists(candidate)) {
-      return candidate
-    }
+function canResolveVoltraMetro(projectRoot: string): boolean {
+  try {
+    createRequire(path.join(projectRoot, 'package.json')).resolve('@use-voltra/metro/bundle-widgets')
+    return true
+  } catch {
+    return false
   }
-
-  return undefined
 }
