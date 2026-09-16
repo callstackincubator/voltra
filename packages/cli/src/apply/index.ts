@@ -9,6 +9,7 @@ import { applyAndroidPlatform, createAndroidPreflightRunner } from '../platforms
 import { applyIOSPlatform, createIOSPreflightRunner } from '../platforms/ios/apply'
 import { renderApplySummary, renderIntro } from '../reporting/clack'
 import { VoltraCliError } from '../reporting/summary'
+import { findMissingMetroPackageWarning } from '../discovery/metro'
 import { diffVoltraState } from '../state/diff'
 import { loadVoltraState } from '../state/load'
 import { saveVoltraState } from '../state/save'
@@ -111,6 +112,7 @@ export async function runApplyPipeline(options: ApplyOptions, dependencies: Appl
   const summaryWarnings = [
     ...(normalizedConfig.warnings ?? []),
     ...platformResults.flatMap((result) => result.warnings ?? []),
+    findMissingMetroPackageWarning(normalizedConfig),
   ].filter(isDefined)
   const summaryChanges = [...platformResults.flatMap((result) => result.changes), ...deletedChanges]
 
