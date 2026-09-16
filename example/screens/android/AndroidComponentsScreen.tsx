@@ -33,6 +33,8 @@ const sectorData = [
   { value: 10, category: 'Charts' },
 ]
 
+const LAZY_LIST_ITEMS = Array.from({ length: 12 }, (_, index) => `Item ${index + 1}`)
+
 type ComponentExample = {
   id: string
   title: string
@@ -258,33 +260,34 @@ const COMPONENTS_DATA: ComponentExample[] = [
   {
     id: 'lazy-column',
     title: 'LazyColumn',
-    description: 'Displays repeated children in a Glance lazy list. Not available in the in-app preview.',
+    description: 'Displays repeated children in a Glance lazy list.',
     family: 'mediumSquare',
     renderExample: () => (
       <VoltraAndroid.Box style={styles.widgetRoot}>
-        <VoltraAndroid.Column style={styles.previewNotice} verticalAlignment="center-vertically">
-          <VoltraAndroid.Text style={styles.previewNoticeTitle}>Preview unavailable</VoltraAndroid.Text>
-          <VoltraAndroid.Text style={styles.previewNoticeBody}>
-            LazyColumn uses AppWidget collection adapters and can only render in a real Android widget.
-          </VoltraAndroid.Text>
-        </VoltraAndroid.Column>
+        <VoltraAndroid.LazyColumn style={{ width: '100%', height: '100%' }}>
+          {LAZY_LIST_ITEMS.map((item) => (
+            <VoltraAndroid.Text key={item} style={styles.lazyListItem}>
+              {item}
+            </VoltraAndroid.Text>
+          ))}
+        </VoltraAndroid.LazyColumn>
       </VoltraAndroid.Box>
     ),
   },
   {
     id: 'lazy-grid',
     title: 'LazyVerticalGrid',
-    description:
-      'Displays repeated children in fixed or adaptive Glance grid cells. Not available in the in-app preview.',
+    description: 'Displays repeated children in fixed or adaptive Glance grid cells.',
     family: 'mediumSquare',
     renderExample: () => (
       <VoltraAndroid.Box style={styles.widgetRoot}>
-        <VoltraAndroid.Column style={styles.previewNotice} verticalAlignment="center-vertically">
-          <VoltraAndroid.Text style={styles.previewNoticeTitle}>Preview unavailable</VoltraAndroid.Text>
-          <VoltraAndroid.Text style={styles.previewNoticeBody}>
-            LazyVerticalGrid uses AppWidget collection adapters and can only render in a real Android widget.
-          </VoltraAndroid.Text>
-        </VoltraAndroid.Column>
+        <VoltraAndroid.LazyVerticalGrid columns={2} style={{ width: '100%', height: '100%' }}>
+          {LAZY_LIST_ITEMS.map((item) => (
+            <VoltraAndroid.Box key={item} style={styles.lazyGridCell}>
+              <VoltraAndroid.Text style={styles.lazyListItem}>{item}</VoltraAndroid.Text>
+            </VoltraAndroid.Box>
+          ))}
+        </VoltraAndroid.LazyVerticalGrid>
       </VoltraAndroid.Box>
     ),
   },
@@ -394,20 +397,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
-  previewNotice: {
-    width: '100%',
-    height: '100%',
-    padding: 12,
+  lazyListItem: {
+    color: '#E2E8F0',
+    fontSize: 13,
+    padding: 8,
   },
-  previewNoticeTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  previewNoticeBody: {
-    color: '#CBD5E1',
-    fontSize: 12,
+  lazyGridCell: {
+    backgroundColor: '#334155',
+    borderRadius: 8,
+    margin: 4,
   },
   footer: {
     marginTop: 24,
