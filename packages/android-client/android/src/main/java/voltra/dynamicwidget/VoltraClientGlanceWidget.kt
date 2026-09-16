@@ -315,7 +315,7 @@ class VoltraClientGlanceWidget(
 
         // Drawn over the widget's own content, so an entry does not have to leave room for it.
         // Only a server-driven widget configured with `refresh: true` has a source that offers one.
-        environmentSource?.refreshAction(context, widgetId)?.let { action ->
+        environmentSource?.refreshAction(context, scope)?.let { action ->
             RefreshButton(action)
         }
     }

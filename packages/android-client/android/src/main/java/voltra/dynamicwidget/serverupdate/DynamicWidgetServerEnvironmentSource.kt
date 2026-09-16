@@ -2,7 +2,6 @@ package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
 import androidx.glance.action.Action
-import androidx.glance.action.actionParametersOf
 import androidx.glance.appwidget.action.actionRunCallback
 import voltra.dynamicwidget.DynamicWidgetEnvironmentSource
 import voltra.widget.server.VoltraWidgetServer
@@ -27,14 +26,14 @@ internal class DynamicWidgetServerEnvironmentSource : DynamicWidgetEnvironmentSo
 
     override fun refreshAction(
         context: Context,
-        dynamicWidgetId: String,
+        scope: WidgetScope,
     ): Action? {
-        if (VoltraWidgetServer.defaults(context).defaults(dynamicWidgetId)?.refresh != true) {
+        if (VoltraWidgetServer.defaults(context).defaults(scope.widgetId)?.refresh != true) {
             return null
         }
 
         return actionRunCallback<DynamicWidgetRefreshActionCallback>(
-            actionParametersOf(DynamicWidgetRefreshActionCallback.KEY_WIDGET_ID to dynamicWidgetId),
+            DynamicWidgetRefreshActionCallback.parametersFor(scope),
         )
     }
 }
