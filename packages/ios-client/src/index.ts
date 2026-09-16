@@ -47,7 +47,6 @@ export { assertRunningOnApple } from './utils/assertRunningOnApple.js'
 export { enableWidgetHotReload } from './utils/enableWidgetHotReload.js'
 export { enableDynamicLiveActivityHotReload } from './utils/enableDynamicLiveActivityHotReload.js'
 export { useUpdateOnHMR } from './utils/useUpdateOnHMR.js'
-export * from './utils/helpers.js'
 export type { VoltraElementJson, VoltraNodeJson } from './types.js'
 export {
   clearWidgetServerUpdate,
