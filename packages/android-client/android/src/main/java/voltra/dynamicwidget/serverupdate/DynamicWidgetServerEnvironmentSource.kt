@@ -2,11 +2,11 @@ package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
 import androidx.glance.action.Action
-import androidx.glance.action.actionParametersOf
 import androidx.glance.appwidget.action.actionRunCallback
 import voltra.dynamicwidget.DynamicWidgetEnvironmentSource
 import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
+import voltra.widget.server.WidgetServerDefaultsStore
 
 /**
  * Contributes `env.serverUpdate` to a server-driven Dynamic Widget's render.
@@ -15,7 +15,10 @@ import voltra.widget.server.WidgetScope
  * fetch went, so it can show "updated 3 min ago", dim itself when the data is stale, or hide its
  * freshness line entirely while the app has taken it over.
  */
-internal class DynamicWidgetServerEnvironmentSource : DynamicWidgetEnvironmentSource {
+internal class DynamicWidgetServerEnvironmentSource(
+    // Injected so a test can build a button without an app.json-generated assets file behind it.
+    private val defaults: (Context) -> WidgetServerDefaultsStore = { VoltraWidgetServer.defaults(it) },
+) : DynamicWidgetEnvironmentSource {
     override fun environmentFields(
         context: Context,
         scope: WidgetScope,
@@ -27,14 +30,14 @@ internal class DynamicWidgetServerEnvironmentSource : DynamicWidgetEnvironmentSo
 
     override fun refreshAction(
         context: Context,
-        dynamicWidgetId: String,
+        scope: WidgetScope,
     ): Action? {
-        if (VoltraWidgetServer.defaults(context).defaults(dynamicWidgetId)?.refresh != true) {
+        if (defaults(context).defaults(scope.widgetId)?.refresh != true) {
             return null
         }
 
         return actionRunCallback<DynamicWidgetRefreshActionCallback>(
-            actionParametersOf(DynamicWidgetRefreshActionCallback.KEY_WIDGET_ID to dynamicWidgetId),
+            DynamicWidgetRefreshActionCallback.parametersFor(scope),
         )
     }
 }

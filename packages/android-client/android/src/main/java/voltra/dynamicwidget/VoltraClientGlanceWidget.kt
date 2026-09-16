@@ -155,6 +155,27 @@ class VoltraClientGlanceWidget(
         }
 
         /**
+         * The scope a placement renders, fetches and reads its status at.
+         *
+         * Normally the instance of its merged configuration (ADR 0007). When Glance cannot tell us
+         * which placement is being rendered, [dynamicWidgetAppWidgetId] is null and the caller has
+         * already degraded to the widget-type configuration — which may name an instance no
+         * placement has, whose props slot and status record nothing ever writes. The widget scope
+         * is the honest answer there: it is what the pre-ADR-0007 render used, the props store
+         * falls back to it anyway, and the status store has no fallback of its own.
+         */
+        internal fun placementScope(
+            widgetId: String,
+            configuration: Map<String, String>,
+            dynamicWidgetAppWidgetId: Int?,
+        ): WidgetScope =
+            if (dynamicWidgetAppWidgetId == null) {
+                WidgetScope.of(widgetId)
+            } else {
+                WidgetScope.of(widgetId, configuration)
+            }
+
+        /**
          * The env a trial render runs with: the real theme, locale and configuration, and a size
          * the caller picked from the widget's placements.
          *
@@ -293,8 +314,10 @@ class VoltraClientGlanceWidget(
                 initialConfiguration = initialConfiguration,
             )
         // This placement's scope (ADR 0007): an Instance of its merged configuration, or the plain
-        // Widget scope when it has none — which is also every widget's scope before this ADR.
-        val scope = WidgetScope.of(widgetId, configuration)
+        // Widget scope when it has none — which is also every widget's scope before this ADR. The
+        // render input, the env fields and the refresh button all take this one value, so a tap
+        // cannot refresh something other than what is on screen.
+        val scope = placementScope(widgetId, configuration, appWidgetId)
         val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId, scope)
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
@@ -315,7 +338,7 @@ class VoltraClientGlanceWidget(
 
         // Drawn over the widget's own content, so an entry does not have to leave room for it.
         // Only a server-driven widget configured with `refresh: true` has a source that offers one.
-        environmentSource?.refreshAction(context, widgetId)?.let { action ->
+        environmentSource?.refreshAction(context, scope)?.let { action ->
             RefreshButton(action)
         }
     }

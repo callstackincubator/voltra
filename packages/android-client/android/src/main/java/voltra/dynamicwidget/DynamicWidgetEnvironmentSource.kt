@@ -30,9 +30,13 @@ interface DynamicWidgetEnvironmentSource {
      * Only something that can actually refresh the widget can answer this, which is why it lives
      * next to the env fields rather than on the Glance widget. A plain Dynamic Widget has nothing
      * to refresh from, so it never draws one.
+     *
+     * Takes the same [scope] as [environmentFields], and for the same reason: the button belongs to
+     * one placement, so the fetch it triggers has to run for that placement's instance rather than
+     * for the widget as a whole (ADR 0007).
      */
     fun refreshAction(
         context: Context,
-        dynamicWidgetId: String,
+        scope: WidgetScope,
     ): Action? = null
 }
