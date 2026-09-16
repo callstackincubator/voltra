@@ -1,6 +1,7 @@
 package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -8,6 +9,7 @@ import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -159,6 +161,28 @@ object DynamicWidgetServerUpdateScheduler {
         delayMinutes: Long,
         expedited: Boolean,
     ) {
+        // Unique per scope, so a settings change plus a reload plus a refresh tap collapse into
+        // one fetch rather than three. REPLACE rather than KEEP because the newest request is the
+        // one carrying the caller's intent -- a fresh URL, or a delay the server asked for.
+        WorkManager
+            .getInstance(context)
+            .enqueueUniqueWork(
+                oneTimeWorkName(scope),
+                ExistingWorkPolicy.REPLACE,
+                buildOneTimeRequest(scope, delayMinutes, expedited),
+            )
+    }
+
+    /**
+     * The one-time request [enqueueOneTime] sends, built separately so a test can read back whether
+     * it actually asked for expedited work on the SDK level it is running at. Testing the decision
+     * alone would pass with the `setExpedited` call below reverted.
+     */
+    internal fun buildOneTimeRequest(
+        scope: WidgetScope,
+        delayMinutes: Long,
+        expedited: Boolean,
+    ): OneTimeWorkRequest {
         val builder =
             OneTimeWorkRequestBuilder<DynamicWidgetServerUpdateWorker>()
                 .setInputData(inputData(scope))
@@ -168,16 +192,11 @@ object DynamicWidgetServerUpdateScheduler {
 
         if (delayMinutes > 0) {
             builder.setInitialDelay(delayMinutes, TimeUnit.MINUTES)
-        } else if (expedited) {
+        } else if (shouldRunExpedited(expedited, Build.VERSION.SDK_INT)) {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         }
 
-        // Unique per scope, so a settings change plus a reload plus a refresh tap collapse into
-        // one fetch rather than three. REPLACE rather than KEEP because the newest request is the
-        // one carrying the caller's intent -- a fresh URL, or a delay the server asked for.
-        WorkManager
-            .getInstance(context)
-            .enqueueUniqueWork(oneTimeWorkName(scope), ExistingWorkPolicy.REPLACE, builder.build())
+        return builder.build()
     }
 
     fun cancel(
@@ -208,6 +227,20 @@ object DynamicWidgetServerUpdateScheduler {
         }
         DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
     }
+
+    /**
+     * On API 30 and below, WorkManager runs expedited work as a foreground service and calls
+     * `CoroutineWorker.getForegroundInfo()`, which [DynamicWidgetServerUpdateWorker] does not
+     * override; the default implementation throws `IllegalStateException`, crashing the process
+     * within a second of any "refresh now" request. Android 12 (API 31, `Build.VERSION_CODES.S`)
+     * added the "quick, transient" expedited path that no longer requires a foreground service, so
+     * expedited scheduling is only safe from there on. Below that, the request still runs, just as
+     * ordinary (non-expedited) one-time work.
+     */
+    internal fun shouldRunExpedited(
+        requestedExpedited: Boolean,
+        sdkInt: Int,
+    ): Boolean = requestedExpedited && sdkInt >= Build.VERSION_CODES.S
 
     internal fun workName(scope: WidgetScope): String = workNameForStorageKey(scope.storageKey)
 

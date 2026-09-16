@@ -375,8 +375,10 @@ status, error, settingsRevision}` per `WidgetScope` in the App Group under
 - `DynamicWidgetServerUpdateScheduler`: periodic unique work
   `voltra_dynamic_widget_server_<id>` from the resolved interval,
   `NetworkType.CONNECTED`, explicit exponential backoff,
-  `ExistingPeriodicWorkPolicy.UPDATE`, plus an expedited one-time request
-  for "refresh now".
+  `ExistingPeriodicWorkPolicy.UPDATE`, plus a one-time request for
+  "refresh now" — expedited from API 31, ordinary below it, where WorkManager
+  would run expedited work as a foreground service and call a
+  `getForegroundInfo()` the worker does not implement.
 - `DynamicWidgetServerPropsStore`: same record as iOS, SharedPreferences
   file `voltra_dynamic_widget_server`.
 - `DynamicWidgetRefreshActionCallback`: new Glance `ActionCallback` that
@@ -435,8 +437,8 @@ props store, and the render path are unchanged.
 | --------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------- |
 | Widget added                      | WidgetKit calls `getTimeline` → fetch                           | `onUpdate` → schedule periodic, run once now                |
 | Periodic                          | `.after(now + interval)`; WidgetKit may stretch it              | WorkManager periodic, 15 min floor                          |
-| Refresh button                    | `AppIntent` → `reloadTimelines` (does not count against budget) | `ActionCallback` → expedited one-time work                  |
-| `reloadWidgets([id])`             | `reloadTimelines`                                               | expedited one-time work                                     |
+| Refresh button                    | `AppIntent` → `reloadTimelines` (does not count against budget) | `ActionCallback` → one-time work, expedited from API 31     |
+| `reloadWidgets([id])`             | `reloadTimelines`                                               | one-time work, expedited from API 31                        |
 | Any settings layer set or cleared | reload affected widgets                                         | reload, reschedule on interval change, cancel when disabled |
 | No URL yet / `enabled: false`     | local entry, `.never`                                           | periodic work not scheduled or cancelled                    |
 | Widget removed                    | nothing to cancel                                               | cancel unique work on last `onDeleted`                      |
