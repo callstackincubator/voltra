@@ -9,6 +9,7 @@ import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -160,6 +161,28 @@ object DynamicWidgetServerUpdateScheduler {
         delayMinutes: Long,
         expedited: Boolean,
     ) {
+        // Unique per scope, so a settings change plus a reload plus a refresh tap collapse into
+        // one fetch rather than three. REPLACE rather than KEEP because the newest request is the
+        // one carrying the caller's intent -- a fresh URL, or a delay the server asked for.
+        WorkManager
+            .getInstance(context)
+            .enqueueUniqueWork(
+                oneTimeWorkName(scope),
+                ExistingWorkPolicy.REPLACE,
+                buildOneTimeRequest(scope, delayMinutes, expedited),
+            )
+    }
+
+    /**
+     * The one-time request [enqueueOneTime] sends, built separately so a test can read back whether
+     * it actually asked for expedited work on the SDK level it is running at. Testing the decision
+     * alone would pass with the `setExpedited` call below reverted.
+     */
+    internal fun buildOneTimeRequest(
+        scope: WidgetScope,
+        delayMinutes: Long,
+        expedited: Boolean,
+    ): OneTimeWorkRequest {
         val builder =
             OneTimeWorkRequestBuilder<DynamicWidgetServerUpdateWorker>()
                 .setInputData(inputData(scope))
@@ -173,12 +196,7 @@ object DynamicWidgetServerUpdateScheduler {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         }
 
-        // Unique per scope, so a settings change plus a reload plus a refresh tap collapse into
-        // one fetch rather than three. REPLACE rather than KEEP because the newest request is the
-        // one carrying the caller's intent -- a fresh URL, or a delay the server asked for.
-        WorkManager
-            .getInstance(context)
-            .enqueueUniqueWork(oneTimeWorkName(scope), ExistingWorkPolicy.REPLACE, builder.build())
+        return builder.build()
     }
 
     fun cancel(
