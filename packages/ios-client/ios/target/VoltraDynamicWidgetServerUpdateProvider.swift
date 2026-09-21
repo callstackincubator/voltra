@@ -21,8 +21,12 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
     self.initialState = initialState
   }
 
-  private var scope: WidgetScope {
-    .of(widgetId)
+  /// The scope for one placement's merged configuration (ADR 0007): `.instance` when WidgetKit
+  /// handed this timeline request a non-empty configuration, `.widget` when it did not — which is
+  /// also the scope of every widget before this ADR. WidgetKit derives the key itself; there is no
+  /// separate placement id to key off, so this is the only identity an iOS placement can have.
+  private func scope(for configuration: [String: String]) -> WidgetScope {
+    .of(widgetId, configuration: configuration)
   }
 
   public func placeholder(in _: Context) -> VoltraClientWidgetEntry {
@@ -53,6 +57,7 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
   }
 
   func timeline(family: WidgetFamily, configuration: [String: String]) async -> Timeline<VoltraClientWidgetEntry> {
+    let scope = scope(for: configuration)
     let settings = VoltraWidgetServer.resolver.resolve(scope)
 
     guard settings.shouldFetch else {
@@ -65,7 +70,7 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
 
     var nextIntervalMinutes = settings.intervalMinutes
 
-    if await shouldFetch() {
+    if await shouldFetch(scope) {
       let result = await runner(family: family, configuration: configuration).run(scope)
 
       // What the server asked for wins over the configured interval: `Cache-Control: max-age` on a
@@ -91,7 +96,11 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
   /// Skipped for a moment after `updateDynamicWidget` writes props, so an optimistic update is not
   /// wiped out by the very reload it triggered. ADR 0002 says the *next scheduled* fetch overwrites
   /// app-written props, not the one the write itself caused.
-  private func shouldFetch() async -> Bool {
+  ///
+  /// Keyed by `scope`, so two placements with different configurations coalesce independently
+  /// (ADR 0007) — WidgetKit calling the timeline once per placement per family collapses onto one
+  /// fetch per distinct configuration, not one fetch total.
+  private func shouldFetch(_ scope: WidgetScope) async -> Bool {
     if let writtenAt = DynamicWidgetServerPropsStore().appWriteAt(for: scope),
        Date().timeIntervalSince(writtenAt) < DynamicWidgetServerFetchCoordinator.defaultCoalesceInterval
     {
@@ -107,7 +116,7 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
   private func localEntry(configuration: [String: String]) async -> VoltraClientWidgetEntry {
     let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: configuration)
 
-    return entry.withServerUpdate(DynamicWidgetServerPropsStore().status(for: scope).toJSON())
+    return entry.withServerUpdate(DynamicWidgetServerPropsStore().status(for: scope(for: configuration)).toJSON())
   }
 
   private func runner(family: WidgetFamily, configuration: [String: String]) -> DynamicWidgetServerUpdateRunner {
@@ -124,7 +133,8 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
           // No `family`: one fetch serves every size and instance of a Dynamic Widget, so its
           // props must be size-agnostic and the entry picks its layout from env.widgetFamily.
           context: VoltraWidgetAppearance.requestContext(),
-          etag: etag
+          etag: etag,
+          configuration: configuration
         ) else {
           return .networkFailure(message: "Could not build a request")
         }
@@ -140,8 +150,11 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
           configuration: configuration
         )
       },
+      // Instance-aware (ADR 0007): commits to the instance slot for a `.instance` scope, and the
+      // widget slot for `.widget` — a widget with no configuration parameters keeps writing
+      // exactly where it always has.
       commitProps: { scope, props in
-        try DynamicWidgetPropsStore().persistDynamicWidgetProps(props, for: scope.widgetId)
+        try DynamicWidgetPropsStore().persistInstanceDynamicWidgetProps(props, for: scope)
       },
       recordSuccess: { statuses.recordSuccess(fetchedAt: $1, httpStatus: $2, for: $0) },
       recordFailure: { statuses.recordFailure($1, httpStatus: $2, for: $0) },

@@ -74,8 +74,18 @@
                     "name": "label",
                     "title": "Label",
                     "default": "Hello"
+                  },
+                  {
+                    "name": "city",
+                    "title": "City",
+                    "default": "London"
                   }
                 ]
+              },
+              "serverUpdate": {
+                "url": "http://localhost:3333",
+                "intervalMinutes": 15,
+                "refresh": true
               }
             },
             {
@@ -270,8 +280,18 @@
                     "name": "label",
                     "title": "Label",
                     "default": "Hello"
+                  },
+                  {
+                    "name": "city",
+                    "title": "City",
+                    "default": "London"
                   }
                 ]
+              },
+              "serverUpdate": {
+                "url": "http://10.0.2.2:3333",
+                "intervalMinutes": 15,
+                "refresh": true
               }
             }
           ],

@@ -6,9 +6,10 @@ export type ButtonProps = {
   onPress?: () => void
   variant?: 'primary' | 'secondary' | 'ghost'
   disabled?: boolean
+  testID?: string
 }
 
-export const Button = ({ title, onPress, style, variant = 'primary', disabled = false }: ButtonProps) => {
+export const Button = ({ title, onPress, style, variant = 'primary', disabled = false, testID }: ButtonProps) => {
   const buttonStyle =
     variant === 'primary' ? styles.primaryButton : variant === 'secondary' ? styles.secondaryButton : styles.ghostButton
 
@@ -25,6 +26,7 @@ export const Button = ({ title, onPress, style, variant = 'primary', disabled = 
       onPress={onPress}
       disabled={disabled}
       activeOpacity={disabled ? 1 : 0.8}
+      testID={testID}
     >
       <Text style={[styles.buttonText, buttonTextStyle, disabled && styles.disabledText]}>{title}</Text>
     </TouchableOpacity>

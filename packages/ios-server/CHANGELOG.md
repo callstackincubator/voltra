@@ -1,5 +1,25 @@
 # @use-voltra/ios-server
 
+## 2.3.1
+
+### Patch Changes
+
+- @use-voltra/core@2.3.1
+- @use-voltra/ios@2.3.1
+- @use-voltra/server@2.3.1
+
+## 2.3.0
+
+### Patch Changes
+
+- Updated dependencies [7492c5e]
+- Updated dependencies [b856fa7]
+- Updated dependencies [413d6b4]
+- Updated dependencies [65bf5be]
+  - @use-voltra/ios@2.3.0
+  - @use-voltra/core@2.3.0
+  - @use-voltra/server@2.3.0
+
 ## 2.2.0
 
 ### Patch Changes

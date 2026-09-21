@@ -113,8 +113,32 @@ The handler responds to GET requests with these query parameters:
 | `family` | The widget family/size (iOS only) |
 | `theme` | The system color scheme (`light` or `dark`) |
 | `locale` | The device locale as a BCP-47 tag, e.g. `en-US` |
+| `instance` | A stable hash of the placement's merged configuration. Present only when the widget has configuration parameters (see [Per-instance requests](#per-instance-requests)). |
+| `configuration` | The placement's merged configuration as canonical JSON. Present only when the widget has configuration parameters. |
 
 The `Authorization: Bearer <token>` header is automatically extracted and passed to `validateToken` and `render`. The `User-Agent` header is set to `VoltraWidget/1.0 (iOS/<version>)`.
+
+### Per-instance requests
+
+WidgetKit lets people configure each placed widget separately through the system Edit Widget sheet — one placement can be set to London, another to New York. When a widget has configuration parameters, every request carries that placement's configuration so a server can answer each one differently:
+
+```
+GET https://api.example.com/widgets/weather
+    ?widgetId=weather&platform=ios&family=systemSmall&theme=dark&locale=en-US
+    &instance=3f9a2c1e
+    &configuration=%7B%22city%22%3A%22London%22%2C%22units%22%3A%22metric%22%7D
+```
+
+- `configuration` is the merged configuration map, serialized canonically: keys sorted by code point, no whitespace, values as JSON strings. Decoded, it is exactly what the widget sees as `env.configuration`.
+- `instance` is a stable, non-cryptographic hash of that canonical string. Two placements with identical configuration send the same `instance` and share one fetch, one cached response, and one props slot. WidgetKit has no placement identity of its own, so a placement's configuration is the only thing that can distinguish it from another.
+- Both parameters are absent when the widget has no configuration parameters at all, so an existing server-driven widget's requests are unchanged by this feature.
+- `instance` and `configuration` are reserved query keys: a `query` you pass to `setWidgetServerUpdate` naming either is rejected.
+
+Configurations are meant for identifiers and short choices, not large payloads — percent-encoding roughly triples the size of braces and quotes in the JSON.
+
+**Fetch count.** A server-driven widget fetches once per distinct configuration among its current placements, not once per placement. If ten placements of one widget each use a different value for a free-text parameter, that is ten fetches per interval (each still floored at 15 minutes) rather than one. A server can still stretch the interval per instance with `Cache-Control: max-age`, exactly as it can today.
+
+A widget with no configuration parameters keeps behaving exactly as it did before: one request, one cached response, shared by every placement.
 
 For Fetch-native runtimes, use `createWidgetUpdateHandler()` instead of the Node adapter:
 

@@ -73,6 +73,12 @@ export type WidgetEnvironment<TConfig extends Record<string, unknown> | undefine
   /** Outcome of the last server fetch, on widgets configured with `serverUpdate`. `undefined`
    * on every other widget. See {@link WidgetServerUpdateEnvironment}. */
   serverUpdate?: WidgetServerUpdateEnvironment
+
+  /** The instance key (ADR 0007): a stable hash of this placement's merged `configuration`,
+   * identical to what a server-driven widget's request sends as `instance`. `undefined` for a
+   * widget with no configuration parameters at all — such a widget has exactly one instance,
+   * and its requests and storage are unchanged by per-instance server fetches. */
+  instance?: string
 }
 
 /**

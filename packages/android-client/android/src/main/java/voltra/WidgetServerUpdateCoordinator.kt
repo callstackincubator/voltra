@@ -95,7 +95,10 @@ internal class WidgetServerUpdateCoordinator(
         for (widgetId in VoltraWidgetServer.serverDrivenWidgetIds(context)) {
             if (classifyKind(widgetId) != VoltraWidgetKind.Dynamic) continue
 
-            val scope = WidgetScope.of(widgetId)
+            // The instance keys are read before the props store clears its own index below, so
+            // every instance's status and ETag record (which have no index of their own) can be
+            // dropped alongside the widget-level ones (ADR 0007).
+            val instanceKeys = propsStore.instanceKeys(widgetId)
 
             try {
                 propsStore.clearDynamicWidgetProps(widgetId)
@@ -103,8 +106,13 @@ internal class WidgetServerUpdateCoordinator(
                 Log.e(TAG, "Failed to clear fetched props for '$widgetId': ${e.message}", e)
             }
 
-            statusStore.clear(scope)
-            etags.clear(scope)
+            statusStore.clear(WidgetScope.of(widgetId))
+            etags.clear(WidgetScope.of(widgetId))
+            instanceKeys.forEach { key ->
+                val instanceScope = WidgetScope.Instance(widgetId, key)
+                statusStore.clear(instanceScope)
+                etags.clear(instanceScope)
+            }
         }
     }
 
@@ -127,10 +135,18 @@ internal class WidgetServerUpdateCoordinator(
         if (!VoltraWidgetServer.defaults(context).isServerDriven(widgetId)) return
 
         val scope = WidgetScope.of(widgetId)
+        val statusStore = DynamicWidgetServerPropsStore(context)
+        val etags = WidgetServerEtagStore(context)
 
         VoltraWidgetServer.store(context).clear(scope)
-        DynamicWidgetServerPropsStore(context).clear(scope)
-        WidgetServerEtagStore(context).clear(scope)
+        statusStore.clear(scope)
+        etags.clear(scope)
+
+        DynamicWidgetPropsStore(context).instanceKeys(widgetId).forEach { key ->
+            val instanceScope = WidgetScope.Instance(widgetId, key)
+            statusStore.clear(instanceScope)
+            etags.clear(instanceScope)
+        }
     }
 
     private fun validate(
@@ -171,11 +187,12 @@ internal class WidgetServerUpdateCoordinator(
     }
 
     private suspend fun applyToWidget(widgetId: String) {
-        val scope = WidgetScope.of(widgetId)
-
         when (classifyKind(widgetId)) {
             VoltraWidgetKind.Dynamic -> {
-                DynamicWidgetServerUpdateScheduler.schedule(context, scope)
+                // Recomputed rather than scheduled for the bare widget scope (ADR 0007): a settings
+                // change (a new interval, url, or enabled: false) applies to every instance of the
+                // widget, and the set of instance scopes has to be (re)derived from its placements.
+                DynamicWidgetServerUpdateScheduler.recompute(context, widgetId)
             }
 
             VoltraWidgetKind.Payload -> {

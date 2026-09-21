@@ -7,7 +7,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import voltra.dynamicwidget.DynamicWidgetPropsPersistence
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.server.ResolvedWidgetServerSettings
@@ -23,14 +22,14 @@ import voltra.widget.server.WidgetServerUpdateDefaults
 class DynamicWidgetServerUpdateRunnerTest {
     private val scope = WidgetScope.of("portfolio")
 
-    private class RecordingProps : DynamicWidgetPropsPersistence {
+    private class RecordingProps {
         val committed = mutableListOf<String>()
 
-        override fun persistDynamicWidgetProps(
-            dynamicWidgetId: String,
-            dynamicWidgetPropsJson: String,
+        fun commit(
+            scope: WidgetScope,
+            json: String,
         ) {
-            committed += dynamicWidgetPropsJson
+            committed += json
         }
     }
 
@@ -107,7 +106,7 @@ class DynamicWidgetServerUpdateRunnerTest {
             },
             writeEtag = { widgetScope, url, etag -> harness.etags += Triple(widgetScope.widgetId, url, etag) },
             trialRender = { _, _ -> trialRenders },
-            commitProps = harness.props,
+            commitProps = harness.props::commit,
             statusStore = harness.statuses,
             notifyWidget = { harness.notified += 1 },
             now = { 1_000L },

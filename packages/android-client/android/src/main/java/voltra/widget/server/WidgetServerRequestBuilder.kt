@@ -64,6 +64,11 @@ object WidgetServerRequestBuilder {
         scope: WidgetScope,
         settings: ResolvedWidgetServerSettings,
         etag: String? = null,
+        // The placement's merged configuration (ADR 0007). Empty for a widget with no configuration
+        // parameters, or when the caller only knows the scope's key — the caller is responsible for
+        // passing the same map that produced `scope`'s key, since the key alone cannot be reversed
+        // back into the configuration that produced it.
+        configuration: Map<String, String> = emptyMap(),
     ): WidgetServerRequest? {
         if (!settings.shouldFetch) {
             return null
@@ -79,6 +84,15 @@ object WidgetServerRequestBuilder {
                 .appendQueryParameter("platform", "android")
                 .appendQueryParameter("theme", currentTheme(context))
                 .appendQueryParameter("locale", currentLocale(context))
+
+        // Present for every method, absent when the widget has no configuration parameters (ADR
+        // 0007). `instance` is the hash of the canonical `configuration`, sent so a backend can
+        // cache or log per instance without recomputing it.
+        val canonicalConfiguration = WidgetCanonicalConfiguration.canonicalize(configuration)
+        if (scope is WidgetScope.Instance && canonicalConfiguration != null) {
+            builder.appendQueryParameter("instance", scope.key)
+            builder.appendQueryParameter("configuration", canonicalConfiguration)
+        }
 
         // Voltra's own keys are appended first and the app's keys are rejected at call time if they
         // collide, so nothing here can shadow what the server relies on.

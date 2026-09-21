@@ -135,4 +135,45 @@ final class WidgetServerRequestBuilderTests: XCTestCase {
     XCTAssertNil(WidgetServerRequestBuilder.build(scope: scope, settings: settings(url: nil), context: context()))
     XCTAssertNil(WidgetServerRequestBuilder.build(scope: scope, settings: settings(enabled: false), context: context()))
   }
+
+  // MARK: ADR 0007 — instance + configuration
+
+  func testSendsInstanceAndConfigurationForAnInstanceScopeWithANonEmptyConfiguration() throws {
+    let configuration = ["city": "London", "units": "metric"]
+    let key = try XCTUnwrap(WidgetCanonicalConfiguration.key(configuration))
+    let instanceScope = WidgetScope.instance(id: "weather", key: key)
+
+    let request = try XCTUnwrap(WidgetServerRequestBuilder.build(
+      scope: instanceScope,
+      settings: settings(),
+      context: context(),
+      configuration: configuration
+    ))
+    let items = queryItems(request)
+
+    XCTAssertEqual(items["instance"], key)
+    XCTAssertEqual(items["configuration"], WidgetCanonicalConfiguration.canonicalize(configuration))
+  }
+
+  func testSendsNeitherInstanceNorConfigurationForAWidgetWithNoConfigurationParameters() throws {
+    let request = try XCTUnwrap(WidgetServerRequestBuilder.build(
+      scope: scope,
+      settings: settings(),
+      context: context(),
+      configuration: [:]
+    ))
+    let items = queryItems(request)
+
+    XCTAssertNil(items["instance"])
+    XCTAssertNil(items["configuration"])
+  }
+
+  func testConfigurationIsReservedAndRejectedByTheSettingsValidator() {
+    let settings = WidgetServerUpdateSettings(query: ["configuration": "x"])
+
+    XCTAssertEqual(
+      WidgetServerSettingsValidator.validate(settings, isDebugBuild: true),
+      "query key 'configuration' is reserved by Voltra and is sent on every request"
+    )
+  }
 }

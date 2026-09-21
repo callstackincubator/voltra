@@ -20,12 +20,19 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
+import voltra.dynamicwidget.AndroidDynamicWidgetInstanceBoundary
+import voltra.dynamicwidget.DynamicWidgetInstanceRejection
+import voltra.dynamicwidget.DynamicWidgetInstanceResolver
 import voltra.dynamicwidget.DynamicWidgetPropsStore
 import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.dynamicwidget.VoltraConfigurationStore
+import voltra.dynamicwidget.serverupdate.DynamicWidgetServerUpdateScheduler
+import voltra.dynamicwidget.triggerDynamicWidgetConfigurationGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
+import voltra.dynamicwidget.triggerDynamicWidgetInstanceConfigurationGlanceUpdate
 import voltra.glance.renderers.arc.ArcBitmapCache
 import voltra.images.VoltraImageManager
 import voltra.widget.VoltraWidgetKind
@@ -88,6 +95,14 @@ class VoltraModule(
                     )
                 },
         )
+    }
+
+    /**
+     * Validates an `appWidgetId` from JS into a Voltra widget id before any per-instance
+     * configuration write (ADR 0006).
+     */
+    private val dynamicWidgetInstanceResolver by lazy {
+        DynamicWidgetInstanceResolver(AndroidDynamicWidgetInstanceBoundary(reactApplicationContext))
     }
 
     private val payloadWidgetUpdater by lazy {
@@ -368,13 +383,250 @@ class VoltraModule(
         runBlocking {
             try {
                 VoltraConfigurationStore(reactApplicationContext).set(widgetId, key, value)
-                VoltraWidgetReceiver.triggerGlanceUpdateOrThrow(reactApplicationContext, widgetId)
+                // Advances each placement's configuration revision before updating it, so a live
+                // Glance session re-reads the store instead of redrawing its captured values.
+                triggerDynamicWidgetConfigurationGlanceUpdate(reactApplicationContext, widgetId)
+                // A type-level write can move any placement without its own value for `key` to a
+                // different instance (ADR 0007), so the scope set is recomputed from placements.
+                DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
                 promise.resolve(null)
             } catch (e: Exception) {
                 Log.e(TAG, "setWidgetConfiguration failed", e)
                 promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
             }
         }
+    }
+
+    /**
+     * Write configuration for one placed widget instance (ADR 0006). Every key of [valuesJson] is
+     * written in a single DataStore transaction, so a multi-key write is never half-applied and
+     * costs one re-render.
+     *
+     * Rejects before anything is stored when [appWidgetId] is not a placement of one of this app's
+     * Dynamic Widgets.
+     */
+    override fun setWidgetInstanceConfiguration(
+        appWidgetId: Double,
+        valuesJson: String,
+        promise: Promise,
+    ) {
+        val instanceId = appWidgetId.toInt()
+        val widgetId =
+            resolveDynamicWidgetInstanceOrReject(instanceId, promise) ?: return
+
+        val values =
+            try {
+                parseConfigurationValues(valuesJson)
+            } catch (e: Exception) {
+                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", "Could not read configuration values: ${e.message}", e)
+                return
+            }
+
+        // The promise is settled exactly once: a failed write rejects and returns here, so it is
+        // never followed by a re-render or a resolve (see updateAndroidDynamicWidget).
+        val written =
+            runBlocking {
+                try {
+                    VoltraConfigurationStore(reactApplicationContext)
+                        .setInstanceValues(widgetId, instanceId, values)
+                    // The placement may have moved to a different instance scope (ADR 0007).
+                    DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
+                    true
+                } catch (e: Exception) {
+                    Log.e(TAG, "setWidgetInstanceConfiguration failed", e)
+                    promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+                    false
+                }
+            }
+        if (!written) return
+
+        rerenderWidgetInstance(widgetId, instanceId)
+        promise.resolve(null)
+    }
+
+    /** The merged three-layer configuration one placement renders with, as a JSON object. */
+    override fun getWidgetInstanceConfiguration(
+        appWidgetId: Double,
+        promise: Promise,
+    ) {
+        val instanceId = appWidgetId.toInt()
+        val widgetId =
+            resolveDynamicWidgetInstanceOrReject(instanceId, promise) ?: return
+
+        runBlocking {
+            try {
+                val values = VoltraConfigurationStore(reactApplicationContext).get(widgetId, instanceId)
+                promise.resolve(configurationValuesToJson(values))
+            } catch (e: Exception) {
+                Log.e(TAG, "getWidgetInstanceConfiguration failed", e)
+                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+            }
+        }
+    }
+
+    /**
+     * The defaults plus widget-type values of a Dynamic Widget, as a JSON object — what a placement
+     * with no values of its own renders with.
+     */
+    override fun getWidgetConfiguration(
+        widgetId: String,
+        promise: Promise,
+    ) {
+        when (val resolution = VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)) {
+            is VoltraWidgetKindResolution.Resolved -> {
+                if (resolution.kind != VoltraWidgetKind.Dynamic) {
+                    promise.reject(
+                        "VOLTRA_WIDGET_KIND_MISMATCH",
+                        "Widget '$widgetId' is a payload-driven widget and has no configuration. " +
+                            "getWidgetConfiguration only applies to Dynamic Widgets.",
+                    )
+                    return
+                }
+            }
+
+            is VoltraWidgetKindResolution.Unresolved -> {
+                promise.reject("VOLTRA_WIDGET_NOT_FOUND", resolution.reason)
+                return
+            }
+        }
+
+        runBlocking {
+            try {
+                val values = VoltraConfigurationStore(reactApplicationContext).get(widgetId)
+                promise.resolve(configurationValuesToJson(values))
+            } catch (e: Exception) {
+                Log.e(TAG, "getWidgetConfiguration failed", e)
+                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+            }
+        }
+    }
+
+    /**
+     * Drop one placement's own configuration so it falls back to the widget-type values and the
+     * defaults. The widget-type values are left alone.
+     */
+    override fun clearWidgetInstanceConfiguration(
+        appWidgetId: Double,
+        promise: Promise,
+    ) {
+        val instanceId = appWidgetId.toInt()
+        val widgetId =
+            resolveDynamicWidgetInstanceOrReject(instanceId, promise) ?: return
+
+        // Settled exactly once, as in setWidgetInstanceConfiguration.
+        val cleared =
+            runBlocking {
+                try {
+                    VoltraConfigurationStore(reactApplicationContext).clearInstance(widgetId, instanceId)
+                    // The placement fell back to the widget-type configuration, possibly a
+                    // different instance scope (ADR 0007).
+                    DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
+                    true
+                } catch (e: Exception) {
+                    Log.e(TAG, "clearWidgetInstanceConfiguration failed", e)
+                    promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+                    false
+                }
+            }
+        if (!cleared) return
+
+        rerenderWidgetInstance(widgetId, instanceId)
+        promise.resolve(null)
+    }
+
+    /**
+     * The Voltra widget id [appWidgetId] is a placement of, or null after rejecting [promise] with
+     * the code that says why it is not usable. Nothing is written before this passes (ADR 0000).
+     */
+    private fun resolveDynamicWidgetInstanceOrReject(
+        appWidgetId: Int,
+        promise: Promise,
+    ): String? =
+        try {
+            dynamicWidgetInstanceResolver.resolveDynamicWidgetId(appWidgetId)
+        } catch (rejection: DynamicWidgetInstanceRejection) {
+            val code =
+                when (rejection) {
+                    is DynamicWidgetInstanceRejection.InstanceNotFound -> "VOLTRA_WIDGET_INSTANCE_NOT_FOUND"
+                    is DynamicWidgetInstanceRejection.KindMismatch -> "VOLTRA_WIDGET_KIND_MISMATCH"
+                    is DynamicWidgetInstanceRejection.WidgetNotFound -> "VOLTRA_WIDGET_NOT_FOUND"
+                }
+            promise.reject(code, rejection.message)
+            null
+        } catch (e: Throwable) {
+            // Resolution reaches AppWidgetManager and the PackageManager over Binder, either of
+            // which can fail with a RuntimeException (a dead system process, or an oversized
+            // component list). Without this the exception would escape the module method and leave
+            // the promise neither resolved nor rejected.
+            Log.e(TAG, "Could not resolve widget instance $appWidgetId", e)
+            promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+            null
+        }
+
+    /**
+     * Re-render only the placement that changed, using the single-`GlanceId` overload, so sibling
+     * placements of the same widget are not redrawn. The placement's configuration revision is
+     * advanced first: Glance does not re-run `provideGlance` for a widget whose session is still
+     * alive, so without the bump the widget would redraw the values it captured when its session
+     * began and only pick the new ones up once that session idled out.
+     *
+     * Dispatched rather than awaited: a Dynamic Widget render evaluates the widget's JS bundle in
+     * the Hermes runtime, and in a debug build fetches it from Metro first, so awaiting it would
+     * block the calling thread for as long as that takes (the ANR risk the pin-preview path in this
+     * file already calls out). ADR 0006 decouples the two — the value is persisted before this
+     * runs, and a re-render that never happens is picked up when the widget next renders from
+     * scratch, exactly as when the app writes while the launcher is not showing the widget.
+     *
+     * Failure is logged, never surfaced. Caught as [Throwable], not [Exception]: this path reaches
+     * the JNI renderer, whose missing native dependency surfaces as [NoClassDefFoundError] or
+     * [UnsatisfiedLinkError], neither of which is an [Exception] (see `VoltraWidgetKindResolver`).
+     */
+    private fun rerenderWidgetInstance(
+        widgetId: String,
+        appWidgetId: Int,
+    ) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                triggerDynamicWidgetInstanceConfigurationGlanceUpdate(
+                    context = reactApplicationContext,
+                    dynamicWidgetId = widgetId,
+                    dynamicWidgetAppWidgetId = appWidgetId,
+                )
+            } catch (e: Throwable) {
+                Log.w(TAG, "Could not re-render widget '$widgetId' instance $appWidgetId: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Configuration values are strings. `JSONObject.getString` would coerce, storing a number as
+     * its digits and a JSON null as the literal "null", so each value is checked instead — the
+     * store's invariant should not depend on the JS wrapper being the only caller.
+     */
+    private fun parseConfigurationValues(valuesJson: String): Map<String, String> {
+        val root = JSONObject(valuesJson)
+        val values = mutableMapOf<String, String>()
+        root.keys().forEach { key ->
+            when (val value = root.opt(key)) {
+                is String -> {
+                    values[key] = value
+                }
+
+                else -> {
+                    throw IllegalArgumentException(
+                        "Configuration values must be strings, but '$key' is " +
+                            "${if (value == null || value == JSONObject.NULL) "null" else value.javaClass.simpleName}.",
+                    )
+                }
+            }
+        }
+        return values
+    }
+
+    private fun configurationValuesToJson(values: Map<String, String>): String {
+        val root = JSONObject()
+        values.forEach { (key, value) -> root.put(key, value) }
+        return root.toString()
     }
 
     override fun clearAndroidWidget(
@@ -728,6 +980,15 @@ class VoltraModule(
                 it.provider.packageName == packageName
             }
 
+        // Prefer the declared receivers, so widgetType only ever names a Voltra widget this app
+        // actually declares. Parsing the class name stays as the fallback for when the manifest
+        // read fails; it reads the simple name, so it is already package-agnostic.
+        val widgetIdsByComponent =
+            VoltraWidgetReceivers
+                .installedReceivers(reactApplicationContext)
+                .entries
+                .associate { (widgetId, component) -> component to widgetId }
+
         val activeWidgets = Arguments.createArray()
         for (providerInfo in installedProviders) {
             val ids = manager.getAppWidgetIds(providerInfo.provider)
@@ -736,11 +997,21 @@ class VoltraModule(
                 val minWidth = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
                 val minHeight = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
                 val shortClassName = providerInfo.provider.shortClassName
-                val name = VoltraWidgetReceivers.widgetIdOrNull(providerInfo.provider.className) ?: shortClassName
+                val widgetType =
+                    widgetIdsByComponent[providerInfo.provider]
+                        ?: VoltraWidgetReceivers.widgetIdOrNull(providerInfo.provider.className)
+                        ?: shortClassName
 
                 activeWidgets.pushMap(
                     WritableNativeMap().apply {
-                        putString("name", name)
+                        // The Voltra widget id, and the Android instance id of this placement.
+                        putString("widgetType", widgetType)
+                        putInt("appWidgetId", id)
+                        // Deprecated aliases of the two fields above, kept at their original
+                        // values: `name` has always carried the Voltra widget id and `widgetId`
+                        // the Android instance id, which is the wrong way round from every other
+                        // API in the package (ADR 0006).
+                        putString("name", widgetType)
                         putInt("widgetId", id)
                         putString("providerClassName", shortClassName)
                         putString("label", providerInfo.loadLabel(reactApplicationContext.packageManager).toString())

@@ -1,14 +1,12 @@
 package voltra.dynamicwidget.serverupdate
 
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidget
 import kotlinx.coroutines.runBlocking
 import voltra.dynamicwidget.VoltraClientGlanceWidget
 import voltra.dynamicwidget.VoltraClientWidgetReceiver
-import voltra.widget.server.WidgetScope
 
 /**
  * Receiver generated for a widget that has both an `entry` and a `serverUpdate`.
@@ -28,9 +26,10 @@ abstract class VoltraServerDrivenClientWidgetReceiver : VoltraClientWidgetReceiv
     ) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
 
-        // Scheduling on every onUpdate rather than only onEnabled: WorkManager's UPDATE policy
-        // makes it idempotent, and it is how a widget picks up an interval the app changed while
-        // the widget was not being drawn.
+        // Recomputing on every onUpdate rather than only onEnabled: it is how a widget picks up an
+        // interval the app changed while the widget was not being drawn, and how a placement whose
+        // configuration changed while the app was not running moves to its new instance scope
+        // (ADR 0007). WorkManager's UPDATE policy makes rescheduling an unchanged scope idempotent.
         //
         // Blocking rather than launching: onReceive must not return before the work is enqueued,
         // or a widget added while the app is not running can lose its schedule entirely -- the
@@ -39,10 +38,28 @@ abstract class VoltraServerDrivenClientWidgetReceiver : VoltraClientWidgetReceiv
         // onReceive, and a second call returns null.
         try {
             runBlocking {
-                DynamicWidgetServerUpdateScheduler.schedule(context.applicationContext, WidgetScope.of(widgetId))
+                DynamicWidgetServerUpdateScheduler.recompute(context.applicationContext, widgetId)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to schedule server updates for '$widgetId': ${e.message}", e)
+        }
+    }
+
+    override fun onRestored(
+        context: Context,
+        oldWidgetIds: IntArray,
+        newWidgetIds: IntArray,
+    ) {
+        // super moves the instance configuration to the new ids first, so the recompute below sees
+        // the restored placements under their new ids and reschedules their fetches.
+        super.onRestored(context, oldWidgetIds, newWidgetIds)
+
+        try {
+            runBlocking {
+                DynamicWidgetServerUpdateScheduler.recompute(context.applicationContext, widgetId)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to recompute server update schedule for '$widgetId' after restore: ${e.message}", e)
         }
     }
 
@@ -50,28 +67,19 @@ abstract class VoltraServerDrivenClientWidgetReceiver : VoltraClientWidgetReceiv
         context: Context,
         appWidgetIds: IntArray,
     ) {
+        // super.onDeleted (VoltraClientWidgetReceiver) clears the deleted placements' instance
+        // configuration first, so by the time this recomputes the scope set, VoltraConfigurationStore
+        // already reflects the removal and a scope with no placement left is cancelled correctly.
         super.onDeleted(context, appWidgetIds)
 
-        if (remainingInstanceCount(context, appWidgetIds) == 0) {
-            DynamicWidgetServerUpdateScheduler.cancel(context.applicationContext, WidgetScope.of(widgetId))
+        try {
+            runBlocking {
+                DynamicWidgetServerUpdateScheduler.recompute(context.applicationContext, widgetId)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to recompute server update schedule for '$widgetId': ${e.message}", e)
         }
     }
-
-    private fun remainingInstanceCount(
-        context: Context,
-        deletedIds: IntArray,
-    ): Int =
-        try {
-            AppWidgetManager
-                .getInstance(context)
-                .getAppWidgetIds(ComponentName(context, this::class.java))
-                .count { it !in deletedIds }
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not count remaining instances of '$widgetId': ${e.message}")
-            // Leaving the work scheduled is the safer guess: the worker cancels itself when it
-            // finds nothing to do, whereas cancelling here would silently stop a live widget.
-            1
-        }
 
     private companion object {
         private const val TAG = "VoltraServerDrivenClient"

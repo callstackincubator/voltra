@@ -22,9 +22,13 @@ internal object DynamicWidgetTrialRender {
         context: Context,
         scope: WidgetScope,
         propsJson: String,
+        // The instance's own merged configuration (ADR 0007), so a server response is judged
+        // against the environment it will actually be drawn in. Callers pass the type-level
+        // configuration for a plain WidgetScope.Widget trial.
+        configuration: Map<String, String>,
     ): Boolean =
         try {
-            renderDynamicWidgetForTrial(context, scope.widgetId, propsJson) != null
+            renderDynamicWidgetForTrial(context, scope, propsJson, configuration) != null
         } catch (e: Throwable) {
             Log.e(TAG, "Trial render for '${scope.widgetId}' threw: ${e.message}")
             false

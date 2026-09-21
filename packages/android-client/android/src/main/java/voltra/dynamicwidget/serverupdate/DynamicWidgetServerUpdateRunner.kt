@@ -2,7 +2,6 @@ package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
 import android.util.Log
-import voltra.dynamicwidget.DynamicWidgetPropsPersistence
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.server.ResolvedWidgetServerSettings
@@ -27,7 +26,10 @@ internal class DynamicWidgetServerUpdateRunner(
     private val fetch: suspend (WidgetScope, ResolvedWidgetServerSettings, String?) -> WidgetServerFetchResult,
     private val writeEtag: (WidgetScope, String, String?) -> Unit,
     private val trialRender: suspend (WidgetScope, String) -> Boolean,
-    private val commitProps: DynamicWidgetPropsPersistence,
+    // Instance-aware (ADR 0007): commits to the instance slot for a WidgetScope.Instance, and the
+    // widget slot for a WidgetScope.Widget — a widget with no configuration parameters keeps
+    // writing exactly where it always has.
+    private val commitProps: (WidgetScope, String) -> Unit,
     private val statusStore: DynamicWidgetServerStatusSink,
     private val notifyWidget: suspend (WidgetScope) -> Unit,
     private val now: () -> Long = System::currentTimeMillis,
@@ -141,7 +143,7 @@ internal class DynamicWidgetServerUpdateRunner(
                     return DynamicWidgetServerUpdateResult(DynamicWidgetServerUpdateOutcome.Failed)
                 }
 
-                commitProps.persistDynamicWidgetProps(scope.widgetId, parsed.json)
+                commitProps(scope, parsed.json)
                 writeEtag(scope, url, result.etag)
                 statusStore.recordSuccess(scope, now(), result.httpStatus)
                 notifyWidget(scope)

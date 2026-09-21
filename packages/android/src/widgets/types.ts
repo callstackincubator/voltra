@@ -21,9 +21,23 @@ export type AndroidWidgetSizeVariant = {
  * Information about an active widget instance on Android
  */
 export type WidgetInfo = {
-  /** The name (ID) of the widget as defined in the config plugin */
+  /** The Voltra widget id, as defined in the config plugin (e.g. `"weather"`) */
+  widgetType: string
+  /**
+   * The Android instance id of this placement. Every placed widget has its own, so the same
+   * widget placed twice appears twice with different `appWidgetId`s. Pass it to the per-instance
+   * configuration APIs to give one placement its own values.
+   */
+  appWidgetId: number
+  /**
+   * @deprecated Renamed to `widgetType`, which says what this field holds. Same value.
+   */
   name: string
-  /** The unique ID for this widget instance (required for updates) */
+  /**
+   * @deprecated Renamed to `appWidgetId`, which says what this field holds — it is the Android
+   * instance id, not the Voltra widget id that `widgetId` names everywhere else in this package.
+   * Same value.
+   */
   widgetId: number
   /** The class name of the provider (e.g., ".WeatherWidget") */
   providerClassName: string

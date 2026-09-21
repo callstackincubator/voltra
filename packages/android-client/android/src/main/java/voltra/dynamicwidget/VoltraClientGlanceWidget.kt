@@ -16,6 +16,7 @@ import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -38,6 +39,8 @@ import voltra.BuildConfig
 import voltra.glance.GlanceFactory
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
+import voltra.widget.server.WidgetCanonicalConfiguration
+import voltra.widget.server.WidgetScope
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -152,6 +155,27 @@ class VoltraClientGlanceWidget(
         }
 
         /**
+         * The scope a placement renders, fetches and reads its status at.
+         *
+         * Normally the instance of its merged configuration (ADR 0007). When Glance cannot tell us
+         * which placement is being rendered, [dynamicWidgetAppWidgetId] is null and the caller has
+         * already degraded to the widget-type configuration — which may name an instance no
+         * placement has, whose props slot and status record nothing ever writes. The widget scope
+         * is the honest answer there: it is what the pre-ADR-0007 render used, the props store
+         * falls back to it anyway, and the status store has no fallback of its own.
+         */
+        internal fun placementScope(
+            widgetId: String,
+            configuration: Map<String, String>,
+            dynamicWidgetAppWidgetId: Int?,
+        ): WidgetScope =
+            if (dynamicWidgetAppWidgetId == null) {
+                WidgetScope.of(widgetId)
+            } else {
+                WidgetScope.of(widgetId, configuration)
+            }
+
+        /**
          * The env a trial render runs with: the real theme, locale and configuration, and a size
          * the caller picked from the widget's placements.
          *
@@ -213,9 +237,19 @@ class VoltraClientGlanceWidget(
                     .put("configuration", configObject)
                     .put("build", build)
 
+            // The instance key (ADR 0007): the hash of this placement's merged configuration, or
+            // absent for a widget with no configuration parameters at all — matching what the
+            // request builder sends and what WidgetScope.of(widgetId, configuration) resolves to.
+            WidgetCanonicalConfiguration.key(configuration)?.let { instanceKey ->
+                env.put("instance", instanceKey)
+            }
+
             // Whatever drives this widget's props gets to describe itself. A plain Dynamic Widget
-            // has no source and its env is exactly what it was before ADR 0002.
-            environmentSource?.environmentFields(context, widgetId)?.forEach { (key, value) ->
+            // has no source and its env is exactly what it was before ADR 0002. The scope carries
+            // the instance key (ADR 0007), so a server-driven source can report the fetch status of
+            // the instance actually being rendered rather than the widget as a whole.
+            val scope = WidgetScope.of(widgetId, configuration)
+            environmentSource?.environmentFields(context, scope)?.forEach { (key, value) ->
                 env.put(key, value)
             }
 
@@ -238,23 +272,53 @@ class VoltraClientGlanceWidget(
             Log.w(TAG, "Bundle not ready for widgetId=$widgetId (dev=${isDev(context)})")
         }
 
+        // Which placement is being rendered, so env.configuration carries this placement's own
+        // values rather than the widget-type ones (ADR 0006). A Glance edge case where the id
+        // cannot be mapped degrades to the pre-instance behaviour instead of a blank widget.
+        val appWidgetId =
+            try {
+                GlanceAppWidgetManager(context).getAppWidgetId(id)
+            } catch (e: Exception) {
+                Log.w(
+                    TAG,
+                    "Could not resolve the appWidgetId for widgetId=$widgetId; rendering the " +
+                        "widget-type configuration: ${e.message}",
+                )
+                null
+            }
+
         // Read user-configured params (DataStore) off the composition so env.configuration is
-        // available synchronously during render.
-        val configuration = VoltraConfigurationStore(context).get(widgetId)
+        // available synchronously during the first render of this session. Later writes reach the
+        // composition through the configuration revision, not through this value: Glance does not
+        // re-run provideGlance for a widget whose session is still alive.
+        val configuration = VoltraConfigurationStore(context).get(widgetId, appWidgetId)
 
         provideContent {
-            Content(bundleReady, configuration)
+            Content(bundleReady, configuration, appWidgetId)
         }
     }
 
     @Composable
     private fun Content(
         bundleReady: Boolean,
-        configuration: Map<String, String>,
+        initialConfiguration: Map<String, String>,
+        appWidgetId: Int?,
     ) {
         val context = LocalContext.current
         val size = LocalSize.current
-        val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId)
+        val configuration =
+            currentDynamicWidgetConfiguration(
+                context = context,
+                dynamicWidgetId = widgetId,
+                dynamicWidgetAppWidgetId = appWidgetId,
+                initialConfiguration = initialConfiguration,
+            )
+        // This placement's scope (ADR 0007): an Instance of its merged configuration, or the plain
+        // Widget scope when it has none — which is also every widget's scope before this ADR. The
+        // render input, the env fields and the refresh button all take this one value, so a tap
+        // cannot refresh something other than what is on screen.
+        val scope = placementScope(widgetId, configuration, appWidgetId)
+        val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId, scope)
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
         // placeholder node (first paint / offline / Metro down).
@@ -274,7 +338,7 @@ class VoltraClientGlanceWidget(
 
         // Drawn over the widget's own content, so an entry does not have to leave room for it.
         // Only a server-driven widget configured with `refresh: true` has a source that offers one.
-        environmentSource?.refreshAction(context, widgetId)?.let { action ->
+        environmentSource?.refreshAction(context, scope)?.let { action ->
             RefreshButton(action)
         }
     }

@@ -1,6 +1,7 @@
 package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -8,6 +9,7 @@ import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -29,6 +31,7 @@ object DynamicWidgetServerUpdateScheduler {
     internal const val WORK_NAME_PREFIX = "voltra_dynamic_widget_server_"
     internal const val WORK_TAG = "voltra_dynamic_widget_server_update"
     internal const val KEY_WIDGET_ID = "widgetId"
+    internal const val KEY_INSTANCE_KEY = "instanceKey"
 
     private const val BACKOFF_SECONDS = 30L
 
@@ -58,6 +61,39 @@ object DynamicWidgetServerUpdateScheduler {
         if (runImmediately) {
             requestImmediateUpdate(context, scope)
         }
+    }
+
+    /**
+     * Recomputes the set of scopes to schedule for [widgetId] from its current placements (ADR
+     * 0007): one scope per distinct merged configuration. New keys are scheduled (and run
+     * immediately, since their placement has never fetched); keys with no placement left are
+     * cancelled. Called on `onUpdate`, `onDeleted`, an instance configuration write or clear, a
+     * type-level configuration write, and a settings change — every event that can move a
+     * placement between configurations.
+     *
+     * A widget with no configuration parameters always resolves to the single [WidgetScope.Widget]
+     * scope, so this reduces to today's one-scope-per-widget behaviour for it.
+     */
+    suspend fun recompute(
+        context: Context,
+        widgetId: String,
+    ) {
+        val currentScopes = DynamicWidgetInstanceScopes.scopes(context, widgetId)
+        val currentStorageKeys = currentScopes.map { it.storageKey }.toSet()
+        val previousStorageKeys = DynamicWidgetScheduleIndex.storageKeys(context, widgetId)
+
+        // A release before ADR 0007 scheduled every widget under its plain widget scope and kept no
+        // index, so that name is treated as always previously scheduled: it is cancelled here
+        // unless the widget still resolves to the widget scope (no configuration parameters).
+        val legacyStorageKey = WidgetScope.of(widgetId).storageKey
+        val orphaned = (previousStorageKeys + legacyStorageKey) - currentStorageKeys
+        orphaned.forEach { storageKey -> cancelStorageKey(context, storageKey) }
+
+        currentScopes.forEach { scope ->
+            schedule(context, scope, runImmediately = scope.storageKey !in previousStorageKeys)
+        }
+
+        DynamicWidgetScheduleIndex.put(context, widgetId, currentStorageKeys)
     }
 
     /**
@@ -125,6 +161,28 @@ object DynamicWidgetServerUpdateScheduler {
         delayMinutes: Long,
         expedited: Boolean,
     ) {
+        // Unique per scope, so a settings change plus a reload plus a refresh tap collapse into
+        // one fetch rather than three. REPLACE rather than KEEP because the newest request is the
+        // one carrying the caller's intent -- a fresh URL, or a delay the server asked for.
+        WorkManager
+            .getInstance(context)
+            .enqueueUniqueWork(
+                oneTimeWorkName(scope),
+                ExistingWorkPolicy.REPLACE,
+                buildOneTimeRequest(scope, delayMinutes, expedited),
+            )
+    }
+
+    /**
+     * The one-time request [enqueueOneTime] sends, built separately so a test can read back whether
+     * it actually asked for expedited work on the SDK level it is running at. Testing the decision
+     * alone would pass with the `setExpedited` call below reverted.
+     */
+    internal fun buildOneTimeRequest(
+        scope: WidgetScope,
+        delayMinutes: Long,
+        expedited: Boolean,
+    ): OneTimeWorkRequest {
         val builder =
             OneTimeWorkRequestBuilder<DynamicWidgetServerUpdateWorker>()
                 .setInputData(inputData(scope))
@@ -134,35 +192,115 @@ object DynamicWidgetServerUpdateScheduler {
 
         if (delayMinutes > 0) {
             builder.setInitialDelay(delayMinutes, TimeUnit.MINUTES)
-        } else if (expedited) {
+        } else if (shouldRunExpedited(expedited, Build.VERSION.SDK_INT)) {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         }
 
-        // Unique per scope, so a settings change plus a reload plus a refresh tap collapse into
-        // one fetch rather than three. REPLACE rather than KEEP because the newest request is the
-        // one carrying the caller's intent -- a fresh URL, or a delay the server asked for.
-        WorkManager
-            .getInstance(context)
-            .enqueueUniqueWork(oneTimeWorkName(scope), ExistingWorkPolicy.REPLACE, builder.build())
+        return builder.build()
     }
 
     fun cancel(
         context: Context,
         scope: WidgetScope,
+    ) = cancelStorageKey(context, scope.storageKey)
+
+    /** Cancels by raw storage key, for a scope [recompute] found no placement for any more. */
+    private fun cancelStorageKey(
+        context: Context,
+        storageKey: String,
     ) {
-        WorkManager.getInstance(context).cancelUniqueWork(workName(scope))
-        WorkManager.getInstance(context).cancelUniqueWork(oneTimeWorkName(scope))
+        WorkManager.getInstance(context).cancelUniqueWork(workNameForStorageKey(storageKey))
+        WorkManager.getInstance(context).cancelUniqueWork(oneTimeWorkNameForStorageKey(storageKey))
     }
 
-    internal fun workName(scope: WidgetScope): String = "$WORK_NAME_PREFIX${scope.storageKey}"
+    /**
+     * Cancels every scope currently scheduled for [widgetId], including ones no longer derivable
+     * from its placements. Used when a widget is removed entirely (`onDeleted` with none left) and
+     * by logout, neither of which can recompute a scope set from placements that are already gone.
+     */
+    suspend fun cancelAll(
+        context: Context,
+        widgetId: String,
+    ) {
+        DynamicWidgetScheduleIndex.storageKeys(context, widgetId).forEach { storageKey ->
+            cancelStorageKey(context, storageKey)
+        }
+        DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
+    }
 
-    private fun oneTimeWorkName(scope: WidgetScope): String = "$WORK_NAME_PREFIX${scope.storageKey}_once"
+    /**
+     * On API 30 and below, WorkManager runs expedited work as a foreground service and calls
+     * `CoroutineWorker.getForegroundInfo()`, which [DynamicWidgetServerUpdateWorker] does not
+     * override; the default implementation throws `IllegalStateException`, crashing the process
+     * within a second of any "refresh now" request. Android 12 (API 31, `Build.VERSION_CODES.S`)
+     * added the "quick, transient" expedited path that no longer requires a foreground service, so
+     * expedited scheduling is only safe from there on. Below that, the request still runs, just as
+     * ordinary (non-expedited) one-time work.
+     */
+    internal fun shouldRunExpedited(
+        requestedExpedited: Boolean,
+        sdkInt: Int,
+    ): Boolean = requestedExpedited && sdkInt >= Build.VERSION_CODES.S
 
-    private fun inputData(scope: WidgetScope): Data = Data.Builder().putString(KEY_WIDGET_ID, scope.widgetId).build()
+    internal fun workName(scope: WidgetScope): String = workNameForStorageKey(scope.storageKey)
+
+    private fun oneTimeWorkName(scope: WidgetScope): String = oneTimeWorkNameForStorageKey(scope.storageKey)
+
+    private fun workNameForStorageKey(storageKey: String): String = "$WORK_NAME_PREFIX$storageKey"
+
+    private fun oneTimeWorkNameForStorageKey(storageKey: String): String = "$WORK_NAME_PREFIX${storageKey}_once"
+
+    private fun inputData(scope: WidgetScope): Data =
+        Data
+            .Builder()
+            .putString(KEY_WIDGET_ID, scope.widgetId)
+            .apply {
+                if (scope is WidgetScope.Instance) {
+                    putString(KEY_INSTANCE_KEY, scope.key)
+                }
+            }.build()
 
     private fun networkConstraints(): Constraints =
         Constraints
             .Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
+}
+
+/**
+ * Remembers which [WidgetScope.storageKey]s are currently scheduled for each widget id, so
+ * [DynamicWidgetServerUpdateScheduler.recompute] can tell which keys are new (schedule + run now)
+ * and which have no placement left (cancel) without asking WorkManager to enumerate its own unique
+ * work names, which it has no API for.
+ */
+private object DynamicWidgetScheduleIndex {
+    private const val PREFERENCES_NAME = "voltra_dynamic_widget_server_schedule"
+    private const val KEY_PREFIX = "scheduled_keys."
+
+    fun storageKeys(
+        context: Context,
+        widgetId: String,
+    ): Set<String> {
+        val raw = preferences(context).getStringSet(KEY_PREFIX + widgetId, null)
+        return raw?.toSet() ?: emptySet()
+    }
+
+    fun put(
+        context: Context,
+        widgetId: String,
+        storageKeys: Set<String>,
+    ) {
+        preferences(context)
+            .edit()
+            .apply {
+                if (storageKeys.isEmpty()) {
+                    remove(KEY_PREFIX + widgetId)
+                } else {
+                    putStringSet(KEY_PREFIX + widgetId, storageKeys)
+                }
+            }.apply()
+    }
+
+    private fun preferences(context: Context) =
+        context.applicationContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 }

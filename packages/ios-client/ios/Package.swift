@@ -25,15 +25,12 @@ let package = Package(
         "BrotliCompression.swift",
         "Data+hexString.swift",
         "Date+toTimerInterval.swift",
-        "ShortNames.swift",
         "VoltraAttributes.swift",
-        "VoltraElement.swift",
         "VoltraEvent.swift",
         "VoltraEventBus.swift",
         "VoltraImageStore.swift",
         "VoltraInteractionIntent.swift",
         "VoltraLiveActivityPayload.swift",
-        "VoltraNode.swift",
         "VoltraPersistentEventQueue.swift",
       ],
       sources: [
@@ -47,6 +44,7 @@ let package = Package(
         // The settings stack's pure half. The Keychain-, Bundle- and URLSession-backed files in
         // this folder are compiled only by the podspec, which ships the whole tree.
         "WidgetServer/WidgetScope.swift",
+        "WidgetServer/WidgetCanonicalConfiguration.swift",
         "WidgetServer/WidgetServerUpdateSettings.swift",
         "WidgetServer/WidgetServerSettingsResolver.swift",
         "WidgetServer/WidgetServerSettingsCodec.swift",
@@ -74,6 +72,11 @@ let package = Package(
         "VoltraPayloadMigrator.swift",
         "VoltraRegion.swift",
         "ComponentTypeID.swift",
+        // The JSON -> AST types. They carry no SwiftUI dependency; rendering is attached
+        // by `ui/VoltraNode+View.swift`, which the podspecs compile alongside them.
+        "ShortNames.swift",
+        "VoltraElement.swift",
+        "VoltraNode.swift",
       ]
     ),
     .testTarget(

@@ -15,6 +15,13 @@ export const ANDROID_WIDGET_SECTIONS: ExampleSection[] = [
     route: '/android-widgets/pin',
   },
   {
+    id: 'widget-instance-config',
+    title: 'Per-Placement Configuration',
+    description:
+      'Give each placed copy of a Dynamic Widget its own env.configuration values, and see how a widget-type write only reaches the placements that have none.',
+    route: '/android-widgets/instance-config',
+  },
+  {
     id: 'preview-widgets',
     title: 'Widget Previews',
     description: 'Preview your Android widget layouts directly within the app using VoltraWidgetPreview.',

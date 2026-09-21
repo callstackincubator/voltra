@@ -294,6 +294,11 @@ public enum VoltraClientWidgetEnvBuilder {
     // makes it `undefined` for every other Dynamic Widget.
     let serverUpdateEntry = serverUpdateJSON.map { ",\n  \"serverUpdate\": \($0)" } ?? ""
 
+    // The instance key (ADR 0007): the hash of this placement's merged configuration, or absent
+    // for a widget with no configuration parameters at all — matching what the request builder
+    // sends and what WidgetScope.of(widgetId, configuration:) resolves to.
+    let instanceEntry = WidgetCanonicalConfiguration.key(configuration).map { ",\n  \"instance\": \(jsonString($0))" } ?? ""
+
     return """
     {
       "date": \(timestampMs),
@@ -303,7 +308,7 @@ public enum VoltraClientWidgetEnvBuilder {
       "widgetRenderingMode": \(jsonString(renderingModeString(widgetRenderingMode))),
       "showsWidgetContainerBackground": \(showsWidgetContainerBackground),
       "configuration": \(configurationJSON),
-      "build": \(buildJSON)\(serverUpdateEntry)
+      "build": \(buildJSON)\(serverUpdateEntry)\(instanceEntry)
     }
     """
   }
@@ -379,9 +384,14 @@ public struct VoltraClientWidgetContentView: View {
         configuration: entry.configuration,
         serverUpdateJSON: entry.serverUpdateJSON
       )
+      // This placement's scope (ADR 0007): an instance of its merged configuration, or the plain
+      // widget scope when it has none — which is also every widget's scope before this ADR.
+      let scope = WidgetScope.of(entry.widgetId, configuration: entry.configuration)
       let dynamicWidgetPropsStore = DynamicWidgetPropsStore()
       let dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator(
-        dynamicWidgetPropsProvider: dynamicWidgetPropsStore.dynamicWidgetProps(for:),
+        // Reads the instance slot for `scope`'s key, falling back to the widget slot when the
+        // placement has not fetched yet or has no configuration.
+        dynamicWidgetPropsProvider: { _ in dynamicWidgetPropsStore.dynamicWidgetProps(for: scope) },
         dynamicWidgetRuntimeBoundary: { dynamicWidgetID, dynamicWidgetPropsJSON, dynamicWidgetEnvironmentJSON in
           VoltraJSRenderer.render(
             widgetId: dynamicWidgetID,

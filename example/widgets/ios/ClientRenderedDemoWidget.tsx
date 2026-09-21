@@ -9,6 +9,9 @@ import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 export type ClientRenderedDemoWidgetProps = {
   headline?: string
   unreadCount?: number
+  city?: string
+  temperature?: number
+  instance?: string
 }
 
 export default function ClientRenderedDemoWidget(
@@ -30,6 +33,10 @@ export default function ClientRenderedDemoWidget(
 
   const config = env.configuration as Record<string, unknown> | undefined
   const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
+  const configCity = typeof config?.city === 'string' ? config.city : '(unset)'
+  const serverCity = props.city ?? '(no server data)'
+  const serverTemp = typeof props.temperature === 'number' ? `${props.temperature}°` : '(no server data)'
+  const instanceKey = env.instance ?? '(no instance)'
 
   const labelStyle = { fontSize: 9, color: '#FFFFFF' } as const
   const valueStyle = { fontSize: 9, color: '#94A3B8' } as const
@@ -76,6 +83,22 @@ export default function ClientRenderedDemoWidget(
       <Voltra.HStack spacing={4}>
         <Voltra.Text style={labelStyle}>config:</Voltra.Text>
         <Voltra.Text style={valueStyle}>{configLabel}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>env.configuration.city:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{configCity}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>env.instance:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{instanceKey}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>server city:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{serverCity}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>server temp:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{serverTemp}</Voltra.Text>
       </Voltra.HStack>
       <Voltra.HStack spacing={4}>
         <Voltra.Text style={labelStyle}>dev:</Voltra.Text>

@@ -347,6 +347,28 @@ function normalizeIOSAppIntent(
   return { parameters }
 }
 
+/**
+ * `appIntent` only reaches the generated project through the `clientRendered` branches, so on a
+ * widget with no `entry` every parameter is dropped: no configuration defaults are emitted, the
+ * receiver stays payload-driven, and `getWidgetConfiguration` rejects it at runtime. Generate time
+ * is the only place that can still say so.
+ */
+function warnOnAppIntentWithoutEntry(
+  appIntent: { parameters: unknown[] } | undefined,
+  hasEntry: boolean,
+  context: string,
+  warnings: string[]
+): void {
+  if (hasEntry || !appIntent || appIntent.parameters.length === 0) {
+    return
+  }
+
+  warnings.push(
+    `${context}.appIntent is ignored because the widget has no 'entry'. Configuration parameters ` +
+      `only apply to Dynamic Widgets. Add an 'entry' to make this one, or drop 'appIntent'.`
+  )
+}
+
 interface NormalizeServerUpdateOptions {
   context: string
   /** True when the widget has an `entry`, so the response is props rather than a payload. */
@@ -423,6 +445,9 @@ function normalizeAndroidWidget(
   assertOptionalPositiveInteger(widget.maxResizeWidth, `android.widgets[${widget.id}].maxResizeWidth`)
   assertOptionalPositiveInteger(widget.maxResizeHeight, `android.widgets[${widget.id}].maxResizeHeight`)
 
+  const androidAppIntent = normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`)
+  warnOnAppIntentWithoutEntry(androidAppIntent, widget.entry !== undefined, `android.widgets[${widget.id}]`, warnings)
+
   return {
     ...widget,
     displayName: normalizeLabel(widget.displayName, `android.widgets[${widget.id}].displayName`),
@@ -435,7 +460,7 @@ function normalizeAndroidWidget(
     ),
     previewImage: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewImage),
     previewLayout: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewLayout),
-    appIntent: normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`),
+    appIntent: androidAppIntent,
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(widget.serverUpdate, {
           context: `android.widgets[${widget.id}].serverUpdate`,
@@ -476,6 +501,9 @@ function normalizeIOSWidget(
     }
   }
 
+  const iosAppIntent = normalizeIOSAppIntent(widget.appIntent, `ios.widgets[${widget.id}].appIntent`)
+  warnOnAppIntentWithoutEntry(iosAppIntent, widget.entry !== undefined, `ios.widgets[${widget.id}]`, warnings)
+
   return {
     ...widget,
     displayName: normalizeLabel(widget.displayName, `ios.widgets[${widget.id}].displayName`),
@@ -487,7 +515,7 @@ function normalizeIOSWidget(
       widget.initialStatePath,
       `ios.widgets[${widget.id}].initialStatePath`
     ),
-    appIntent: normalizeIOSAppIntent(widget.appIntent, `ios.widgets[${widget.id}].appIntent`),
+    appIntent: iosAppIntent,
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(widget.serverUpdate, {
           context: `ios.widgets[${widget.id}].serverUpdate`,
