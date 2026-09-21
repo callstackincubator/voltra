@@ -33,6 +33,7 @@ The following React Native style properties are supported:
 **Style:**
 
 - `backgroundColor` - Background color (hex strings, color names, or CSS gradient strings — see [Gradients](/ios/development/gradients))
+- `backgroundImage` - CSS gradient string painted above `backgroundColor` — see [Gradients](/ios/development/gradients)
 - `opacity` - Opacity value between 0 and 1
 - `borderRadius` - Corner radius value
 - `borderWidth` - Border width

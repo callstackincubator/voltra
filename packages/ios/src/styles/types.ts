@@ -44,6 +44,7 @@ export type VoltraViewStyle = {
   marginHorizontal?: number | string
   marginVertical?: number | string
   backgroundColor?: string
+  /** CSS gradient painted above `backgroundColor`, e.g. `linear-gradient(to right, red, blue)` */
   backgroundImage?: string
   opacity?: number
   borderRadius?: number | string
