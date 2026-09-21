@@ -8,6 +8,8 @@ import androidx.glance.appwidget.lazy.GridCells
 import androidx.glance.appwidget.lazy.LazyVerticalGrid
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
+import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxWidth
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderNode
@@ -37,8 +39,9 @@ fun VoltraLazyVerticalGrid(
     // GlanceRemoteViewsService, which the framework binds via
     // AppWidgetManager.bindRemoteViewsService — that requires a real widget id bound to the
     // caller's AppWidgetHost, which no in-app preview can provide (see VoltraRN.kt).
-    // Approximate the grid with eager Rows of a fixed column count instead so the preview
-    // shows content.
+    // Approximate the grid with eager Rows of equal-width cells instead so the preview shows
+    // content. Like the real grid, every cell is as wide as a column (the last row keeps empty
+    // cells rather than stretching its items), and an item is aligned inside its cell.
     if (context.isPreview && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
         logPreviewApproximation("LazyVerticalGrid")
         val columnCount = deriveFallbackGridColumnCount(element.p, context.widgetSize?.width?.value)
@@ -48,8 +51,13 @@ fun VoltraLazyVerticalGrid(
             horizontalAlignment = horizontalAlignment,
         ) {
             RenderNestedGroups(rows, horizontalAlignment) { row ->
-                Row(horizontalAlignment = horizontalAlignment) {
-                    row.forEach { child -> RenderNode(child) }
+                Row(modifier = GlanceModifier.fillMaxWidth()) {
+                    row.forEach { child ->
+                        LazyItemBox(horizontalAlignment, GlanceModifier.defaultWeight()) { RenderNode(child) }
+                    }
+                    repeat(columnCount - row.size) {
+                        Spacer(modifier = GlanceModifier.defaultWeight())
+                    }
                 }
             }
         }

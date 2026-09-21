@@ -1,6 +1,8 @@
 package voltra.glance.components
 
+import android.os.Build
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VoltraLazyListFallbackTest {
@@ -10,18 +12,45 @@ class VoltraLazyListFallbackTest {
     }
 
     @Test
-    fun `clamps a numeric columns prop to at most the direct-children cap`() {
-        assertEquals(10, deriveFallbackGridColumnCount(mapOf("columns" to 25), widgetWidthDp = null))
+    fun `clamps a numeric columns prop to the 1 to 5 range Glance supports`() {
+        assertEquals(5, deriveFallbackGridColumnCount(mapOf("columns" to 25), widgetWidthDp = null))
+        assertEquals(1, deriveFallbackGridColumnCount(mapOf("columns" to 0), widgetWidthDp = null))
     }
 
     @Test
-    fun `derives an adaptive column count from the widget width and minSize`() {
-        assertEquals(4, deriveFallbackGridColumnCount(mapOf("columns" to "a:50"), widgetWidthDp = 220f))
+    fun `derives an adaptive column count from the widget width and minSize on API 31`() {
+        assertEquals(
+            4,
+            deriveFallbackGridColumnCount(
+                mapOf("columns" to "a:50"),
+                widgetWidthDp = 220f,
+                sdkInt = Build.VERSION_CODES.S,
+            ),
+        )
+    }
+
+    @Test
+    fun `uses 2 columns for an adaptive grid below API 31, like the real widget`() {
+        assertEquals(
+            2,
+            deriveFallbackGridColumnCount(
+                mapOf("columns" to "a:50"),
+                widgetWidthDp = 220f,
+                sdkInt = Build.VERSION_CODES.R,
+            ),
+        )
     }
 
     @Test
     fun `falls back to 2 columns for adaptive props without a known widget width`() {
-        assertEquals(2, deriveFallbackGridColumnCount(mapOf("columns" to "a:50"), widgetWidthDp = null))
+        assertEquals(
+            2,
+            deriveFallbackGridColumnCount(
+                mapOf("columns" to "a:50"),
+                widgetWidthDp = null,
+                sdkInt = Build.VERSION_CODES.S,
+            ),
+        )
     }
 
     @Test
@@ -52,17 +81,44 @@ class VoltraLazyListFallbackTest {
     }
 
     @Test
-    fun `chunks a very large list into groups that themselves respect the cap`() {
-        val items = (1..1000).toList()
+    fun `renders a list within the cap as direct items without nesting`() {
+        val items = (1..10).toList()
 
-        val groups = chunkForNesting(items, maxChildren = 10)
+        assertEquals(items.map { NestedGroupNode.Item(it) }, nestForGlance(items, maxChildren = 10))
+    }
 
-        assert(groups.size <= 10) { "expected at most 10 groups, got ${groups.size}" }
-        assertEquals(items, groups.flatten())
+    @Test
+    fun `nests lists of any length so that no container exceeds the cap`() {
+        for (size in listOf(11, 12, 99, 100, 101, 1000, 1001)) {
+            val items = (1..size).toList()
+
+            val nodes = nestForGlance(items, maxChildren = 10)
+
+            assertAllContainersWithinCap(nodes, maxChildren = 10)
+            assertEquals("items out of order for $size items", items, flatten(nodes))
+        }
     }
 
     @Test
     fun `resolves a null children node to an empty list`() {
         assertEquals(emptyList<Any?>(), resolveLazyListItems(null, sharedElements = null))
     }
+
+    private fun assertAllContainersWithinCap(
+        nodes: List<NestedGroupNode<Int>>,
+        maxChildren: Int,
+    ) {
+        assertTrue("container has ${nodes.size} direct children", nodes.size <= maxChildren)
+        nodes.filterIsInstance<NestedGroupNode.Group<Int>>().forEach {
+            assertAllContainersWithinCap(it.children, maxChildren)
+        }
+    }
+
+    private fun flatten(nodes: List<NestedGroupNode<Int>>): List<Int> =
+        nodes.flatMap { node ->
+            when (node) {
+                is NestedGroupNode.Item -> listOf(node.item)
+                is NestedGroupNode.Group -> flatten(node.children)
+            }
+        }
 }

@@ -41,7 +41,9 @@ fun VoltraLazyColumn(
             modifier = finalModifier,
             horizontalAlignment = horizontalAlignment,
         ) {
-            RenderNestedGroups(items, horizontalAlignment) { child -> RenderNode(child) }
+            RenderNestedGroups(items, horizontalAlignment) { child ->
+                LazyItemBox(horizontalAlignment) { RenderNode(child) }
+            }
         }
         return
     }

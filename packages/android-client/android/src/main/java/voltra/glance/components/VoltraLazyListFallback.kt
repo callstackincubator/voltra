@@ -1,9 +1,13 @@
 package voltra.glance.components
 
+import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.glance.GlanceModifier
 import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.fillMaxWidth
 import voltra.models.VoltraNode
 import kotlin.math.ceil
 
@@ -44,10 +48,8 @@ internal fun resolveLazyListItems(
     }
 
 /**
- * Splits [items] into groups small enough to be direct children of a single Glance
- * Column/Row (at most [maxChildren]), recursing on the caller's side (see
- * [RenderNestedGroups]) so that arbitrarily long lists never silently lose items to
- * Glance's per-container truncation.
+ * Splits [items] into at most [maxChildren] consecutive groups. A group can itself still hold
+ * more than [maxChildren] items; [nestForGlance] recurses into it until every container fits.
  */
 internal fun <T> chunkForNesting(
     items: List<T>,
@@ -58,11 +60,38 @@ internal fun <T> chunkForNesting(
     return items.chunked(chunkSize)
 }
 
+/** One direct child of a container in the eager fallback: an item, or a nested group. */
+internal sealed class NestedGroupNode<out T> {
+    data class Item<T>(
+        val item: T,
+    ) : NestedGroupNode<T>()
+
+    data class Group<T>(
+        val children: List<NestedGroupNode<T>>,
+    ) : NestedGroupNode<T>()
+}
+
 /**
- * Renders [items] with [renderItem], nesting extra Columns as needed so that no single
- * Column ever receives more than [maxChildren] direct children. Overflow Columns carry
- * [horizontalAlignment] so a long list keeps the alignment the caller set on the outer
- * container.
+ * Arranges [items] as the direct children of one Glance Column, nesting groups so that neither
+ * that Column nor any nested group has more than [maxChildren] direct children. Arbitrarily
+ * long lists therefore never lose items to Glance's per-container truncation. Flattening the
+ * result in order gives back [items].
+ */
+internal fun <T> nestForGlance(
+    items: List<T>,
+    maxChildren: Int = VOLTRA_GLANCE_MAX_DIRECT_CHILDREN,
+): List<NestedGroupNode<T>> {
+    require(maxChildren >= 2) { "maxChildren must be at least 2, was $maxChildren" }
+    if (items.size <= maxChildren) return items.map { NestedGroupNode.Item(it) }
+    return chunkForNesting(items, maxChildren).map { group ->
+        NestedGroupNode.Group(nestForGlance(group, maxChildren))
+    }
+}
+
+/**
+ * Renders [items] with [renderItem] as the content of a Column, laid out by [nestForGlance].
+ * Nested groups are full-width Columns, so an item that fills the width of the list keeps
+ * filling it once the list is long enough to need nesting.
  */
 @Composable
 internal fun <T> RenderNestedGroups(
@@ -71,30 +100,79 @@ internal fun <T> RenderNestedGroups(
     maxChildren: Int = VOLTRA_GLANCE_MAX_DIRECT_CHILDREN,
     renderItem: @Composable (T) -> Unit,
 ) {
-    if (items.size <= maxChildren) {
-        items.forEach { renderItem(it) }
-        return
-    }
-    chunkForNesting(items, maxChildren).forEach { group ->
-        Column(horizontalAlignment = horizontalAlignment) {
-            RenderNestedGroups(group, horizontalAlignment, maxChildren, renderItem)
+    RenderNestedGroupNodes(nestForGlance(items, maxChildren), horizontalAlignment, renderItem)
+}
+
+@Composable
+private fun <T> RenderNestedGroupNodes(
+    nodes: List<NestedGroupNode<T>>,
+    horizontalAlignment: Alignment.Horizontal,
+    renderItem: @Composable (T) -> Unit,
+) {
+    nodes.forEach { node ->
+        when (node) {
+            is NestedGroupNode.Item -> {
+                renderItem(node.item)
+            }
+
+            is NestedGroupNode.Group -> {
+                Column(
+                    modifier = GlanceModifier.fillMaxWidth(),
+                    horizontalAlignment = horizontalAlignment,
+                ) {
+                    RenderNestedGroupNodes(node.children, horizontalAlignment, renderItem)
+                }
+            }
         }
     }
 }
 
-/** Derives a grid column count for the eager fallback, mirroring [extractGridCells]. */
+/**
+ * Wraps one item of the eager fallback the way Glance wraps every lazy list and grid item: in
+ * a Box that fills the width of its row or cell, aligning the item by [horizontalAlignment]
+ * and centering it vertically.
+ */
+@Composable
+internal fun LazyItemBox(
+    horizontalAlignment: Alignment.Horizontal,
+    modifier: GlanceModifier = GlanceModifier.fillMaxWidth(),
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment(horizontalAlignment, Alignment.Vertical.CenterVertically),
+    ) {
+        content()
+    }
+}
+
+/** Glance's LazyVerticalGrid only supports fixed column counts from 1 to 5. */
+internal const val VOLTRA_GLANCE_MAX_FIXED_GRID_COLUMNS = 5
+
+/**
+ * Derives a grid column count for the eager fallback, mirroring what the real grid uses on
+ * [sdkInt] (see extractGridCells): a fixed count, clamped to the 1..5 range Glance supports; an
+ * adaptive count from the widget width from API 31 on, since below that the real grid uses 2
+ * columns; and 2 columns otherwise.
+ */
 internal fun deriveFallbackGridColumnCount(
     props: Map<String, Any?>?,
     widgetWidthDp: Float?,
+    sdkInt: Int = Build.VERSION.SDK_INT,
 ): Int =
     when (val columns = props?.get("columns")) {
         is Number -> {
-            columns.toInt().coerceIn(1, VOLTRA_GLANCE_MAX_DIRECT_CHILDREN)
+            columns.toInt().coerceIn(1, VOLTRA_GLANCE_MAX_FIXED_GRID_COLUMNS)
         }
 
         is String -> {
             val adaptiveMinSize = if (columns.startsWith("a:")) columns.substringAfter("a:").toIntOrNull() else null
-            if (adaptiveMinSize != null && adaptiveMinSize > 0 && widgetWidthDp != null && widgetWidthDp > 0f) {
+            if (adaptiveMinSize != null &&
+                adaptiveMinSize > 0 &&
+                sdkInt >= Build.VERSION_CODES.S &&
+                widgetWidthDp != null &&
+                widgetWidthDp > 0f
+            ) {
                 (widgetWidthDp / adaptiveMinSize).toInt().coerceIn(1, VOLTRA_GLANCE_MAX_DIRECT_CHILDREN)
             } else {
                 2
