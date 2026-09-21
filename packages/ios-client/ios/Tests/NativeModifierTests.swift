@@ -88,6 +88,20 @@ final class NativeModifierTests: XCTestCase {
     }
   }
 
+  func testCanApplyOnlyForKnownDecodableModifiers() {
+    XCTAssertTrue(VoltraModifierRegistry.canApply(
+      VoltraModifierDescriptor(type: "containerBackground", params: ["color": "#101828"])
+    ))
+    // Hosts keep their default container background and widget URL for these.
+    XCTAssertFalse(VoltraModifierRegistry.canApply(
+      VoltraModifierDescriptor(type: "containerBackground", params: ["color": "not-a-color"])
+    ))
+    XCTAssertFalse(VoltraModifierRegistry.canApply(
+      VoltraModifierDescriptor(type: "widgetURL", params: ["url": ""])
+    ))
+    XCTAssertFalse(VoltraModifierRegistry.canApply(VoltraModifierDescriptor(type: "doesNotExist", params: [:])))
+  }
+
   func testAnimationRequiresAValue() {
     let descriptor = VoltraModifierDescriptor(type: "animation", params: ["curve": "linear"])
     XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor)) { error in

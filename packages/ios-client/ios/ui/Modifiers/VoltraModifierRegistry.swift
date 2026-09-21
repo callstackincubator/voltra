@@ -62,6 +62,12 @@ enum VoltraModifierRegistry {
     return try definition.make(descriptor.params)
   }
 
+  /// Whether the descriptor names a known modifier whose parameters decode, so applying it
+  /// changes the view. Hosts use it before dropping a default the modifier would replace.
+  static func canApply(_ descriptor: VoltraModifierDescriptor) -> Bool {
+    (try? makeModifier(descriptor)) != nil
+  }
+
   static func apply<Content: View>(_ descriptor: VoltraModifierDescriptor, to content: Content) -> AnyView {
     do {
       guard let modifier = try makeModifier(descriptor) else {
