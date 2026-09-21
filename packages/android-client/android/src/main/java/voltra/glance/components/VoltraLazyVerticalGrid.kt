@@ -1,5 +1,6 @@
 package voltra.glance.components
 
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
@@ -69,9 +70,12 @@ private fun extractGridCells(props: Map<String, Any?>?): GridCells =
 
         is String -> {
             val adaptiveMinSize = if (columns.startsWith("a:")) columns.substringAfter("a:").toIntOrNull() else null
-            if (adaptiveMinSize != null) {
+            if (adaptiveMinSize != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 GridCells.Adaptive(adaptiveMinSize.coerceAtLeast(1).dp)
             } else {
+                // GridCells.Adaptive is @RequiresApi(31); extractGridCells has no access to the
+                // widget's measured width, so we can't derive a column count here. Fall back to
+                // the same Fixed(2) used for unparseable column values.
                 GridCells.Fixed(2)
             }
         }

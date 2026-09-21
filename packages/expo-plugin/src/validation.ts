@@ -12,6 +12,20 @@ const WIDGET_ID_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 const LOCALE_KEY_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/
 
 const MAX_LOCALE_KEY_LENGTH = 32
+const WIDGET_ENTRY_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'])
+const WIDGET_ENTRY_FIELD_NAME = 'entry'
+
+function isAbsoluteWidgetPath(value: string): boolean {
+  return path.isAbsolute(value) || path.win32.isAbsolute(value) || /^[a-zA-Z]:[\\/]/.test(value)
+}
+
+function normalizeWidgetEntry(entry: string): string {
+  return path.posix.normalize(entry.replace(/\\/g, '/'))
+}
+
+function widgetEntryExtension(entry: string): string {
+  return path.posix.extname(entry)
+}
 
 export function validateHomeScreenWidgetId(widgetId: unknown): asserts widgetId is string {
   if (!widgetId || typeof widgetId !== 'string') {
@@ -86,6 +100,69 @@ export function validateWidgetLabel(value: unknown, widgetId: string, fieldName:
       throw new Error(`Widget '${widgetId}': ${fieldName}.${locale} must be a non-empty string`)
     }
   }
+}
+
+export function normalizeWidgetEntryPath(entry: string, projectRoot?: string): string {
+  const normalizedInput = normalizeWidgetEntry(entry)
+
+  if (projectRoot) {
+    const absolutePath = path.resolve(projectRoot, normalizedInput)
+    const relativePath = path.relative(projectRoot, absolutePath)
+    return normalizeWidgetEntry(relativePath)
+  }
+
+  return normalizedInput
+}
+
+export function validateWidgetEntry(value: unknown, widgetId: string, projectRoot?: string): string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`Widget '${widgetId}': ${WIDGET_ENTRY_FIELD_NAME} is required`)
+  }
+
+  if (isAbsoluteWidgetPath(value)) {
+    throw new Error(`Widget '${widgetId}': ${WIDGET_ENTRY_FIELD_NAME} must be a relative path, not an absolute path`)
+  }
+
+  const normalizedEntry = normalizeWidgetEntryPath(value)
+  if (!normalizedEntry || normalizedEntry === '.') {
+    throw new Error(`Widget '${widgetId}': ${WIDGET_ENTRY_FIELD_NAME} must point to a file inside the project root`)
+  }
+
+  if (normalizedEntry === '..' || normalizedEntry.startsWith('../')) {
+    throw new Error(
+      `Widget '${widgetId}': ${WIDGET_ENTRY_FIELD_NAME} must stay within the project root after normalization`
+    )
+  }
+
+  const extension = widgetEntryExtension(normalizedEntry)
+  if (!WIDGET_ENTRY_EXTENSIONS.has(extension)) {
+    throw new Error(
+      `Widget '${widgetId}': ${WIDGET_ENTRY_FIELD_NAME} must use a Metro-importable source extension ` +
+        `(${Array.from(WIDGET_ENTRY_EXTENSIONS).join(', ')}); received '${extension || '(none)'}'`
+    )
+  }
+
+  if (!projectRoot) {
+    return normalizedEntry
+  }
+
+  const normalizedInput = normalizeWidgetEntry(value)
+  const absolutePath = path.resolve(projectRoot, normalizedInput)
+  const normalizedProjectRelativePath = normalizeWidgetEntryPath(normalizedInput, projectRoot)
+
+  if (normalizedProjectRelativePath === '..' || normalizedProjectRelativePath.startsWith('../')) {
+    throw new Error(
+      `Widget '${widgetId}': ${WIDGET_ENTRY_FIELD_NAME} must stay within the project root after normalization`
+    )
+  }
+
+  if (!fs.existsSync(absolutePath) || !fs.statSync(absolutePath).isFile()) {
+    throw new Error(
+      `Widget '${widgetId}': ${WIDGET_ENTRY_FIELD_NAME} file not found at ${normalizedProjectRelativePath}`
+    )
+  }
+
+  return normalizedProjectRelativePath
 }
 
 /**

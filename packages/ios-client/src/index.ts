@@ -5,6 +5,7 @@ export {
 } from './components/VoltraLiveActivityPreview.js'
 export { VoltraView, type VoltraViewProps } from './components/VoltraView.js'
 export { VoltraWidgetPreview, type VoltraWidgetPreviewProps } from './components/VoltraWidgetPreview.js'
+export { type DynamicWidgetProps, type DynamicWidgetPropsValue, updateDynamicWidget } from './dynamic-widget/api.js'
 export * from './events.js'
 export { isGlassSupported, isHeadless, useIsHeadless } from './helpers.js'
 export { logger, type VoltraLogLevel } from './logger.js'
@@ -22,6 +23,18 @@ export {
   type UseLiveActivityOptions,
   type UseLiveActivityResult,
 } from './live-activity/api.js'
+export {
+  getDynamicLiveActivityDefinitionIds,
+  startDynamicLiveActivity,
+  type StartDynamicLiveActivityOptions,
+  updateDynamicLiveActivity,
+  type UpdateDynamicLiveActivityOptions,
+  useDynamicLiveActivity,
+  type UseDynamicLiveActivityOptions,
+  type UseDynamicLiveActivityResult,
+  type DynamicLiveActivityProps,
+  type DynamicLiveActivityPropsValue,
+} from './live-activity/dynamic-api.js'
 export type { DismissalPolicy, LiveActivityVariants } from '@use-voltra/ios'
 export {
   clearPreloadedImages,
@@ -31,9 +44,20 @@ export {
   reloadLiveActivities,
 } from './preload.js'
 export { assertRunningOnApple } from './utils/assertRunningOnApple.js'
+export { enableWidgetHotReload } from './utils/enableWidgetHotReload.js'
+export { enableDynamicLiveActivityHotReload } from './utils/enableDynamicLiveActivityHotReload.js'
 export { useUpdateOnHMR } from './utils/useUpdateOnHMR.js'
 export * from './utils/helpers.js'
 export type { VoltraElementJson, VoltraNodeJson } from './types.js'
+export {
+  clearWidgetServerUpdate,
+  getWidgetServerUpdate,
+  setWidgetServerUpdate,
+  type WidgetServerUpdateBody,
+  type WidgetServerUpdateOptions,
+  type WidgetServerUpdateSettings,
+  type WidgetServerUpdateSnapshot,
+} from './widgets/server-update.js'
 export {
   clearWidgetServerCredentials,
   setWidgetServerCredentials,

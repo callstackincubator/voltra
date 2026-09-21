@@ -1,7 +1,10 @@
 import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 
 import type { AndroidWidgetConfig } from '../../types'
+import { detectClientRenderedWidgets } from '../clientRendered'
 import { generateAndroidAssets } from './assets'
+import { generateAndroidConfigDefaults } from './configDefaults'
+import { generateAndroidServerDefaults } from './serverDefaults'
 import { copyAndroidFonts } from './fonts'
 import { generateAndroidInitialStates } from './initialStates'
 import { generateWidgetReceivers } from './kotlin'
@@ -44,6 +47,10 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
         )
       }
 
+      // Tag each widget once; Dynamic Widget detection drives receiver wiring and placeholder
+      // prerendering. Other generators ignore the extra fields.
+      const detectedWidgets = detectClientRenderedWidgets(widgets, projectRoot)
+
       // Generate assets (drawable images and preview images)
       const previewImageMap = await generateAndroidAssets({
         platformProjectRoot,
@@ -56,7 +63,7 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
       await generateWidgetReceivers({
         platformProjectRoot,
         packageName,
-        widgets,
+        widgets: detectedWidgets,
       })
 
       // Generate XML files (widget info, layouts, strings)
@@ -89,6 +96,18 @@ export const generateAndroidWidgetFiles: ConfigPlugin<GenerateAndroidWidgetFiles
       await generateAndroidInitialStates({
         platformProjectRoot,
         projectRoot: config.modRequest.projectRoot,
+        widgets: detectedWidgets,
+      })
+
+      // Emit code-declared client widget configuration defaults (env.configuration).
+      await generateAndroidConfigDefaults({
+        platformProjectRoot,
+        widgets,
+      })
+
+      // Emit the build-time serverUpdate defaults the runtime settings resolver reads.
+      await generateAndroidServerDefaults({
+        platformProjectRoot,
         widgets,
       })
 

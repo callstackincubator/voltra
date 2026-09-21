@@ -37,6 +37,12 @@ public enum VoltraWidgetDefaults {
     try? resolvedDefaults().string(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
   }
 
+  /// Metro dev-server base URL relayed from the app (DEBUG). Read by the client-widget runtime;
+  /// nil falls back to localhost.
+  public static func devServerURL() -> String? {
+    try? resolvedDefaults().string(forKey: VoltraStorageKeys.devServerURL)
+  }
+
   // MARK: - Write
 
   public static func setWidgetJson(_ json: String, for widgetId: String, deepLinkUrl: String?) throws {
@@ -70,15 +76,27 @@ public enum VoltraWidgetDefaults {
     defaults.synchronize()
   }
 
+  /// Relay the Metro dev-server base URL to the widget extension (DEBUG). Best-effort: a missing
+  /// app group just leaves the extension on its localhost fallback.
+  public static func setDevServerURL(_ url: String) {
+    guard let defaults = try? resolvedDefaults() else { return }
+    defaults.set(url, forKey: VoltraStorageKeys.devServerURL)
+    defaults.synchronize()
+  }
+
   // MARK: - Remove
 
-  /// Removes all persisted data (json, deepLinkUrl, timeline) for a single widget.
+  /// Removes all persisted data (json, deepLinkUrl, timeline, Dynamic Widget props) for a single widget.
   /// This is the single source of truth for which keys exist per widget.
   public static func removeAllData(for widgetId: String) {
     guard let defaults = try? resolvedDefaults() else { return }
     defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
     defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
     defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
+    let dynamicWidgetPropsStore = DynamicWidgetPropsStore(
+      storage: DynamicWidgetPropsUserDefaultsStorage(userDefaults: defaults)
+    )
+    try? dynamicWidgetPropsStore.clearDynamicWidgetProps(for: widgetId)
     defaults.synchronize()
   }
 
@@ -91,11 +109,15 @@ public enum VoltraWidgetDefaults {
   /// Removes all persisted data for every widget listed in the app's Info.plist.
   public static func removeAllWidgets() {
     guard let defaults = try? resolvedDefaults() else { return }
+    let dynamicWidgetPropsStore = DynamicWidgetPropsStore(
+      storage: DynamicWidgetPropsUserDefaultsStorage(userDefaults: defaults)
+    )
     let widgetIds = Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
     for widgetId in widgetIds {
       defaults.removeObject(forKey: VoltraStorageKeys.widgetJson(widgetId))
       defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
       defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
+      try? dynamicWidgetPropsStore.clearDynamicWidgetProps(for: widgetId)
     }
     defaults.synchronize()
   }

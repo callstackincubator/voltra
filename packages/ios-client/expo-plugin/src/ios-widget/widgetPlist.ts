@@ -3,8 +3,12 @@ import plist from '@expo/plist'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join as joinPath } from 'path'
 
+import { widgetKindOverrides } from '../constants'
 import type { IOSWidgetConfig } from '../types'
+import { detectClientRenderedWidgets } from './clientRendered'
 import { logger } from '@use-voltra/expo-plugin'
+import { resolveIOSWidgetServerUpdate } from '../ios/serverUpdate'
+import { appendMissingURLSchemes, getAppURLSchemes } from '../utils/urlScheme'
 
 export interface ConfigureMainAppPlistProps {
   targetName: string
@@ -34,9 +38,9 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
         return config
       }
 
-      const scheme = typeof expoConfig.scheme === 'string' ? expoConfig.scheme : expoConfig.ios?.bundleIdentifier
+      const schemes = getAppURLSchemes(expoConfig)
 
-      if (scheme) {
+      if (schemes.length > 0) {
         const targetPath = joinPath(config.modRequest.platformProjectRoot, targetName)
         const filePath = joinPath(targetPath, 'Info.plist')
         if (!existsSync(filePath)) {
@@ -45,6 +49,27 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
         }
 
         const content = plist.parse(readFileSync(filePath, 'utf8')) as InfoPlist
+
+        // Dynamic Widgets fetch their JS bundle from Metro at
+        // http://localhost:8081 in DEBUG builds. iOS requires an ATS exception for
+        // plaintext HTTP, scoped to localhost. The keys are only added when a
+        // Dynamic Widget actually exists, so server-only configurations
+        // keep their plist minimal.
+        if (widgets && widgets.length > 0) {
+          const detected = detectClientRenderedWidgets(widgets, config.modRequest.projectRoot)
+          const hasClientWidget = detected.some((w) => w.clientRendered)
+          if (hasClientWidget) {
+            ;(content as any)['NSAppTransportSecurity'] = {
+              NSAllowsLocalNetworking: true,
+              NSExceptionDomains: {
+                localhost: {
+                  NSExceptionAllowsInsecureHTTPLoads: true,
+                  NSIncludesSubdomains: true,
+                },
+              },
+            }
+          }
+        }
 
         // WidgetKit extensions must NOT declare NSExtensionPrincipalClass/MainStoryboard.
         // The @main WidgetBundle in Swift is the entry point.
@@ -56,20 +81,8 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
 
         // Keep URL schemes in the widget extension so Live Activity links can be resolved
         // from relative to absolute URLs (see VoltraDeepLinkResolver.swift).
-        const existingTypes = (content.CFBundleURLTypes as any[]) || []
-        const hasScheme = existingTypes.some(
-          (t) => Array.isArray(t?.CFBundleURLSchemes) && t.CFBundleURLSchemes.includes(scheme)
-        )
-        if (!hasScheme) {
-          content.CFBundleURLTypes = [
-            ...existingTypes,
-            {
-              CFBundleURLSchemes: [scheme],
-            },
-          ]
-        } else {
-          content.CFBundleURLTypes = existingTypes
-        }
+        // Uses the same scheme list as the app, so a relative link resolves to the app's first scheme.
+        content.CFBundleURLTypes = appendMissingURLSchemes((content.CFBundleURLTypes as any[]) || [], schemes)
 
         // Only set group identifier if provided
         if (groupIdentifier) {
@@ -83,23 +96,46 @@ export const configureWidgetExtensionPlist: ConfigPlugin<ConfigureMainAppPlistPr
           const serverRefresh: Record<string, boolean> = {}
 
           for (const widget of widgets) {
-            if (widget.serverUpdate) {
-              serverUrls[widget.id] = widget.serverUpdate.url
-              serverIntervals[widget.id] = widget.serverUpdate.intervalMinutes ?? 15
-              if (widget.serverUpdate.refresh) {
-                serverRefresh[widget.id] = true
-              }
+            const serverUpdate = resolveIOSWidgetServerUpdate(widget)
+
+            if (!serverUpdate) {
+              continue
             }
+
+            // Every server-driven widget gets an interval, so this dictionary's keys are the set
+            // of server-driven widget ids. A URL is written only when app.json set one.
+            serverIntervals[widget.id] = serverUpdate.intervalMinutes
+
+            if (serverUpdate.url !== undefined) {
+              serverUrls[widget.id] = serverUpdate.url
+            }
+
+            if (serverUpdate.refresh) {
+              serverRefresh[widget.id] = true
+            }
+          }
+
+          if (Object.keys(serverIntervals).length > 0) {
+            ;(content as any)['Voltra_WidgetServerIntervals'] = serverIntervals
           }
 
           if (Object.keys(serverUrls).length > 0) {
             ;(content as any)['Voltra_WidgetServerUrls'] = serverUrls
-            ;(content as any)['Voltra_WidgetServerIntervals'] = serverIntervals
           }
 
           if (Object.keys(serverRefresh).length > 0) {
             ;(content as any)['Voltra_WidgetServerRefresh'] = serverRefresh
           }
+        }
+
+        // Custom widget kinds, so the extension maps ids to kinds too (see VoltraWidgetKind.swift).
+        // Deleted when no widget pins one, so a `kind` dropped from the config does not linger in
+        // an Info.plist that a previous prebuild wrote.
+        const widgetKinds = widgetKindOverrides(widgets)
+        if (widgetKinds) {
+          ;(content as any)['Voltra_WidgetKinds'] = widgetKinds
+        } else {
+          delete (content as any)['Voltra_WidgetKinds']
         }
 
         // Add Keychain group for shared credential access

@@ -2,16 +2,24 @@ import SwiftUI
 
 enum JSStyleParser {
   static func number(_ value: Any?) -> CGFloat? {
-    if let v = value as? CGFloat { return v }
-    if let v = value as? Double { return CGFloat(v) }
-    if let v = value as? Int { return CGFloat(v) }
+    if let v = value as? CGFloat {
+      return v
+    }
+    if let v = value as? Double {
+      return CGFloat(v)
+    }
+    if let v = value as? Int {
+      return CGFloat(v)
+    }
     // Handle "20.5" strings if necessary, though rarer in raw JSON objects
     return nil
   }
 
   static func sizeValue(_ value: Any?) -> SizeValue? {
     // Numeric → Fixed
-    if let n = number(value) { return .fixed(n) }
+    if let n = number(value) {
+      return .fixed(n)
+    }
     // String → Fill / Wrap / try numeric
     guard let str = value as? String else { return nil }
     switch str {
@@ -19,7 +27,9 @@ enum JSStyleParser {
     case "auto": return .wrap
     default:
       // Try parsing as numeric string
-      if let n = Double(str) { return .fixed(CGFloat(n)) }
+      if let n = Double(str) {
+        return .fixed(CGFloat(n))
+      }
       return nil
     }
   }
@@ -50,8 +60,12 @@ enum JSStyleParser {
   static func boolean(_ value: Any?) -> Bool {
     guard let value = value else { return false }
 
-    if let bool = value as? Bool { return bool }
-    if let int = value as? Int { return int == 1 }
+    if let bool = value as? Bool {
+      return bool
+    }
+    if let int = value as? Int {
+      return int == 1
+    }
     if let string = value as? String {
       return string.lowercased() == "true"
     }
@@ -107,9 +121,15 @@ enum JSStyleParser {
     let hasUnderline = string.contains("underline")
     let hasLineThrough = string.contains("line-through") || string.contains("strikethrough")
 
-    if hasUnderline, hasLineThrough { return .underlineLineThrough }
-    if hasUnderline { return .underline }
-    if hasLineThrough { return .lineThrough }
+    if hasUnderline, hasLineThrough {
+      return .underlineLineThrough
+    }
+    if hasUnderline {
+      return .underline
+    }
+    if hasLineThrough {
+      return .lineThrough
+    }
     return .none
   }
 
@@ -128,8 +148,12 @@ enum JSStyleParser {
   static func overflow(_ value: Any?) -> Overflow? {
     guard let string = (value as? String)?.lowercased() else { return nil }
 
-    if string == "hidden" { return .hidden }
-    if string == "visible" { return .visible }
+    if string == "hidden" {
+      return .hidden
+    }
+    if string == "visible" {
+      return .visible
+    }
     return nil
   }
 

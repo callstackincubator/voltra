@@ -1,0 +1,53 @@
+import { PackageManagerTabs } from '@rspress/core/theme'
+
+# Android Setup
+
+Once you have [installed Voltra](../getting-started/installation), you need to configure the Expo plugin for Android.
+
+## 1. Configure the Expo Plugin
+
+Add the Voltra plugin to your `app.json` or `app.config.js`:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "voltra",
+        {
+          "android": {
+            "widgets": [
+              {
+                "id": "my_widget",
+                "name": "My First Widget",
+                "description": "A simple Voltra widget"
+              }
+            ]
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+## 2. Prebuild for Android
+
+Update your native Android project:
+
+<PackageManagerTabs
+  command={{
+    npm: 'npx expo prebuild --platform android',
+    yarn: 'yarn dlx expo prebuild --platform android',
+    pnpm: 'pnpm dlx expo prebuild --platform android',
+    bun: 'bunx expo prebuild --platform android',
+  }}
+/>
+
+## 3. Run the app
+
+```bash
+npx expo run:android
+```
+
+Your widget should now be available in the Android widget picker!

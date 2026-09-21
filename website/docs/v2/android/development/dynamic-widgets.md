@@ -1,0 +1,239 @@
+# Dynamic Widgets
+
+:::warning Experimental Feature
+Dynamic Widgets are experimental. Please [report any issues](https://github.com/callstackincubator/voltra/issues) you find.
+:::
+
+Dynamic Widgets run their entry component on-device and can react to both app-supplied runtime props and current device state. Declare a Dynamic Widget in `app.json` with a stable `id` and an explicit `entry`, then default-export the Dynamic Widget from that file.
+
+Your Dynamic Widget can react to:
+
+- `env.widgetFamily`
+- `env.colorScheme`
+- `env.locale`
+- `env.configuration`
+- `AndroidDynamicColors` tokens, which resolve to the current Material You palette natively
+
+When you change `app.json`, run Expo Prebuild or Voltra Apply so the updated Dynamic Widget configuration is available on device. If you change only the Dynamic Widget JS, reopen the app in development and the Dynamic Widget updates automatically.
+
+## Set up Metro
+
+Dynamic Widgets require `@use-voltra/metro` in the app project. Install it alongside the Android packages:
+
+```sh
+npm install @use-voltra/metro
+```
+
+Wrap the app's existing Metro config with `withVoltra`:
+
+```js title="metro.config.js"
+const { getDefaultConfig } = require('expo/metro-config')
+const { withVoltra } = require('@use-voltra/metro')
+
+const config = getDefaultConfig(__dirname)
+
+module.exports = withVoltra(config)
+```
+
+## How to use it
+
+1. Add an Android Dynamic Widget declaration to `app.json` with an `id`, an `entry`, and any Dynamic Widget metadata you need.
+2. Default-export the Dynamic Widget function or component from the module named by `entry`.
+3. Use `initialStatePath` if you want a pre-rendered first view.
+4. Re-run Expo Prebuild or Voltra Apply after updating `app.json`.
+5. Keep Android and iOS Dynamic Widget declarations separate; the same `id` can exist on both platforms because each platform is configured separately.
+
+```tsx
+// widgets/android/inbox-widget.tsx
+import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
+
+type InboxDynamicWidgetProps = {
+  // Optional because the Dynamic Widget receives {} before its first runtime props update.
+  unreadCount?: number
+}
+
+type InboxDynamicWidgetConfiguration = {
+  label?: string
+}
+
+export default function InboxDynamicWidget(
+  props: InboxDynamicWidgetProps = {},
+  env: WidgetEnvironment<InboxDynamicWidgetConfiguration> = {} as WidgetEnvironment<InboxDynamicWidgetConfiguration>
+) {
+  const unreadCount = props.unreadCount ?? 0
+  const label = env.configuration?.label ?? 'Inbox'
+
+  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return (
+    <VoltraAndroid.Column
+      style={{ width: '100%', height: '100%', padding: 16, backgroundColor: AndroidDynamicColors.surface }}
+      verticalAlignment="center-vertically"
+    >
+      <VoltraAndroid.Text style={{ color: AndroidDynamicColors.onSurface, fontSize: 18 }}>{label}</VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ color: AndroidDynamicColors.primary, fontSize: 24 }}>
+        {unreadCount} unread
+      </VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ color: AndroidDynamicColors.onSurfaceVariant }}>
+        Size: {env.widgetFamily}
+      </VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ color: AndroidDynamicColors.onSurfaceVariant }}>
+        Scheme: {env.colorScheme ?? 'light'}
+      </VoltraAndroid.Text>
+      <VoltraAndroid.Text style={{ color: AndroidDynamicColors.onSurfaceVariant }}>
+        Rendered: {renderedAt}
+      </VoltraAndroid.Text>
+    </VoltraAndroid.Column>
+  )
+}
+```
+
+Example plugin config:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "@use-voltra/android-client",
+        {
+          "widgets": [
+            {
+              "id": "inbox_widget",
+              "entry": "./widgets/android/inbox-widget.tsx",
+              "displayName": "Inbox Widget",
+              "description": "A Dynamic Widget with runtime props and live device state",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "initialStatePath": "./widgets/android/inbox-widget.tsx",
+              "appIntent": {
+                "parameters": [
+                  {
+                    "name": "label",
+                    "title": "Label",
+                    "default": "Inbox"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    ]
+  }
+}
+```
+
+After changing the plugin configuration, rebuild the native Android app. You also need a native rebuild after upgrading to a version of `@use-voltra/android-client` that introduces a new native API.
+
+## Update Dynamic Widget props
+
+Call `updateAndroidDynamicWidget` from your app. The object is serialized, persisted, and passed as the first argument to the entry component on each subsequent render. The update re-renders every installed instance with the matching Dynamic Widget id.
+
+```ts
+import { updateAndroidDynamicWidget } from '@use-voltra/android-client'
+
+await updateAndroidDynamicWidget('inbox_widget', {
+  unreadCount: 7,
+})
+```
+
+Dynamic Widget props must be JSON-serializable. You can use strings, numbers, booleans, `null`, arrays, and nested objects. Functions, `undefined`, `Date`, `BigInt`, and cyclic references are not supported.
+
+Before the first call to `updateAndroidDynamicWidget`, the entry component receives `{}`. The latest props object is persisted by Dynamic Widget id, survives app process restarts, and is reused until a later call replaces it or the app's data is cleared.
+
+:::warning Choose the API by widget type
+`updateAndroidDynamicWidget` updates an entry-based Dynamic Widget by passing runtime props to its entry component. The legacy `updateAndroidWidget` API sends pre-rendered variant payloads to a payload-driven widget and cannot update an entry-based Dynamic Widget. Calling it on a Dynamic Widget now rejects with `VOLTRA_WIDGET_KIND_MISMATCH`, and `updateAndroidDynamicWidget` rejects the same way when called on a payload-driven widget.
+:::
+
+## Fetching props from a server
+
+Props do not have to come from the app. Add a `serverUpdate` alongside `entry` and the widget fetches a JSON object on a schedule and renders it, without the app running:
+
+```json
+{
+  "id": "portfolio",
+  "entry": "./widgets/android/portfolio.tsx",
+  "serverUpdate": {
+    "url": "https://api.example.com/widgets/portfolio",
+    "intervalMinutes": 30
+  }
+}
+```
+
+The response object becomes the same first argument `updateAndroidDynamicWidget` passes, so the entry component does not change. Because the server returns data rather than a rendered payload, the backend can be written in any language.
+
+`updateAndroidDynamicWidget` keeps working on a server-driven widget — the next fetch simply overwrites what you wrote. See [Server-driven widgets](./server-driven-widgets) for the response contract, the `env.serverUpdate` fields, and how to take a widget over.
+
+## Configure each placed widget separately
+
+Every widget placed on the Home Screen has its own `appWidgetId`. Give one placement its own values and it renders them alone — the usual reason to place a widget twice, like one weather widget on London and another on New York. The widget code does not change: it still reads `env.configuration`, and now gets the values of the placement being drawn.
+
+Three layers feed `env.configuration`, each hiding the same key in the one below it:
+
+```
+defaults (app.json)  <  widget-type values  <  instance values  →  env.configuration
+```
+
+Read the placements, then write to one of them:
+
+```typescript
+import {
+  getActiveWidgets,
+  setWidgetInstanceConfiguration,
+  getWidgetInstanceConfiguration,
+  clearWidgetInstanceConfiguration,
+} from '@use-voltra/android-client'
+
+const placements = await getActiveWidgets()
+const weather = placements.filter(widget => widget.widgetType === 'weather')
+
+if (weather.length > 0) {
+  // One key at a time…
+  await setWidgetInstanceConfiguration(weather[0].appWidgetId, 'city', 'London')
+
+  // What this placement renders with, all three layers merged.
+  const values = await getWidgetInstanceConfiguration(weather[0].appWidgetId)
+
+  // Drop this placement's own values so it follows the widget-type ones again.
+  await clearWidgetInstanceConfiguration(weather[0].appWidgetId)
+}
+
+if (weather.length > 1) {
+  // Several keys at once, which costs one write and one re-render.
+  await setWidgetInstanceConfiguration(weather[1].appWidgetId, {
+    city: 'New York',
+    units: 'fahrenheit',
+  })
+}
+```
+
+Values are strings, and only that placement re-renders.
+
+### How the layers interact
+
+`setWidgetConfiguration(widgetId, key, value)` still writes the widget-type value, which is what every placement without its own value for that key renders. A placement that has its own value keeps showing it, so a later type-level write does not visibly change it. `clearWidgetInstanceConfiguration` drops the placement's values and it follows the type-level ones again. `getWidgetConfiguration(widgetId)` reads the type-level layer — the defaults plus any type-level values — without any placement's own values.
+
+### What happens to the values
+
+Removing a widget from the Home Screen drops that placement's values, so adding the widget again starts from the widget-type values rather than inheriting the old placement's. When the launcher restores its layout from a backup and assigns new ids, each placement's values move with it, so a configured widget survives a device restore.
+
+These APIs reject when the `appWidgetId` is not a placement of one of your own Dynamic Widgets: `VOLTRA_WIDGET_INSTANCE_NOT_FOUND` when nothing of yours is placed with that id, `VOLTRA_WIDGET_KIND_MISMATCH` when the placement is a payload-driven widget, and `VOLTRA_WIDGET_NOT_FOUND` when the widget id cannot be resolved. Nothing is stored unless the call succeeds.
+
+### Platform differences
+
+The Home Screen's own edit gesture does not open a Voltra configuration screen yet, so your app is the only place to change a placement's values on Android. On iOS the system Edit Widget sheet writes them instead, generated from the same `appIntent.parameters`, and the widget reads `env.configuration` exactly as it does here.
+
+## Runtime props and configuration are separate
+
+Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, updated in-app with `setWidgetConfiguration` for every placement or `setWidgetInstanceConfiguration` for one, and read from `env.configuration`. Updating one does not replace the other.
+
+## Notes
+
+- There is no `export` field in app.json for Dynamic Widgets.
+- The default-exported Dynamic Widget function or component name does not need to match the widget `id`.
+- Use a real device to verify release rendering.
+- `initialStatePath` gives the Dynamic Widget a pre-rendered first view.

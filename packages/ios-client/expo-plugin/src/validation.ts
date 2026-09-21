@@ -1,6 +1,16 @@
-import { validateHomeScreenWidgetId, validateInitialStatePath, validateWidgetLabel } from '@use-voltra/expo-plugin'
+import {
+  validateHomeScreenWidgetId,
+  validateInitialStatePath,
+  validateWidgetEntry,
+  validateWidgetLabel,
+  validateWidgetServerUpdate,
+} from '@use-voltra/expo-plugin'
 
-import type { IOSConfigPluginProps, IOSWidgetConfig, IOSWidgetFamily } from './types'
+import { iosServerUpdateRules } from './ios/serverUpdate'
+import { getDynamicLiveActivityAttributesType } from '@use-voltra/expo-plugin'
+
+import { widgetKind } from './constants'
+import type { IOSConfigPluginProps, IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetFamily } from './types'
 
 const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
   'systemSmall',
@@ -11,12 +21,40 @@ const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
   'accessoryRectangular',
   'accessoryInline',
 ])
+const DYNAMIC_LIVE_ACTIVITY_ID_PATTERN = /^[a-zA-Z0-9_]+$/
 
-export function validateIOSWidgetConfig(widget: IOSWidgetConfig): void {
+export function validateIOSDynamicLiveActivityConfig(
+  liveActivity: IOSDynamicLiveActivityConfig,
+  projectRoot?: string
+): void {
+  if (!liveActivity.id || typeof liveActivity.id !== 'string') {
+    throw new Error('Dynamic Live Activity ID is required and must be a string')
+  }
+
+  if (!DYNAMIC_LIVE_ACTIVITY_ID_PATTERN.test(liveActivity.id)) {
+    throw new Error(
+      `Dynamic Live Activity ID '${liveActivity.id}' is invalid. ` +
+        'It must be non-empty and contain only alphanumeric characters and underscores.'
+    )
+  }
+
+  validateWidgetEntry(liveActivity.entry, liveActivity.id, projectRoot)
+}
+
+export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: string): void {
   validateHomeScreenWidgetId(widget.id)
+  if (widget.kind !== undefined && (typeof widget.kind !== 'string' || widget.kind.trim() === '')) {
+    throw new Error(`Widget '${widget.id}': kind must be a non-empty string`)
+  }
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
-  validateInitialStatePath(widget.initialStatePath, widget.id)
+  validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
+
+  if (widget.entry !== undefined) {
+    validateWidgetEntry(widget.entry, widget.id, projectRoot)
+  }
+
+  validateWidgetServerUpdate(widget.serverUpdate, widget.id, iosServerUpdateRules(widget))
 
   if (widget.supportedFamilies) {
     if (!Array.isArray(widget.supportedFamilies)) {
@@ -34,7 +72,7 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig): void {
   }
 }
 
-export function validateIOSConfigPluginProps(props: IOSConfigPluginProps): void {
+export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projectRoot?: string): void {
   if (props.groupIdentifier !== undefined) {
     if (typeof props.groupIdentifier !== 'string') {
       throw new Error('groupIdentifier must be a string')
@@ -51,13 +89,59 @@ export function validateIOSConfigPluginProps(props: IOSConfigPluginProps): void 
     }
 
     const seenIds = new Set<string>()
+    const seenKinds = new Set<string>()
     for (const widget of props.widgets) {
-      validateIOSWidgetConfig(widget)
+      validateIOSWidgetConfig(widget, projectRoot)
+
+      // A server-driven Dynamic Widget commits fetched props to the App Group so the widget
+      // extension can read them. Without one it would fetch and have nowhere to put the result.
+      if (widget.entry !== undefined && widget.serverUpdate !== undefined && !props.groupIdentifier) {
+        throw new Error(
+          `Widget '${widget.id}' has both entry and serverUpdate, which requires groupIdentifier ` +
+            'so fetched props can be shared with the widget extension.'
+        )
+      }
 
       if (seenIds.has(widget.id)) {
         throw new Error(`Duplicate widget ID: '${widget.id}'`)
       }
       seenIds.add(widget.id)
+
+      const kind = widgetKind(widget)
+      if (seenKinds.has(kind)) {
+        throw new Error(`Duplicate widget kind: '${kind}'`)
+      }
+      seenKinds.add(kind)
+    }
+  }
+
+  if (props.liveActivities !== undefined) {
+    if (!Array.isArray(props.liveActivities)) {
+      throw new Error('liveActivities must be an array')
+    }
+
+    if (props.liveActivities.length > 0 && !props.groupIdentifier) {
+      throw new Error('groupIdentifier is required when liveActivities is non-empty')
+    }
+
+    const seenIds = new Set<string>()
+    const seenAttributesTypes = new Map<string, string>()
+    for (const liveActivity of props.liveActivities) {
+      validateIOSDynamicLiveActivityConfig(liveActivity, projectRoot)
+
+      if (seenIds.has(liveActivity.id)) {
+        throw new Error(`Duplicate Dynamic Live Activity ID: '${liveActivity.id}'`)
+      }
+      seenIds.add(liveActivity.id)
+
+      const attributesType = getDynamicLiveActivityAttributesType(liveActivity.id)
+      const conflictingId = seenAttributesTypes.get(attributesType)
+      if (conflictingId) {
+        throw new Error(
+          `Dynamic Live Activity IDs '${conflictingId}' and '${liveActivity.id}' generate the same ActivityKit attributes type '${attributesType}'`
+        )
+      }
+      seenAttributesTypes.set(attributesType, liveActivity.id)
     }
   }
 }

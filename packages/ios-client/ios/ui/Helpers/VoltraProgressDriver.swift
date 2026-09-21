@@ -43,10 +43,14 @@ enum VoltraProgressDriver {
   /// The progress value is clamped to `[0, 1]` unless `clamp` is `false`.
   static func progress(for range: ClosedRange<Date>, at date: Date = Date(), clamp: Bool = true) -> Double {
     let total = range.upperBound.timeIntervalSince(range.lowerBound)
-    if total <= 0 { return clamp ? 1 : 0 }
+    if total <= 0 {
+      return clamp ? 1 : 0
+    }
     let elapsed = date.timeIntervalSince(range.lowerBound)
     let ratio = elapsed / total
-    if !clamp { return ratio }
+    if !clamp {
+      return ratio
+    }
     return min(max(ratio, 0), 1)
   }
 }

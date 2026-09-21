@@ -112,15 +112,23 @@ struct LayoutModifier: ViewModifier {
 
   /// Derive effective ideal width: explicit width, then flexBasis, then nil
   private var effectiveIdealWidth: CGFloat? {
-    if let w = widthValue { return w }
-    if case let .fixed(v) = style.flexBasis { return v }
+    if let w = widthValue {
+      return w
+    }
+    if case let .fixed(v) = style.flexBasis {
+      return v
+    }
     return nil
   }
 
   /// Derive effective ideal height: explicit height, then flexBasis, then nil
   private var effectiveIdealHeight: CGFloat? {
-    if let h = heightValue { return h }
-    if case let .fixed(v) = style.flexBasis { return v }
+    if let h = heightValue {
+      return h
+    }
+    if case let .fixed(v) = style.flexBasis {
+      return v
+    }
     return nil
   }
 

@@ -1,5 +1,6 @@
 import { withAndroid } from './android'
-import type { AndroidConfigPluginProps, VoltraAndroidConfigPlugin } from './types'
+import { generateAndroidDynamicWidgetsManifest } from './android/files/manifest'
+import type { VoltraAndroidConfigPlugin } from './types'
 import { validateAndroidConfigPluginProps } from './validation'
 
 /**
@@ -12,6 +13,12 @@ const withVoltraAndroid: VoltraAndroidConfigPlugin = (config, props = {}) => {
   validateAndroidConfigPluginProps(props, projectRoot)
 
   const widgets = props.widgets ?? []
+  config = generateAndroidDynamicWidgetsManifest(config, { widgets })
+
+  if (!config.android?.package) {
+    return config
+  }
+
   if (widgets.length === 0 && !props.enableNotifications) {
     return config
   }

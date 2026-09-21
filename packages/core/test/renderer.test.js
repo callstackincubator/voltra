@@ -144,6 +144,62 @@ test('rejects unsupported host and class components', () => {
   )
 })
 
+test('invokes validate with flattened rendered children and props, skipping id/children', () => {
+  const calls = []
+  const Grid = createVoltraComponent('View', {
+    validate(info) {
+      calls.push(info)
+    },
+  })
+
+  renderVariantToJson(
+    React.createElement(
+      Grid,
+      { id: 'grid', gap: 4 },
+      React.createElement(View, { key: '1' }),
+      [React.createElement(View, { key: '2' }), React.createElement(View, { key: '3' })],
+      false,
+      null,
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(View, { key: '4' }),
+        React.createElement(View, { key: '5' })
+      )
+    ),
+    componentRegistry
+  )
+
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].children.length, 5)
+  assert.deepStrictEqual(calls[0].props, { gap: 4 })
+})
+
+test('does not invoke validate in production', () => {
+  const calls = []
+  const Grid = createVoltraComponent('View', {
+    validate(info) {
+      calls.push(info)
+    },
+  })
+
+  const previousEnv = process.env.NODE_ENV
+  process.env.NODE_ENV = 'production'
+  try {
+    renderVariantToJson(React.createElement(Grid, null, React.createElement(View)), componentRegistry)
+  } finally {
+    process.env.NODE_ENV = previousEnv
+  }
+
+  assert.equal(calls.length, 0)
+})
+
+test('does not crash when a voltra component has no validate option', () => {
+  assert.doesNotThrow(() =>
+    renderVariantToJson(React.createElement(View, null, React.createElement(View)), componentRegistry)
+  )
+})
+
 test('rejects strict mode, suspense, profiler, and portals with useful errors', () => {
   assert.throws(
     () =>

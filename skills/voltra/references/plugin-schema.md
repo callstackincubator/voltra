@@ -2,18 +2,18 @@
 
 Voltra plugin config lives under `expo.plugins`.
 
-## Common Top-Level Keys
+## iOS Plugin Schema
+
+Use `@use-voltra/ios-client` for iOS config.
 
 - `groupIdentifier`
 - `enablePushNotifications`
-- `liveActivity`
 - `widgets`
 - `fonts`
-- `android`
 - `deploymentTarget`
 - `targetName`
 
-## iOS Widget Schema
+### iOS Widget Schema
 
 Use top-level `widgets` for iOS widget gallery registration.
 
@@ -22,8 +22,10 @@ Use top-level `widgets` for iOS widget gallery registration.
 - `description` (string or per-locale map)
 - `supportedFamilies`: array of iOS families such as `systemSmall`, `systemMedium`, `systemLarge`
 - `initialStatePath` (string or per-locale map of paths for localized pre-render)
-- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId`, `platform=ios`, and `family`
-- `serverUpdate.intervalMinutes`: polling interval, default `15`, subject to WidgetKit throttling
+- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId`, `platform=ios`, `family`, `theme`, and `locale`. Optional; omit it to supply the URL at runtime with `setWidgetServerUpdate`
+- `serverUpdate.intervalMinutes`: polling interval, default `15`, subject to WidgetKit throttling. With `entry`, floor and default are both `15`
+- `serverUpdate.refresh`: native refresh button, default `false`
+- `entry` plus `serverUpdate`: server returns plain JSON props rather than a rendered payload; requires `groupIdentifier`. `family` is not sent
 
 Other important Apple-side keys:
 
@@ -33,24 +35,36 @@ Other important Apple-side keys:
 - `targetName`: custom Apple widget extension target name
 - `keychainGroup`: shared credential group for authenticated server-driven widgets; auto-derived when omitted and iOS widgets use `serverUpdate`
 
-## Android Widget Schema
+## Android Plugin Schema
 
-Use `android.widgets` for Android widget registration.
+Use `@use-voltra/android-client` for Android config.
+
+- `enableNotifications`
+- `widgets`
+- `fonts`
+
+### Android Widget Schema
 
 - `id`: unique identifier, use alphanumeric and underscores only
 - `displayName` (string or per-locale map)
 - `description` (string or per-locale map)
 - `targetCellWidth`
 - `targetCellHeight`
-- `minCellWidth`
-- `minCellHeight`
 - `minWidth`
 - `minHeight`
+- `minCellWidth` (deprecated, prefer `minWidth`)
+- `minCellHeight` (deprecated, prefer `minHeight`)
+- `minResizeWidth`
+- `minResizeHeight`
+- `maxResizeWidth` (Android 12+)
+- `maxResizeHeight` (Android 12+)
 - `resizeMode`
 - `widgetCategory`
 - `initialStatePath` (string or per-locale map of paths)
-- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId` and `platform=android`
-- `serverUpdate.intervalMinutes`: polling interval; use at least 15 minutes
+- `serverUpdate.url`: widget endpoint, Voltra appends `widgetId`, `platform=android`, `theme`, and `locale`. Optional; omit it to supply the URL at runtime with `setWidgetServerUpdate`
+- `serverUpdate.intervalMinutes`: polling interval, default `60`; use at least 15 minutes. With `entry`, floor and default are both `15`
+- `serverUpdate.refresh`: native refresh button, default `false`
+- `entry` plus `serverUpdate`: server returns plain JSON props rather than a rendered payload. `family` is not sent
 - `previewImage`
 - `previewLayout`
 

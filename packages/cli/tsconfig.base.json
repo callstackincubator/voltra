@@ -13,5 +13,5 @@
     "types": ["node"]
   },
   "include": ["./src"],
-  "exclude": ["**/__mocks__/*", "**/__tests__/*"]
+  "exclude": ["**/__mocks__/*", "**/__tests__/*", "**/*.node.test.ts"]
 }

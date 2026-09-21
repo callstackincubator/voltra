@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
-import { requestPinAndroidWidget } from '@use-voltra/android-client'
+import { requestPinAndroidWidget, setWidgetConfiguration } from '@use-voltra/android-client'
 
 import { Button } from '~/components/Button'
 import { ScreenLayout } from '~/components/ScreenLayout'
+
+const DYNAMIC_WIDGET_ID = 'AndroidClientDemoWidget'
 
 const AVAILABLE_WIDGETS = [
   {
@@ -28,6 +30,20 @@ const AVAILABLE_WIDGETS = [
     defaultPreviewWidth: 250,
     defaultPreviewHeight: 150,
   },
+  {
+    id: 'arc_progress',
+    name: 'Arc Progress Widget',
+    description: 'Battery gauge and a row of activity gauges drawn with ArcProgressIndicator',
+    defaultPreviewWidth: 250,
+    defaultPreviewHeight: 250,
+  },
+  {
+    id: DYNAMIC_WIDGET_ID,
+    name: 'Dynamic Widget Demo',
+    description: 'On-device JSX render (Hermes) with runtime props and live env',
+    defaultPreviewWidth: 250,
+    defaultPreviewHeight: 150,
+  },
 ]
 
 export default function AndroidWidgetPinScreen() {
@@ -36,6 +52,22 @@ export default function AndroidWidgetPinScreen() {
   const [previewWidth, setPreviewWidth] = useState<string>('250')
   const [previewHeight, setPreviewHeight] = useState<string>('150')
   const [isPinning, setIsPinning] = useState(false)
+  const [configLabel, setConfigLabel] = useState<string>('')
+
+  const handleSetConfig = async () => {
+    if (Platform.OS !== 'android') {
+      return
+    }
+    try {
+      await setWidgetConfiguration(DYNAMIC_WIDGET_ID, 'label', configLabel)
+      Alert.alert(
+        'Saved',
+        `Set env.configuration.label to "${configLabel}" for ${DYNAMIC_WIDGET_ID}. The Dynamic Widget re-renders.`
+      )
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || String(error))
+    }
+  }
 
   const selectedWidget = AVAILABLE_WIDGETS.find((w) => w.id === selectedWidgetId) || AVAILABLE_WIDGETS[0]
 
@@ -108,6 +140,25 @@ export default function AndroidWidgetPinScreen() {
             <Text style={styles.widgetDescription}>{widget.description}</Text>
           </View>
         ))}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Dynamic Widget configuration</Text>
+        <Text style={styles.widgetDescription}>
+          Configuration is separate from runtime props and is available through env.configuration.
+        </Text>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>env.configuration.label</Text>
+          <TextInput
+            style={styles.input}
+            value={configLabel}
+            onChangeText={setConfigLabel}
+            placeholder="label value"
+            placeholderTextColor="#64748B"
+            autoCapitalize="none"
+          />
+        </View>
+        <Button title="Set configuration" onPress={handleSetConfig} style={styles.resetButton} />
       </View>
 
       <View style={styles.section}>

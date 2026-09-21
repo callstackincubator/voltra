@@ -3,6 +3,7 @@ import { getMissingPlatformPackageMessage, getMissingPlatformPackages } from '..
 import { VoltraCliError } from '../../reporting/summary'
 
 import { ensureAndroidManifest } from './manifest'
+import { ensureAndroidGradleWidgetBundling } from './gradle'
 import { generateAndroidFiles } from './generated'
 
 import type { NormalizedVoltraConfig } from '../../config/types'
@@ -61,12 +62,17 @@ export async function applyAndroidPlatform(context: PlatformApplyContext): Promi
     android: androidConfig,
     discovery,
   })
+  const gradleResult = await ensureAndroidGradleWidgetBundling({
+    projectRoot: context.config.projectRoot,
+    discovery,
+    hasDynamicWidgets: androidConfig.widgets.some((widget) => widget.entry !== undefined),
+  })
 
   return {
     platform: 'android',
-    changes: manifestResult.change ? [manifestResult.change, ...generatedResult.changes] : generatedResult.changes,
+    changes: [manifestResult.change, gradleResult.change, ...generatedResult.changes].filter(isDefined),
     generatedFiles: generatedResult.files,
-    warnings: generatedResult.warnings,
+    warnings: [...generatedResult.warnings, ...(gradleResult.warnings ?? [])],
   }
 }
 
@@ -93,4 +99,8 @@ function isAndroidProjectDiscovery(value: unknown): value is AndroidProjectDisco
     candidate.buildGradlePath,
     candidate.packageName,
   ].every((entry) => typeof entry === 'string' && entry.length > 0)
+}
+
+function isDefined<TValue>(value: TValue | undefined): value is TValue {
+  return value !== undefined
 }

@@ -2,19 +2,22 @@ import { ConfigPlugin, withDangerousMod } from '@expo/config-plugins'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import type { IOSWidgetConfig } from '../../types'
+import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 import { generateAssets } from './assets'
 import { generateEntitlements } from './entitlements'
 import { generateInfoPlist } from './infoPlist'
+import { generateIOSDynamicLiveActivitiesManifest, generateIOSDynamicWidgetsManifest } from './manifest'
 import { generateSwiftFiles } from './swift'
 
 export interface GenerateWidgetExtensionFilesProps {
   targetName: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
   groupIdentifier?: string
   keychainGroup?: string
   version: string
   buildNumber: string
+  voltraVersion: string
 }
 
 /**
@@ -30,7 +33,8 @@ export interface GenerateWidgetExtensionFilesProps {
  * This should run before configureXcodeProject so the files exist when Xcode project is configured.
  */
 export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionFilesProps> = (config, props) => {
-  const { targetName, widgets, groupIdentifier, keychainGroup, version, buildNumber } = props
+  const { targetName, widgets, liveActivities, groupIdentifier, keychainGroup, version, buildNumber, voltraVersion } =
+    props
 
   return withDangerousMod(config, [
     'ios',
@@ -48,7 +52,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
       }
 
       // Generate Info.plist
-      generateInfoPlist(targetPath, targetName, version, buildNumber)
+      generateInfoPlist(targetPath, targetName, version, buildNumber, voltraVersion)
 
       // Generate Assets.xcassets and copy user images
       generateAssets({ targetPath })
@@ -58,6 +62,20 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         targetPath,
         projectRoot,
         widgets,
+        liveActivities,
+      })
+
+      // Write the iOS-owned Dynamic Widgets manifest for Metro to consume later.
+      generateIOSDynamicWidgetsManifest({
+        projectRoot,
+        widgets,
+      })
+
+      // Dynamic Live Activities have their own Metro manifest so their IDs may overlap with
+      // Dynamic Widgets and stale declarations never leak into a later prebuild.
+      generateIOSDynamicLiveActivitiesManifest({
+        projectRoot,
+        liveActivities,
       })
 
       // Generate entitlements file (may be empty if no groupIdentifier or keychainGroup)

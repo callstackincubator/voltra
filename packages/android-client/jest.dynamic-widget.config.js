@@ -1,0 +1,21 @@
+/** @type {import('jest').Config} */
+module.exports = {
+  testEnvironment: 'node',
+  testMatch: [
+    '<rootDir>/src/dynamic-widget/**/*.node.test.ts',
+    '<rootDir>/src/utils/**/*.node.test.ts',
+    '<rootDir>/src/widgets/**/*.node.test.ts',
+  ],
+  modulePathIgnorePatterns: ['<rootDir>/build'],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
+  transform: {
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/tsconfig.dynamic-widget.jest.json',
+      },
+    ],
+  },
+}

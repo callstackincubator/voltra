@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
+  # No `branches` filter: stacked PRs (e.g. via gh-stack) target another
+  # feature branch instead of `main`, and the filter would otherwise stop
+  # this workflow from ever running for them.
   pull_request:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -158,6 +159,10 @@ jobs:
         working-directory: example/android
         run: ./gradlew :use-voltra_android-client:testDebugUnitTest
 
+      - name: Run Android Lint
+        working-directory: example/android
+        run: ./gradlew :use-voltra_android-client:lintDebug -PvoltraLintStrict
+
   native-swift-test:
     name: '[Swift] Test'
     runs-on: macos-latest
@@ -243,3 +248,129 @@ jobs:
 
       - name: Check Kotlin formatting
         run: pnpm run format:kotlin:check
+
+  android-tarball-build:
+    name: '[Android] Tarball + all-ABI native build'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # build/** must exist so the packed tarball is complete.
+      - name: Build monorepo
+        run: pnpm run build:all
+
+      # Packaging integrity: pack android-client and install the *tarball* into
+      # the example app instead of the workspace symlink. `pnpm pack` rewrites
+      # the `workspace:` deps to real version ranges that match the sibling
+      # packages, so pnpm links those from the workspace while android-client
+      # itself is consumed exactly as it would ship to npm. A file missing from
+      # the tarball (the v2.1.0 CMakeLists.txt incident) then breaks prebuild or
+      # gradle configure below.
+      - name: Pack android-client tarball
+        working-directory: packages/android-client
+        run: |
+          mkdir -p "$RUNNER_TEMP/tarballs"
+          pnpm pack --pack-destination "$RUNNER_TEMP/tarballs"
+          TARBALL=$(ls "$RUNNER_TEMP/tarballs"/*.tgz | head -n1)
+          echo "ANDROID_CLIENT_TARBALL=$TARBALL" >> "$GITHUB_ENV"
+
+      # `pnpm pack` rewrites the tarball's `workspace:^` deps to real semver
+      # ranges, which pnpm would otherwise resolve from the npm registry —
+      # tripping minimumReleaseAge for freshly published versions and testing
+      # published siblings instead of this branch. Override every @use-voltra
+      # sibling back to the workspace so only android-client itself is consumed
+      # from the tarball (it must NOT be overridden, or the tarball install —
+      # the whole point of this job — would be replaced by a workspace link).
+      - name: Resolve sibling packages from the workspace
+        run: |
+          {
+            echo ""
+            echo "overrides:"
+            for f in packages/*/package.json; do
+              name=$(node -p "require('./$f').name")
+              if [ "$name" != "@use-voltra/android-client" ]; then
+                echo "  \"$name\": workspace:*"
+              fi
+            done
+          } >> pnpm-workspace.yaml
+
+      - name: Install android-client from tarball into example app
+        run: pnpm --filter voltra-example add "file:$ANDROID_CLIENT_TARBALL"
+
+      - name: Generate Android native project
+        working-directory: example
+        run: CI=1 pnpm exec expo prebuild --platform android
+
+      # All-ABI native build (issue #209): a targeted external-native-build task
+      # keeps CI fast while compiling libvoltra_js_renderer.so and linking
+      # ReactAndroid::jsi / hermes-engine::hermesvm / fbjni::fbjni for every ABI,
+      # so a per-ABI (e.g. armeabi-v7a) link regression fails CI.
+      - name: Build native library for all ABIs
+        working-directory: example/android
+        run: >-
+          ./gradlew :use-voltra_android-client:externalNativeBuildDebug
+          -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
+
+      - name: Verify 16 KB ELF alignment
+        working-directory: example/android
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          android_client_root=$(node -p "require('path').dirname(require.resolve('@use-voltra/android-client/package.json'))")
+          readelf_bin=$(find "$ANDROID_HOME/ndk" -path '*/toolchains/llvm/prebuilt/*/bin/llvm-readelf' -print | sort -V | tail -n1)
+
+          if [[ -z "$readelf_bin" ]]; then
+            echo "::error::Could not find llvm-readelf in the Android NDK"
+            exit 1
+          fi
+
+          for abi in arm64-v8a x86_64; do
+            library_path=$(find "$android_client_root/android/build/intermediates/cxx" \
+              -path "*/obj/$abi/libvoltra_js_renderer.so" -print -quit)
+
+            if [[ -z "$library_path" ]]; then
+              echo "::error::Could not find libvoltra_js_renderer.so for $abi"
+              exit 1
+            fi
+
+            alignments=$("$readelf_bin" -lW "$library_path" | awk '$1 == "LOAD" { print $NF }')
+            if [[ -z "$alignments" ]]; then
+              echo "::error::No ELF LOAD segments found in $library_path"
+              exit 1
+            fi
+
+            while IFS= read -r alignment; do
+              if (( alignment < 0x4000 )); then
+                echo "::error::$library_path has an ELF LOAD segment aligned to $alignment; expected at least 0x4000"
+                exit 1
+              fi
+            done <<< "$alignments"
+          done

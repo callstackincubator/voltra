@@ -8,7 +8,9 @@ export interface IOSConfigProps {
   groupIdentifier?: string
   widgetIds?: string[]
   widgets?: import('../types').IOSWidgetConfig[]
+  liveActivities?: import('../types').IOSDynamicLiveActivityConfig[]
   keychainGroup?: string
+  voltraVersion: string
 }
 
 /**
@@ -27,6 +29,7 @@ export function withIOS(config: ExpoConfig, props: IOSConfigProps): ExpoConfig {
     widgetIds: props.widgetIds,
     widgets: props.widgets,
     keychainGroup: props.keychainGroup,
+    voltraVersion: props.voltraVersion,
   })
 
   // Configure entitlements

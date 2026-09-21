@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/ios-client",
-  "version": "1.4.1",
+  "version": "2.3.1",
   "description": "Client-only Voltra APIs for iOS",
   "main": "./build/commonjs/index.js",
   "module": "./build/module/index.js",
@@ -25,10 +25,12 @@
   "files": [
     "app.plugin.js",
     "build",
-    "expo-plugin",
+    "expo-plugin/app.plugin.js",
+    "expo-plugin/build",
+    "expo-plugin/src",
     "ios",
     "src",
-    "Voltra.podspec",
+    "*.podspec",
     "README.md"
   ],
   "scripts": {
@@ -42,13 +44,14 @@
     "format:swift:fix": "swiftformat ios",
     "lint": "oxlint src expo-plugin/src",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit && tsc -p expo-plugin/tsconfig.typecheck.json --noEmit",
-    "test": "jest --config expo-plugin/jest.config.js",
+    "test": "jest --config jest.dynamic-widget.config.js && jest --config expo-plugin/jest.config.js",
     "test:swift": "cd ios && swift test"
   },
   "dependencies": {
     "@babel/core": "^7.27.4",
     "@expo/config-plugins": "~10.1.2",
     "@expo/plist": "^0.3.5",
+    "@use-voltra/compiler": "workspace:^",
     "@use-voltra/expo-plugin": "workspace:^",
     "@use-voltra/ios": "workspace:^",
     "dedent": "^1.7.1",

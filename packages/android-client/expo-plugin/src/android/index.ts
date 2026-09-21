@@ -3,6 +3,7 @@ import { ConfigPlugin, withPlugins } from '@expo/config-plugins'
 import type { AndroidPluginProps } from '../types'
 import { validateAndroidWidgetConfig } from '../validation'
 import { generateAndroidWidgetFiles } from './files'
+import { withWidgetBundleGradle } from './gradle'
 import { configureAndroidManifest } from './manifest'
 
 /**
@@ -24,5 +25,6 @@ export const withAndroid: ConfigPlugin<AndroidPluginProps> = (config, props) => 
   return withPlugins(config, [
     [generateAndroidWidgetFiles, { widgets, userImagesPath, fonts }],
     [configureAndroidManifest, { enableNotifications, widgets }],
+    [withWidgetBundleGradle, { widgets }],
   ])
 }

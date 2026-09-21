@@ -32,6 +32,15 @@ type VoltraInteractionEvent = Readonly<{
   payload: string
 }>
 
+type VoltraDynamicLiveActivityRenderFailedEvent = Readonly<{
+  source: string
+  timestamp: number
+  type: 'dynamicLiveActivityRenderFailed'
+  activityName: string
+  definitionId: string
+  message: string
+}>
+
 type StartVoltraOptions = Readonly<{
   target?: string
   deepLinkUrl?: string
@@ -86,26 +95,39 @@ type WidgetServerCredentials = Readonly<{
 
 export interface Spec extends TurboModule {
   readonly onInteraction: CodegenTypes.EventEmitter<VoltraInteractionEvent>
+  readonly onDynamicLiveActivityRenderFailed: CodegenTypes.EventEmitter<VoltraDynamicLiveActivityRenderFailedEvent>
   readonly onStateChanged: CodegenTypes.EventEmitter<VoltraActivityUpdateEvent>
   readonly onActivityTokenReceived: CodegenTypes.EventEmitter<VoltraActivityTokenReceivedEvent>
   readonly onActivityPushToStartTokenReceived: CodegenTypes.EventEmitter<VoltraActivityPushToStartTokenReceivedEvent>
+  drainDynamicLiveActivityRenderFailures(): void
+  setDynamicLiveActivityRenderFailureListenerActive(active: boolean): void
   startLiveActivity(jsonString: string, options: StartVoltraOptions): Promise<string>
   updateLiveActivity(activityId: string, jsonString: string, options: UpdateVoltraOptions): Promise<void>
+  startDynamicLiveActivity(definitionId: string, propsJson: string, options: StartVoltraOptions): Promise<string>
+  updateDynamicLiveActivity(activityId: string, propsJson: string, options: UpdateVoltraOptions): Promise<void>
   endLiveActivity(activityId: string, options: EndVoltraOptions): Promise<void>
   endAllLiveActivities(): Promise<void>
   getLatestVoltraActivityId(): Promise<string | null>
   listVoltraActivityIds(): Promise<string[]>
+  getDynamicLiveActivityDefinitionIds(): Promise<string[]>
   isLiveActivityActive(activityName: string): boolean
   isHeadless(): boolean
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>
   reloadLiveActivities(activityNames?: string[] | null): Promise<void>
+  reloadDynamicLiveActivities(definitionIds?: string[] | null): Promise<void>
   clearPreloadedImages(keys?: string[] | null): Promise<void>
+  updateDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   updateWidget(widgetId: string, jsonString: string, options: UpdateWidgetOptions): Promise<void>
   scheduleWidget(widgetId: string, timelineJson: string): Promise<void>
   reloadWidgets(widgetIds?: string[] | null): Promise<void>
   clearWidget(widgetId: string): Promise<void>
   clearAllWidgets(): Promise<void>
   getActiveWidgets<T = unknown>(): Promise<T[]>
+  /** Settings are passed as JSON so an arbitrary `body` survives the bridge unchanged. */
+  setWidgetServerUpdate(settingsJson: string, widgetId?: string | null): Promise<void>
+  clearWidgetServerUpdate(widgetId?: string | null): Promise<void>
+  /** Result is JSON so an arbitrary `body` survives the bridge unchanged, or null. */
+  getWidgetServerUpdate(widgetId?: string | null): Promise<string | null>
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
 }

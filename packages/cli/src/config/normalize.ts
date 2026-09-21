@@ -2,12 +2,20 @@ import path from 'node:path'
 
 import { resolveFromRoot } from '../fs/path'
 import { CLI_DEFAULTS } from './defaults'
+import { isPerConfigurationMap } from './perConfiguration'
+import { resolveServerUpdateInterval, resolveServerUpdateUrl, validateServerUpdateRefresh } from './serverUpdate'
+import { iosWidgetKind } from './widgetKind'
+
+import type { PerConfiguration } from './perConfiguration'
 
 import type {
+  AndroidWidgetAppIntentConfig,
   AndroidWidgetConfig,
+  IOSWidgetAppIntentConfig,
   IOSWidgetConfig,
   LoadedVoltraConfig,
   NormalizedAndroidWidgetConfig,
+  NormalizedWidgetServerUpdateConfig,
   NormalizedVoltraAndroidConfig,
   NormalizedVoltraConfig,
   NormalizedVoltraIOSConfig,
@@ -26,6 +34,7 @@ const VALID_IOS_WIDGET_FAMILIES = new Set([
   'accessoryRectangular',
   'accessoryInline',
 ])
+const WIDGET_ENTRY_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'])
 
 export class VoltraConfigNormalizationError extends Error {
   constructor(message: string) {
@@ -47,6 +56,33 @@ function assertRecord(value: unknown, context: string): asserts value is Record<
 function assertOptionalString(value: unknown, context: string): asserts value is string | undefined {
   if (value !== undefined && typeof value !== 'string') {
     throw new VoltraConfigNormalizationError(`${context} must be a string`)
+  }
+}
+
+function assertOptionalPerConfigurationString(
+  value: unknown,
+  context: string
+): asserts value is PerConfiguration<string> | undefined {
+  if (value === undefined || typeof value === 'string') {
+    return
+  }
+
+  if (!isPerConfigurationMap(value as PerConfiguration<unknown>)) {
+    throw new VoltraConfigNormalizationError(
+      `${context} must be a string, or an object of strings keyed by build configuration name`
+    )
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+
+  if (entries.length === 0) {
+    throw new VoltraConfigNormalizationError(`${context} must not be an empty object`)
+  }
+
+  for (const [buildConfigurationName, configurationValue] of entries) {
+    if (typeof configurationValue !== 'string' || !configurationValue.trim()) {
+      throw new VoltraConfigNormalizationError(`${context}.${buildConfigurationName} must be a non-empty string`)
+    }
   }
 }
 
@@ -100,6 +136,71 @@ function resolveOptionalPathFromProjectRoot(projectRoot: string, filePath: strin
   }
 
   return resolvePathFromProjectRoot(projectRoot, filePath)
+}
+
+function resolveOptionalPerConfigurationPath(
+  projectRoot: string,
+  filePath: PerConfiguration<string> | undefined
+): PerConfiguration<string> | undefined {
+  if (!filePath) {
+    return undefined
+  }
+
+  if (!isPerConfigurationMap(filePath)) {
+    return resolvePathFromProjectRoot(projectRoot, filePath)
+  }
+
+  return Object.fromEntries(
+    Object.entries(filePath).map(([buildConfigurationName, configurationPath]) => [
+      buildConfigurationName,
+      resolvePathFromProjectRoot(projectRoot, configurationPath),
+    ])
+  )
+}
+
+function isAbsoluteWidgetPath(value: string): boolean {
+  return path.isAbsolute(value) || path.win32.isAbsolute(value) || /^[a-zA-Z]:[\\/]/.test(value)
+}
+
+function normalizeWidgetEntry(entry: string): string {
+  return path.posix.normalize(entry.replace(/\\/g, '/'))
+}
+
+function normalizeWidgetEntryPath(entry: string): string {
+  return normalizeWidgetEntry(entry)
+}
+
+function normalizeOptionalWidgetEntry(value: unknown, context: string): string | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  assertNonEmptyString(value, context)
+
+  if (isAbsoluteWidgetPath(value)) {
+    throw new VoltraConfigNormalizationError(`${context} must be a relative path, not an absolute path`)
+  }
+
+  const normalizedEntry = normalizeWidgetEntryPath(value)
+
+  if (!normalizedEntry || normalizedEntry === '.') {
+    throw new VoltraConfigNormalizationError(`${context} must point to a file inside the project root`)
+  }
+
+  if (normalizedEntry === '..' || normalizedEntry.startsWith('../')) {
+    throw new VoltraConfigNormalizationError(`${context} must stay within the project root after normalization`)
+  }
+
+  const extension = path.posix.extname(normalizedEntry)
+  if (!WIDGET_ENTRY_EXTENSIONS.has(extension)) {
+    throw new VoltraConfigNormalizationError(
+      `${context} must use a Metro-importable source extension (${Array.from(WIDGET_ENTRY_EXTENSIONS).join(
+        ', '
+      )}); received '${extension || '(none)'}'`
+    )
+  }
+
+  return normalizedEntry
 }
 
 function normalizeLocalizedPathMap(
@@ -165,42 +266,171 @@ function normalizeInitialStatePath(
   return normalizeLocalizedPathMap(projectRoot, value, context)
 }
 
-function normalizeServerUpdate(
-  serverUpdate: { url: string; intervalMinutes?: number; refresh?: boolean },
-  context: string,
-  defaultIntervalMinutes: number,
-  defaultRefresh: boolean,
-  minimumIntervalMinutes: number
-): { url: string; intervalMinutes: number; refresh: boolean } {
-  assertObject(serverUpdate, context)
-  assertNonEmptyString(serverUpdate.url, `${context}.url`)
+function normalizeWidgetParameterName(value: unknown, context: string): string {
+  assertNonEmptyString(value, context)
+  return value
+}
 
-  if (serverUpdate.intervalMinutes !== undefined) {
-    if (typeof serverUpdate.intervalMinutes !== 'number' || !Number.isFinite(serverUpdate.intervalMinutes)) {
-      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be a number`)
-    }
-
-    if (!Number.isInteger(serverUpdate.intervalMinutes)) {
-      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be an integer`)
-    }
-
-    if (serverUpdate.intervalMinutes < minimumIntervalMinutes) {
-      throw new VoltraConfigNormalizationError(`${context}.intervalMinutes must be at least ${minimumIntervalMinutes}`)
-    }
+function normalizeAndroidAppIntent(
+  value: AndroidWidgetAppIntentConfig | undefined,
+  context: string
+): AndroidWidgetAppIntentConfig | undefined {
+  if (value === undefined) {
+    return undefined
   }
 
-  if (serverUpdate.refresh !== undefined && typeof serverUpdate.refresh !== 'boolean') {
-    throw new VoltraConfigNormalizationError(`${context}.refresh must be a boolean`)
+  assertObject(value, context)
+
+  if (!Array.isArray(value.parameters)) {
+    throw new VoltraConfigNormalizationError(`${context}.parameters must be an array`)
+  }
+
+  const seenNames = new Set<string>()
+  const parameters = value.parameters.map((parameter, index) => {
+    const parameterContext = `${context}.parameters[${index}]`
+    assertObject(parameter, parameterContext)
+    const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
+    assertOptionalString(parameter.title, `${parameterContext}.title`)
+    assertOptionalString(parameter.default, `${parameterContext}.default`)
+
+    if (seenNames.has(name)) {
+      throw new VoltraConfigNormalizationError(`${context}.parameters contains duplicate name '${name}'`)
+    }
+
+    seenNames.add(name)
+
+    return {
+      name,
+      title: parameter.title,
+      default: parameter.default,
+    }
+  })
+
+  return { parameters }
+}
+
+function normalizeIOSAppIntent(
+  value: IOSWidgetAppIntentConfig | undefined,
+  context: string
+): IOSWidgetAppIntentConfig | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  assertObject(value, context)
+
+  if (!Array.isArray(value.parameters)) {
+    throw new VoltraConfigNormalizationError(`${context}.parameters must be an array`)
+  }
+
+  const seenNames = new Set<string>()
+  const parameters = value.parameters.map((parameter, index) => {
+    const parameterContext = `${context}.parameters[${index}]`
+    assertObject(parameter, parameterContext)
+    const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
+    assertNonEmptyString(parameter.title, `${parameterContext}.title`)
+    assertOptionalString(parameter.default, `${parameterContext}.default`)
+
+    if (seenNames.has(name)) {
+      throw new VoltraConfigNormalizationError(`${context}.parameters contains duplicate name '${name}'`)
+    }
+
+    seenNames.add(name)
+
+    return {
+      name,
+      title: parameter.title,
+      default: parameter.default,
+    }
+  })
+
+  return { parameters }
+}
+
+/**
+ * `appIntent` only reaches the generated project through the `clientRendered` branches, so on a
+ * widget with no `entry` every parameter is dropped: no configuration defaults are emitted, the
+ * receiver stays payload-driven, and `getWidgetConfiguration` rejects it at runtime. Generate time
+ * is the only place that can still say so.
+ */
+function warnOnAppIntentWithoutEntry(
+  appIntent: { parameters: unknown[] } | undefined,
+  hasEntry: boolean,
+  context: string,
+  warnings: string[]
+): void {
+  if (hasEntry || !appIntent || appIntent.parameters.length === 0) {
+    return
+  }
+
+  warnings.push(
+    `${context}.appIntent is ignored because the widget has no 'entry'. Configuration parameters ` +
+      `only apply to Dynamic Widgets. Add an 'entry' to make this one, or drop 'appIntent'.`
+  )
+}
+
+interface NormalizeServerUpdateOptions {
+  context: string
+  /** True when the widget has an `entry`, so the response is props rather than a payload. */
+  hasEntry: boolean
+  defaultIntervalMinutes: number
+  defaultRefresh: boolean
+  minimumIntervalMinutes: number
+  warnings: string[]
+}
+
+function normalizeServerUpdate(
+  serverUpdate: { url?: string; intervalMinutes?: number; refresh?: boolean },
+  options: NormalizeServerUpdateOptions
+): NormalizedWidgetServerUpdateConfig {
+  const { context, hasEntry, defaultIntervalMinutes, defaultRefresh, minimumIntervalMinutes, warnings } = options
+
+  assertObject(serverUpdate, context)
+
+  const url = resolveServerUpdateUrl(serverUpdate.url, context)
+
+  if (url.kind === 'invalid') {
+    throw new VoltraConfigNormalizationError(url.error)
+  }
+
+  if (url.kind === 'insecure') {
+    warnings.push(url.warning)
+  }
+
+  const interval = resolveServerUpdateInterval({
+    intervalMinutes: serverUpdate.intervalMinutes,
+    context,
+    hasEntry,
+    defaultIntervalMinutes,
+    minimumIntervalMinutes,
+  })
+
+  if (interval.kind === 'invalid') {
+    throw new VoltraConfigNormalizationError(interval.error)
+  }
+
+  if (interval.kind === 'clamped') {
+    warnings.push(interval.warning)
+  }
+
+  const refreshError = validateServerUpdateRefresh(serverUpdate.refresh, context)
+
+  if (refreshError) {
+    throw new VoltraConfigNormalizationError(refreshError)
   }
 
   return {
     url: serverUpdate.url,
-    intervalMinutes: serverUpdate.intervalMinutes ?? defaultIntervalMinutes,
+    intervalMinutes: interval.intervalMinutes,
     refresh: serverUpdate.refresh ?? defaultRefresh,
   }
 }
 
-function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig): NormalizedAndroidWidgetConfig {
+function normalizeAndroidWidget(
+  projectRoot: string,
+  widget: AndroidWidgetConfig,
+  warnings: string[]
+): NormalizedAndroidWidgetConfig {
   assertObject(widget, 'android.widgets[]')
   assertNonEmptyString(widget.id, 'android.widgets[].id')
   assertValidWidgetId(widget.id, 'android.widgets[].id')
@@ -208,11 +438,21 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
   assertPositiveInteger(widget.targetCellHeight, `android.widgets[${widget.id}].targetCellHeight`)
   assertOptionalPositiveInteger(widget.minCellWidth, `android.widgets[${widget.id}].minCellWidth`)
   assertOptionalPositiveInteger(widget.minCellHeight, `android.widgets[${widget.id}].minCellHeight`)
+  assertOptionalPositiveInteger(widget.minWidth, `android.widgets[${widget.id}].minWidth`)
+  assertOptionalPositiveInteger(widget.minHeight, `android.widgets[${widget.id}].minHeight`)
+  assertOptionalPositiveInteger(widget.minResizeWidth, `android.widgets[${widget.id}].minResizeWidth`)
+  assertOptionalPositiveInteger(widget.minResizeHeight, `android.widgets[${widget.id}].minResizeHeight`)
+  assertOptionalPositiveInteger(widget.maxResizeWidth, `android.widgets[${widget.id}].maxResizeWidth`)
+  assertOptionalPositiveInteger(widget.maxResizeHeight, `android.widgets[${widget.id}].maxResizeHeight`)
+
+  const androidAppIntent = normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`)
+  warnOnAppIntentWithoutEntry(androidAppIntent, widget.entry !== undefined, `android.widgets[${widget.id}]`, warnings)
 
   return {
     ...widget,
     displayName: normalizeLabel(widget.displayName, `android.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `android.widgets[${widget.id}].description`),
+    entry: normalizeOptionalWidgetEntry(widget.entry, `android.widgets[${widget.id}].entry`),
     initialStatePath: normalizeInitialStatePath(
       projectRoot,
       widget.initialStatePath,
@@ -220,22 +460,32 @@ function normalizeAndroidWidget(projectRoot: string, widget: AndroidWidgetConfig
     ),
     previewImage: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewImage),
     previewLayout: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewLayout),
+    appIntent: androidAppIntent,
     serverUpdate: widget.serverUpdate
-      ? normalizeServerUpdate(
-          widget.serverUpdate,
-          `android.widgets[${widget.id}].serverUpdate`,
-          CLI_DEFAULTS.android.serverUpdateIntervalMinutes,
-          CLI_DEFAULTS.android.serverUpdateRefresh,
-          15
-        )
+      ? normalizeServerUpdate(widget.serverUpdate, {
+          context: `android.widgets[${widget.id}].serverUpdate`,
+          hasEntry: widget.entry !== undefined,
+          defaultIntervalMinutes: CLI_DEFAULTS.android.serverUpdateIntervalMinutes,
+          defaultRefresh: CLI_DEFAULTS.android.serverUpdateRefresh,
+          minimumIntervalMinutes: 15,
+          warnings,
+        })
       : undefined,
   }
 }
 
-function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): NormalizedIOSWidgetConfig {
+function normalizeIOSWidget(
+  projectRoot: string,
+  widget: IOSWidgetConfig,
+  warnings: string[]
+): NormalizedIOSWidgetConfig {
   assertObject(widget, 'ios.widgets[]')
   assertNonEmptyString(widget.id, 'ios.widgets[].id')
   assertValidWidgetId(widget.id, 'ios.widgets[].id')
+
+  if (widget.kind !== undefined) {
+    assertNonEmptyString(widget.kind, `ios.widgets[${widget.id}].kind`)
+  }
 
   if (widget.supportedFamilies !== undefined) {
     if (!Array.isArray(widget.supportedFamilies)) {
@@ -251,24 +501,30 @@ function normalizeIOSWidget(projectRoot: string, widget: IOSWidgetConfig): Norma
     }
   }
 
+  const iosAppIntent = normalizeIOSAppIntent(widget.appIntent, `ios.widgets[${widget.id}].appIntent`)
+  warnOnAppIntentWithoutEntry(iosAppIntent, widget.entry !== undefined, `ios.widgets[${widget.id}]`, warnings)
+
   return {
     ...widget,
     displayName: normalizeLabel(widget.displayName, `ios.widgets[${widget.id}].displayName`),
     description: normalizeLabel(widget.description, `ios.widgets[${widget.id}].description`),
     supportedFamilies: widget.supportedFamilies ?? [...CLI_DEFAULTS.ios.widgetFamilies],
+    entry: normalizeOptionalWidgetEntry(widget.entry, `ios.widgets[${widget.id}].entry`),
     initialStatePath: normalizeInitialStatePath(
       projectRoot,
       widget.initialStatePath,
       `ios.widgets[${widget.id}].initialStatePath`
     ),
+    appIntent: iosAppIntent,
     serverUpdate: widget.serverUpdate
-      ? normalizeServerUpdate(
-          widget.serverUpdate,
-          `ios.widgets[${widget.id}].serverUpdate`,
-          CLI_DEFAULTS.ios.serverUpdateIntervalMinutes,
-          CLI_DEFAULTS.ios.serverUpdateRefresh,
-          1
-        )
+      ? normalizeServerUpdate(widget.serverUpdate, {
+          context: `ios.widgets[${widget.id}].serverUpdate`,
+          hasEntry: widget.entry !== undefined,
+          defaultIntervalMinutes: CLI_DEFAULTS.ios.serverUpdateIntervalMinutes,
+          defaultRefresh: CLI_DEFAULTS.ios.serverUpdateRefresh,
+          minimumIntervalMinutes: 1,
+          warnings,
+        })
       : undefined,
   }
 }
@@ -282,6 +538,25 @@ function assertUniqueWidgetIds(widgetIds: string[], context: string): void {
     }
 
     seen.add(widgetId)
+  }
+}
+
+/**
+ * WidgetKit identifies a placed widget by extension bundle id + kind, so two widgets sharing a kind
+ * would fight over the same Home Screen instances. Compared after defaulting, which also catches a
+ * custom kind that collides with another widget's `Voltra_Widget_<id>`.
+ */
+function assertUniqueIOSWidgetKinds(widgets: Pick<IOSWidgetConfig, 'id' | 'kind'>[]): void {
+  const seen = new Set<string>()
+
+  for (const widget of widgets) {
+    const kind = iosWidgetKind(widget)
+
+    if (seen.has(kind)) {
+      throw new VoltraConfigNormalizationError(`Duplicate ios widget kind '${kind}'`)
+    }
+
+    seen.add(kind)
   }
 }
 
@@ -302,6 +577,7 @@ function assertValidIOSTargetName(targetName: string, context: string): void {
 }
 
 function normalizeAndroidConfig(
+  warnings: string[],
   projectRoot: string,
   config: LoadedVoltraConfig['config']['android']
 ): NormalizedVoltraAndroidConfig | undefined {
@@ -326,7 +602,7 @@ function normalizeAndroidConfig(
     throw new VoltraConfigNormalizationError('android.widgets must be an array')
   }
 
-  const widgets = (config.widgets ?? []).map((widget) => normalizeAndroidWidget(projectRoot, widget))
+  const widgets = (config.widgets ?? []).map((widget) => normalizeAndroidWidget(projectRoot, widget, warnings))
   assertUniqueWidgetIds(
     widgets.map((widget) => widget.id),
     'android'
@@ -350,6 +626,7 @@ function normalizeAndroidConfig(
 }
 
 function normalizeIOSConfig(
+  warnings: string[],
   projectRoot: string,
   config: LoadedVoltraConfig['config']['ios']
 ): NormalizedVoltraIOSConfig | undefined {
@@ -359,12 +636,12 @@ function normalizeIOSConfig(
 
   assertObject(config, 'ios')
   assertOptionalBoolean(config.enablePushNotifications, 'ios.enablePushNotifications')
-  assertOptionalString(config.groupIdentifier, 'ios.groupIdentifier')
+  assertOptionalPerConfigurationString(config.groupIdentifier, 'ios.groupIdentifier')
   assertOptionalString(config.deploymentTarget, 'ios.deploymentTarget')
   assertOptionalString(config.targetName, 'ios.targetName')
   assertOptionalStringArray(config.fonts, 'ios.fonts')
   assertOptionalString(config.userImagesPath, 'ios.userImagesPath')
-  assertOptionalString(config.keychainGroup, 'ios.keychainGroup')
+  assertOptionalPerConfigurationString(config.keychainGroup, 'ios.keychainGroup')
 
   if (config.project !== undefined) {
     assertObject(config.project, 'ios.project')
@@ -372,7 +649,7 @@ function normalizeIOSConfig(
     assertOptionalString(config.project.xcodeprojPath, 'ios.project.xcodeprojPath')
     assertOptionalString(config.project.mainTargetName, 'ios.project.mainTargetName')
     assertOptionalString(config.project.infoPlistPath, 'ios.project.infoPlistPath')
-    assertOptionalString(config.project.entitlementsPath, 'ios.project.entitlementsPath')
+    assertOptionalPerConfigurationString(config.project.entitlementsPath, 'ios.project.entitlementsPath')
     assertOptionalString(config.project.podfilePath, 'ios.project.podfilePath')
   }
 
@@ -384,11 +661,12 @@ function normalizeIOSConfig(
     assertValidIOSTargetName(config.targetName, 'ios.targetName')
   }
 
-  const widgets = (config.widgets ?? []).map((widget) => normalizeIOSWidget(projectRoot, widget))
+  const widgets = (config.widgets ?? []).map((widget) => normalizeIOSWidget(projectRoot, widget, warnings))
   assertUniqueWidgetIds(
     widgets.map((widget) => widget.id),
     'ios'
   )
+  assertUniqueIOSWidgetKinds(widgets)
 
   return {
     enablePushNotifications: config.enablePushNotifications ?? CLI_DEFAULTS.ios.enablePushNotifications,
@@ -404,7 +682,7 @@ function normalizeIOSConfig(
       xcodeprojPath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.xcodeprojPath),
       mainTargetName: config.project?.mainTargetName,
       infoPlistPath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.infoPlistPath),
-      entitlementsPath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.entitlementsPath),
+      entitlementsPath: resolveOptionalPerConfigurationPath(projectRoot, config.project?.entitlementsPath),
       podfilePath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.podfilePath),
     },
   }
@@ -419,11 +697,38 @@ export function normalizeVoltraConfig(loadedConfig: LoadedVoltraConfig): Normali
     loadedConfig.config.projectRoot ?? loadedConfig.configDir
   )
 
+  const warnings: string[] = []
+  const android = normalizeAndroidConfig(warnings, projectRoot, loadedConfig.config.android)
+  const ios = normalizeIOSConfig(warnings, projectRoot, loadedConfig.config.ios)
+
+  assertServerDrivenDynamicWidgetsAreSupported(ios)
+
   return {
     configPath: loadedConfig.configPath,
     configDir: loadedConfig.configDir,
     projectRoot,
-    android: normalizeAndroidConfig(projectRoot, loadedConfig.config.android),
-    ios: normalizeIOSConfig(projectRoot, loadedConfig.config.ios),
+    android,
+    ios,
+    warnings,
+  }
+}
+
+/**
+ * A Dynamic Widget commits fetched props to the App Group so the widget extension can read them,
+ * so a server-driven one without a `groupIdentifier` would fetch and have nowhere to put the
+ * result.
+ */
+function assertServerDrivenDynamicWidgetsAreSupported(ios: NormalizedVoltraIOSConfig | undefined): void {
+  if (ios === undefined || ios.groupIdentifier !== undefined) {
+    return
+  }
+
+  for (const widget of ios.widgets) {
+    if (widget.entry !== undefined && widget.serverUpdate !== undefined) {
+      throw new VoltraConfigNormalizationError(
+        `ios.widgets[${widget.id}] has both entry and serverUpdate, which requires ios.groupIdentifier ` +
+          'so fetched props can be shared with the widget extension.'
+      )
+    }
   }
 }

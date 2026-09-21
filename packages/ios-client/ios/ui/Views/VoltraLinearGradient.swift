@@ -57,12 +57,16 @@ public struct VoltraLinearGradient: VoltraView {
           }
         }
       }
-      if !stops.isEmpty { return Gradient(stops: stops) }
+      if !stops.isEmpty {
+        return Gradient(stops: stops)
+      }
     }
     if let colorsStr = params.colors {
       let parts = colorsStr.split(separator: "|").map(String.init)
       let colors: [Color] = parts.compactMap { JSColorParser.parse($0) }
-      if !colors.isEmpty { return Gradient(colors: colors) }
+      if !colors.isEmpty {
+        return Gradient(colors: colors)
+      }
     }
     // Fallback neutral gradient
     return Gradient(colors: [Color.black.opacity(0.25), Color.black.opacity(0.05)])

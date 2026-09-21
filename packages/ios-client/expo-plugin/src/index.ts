@@ -1,9 +1,11 @@
 import { IOSConfig } from 'expo/config-plugins'
 
+import { resolveInstalledPackageVersion } from '@use-voltra/expo-plugin'
+
 import { IOS } from './constants'
 import { withIOS, withPushNotifications } from './ios'
 import { withIOS as withIOSWidget } from './ios-widget'
-import type { IOSConfigPluginProps, VoltraIosConfigPlugin } from './types'
+import type { VoltraIosConfigPlugin } from './types'
 import { ensureURLScheme } from './utils/urlScheme'
 import { validateIOSConfigPluginProps } from './validation'
 
@@ -13,11 +15,18 @@ import { validateIOSConfigPluginProps } from './validation'
  * Configures Live Activities, the widget extension, and optional push-to-start support.
  */
 const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
-  validateIOSConfigPluginProps(props)
+  const projectRoot = (config as { modRequest?: { projectRoot?: string } }).modRequest?.projectRoot
+  validateIOSConfigPluginProps(props, projectRoot)
+
+  const voltraVersion = resolveInstalledPackageVersion(projectRoot ?? process.cwd(), '@use-voltra/ios-client')
 
   const iosBundleIdentifier = config.ios?.bundleIdentifier
   if (!iosBundleIdentifier) {
-    return config
+    throw new Error(
+      'The Voltra iOS config plugin requires "expo.ios.bundleIdentifier" to be set in the app config — ' +
+        'it derives the widget extension bundle identifier from it. ' +
+        'Set "ios.bundleIdentifier" (e.g. "com.example.app") in app.json or app.config.(js|ts) and run prebuild again.'
+    )
   }
 
   const deploymentTarget = props.deploymentTarget || IOS.DEPLOYMENT_TARGET
@@ -36,7 +45,9 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
     groupIdentifier: props.groupIdentifier,
     widgetIds: props.widgets && props.widgets.length > 0 ? props.widgets.map((w) => w.id) : undefined,
     widgets: props.widgets,
+    liveActivities: props.liveActivities,
     keychainGroup,
+    voltraVersion,
   })
 
   config = withIOSWidget(config, {
@@ -44,8 +55,10 @@ const withVoltraIos: VoltraIosConfigPlugin = (config, props = {}) => {
     bundleIdentifier,
     deploymentTarget,
     widgets: props.widgets,
+    liveActivities: props.liveActivities,
     version,
     buildNumber,
+    voltraVersion,
     ...(props.groupIdentifier ? { groupIdentifier: props.groupIdentifier } : {}),
     ...(keychainGroup ? { keychainGroup } : {}),
     ...(props.fonts ? { fonts: props.fonts } : {}),
@@ -62,6 +75,7 @@ export default withVoltraIos
 
 export type {
   IOSConfigPluginProps,
+  IOSDynamicLiveActivityConfig,
   IOSMainAppPluginProps,
   IOSWidgetConfig,
   IOSWidgetExtensionFiles,

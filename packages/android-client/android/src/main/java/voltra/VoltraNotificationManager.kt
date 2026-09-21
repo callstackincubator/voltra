@@ -14,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -340,11 +341,21 @@ class VoltraNotificationManager(
         )
     }
 
+    // Settings.ACTION_APP_NOTIFICATION_SETTINGS only resolves to an activity on API 26+.
+    // On 24-25 no activity handles it and startActivity throws ActivityNotFoundException,
+    // so fall back to the app details screen, which has existed since API 9.
     fun openPromotedNotificationSettings() {
         val intent =
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                putExtra(Settings.EXTRA_APP_PACKAGE, appContext.packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, appContext.packageName)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            } else {
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", appContext.packageName, null)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
             }
         appContext.startActivity(intent)
     }
@@ -353,6 +364,17 @@ class VoltraNotificationManager(
         val intId = allocateNotificationId()
         return "ongoing-notification-$intId"
     }
+
+    // Notification.Builder(Context, String) is API 26. Notification channels don't exist
+    // below API 26, so falling back to the single-arg constructor (and discarding
+    // channelId) on 24-25 is correct behavior, not a compromise.
+    @Suppress("DEPRECATION")
+    private fun newBuilder(channelId: String?): Builder =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && channelId != null) {
+            Builder(appContext, channelId)
+        } else {
+            Builder(appContext).setPriority(Notification.PRIORITY_DEFAULT)
+        }
 
     private fun postNotification(
         record: AndroidOngoingNotificationRecord,
@@ -371,7 +393,7 @@ class VoltraNotificationManager(
         }
 
         val builder =
-            Builder(appContext, record.channelId)
+            newBuilder(record.channelId)
                 .setSmallIcon(resolveSmallIcon(record.smallIcon))
                 .setOngoing(true)
                 .setOnlyAlertOnce(onlyAlertOnce)
@@ -517,12 +539,14 @@ class VoltraNotificationManager(
             null
         }
 
+    @RequiresApi(36)
     private fun AndroidOngoingNotificationProgressSegmentPayload.toNativeSegment(): Notification.ProgressStyle.Segment {
         val segment = Notification.ProgressStyle.Segment(length)
         parseAndroidColor(color)?.let { segment.setColor(it) }
         return segment
     }
 
+    @RequiresApi(36)
     private fun AndroidOngoingNotificationProgressPointPayload.toNativePoint(): Notification.ProgressStyle.Point {
         val point = Notification.ProgressStyle.Point(position)
         parseAndroidColor(color)?.let { point.setColor(it) }

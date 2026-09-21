@@ -4,7 +4,15 @@ import { promisify } from 'node:util'
 import { brotliCompress, constants } from 'node:zlib'
 
 import { type ComponentRegistry, createVoltraRenderer, ensurePayloadWithinBudget } from '@use-voltra/core'
-import { getComponentId, type LiveActivityVariants, type WidgetVariants } from '@use-voltra/ios'
+import {
+  getComponentId,
+  getDynamicLiveActivityAttributesType,
+  type DynamicLiveActivityContentState,
+  type DynamicLiveActivityProps,
+  type DynamicLiveActivityPropsValue,
+  type LiveActivityVariants,
+  type WidgetVariants,
+} from '@use-voltra/ios'
 import type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,
@@ -19,7 +27,14 @@ import {
 import type { ReactNode } from 'react'
 
 export { Voltra } from '@use-voltra/ios'
-export type { LiveActivityVariants, WidgetVariants }
+export { getDynamicLiveActivityAttributesType }
+export type {
+  DynamicLiveActivityContentState,
+  DynamicLiveActivityProps,
+  DynamicLiveActivityPropsValue,
+  LiveActivityVariants,
+  WidgetVariants,
+}
 export type {
   WidgetRenderRequest,
   WidgetUpdateExpressHandler,

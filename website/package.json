@@ -8,13 +8,12 @@
     "preview": "rspress preview"
   },
   "dependencies": {
-    "@callstack/rspress-preset": "0.5.1",
-    "@callstack/rspress-theme": "0.5.1",
-    "@rspress/core": "2.0.0-rc.4",
+    "@callstack/rspress-preset": "0.6.6",
+    "@callstack/rspress-theme": "0.6.6",
+    "@rspress/core": "2.0.8",
     "@shikijs/transformers": "^3.13.0"
   },
   "devDependencies": {
-    "@types/node": "^18.11.17",
-    "vercel": "54.2.0"
+    "@types/node": "^18.11.17"
   }
 }

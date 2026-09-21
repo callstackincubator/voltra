@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/core",
-  "version": "1.4.1",
+  "version": "2.3.1",
   "description": "Generic renderer and payload utilities for Voltra",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",
@@ -12,10 +12,17 @@
       "import": "./build/esm/index.js",
       "default": "./build/esm/index.js"
     },
+    "./dynamic-live-activity": {
+      "types": "./build/types/dynamic-live-activity.d.ts",
+      "require": "./build/cjs/dynamic-live-activity.js",
+      "import": "./build/esm/dynamic-live-activity.js",
+      "default": "./build/esm/dynamic-live-activity.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "build",
+    "src",
     "README.md"
   ],
   "scripts": {

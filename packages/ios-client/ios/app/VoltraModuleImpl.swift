@@ -2,6 +2,7 @@ import ActivityKit
 import Compression
 import Foundation
 import os
+import React
 import UIKit
 
 @objc(VoltraHeadlessState)
@@ -59,7 +60,26 @@ public class VoltraModuleImpl {
   public init() {
     // Clean up data for widgets that are no longer installed
     VoltraWidgetService.cleanupOrphanedData()
+    #if DEBUG
+      syncDevServerURL()
+    #endif
   }
+
+  #if DEBUG
+    /// Resolve the Metro dev-server base URL via React Native's own provider and relay it to the
+    /// widget extension through the app group. The extension is React-free (can't call
+    /// RCTBundleURLProvider itself), so the app resolves it and the extension reads it — fixing the
+    /// case where Metro isn't on localhost:8081 (custom port, LAN dev server, physical device).
+    private func syncDevServerURL() {
+      guard
+        let url = RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index"),
+        let scheme = url.scheme,
+        let host = url.host
+      else { return }
+      let port = url.port.map { ":\($0)" } ?? ""
+      VoltraWidgetDefaults.setDevServerURL("\(scheme)://\(host)\(port)")
+    }
+  #endif
 
   func isHeadless() -> Bool {
     VoltraHeadlessState.shared.isHeadless()
@@ -67,6 +87,14 @@ public class VoltraModuleImpl {
 
   func clearHeadless() {
     VoltraHeadlessState.shared.clear()
+  }
+
+  func drainDynamicLiveActivityRenderFailures() {
+    VoltraEventBus.shared.drainDynamicLiveActivityRenderFailures()
+  }
+
+  func setDynamicLiveActivityRenderFailureListenerActive(_ active: Bool) {
+    VoltraEventBus.shared.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
   var pushNotificationsEnabled: Bool {
@@ -162,6 +190,48 @@ public class VoltraModuleImpl {
     }
   }
 
+  func startDynamicLiveActivity(definitionId: String, propsJson: String, options: StartVoltraOptions?) async throws -> String {
+    guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
+    let name = options?.activityName?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let activityName = name?.isEmpty == false ? name! : UUID().uuidString
+    do {
+      let props = try VoltraDynamicLiveActivityPayloadValidator.decodeProps(propsJson)
+      let staleDate = options?.staleDate.map { Date(timeIntervalSince1970: $0.doubleValue / 1000.0) }
+      let pushType = try resolvePushType(channelId: options?.channelId)
+      let request = VoltraDynamicLiveActivityCreateRequest(
+        definitionId: definitionId,
+        name: activityName,
+        deepLinkUrl: options?.deepLinkUrl,
+        props: props,
+        staleDate: staleDate,
+        relevanceScore: options?.relevanceScore?.doubleValue ?? 0.0,
+        pushType: pushType
+      )
+      return try await liveActivityService.createDynamicActivity(request)
+    } catch {
+      VoltraLogger.module.error("startDynamicLiveActivity failed: \(error)")
+      throw mapError(error)
+    }
+  }
+
+  func updateDynamicLiveActivity(activityId: String, propsJson: String, options: UpdateVoltraOptions?) async throws {
+    guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
+    do {
+      let props = try VoltraDynamicLiveActivityPayloadValidator.decodeProps(propsJson)
+      let staleDate = options?.staleDate.map { Date(timeIntervalSince1970: $0.doubleValue / 1000.0) }
+      try await liveActivityService.updateDynamicActivity(
+        byName: activityId,
+        request: VoltraDynamicLiveActivityUpdateRequest(
+          props: props,
+          staleDate: staleDate,
+          relevanceScore: options?.relevanceScore?.doubleValue ?? 0.0
+        )
+      )
+    } catch {
+      throw mapError(error)
+    }
+  }
+
   func endLiveActivity(activityId: String, options: EndVoltraOptions?) async throws {
     guard #available(iOS 16.4, *) else { throw VoltraErrors.unsupportedOS }
 
@@ -182,12 +252,17 @@ public class VoltraModuleImpl {
 
   func getLatestVoltraActivityId() -> String? {
     guard #available(iOS 16.4, *) else { return nil }
-    return liveActivityService.getLatestActivity()?.id
+    return liveActivityService.latestActivityId()
   }
 
   func listVoltraActivityIds() -> [String] {
     guard #available(iOS 16.4, *) else { return [] }
-    return liveActivityService.getAllActivities().map(\.id)
+    return liveActivityService.getAllActivityReferences().map(\.id)
+  }
+
+  func getDynamicLiveActivityDefinitionIds() -> [String] {
+    guard #available(iOS 16.4, *) else { return [] }
+    return liveActivityService.dynamicLiveActivityDefinitionIds()
   }
 
   func isLiveActivityActive(name: String) -> Bool {
@@ -225,6 +300,13 @@ public class VoltraModuleImpl {
     }
   }
 
+  func reloadDynamicLiveActivities(definitionIds: [String]?) async {
+    #if DEBUG
+      syncDevServerURL()
+    #endif
+    await liveActivityService.reloadDynamicActivities(definitionIds: definitionIds)
+  }
+
   // MARK: - Image Preloading
 
   func preloadImages(images: [PreloadImageOptions]) async throws -> PreloadImagesResult {
@@ -236,6 +318,29 @@ public class VoltraModuleImpl {
   }
 
   // MARK: - Widgets
+
+  func updateDynamicWidget(
+    dynamicWidgetId: String,
+    dynamicWidgetPropsJson: String
+  ) async throws {
+    let dynamicWidgetUpdater = DynamicWidgetUpdater(
+      dynamicWidgetPropsPersistence: DynamicWidgetPropsStore(),
+      dynamicWidgetTimelineReload: { dynamicWidgetId in
+        // On a server-driven widget the reload below runs getTimeline, which would otherwise
+        // fetch and overwrite what was just written. ADR 0002 says the *next scheduled* fetch
+        // overwrites app-written props, not the reload the write itself caused.
+        if VoltraWidgetServer.isServerDriven(dynamicWidgetId) {
+          DynamicWidgetServerPropsStore().noteAppWrite(for: .of(dynamicWidgetId))
+        }
+
+        VoltraWidgetService.reloadTimeline(for: dynamicWidgetId)
+      }
+    )
+    try await dynamicWidgetUpdater.updateDynamicWidget(
+      dynamicWidgetID: dynamicWidgetId,
+      dynamicWidgetPropsJSON: dynamicWidgetPropsJson
+    )
+  }
 
   func updateWidget(widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws {
     try VoltraWidgetService.setWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
@@ -255,6 +360,11 @@ public class VoltraModuleImpl {
   }
 
   func reloadWidgets(widgetIds: [String]?) async {
+    #if DEBUG
+      // Refresh the relayed dev-server URL before reloading (hot-reload path) so the extension
+      // fetches from the current Metro host.
+      syncDevServerURL()
+    #endif
     if let ids = widgetIds, !ids.isEmpty {
       for widgetId in ids {
         VoltraWidgetService.reloadTimeline(for: widgetId)
@@ -266,16 +376,35 @@ public class VoltraModuleImpl {
 
   func clearWidget(widgetId: String) async {
     VoltraWidgetService.removeAllData(for: widgetId)
+    VoltraWidgetService.clearWidgetServerState(for: widgetId)
     VoltraWidgetService.reloadTimeline(for: widgetId)
   }
 
   func clearAllWidgets() async {
     VoltraWidgetService.removeAllWidgets()
+
+    for widgetId in VoltraWidgetServer.serverDrivenWidgetIds {
+      VoltraWidgetService.clearWidgetServerState(for: widgetId)
+    }
+
     VoltraWidgetService.reloadAllTimelines()
   }
 
   func getActiveWidgets() async throws -> [[String: String]] {
     try await VoltraWidgetService.getActiveWidgets()
+  }
+
+  /// - Returns: an error message when the settings were rejected, or nil when they were applied.
+  func setWidgetServerUpdate(settingsJson: String, widgetId: String?) -> String? {
+    VoltraWidgetService.setWidgetServerUpdate(settingsJson: settingsJson, widgetId: widgetId)
+  }
+
+  func clearWidgetServerUpdate(widgetId: String?) -> String? {
+    VoltraWidgetService.clearWidgetServerUpdate(widgetId: widgetId)
+  }
+
+  func getWidgetServerUpdate(widgetId: String?) -> String? {
+    VoltraWidgetService.getWidgetServerUpdate(widgetId: widgetId)
   }
 
   func setWidgetServerCredentials(token: String, headers: [String: String]?) {
@@ -301,6 +430,16 @@ public class VoltraModuleImpl {
         return VoltraErrors.liveActivitiesNotEnabled
       case .notFound:
         return VoltraErrors.notFound
+      case .rendererMismatch:
+        return VoltraErrors.rendererMismatch
+      }
+    }
+    if let dynamicError = error as? VoltraDynamicLiveActivityError {
+      switch dynamicError {
+      case .rendererMismatch:
+        return VoltraErrors.rendererMismatch
+      case .unknownDefinition, .payloadTooLarge, .resourceUnavailable:
+        return VoltraErrors.unexpectedError(error)
       }
     }
     return VoltraErrors.unexpectedError(error)

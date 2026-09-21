@@ -160,6 +160,7 @@ private fun RenderElement(element: VoltraElement) {
         ComponentTypeID.LAZY_COLUMN -> VoltraLazyColumn(element)
         ComponentTypeID.LAZY_VERTICAL_GRID -> VoltraLazyVerticalGrid(element)
         ComponentTypeID.CHART -> RenderChart(element)
+        ComponentTypeID.ARC_PROGRESS_INDICATOR -> RenderArcProgressIndicator(element)
     }
 }
 
@@ -195,5 +196,6 @@ fun RenderElementWithModifier(
         ComponentTypeID.LAZY_COLUMN -> VoltraLazyColumn(element, modifier)
         ComponentTypeID.LAZY_VERTICAL_GRID -> VoltraLazyVerticalGrid(element, modifier)
         ComponentTypeID.CHART -> RenderChart(element, modifier)
+        ComponentTypeID.ARC_PROGRESS_INDICATOR -> RenderArcProgressIndicator(element, modifier)
     }
 }

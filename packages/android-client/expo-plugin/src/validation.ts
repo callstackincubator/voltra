@@ -1,15 +1,36 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { validateHomeScreenWidgetId, validateInitialStatePath, validateWidgetLabel } from '@use-voltra/expo-plugin'
+import {
+  validateHomeScreenWidgetId,
+  validateInitialStatePath,
+  validateWidgetEntry,
+  validateWidgetLabel,
+  validateWidgetServerUpdate,
+} from '@use-voltra/expo-plugin'
+
+import { androidServerUpdateRules } from './android/serverUpdate'
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
+
+function validatePositiveIntegerField(widget: AndroidWidgetConfig, field: keyof AndroidWidgetConfig): void {
+  const value = widget[field]
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    throw new Error(`Widget '${widget.id}': ${field} must be a positive integer`)
+  }
+}
 
 export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, projectRoot?: string): void {
   validateHomeScreenWidgetId(widget.id)
   validateWidgetLabel(widget.displayName, widget.id, 'displayName')
   validateWidgetLabel(widget.description, widget.id, 'description')
   validateInitialStatePath(widget.initialStatePath, widget.id, projectRoot)
+
+  if (widget.entry !== undefined) {
+    validateWidgetEntry(widget.entry, widget.id, projectRoot)
+  }
+
+  validateWidgetServerUpdate(widget.serverUpdate, widget.id, androidServerUpdateRules(widget))
 
   if (typeof widget.targetCellWidth !== 'number') {
     throw new Error(`Widget '${widget.id}': targetCellWidth is required and must be a number`)
@@ -25,20 +46,36 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
     throw new Error(`Widget '${widget.id}': targetCellHeight must be a positive integer (typically 1-5)`)
   }
 
+  if (widget.minWidth !== undefined) {
+    validatePositiveIntegerField(widget, 'minWidth')
+  }
+
+  if (widget.minHeight !== undefined) {
+    validatePositiveIntegerField(widget, 'minHeight')
+  }
+
   if (widget.minCellWidth !== undefined) {
-    if (typeof widget.minCellWidth !== 'number' || !Number.isInteger(widget.minCellWidth) || widget.minCellWidth < 1) {
-      throw new Error(`Widget '${widget.id}': minCellWidth must be a positive integer`)
-    }
+    validatePositiveIntegerField(widget, 'minCellWidth')
   }
 
   if (widget.minCellHeight !== undefined) {
-    if (
-      typeof widget.minCellHeight !== 'number' ||
-      !Number.isInteger(widget.minCellHeight) ||
-      widget.minCellHeight < 1
-    ) {
-      throw new Error(`Widget '${widget.id}': minCellHeight must be a positive integer`)
-    }
+    validatePositiveIntegerField(widget, 'minCellHeight')
+  }
+
+  if (widget.minResizeWidth !== undefined) {
+    validatePositiveIntegerField(widget, 'minResizeWidth')
+  }
+
+  if (widget.minResizeHeight !== undefined) {
+    validatePositiveIntegerField(widget, 'minResizeHeight')
+  }
+
+  if (widget.maxResizeWidth !== undefined) {
+    validatePositiveIntegerField(widget, 'maxResizeWidth')
+  }
+
+  if (widget.maxResizeHeight !== undefined) {
+    validatePositiveIntegerField(widget, 'maxResizeHeight')
   }
 
   if (widget.previewImage !== undefined) {

@@ -1,6 +1,11 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "rootDir": "../..",
+    "baseUrl": "../..",
+    "paths": {
+      "@use-voltra/compiler": ["packages/compiler/src/index.ts"]
+    }
   }
 }

@@ -3,6 +3,11 @@ import { getNativeVoltra } from '../VoltraModule.js'
 
 export type { WidgetServerCredentials } from '../types.js'
 
+/**
+ * @deprecated Use {@link setWidgetServerUpdate} with an `Authorization` header. This writes the
+ * same stored credentials and keeps the same replace-everything semantics, so migrating is a
+ * one-line change; it will be removed in a future major.
+ */
 export async function setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void> {
   if (!credentials.token) {
     throw new Error('[Voltra][iOS] setWidgetServerCredentials: token is required')
@@ -11,6 +16,9 @@ export async function setWidgetServerCredentials(credentials: WidgetServerCreden
   return getNativeVoltra().setWidgetServerCredentials(credentials)
 }
 
+/**
+ * @deprecated Use {@link clearWidgetServerUpdate} instead.
+ */
 export async function clearWidgetServerCredentials(): Promise<void> {
   return getNativeVoltra().clearWidgetServerCredentials()
 }

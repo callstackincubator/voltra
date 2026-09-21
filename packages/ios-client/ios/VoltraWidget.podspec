@@ -14,6 +14,7 @@ Pod::Spec.new do |s|
     :ios => '16.4',
   }
   s.swift_version  = '5.9'
+  s.module_name    = 'VoltraRuntime'
   s.source         = { git: 'https://github.com/callstackincubator/voltra' }
   s.static_framework = true
 

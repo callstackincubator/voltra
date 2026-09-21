@@ -2,7 +2,7 @@ import ActivityKit
 import Foundation
 import SwiftUI
 
-enum VoltraDeepLinkResolver {
+public enum VoltraDeepLinkResolver {
   static func deepLinkScheme() -> String? {
     if let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]] {
       for t in types {
@@ -26,11 +26,13 @@ enum VoltraDeepLinkResolver {
   /// Resolves a URL string, supporting both absolute and relative paths
   /// - Parameter raw: The URL string (e.g., "myapp://path", "/path", or "path")
   /// - Returns: A resolved URL, or nil if invalid
-  static func resolveUrl(_ raw: String) -> URL? {
+  public static func resolveUrl(_ raw: String) -> URL? {
     guard !raw.isEmpty else { return nil }
 
     // If it's already an absolute URL, use it as-is
-    if raw.contains("://"), let url = URL(string: raw) { return url }
+    if raw.contains("://"), let url = URL(string: raw) {
+      return url
+    }
 
     // Otherwise, prepend the app's URL scheme
     if let scheme = deepLinkScheme() {

@@ -13,6 +13,9 @@ public actor VoltraLiveActivityManager {
   // Callbacks are `let` + `@Sendable` so they are immutable after init and safe
   // to call from any concurrency context without capturing `self`.
 
+  /// Called when ActivityKit exposes an activity instance to this process.
+  private let onActivityDiscovered: (@Sendable (String) -> Void)?
+
   /// Called when a push token is received or rotated for a specific activity.
   /// Parameters: (activityName, hexToken)
   private let onTokenUpdated: (@Sendable (String, String) -> Void)?
@@ -30,6 +33,7 @@ public actor VoltraLiveActivityManager {
   /// Drives the main `Activity.activityUpdates` loop. When this task is cancelled,
   /// the loop exits and no new per-activity observers are created.
   private var activityUpdatesTask: Task<Void, Never>?
+  private var isObserving = false
 
   /// Drives the `Activity.pushToStartTokenUpdates` loop (iOS 17.2+ only).
   private var pushToStartTask: Task<Void, Never>?
@@ -42,6 +46,11 @@ public actor VoltraLiveActivityManager {
   /// One lifecycle-state observer task per live activity, keyed by `activity.id`.
   private var stateTasks: [String: Task<Void, Never>] = [:]
 
+  /// Generated Dynamic Live Activity types require separate ActivityKit streams.
+  /// This observer owns those streams while this manager continues to own the
+  /// unchanged legacy and app-wide push-to-start contracts.
+  private let dynamicObserver: VoltraDynamicLiveActivityObserver
+
   /// The last push-to-start token we forwarded to the callback.
   /// ActivityKit re-delivers the current token whenever a live activity starts or
   /// ends (the push-to-start eligibility state has changed), even if the token
@@ -52,13 +61,20 @@ public actor VoltraLiveActivityManager {
   // MARK: - Init
 
   public init(
+    onActivityDiscovered: (@Sendable (String) -> Void)? = nil,
     onTokenUpdated: (@Sendable (String, String) -> Void)? = nil,
     onPushToStartUpdated: (@Sendable (String) -> Void)? = nil,
     onStateChanged: (@Sendable (String, String) -> Void)? = nil
   ) {
+    self.onActivityDiscovered = onActivityDiscovered
     self.onTokenUpdated = onTokenUpdated
     self.onPushToStartUpdated = onPushToStartUpdated
     self.onStateChanged = onStateChanged
+    dynamicObserver = VoltraDynamicLiveActivityObserver(
+      onActivityDiscovered: onActivityDiscovered,
+      onTokenUpdated: onTokenUpdated,
+      onStateChanged: onStateChanged
+    )
   }
 
   // MARK: - Public API
@@ -69,9 +85,14 @@ public actor VoltraLiveActivityManager {
   /// To restart observation, call `stopObserving()` first.
   public func startObserving() {
     guard activityUpdatesTask == nil else { return }
+    isObserving = true
 
     startActivityUpdatesObservation()
     startPushToStartObservation()
+    Task { [weak self, dynamicObserver] in
+      guard await self?.currentlyObserving() == true else { return }
+      await VoltraDynamicLiveActivityRegistry.shared.startObserving(with: dynamicObserver)
+    }
   }
 
   /// Stop all observation and cancel every outstanding task.
@@ -79,6 +100,7 @@ public actor VoltraLiveActivityManager {
   /// Safe to call from any context. After this returns the actor holds no running
   /// tasks; calling `startObserving()` again creates a fresh set.
   public func stopObserving() {
+    isObserving = false
     activityUpdatesTask?.cancel()
     activityUpdatesTask = nil
 
@@ -88,6 +110,13 @@ public actor VoltraLiveActivityManager {
     lastPushToStartToken = nil
 
     cancelAllPerActivityTasks()
+    Task { [dynamicObserver] in
+      await dynamicObserver.stopObserving()
+    }
+  }
+
+  private func currentlyObserving() -> Bool {
+    isObserving
   }
 
   // MARK: - deinit
@@ -169,6 +198,7 @@ public actor VoltraLiveActivityManager {
   private func observe(_ activity: Activity<VoltraAttributes>) {
     let activityId = activity.id
     let activityName = activity.attributes.name
+    onActivityDiscovered?(activityId)
 
     // Token observation
     if let onTokenUpdated, tokenTasks[activityId] == nil {

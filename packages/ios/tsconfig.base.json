@@ -5,7 +5,8 @@
     "baseUrl": ".",
     "moduleResolution": "node",
     "paths": {
-      "@use-voltra/core": ["../core/build/types/index.d.ts"]
+      "@use-voltra/core": ["../core/build/types/index.d.ts"],
+      "@use-voltra/core/dynamic-live-activity": ["../core/build/types/dynamic-live-activity.d.ts"]
     }
   },
   "include": ["./src"],

@@ -1,11 +1,24 @@
 #import "NativeVoltra.h"
 #import <UIKit/UIKit.h>
 
-#if __has_include("Voltra/Voltra-Swift.h")
-#import "Voltra/Voltra-Swift.h"
+#if __has_include("Voltra/VoltraRuntime-Swift.h")
+#import "Voltra/VoltraRuntime-Swift.h"
 #else
-#import "Voltra-Swift.h"
+#import "VoltraRuntime-Swift.h"
 #endif
+
+static NSString *VoltraPromiseErrorCode(NSString *fallbackCode, NSError *error)
+{
+  if ([error.domain isEqualToString:@"com.callstack.voltra"] && error.code == 4) {
+    return @"VOLTRA_RENDERER_MISMATCH";
+  }
+  return fallbackCode;
+}
+
+static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallbackCode, NSError *error)
+{
+  reject(VoltraPromiseErrorCode(fallbackCode, error), error.localizedDescription, error);
+}
 
 @interface VoltraLaunchObserver : NSObject
 @end
@@ -30,6 +43,7 @@
 
 @interface NativeVoltra () {
   VoltraModule *_module;
+  BOOL _invalidated;
 }
 @end
 
@@ -51,15 +65,27 @@
 {
   [super setEventEmitterCallback:eventEmitterCallbackWrapper];
 
+  if (_invalidated) {
+    return;
+  }
+
+  __weak NativeVoltra *weakSelf = self;
   [self.module startMonitoringWithEventHandler:^(NSString *eventName, NSDictionary *eventData) {
+    __strong NativeVoltra *strongSelf = weakSelf;
+    if (strongSelf == nil || strongSelf->_invalidated) {
+      return;
+    }
+
     if ([eventName isEqualToString:@"interaction"]) {
-      [self emitOnInteraction:eventData];
+      [strongSelf emitOnInteraction:eventData];
+    } else if ([eventName isEqualToString:@"dynamicLiveActivityRenderFailed"]) {
+      [strongSelf emitOnDynamicLiveActivityRenderFailed:eventData];
     } else if ([eventName isEqualToString:@"stateChange"]) {
-      [self emitOnStateChanged:eventData];
+      [strongSelf emitOnStateChanged:eventData];
     } else if ([eventName isEqualToString:@"activityTokenReceived"]) {
-      [self emitOnActivityTokenReceived:eventData];
+      [strongSelf emitOnActivityTokenReceived:eventData];
     } else if ([eventName isEqualToString:@"activityPushToStartTokenReceived"]) {
-      [self emitOnActivityPushToStartTokenReceived:eventData];
+      [strongSelf emitOnActivityPushToStartTokenReceived:eventData];
     }
   }];
 }
@@ -75,7 +101,18 @@
 - (void)applicationWillEnterForeground
 {
   [self.module clearHeadless];
+  [self.module drainDynamicLiveActivityRenderFailures];
   [self updateRootAppPropertiesHeadless:NO];
+}
+
+- (void)drainDynamicLiveActivityRenderFailures
+{
+  [self.module drainDynamicLiveActivityRenderFailures];
+}
+
+- (void)setDynamicLiveActivityRenderFailureListenerActive:(BOOL)active
+{
+  [self.module setDynamicLiveActivityRenderFailureListenerActive:active];
 }
 
 - (UIView *)reactRootViewInView:(UIView *)view
@@ -182,7 +219,7 @@
   if (auto v = options.staleDate()) opts.staleDate = @(v.value());
   if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
   [self.module startLiveActivity:jsonString options:opts completion:^(NSString *activityId, NSError *error) {
-    if (error) { reject(@"startLiveActivity", error.localizedDescription, error); } else { resolve(activityId); }
+    if (error) { VoltraRejectPromise(reject, @"startLiveActivity", error); } else { resolve(activityId); }
   }];
 }
 
@@ -196,7 +233,38 @@
   if (auto v = options.staleDate()) opts.staleDate = @(v.value());
   if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
   [self.module updateLiveActivity:activityId jsonString:jsonString options:opts completion:^(NSError *error) {
-    if (error) { reject(@"updateLiveActivity", error.localizedDescription, error); } else { resolve(nil); }
+    if (error) { VoltraRejectPromise(reject, @"updateLiveActivity", error); } else { resolve(nil); }
+  }];
+}
+
+- (void)startDynamicLiveActivity:(NSString *)definitionId
+                       propsJson:(NSString *)propsJson
+                         options:(JS::NativeVoltra::StartVoltraOptions &)options
+                         resolve:(RCTPromiseResolveBlock)resolve
+                          reject:(RCTPromiseRejectBlock)reject
+{
+  StartVoltraOptions *opts = [StartVoltraOptions new];
+  opts.activityName = options.activityName();
+  opts.deepLinkUrl = options.deepLinkUrl();
+  opts.channelId = options.channelId();
+  if (auto v = options.staleDate()) opts.staleDate = @(v.value());
+  if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
+  [self.module startDynamicLiveActivity:definitionId propsJson:propsJson options:opts completion:^(NSString *activityId, NSError *error) {
+    if (error) { VoltraRejectPromise(reject, @"startDynamicLiveActivity", error); } else { resolve(activityId); }
+  }];
+}
+
+- (void)updateDynamicLiveActivity:(NSString *)activityId
+                        propsJson:(NSString *)propsJson
+                          options:(JS::NativeVoltra::UpdateVoltraOptions &)options
+                          resolve:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
+{
+  UpdateVoltraOptions *opts = [UpdateVoltraOptions new];
+  if (auto v = options.staleDate()) opts.staleDate = @(v.value());
+  if (auto v = options.relevanceScore()) opts.relevanceScore = @(v.value());
+  [self.module updateDynamicLiveActivity:activityId propsJson:propsJson options:opts completion:^(NSError *error) {
+    if (error) { VoltraRejectPromise(reject, @"updateDynamicLiveActivity", error); } else { resolve(nil); }
   }];
 }
 
@@ -213,14 +281,14 @@
     opts.dismissalPolicy = policy;
   }
   [self.module endLiveActivity:activityId options:opts completion:^(NSError *error) {
-    if (error) { reject(@"endLiveActivity", error.localizedDescription, error); } else { resolve(nil); }
+    if (error) { VoltraRejectPromise(reject, @"endLiveActivity", error); } else { resolve(nil); }
   }];
 }
 
 - (void)endAllLiveActivities:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   [self.module endAllLiveActivities:^(NSError *error) {
-    if (error) { reject(@"endAllLiveActivities", error.localizedDescription, error); } else { resolve(nil); }
+    if (error) { VoltraRejectPromise(reject, @"endAllLiveActivities", error); } else { resolve(nil); }
   }];
 }
 
@@ -232,6 +300,11 @@
 - (void)listVoltraActivityIds:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   resolve([self.module listVoltraActivityIds]);
+}
+
+- (void)getDynamicLiveActivityDefinitionIds:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  resolve([self.module getDynamicLiveActivityDefinitionIds]);
 }
 
 - (NSNumber *)isLiveActivityActive:(NSString *)activityName
@@ -260,6 +333,11 @@
   }];
 }
 
+- (void)reloadDynamicLiveActivities:(NSArray *)definitionIds resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module reloadDynamicLiveActivities:definitionIds completion:^{ resolve(nil); }];
+}
+
 - (void)clearPreloadedImages:(NSArray *)keys resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
   [self.module clearPreloadedImages:keys completion:^{ resolve(nil); }];
@@ -275,6 +353,25 @@
   opts.deepLinkUrl = options.deepLinkUrl();
   [self.module updateWidget:widgetId jsonString:jsonString options:opts completion:^(NSError *error) {
     if (error) { reject(@"updateWidget", error.localizedDescription, error); } else { resolve(nil); }
+  }];
+}
+
+- (void)updateDynamicWidget:(NSString *)dynamicWidgetId
+     dynamicWidgetPropsJson:(NSString *)dynamicWidgetPropsJson
+                    resolve:(RCTPromiseResolveBlock)resolve
+                     reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module updateDynamicWidget:dynamicWidgetId
+            dynamicWidgetPropsJson:dynamicWidgetPropsJson
+                         completion:^(NSError *error) {
+    if (error) {
+      NSString *message = [NSString stringWithFormat:@"Failed to update Dynamic Widget '%@': %@",
+                                                     dynamicWidgetId,
+                                                     error.localizedDescription];
+      reject(@"updateDynamicWidget", message, error);
+    } else {
+      resolve(nil);
+    }
   }];
 }
 
@@ -310,6 +407,39 @@
   }];
 }
 
+- (void)setWidgetServerUpdate:(NSString *)settingsJson
+                     widgetId:(NSString *)widgetId
+                      resolve:(RCTPromiseResolveBlock)resolve
+                       reject:(RCTPromiseRejectBlock)reject
+{
+  NSString *error = [self.module setWidgetServerUpdate:settingsJson widgetId:widgetId];
+  if (error) {
+    reject(@"VOLTRA_INVALID_SERVER_UPDATE_SETTINGS", error, nil);
+  } else {
+    resolve(nil);
+  }
+}
+
+- (void)clearWidgetServerUpdate:(NSString *)widgetId
+                        resolve:(RCTPromiseResolveBlock)resolve
+                         reject:(RCTPromiseRejectBlock)reject
+{
+  NSString *error = [self.module clearWidgetServerUpdate:widgetId];
+  if (error) {
+    reject(@"VOLTRA_INVALID_SERVER_UPDATE_SETTINGS", error, nil);
+  } else {
+    resolve(nil);
+  }
+}
+
+- (void)getWidgetServerUpdate:(NSString *)widgetId
+                       resolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject
+{
+  NSString *json = [self.module getWidgetServerUpdate:widgetId];
+  resolve(json);
+}
+
 - (void)setWidgetServerCredentials:(JS::NativeVoltra::WidgetServerCredentials &)credentials
                            resolve:(RCTPromiseResolveBlock)resolve
                             reject:(RCTPromiseRejectBlock)reject
@@ -324,10 +454,16 @@
   resolve(nil);
 }
 
-- (void)dealloc
+- (void)invalidate
 {
+  if (_invalidated) {
+    return;
+  }
+
+  _invalidated = YES;
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-  [self.module stopMonitoring];
+  [_module stopMonitoring];
+  _module = nil;
 }
 
 @end

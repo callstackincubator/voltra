@@ -9,7 +9,9 @@ public struct VoltraWidget: Widget {
   /// Convert an array of nodes to a single root node for rendering
   private func rootNode(for region: VoltraRegion, from state: VoltraAttributes.ContentState) -> VoltraNode {
     let nodes = state.regions[region] ?? []
-    if nodes.isEmpty { return .empty }
+    if nodes.isEmpty {
+      return .empty
+    }
     return nodes.count == 1 ? nodes[0] : .array(nodes)
   }
 

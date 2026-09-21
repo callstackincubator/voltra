@@ -105,6 +105,11 @@ export type { EnsureGitWorktreeOptions, EnsureGitWorktreeResult, GitWorktreeStat
 export { AndroidGeneratedFilesError, generateAndroidFiles } from './platforms/android/generated'
 export type { GenerateAndroidFilesOptions, GenerateAndroidFilesResult } from './platforms/android/generated'
 export { applyAndroidPlatform, createAndroidPreflightRunner } from './platforms/android/apply'
+export { addDynamicWidgetBundlingSnippet, ensureAndroidGradleWidgetBundling } from './platforms/android/gradle'
+export type {
+  EnsureAndroidGradleWidgetBundlingOptions,
+  EnsureAndroidGradleWidgetBundlingResult,
+} from './platforms/android/gradle'
 export { AndroidManifestMutationError, ensureAndroidManifest } from './platforms/android/manifest'
 export type { EnsureAndroidManifestOptions, EnsureAndroidManifestResult } from './platforms/android/manifest'
 export { IOSGeneratedFilesError, generateIOSFiles } from './platforms/ios/generated'
@@ -112,6 +117,11 @@ export type { GenerateIOSFilesOptions, GenerateIOSFilesResult } from './platform
 export { resolveIOSWidgetTargetName } from './platforms/ios/targetName'
 export { IOSWidgetTargetMutationError, ensureIOSWidgetTarget } from './platforms/ios/xcodeTarget'
 export { applyIOSPlatform, createIOSPreflightRunner } from './platforms/ios/apply'
+export {
+  IOSBuildConfigurationValueError,
+  VOLTRA_BUILD_SETTING_PREFIX,
+  resolveIOSBuildConfigurationValues,
+} from './platforms/ios/buildConfigurationValues'
 export { IOSEntitlementsMutationError, ensureEntitlements } from './platforms/ios/entitlements'
 export type { EnsureEntitlementsOptions, EnsureEntitlementsResult } from './platforms/ios/entitlements'
 export { IOSInfoPlistMutationError, ensureInfoPlist } from './platforms/ios/plist'
@@ -161,10 +171,14 @@ export {
 } from './reporting/summary'
 export type {
   AndroidProjectOverrides,
+  AndroidWidgetAppIntentConfig,
+  AndroidWidgetAppIntentParameter,
   AndroidWidgetConfig,
   AndroidWidgetServerUpdateConfig,
   CliDefaults,
   IOSProjectOverrides,
+  IOSWidgetAppIntentConfig,
+  IOSWidgetAppIntentParameter,
   IOSWidgetConfig,
   IOSWidgetFamily,
   IOSWidgetServerUpdateConfig,
@@ -178,6 +192,8 @@ export type {
   NormalizedVoltraAndroidConfig,
   NormalizedVoltraConfig,
   NormalizedVoltraIOSConfig,
+  ResolvedIOSProjectConfig,
+  ResolvedVoltraIOSConfig,
   VoltraAndroidConfig,
   VoltraConfig,
   VoltraIOSConfig,
@@ -186,6 +202,7 @@ export type {
   WidgetLabel,
   WidgetLocalizedValue,
 } from './config/types'
+export type { PerConfiguration } from './config/perConfiguration'
 export type {
   ApplySummary,
   PreflightFailureReport,

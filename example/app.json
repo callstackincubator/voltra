@@ -32,6 +32,12 @@
           "groupIdentifier": "group.callstackincubator.voltraexample",
           "keychainGroup": "$(AppIdentifierPrefix)group.callstackincubator.voltraexample",
           "enablePushNotifications": true,
+          "liveActivities": [
+            {
+              "id": "order_finished",
+              "entry": "./components/live-activities/OrderFinishedDynamicLiveActivity.tsx"
+            }
+          ],
           "widgets": [
             {
               "id": "weather",
@@ -47,6 +53,39 @@
               "initialStatePath": {
                 "en": "./widgets/ios/ios-weather-initial.tsx",
                 "pl": "./widgets/ios/ios-weather-initial.tsx"
+              }
+            },
+            {
+              "id": "ClientRenderedDemoWidget",
+              "entry": "./widgets/ios/ClientRenderedDemoWidget.tsx",
+              "displayName": {
+                "en": "Client-Rendered Demo",
+                "pl": "Client-Rendered Demo"
+              },
+              "description": {
+                "en": "Plain widget showing env values — for verifying Dynamic Widget hot reload.",
+                "pl": "Prosty widget pokazujący wartości env — do weryfikacji hot reload."
+              },
+              "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+              "initialStatePath": "./widgets/ios/ClientRenderedDemoWidget.tsx",
+              "appIntent": {
+                "parameters": [
+                  {
+                    "name": "label",
+                    "title": "Label",
+                    "default": "Hello"
+                  },
+                  {
+                    "name": "city",
+                    "title": "City",
+                    "default": "London"
+                  }
+                ]
+              },
+              "serverUpdate": {
+                "url": "http://localhost:3333",
+                "intervalMinutes": 15,
+                "refresh": true
               }
             },
             {
@@ -199,6 +238,56 @@
               "resizeMode": "horizontal|vertical",
               "widgetCategory": "home_screen",
               "initialStatePath": "./widgets/android/android-material-colors-initial.tsx",
+              "serverUpdate": {
+                "url": "http://10.0.2.2:3333",
+                "intervalMinutes": 15,
+                "refresh": true
+              }
+            },
+            {
+              "id": "arc_progress",
+              "displayName": {
+                "en": "Arc Progress Widget"
+              },
+              "description": {
+                "en": "Battery gauge and a row of activity gauges drawn with ArcProgressIndicator"
+              },
+              "targetCellWidth": 3,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/android-arc-progress-initial.tsx"
+            },
+            {
+              "id": "AndroidClientDemoWidget",
+              "entry": "./widgets/android/AndroidClientDemoWidget.tsx",
+              "displayName": {
+                "en": "Client Demo"
+              },
+              "description": {
+                "en": "Client-rendered Voltra widget (on-device Hermes)"
+              },
+              "minCellWidth": 2,
+              "minCellHeight": 2,
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android/AndroidClientDemoWidget.tsx",
+              "appIntent": {
+                "parameters": [
+                  {
+                    "name": "label",
+                    "title": "Label",
+                    "default": "Hello"
+                  },
+                  {
+                    "name": "city",
+                    "title": "City",
+                    "default": "London"
+                  }
+                ]
+              },
               "serverUpdate": {
                 "url": "http://10.0.2.2:3333",
                 "intervalMinutes": 15,

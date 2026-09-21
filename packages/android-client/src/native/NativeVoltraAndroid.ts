@@ -92,12 +92,26 @@ export interface Spec extends TurboModule {
   getAndroidOngoingNotificationCapabilities(): AndroidOngoingNotificationCapabilitiesSpec
   openAndroidNotificationSettings(): Promise<void>
   updateAndroidWidget(widgetId: string, jsonString: string, options?: Readonly<{ deepLinkUrl?: string }>): Promise<void>
+  updateAndroidDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
+  setWidgetConfiguration(widgetId: string, key: string, value: string): Promise<void>
+  /** Values cross as a JSON object so several keys cost one bridge call and one re-render. */
+  setWidgetInstanceConfiguration(appWidgetId: number, valuesJson: string): Promise<void>
+  /** Result is a JSON object: the merged defaults, widget-type and instance values. */
+  getWidgetInstanceConfiguration(appWidgetId: number): Promise<string>
+  /** Result is a JSON object: the merged defaults and widget-type values. */
+  getWidgetConfiguration(widgetId: string): Promise<string>
+  clearWidgetInstanceConfiguration(appWidgetId: number): Promise<void>
   clearAndroidWidget(widgetId: string): Promise<void>
   clearAllAndroidWidgets(): Promise<void>
   requestPinGlanceAppWidget(widgetId: string, options?: RequestPinGlanceAppWidgetOptionsSpec): Promise<boolean>
   preloadImages(images: PreloadImageOptions[]): Promise<PreloadImagesResult>
   clearPreloadedImages(keys?: string[] | null): Promise<void>
+  /** Settings are passed as JSON so an arbitrary `body` survives the bridge unchanged. */
+  setWidgetServerUpdate(settingsJson: string, widgetId?: string | null): Promise<void>
+  clearWidgetServerUpdate(widgetId?: string | null): Promise<void>
+  /** Result is JSON so an arbitrary `body` survives the bridge unchanged, or null. */
+  getWidgetServerUpdate(widgetId?: string | null): Promise<string | null>
   setWidgetServerCredentials(credentials: WidgetServerCredentials): Promise<void>
   clearWidgetServerCredentials(): Promise<void>
   getActiveWidgets(): Promise<ReadonlyArray<object>>

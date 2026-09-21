@@ -1,6 +1,11 @@
 import type { ConfigPlugin } from '@expo/config-plugins'
 
-import type { WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
+import type {
+  DynamicLiveActivityEntryConfig,
+  DynamicWidgetEntryConfig,
+  WidgetInitialStatePath,
+  WidgetLabel,
+} from '@use-voltra/expo-plugin'
 
 /**
  * Supported iOS Home Screen widget size families.
@@ -15,27 +20,73 @@ export type IOSWidgetFamily =
   | 'accessoryInline'
 
 /**
- * Configuration for a single iOS home screen widget.
+ * A single user-configurable parameter exposed via AppIntent (the native "Edit Widget" sheet).
  */
-export interface IOSWidgetConfig {
+export interface AppIntentParameter {
+  /** Swift property name + the key under `env.configuration`. */
+  name: string
+  /** Label shown in the widget configuration sheet. */
+  title: string
+  /** Default value used before the user configures the widget (the "from code" default). */
+  default?: string
+}
+
+/**
+ * AppIntent configuration for a user-configurable widget (iOS 17+).
+ */
+export interface IOSWidgetAppIntentConfig {
+  /** Parameters the user can edit via "Edit Widget"; surfaced as `env.configuration`. */
+  parameters: AppIntentParameter[]
+}
+
+/**
+ * Configuration for a single iOS home screen widget.
+ *
+ * `entry` is required only for Dynamic Widgets. Widgets without `entry` remain server-rendered /
+ * server-updated legacy widgets and are excluded from the Dynamic Widgets manifest.
+ */
+export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
   /**
-   * Unique identifier for the widget (used as the widget kind and in JS API)
+   * Unique identifier for the widget (used in the JS API and, unless `kind` is set, as the widget kind)
    */
   id: string
+  /**
+   * WidgetKit `kind` of the generated widget. Defaults to `Voltra_Widget_<id>`.
+   * Pin it to the kind of a pre-Voltra widget so already placed instances survive the migration
+   * (WidgetKit identifies a placed widget by extension bundle id + kind).
+   */
+  kind?: string
   displayName: WidgetLabel
   description: WidgetLabel
   /** @default ['systemSmall', 'systemMedium', 'systemLarge'] */
   supportedFamilies?: IOSWidgetFamily[]
   initialStatePath?: WidgetInitialStatePath
   serverUpdate?: IOSWidgetServerUpdateConfig
+  /**
+   * AppIntent configuration (iOS 17+). When set on a Dynamic Widget, the plugin generates
+   * an `AppIntentConfiguration` so users configure parameters via the native "Edit Widget" sheet;
+   * defaults come from `parameters[].default`, and the configured values are passed into the
+   * widget's `env.configuration` on each render.
+   */
+  appIntent?: IOSWidgetAppIntentConfig
 }
+
+/**
+ * A Dynamic Live Activity bundled with the app.
+ * @experimental
+ */
+export interface IOSDynamicLiveActivityConfig extends DynamicLiveActivityEntryConfig {}
 
 /**
  * Server-driven iOS widget updates (WidgetKit background refresh).
  */
 export interface IOSWidgetServerUpdateConfig {
-  url: string
-  /** @default 15 */
+  /**
+   * Server endpoint that returns widget state updates. Omit it to mark the widget
+   * server-driven and supply the URL at runtime with `setWidgetServerUpdate`.
+   */
+  url?: string
+  /** @default 15, or 15 when the widget has an `entry` */
   intervalMinutes?: number
   /** @default false */
   refresh?: boolean
@@ -61,6 +112,8 @@ export interface IOSConfigPluginProps {
   enablePushNotifications?: boolean
   groupIdentifier?: string
   widgets?: IOSWidgetConfig[]
+  /** @experimental Dynamic Live Activities rendered from bundled JavaScript entries. */
+  liveActivities?: IOSDynamicLiveActivityConfig[]
   deploymentTarget?: string
   targetName?: string
   fonts?: string[]
@@ -81,6 +134,7 @@ export interface IOSWidgetExtensionPluginProps {
   bundleIdentifier: string
   deploymentTarget: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
   groupIdentifier?: string
   keychainGroup?: string
   fonts?: string[]

@@ -2,6 +2,7 @@ import { discoverIOSProject } from '../../discovery/ios'
 import { getMissingPlatformPackageMessage, getMissingPlatformPackages } from '../../dependencies/platformPackages'
 import { VoltraCliError } from '../../reporting/summary'
 
+import { resolveIOSBuildConfigurationValues } from './buildConfigurationValues'
 import { ensureEntitlements } from './entitlements'
 import { generateIOSFiles } from './generated'
 import { ensureInfoPlist } from './plist'
@@ -52,32 +53,36 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
   }
 
   const discovery = getIOSDiscovery(context.preflight)
+  // Values given per build configuration are collapsed once, so every mutator below sees a plain
+  // string and the project carries the per-configuration values.
+  const { ios, buildSettings } = resolveIOSBuildConfigurationValues(iosConfig, discovery)
   const generatedResult = await generateIOSFiles({
     projectRoot: context.config.projectRoot,
-    ios: iosConfig,
+    ios,
     discovery,
   })
   const entitlementsResult = await ensureEntitlements({
     projectRoot: context.config.projectRoot,
-    ios: iosConfig,
+    ios,
     discovery,
   })
   const infoPlistResult = await ensureInfoPlist({
     projectRoot: context.config.projectRoot,
-    ios: iosConfig,
+    ios,
     discovery,
   })
   const podfileResult = await ensurePodfileBlock({
     projectRoot: context.config.projectRoot,
-    ios: iosConfig,
+    ios,
     discovery,
   })
   const xcodeTargetResult = await ensureIOSWidgetTarget({
     projectRoot: context.config.projectRoot,
-    ios: iosConfig,
+    ios,
     discovery,
     generatedFiles: generatedResult.files,
     previousGeneratedFiles: context.previousState?.files,
+    buildSettings,
   })
 
   if (generatedResult.targetName !== xcodeTargetResult.targetName) {
@@ -93,11 +98,10 @@ export async function applyIOSPlatform(context: PlatformApplyContext): Promise<P
   }
 
   const changes = [
-    infoPlistResult.change,
-    entitlementsResult.change,
-    podfileResult.change,
-    xcodeTargetResult.change,
-  ].filter(isDefined)
+    ...infoPlistResult.changes,
+    ...entitlementsResult.changes,
+    ...[podfileResult.change, xcodeTargetResult.change].filter(isDefined),
+  ]
 
   return {
     platform: 'ios',
@@ -130,7 +134,13 @@ function isIOSProjectDiscovery(value: unknown): value is IOSProjectDiscovery {
       candidate.podfilePath,
       candidate.mainTargetName,
       candidate.infoPlistPath,
-    ].every((entry) => typeof entry === 'string' && entry.length > 0) && Array.isArray(candidate.mainTargetCandidates)
+    ].every((entry) => typeof entry === 'string' && entry.length > 0) &&
+    [
+      candidate.mainTargetCandidates,
+      candidate.buildConfigurationNames,
+      candidate.infoPlistPaths,
+      candidate.entitlementsPaths,
+    ].every((entry) => Array.isArray(entry))
   )
 }
 

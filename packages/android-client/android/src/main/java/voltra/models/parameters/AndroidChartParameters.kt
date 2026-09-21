@@ -21,6 +21,8 @@ data class AndroidChartParameters(
     val xAxisVisibility: String? = null,
     /** Show or hide the y-axis */
     val yAxisVisibility: String? = null,
+    /** Pin the y-axis lower and/or upper bound */
+    val yScale: String? = null,
     /** Show or hide the chart legend */
     val legendVisibility: String? = null,
     /** Map of series name to color string */

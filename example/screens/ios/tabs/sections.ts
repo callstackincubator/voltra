@@ -2,6 +2,12 @@ import type { ExampleSection } from '~/components/ExampleSectionCards'
 
 export const IOS_WIDGET_SECTIONS: ExampleSection[] = [
   {
+    id: 'dynamic-widget',
+    title: 'Dynamic Widget',
+    description: 'Update an entry-based iOS Dynamic Widget with persisted runtime props.',
+    route: '/ios-widgets/dynamic-widget',
+  },
+  {
     id: 'weather',
     title: 'Weather Widget',
     description:

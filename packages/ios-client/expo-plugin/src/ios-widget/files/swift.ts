@@ -11,14 +11,24 @@ import {
   type WidgetLabel,
 } from '@use-voltra/expo-plugin'
 
-import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP } from '../../constants'
-import type { IOSWidgetConfig } from '../../types'
+import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP, widgetKind } from '../../constants'
+import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
+import { detectClientRenderedWidgets, type DetectedIOSWidget } from '../clientRendered'
+import { prerenderClientRenderedWidgets } from '../clientRenderedPrerender'
+import {
+  generateDynamicLiveActivitiesSwift,
+  generateDynamicLiveActivityTypesSwift,
+  generateDynamicLiveActivityWidgetInstances,
+} from '../dynamic-live-activity/swift'
+
+import { escapeForSwiftStringLiteral } from './swift-utils'
 
 export interface GenerateSwiftFilesOptions {
   targetPath: string
   projectRoot: string
   widgets?: IOSWidgetConfig[]
+  liveActivities?: IOSDynamicLiveActivityConfig[]
 }
 
 type RenderWidgetToString = (variants: unknown) => string
@@ -35,7 +45,7 @@ type RenderWidgetToString = (variants: unknown) => string
  * - VoltraWidgetBundle.swift (widget bundle definition)
  */
 export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Promise<void> {
-  const { targetPath, projectRoot, widgets } = options
+  const { targetPath, projectRoot, widgets, liveActivities } = options
 
   // Dynamic import keeps the plugin CommonJS-compatible while resolving the current package entry.
   const serverModuleId = '@use-voltra/ios/server'
@@ -43,8 +53,23 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
     renderWidgetToString: RenderWidgetToString
   }
 
-  // Prerender widget initial states if any widgets have initialStatePath configured
-  const prerenderedStates = await prerenderWidgetState(widgets || [], projectRoot, renderWidgetToString)
+  // Tag each widget with its rendering mode (server vs Dynamic Widget) by inspecting the
+  // app.json entry module. See ../clientRendered.ts.
+  const detectedWidgets = detectClientRenderedWidgets(widgets || [], projectRoot)
+  const clientWidgetCount = detectedWidgets.filter((w) => w.clientRendered).length
+  if (clientWidgetCount > 0) {
+    logger.info(`Detected ${clientWidgetCount} Dynamic Widget(s) — generating Provider scaffolding`)
+  }
+
+  // Prerender widget initial states. Widgets with `initialStatePath` go through the existing
+  // multi-family WidgetVariants → JSON path; Dynamic Widgets go through the entry-module path
+  // (call the default export with default props + minimal env, run renderVoltraVariantToJson,
+  // stringify). Both produce entries in the same map shape so
+  // VoltraWidgetInitialStates.swift can read either via the same lookup at runtime.
+  const serverWidgets = detectedWidgets.filter((w) => !w.clientRendered)
+  const serverStates = await prerenderWidgetState(serverWidgets, projectRoot, renderWidgetToString, 'ios')
+  const clientStates = await prerenderClientRenderedWidgets(detectedWidgets, projectRoot)
+  const prerenderedStates = new Map([...serverStates, ...clientStates])
 
   syncVoltraWidgetGalleryStrings(targetPath, widgets)
 
@@ -59,12 +84,24 @@ export async function generateSwiftFiles(options: GenerateSwiftFilesOptions): Pr
 
   // Generate the widget bundle Swift file
   const widgetBundleContent =
-    widgets && widgets.length > 0 ? generateWidgetBundleSwift(widgets) : generateDefaultWidgetBundleSwift()
+    detectedWidgets.length > 0 || (liveActivities?.length ?? 0) > 0
+      ? generateWidgetBundleSwift(detectedWidgets, liveActivities ?? [])
+      : generateDefaultWidgetBundleSwift()
 
   const widgetBundlePath = path.join(targetPath, 'VoltraWidgetBundle.swift')
   fs.writeFileSync(widgetBundlePath, widgetBundleContent)
 
   logger.info(`Generated VoltraWidgetBundle.swift with ${widgets?.length ?? 0} home screen widgets`)
+
+  fs.writeFileSync(
+    path.join(targetPath, 'VoltraDynamicLiveActivityTypes.swift'),
+    generateDynamicLiveActivityTypesSwift(liveActivities ?? [])
+  )
+  fs.writeFileSync(
+    path.join(targetPath, 'VoltraDynamicLiveActivities.swift'),
+    generateDynamicLiveActivitiesSwift(liveActivities ?? [])
+  )
+  logger.info(`Generated Dynamic Live Activity Swift scaffolding with ${liveActivities?.length ?? 0} definition(s)`)
 }
 
 const GENERATED_INITIAL_STATE_LOCALE_HELPER = dedent`
@@ -137,10 +174,6 @@ const GENERATED_INITIAL_STATE_LOCALE_HELPER = dedent`
 // LocalizedStringResource is still appropriate for extensions (deferred resolution).
 // https://developer.apple.com/documentation/foundation/localizedstringresource
 // ============================================================================
-
-function escapeForSwiftStringLiteral(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r')
-}
 
 function escapeDotStringsValue(s: string): string {
   return escapeForSwiftStringLiteral(s)
@@ -263,9 +296,29 @@ function iosWidgetGalleryLabelSwiftExpr(
 }
 
 /**
- * Generates Swift code for a single widget struct
+ * Generates Swift code for a single widget struct. Dispatches on rendering mode:
+ *  - server-rendered → `VoltraHomeWidgetProvider` + `VoltraHomeWidgetView` (existing path)
+ *  - Dynamic Widget → `VoltraClientWidgetProvider` + `VoltraClientWidgetContentView`
+ *    (the content view internally renders via VoltraHomeWidgetView so the UI layer is
+ *    identical to the fallback state path — see VoltraClientWidgetRuntime.swift)
+ *  - Dynamic Widget with a `serverUpdate` → `VoltraDynamicWidgetServerUpdateProvider`, which wraps
+ *    the one above and adds the fetch, the commit and the schedule
+ *
+ * `entry` picks the render engine and `serverUpdate` picks where the data comes from, so the two
+ * keys together select one of four providers. Runtime code never asks "is this server-driven?" —
+ * the answer is baked in here, once, at generate time.
  */
-function generateWidgetStruct(widget: IOSWidgetConfig): string {
+function widgetUsesAppIntent(widget: DetectedIOSWidget): boolean {
+  return widget.clientRendered && !!widget.appIntent && widget.appIntent.parameters.length > 0
+}
+
+function generateWidgetStruct(widget: DetectedIOSWidget): string {
+  // Client-rendered widgets with an appIntent config get a native "Edit Widget" sheet via
+  // AppIntentConfiguration; the configured params flow into env.configuration.
+  if (widgetUsesAppIntent(widget)) {
+    return generateClientAppIntentWidgetCode(widget)
+  }
+
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
 
@@ -275,6 +328,31 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
 
+  const clientProviderName = widget.serverUpdate
+    ? 'VoltraDynamicWidgetServerUpdateProvider'
+    : 'VoltraClientWidgetProvider'
+
+  const providerAndContent = widget.clientRendered
+    ? dedent`
+        provider: ${clientProviderName}(
+          widgetId: widgetId,
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+        )
+      ) { entry in
+        VoltraClientWidgetContentView(
+          entry: entry,
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+        )
+      }`
+    : dedent`
+        provider: VoltraHomeWidgetProvider(
+          widgetId: widgetId,
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+        )
+      ) { entry in
+        VoltraHomeWidgetView(entry: entry)
+      }`
+
   return dedent`
     public struct ${structName}: Widget {
       private let widgetId = "${widget.id}"
@@ -283,13 +361,112 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
 
       public var body: some WidgetConfiguration {
         StaticConfiguration(
-          kind: "Voltra_Widget_${widget.id}",
-          provider: VoltraHomeWidgetProvider(
-            widgetId: widgetId,
+          kind: "${widgetKind(widget)}",
+          ${providerAndContent}
+        .configurationDisplayName(${displayNameExpr})
+        .description(${descriptionExpr})
+        .supportedFamilies([${familiesSwift}])
+        .contentMarginsDisabled()
+      }
+    }
+  `
+}
+
+/**
+ * Generates a Dynamic Widget backed by AppIntentConfiguration (iOS 17+): a
+ * WidgetConfigurationIntent (params + code defaults), an AppIntentTimelineProvider that loads the
+ * bundle via the shared client runtime, and an AppIntentConfiguration widget. The configured
+ * params are passed into the render as env.configuration; the native "Edit Widget" sheet edits them.
+ */
+function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
+  const params = widget.appIntent!.parameters
+  const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
+  const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
+  const intentName = `VoltraWidget_${widget.id}_Intent`
+  const providerName = `VoltraWidget_${widget.id}_ClientProvider`
+  const intentTitle = escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)
+  const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
+  const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
+
+  const swiftDefault = (p: { default?: string }) => `"${escapeForSwiftStringLiteral(p.default ?? '')}"`
+  const dictLiteral = (entries: string[]) => (entries.length > 0 ? `[${entries.join(', ')}]` : '[:]')
+
+  const paramDecls = params
+    .map(
+      (p) =>
+        `  @Parameter(title: "${escapeForSwiftStringLiteral(p.title)}", default: ${swiftDefault(p)})\n  var ${
+          p.name
+        }: String`
+    )
+    .join('\n\n')
+  const initParams = params.map((p) => `${p.name}: String`).join(', ')
+  const initBody = params.map((p) => `    self.${p.name} = ${p.name}`).join('\n')
+  const configuredDict = dictLiteral(params.map((p) => `"${p.name}": configuration.${p.name}`))
+  const defaultDict = dictLiteral(params.map((p) => `"${p.name}": ${swiftDefault(p)}`))
+  // A server-driven Dynamic Widget fetches on every timeline request and schedules the next one
+  // from its resolved interval; a plain one has nothing to ask again for, so its policy is .never.
+  const appIntentTimelineBody = widget.serverUpdate
+    ? dedent`
+        return await VoltraDynamicWidgetServerUpdateProvider.timeline(
+          widgetId: widgetId,
+          family: context.family,
+          configuration: ${configuredDict}
+        )`
+    : dedent`
+        let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
+        return Timeline(entries: [entry], policy: .never)`
+
+  return dedent`
+    // MARK: - Client-rendered AppIntent widget: ${widget.id}
+
+    @available(iOS 17.0, *)
+    struct ${intentName}: WidgetConfigurationIntent {
+      static var title: LocalizedStringResource = "${intentTitle}"
+
+    ${paramDecls}
+
+      init() {}
+      init(${initParams}) {
+    ${initBody}
+      }
+    }
+
+    @available(iOS 17.0, *)
+    private struct ${providerName}: AppIntentTimelineProvider {
+      typealias Intent = ${intentName}
+      typealias Entry = VoltraClientWidgetEntry
+
+      private let widgetId = "${widget.id}"
+
+      func placeholder(in _: Context) -> VoltraClientWidgetEntry {
+        VoltraClientWidgetEntry(date: Date(), widgetId: widgetId, bundleReady: false, configuration: ${defaultDict})
+      }
+
+      func snapshot(for configuration: ${intentName}, in _: Context) async -> VoltraClientWidgetEntry {
+        await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
+      }
+
+      func timeline(for configuration: ${intentName}, in context: Context) async -> Timeline<VoltraClientWidgetEntry> {
+    ${appIntentTimelineBody}
+      }
+    }
+
+    @available(iOS 17.0, *)
+    public struct VoltraWidget_${widget.id}: Widget {
+      private let widgetId = "${widget.id}"
+
+      public init() {}
+
+      public var body: some WidgetConfiguration {
+        AppIntentConfiguration(
+          kind: "${widgetKind(widget)}",
+          intent: ${intentName}.self,
+          provider: ${providerName}()
+        ) { entry in
+          VoltraClientWidgetContentView(
+            entry: entry,
             initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
           )
-        ) { entry in
-          VoltraHomeWidgetView(entry: entry)
         }
         .configurationDisplayName(${displayNameExpr})
         .description(${descriptionExpr})
@@ -303,15 +480,33 @@ function generateWidgetStruct(widget: IOSWidgetConfig): string {
 /**
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
  */
-function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
+function generateWidgetBundleSwift(
+  widgets: DetectedIOSWidget[],
+  liveActivities: IOSDynamicLiveActivityConfig[] = []
+): string {
   // Generate widget structs
-  const widgetStructs = widgets.map(generateWidgetStruct).join('\n\n')
+  const widgetStructs = widgets.map((w) => generateWidgetStruct(w)).join('\n\n')
 
-  // Generate widget bundle body entries
-  const widgetInstances = widgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
+  // AppIntent widgets are iOS 17+, so their bundle entries are gated behind #available.
+  const appIntentWidgets = widgets.filter(widgetUsesAppIntent)
+  const plainWidgets = widgets.filter((w) => !widgetUsesAppIntent(w))
+  const plainInstances = plainWidgets.map((w) => `VoltraWidget_${w.id}()`).join('\n    ')
+  const appIntentInstances =
+    appIntentWidgets.length > 0
+      ? `if #available(iOS 17.0, *) {\n      ${appIntentWidgets
+          .map((w) => `VoltraWidget_${w.id}()`)
+          .join('\n      ')}\n    }`
+      : ''
+  const dynamicLiveActivityInstances = generateDynamicLiveActivityWidgetInstances(liveActivities)
+  const widgetInstances = [plainInstances, appIntentInstances, dynamicLiveActivityInstances]
+    .filter(Boolean)
+    .join('\n    ')
+  const widgetSectionTitle =
+    liveActivities.length > 0 ? 'Home Screen Widgets and Dynamic Live Activities' : 'Home Screen Widgets'
 
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
   const foundationImport = needsFoundation ? 'import Foundation\n' : ''
+  const appIntentsImport = appIntentWidgets.length > 0 ? 'import AppIntents\n' : ''
 
   return dedent`
     //
@@ -321,9 +516,9 @@ function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
     //  This file defines which Voltra widgets are available in your app.
     //
 
-    ${foundationImport}import SwiftUI
+    ${foundationImport}${appIntentsImport}import SwiftUI
     import WidgetKit
-    import VoltraWidget
+    import VoltraRuntime
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
@@ -331,7 +526,7 @@ function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
         // Live Activity (with Watch/CarPlay support)
         VoltraWidget()
 
-        // Home Screen Widgets
+        // ${widgetSectionTitle}
         ${widgetInstances}
       }
     }
@@ -343,8 +538,8 @@ function generateWidgetBundleSwift(widgets: IOSWidgetConfig[]): string {
 }
 
 /**
- * Generates the VoltraWidgetBundle.swift file content when no widgets are configured
- * (only Live Activities)
+ * Generates the VoltraWidgetBundle.swift file content when no Home Screen widgets or Dynamic
+ * Live Activities are configured. Keep this legacy output stable for existing projects.
  */
 function generateDefaultWidgetBundleSwift(): string {
   return dedent`
@@ -357,7 +552,7 @@ function generateDefaultWidgetBundleSwift(): string {
 
     import SwiftUI
     import WidgetKit
-    import VoltraWidget  // Import Voltra widgets
+    import VoltraRuntime  // Import Voltra widgets
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
@@ -473,4 +668,7 @@ function getSwiftRawStringDelimiter(str: string): string {
 
 export const __test__ = {
   generateInitialStatesSwift,
+  generateWidgetBundleSwift,
+  generateDynamicLiveActivityTypesSwift,
+  generateDynamicLiveActivitiesSwift,
 }

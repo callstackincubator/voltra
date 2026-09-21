@@ -1,0 +1,100 @@
+import { Voltra, type WidgetEnvironment } from '@use-voltra/ios'
+
+// Minimal Dynamic Widget example for verifying the dev loop.
+//
+// Plain black tile with runtime props and the env values captured per render, plus a single
+// editable literal (`hotReloadMarker` below) for proving hot reload end-to-end.
+// Edit the literal, save, watch the home-screen widget update within ~1 second.
+
+export type ClientRenderedDemoWidgetProps = {
+  headline?: string
+  unreadCount?: number
+  city?: string
+  temperature?: number
+  instance?: string
+}
+
+export default function ClientRenderedDemoWidget(
+  props: ClientRenderedDemoWidgetProps = {},
+  env: WidgetEnvironment = {} as WidgetEnvironment
+) {
+  // ▼ EDIT THIS LITERAL TO TEST HOT RELOAD ▼
+  const hotReloadMarker = 'edit me'
+  const headline = props.headline ?? 'No headline yet'
+  const unreadCount = props.unreadCount ?? 0
+
+  const date = env.date ? new Date(env.date) : new Date()
+  const renderedAt = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+
+  const config = env.configuration as Record<string, unknown> | undefined
+  const configLabel = typeof config?.label === 'string' ? config.label : '(unset)'
+  const configCity = typeof config?.city === 'string' ? config.city : '(unset)'
+  const serverCity = props.city ?? '(no server data)'
+  const serverTemp = typeof props.temperature === 'number' ? `${props.temperature}°` : '(no server data)'
+  const instanceKey = env.instance ?? '(no instance)'
+
+  const labelStyle = { fontSize: 9, color: '#FFFFFF' } as const
+  const valueStyle = { fontSize: 9, color: '#94A3B8' } as const
+
+  return (
+    <Voltra.VStack alignment="leading" spacing={3} style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}>
+      <Voltra.Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Client-rendered demo</Voltra.Text>
+
+      <Voltra.Text style={{ fontSize: 14, fontWeight: '600', color: '#34D399' }}>{hotReloadMarker}</Voltra.Text>
+
+      <Voltra.Text style={{ fontSize: 10, color: '#34D399' }}>
+        {headline} · {unreadCount} unread
+      </Voltra.Text>
+
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>family:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{env.widgetFamily ?? '?'}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>scheme:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{env.colorScheme ?? '?'}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>mode:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{env.widgetRenderingMode ?? '?'}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>locale:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{env.locale ?? '?'}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>config:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{configLabel}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>env.configuration.city:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{configCity}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>env.instance:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{instanceKey}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>server city:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{serverCity}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>server temp:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{serverTemp}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>dev:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{String(env.build?.isDev ?? '?')}</Voltra.Text>
+      </Voltra.HStack>
+      <Voltra.HStack spacing={4}>
+        <Voltra.Text style={labelStyle}>time:</Voltra.Text>
+        <Voltra.Text style={valueStyle}>{renderedAt}</Voltra.Text>
+      </Voltra.HStack>
+    </Voltra.VStack>
+  )
+}

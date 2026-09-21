@@ -250,7 +250,9 @@ struct VoltraFlexStackLayout: Layout {
       }
     }
     // If stretch and no explicit cross size, use full cross axis (only finite values)
-    if let proposal = proposal, proposal.isFinite { return proposal }
+    if let proposal = proposal, proposal.isFinite {
+      return proposal
+    }
     // Otherwise, measure intrinsic
     let size = subview.sizeThatFits(ProposedViewSize(width: nil, height: nil))
     return crossAxis(size)
@@ -266,8 +268,12 @@ struct VoltraFlexStackLayout: Layout {
 
   private func clamp(_ value: CGFloat, min: CGFloat?, max: CGFloat?) -> CGFloat {
     var result = value
-    if let min = min { result = Swift.max(result, min) }
-    if let max = max { result = Swift.min(result, max) }
+    if let min = min {
+      result = Swift.max(result, min)
+    }
+    if let max = max {
+      result = Swift.min(result, max)
+    }
     return result
   }
 
