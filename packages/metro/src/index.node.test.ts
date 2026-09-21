@@ -123,8 +123,8 @@ describe('withVoltra Metro config transformer', () => {
     assert.equal(typeof config.resolver.resolveRequest, 'function')
   })
 
-  test('starts widget Metro when at least one Dynamic Widget is configured', async () => {
-    const { projectRoot, cleanup } = makeTempProject({
+  const configuredWidgetProject = () =>
+    makeTempProject({
       '.voltra/manifest.ios.json': JSON.stringify(
         { version: 1, platform: 'ios', widgets: [{ id: 'home', entry: 'widgets/home.js' }] },
         null,
@@ -133,6 +133,26 @@ describe('withVoltra Metro config transformer', () => {
       '.voltra/manifest.android.json': JSON.stringify({ version: 1, platform: 'android', widgets: [] }, null, 2),
       'widgets/home.js': 'export default function HomeWidget() { return null }\n',
     })
+
+  // `react-native bundle` loads the config and then waits for the event loop to drain, so a
+  // Metro server created here would keep a release build hanging forever.
+  test('does not start widget Metro while loading the config', async () => {
+    const { projectRoot, cleanup } = configuredWidgetProject()
+    cleanups.push(cleanup)
+
+    const { calls } = installProjectModuleStubs()
+    const config = await withVoltra({
+      projectRoot,
+      resolver: {},
+      server: {},
+    })
+
+    assert.equal(calls.includes('metro.createConnectMiddleware'), false)
+    assert.equal(typeof config.server.enhanceMiddleware, 'function')
+  })
+
+  test('starts widget Metro once when the dev server enhances its middleware', async () => {
+    const { projectRoot, cleanup } = configuredWidgetProject()
     cleanups.push(cleanup)
 
     const { calls, getWidgetConfig } = installProjectModuleStubs()
@@ -144,9 +164,11 @@ describe('withVoltra Metro config transformer', () => {
       watchFolders: [additionalWatchFolder],
     })
 
-    assert.equal(calls.includes('metro-config'), true)
-    assert.equal(calls.includes('metro.createConnectMiddleware'), true)
+    config.server.enhanceMiddleware(() => {}, {})
+    config.server.enhanceMiddleware(() => {}, {})
+    await new Promise((resolve) => setImmediate(resolve))
+
+    assert.equal(calls.filter((call) => call === 'metro.createConnectMiddleware').length, 1)
     assert.deepEqual(getWidgetConfig().watchFolders, [projectRoot, additionalWatchFolder])
-    assert.equal(typeof config.server.enhanceMiddleware, 'function')
   })
 })
