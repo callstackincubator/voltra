@@ -30,6 +30,19 @@ import kotlin.math.abs
  */
 internal fun usesAppWidgetHostView(sdkInt: Int): Boolean = sdkInt >= Build.VERSION_CODES.S_V2
 
+/** An [AppWidgetHostView] that records whether it fell back to its error view. */
+private class PreviewAppWidgetHostView(
+    context: Context,
+) : AppWidgetHostView(context) {
+    var showedErrorView = false
+        private set
+
+    override fun getErrorView(): View {
+        showedErrorView = true
+        return super.getErrorView()
+    }
+}
+
 @OptIn(ExperimentalGlanceRemoteViewsApi::class)
 class VoltraRN(
     context: Context,
@@ -152,27 +165,31 @@ class VoltraRN(
                                 // re-renders of the same payload.
                                 val reusableHostView =
                                     host.currentHostView()?.takeIf { payloadStr == lastRenderedPayload }
-                                val targetHostView =
-                                    reusableHostView ?: run {
-                                        val freshHostView = AppWidgetHostView(remoteViewsContext)
-                                        freshHostView.layoutParams =
-                                            ViewGroup.LayoutParams(
-                                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                            )
+                                if (reusableHostView != null) {
+                                    reusableHostView.updateAppWidget(remoteViews)
+                                } else {
+                                    val freshHostView = PreviewAppWidgetHostView(remoteViewsContext)
+                                    freshHostView.layoutParams =
+                                        ViewGroup.LayoutParams(
+                                            ViewGroup.LayoutParams.MATCH_PARENT,
+                                            ViewGroup.LayoutParams.MATCH_PARENT,
+                                        )
 
-                                        // Add the new host view FIRST, then remove old ones, to prevent flickering.
-                                        host.addView(freshHostView)
+                                    // Render into the new host view before it replaces anything.
+                                    // updateAppWidget swallows inflation failures and shows its
+                                    // own error view instead, so check for that and keep the
+                                    // last good render on screen, as the path below API 32 does.
+                                    freshHostView.updateAppWidget(remoteViews)
+                                    if (freshHostView.showedErrorView) return@withContext
 
-                                        val childCount = host.childCount
-                                        if (childCount > 1) {
-                                            host.removeViews(0, childCount - 1)
-                                        }
+                                    // Add the new host view FIRST, then remove old ones, to prevent flickering.
+                                    host.addView(freshHostView)
 
-                                        freshHostView
+                                    val childCount = host.childCount
+                                    if (childCount > 1) {
+                                        host.removeViews(0, childCount - 1)
                                     }
-
-                                targetHostView.updateAppWidget(remoteViews)
+                                }
                             } else {
                                 // Below API 32, AppWidgetHostView can't be used at all (see
                                 // usesAppWidgetHostView), so apply/reapply the RemoteViews
