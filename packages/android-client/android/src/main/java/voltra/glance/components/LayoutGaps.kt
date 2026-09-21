@@ -1,6 +1,7 @@
 package voltra.glance.components
 
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.glance.Visibility
 import voltra.glance.resolveStyle
 import voltra.models.VoltraNode
@@ -11,9 +12,6 @@ import voltra.styling.StyleConverter
  * LazyVerticalGrid. Kept free of Compose so the logic can be unit tested directly.
  */
 internal object LayoutGaps {
-    /** Number of direct children Jetpack Glance keeps in a Column/Row before truncating. */
-    const val GLANCE_CHILD_LIMIT = 10
-
     /**
      * Flattens a VoltraNode tree into an ordered list of leaf nodes (Element or Text),
      * resolving Array nodes recursively and Ref nodes through [sharedElements]. Null
@@ -33,7 +31,7 @@ internal object LayoutGaps {
 
     /**
      * Whether a leaf node is invisible (`display: none` -> Glance [Visibility.Gone]) and
-     * should therefore be excluded when computing gap spacer placement. Text leaves have
+     * should therefore be excluded when deciding where gaps go. Text leaves have
      * no style and are never Gone.
      *
      * This resolves each node's style (including a full [StyleConverter.convert]), so it
@@ -54,8 +52,8 @@ internal object LayoutGaps {
      * When [gap] is not a positive value, [children] is returned unchanged: no per-child
      * style resolution happens, and Gone children stay in the list so they keep being
      * rendered as Glance `Visibility.Gone` views exactly as before the `gap` style
-     * existed. When [gap] is positive, Gone children are excluded so they neither receive
-     * a spacer nor consume one of Glance's 10 direct-child slots.
+     * existed. When [gap] is positive, Gone children are excluded so they do not get a gap
+     * of their own and do not consume one of Glance's 10 direct-child slots.
      */
     fun visibleChildren(
         children: List<VoltraNode>,
@@ -66,28 +64,40 @@ internal object LayoutGaps {
         return children.filterNot { isGone(it, sharedStyles) }
     }
 
-    /**
-     * Indices into a list of visible children (Gone children already filtered out via
-     * [visibleChildren] when applicable) that should have a gap spacer rendered before
-     * them: every index except the first, and only when [gap] is a positive value.
-     */
-    fun spacerBeforeIndices(
-        visibleChildrenCount: Int,
-        gap: Dp?,
-    ): Set<Int> {
-        if (!hasPositiveGap(gap) || visibleChildrenCount <= 1) return emptySet()
-        return (1 until visibleChildrenCount).toSet()
-    }
+    /** Leading and trailing padding along a container's main axis that simulates `gap`. */
+    data class GapInsets(
+        val leading: Dp,
+        val trailing: Dp,
+    )
 
     /**
-     * True when the total number of views a Column/Row would render (visible children
-     * plus gap spacers) exceeds Glance's hard limit of [GLANCE_CHILD_LIMIT] direct
-     * children.
+     * Main-axis padding for the child at [position] out of [count] children laid out in a
+     * line (the visible children of a Column/Row, or the columns of a grid row), or null when
+     * [gap] is not a positive value or there is at most one child.
+     *
+     * The gap is split so that adjacent children are exactly [gap] apart, the first child
+     * has no leading padding and the last has no trailing padding (no gap at the
+     * container's edge), and every child carries the same total padding of
+     * `(count - 1) * gap / count`. Child `i` gets `i * gap / count` before it and
+     * `(count - 1 - i) * gap / count` after it.
+     *
+     * Equal totals matter because the renderer applies this padding to a `Box` wrapping
+     * each child (a separate `Spacer` view would use up one of the 10 direct children
+     * Glance keeps in a Column/Row): weighted wrappers share the free space equally, so
+     * weighted children still end up the same size, as they do with `gap` on iOS.
      */
-    fun exceedsGlanceChildLimit(
-        visibleChildrenCount: Int,
-        spacerCount: Int,
-    ): Boolean = visibleChildrenCount + spacerCount > GLANCE_CHILD_LIMIT
+    fun gapInsets(
+        position: Int,
+        count: Int,
+        gap: Dp?,
+    ): GapInsets? {
+        if (!hasPositiveGap(gap) || count <= 1) return null
+        val g = gap!!
+        return GapInsets(
+            leading = g * position / count,
+            trailing = g * (count - 1 - position) / count,
+        )
+    }
 
     /**
      * Whether the item at [index] (0-based, out of [itemCount] total items) in a lazy
@@ -101,6 +111,51 @@ internal object LayoutGaps {
     ): Boolean {
         if (!hasPositiveGap(gap) || itemCount <= 1) return false
         return index < itemCount - 1
+    }
+
+    /** Padding, in dp, a `LazyVerticalGrid` cell is wrapped in to simulate the `gap` style. */
+    data class CellPadding(
+        val start: Dp,
+        val top: Dp,
+        val end: Dp,
+        val bottom: Dp,
+    )
+
+    /**
+     * Padding for the cell at [index] in a `LazyVerticalGrid`.
+     *
+     * With a known column count ([columns] non-null, from `GridCells.Fixed`), the gap is
+     * applied only between cells, never at the grid's outer edge, matching `gap` on
+     * Column/Row: the horizontal gap is split across each row with [gapInsets], and every
+     * cell after the first row gets the full gap on its top edge.
+     *
+     * With an adaptive column count ([columns] null) the renderer cannot know which row or
+     * column a cell lands in, so every cell gets half the gap on every edge instead. Adjacent
+     * cells are still [gap] apart, but the grid's outer edge also gets half a gap.
+     *
+     * Returns null when [gap] is not a positive value or the cell needs no padding.
+     */
+    fun gridCellPadding(
+        index: Int,
+        columns: Int?,
+        gap: Dp?,
+    ): CellPadding? {
+        if (!hasPositiveGap(gap)) return null
+        val g = gap!!
+        if (columns == null) {
+            val half = g / 2
+            return CellPadding(start = half, top = half, end = half, bottom = half)
+        }
+        val n = columns.coerceAtLeast(1)
+        val horizontal = gapInsets(index % n, n, g)
+        val padding =
+            CellPadding(
+                start = horizontal?.leading ?: 0.dp,
+                top = if (index / n > 0) g else 0.dp,
+                end = horizontal?.trailing ?: 0.dp,
+                bottom = 0.dp,
+            )
+        return padding.takeUnless { it.start.value == 0f && it.top.value == 0f && it.end.value == 0f }
     }
 
     private fun hasPositiveGap(gap: Dp?): Boolean = gap != null && gap.value > 0f

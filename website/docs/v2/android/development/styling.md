@@ -19,7 +19,7 @@ The following React Native style properties are supported on Android:
 - `padding` - Uniform padding on all edges.
 - `paddingTop`, `paddingBottom`, `paddingLeft`, `paddingRight` - Individual edge padding.
 - `paddingHorizontal`, `paddingVertical` - Horizontal and vertical padding.
-- `gap` - Spacing (in dp) between children. Supported on `Column`, `Row`, `LazyColumn`, and `LazyVerticalGrid`. On `LazyVerticalGrid`, half the gap is applied to every edge of each cell, so adjacent cells get a full gap while the grid's outer edge gets a half gap.
+- `gap` - Spacing (in dp) between children. Supported on `Column`, `Row`, `LazyColumn`, and `LazyVerticalGrid`. The gap goes only between children, never around the outside, except on a `LazyVerticalGrid` with adaptive columns, where the grid's outer edge also gets half the gap.
 - `visibility` - Controls component visibility (`"visible"`, `"hidden"`, or `"invisible"`).
 
 ### Visual Style

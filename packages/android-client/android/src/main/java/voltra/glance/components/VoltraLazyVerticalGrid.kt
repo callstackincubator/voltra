@@ -31,20 +31,20 @@ fun VoltraLazyVerticalGrid(
             element.t,
             element.hashCode(),
         )
-    // Wrap every cell in a half-gap padding: this gives a full gap between adjacent cells
-    // and a half gap at the outer edge of the grid.
     val gap = compositeStyle?.layout?.gap
-    val cellPadding = gap?.takeIf { it.value > 0f }?.let { it / 2 }
+    val gridCells = extractGridCells(element.p)
+    // Adaptive grids have no column count we can see here; see LayoutGaps.gridCellPadding.
+    val columns = (gridCells as? GridCells.Fixed)?.count
 
     LazyVerticalGrid(
-        gridCells = extractGridCells(element.p),
+        gridCells = gridCells,
         modifier = finalModifier,
         horizontalAlignment = extractHorizontalAlignment(element.p),
     ) {
         when (val children = element.c) {
             is VoltraNode.Array -> {
                 items(children.elements.size) { index ->
-                    RenderGridCell(children.elements[index], cellPadding)
+                    RenderGridCell(children.elements[index], LayoutGaps.gridCellPadding(index, columns, gap))
                 }
             }
 
@@ -52,17 +52,17 @@ fun VoltraLazyVerticalGrid(
                 val resolved = context.sharedElements?.getOrNull(children.ref)
                 if (resolved is VoltraNode.Array) {
                     items(resolved.elements.size) { index ->
-                        RenderGridCell(resolved.elements[index], cellPadding)
+                        RenderGridCell(resolved.elements[index], LayoutGaps.gridCellPadding(index, columns, gap))
                     }
                 } else {
-                    item { RenderGridCell(resolved, cellPadding) }
+                    item { RenderGridCell(resolved, LayoutGaps.gridCellPadding(0, columns, gap)) }
                 }
             }
 
             null -> { /* Empty grid */ }
 
             else -> {
-                item { RenderGridCell(children, cellPadding) }
+                item { RenderGridCell(children, LayoutGaps.gridCellPadding(0, columns, gap)) }
             }
         }
     }
@@ -71,10 +71,18 @@ fun VoltraLazyVerticalGrid(
 @Composable
 private fun RenderGridCell(
     node: VoltraNode?,
-    cellPadding: androidx.compose.ui.unit.Dp?,
+    cellPadding: LayoutGaps.CellPadding?,
 ) {
     if (cellPadding != null) {
-        Box(modifier = GlanceModifier.padding(all = cellPadding)) {
+        Box(
+            modifier =
+                GlanceModifier.padding(
+                    start = cellPadding.start,
+                    top = cellPadding.top,
+                    end = cellPadding.end,
+                    bottom = cellPadding.bottom,
+                ),
+        ) {
             RenderNode(node)
         }
     } else {
