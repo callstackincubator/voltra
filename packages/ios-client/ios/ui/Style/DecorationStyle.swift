@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DecorationStyle {
   var backgroundColor: BackgroundValue?
+  var backgroundImage: BackgroundValue?
   var cornerRadius: CGFloat?
   var border: (width: CGFloat, color: Color)?
   var shadow: (radius: CGFloat, color: Color, opacity: Double, offset: CGSize)?
@@ -133,6 +134,14 @@ struct DecorationModifier: ViewModifier {
     return nil
   }
 
+  private var resolvedBackgroundImage: BackgroundValue? {
+    guard suppressesDecorativeContainerEffects, isFullBleedBackgroundCandidate else {
+      return style.backgroundImage
+    }
+
+    return nil
+  }
+
   private var resolvedGlassEffect: GlassEffect? {
     guard suppressesDecorativeContainerEffects else {
       return style.glassEffect
@@ -143,19 +152,13 @@ struct DecorationModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
+      // Each `.background` goes behind everything applied before it, so the image is applied
+      // first and ends up above the color.
+      .voltraIfLet(resolvedBackgroundImage) { content, bg in
+        applyBackground(bg, to: content)
+      }
       .voltraIfLet(resolvedBackgroundColor) { content, bg in
-        switch bg {
-        case let .color(color):
-          content.background(color)
-        case let .linearGradient(gradient, start, end):
-          content.background(LinearGradient(gradient: gradient, startPoint: start, endPoint: end))
-        case let .radialGradient(spec):
-          content.background {
-            radialGradientBackground(spec)
-          }
-        case let .angularGradient(gradient, center, angle):
-          content.background(AngularGradient(gradient: gradient, center: center, angle: angle))
-        }
+        applyBackground(bg, to: content)
       }
       // If we have a corner radius, we must handle the border specifically here
       .voltraIfLet(style.cornerRadius) { content, radius in
@@ -203,5 +206,24 @@ struct DecorationModifier: ViewModifier {
           content
         }
       }
+  }
+
+  /// Keeps the modifiers `backgroundColor` used before `backgroundImage` existed: colors and
+  /// linear/angular gradients go through the `ShapeStyle` overload, which extends into the safe
+  /// area; the view-based overload would not.
+  @ViewBuilder
+  private func applyBackground(_ background: BackgroundValue, to content: some View) -> some View {
+    switch background {
+    case let .color(color):
+      content.background(color)
+    case let .linearGradient(gradient, start, end):
+      content.background(LinearGradient(gradient: gradient, startPoint: start, endPoint: end))
+    case let .radialGradient(spec):
+      content.background {
+        radialGradientBackground(spec)
+      }
+    case let .angularGradient(gradient, center, angle):
+      content.background(AngularGradient(gradient: gradient, center: center, angle: angle))
+    }
   }
 }
