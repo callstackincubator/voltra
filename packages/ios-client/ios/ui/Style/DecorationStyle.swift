@@ -152,15 +152,13 @@ struct DecorationModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
+      // Each `.background` goes behind everything applied before it, so the image is applied
+      // first and ends up above the color.
       .voltraIfLet(resolvedBackgroundImage) { content, bg in
-        content.background {
-          backgroundView(for: bg)
-        }
+        applyBackground(bg, to: content)
       }
       .voltraIfLet(resolvedBackgroundColor) { content, bg in
-        content.background {
-          backgroundView(for: bg)
-        }
+        applyBackground(bg, to: content)
       }
       // If we have a corner radius, we must handle the border specifically here
       .voltraIfLet(style.cornerRadius) { content, radius in
@@ -210,17 +208,22 @@ struct DecorationModifier: ViewModifier {
       }
   }
 
+  /// Keeps the modifiers `backgroundColor` used before `backgroundImage` existed: colors and
+  /// linear/angular gradients go through the `ShapeStyle` overload, which extends into the safe
+  /// area; the view-based overload would not.
   @ViewBuilder
-  private func backgroundView(for background: BackgroundValue) -> some View {
+  private func applyBackground(_ background: BackgroundValue, to content: some View) -> some View {
     switch background {
     case let .color(color):
-      color
+      content.background(color)
     case let .linearGradient(gradient, start, end):
-      LinearGradient(gradient: gradient, startPoint: start, endPoint: end)
+      content.background(LinearGradient(gradient: gradient, startPoint: start, endPoint: end))
     case let .radialGradient(spec):
-      radialGradientBackground(spec)
+      content.background {
+        radialGradientBackground(spec)
+      }
     case let .angularGradient(gradient, center, angle):
-      AngularGradient(gradient: gradient, center: center, angle: angle)
+      content.background(AngularGradient(gradient: gradient, center: center, angle: angle))
     }
   }
 }
