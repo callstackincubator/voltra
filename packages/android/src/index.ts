@@ -67,24 +67,32 @@ export type {
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationCapabilities,
+  AndroidOngoingNotificationCategory,
   AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationFallbackBehavior,
   AndroidOngoingNotificationInput,
   AndroidOngoingNotificationPayload,
+  AndroidOngoingNotificationPresentationOptions,
   AndroidOngoingNotificationProgressPayload,
   AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
+  AndroidOngoingNotificationPublicVersion,
   AndroidOngoingNotificationStartResult,
   AndroidOngoingNotificationStatus,
   AndroidOngoingNotificationStopResult,
   AndroidOngoingNotificationUpdateResult,
   AndroidOngoingNotificationUpsertResult,
+  AndroidOngoingNotificationVisibility,
   StartAndroidOngoingNotificationOptions,
   UpdateAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationResult,
+} from './ongoing-notification/types.js'
+export {
+  ANDROID_ONGOING_NOTIFICATION_CATEGORIES,
+  ANDROID_ONGOING_NOTIFICATION_VISIBILITIES,
 } from './ongoing-notification/types.js'
 
 // Component prop types

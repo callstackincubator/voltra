@@ -1,6 +1,11 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
-import type { AndroidOngoingNotificationPayload } from '@use-voltra/android'
+import type {
+  AndroidOngoingNotificationCategory,
+  AndroidOngoingNotificationPayload,
+  AndroidOngoingNotificationPresentationOptions,
+  AndroidOngoingNotificationVisibility,
+} from '@use-voltra/android'
 import type { StartAndroidOngoingNotificationOptions } from '@use-voltra/android-client'
 import { stopAndroidOngoingNotification, upsertAndroidOngoingNotification } from '@use-voltra/android-client'
 
@@ -128,6 +133,28 @@ const parseBoolean = (value: unknown): boolean | undefined => {
   return typeof value === 'boolean' ? value : undefined
 }
 
+/**
+ * Presentation options are read from the push `options` object only. They are app policy rather than
+ * content, so a server that only renders what the notification says leaves them out and the device
+ * keeps what the running notification already uses.
+ */
+const readPresentationOptions = (rawOptions: unknown): AndroidOngoingNotificationPresentationOptions => {
+  if (!isRecord(rawOptions)) {
+    return {}
+  }
+
+  return {
+    visibility: parseString(rawOptions.visibility) as AndroidOngoingNotificationVisibility | undefined,
+    color: parseString(rawOptions.color),
+    category: parseString(rawOptions.category) as AndroidOngoingNotificationCategory | undefined,
+    timeoutMs: typeof rawOptions.timeoutMs === 'number' ? rawOptions.timeoutMs : undefined,
+    localOnly: parseBoolean(rawOptions.localOnly),
+    group: parseString(rawOptions.group),
+    sortKey: parseString(rawOptions.sortKey),
+    allowSystemGeneratedContextualActions: parseBoolean(rawOptions.allowSystemGeneratedContextualActions),
+  }
+}
+
 const parseOptions = (
   message: VoltraOngoingNotificationMessage
 ): StartAndroidOngoingNotificationOptions | undefined => {
@@ -136,6 +163,8 @@ const parseOptions = (
     : typeof message.options === 'string'
     ? parseJsonString(message.options)
     : null
+
+  const presentationOptions = readPresentationOptions(rawOptions)
 
   const mergedOptions = {
     ...(isRecord(rawOptions) ? rawOptions : {}),
@@ -153,6 +182,7 @@ const parseOptions = (
 
   const options: StartAndroidOngoingNotificationOptions = {
     channelId: DEFAULT_CHANNEL_ID,
+    ...presentationOptions,
   }
 
   if (mergedOptions.channelId !== undefined) {

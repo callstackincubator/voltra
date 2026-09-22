@@ -14,6 +14,7 @@ import type {
   AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
+  AndroidOngoingNotificationPublicVersion,
 } from './types.js'
 
 void getAndroidComponentId
@@ -232,6 +233,37 @@ const normalizeWhen = (value: unknown): number | undefined => {
   throw new Error('[Voltra] [Android] Ongoing notification prop "when" must be a valid Date or timestamp.')
 }
 
+/**
+ * A count-down only exists on a chronometer, and the platform ignores the setter otherwise, so
+ * accepting the combination would be a prop that is silently dropped.
+ */
+const normalizeChronometerCountDown = (value: unknown, chronometer: boolean | undefined): boolean | undefined => {
+  const countDown = assertBoolean(value, 'chronometerCountDown')
+
+  if (countDown === true && chronometer !== true) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "chronometerCountDown" requires "chronometer".')
+  }
+
+  return countDown
+}
+
+const normalizePublicVersion = (value: unknown): AndroidOngoingNotificationPublicVersion | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "publicVersion" must be an object with a title.')
+  }
+
+  const { title, text } = value as { title?: unknown; text?: unknown }
+
+  return {
+    title: assertString(title, 'publicVersion.title'),
+    text: assertOptionalNonEmptyString(text, 'publicVersion.text'),
+  }
+}
+
 const getElementKind = (element: ReactElement<Record<string, unknown>>) => {
   const elementType = element.type as unknown
 
@@ -302,7 +334,10 @@ const normalizeProgressPayload = (
     shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
     when: normalizeWhen(props.when),
     chronometer: assertBoolean(props.chronometer, 'chronometer'),
+    chronometerCountDown: normalizeChronometerCountDown(props.chronometerCountDown, props.chronometer),
+    showWhen: assertBoolean(props.showWhen, 'showWhen'),
     largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
+    publicVersion: normalizePublicVersion(props.publicVersion),
     progressTrackerIcon: assertOptionalImageSource(props.progressTrackerIcon, 'progressTrackerIcon'),
     progressStartIcon: assertOptionalImageSource(props.progressStartIcon, 'progressStartIcon'),
     progressEndIcon: assertOptionalImageSource(props.progressEndIcon, 'progressEndIcon'),
@@ -327,7 +362,10 @@ const normalizeBigTextPayload = (
     shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
     when: normalizeWhen(props.when),
     chronometer: assertBoolean(props.chronometer, 'chronometer'),
+    chronometerCountDown: normalizeChronometerCountDown(props.chronometerCountDown, props.chronometer),
+    showWhen: assertBoolean(props.showWhen, 'showWhen'),
     largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
+    publicVersion: normalizePublicVersion(props.publicVersion),
     actions: normalizeActions(props.children),
   }
 }

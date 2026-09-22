@@ -33,14 +33,35 @@ type StartAndroidOngoingNotificationOptionsSpec = Readonly<{
   deepLinkUrl?: string
   requestPromotedOngoing?: boolean
   fallbackBehavior?: string
+  visibility?: string
+  color?: string
+  category?: string
+  timeoutMs?: number
+  localOnly?: boolean
+  group?: string
+  sortKey?: string
+  allowSystemGeneratedContextualActions?: boolean
 }>
 
+/**
+ * An update option whose value is `null` clears the stored value, which a spec type cannot express
+ * with `?:` alone: an absent key means "keep it".
+ */
 type UpdateAndroidOngoingNotificationOptionsSpec = Readonly<{
   channelId?: string
   smallIcon?: string
   deepLinkUrl?: string
   requestPromotedOngoing?: boolean
   fallbackBehavior?: string
+  alert?: boolean
+  visibility?: string | null
+  color?: string | null
+  category?: string | null
+  timeoutMs?: number | null
+  localOnly?: boolean | null
+  group?: string | null
+  sortKey?: string | null
+  allowSystemGeneratedContextualActions?: boolean | null
 }>
 
 type AndroidOngoingNotificationResultSpec = Readonly<{

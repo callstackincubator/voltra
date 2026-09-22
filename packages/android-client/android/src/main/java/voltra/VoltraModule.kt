@@ -55,6 +55,7 @@ class VoltraModule(
 ) : NativeVoltraAndroidSpec(reactContext) {
     companion object {
         private const val TAG = "VoltraModule"
+        private const val ERROR_INVALID_NOTIFICATION_OPTIONS = "VOLTRA_INVALID_NOTIFICATION_OPTIONS"
     }
 
     private val notificationManager by lazy {
@@ -165,6 +166,25 @@ class VoltraModule(
         super.invalidate()
     }
 
+    /**
+     * Resolves [promise] with the result of [mutation], turning an invalid option into a rejection.
+     *
+     * Ongoing notification options may come from a push that an older release of the app put on the
+     * wire, so a value this release cannot honour has to fail the call the way every other failure
+     * does rather than escape the TurboModule method.
+     */
+    private fun resolveOngoingNotificationMutation(
+        promise: Promise,
+        mutation: () -> WritableNativeMap,
+    ) {
+        try {
+            promise.resolve(mutation())
+        } catch (error: IllegalArgumentException) {
+            Log.e(TAG, "Rejected Android ongoing notification: ${error.message}")
+            promise.reject(ERROR_INVALID_NOTIFICATION_OPTIONS, error.message)
+        }
+    }
+
     override fun startAndroidOngoingNotification(
         payload: String,
         options: ReadableMap,
@@ -172,9 +192,11 @@ class VoltraModule(
     ) {
         Log.d(TAG, "startAndroidOngoingNotification called")
         val opts = AndroidOngoingNotificationOptions(options)
-        val result = runBlocking { notificationManager.startOngoingNotification(payload, opts) }
-        Log.d(TAG, "startAndroidOngoingNotification returning: $result")
-        promise.resolve(result.toWritableMap())
+        resolveOngoingNotificationMutation(promise) {
+            val result = runBlocking { notificationManager.startOngoingNotification(payload, opts) }
+            Log.d(TAG, "startAndroidOngoingNotification returning: $result")
+            result.toWritableMap()
+        }
     }
 
     override fun updateAndroidOngoingNotification(
@@ -187,12 +209,14 @@ class VoltraModule(
         val opts =
             options?.let { AndroidOngoingNotificationOptions(it) }
                 ?: AndroidOngoingNotificationOptions()
-        val result =
-            runBlocking {
-                notificationManager.updateOngoingNotification(notificationId, payload, opts)
-            }
-        Log.d(TAG, "updateAndroidOngoingNotification returning: $result")
-        promise.resolve(result.toWritableMap())
+        resolveOngoingNotificationMutation(promise) {
+            val result =
+                runBlocking {
+                    notificationManager.updateOngoingNotification(notificationId, payload, opts)
+                }
+            Log.d(TAG, "updateAndroidOngoingNotification returning: $result")
+            result.toWritableMap()
+        }
     }
 
     override fun upsertAndroidOngoingNotification(
@@ -202,9 +226,11 @@ class VoltraModule(
     ) {
         Log.d(TAG, "upsertAndroidOngoingNotification called")
         val opts = AndroidOngoingNotificationOptions(options)
-        val result = runBlocking { notificationManager.upsertOngoingNotification(payload, opts) }
-        Log.d(TAG, "upsertAndroidOngoingNotification returning: $result")
-        promise.resolve(result.toWritableMap())
+        resolveOngoingNotificationMutation(promise) {
+            val result = runBlocking { notificationManager.upsertOngoingNotification(payload, opts) }
+            Log.d(TAG, "upsertAndroidOngoingNotification returning: $result")
+            result.toWritableMap()
+        }
     }
 
     override fun stopAndroidOngoingNotification(

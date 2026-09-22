@@ -5,7 +5,6 @@ import {
   renderAndroidOngoingNotificationPayload,
   type AndroidOngoingNotificationCapabilities,
   type AndroidOngoingNotificationContent,
-  type AndroidOngoingNotificationFallbackBehavior,
   type AndroidOngoingNotificationInput,
   type AndroidOngoingNotificationPayload,
   type AndroidOngoingNotificationStartResult,
@@ -21,6 +20,10 @@ import {
 
 import { useUpdateOnHMR } from '../utils/index.js'
 import { getNativeVoltraAndroid } from '../native/NativeVoltraAndroid.js'
+import {
+  getFilteredAndroidOngoingNotificationUpdateOptions,
+  getStartAndroidOngoingNotificationOptions,
+} from './options.js'
 
 const NOTIFICATION_PERMISSION = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
 
@@ -42,52 +45,6 @@ const serializeAndroidOngoingNotificationInput = (input: AndroidOngoingNotificat
   }
 
   return renderAndroidOngoingNotificationPayload(input)
-}
-
-const getFilteredAndroidOngoingNotificationUpdateOptions = (
-  options?: UpdateAndroidOngoingNotificationOptions | StartAndroidOngoingNotificationOptions
-): UpdateAndroidOngoingNotificationOptions | undefined => {
-  if (!options) {
-    return undefined
-  }
-
-  const filteredOptions: UpdateAndroidOngoingNotificationOptions = {}
-
-  if (options.channelId !== undefined) {
-    filteredOptions.channelId = options.channelId
-  }
-
-  if (options.smallIcon !== undefined) {
-    filteredOptions.smallIcon = options.smallIcon
-  }
-
-  if (options.deepLinkUrl !== undefined) {
-    filteredOptions.deepLinkUrl = options.deepLinkUrl
-  }
-
-  if (options.requestPromotedOngoing !== undefined) {
-    filteredOptions.requestPromotedOngoing = options.requestPromotedOngoing
-  }
-
-  if (options.fallbackBehavior !== undefined) {
-    filteredOptions.fallbackBehavior = options.fallbackBehavior as AndroidOngoingNotificationFallbackBehavior
-  }
-
-  return Object.keys(filteredOptions).length > 0 ? filteredOptions : undefined
-}
-
-const getStartAndroidOngoingNotificationOptions = (
-  _input: AndroidOngoingNotificationInput,
-  options: StartAndroidOngoingNotificationOptions
-): StartAndroidOngoingNotificationOptions => {
-  return {
-    notificationId: options.notificationId,
-    channelId: options.channelId,
-    smallIcon: options.smallIcon,
-    deepLinkUrl: options.deepLinkUrl,
-    requestPromotedOngoing: options.requestPromotedOngoing,
-    fallbackBehavior: options.fallbackBehavior,
-  }
 }
 
 const createNotFoundUpdateResult = (notificationId: string): AndroidOngoingNotificationUpdateResult => ({
@@ -204,7 +161,7 @@ export const startAndroidOngoingNotification = async (
 ): Promise<AndroidOngoingNotificationStartResult> => {
   return (await getNativeVoltraAndroid().startAndroidOngoingNotification(
     serializeAndroidOngoingNotificationInput(input),
-    getStartAndroidOngoingNotificationOptions(input, options)
+    getStartAndroidOngoingNotificationOptions(options)
   )) as AndroidOngoingNotificationStartResult
 }
 
@@ -214,7 +171,7 @@ export const upsertAndroidOngoingNotification = async (
 ): Promise<AndroidOngoingNotificationUpsertResult> => {
   return (await getNativeVoltraAndroid().upsertAndroidOngoingNotification(
     serializeAndroidOngoingNotificationInput(input),
-    getStartAndroidOngoingNotificationOptions(input, options)
+    getStartAndroidOngoingNotificationOptions(options)
   )) as AndroidOngoingNotificationUpsertResult
 }
 

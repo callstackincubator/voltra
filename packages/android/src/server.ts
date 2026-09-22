@@ -8,12 +8,14 @@ export type {
   AndroidOngoingNotificationActionProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
+  AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationPayload,
   AndroidOngoingNotificationProgressPayload,
   AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
+  AndroidOngoingNotificationPublicVersion,
 } from './ongoing-notification/types.js'
 export { renderAndroidWidgetToString } from './widgets/renderer.js'
 export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'

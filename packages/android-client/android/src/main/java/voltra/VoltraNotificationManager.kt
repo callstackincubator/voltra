@@ -15,7 +15,6 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
@@ -26,12 +25,16 @@ import voltra.ongoingnotification.AndroidOngoingNotificationBigTextPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationImageSource
 import voltra.ongoingnotification.AndroidOngoingNotificationPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationPayloadParser
+import voltra.ongoingnotification.AndroidOngoingNotificationPresentation
+import voltra.ongoingnotification.AndroidOngoingNotificationPresentationUpdate
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressPointPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressSegmentPayload
+import voltra.ongoingnotification.AndroidOngoingNotificationPublicVersionPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
-import voltra.styling.JSColorParser
-import voltra.styling.VoltraColorValue
+import voltra.ongoingnotification.androidOngoingNotificationCategory
+import voltra.ongoingnotification.androidOngoingNotificationColor
+import voltra.ongoingnotification.applyAndroidOngoingNotificationPresentation
 
 private enum class AndroidOngoingNotificationFallbackBehavior {
     STANDARD,
@@ -45,6 +48,9 @@ data class AndroidOngoingNotificationOptions(
     val deepLinkUrl: String? = null,
     val requestPromotedOngoing: Boolean? = null,
     val fallbackBehavior: String? = null,
+    val presentation: AndroidOngoingNotificationPresentationUpdate = AndroidOngoingNotificationPresentationUpdate(),
+    /** Per post, never stored: re-alert for this update instead of posting it silently. */
+    val alert: Boolean? = null,
 )
 
 data class AndroidOngoingNotificationCapabilities(
@@ -223,7 +229,12 @@ class VoltraNotificationManager(
                     dismissed = false,
                 )
 
-            postNotification(record, AndroidOngoingNotificationPayloadParser.parse(payload), onlyAlertOnce = true)
+            postNotification(
+                record,
+                AndroidOngoingNotificationPayloadParser.parse(payload),
+                // Updates are silent by default; `alert` re-alerts for this one post only.
+                onlyAlertOnce = options?.alert != true,
+            )
             saveRecord(record)
             AndroidOngoingNotificationUpdateResult(
                 ok = true,
@@ -400,7 +411,9 @@ class VoltraNotificationManager(
                 .setDeleteIntent(createDeleteIntent(record))
                 .setContentIntent(createContentIntent(record))
 
-        getNotificationCategory(payload)?.let { builder.setCategory(it) }
+        val category = resolveNotificationCategory(record, payload)
+        builder.applyAndroidOngoingNotificationPresentation(record.presentation)
+        category?.let { builder.setCategory(it) }
 
         payload.title?.let { builder.setContentTitle(it) }
 
@@ -409,7 +422,40 @@ class VoltraNotificationManager(
         applyActions(builder, record, payload)
         requestPromotionIfPossible(builder, record)
 
+        payload.publicVersion?.let { publicVersion ->
+            builder.setPublicVersion(buildPublicVersion(record, payload, publicVersion, category))
+        }
+
         notificationManager.notify(record.systemNotificationId, builder.build())
+    }
+
+    /**
+     * Builds the lock-screen copy of a notification whose private content should not be readable
+     * from the lock screen.
+     *
+     * It carries the channel, icon, colour, category and timestamp rules of the main notification,
+     * so it reads as the same notification, and nothing else: no style, no progress and no actions,
+     * because everything the private content reveals lives in the main notification.
+     */
+    private fun buildPublicVersion(
+        record: AndroidOngoingNotificationRecord,
+        payload: AndroidOngoingNotificationPayload,
+        publicVersion: AndroidOngoingNotificationPublicVersionPayload,
+        category: String?,
+    ): Notification {
+        val builder =
+            newBuilder(record.channelId)
+                .setSmallIcon(resolveSmallIcon(record.smallIcon))
+                .setOngoing(true)
+                .setContentTitle(publicVersion.title)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
+
+        publicVersion.text?.let { builder.setContentText(it) }
+        androidOngoingNotificationColor(record.presentation.color)?.let { builder.setColor(it) }
+        category?.let { builder.setCategory(it) }
+        applyTimestampFields(builder, payload)
+
+        return builder.build()
     }
 
     private fun applyCommonFields(
@@ -435,12 +481,34 @@ class VoltraNotificationManager(
             payload.shortCriticalText?.let { builder.setShortCriticalText(it) }
         }
 
-        if (payload.whenEpochMillis != null || payload.chronometer == true) {
+        applyTimestampFields(builder, payload)
+    }
+
+    /**
+     * Applies the timestamp block, shared by the notification and its public version so both show
+     * time the same way.
+     *
+     * `showWhen` defaults to the pre-existing behaviour: the timestamp is shown whenever the payload
+     * carries a `when` or a chronometer, and hidden otherwise. Overriding it to false lets an app
+     * keep `when` for ordering, or for the Live Update chip, without printing the time.
+     */
+    private fun applyTimestampFields(
+        builder: Builder,
+        payload: AndroidOngoingNotificationPayload,
+    ) {
+        val hasTimestamp = payload.whenEpochMillis != null || payload.chronometer == true
+
+        if (hasTimestamp) {
             builder.setWhen(payload.whenEpochMillis ?: System.currentTimeMillis())
-            builder.setShowWhen(true)
             builder.setUsesChronometer(payload.chronometer == true)
-        } else {
-            builder.setShowWhen(false)
+        }
+
+        builder.setShowWhen(payload.showWhen ?: hasTimestamp)
+
+        // setChronometerCountDown is API 24, which is this package's minSdk, so it needs no gate.
+        // The renderer already rejects a count-down without a chronometer.
+        if (payload.chronometer == true && payload.chronometerCountDown == true) {
+            builder.setChronometerCountDown(true)
         }
     }
 
@@ -480,6 +548,16 @@ class VoltraNotificationManager(
             }
         }
     }
+
+    /**
+     * The `category` option wins over the payload default; an unknown value is dropped rather than
+     * posted, so a push written for a newer release cannot smuggle in a category Voltra does not
+     * support.
+     */
+    private fun resolveNotificationCategory(
+        record: AndroidOngoingNotificationRecord,
+        payload: AndroidOngoingNotificationPayload,
+    ): String? = androidOngoingNotificationCategory(record.presentation.category) ?: getNotificationCategory(payload)
 
     private fun getNotificationCategory(payload: AndroidOngoingNotificationPayload): String? =
         when (payload) {
@@ -542,20 +620,15 @@ class VoltraNotificationManager(
     @RequiresApi(36)
     private fun AndroidOngoingNotificationProgressSegmentPayload.toNativeSegment(): Notification.ProgressStyle.Segment {
         val segment = Notification.ProgressStyle.Segment(length)
-        parseAndroidColor(color)?.let { segment.setColor(it) }
+        androidOngoingNotificationColor(color)?.let { segment.setColor(it) }
         return segment
     }
 
     @RequiresApi(36)
     private fun AndroidOngoingNotificationProgressPointPayload.toNativePoint(): Notification.ProgressStyle.Point {
         val point = Notification.ProgressStyle.Point(position)
-        parseAndroidColor(color)?.let { point.setColor(it) }
+        androidOngoingNotificationColor(color)?.let { point.setColor(it) }
         return point
-    }
-
-    private fun parseAndroidColor(color: String?): Int? {
-        val value = JSColorParser.parse(color) as? VoltraColorValue.Static ?: return null
-        return value.color.toArgb()
     }
 
     private fun requestPromotionIfPossible(
@@ -712,6 +785,9 @@ class VoltraNotificationManager(
                     currentRecord?.requestPromotedOngoing ?: false
                 },
             fallbackBehavior = options.fallbackBehavior ?: currentRecord?.fallbackBehavior ?: "standard",
+            presentation =
+                (currentRecord?.presentation ?: AndroidOngoingNotificationPresentation())
+                    .mergedWith(options.presentation),
             active = currentRecord?.active ?: true,
             dismissed = currentRecord?.dismissed ?: false,
         )

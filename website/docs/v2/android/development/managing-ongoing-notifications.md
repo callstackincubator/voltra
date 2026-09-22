@@ -128,6 +128,139 @@ await startAndroidOngoingNotification(
 )
 ```
 
+## Presentation options
+
+Everything that says how the system should treat the notification goes in the options, next to
+`channelId`. Everything that says what the notification means right now goes in the content, as props
+on `AndroidOngoingNotification.Progress` or `AndroidOngoingNotification.BigText`.
+
+```tsx
+await startAndroidOngoingNotification(
+  <AndroidOngoingNotification.Progress
+    title="Driver is on the way"
+    text="Anna, silver Toyota"
+    value={32}
+    max={100}
+    when={Date.now() + 8 * 60 * 1000}
+    chronometer
+    publicVersion={{
+      title: 'Ride in progress',
+      text: 'Unlock to see driver details',
+    }}
+  />,
+  {
+    notificationId: 'ride-44',
+    channelId: 'ride_updates',
+    visibility: 'private',
+    color: '#1E88E5',
+    category: 'navigation',
+    timeoutMs: 30 * 60 * 1000,
+    group: 'rides',
+    sortKey: '2026-09-22T12:00',
+  }
+)
+```
+
+| Option                                    | Values                                                                                                     | Default                                                    | Applies on    | After an update that omits it |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------- | ----------------------------- |
+| `visibility`                              | `'public'`, `'private'`, `'secret'`                                                                         | system default, `'private'`                                | all versions  | kept                          |
+| `color`                                   | any static color string: `'#1E88E5'`, `'rgb(30, 136, 229)'`, `'crimson'`                                     | none                                                       | all versions  | kept                          |
+| `category`                                | `'progress'`, `'navigation'`, `'transport'`, `'service'`, `'status'`, `'workout'`, `'stopwatch'`, `'location_sharing'` | from the content: a progress notification reports `'progress'`, a big text notification reports none | all versions  | kept                          |
+| `timeoutMs`                               | milliseconds as a whole number                                                                              | none, the notification stays until you stop it             | Android 8.0+  | kept and the timer restarts   |
+| `localOnly`                               | `true` to keep it off Wear and Android Auto                                                                 | `false`                                                    | all versions  | kept                          |
+| `group`, `sortKey`                        | group key, and the order inside it                                                                          | none                                                       | all versions  | kept                          |
+| `allowSystemGeneratedContextualActions`   | `false` to stop the system adding its own actions, such as a directions chip                                | platform default, `true`                                   | Android 10+   | kept                          |
+
+Notes on individual options:
+
+- `visibility` decides what the lock screen shows. `'secret'` hides the notification entirely there.
+  Use `'private'` together with `publicVersion` to show a short copy of your own.
+- `color` is an accent: the system tints the notification with it, and shows it as background only for
+  styles that support that. A color the device cannot resolve, such as a theme token, rejects the
+  call rather than posting without a color.
+- `category` overrides what Voltra derives from your content, and does not change the channel.
+- `timeoutMs` is applied on every post, so each update restarts the countdown and a notification that
+  stops being updated eventually disappears on its own. Once the system removes it,
+  `getAndroidOngoingNotificationStatus()` reports it as no longer active, and starting that
+  `notificationId` again needs `stopAndroidOngoingNotification()` first, the same as after a swipe. On
+  Android 7.x and older the value is kept but not applied.
+- `group` puts the notification in the bundle the system builds from notifications sharing the key.
+  Voltra does not post a group summary of its own.
+
+### Lock-screen copy
+
+`publicVersion` is a prop on the content, not an option: it is text, so an update replaces it, and an
+update that leaves it out posts without one.
+
+```tsx
+<AndroidOngoingNotification.Progress
+  title="Driver is on the way"
+  text="Anna, silver Toyota · 46.021, 14.968"
+  value={32}
+  max={100}
+  when={Date.now()}
+  publicVersion={{ title: 'Ride in progress', text: 'Unlock to see driver details' }}
+/>
+```
+
+The copy is what the lock screen shows when `visibility` hides the real content. It carries the title
+and text you give it and nothing else: no progress, no action buttons.
+
+### Timestamps
+
+`when` and `chronometer` already exist. Two more props decide what the system does with them:
+
+- `showWhen` (default `true`, and `false` when the payload carries no timestamp) hides the time the
+  notification shows while keeping the timestamp for sorting and timeouts. Set it to `false` for an
+  absolute deadline or a count-down, so the notification stops claiming it is "5 minutes ago".
+- `chronometerCountDown` (default `false`) counts a chronometer down to `when` instead of up from it.
+  Needs `chronometer`.
+
+```tsx
+<AndroidOngoingNotification.BigText
+  title="Your table is ready"
+  text="Reserved until 20:30"
+  bigText="We hold it for 15 minutes. Reply in the app to keep it."
+  when={tableReadyUntil.getTime()}
+  chronometer
+  chronometerCountDown
+  showWhen={false}
+/>
+```
+
+### Changing a presentation option
+
+An update keeps every presentation option you do not mention. To change one, send it; to go back to
+the platform default, send `null`:
+
+```tsx
+await updateAndroidOngoingNotification('ride-44', content, {
+  channelId: 'ride_updates',
+  color: '#000000', // replace
+  timeoutMs: null, // stop timing this one out
+  // group and sortKey left out: they keep their stored values
+})
+```
+
+The pre-existing options (`smallIcon`, `deepLinkUrl`, `requestPromotedOngoing`, `fallbackBehavior`)
+behave as before: leaving one out reuses the stored value, and there is no way to clear them.
+
+### Letting one update make a sound
+
+An ongoing notification alerts when it is first posted and is silent afterwards. `alert` is an update
+option that lets one update alert again:
+
+```tsx
+await updateAndroidOngoingNotification('ride-44', content, {
+  channelId: 'ride_updates',
+  alert: true,
+})
+```
+
+It applies to that post only and is never stored, so the next update is quiet again. Whether it
+audibly alerts is still decided by the channel you created: a channel on low importance stays silent
+however you set `alert`.
+
 ## Updating a notification
 
 Use the same `notificationId` to update an existing notification.
@@ -345,3 +478,13 @@ Check device support first with `getAndroidOngoingNotificationCapabilities()` if
 - Your app must create the Android notification channel before starting a notification.
 - Notification permission still needs to be requested by your app on Android 13+.
 - Action buttons open deep links. They are not a JavaScript event system.
+- Some Android notification fields stay out of the API on purpose:
+  - Badge count and badge icon. The launcher dot belongs to the channel your app creates, and a count makes no sense for a single ongoing item.
+  - Group summary. Voltra posts no summary, and requesting one disqualifies the notification from promoted presentation.
+  - A color background on every notification (`colorized`). It does nothing for these styles outside a foreground service, which Voltra does not run, and it also disqualifies promoted presentation.
+  - Tapping to auto-dismiss. The ongoing lifecycle belongs to `stopAndroidOngoingNotification()`, and a tap-dismiss would leave the notification recorded as active while it is already gone.
+  - Sound, vibration, lights and their defaults, and importance. All of them are channel settings since Android 8.0.
+  - Priority below Android 8.0. Deprecated, and a second API level to document for the same result.
+  - A settings line under the notification, which needs a notification-preferences intent filter in your manifest, and the deprecated extra content-info line.
+  - A ticker, which older accessibility services read while TalkBack reads the title and text anyway.
+  - Whether a grouped notification alerts with its group. That only means something together with a summary Voltra does not post.
