@@ -582,7 +582,10 @@ class VoltraNotificationManager(
         if (payload.whenEpochMillis != null || payload.chronometer == true) {
             builder.setWhen(payload.whenEpochMillis ?: System.currentTimeMillis())
             builder.setShowWhen(true)
-            builder.setUsesChronometer(payload.chronometer == true)
+            // Remote payloads bypass the renderer (which always pairs the two flags), so
+            // a countdown may arrive without `chronometer: true`. A countdown chip is
+            // still a chip: show the chronometer rather than a static timestamp.
+            builder.setUsesChronometer(payload.chronometer == true || payload.chronometerCountDown == true)
             // Validation guarantees a countdown always has `when` to count down to.
             // setChronometerCountDown is API 24 — Voltra's minSdk — so no gate is needed.
             if (payload.chronometerCountDown == true) {

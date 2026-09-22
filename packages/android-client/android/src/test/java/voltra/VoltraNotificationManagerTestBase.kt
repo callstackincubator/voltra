@@ -132,6 +132,20 @@ abstract class VoltraNotificationManagerTestBase(
     }
 
     @Test
+    fun countdownImpliesTheChronometerEvenWithoutTheChronometerFlag() {
+        startChannel()
+
+        // Remote payloads bypass the renderer, which always pairs the flags; a countdown
+        // arriving without `chronometer` must still render the ticking chip, not a static
+        // timestamp.
+        start(progressPayload(whenMillis = PAYLOAD_WHEN_MILLIS, chronometerCountDown = true))
+
+        val notification = lastPosted()
+        assertTrue(notification.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER))
+        assertTrue(notification.extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN))
+    }
+
+    @Test
     fun countdownWithoutWhenIsRejectedAndNothingIsPosted() {
         startChannel()
 
