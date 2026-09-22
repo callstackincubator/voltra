@@ -4,6 +4,12 @@ import {
   getUpsertAndroidOngoingNotificationOptions,
 } from '../options.js'
 
+/**
+ * Hands a validator an option value the public types forbid, which is exactly the point: these tests
+ * check the runtime guard that has to catch what a hand-written push or a plain JS caller can send.
+ */
+const invalid = (options: Record<string, unknown>) => options as never
+
 const startOptions = {
   notificationId: 'ride-44',
   channelId: 'ride_updates',
@@ -36,23 +42,25 @@ describe('getStartAndroidOngoingNotificationOptions', () => {
   })
 
   it('rejects a value outside the visibility union', () => {
-    expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, visibility: 'everyone' })).toThrow(
+    expect(() =>
+      getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, visibility: 'everyone' }))
+    ).toThrow(
       /^\[Voltra\] \[Android\] Ongoing notification option "visibility" must be one of "public", "private", "secret"\./
     )
   })
 
   it('rejects a category outside the supported set, including the payload kind name', () => {
-    expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, category: 'bigText' })).toThrow(
+    expect(() => getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, category: 'bigText' }))).toThrow(
       /option "category" must be one of/
     )
-    expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, category: 'call' })).toThrow(
+    expect(() => getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, category: 'call' }))).toThrow(
       /option "category" must be one of/
     )
   })
 
   it('rejects a timeout that is not a positive whole number of milliseconds', () => {
     for (const timeoutMs of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, '1800000']) {
-      expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, timeoutMs })).toThrow(
+      expect(() => getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, timeoutMs }))).toThrow(
         /option "timeoutMs" must be a positive integer number of milliseconds/
       )
     }
@@ -65,22 +73,24 @@ describe('getStartAndroidOngoingNotificationOptions', () => {
     expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, group: '' })).toThrow(
       /option "group" must be a non-empty string/
     )
-    expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, sortKey: 12 })).toThrow(
+    expect(() => getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, sortKey: 12 }))).toThrow(
       /option "sortKey" must be a non-empty string/
     )
-    expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, localOnly: 'true' })).toThrow(
+    expect(() => getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, localOnly: 'true' }))).toThrow(
       /option "localOnly" must be a boolean/
     )
     expect(() =>
-      getStartAndroidOngoingNotificationOptions({
-        ...startOptions,
-        allowSystemGeneratedContextualActions: 'no',
-      })
+      getStartAndroidOngoingNotificationOptions(
+        invalid({
+          ...startOptions,
+          allowSystemGeneratedContextualActions: 'no',
+        })
+      )
     ).toThrow(/option "allowSystemGeneratedContextualActions" must be a boolean/)
   })
 
   it('rejects the per-post alert option on start', () => {
-    expect(() => getStartAndroidOngoingNotificationOptions({ ...startOptions, alert: true })).toThrow(
+    expect(() => getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, alert: true }))).toThrow(
       /option "alert" is only available when updating/
     )
   })
@@ -130,10 +140,10 @@ describe('getFilteredAndroidOngoingNotificationUpdateOptions', () => {
   })
 
   it('rejects a malformed alert or presentation option before the native call', () => {
-    expect(() => getFilteredAndroidOngoingNotificationUpdateOptions({ alert: 'yes' })).toThrow(
+    expect(() => getFilteredAndroidOngoingNotificationUpdateOptions(invalid({ alert: 'yes' }))).toThrow(
       /option "alert" must be a boolean/
     )
-    expect(() => getFilteredAndroidOngoingNotificationUpdateOptions({ visibility: 'everyone' })).toThrow(
+    expect(() => getFilteredAndroidOngoingNotificationUpdateOptions(invalid({ visibility: 'everyone' }))).toThrow(
       /option "visibility" must be one of/
     )
     expect(() => getFilteredAndroidOngoingNotificationUpdateOptions({ timeoutMs: 0 })).toThrow(
@@ -155,12 +165,12 @@ describe('getUpsertAndroidOngoingNotificationOptions', () => {
   })
 
   it('still validates the values it forwards', () => {
-    expect(() => getUpsertAndroidOngoingNotificationOptions({ ...startOptions, alert: 'yes' })).toThrow(
+    expect(() => getUpsertAndroidOngoingNotificationOptions(invalid({ ...startOptions, alert: 'yes' }))).toThrow(
       /option "alert" must be a boolean/
     )
-    expect(() => getUpsertAndroidOngoingNotificationOptions({ ...startOptions, visibility: 'everyone' })).toThrow(
-      /option "visibility" must be one of/
-    )
+    expect(() =>
+      getUpsertAndroidOngoingNotificationOptions(invalid({ ...startOptions, visibility: 'everyone' }))
+    ).toThrow(/option "visibility" must be one of/)
   })
 
   it('leaves out the keys the caller did not set', () => {
