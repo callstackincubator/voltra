@@ -3,8 +3,9 @@
 Status: Accepted — not yet implemented (the Metric payload kind lands after the
 promotion/eligibility work; the rest lands with it)
 
-Implemented by #<PR1> (promotion request, status-bar chip, eligibility and
-error codes) and #<PR2> (Metric payload kind and the compileSdk 37 floor).
+Implemented by #325 (promotion request, status-bar chip, eligibility and
+error codes) and by its stacked follow-up PR (Metric payload kind and the
+compileSdk 37 floor).
 
 Resolves [#322](https://github.com/callstackincubator/voltra/issues/322).
 
