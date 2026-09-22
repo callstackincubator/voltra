@@ -24,15 +24,21 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import voltra.ongoingnotification.VoltraNotificationImageResolver.Companion.MAX_ICON_LONG_EDGE_PX
+import voltra.ongoingnotification.VoltraNotificationImageResolver.Companion.MAX_PICTURE_LONG_EDGE_PX
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
 /**
  * Covers what Voltra hands the framework, through the real [Notification.Builder] and a shadowed
  * notification manager: which style, which flags, and which of the framework's own extras end up
- * filled. Artwork is asserted at sizes below what the platform clamps a notification to, so a wrong
- * size here is Voltra's doing. The downscale caps are asserted on the resolver, which is the code
- * that applies them.
+ * filled.
+ *
+ * The platform rescales notification artwork into its own display box while building the
+ * notification — 416dp by 284dp for a picture and 48dp for an icon — which at the default mdpi test
+ * density is smaller than Voltra's budgets and would hide them. Most tests therefore use artwork
+ * small enough that nothing rescales it and assert it unchanged; the budgets are asserted under a
+ * density whose display box is bigger than the budget, so the number that comes back is Voltra's.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -133,6 +139,32 @@ class VoltraNotificationManagerOngoingStyleTest {
         val posted = post(progressPayload(inlineField("largeIcon", 40, 40)))
 
         assertEquals(40, posted.bitmapFromExtra(Notification.EXTRA_LARGE_ICON)?.width)
+    }
+
+    @Test
+    @Config(qualifiers = "xxxhdpi")
+    fun `caps the picture it hands the platform at the picture budget`() {
+        // 416dp is 1664 px at this density, so anything smaller coming back can only be Voltra's
+        // budget: at the default mdpi density the platform would clamp a 3000 px picture to 416 px
+        // and the assertion would pass whatever the resolver did.
+        val posted = post(bigPicturePayload(pictureField(3000)))
+
+        val picture = posted.extras.getParcelable(Notification.EXTRA_PICTURE) as? Bitmap
+
+        assertEquals(MAX_PICTURE_LONG_EDGE_PX, maxOf(picture!!.width, picture.height))
+        assertEquals(4f / 3f, picture.width.toFloat() / picture.height, 0.02f)
+    }
+
+    @Test
+    @Config(qualifiers = "1000dpi")
+    fun `caps a posted thumbnail at the icon budget`() {
+        // Same trick for the same reason: the platform draws a thumbnail in a 48dp box, which only
+        // stops binding above 5x density, so a 2000 px icon coming back at 256 px is Voltra's cap.
+        val posted = post(progressPayload(inlineField("largeIcon", 2000, 2000)))
+
+        val largeIcon = posted.bitmapFromExtra(Notification.EXTRA_LARGE_ICON)
+
+        assertEquals(MAX_ICON_LONG_EDGE_PX, maxOf(largeIcon!!.width, largeIcon.height))
     }
 
     @Test
