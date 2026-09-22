@@ -155,7 +155,8 @@ internal class VoltraNotificationImageResolver(
     /**
      * Two-pass decode: read the dimensions without allocating pixels, then decode with the largest
      * power-of-two subsampling that still leaves the long edge at or above the target, and scale the
-     * remainder. This keeps the peak allocation near the target instead of near the source.
+     * remainder. That bounds the peak to within one doubling of the target on a side, rather than to
+     * the size of the source, which is what the whole exercise is about.
      */
     private fun decodeBytes(
         bytes: ByteArray,
@@ -257,6 +258,11 @@ internal class VoltraNotificationImageResolver(
         }
     }
 
+    /**
+     * Scales a subsampled bitmap to the cap and releases what it was scaled from: that bitmap never
+     * leaves this class, and leaving it to the garbage collector would keep up to a doubling on each
+     * side of the target alive next to the copy that replaces it.
+     */
     private fun scaleDown(
         bitmap: Bitmap,
         maxLongEdgePx: Int,
@@ -267,7 +273,13 @@ internal class VoltraNotificationImageResolver(
             return bitmap
         }
 
-        return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+        val scaled = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
+
+        if (scaled !== bitmap) {
+            bitmap.recycle()
+        }
+
+        return scaled
     }
 }
 
