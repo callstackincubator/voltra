@@ -85,6 +85,18 @@ test('rejects a public version without a usable title', () => {
   })
 })
 
+test('accepts an empty public version text, like the other text fields of the content', () => {
+  const payload = renderProgress({
+    value: 1,
+    max: 100,
+    title: 'Ride in progress',
+    text: '',
+    publicVersion: { title: 'Ride in progress', text: '' },
+  })
+
+  assert.deepEqual(payload.publicVersion, { title: 'Ride in progress', text: '' })
+})
+
 test('rejects malformed timestamp and lock-screen props', () => {
   assert.throws(() => renderProgress({ value: 1, max: 100, showWhen: 'yes' }), {
     message: /prop "showWhen" must be a boolean/,

@@ -260,7 +260,7 @@ const normalizePublicVersion = (value: unknown): AndroidOngoingNotificationPubli
 
   return {
     title: assertString(title, 'publicVersion.title'),
-    text: assertOptionalNonEmptyString(text, 'publicVersion.text'),
+    text: assertOptionalString(text, 'publicVersion.text'),
   }
 }
 
