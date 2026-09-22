@@ -112,7 +112,9 @@ export const useAndroidOngoingNotification = (
       }
 
       const updateOptions = { ...optionsRef.current, ...options }
-      lastUpdateOptionsRef.current = updateOptions
+      // `alert` describes exactly the one post it arrived with, so it must never live in the object
+      // the autoUpdate effect replays: caching it would alert again on every content change.
+      lastUpdateOptionsRef.current = { ...updateOptions, alert: undefined }
       return updateAndroidOngoingNotification(targetId, contentRef.current, updateOptions)
     },
     [targetId]
