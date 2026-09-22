@@ -181,7 +181,11 @@ export const useAndroidOngoingNotification = (
       return
     }
 
-    void start()
+    // Auto-start rejections (e.g. VOLTRA_NOTIFICATION_CHANNEL_NOT_FOUND) must not
+    // surface as unhandled promise rejections; log the coded error instead.
+    start().catch((error: unknown) => {
+      console.error('[voltra] useAndroidOngoingNotification autoStart failed:', error)
+    })
   }, [options.autoStart, start, targetId])
 
   useEffect(() => {
@@ -189,7 +193,9 @@ export const useAndroidOngoingNotification = (
       return
     }
 
-    void update(lastUpdateOptionsRef.current)
+    update(lastUpdateOptionsRef.current).catch((error: unknown) => {
+      console.error('[voltra] useAndroidOngoingNotification autoUpdate failed:', error)
+    })
   }, [content, options.autoUpdate, targetId, update])
 
   return {

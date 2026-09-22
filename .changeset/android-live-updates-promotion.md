@@ -12,4 +12,7 @@ report promotion eligibility as machine-readable reasons. New helpers:
 `openAndroidPromotedNotificationSettings()` opens the Live Updates settings page. Posting
 now rejects with coded errors (`VOLTRA_NOTIFICATION_...`) for a missing or unknown channel,
 a malformed remote payload, or — with `fallbackBehavior: 'error'` — an ineligible promoted
-notification, instead of failing silently or leaking raw exceptions.
+notification, instead of failing silently or leaking raw exceptions. In
+`useAndroidOngoingNotification`, an `autoStart` or `autoUpdate` that now rejects (for those
+same coded reasons) is reported through `console.error` instead of surfacing as an
+unhandled promise rejection.
