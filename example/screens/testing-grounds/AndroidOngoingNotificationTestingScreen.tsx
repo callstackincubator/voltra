@@ -3,8 +3,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState, PermissionsAndroid, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   AndroidOngoingNotification,
+  type AndroidOngoingNotificationCategory,
   type AndroidOngoingNotificationPayload,
+  type AndroidOngoingNotificationPresentationOptions,
+  type AndroidOngoingNotificationVisibility,
   type StartAndroidOngoingNotificationOptions,
+  type UpdateAndroidOngoingNotificationOptions,
+  type UpsertAndroidOngoingNotificationOptions,
 } from '@use-voltra/android'
 import {
   getAndroidOngoingNotificationCapabilities,
@@ -28,6 +33,20 @@ const DEFAULT_POINTS = '[{"position": 20, "color": "#F59E0B"}, {"position": 72}]
 const DEFAULT_PRIMARY_ACTION_DEEP_LINK = 'voltra://orders/123'
 const DEFAULT_SECONDARY_ACTION_DEEP_LINK = 'voltra://orders/123/track'
 const DEFAULT_PRIMARY_ACTION_ICON = 'voltra_icon'
+
+const VISIBILITY_CHOICES: (AndroidOngoingNotificationVisibility | 'unset')[] = ['unset', 'public', 'private', 'secret']
+
+/** Every presentation option sent as `null`, which an update reads as "go back to the platform default". */
+const CLEARED_PRESENTATION_OPTIONS: UpdateAndroidOngoingNotificationOptions = {
+  visibility: null,
+  color: null,
+  category: null,
+  timeoutMs: null,
+  localOnly: null,
+  group: null,
+  sortKey: null,
+  allowSystemGeneratedContextualActions: null,
+}
 
 const formatJson = (value: unknown) => JSON.stringify(value, null, 2)
 
@@ -63,12 +82,27 @@ const toOptionalNonEmptyString = (value: string) => {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+const toTimeoutMs = (seconds: string) => {
+  const parsed = Number.parseFloat(seconds)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed * 1000) : undefined
+}
+
 export default function AndroidOngoingNotificationTestingScreen() {
   const [style, setStyle] = useState<OngoingNotificationStyle>('progress')
   const [notificationId, setNotificationId] = useState(DEFAULT_NOTIFICATION_ID)
   const [channelId, setChannelId] = useState('voltra_live_updates')
   const [smallIcon, setSmallIcon] = useState('')
   const [requestPromotedOngoing, setRequestPromotedOngoing] = useState(true)
+  const [visibility, setVisibility] = useState<AndroidOngoingNotificationVisibility | 'unset'>('unset')
+  const [color, setColor] = useState('')
+  const [category, setCategory] = useState('')
+  const [timeoutSeconds, setTimeoutSeconds] = useState('')
+  const [localOnly, setLocalOnly] = useState(false)
+  const [group, setGroup] = useState('')
+  const [sortKey, setSortKey] = useState('')
+  const [contextualActions, setContextualActions] = useState(true)
+  const [alertOnUpdate, setAlertOnUpdate] = useState(false)
+  const [clearOnUpdate, setClearOnUpdate] = useState(false)
   const [title, setTitle] = useState('Driver is approaching')
   const [text, setText] = useState('2 stops away')
   const [bigText, setBigText] = useState('Your courier is moving through the final neighborhood.')
@@ -78,6 +112,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
   const [progressMax, setProgressMax] = useState('100')
   const [indeterminate, setIndeterminate] = useState(false)
   const [chronometer, setChronometer] = useState(false)
+  const [chronometerCountDown, setChronometerCountDown] = useState(false)
+  const [showTimestamp, setShowTimestamp] = useState(false)
+  const [showWhen, setShowWhen] = useState(true)
+  const [publicTitle, setPublicTitle] = useState('')
+  const [publicText, setPublicText] = useState('')
   const [largeIcon, setLargeIcon] = useState('')
   const [progressTrackerIcon, setProgressTrackerIcon] = useState('')
   const [progressStartIcon, setProgressStartIcon] = useState('')
@@ -112,6 +151,12 @@ export default function AndroidOngoingNotificationTestingScreen() {
   useFocusEffect(refreshCapabilities)
 
   const content = useMemo(() => {
+    const when = showTimestamp || chronometer ? Date.now() : undefined
+    const publicVersionTitle = toOptionalNonEmptyString(publicTitle)
+    const publicVersion = publicVersionTitle
+      ? { title: publicVersionTitle, text: toOptionalNonEmptyString(publicText) }
+      : undefined
+
     if (style === 'progress') {
       return (
         <AndroidOngoingNotification.Progress
@@ -123,7 +168,10 @@ export default function AndroidOngoingNotificationTestingScreen() {
           indeterminate={indeterminate}
           shortCriticalText={shortCriticalText || undefined}
           chronometer={chronometer}
-          when={chronometer ? Date.now() : undefined}
+          chronometerCountDown={chronometer ? chronometerCountDown : undefined}
+          when={when}
+          showWhen={when ? showWhen : undefined}
+          publicVersion={publicVersion}
           largeIcon={toImageSource(largeIcon)}
           progressTrackerIcon={toImageSource(progressTrackerIcon)}
           progressStartIcon={toImageSource(progressStartIcon)}
@@ -156,7 +204,10 @@ export default function AndroidOngoingNotificationTestingScreen() {
         bigText={bigText || undefined}
         shortCriticalText={shortCriticalText || undefined}
         chronometer={chronometer}
-        when={chronometer ? Date.now() : undefined}
+        chronometerCountDown={chronometer ? chronometerCountDown : undefined}
+        when={when}
+        showWhen={when ? showWhen : undefined}
+        publicVersion={publicVersion}
         largeIcon={toImageSource(largeIcon)}
       >
         {toOptionalNonEmptyString(primaryActionTitle) && toOptionalNonEmptyString(primaryActionDeepLinkUrl) ? (
@@ -177,6 +228,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
   }, [
     bigText,
     chronometer,
+    chronometerCountDown,
     indeterminate,
     largeIcon,
     pointsJson,
@@ -188,10 +240,14 @@ export default function AndroidOngoingNotificationTestingScreen() {
     progressStartIcon,
     progressTrackerIcon,
     progressValue,
+    publicText,
+    publicTitle,
     secondaryActionDeepLinkUrl,
     secondaryActionTitle,
     segmentsJson,
     shortCriticalText,
+    showTimestamp,
+    showWhen,
     style,
     subText,
     text,
@@ -202,11 +258,26 @@ export default function AndroidOngoingNotificationTestingScreen() {
     setActiveState(isAndroidOngoingNotificationActive(id))
   }
 
-  const getOngoingNotificationOptions = () => ({
+  const presentationOptions = useMemo<AndroidOngoingNotificationPresentationOptions>(
+    () => ({
+      visibility: visibility === 'unset' ? undefined : visibility,
+      color: toOptionalNonEmptyString(color),
+      category: toOptionalNonEmptyString(category) as AndroidOngoingNotificationCategory | undefined,
+      timeoutMs: toTimeoutMs(timeoutSeconds),
+      localOnly,
+      group: toOptionalNonEmptyString(group),
+      sortKey: toOptionalNonEmptyString(sortKey),
+      allowSystemGeneratedContextualActions: contextualActions,
+    }),
+    [category, color, contextualActions, group, localOnly, sortKey, timeoutSeconds, visibility]
+  )
+
+  const getOngoingNotificationOptions = (): StartAndroidOngoingNotificationOptions => ({
     notificationId,
     channelId,
     smallIcon: smallIcon || undefined,
     requestPromotedOngoing,
+    ...presentationOptions,
   })
 
   const buildVoltraPushEnvelope = (operation: 'upsert' | 'stop' = 'upsert') => {
@@ -214,7 +285,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
       voltraOngoingNotification: {
         notificationId: string
         operation: 'upsert' | 'stop'
-        options: StartAndroidOngoingNotificationOptions
+        options: UpsertAndroidOngoingNotificationOptions
         payload?: AndroidOngoingNotificationPayload
       }
     } = {
@@ -225,6 +296,8 @@ export default function AndroidOngoingNotificationTestingScreen() {
           channelId,
           smallIcon: smallIcon || undefined,
           requestPromotedOngoing,
+          ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : presentationOptions),
+          ...(alertOnUpdate ? { alert: true } : {}),
         },
       },
     }
@@ -252,9 +325,12 @@ export default function AndroidOngoingNotificationTestingScreen() {
   }, [buildVoltraPushEnvelope])
 
   const handleRenderPayload = () => {
-    const payload = renderAndroidOngoingNotificationPayload(content)
-    setRenderedPayload(payload)
-    setStatusMessage('Rendered semantic payload from JSX content.')
+    try {
+      setRenderedPayload(renderAndroidOngoingNotificationPayload(content))
+      setStatusMessage('Rendered semantic payload from JSX content.')
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Failed to render the payload.')
+    }
   }
 
   const handleStart = async () => {
@@ -274,7 +350,13 @@ export default function AndroidOngoingNotificationTestingScreen() {
 
   const handleUpdate = async () => {
     try {
-      const result = await updateAndroidOngoingNotification(notificationId, content, getOngoingNotificationOptions())
+      const result = await updateAndroidOngoingNotification(notificationId, content, {
+        ...getOngoingNotificationOptions(),
+        // With the toggle on, every presentation option is sent as null: the update goes back to the
+        // platform defaults instead of keeping what the start post stored.
+        ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : presentationOptions),
+        alert: alertOnUpdate || undefined,
+      })
       syncActiveState(notificationId)
       setStatusMessage(
         result.ok
@@ -291,7 +373,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
     try {
       const payloadString = renderedPayload || renderAndroidOngoingNotificationPayload(content)
       const payload = JSON.parse(payloadString) as AndroidOngoingNotificationPayload
-      const result = await upsertAndroidOngoingNotification(payload, getOngoingNotificationOptions())
+      const result = await upsertAndroidOngoingNotification(payload, {
+        ...getOngoingNotificationOptions(),
+        ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : {}),
+        alert: alertOnUpdate || undefined,
+      })
       syncActiveState(result.notificationId)
       setRenderedPayload(formatJson(payload))
       setStatusMessage(
@@ -435,6 +521,127 @@ export default function AndroidOngoingNotificationTestingScreen() {
       </Card>
 
       <Card>
+        <Card.Title>Presentation Options</Card.Title>
+        <Card.Text>
+          Empty fields are not sent, so the stored value or the platform default is used. Toggles are always sent and
+          are stored until an update changes them.
+        </Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Visibility</Text>
+          <View style={styles.toggleGroup}>
+            {VISIBILITY_CHOICES.map((choice) => (
+              <Button
+                key={choice}
+                title={choice}
+                variant={visibility === choice ? 'primary' : 'secondary'}
+                onPress={() => setVisibility(choice)}
+                style={styles.smButton}
+              />
+            ))}
+          </View>
+        </View>
+        <Card.Text>
+          Choose &quot;private&quot; together with the public version fields to see the lock-screen copy.
+        </Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Color</Text>
+          <TextInput
+            style={styles.input}
+            value={color}
+            onChangeText={setColor}
+            placeholder="#1E88E5 or rgb(30, 136, 229)"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Category</Text>
+          <TextInput
+            style={styles.input}
+            value={category}
+            onChangeText={setCategory}
+            placeholder="navigation or workout"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <Card.Text>A timeout is applied on every post, so each update restarts the countdown.</Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Timeout (seconds)</Text>
+          <TextInput
+            style={styles.input}
+            value={timeoutSeconds}
+            onChangeText={setTimeoutSeconds}
+            placeholder="120"
+            placeholderTextColor="#6B7280"
+            keyboardType="numeric"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Local only</Text>
+          <Button
+            title={localOnly ? 'ON' : 'OFF'}
+            variant={localOnly ? 'primary' : 'secondary'}
+            onPress={() => setLocalOnly((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Group</Text>
+          <TextInput
+            style={styles.input}
+            value={group}
+            onChangeText={setGroup}
+            placeholder="rides"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Sort key</Text>
+          <TextInput
+            style={styles.input}
+            value={sortKey}
+            onChangeText={setSortKey}
+            placeholder="2026-09-22T12:00"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Contextual actions</Text>
+          <Button
+            title={contextualActions ? 'ON' : 'OFF'}
+            variant={contextualActions ? 'primary' : 'secondary'}
+            onPress={() => setContextualActions((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Alert on update</Text>
+          <Button
+            title={alertOnUpdate ? 'ON' : 'OFF'}
+            variant={alertOnUpdate ? 'primary' : 'secondary'}
+            onPress={() => setAlertOnUpdate((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Clear on update</Text>
+          <Button
+            title={clearOnUpdate ? 'ON' : 'OFF'}
+            variant={clearOnUpdate ? 'primary' : 'secondary'}
+            onPress={() => setClearOnUpdate((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <Card.Text>
+          &quot;Clear on update&quot; sends every presentation option as null, so the next update posts at the platform
+          defaults and nothing is stored.
+        </Card.Text>
+      </Card>
+
+      <Card>
         <Card.Title>Semantic Content</Card.Title>
         <View style={styles.row}>
           <Text style={styles.label}>Style</Text>
@@ -489,6 +696,61 @@ export default function AndroidOngoingNotificationTestingScreen() {
             style={styles.smButton}
           />
         </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Count Down</Text>
+          <Button
+            title={chronometerCountDown ? 'ON' : 'OFF'}
+            variant={chronometerCountDown ? 'primary' : 'secondary'}
+            onPress={() => setChronometerCountDown((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Timestamp</Text>
+          <Button
+            title={showTimestamp ? 'ON' : 'OFF'}
+            variant={showTimestamp ? 'primary' : 'secondary'}
+            onPress={() => setShowTimestamp((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Show Timestamp</Text>
+          <Button
+            title={showWhen ? 'Shown' : 'Hidden'}
+            variant={showWhen ? 'primary' : 'secondary'}
+            onPress={() => setShowWhen((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <Card.Text>
+          Hidden keeps the timestamp for sorting and timeouts while the notification stops showing an age that never
+          changes. Needs the timestamp toggle on.
+        </Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Public Title</Text>
+          <TextInput
+            style={styles.input}
+            value={publicTitle}
+            onChangeText={setPublicTitle}
+            placeholder="Ride in progress"
+            placeholderTextColor="#6B7280"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Public Text</Text>
+          <TextInput
+            style={styles.input}
+            value={publicText}
+            onChangeText={setPublicText}
+            placeholder="Unlock to see driver details"
+            placeholderTextColor="#6B7280"
+          />
+        </View>
+        <Card.Text>
+          The public version is the lock-screen copy for a private notification. It replaces the title and text on the
+          lock screen and carries nothing else.
+        </Card.Text>
 
         {style === 'progress' ? (
           <>

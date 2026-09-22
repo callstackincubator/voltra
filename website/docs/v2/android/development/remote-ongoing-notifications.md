@@ -89,8 +89,12 @@ Your payload's `data.voltraOngoingNotification` should contain:
 
 - `notificationId`: the stable notification identifier
 - `operation`: `'upsert'` or `'stop'`
-- `options`: start options such as `channelId`, `smallIcon`, `deepLinkUrl`, `requestPromotedOngoing`, or `fallbackBehavior`
+- `options`: start options such as `channelId`, `smallIcon`, `deepLinkUrl`, `requestPromotedOngoing`, or `fallbackBehavior`; the presentation options `visibility`, `color`, `category`, `timeoutMs`, `localOnly`, `group`, `sortKey`, and `allowSystemGeneratedContextualActions`; and `alert`
 - `payload`: the Voltra semantic payload for `'upsert'`
+
+Presentation options are the app's decision, so send them only if your push builder is allowed to make it. An upsert whose `options` leaves them out changes nothing about how the running notification is presented, and a presentation option sent as `null` clears the stored value when the push updates an existing notification. `alert: true` makes an updating push alert the way a first post does; a push that starts a notification always alerts anyway.
+
+The payload itself can carry `publicVersion`, `showWhen`, and `chronometerCountDown`, like any other content field.
 
 Example Expo push request:
 
@@ -99,7 +103,7 @@ Example Expo push request:
   "to": "ExponentPushToken[project-token]",
   "priority": "high",
   "data": {
-    "voltraOngoingNotification": "{\"notificationId\":\"order-123\",\"operation\":\"upsert\",\"options\":{\"channelId\":\"delivery_updates\",\"deepLinkUrl\":\"myapp://orders/123\",\"requestPromotedOngoing\":true},\"payload\":{\"v\":1,\"kind\":\"progress\",\"title\":\"Driver is approaching\",\"text\":\"2 stops away\",\"value\":80,\"max\":100}}"
+    "voltraOngoingNotification": "{\"notificationId\":\"order-123\",\"operation\":\"upsert\",\"options\":{\"channelId\":\"delivery_updates\",\"deepLinkUrl\":\"myapp://orders/123\",\"requestPromotedOngoing\":true,\"visibility\":\"private\",\"color\":\"#1E88E5\",\"category\":\"navigation\",\"timeoutMs\":1800000,\"group\":\"deliveries\"},\"payload\":{\"v\":1,\"kind\":\"progress\",\"title\":\"Driver is approaching\",\"text\":\"2 stops away\",\"value\":80,\"max\":100,\"when\":1758540000000,\"showWhen\":false,\"publicVersion\":{\"title\":\"Delivery in progress\",\"text\":\"Unlock to see the driver\"}}}"
   }
 }
 ```

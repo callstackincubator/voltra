@@ -1,7 +1,12 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
-import type { AndroidOngoingNotificationPayload } from '@use-voltra/android'
-import type { StartAndroidOngoingNotificationOptions } from '@use-voltra/android-client'
+import type {
+  AndroidOngoingNotificationCategory,
+  AndroidOngoingNotificationPayload,
+  AndroidOngoingNotificationPresentationOptions,
+  AndroidOngoingNotificationVisibility,
+} from '@use-voltra/android'
+import type { UpsertAndroidOngoingNotificationOptions } from '@use-voltra/android-client'
 import { stopAndroidOngoingNotification, upsertAndroidOngoingNotification } from '@use-voltra/android-client'
 
 export const VOLTRA_BACKGROUND_NOTIFICATION_TASK = 'voltra-background-notification-task'
@@ -128,14 +133,52 @@ const parseBoolean = (value: unknown): boolean | undefined => {
   return typeof value === 'boolean' ? value : undefined
 }
 
+const parseClearableString = (value: unknown): string | null | undefined => (value === null ? null : parseString(value))
+
+const parseClearableBoolean = (value: unknown): boolean | null | undefined =>
+  value === null ? null : parseBoolean(value)
+
+const parseClearableNumber = (value: unknown): number | null | undefined =>
+  value === null ? null : typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+type PushPresentationOptions = Pick<
+  UpsertAndroidOngoingNotificationOptions,
+  keyof AndroidOngoingNotificationPresentationOptions
+>
+
+/**
+ * Presentation options are read from the push `options` object only. They are app policy rather than
+ * content, so a server that only renders what the notification says leaves them out and the device
+ * keeps what the running notification already uses. A key sent as `null` clears the stored value
+ * when the push updates an existing notification.
+ */
+const readPresentationOptions = (rawOptions: unknown): PushPresentationOptions => {
+  if (!isRecord(rawOptions)) {
+    return {}
+  }
+
+  return {
+    visibility: parseClearableString(rawOptions.visibility) as AndroidOngoingNotificationVisibility | null | undefined,
+    color: parseClearableString(rawOptions.color),
+    category: parseClearableString(rawOptions.category) as AndroidOngoingNotificationCategory | null | undefined,
+    timeoutMs: parseClearableNumber(rawOptions.timeoutMs),
+    localOnly: parseClearableBoolean(rawOptions.localOnly),
+    group: parseClearableString(rawOptions.group),
+    sortKey: parseClearableString(rawOptions.sortKey),
+    allowSystemGeneratedContextualActions: parseClearableBoolean(rawOptions.allowSystemGeneratedContextualActions),
+  }
+}
+
 const parseOptions = (
   message: VoltraOngoingNotificationMessage
-): StartAndroidOngoingNotificationOptions | undefined => {
+): UpsertAndroidOngoingNotificationOptions | undefined => {
   const rawOptions = isRecord(message.options)
     ? message.options
     : typeof message.options === 'string'
     ? parseJsonString(message.options)
     : null
+
+  const presentationOptions = readPresentationOptions(rawOptions)
 
   const mergedOptions = {
     ...(isRecord(rawOptions) ? rawOptions : {}),
@@ -149,10 +192,12 @@ const parseOptions = (
     fallbackBehavior:
       parseString(message.fallbackBehavior) ??
       (isRecord(rawOptions) ? parseString(rawOptions.fallbackBehavior) : undefined),
+    alert: isRecord(rawOptions) ? parseBoolean(rawOptions.alert) : undefined,
   }
 
-  const options: StartAndroidOngoingNotificationOptions = {
+  const options: UpsertAndroidOngoingNotificationOptions = {
     channelId: DEFAULT_CHANNEL_ID,
+    ...presentationOptions,
   }
 
   if (mergedOptions.channelId !== undefined) {
@@ -173,7 +218,11 @@ const parseOptions = (
 
   if (mergedOptions.fallbackBehavior !== undefined) {
     options.fallbackBehavior =
-      mergedOptions.fallbackBehavior as StartAndroidOngoingNotificationOptions['fallbackBehavior']
+      mergedOptions.fallbackBehavior as UpsertAndroidOngoingNotificationOptions['fallbackBehavior']
+  }
+
+  if (mergedOptions.alert !== undefined) {
+    options.alert = mergedOptions.alert
   }
 
   return options

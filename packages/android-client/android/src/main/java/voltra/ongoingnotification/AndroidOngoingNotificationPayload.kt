@@ -29,14 +29,23 @@ data class AndroidOngoingNotificationActionPayload(
 )
 
 @Serializable
+data class AndroidOngoingNotificationPublicVersionPayload(
+    val title: String,
+    val text: String? = null,
+)
+
+@Serializable
 sealed class AndroidOngoingNotificationPayload {
     abstract val v: Int
     abstract val title: String?
     abstract val subText: String?
     abstract val shortCriticalText: String?
     abstract val chronometer: Boolean?
+    abstract val chronometerCountDown: Boolean?
+    abstract val showWhen: Boolean?
     abstract val whenEpochMillis: Long?
     abstract val largeIcon: AndroidOngoingNotificationImageSource?
+    abstract val publicVersion: AndroidOngoingNotificationPublicVersionPayload?
     abstract val actions: List<AndroidOngoingNotificationActionPayload>?
 }
 
@@ -54,7 +63,10 @@ data class AndroidOngoingNotificationProgressPayload(
     @SerialName("when")
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
+    override val chronometerCountDown: Boolean? = null,
+    override val showWhen: Boolean? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
+    override val publicVersion: AndroidOngoingNotificationPublicVersionPayload? = null,
     val progressTrackerIcon: AndroidOngoingNotificationImageSource? = null,
     val progressStartIcon: AndroidOngoingNotificationImageSource? = null,
     val progressEndIcon: AndroidOngoingNotificationImageSource? = null,
@@ -75,7 +87,10 @@ data class AndroidOngoingNotificationBigTextPayload(
     @SerialName("when")
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
+    override val chronometerCountDown: Boolean? = null,
+    override val showWhen: Boolean? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
+    override val publicVersion: AndroidOngoingNotificationPublicVersionPayload? = null,
     override val actions: List<AndroidOngoingNotificationActionPayload>? = null,
 ) : AndroidOngoingNotificationPayload()
 
@@ -88,6 +103,7 @@ data class AndroidOngoingNotificationRecord(
     val deepLinkUrl: String? = null,
     val requestPromotedOngoing: Boolean = false,
     val fallbackBehavior: String = "standard",
+    val presentation: AndroidOngoingNotificationPresentation = AndroidOngoingNotificationPresentation(),
     val active: Boolean = true,
     val dismissed: Boolean = false,
 )
