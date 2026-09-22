@@ -529,19 +529,18 @@ class VoltraNotificationManager(
                 ?.let { style.bigPicture(it) }
         }
 
+        // An expanded thumbnail wins over hiding one, but only one that actually decoded. Artwork
+        // that failed to resolve has to fall through to an explicit hide, otherwise asking to drop
+        // the thumbnail would end up showing the collapsed one in its place.
+        val bigLargeIcon = payload.bigLargeIcon?.let { imageResolver.resolveIcon(it, MAX_ICON_LONG_EDGE_PX) }
+
         when {
-            payload.bigLargeIcon != null -> {
-                imageResolver
-                    .resolveIcon(payload.bigLargeIcon, MAX_ICON_LONG_EDGE_PX)
-                    ?.let { style.bigLargeIcon(it) }
-            }
+            bigLargeIcon != null -> style.bigLargeIcon(bigLargeIcon)
 
             // Passing an explicit null marks the expanded thumbnail as cleared, which is how the
             // platform expresses "thumbnail only while collapsed". Leaving the key unset instead
             // would keep showing the collapsed large icon.
-            payload.hideLargeIconWhenExpanded == true -> {
-                style.bigLargeIcon(null as Icon?)
-            }
+            payload.hideLargeIconWhenExpanded == true -> style.bigLargeIcon(null as Icon?)
         }
 
         payload.summaryText?.let { style.setSummaryText(it) }

@@ -164,6 +164,23 @@ class VoltraNotificationManagerOngoingStyleTest {
     }
 
     @Test
+    fun `hides the expanded thumbnail when the one it was given cannot be decoded`() {
+        val posted =
+            post(
+                bigPicturePayload(
+                    pictureField(SMALL_PICTURE),
+                    inlineField("largeIcon", 40, 40),
+                    "\"hideLargeIconWhenExpanded\":true",
+                    unparsableField("bigLargeIcon"),
+                ),
+            )
+
+        assertTrue(posted.extras.containsKey(Notification.EXTRA_LARGE_ICON_BIG))
+        assertNull(posted.extras.getParcelable(Notification.EXTRA_LARGE_ICON_BIG) as? Icon)
+        assertNotNull(posted.bitmapFromExtra(Notification.EXTRA_LARGE_ICON))
+    }
+
+    @Test
     fun `leaves the expanded thumbnail alone when neither option is given`() {
         val posted = post(bigPicturePayload(pictureField(SMALL_PICTURE)))
 
@@ -195,8 +212,7 @@ class VoltraNotificationManagerOngoingStyleTest {
 
     @Test
     fun `posts without a big picture when the picture cannot be decoded`() {
-        val unparsable = Base64.encodeToString("not an image".toByteArray(), Base64.NO_WRAP)
-        val posted = post(bigPicturePayload(""" "picture":{"base64":"$unparsable"} """))
+        val posted = post(bigPicturePayload(unparsableField("picture")))
 
         assertEquals(TEMPLATE_BIG_PICTURE, posted.extras.getString(Notification.EXTRA_TEMPLATE))
         assertNull(posted.extras.getParcelable(Notification.EXTRA_PICTURE) as? Bitmap)
@@ -306,6 +322,11 @@ class VoltraNotificationManagerOngoingStyleTest {
         width: Int,
         height: Int,
     ): String = """ "$name":{"base64":"${pngBase64(width, height)}"} """
+
+    private fun unparsableField(name: String): String {
+        val unparsable = Base64.encodeToString("not an image".toByteArray(), Base64.NO_WRAP)
+        return """ "$name":{"base64":"$unparsable"} """
+    }
 
     private fun pngBase64(
         width: Int,
