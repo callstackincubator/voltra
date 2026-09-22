@@ -1,5 +1,15 @@
 # @use-voltra/android-server
 
+## 2.3.2
+
+### Patch Changes
+
+- Updated dependencies [910e7fe]
+- Updated dependencies [3ba1b1b]
+  - @use-voltra/core@2.3.2
+  - @use-voltra/android@2.3.2
+  - @use-voltra/server@2.3.2
+
 ## 2.3.1
 
 ### Patch Changes
