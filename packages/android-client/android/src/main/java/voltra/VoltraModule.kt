@@ -56,6 +56,7 @@ class VoltraModule(
     companion object {
         private const val TAG = "VoltraModule"
         private const val ERROR_INVALID_NOTIFICATION_OPTIONS = "VOLTRA_INVALID_NOTIFICATION_OPTIONS"
+        private const val ERROR_NOTIFICATION_UNAVAILABLE = "VOLTRA_NOTIFICATION_UNAVAILABLE"
     }
 
     private val notificationManager by lazy {
@@ -167,11 +168,13 @@ class VoltraModule(
     }
 
     /**
-     * Resolves [promise] with the result of [mutation], turning an invalid option into a rejection.
+     * Resolves [promise] with the result of [mutation], turning a refused call into a rejection.
      *
      * Ongoing notification options may come from a push that an older release of the app put on the
      * wire, so a value this release cannot honour has to fail the call the way every other failure
-     * does rather than escape the TurboModule method.
+     * does rather than escape the TurboModule method. A [IllegalArgumentException] names a malformed
+     * option; a [IllegalStateException] is the promoted ongoing notification the caller asked for
+     * being unavailable here with `fallbackBehavior: 'error'`.
      */
     private fun resolveOngoingNotificationMutation(
         promise: Promise,
@@ -182,6 +185,9 @@ class VoltraModule(
         } catch (error: IllegalArgumentException) {
             Log.e(TAG, "Rejected Android ongoing notification: ${error.message}")
             promise.reject(ERROR_INVALID_NOTIFICATION_OPTIONS, error.message)
+        } catch (error: IllegalStateException) {
+            Log.e(TAG, "Unavailable Android ongoing notification: ${error.message}")
+            promise.reject(ERROR_NOTIFICATION_UNAVAILABLE, error.message)
         }
     }
 
