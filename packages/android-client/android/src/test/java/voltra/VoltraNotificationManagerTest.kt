@@ -1,9 +1,13 @@
 package voltra
 
+import android.app.Notification
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
 import android.provider.Settings
+import org.junit.Assert.assertTrue
+import org.junit.Ignore
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -50,5 +54,29 @@ class VoltraNotificationManagerApi36Test : VoltraNotificationManagerTestBase(tru
             }
         shadowOf(context.packageManager).addActivityIfNotPresent(component)
         shadowOf(context.packageManager).addIntentFilterForActivity(component, filter)
+    }
+
+    /**
+     * Verification for Android 16 QPR (SDK 36.1) devices, where `Builder` gained
+     * `setRequestPromotedOngoing` writing the same extras key on the framework side —
+     * and `build()` gives framework extras precedence over the user extras Voltra
+     * writes. If that Builder ever defaults the key, the promotion request would be
+     * silently dropped on exactly the newest devices. Robolectric ships no 36.1 image,
+     * so run this reflection-based assertion on a 36.1 emulator/system image, then drop
+     * the `@Ignore`.
+     */
+    @Ignore(
+        "Manual check on an SDK 36.1 image (Robolectric caps at 36.0): post with requestPromotedOngoing and confirm the platform reports the request",
+    )
+    @Test
+    fun platformStillReportsThePromotionRequestOnThe361Builder() {
+        startChannel()
+        start(bigTextPayload(), notificationId = "promoted-361", requestPromotedOngoing = true)
+
+        val reported =
+            Notification::class.java
+                .getMethod("isRequestPromotedOngoing")
+                .invoke(lastPosted()) as Boolean
+        assertTrue(reported)
     }
 }
