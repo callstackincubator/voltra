@@ -5,6 +5,9 @@
   making a change.
 - For version plans, see @./docs/agents/version-plans.md.
 - Before preparing or opening a pull request, see @./docs/agents/pull-requests.md.
+- To drive the example app end to end — setting widget, Live Activity, and ongoing
+  notification state from the terminal or an MCP client instead of tapping through the UI —
+  see @./docs/agents/appduct-e2e.md.
 - Preserve unrelated work already present in the working tree.
 - Keep changes focused; do not make opportunistic refactors.
 - Never commit credentials, secrets, generated build output, or local

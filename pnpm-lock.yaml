@@ -59,6 +59,9 @@ importers:
 
   example:
     dependencies:
+      '@appduct/react-native':
+        specifier: ^0.11.0
+        version: 0.11.0(expo@55.0.25)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)
       '@expo-google-fonts/merriweather':
         specifier: ^0.4.2
         version: 0.4.2
@@ -188,6 +191,9 @@ importers:
       react-native-worklets:
         specifier: ~0.7.0
         version: 0.7.4(@babel/core@7.29.0)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@babel/core':
         specifier: ^7.25.2
@@ -523,6 +529,19 @@ importers:
         version: 18.19.130
 
 packages:
+
+  '@appduct/react-native@0.11.0':
+    resolution: {integrity: sha512-ftcqnlndgwqzWmSz27kZd0cQLsPv7XCJltjA+Hl4kvpzXMU1sfj0KEqLOQVRHSyOCN5wb7AzYACchXE/5AuH4w==}
+    peerDependencies:
+      expo: '>=54.0.0'
+      react: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
+
+  '@appduct/shared@0.11.0':
+    resolution: {integrity: sha512-rNRbYH6OOTE6/dUvrmpNk/29MiYPPE/Wl0a+AcbKhhgAubxl2f8vkO2ac1CfQ/WjlJNb2tMHZ8OmSI8N8SH/Vg==}
 
   '@ark/schema@0.56.0':
     resolution: {integrity: sha512-ECg3hox/6Z/nLajxXqNhgPtNdHWC9zNsDyskwO28WinoFEnWow4IsERNz9AnXRhTZJnYIlAJ4uGn3nlLk65vZA==}
@@ -9200,6 +9219,16 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@appduct/react-native@0.11.0(expo@55.0.25)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@appduct/shared': 0.11.0
+      react: 19.2.4
+      react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4)
+    optionalDependencies:
+      expo: 55.0.25(@babel/core@7.29.0)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.11)(expo-router@55.0.15)(react-dom@19.2.4(react@19.2.4))(react-native-webview@13.16.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4))(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+
+  '@appduct/shared@0.11.0': {}
 
   '@ark/schema@0.56.0':
     dependencies:
