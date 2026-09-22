@@ -220,6 +220,9 @@ abstract class VoltraNotificationManagerTestBase(
         assertEquals(promotion.eligible, promotion.reasons.isEmpty())
         if (promotionSupported) {
             assertNotNull(promotion.hasPromotableCharacteristics)
+            // `not_promotable` stands for "rejected for another reason"; the platform's
+            // rejection here is the missing title itself, so it must not be listed twice.
+            assertFalse(promotion.reasons.contains(AndroidOngoingNotificationPromotionIssue.NOT_PROMOTABLE))
         } else {
             assertNull(promotion.hasPromotableCharacteristics)
             assertTrue(promotion.reasons.contains(AndroidOngoingNotificationPromotionIssue.UNSUPPORTED_API_LEVEL))

@@ -112,7 +112,12 @@ class AndroidOngoingNotificationPromotionEvaluator(
                 null
             }
 
-        if (hasPromotableCharacteristics == false) {
+        // `not_promotable` means "the platform rejected this shape for a reason Voltra
+        // did not already name". A missing title fails the platform check for that same
+        // missing title, so the platform verdict is not reported a second time next to
+        // the specific reason.
+        val explainedByAShapeReason = reasons.contains(AndroidOngoingNotificationPromotionIssue.MISSING_TITLE)
+        if (hasPromotableCharacteristics == false && !explainedByAShapeReason) {
             reasons += AndroidOngoingNotificationPromotionIssue.NOT_PROMOTABLE
         }
 
