@@ -67,14 +67,13 @@ data class AndroidOngoingNotificationPromotionInfo(
  */
 class AndroidOngoingNotificationPromotionEvaluator(
     private val context: Context,
+    private val notificationManager: NotificationManager,
 ) {
     fun evaluate(
         payload: AndroidOngoingNotificationPayload,
         channelId: String?,
         notification: Notification?,
     ): AndroidOngoingNotificationPromotionInfo {
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val reasons = mutableListOf<String>()
         val promotionSupported = Build.VERSION.SDK_INT >= PROMOTION_MIN_SDK
 
