@@ -44,6 +44,17 @@ if (hostMinSdk < 24) {
   )
 }
 
+// Notification.MetricStyle is API 37. Failing configuration with this message beats a
+// Kotlin "unresolved reference" once the module compiles against the newer platform.
+def hostCompileSdk = safeExtGet("compileSdkVersion", 37)
+if (hostCompileSdk < 37) {
+  throw new GradleException(
+    "@use-voltra/android-client requires compileSdkVersion 37 for ongoing-notification MetricStyle; " +
+      "this app sets ${hostCompileSdk}. Raise it, e.g. with expo-build-properties: " +
+      "[\"expo-build-properties\", { \"android\": { \"compileSdkVersion\": 37 } }]."
+  )
+}
+
 // Robolectric's SDK 36+ android-all jars contain JDK 21 class files, so test classes
 // running @Config(sdk = [36]) (or above) need a JDK 21+ test JVM. Unit tests therefore
 // run on a JDK 21 toolchain (downloaded automatically when none is installed). The
@@ -63,7 +74,7 @@ try {
 android {
   namespace "voltra"
 
-  compileSdkVersion safeExtGet("compileSdkVersion", 36)
+  compileSdkVersion hostCompileSdk
 
   defaultConfig {
     minSdkVersion hostMinSdk

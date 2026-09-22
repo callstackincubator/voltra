@@ -1,17 +1,15 @@
 package voltra
 
 import android.app.Notification
-import android.content.ComponentName
-import android.content.Intent
-import android.content.IntentFilter
 import android.provider.Settings
 import org.junit.Assert.assertTrue
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+
+private const val FAKE_PROMOTION_SETTINGS_ACTIVITY = "voltra.test.FakePromotionSettingsActivity"
 
 /**
  * Floor of Voltra's supported range: channels, the channel-not-found rejection, the
@@ -35,8 +33,8 @@ class VoltraNotificationManagerApi26Test : VoltraNotificationManagerTestBase(fal
 /**
  * Pre-Live-Update behavior contract: everything Voltra did on Android 15 and below must
  * keep working — countdown chip extras included (`setChronometerCountDown` is API 24),
- * while the promotion bit, promotion info and `ProgressStyle` must stay absent.
- * The default SDK comes from `robolectric.properties` (35).
+ * while the promotion bit, promotion info, `ProgressStyle` and `MetricStyle` must stay
+ * absent. The default SDK comes from `robolectric.properties` (35).
  */
 @RunWith(RobolectricTestRunner::class)
 class VoltraNotificationManagerTest : VoltraNotificationManagerTestBase(false)
@@ -46,14 +44,7 @@ class VoltraNotificationManagerTest : VoltraNotificationManagerTestBase(false)
 @Config(sdk = [36], shadows = [ShadowPromotedNotificationManager::class])
 class VoltraNotificationManagerApi36Test : VoltraNotificationManagerTestBase(true) {
     override fun registerPromotionSettingsActivity() {
-        val component = ComponentName(context.packageName, "voltra.test.FakePromotionSettingsActivity")
-        val filter =
-            IntentFilter(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS).apply {
-                // resolveActivity matches with CATEGORY_DEFAULT added to the intent.
-                addCategory(Intent.CATEGORY_DEFAULT)
-            }
-        shadowOf(context.packageManager).addActivityIfNotPresent(component)
-        shadowOf(context.packageManager).addIntentFilterForActivity(component, filter)
+        registerActivityForAction(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS, FAKE_PROMOTION_SETTINGS_ACTIVITY)
     }
 
     /**
@@ -78,5 +69,14 @@ class VoltraNotificationManagerApi36Test : VoltraNotificationManagerTestBase(tru
                 .getMethod("isRequestPromotedOngoing")
                 .invoke(lastPosted()) as Boolean
         assertTrue(reported)
+    }
+}
+
+/** Android 17 (`compileSdk 37`): the platform `MetricStyle` and the platform promotion accessor. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [37], shadows = [ShadowPromotedNotificationManager::class])
+class VoltraNotificationManagerApi37Test : VoltraNotificationManagerTestBase(true, metricStyleSupported = true) {
+    override fun registerPromotionSettingsActivity() {
+        registerActivityForAction(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS, FAKE_PROMOTION_SETTINGS_ACTIVITY)
     }
 }

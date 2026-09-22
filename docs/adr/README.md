@@ -18,13 +18,13 @@ Status values:
   toward it should treat the documentation as the specification.
 - **Superseded by NNNN** — no longer binding; read the replacement.
 
-| ADR                                                           | Title                                                      | Status                         |
-| ------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------ |
-| [0000](0000-android-widget-kind-separation.md)                | Separate payload-driven and Dynamic Android widget paths   | Accepted                       |
-| [0001](0001-dynamic-live-activities.md)                       | Dynamic Live Activities rendering                          | Accepted                       |
-| [0002](0002-server-driven-dynamic-widgets.md)                 | Server-driven Dynamic Widgets                              | Accepted                       |
-| [0003](0003-widget-module-resolution.md)                      | Widget module resolution                                   | Accepted                       |
-| [0004](0004-android-arc-progress-indicator.md)                | Bitmap-rendered arc progress indicator for Android widgets | Accepted                       |
-| [0006](0006-android-widget-instance-configuration.md)         | Per-instance configuration for Android Dynamic Widgets     | Accepted                       |
-| [0007](0007-per-instance-server-fetches.md)                   | Per-instance server fetches for Dynamic Widgets            | Accepted                       |
-| [0008](0008-android-ongoing-notification-live-updates-api.md) | Android ongoing notification Live Updates API surface      | Accepted — not yet implemented |
+| ADR                                                           | Title                                                      | Status   |
+| ------------------------------------------------------------- | ---------------------------------------------------------- | -------- |
+| [0000](0000-android-widget-kind-separation.md)                | Separate payload-driven and Dynamic Android widget paths   | Accepted |
+| [0001](0001-dynamic-live-activities.md)                       | Dynamic Live Activities rendering                          | Accepted |
+| [0002](0002-server-driven-dynamic-widgets.md)                 | Server-driven Dynamic Widgets                              | Accepted |
+| [0003](0003-widget-module-resolution.md)                      | Widget module resolution                                   | Accepted |
+| [0004](0004-android-arc-progress-indicator.md)                | Bitmap-rendered arc progress indicator for Android widgets | Accepted |
+| [0006](0006-android-widget-instance-configuration.md)         | Per-instance configuration for Android Dynamic Widgets     | Accepted |
+| [0007](0007-per-instance-server-fetches.md)                   | Per-instance server fetches for Dynamic Widgets            | Accepted |
+| [0008](0008-android-ongoing-notification-live-updates-api.md) | Android ongoing notification Live Updates API surface      | Accepted |

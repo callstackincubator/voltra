@@ -25,6 +25,7 @@ fun AndroidOngoingNotificationStartResult.toWritableMap() =
         action?.let { putString("action", it) }
         reason?.let { putString("reason", it) }
         promotion?.let { putMap("promotion", it.toWritableMap()) }
+        styleFallback?.let { putString("styleFallback", it) }
     }
 
 fun AndroidOngoingNotificationUpdateResult.toWritableMap() =
@@ -34,6 +35,7 @@ fun AndroidOngoingNotificationUpdateResult.toWritableMap() =
         action?.let { putString("action", it) }
         reason?.let { putString("reason", it) }
         promotion?.let { putMap("promotion", it.toWritableMap()) }
+        styleFallback?.let { putString("styleFallback", it) }
     }
 
 fun AndroidOngoingNotificationUpsertResult.toWritableMap() =
@@ -43,6 +45,7 @@ fun AndroidOngoingNotificationUpsertResult.toWritableMap() =
         action?.let { putString("action", it) }
         reason?.let { putString("reason", it) }
         promotion?.let { putMap("promotion", it.toWritableMap()) }
+        styleFallback?.let { putString("styleFallback", it) }
     }
 
 fun AndroidOngoingNotificationStopResult.toWritableMap() =

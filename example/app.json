@@ -316,6 +316,9 @@
         {
           "ios": {
             "deploymentTarget": "17.0"
+          },
+          "android": {
+            "compileSdkVersion": 37
           }
         }
       ]
