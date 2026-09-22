@@ -1,6 +1,7 @@
 import {
   getFilteredAndroidOngoingNotificationUpdateOptions,
   getStartAndroidOngoingNotificationOptions,
+  getUpsertAndroidOngoingNotificationOptions,
 } from '../options.js'
 
 const startOptions = {
@@ -138,5 +139,34 @@ describe('getFilteredAndroidOngoingNotificationUpdateOptions', () => {
     expect(() => getFilteredAndroidOngoingNotificationUpdateOptions({ timeoutMs: 0 })).toThrow(
       /option "timeoutMs" must be a positive integer number of milliseconds/
     )
+  })
+})
+
+describe('getUpsertAndroidOngoingNotificationOptions', () => {
+  it('accepts what only an update can use, because an upsert may update', () => {
+    expect(
+      getUpsertAndroidOngoingNotificationOptions({
+        ...startOptions,
+        alert: true,
+        color: null,
+        timeoutMs: 60000,
+      })
+    ).toEqual({ ...startOptions, alert: true, color: null, timeoutMs: 60000 })
+  })
+
+  it('still validates the values it forwards', () => {
+    expect(() => getUpsertAndroidOngoingNotificationOptions({ ...startOptions, alert: 'yes' })).toThrow(
+      /option "alert" must be a boolean/
+    )
+    expect(() => getUpsertAndroidOngoingNotificationOptions({ ...startOptions, visibility: 'everyone' })).toThrow(
+      /option "visibility" must be one of/
+    )
+  })
+
+  it('leaves out the keys the caller did not set', () => {
+    const options = getUpsertAndroidOngoingNotificationOptions(startOptions)
+
+    expect('alert' in options).toBe(false)
+    expect('color' in options).toBe(false)
   })
 })

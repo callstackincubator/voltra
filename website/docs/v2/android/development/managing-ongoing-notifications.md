@@ -245,6 +245,10 @@ await updateAndroidOngoingNotification('ride-44', content, {
 The pre-existing options (`smallIcon`, `deepLinkUrl`, `requestPromotedOngoing`, `fallbackBehavior`)
 behave as before: leaving one out reuses the stored value, and there is no way to clear them.
 
+`upsertAndroidOngoingNotification()` takes the same options, and the `null` clears mean the same thing
+there when the call ends up updating. When it ends up starting, nothing is stored to clear and the
+calls behave like a start.
+
 ### Letting one update make a sound
 
 An ongoing notification alerts when it is first posted and is silent afterwards. `alert` is an update
@@ -259,7 +263,8 @@ await updateAndroidOngoingNotification('ride-44', content, {
 
 It applies to that post only and is never stored, so the next update is quiet again. Whether it
 audibly alerts is still decided by the channel you created: a channel on low importance stays silent
-however you set `alert`.
+however you set `alert`. `upsertAndroidOngoingNotification()` takes it too: it alerts when that call
+ends up updating, and a first post always alerts anyway.
 
 ## Updating a notification
 
@@ -312,7 +317,7 @@ if (result.ok) {
 }
 ```
 
-This API is especially useful for remote updates, where the same incoming push may need to create the notification the first time and update it later.
+This API is especially useful for remote updates, where the same incoming push may need to create the notification the first time and update it later. It takes the same options as the other two calls: a presentation option sent as `null` clears the stored value and `alert` makes the update branch alert, both only when the call ends up updating.
 
 ## Stopping a notification
 

@@ -9,6 +9,7 @@ import {
   type AndroidOngoingNotificationVisibility,
   type StartAndroidOngoingNotificationOptions,
   type UpdateAndroidOngoingNotificationOptions,
+  type UpsertAndroidOngoingNotificationOptions,
 } from '@use-voltra/android'
 import {
   getAndroidOngoingNotificationCapabilities,
@@ -284,7 +285,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
       voltraOngoingNotification: {
         notificationId: string
         operation: 'upsert' | 'stop'
-        options: StartAndroidOngoingNotificationOptions
+        options: UpsertAndroidOngoingNotificationOptions
         payload?: AndroidOngoingNotificationPayload
       }
     } = {
@@ -295,7 +296,8 @@ export default function AndroidOngoingNotificationTestingScreen() {
           channelId,
           smallIcon: smallIcon || undefined,
           requestPromotedOngoing,
-          ...presentationOptions,
+          ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : presentationOptions),
+          ...(alertOnUpdate ? { alert: true } : {}),
         },
       },
     }
@@ -371,7 +373,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
     try {
       const payloadString = renderedPayload || renderAndroidOngoingNotificationPayload(content)
       const payload = JSON.parse(payloadString) as AndroidOngoingNotificationPayload
-      const result = await upsertAndroidOngoingNotification(payload, getOngoingNotificationOptions())
+      const result = await upsertAndroidOngoingNotification(payload, {
+        ...getOngoingNotificationOptions(),
+        ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : {}),
+        alert: alertOnUpdate || undefined,
+      })
       syncActiveState(result.notificationId)
       setRenderedPayload(formatJson(payload))
       setStatusMessage(

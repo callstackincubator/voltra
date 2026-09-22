@@ -45,6 +45,7 @@ export type {
   AndroidOngoingNotificationVisibility,
   StartAndroidOngoingNotificationOptions,
   UpdateAndroidOngoingNotificationOptions,
+  UpsertAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationResult,
 } from '@use-voltra/android'

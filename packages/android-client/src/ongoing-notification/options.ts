@@ -4,6 +4,7 @@ import {
   type AndroidOngoingNotificationPresentationOptions,
   type StartAndroidOngoingNotificationOptions,
   type UpdateAndroidOngoingNotificationOptions,
+  type UpsertAndroidOngoingNotificationOptions,
 } from '@use-voltra/android'
 
 type PresentationOptionName = keyof AndroidOngoingNotificationPresentationOptions
@@ -125,6 +126,37 @@ export const getStartAndroidOngoingNotificationOptions = (
     deepLinkUrl: options.deepLinkUrl,
     requestPromotedOngoing: options.requestPromotedOngoing,
     fallbackBehavior: options.fallbackBehavior,
+    ...getPresentationOptionsToForward(options),
+  }
+}
+
+/**
+ * Validates upsert options and builds the object that crosses the bridge.
+ *
+ * An upsert may update, so it accepts what an update accepts: a `null` presentation option, which
+ * clears the stored value when there is one to clear, and `alert`, which the update branch honours.
+ * On the start branch neither changes anything, because nothing is stored yet and a first post
+ * always alerts.
+ *
+ * @throws synchronously, before any native call, when an option is malformed.
+ */
+export const getUpsertAndroidOngoingNotificationOptions = (
+  options: UpsertAndroidOngoingNotificationOptions
+): UpsertAndroidOngoingNotificationOptions => {
+  if (options.alert !== undefined) {
+    checkBoolean(options.alert, 'alert')
+  }
+
+  validatePresentationOptions(options, true)
+
+  return {
+    notificationId: options.notificationId,
+    channelId: options.channelId,
+    smallIcon: options.smallIcon,
+    deepLinkUrl: options.deepLinkUrl,
+    requestPromotedOngoing: options.requestPromotedOngoing,
+    fallbackBehavior: options.fallbackBehavior,
+    ...(options.alert === undefined ? {} : { alert: options.alert }),
     ...getPresentationOptionsToForward(options),
   }
 }

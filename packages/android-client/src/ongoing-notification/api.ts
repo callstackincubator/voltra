@@ -14,6 +14,7 @@ import {
   type AndroidOngoingNotificationUpsertResult,
   type StartAndroidOngoingNotificationOptions,
   type UpdateAndroidOngoingNotificationOptions,
+  type UpsertAndroidOngoingNotificationOptions,
   type UseAndroidOngoingNotificationOptions,
   type UseAndroidOngoingNotificationResult,
 } from '@use-voltra/android'
@@ -23,6 +24,7 @@ import { getNativeVoltraAndroid } from '../native/NativeVoltraAndroid.js'
 import {
   getFilteredAndroidOngoingNotificationUpdateOptions,
   getStartAndroidOngoingNotificationOptions,
+  getUpsertAndroidOngoingNotificationOptions,
 } from './options.js'
 
 const NOTIFICATION_PERMISSION = PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
@@ -169,11 +171,11 @@ export const startAndroidOngoingNotification = async (
 
 export const upsertAndroidOngoingNotification = async (
   input: AndroidOngoingNotificationInput,
-  options: StartAndroidOngoingNotificationOptions
+  options: UpsertAndroidOngoingNotificationOptions
 ): Promise<AndroidOngoingNotificationUpsertResult> => {
   return (await getNativeVoltraAndroid().upsertAndroidOngoingNotification(
     serializeAndroidOngoingNotificationInput(input),
-    getStartAndroidOngoingNotificationOptions(options)
+    getUpsertAndroidOngoingNotificationOptions(options)
   )) as AndroidOngoingNotificationUpsertResult
 }
 

@@ -211,6 +211,23 @@ export type UpdateAndroidOngoingNotificationOptions = Omit<
     alert?: boolean
   }
 
+/**
+ * Options for starting or updating with one call.
+ *
+ * The shape of start plus what only an update can use: a presentation option sent as `null` clears
+ * the stored value when the notification already exists, and `alert` lets that update branch alert.
+ * On the start branch neither changes anything, because nothing is stored yet and a first post
+ * always alerts.
+ */
+export type UpsertAndroidOngoingNotificationOptions = Omit<
+  StartAndroidOngoingNotificationOptions,
+  keyof AndroidOngoingNotificationPresentationOptions
+> &
+  Clearable<AndroidOngoingNotificationPresentationOptions> & {
+    /** Let the update branch make a sound the way a first post does. A start branch always alerts. */
+    alert?: boolean
+  }
+
 export type UseAndroidOngoingNotificationOptions = StartAndroidOngoingNotificationOptions & {
   autoStart?: boolean
   autoUpdate?: boolean

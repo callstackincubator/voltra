@@ -87,6 +87,7 @@ export type {
   AndroidOngoingNotificationVisibility,
   StartAndroidOngoingNotificationOptions,
   UpdateAndroidOngoingNotificationOptions,
+  UpsertAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationResult,
 } from './ongoing-notification/types.js'

@@ -6,7 +6,7 @@ import type {
   AndroidOngoingNotificationPresentationOptions,
   AndroidOngoingNotificationVisibility,
 } from '@use-voltra/android'
-import type { StartAndroidOngoingNotificationOptions } from '@use-voltra/android-client'
+import type { UpsertAndroidOngoingNotificationOptions } from '@use-voltra/android-client'
 import { stopAndroidOngoingNotification, upsertAndroidOngoingNotification } from '@use-voltra/android-client'
 
 export const VOLTRA_BACKGROUND_NOTIFICATION_TASK = 'voltra-background-notification-task'
@@ -133,31 +133,45 @@ const parseBoolean = (value: unknown): boolean | undefined => {
   return typeof value === 'boolean' ? value : undefined
 }
 
+const parseClearableString = (value: unknown): string | null | undefined => (value === null ? null : parseString(value))
+
+const parseClearableBoolean = (value: unknown): boolean | null | undefined =>
+  value === null ? null : parseBoolean(value)
+
+const parseClearableNumber = (value: unknown): number | null | undefined =>
+  value === null ? null : typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+type PushPresentationOptions = Pick<
+  UpsertAndroidOngoingNotificationOptions,
+  keyof AndroidOngoingNotificationPresentationOptions
+>
+
 /**
  * Presentation options are read from the push `options` object only. They are app policy rather than
  * content, so a server that only renders what the notification says leaves them out and the device
- * keeps what the running notification already uses.
+ * keeps what the running notification already uses. A key sent as `null` clears the stored value
+ * when the push updates an existing notification.
  */
-const readPresentationOptions = (rawOptions: unknown): AndroidOngoingNotificationPresentationOptions => {
+const readPresentationOptions = (rawOptions: unknown): PushPresentationOptions => {
   if (!isRecord(rawOptions)) {
     return {}
   }
 
   return {
-    visibility: parseString(rawOptions.visibility) as AndroidOngoingNotificationVisibility | undefined,
-    color: parseString(rawOptions.color),
-    category: parseString(rawOptions.category) as AndroidOngoingNotificationCategory | undefined,
-    timeoutMs: typeof rawOptions.timeoutMs === 'number' ? rawOptions.timeoutMs : undefined,
-    localOnly: parseBoolean(rawOptions.localOnly),
-    group: parseString(rawOptions.group),
-    sortKey: parseString(rawOptions.sortKey),
-    allowSystemGeneratedContextualActions: parseBoolean(rawOptions.allowSystemGeneratedContextualActions),
+    visibility: parseClearableString(rawOptions.visibility) as AndroidOngoingNotificationVisibility | null | undefined,
+    color: parseClearableString(rawOptions.color),
+    category: parseClearableString(rawOptions.category) as AndroidOngoingNotificationCategory | null | undefined,
+    timeoutMs: parseClearableNumber(rawOptions.timeoutMs),
+    localOnly: parseClearableBoolean(rawOptions.localOnly),
+    group: parseClearableString(rawOptions.group),
+    sortKey: parseClearableString(rawOptions.sortKey),
+    allowSystemGeneratedContextualActions: parseClearableBoolean(rawOptions.allowSystemGeneratedContextualActions),
   }
 }
 
 const parseOptions = (
   message: VoltraOngoingNotificationMessage
-): StartAndroidOngoingNotificationOptions | undefined => {
+): UpsertAndroidOngoingNotificationOptions | undefined => {
   const rawOptions = isRecord(message.options)
     ? message.options
     : typeof message.options === 'string'
@@ -178,9 +192,10 @@ const parseOptions = (
     fallbackBehavior:
       parseString(message.fallbackBehavior) ??
       (isRecord(rawOptions) ? parseString(rawOptions.fallbackBehavior) : undefined),
+    alert: isRecord(rawOptions) ? parseBoolean(rawOptions.alert) : undefined,
   }
 
-  const options: StartAndroidOngoingNotificationOptions = {
+  const options: UpsertAndroidOngoingNotificationOptions = {
     channelId: DEFAULT_CHANNEL_ID,
     ...presentationOptions,
   }
@@ -203,7 +218,11 @@ const parseOptions = (
 
   if (mergedOptions.fallbackBehavior !== undefined) {
     options.fallbackBehavior =
-      mergedOptions.fallbackBehavior as StartAndroidOngoingNotificationOptions['fallbackBehavior']
+      mergedOptions.fallbackBehavior as UpsertAndroidOngoingNotificationOptions['fallbackBehavior']
+  }
+
+  if (mergedOptions.alert !== undefined) {
+    options.alert = mergedOptions.alert
   }
 
   return options
