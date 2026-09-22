@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
 import android.net.Uri
+import android.os.Build
 import android.util.Base64
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -44,6 +45,11 @@ class VoltraNotificationManagerOngoingStyleTest {
 
     @Before
     fun createNotificationChannel() {
+        // Below API 26 there are no channels at all, and the call itself does not exist.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return
+        }
+
         notificationManager.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, "Ongoing", NotificationManager.IMPORTANCE_DEFAULT),
         )
@@ -244,6 +250,37 @@ class VoltraNotificationManagerOngoingStyleTest {
         val posted = post(inboxPayload("\"lines\":[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\"]"))
 
         assertEquals(listOf("1", "2", "3", "4", "5", "6"), posted.postedLines())
+    }
+
+    @Test
+    @Config(sdk = [24])
+    fun `posts both new layouts through the pre-channel builder on the oldest supported release`() {
+        val bigPicture = post(bigPicturePayload(pictureField(SMALL_PICTURE)))
+
+        assertEquals(TEMPLATE_BIG_PICTURE, bigPicture.extras.getString(Notification.EXTRA_TEMPLATE))
+        assertTrue(bigPicture.flags and Notification.FLAG_ONGOING_EVENT != 0)
+
+        val inbox = post(inboxPayload("\"lines\":[\"12 Oak Street\"]"), notificationId = "route-7")
+
+        assertEquals(TEMPLATE_INBOX, inbox.extras.getString(Notification.EXTRA_TEMPLATE))
+        assertTrue(inbox.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals(listOf("12 Oak Street"), inbox.postedLines())
+    }
+
+    @Test
+    fun `starts a picture a promotion was asked for but not insisted on`() {
+        val result =
+            runBlocking {
+                VoltraNotificationManager(context).startOngoingNotification(
+                    bigPicturePayload(pictureField(SMALL_PICTURE)),
+                    options("delivery-123").copy(requestPromotedOngoing = true, fallbackBehavior = "standard"),
+                )
+            }
+
+        val status = VoltraNotificationManager(context).getOngoingNotificationStatus("delivery-123")
+
+        assertTrue("startOngoingNotification failed with ${result.reason}", result.ok)
+        assertNull(status.hasPromotableCharacteristics)
     }
 
     @Test
