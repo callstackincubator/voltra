@@ -60,3 +60,12 @@ fun AndroidOngoingNotificationPromotionInfo.toWritableMap() =
         putArray("reasons", Arguments.fromList(reasons))
         hasPromotableCharacteristics?.let { putBoolean("hasPromotableCharacteristics", it) }
     }
+
+// The pre-flight result type deliberately has no `requested` field: a check is always
+// a request, so the key would be an undeclared constant riding along to JS.
+fun AndroidOngoingNotificationPromotionInfo.toCheckResultWritableMap() =
+    WritableNativeMap().apply {
+        putBoolean("eligible", eligible)
+        putArray("reasons", Arguments.fromList(reasons))
+        hasPromotableCharacteristics?.let { putBoolean("hasPromotableCharacteristics", it) }
+    }
