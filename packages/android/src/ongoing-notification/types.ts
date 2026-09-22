@@ -55,6 +55,26 @@ export type AndroidOngoingNotificationBigTextProps = AndroidOngoingNotificationC
   children?: ReactNode
 }
 
+export type AndroidOngoingNotificationBigPictureProps = AndroidOngoingNotificationCommonDisplayProps & {
+  picture: ImageSource
+  text?: string
+  summaryText?: string
+  pictureContentDescription?: string
+  showPictureWhenCollapsed?: boolean
+  largeIcon?: ImageSource
+  bigLargeIcon?: ImageSource
+  hideLargeIconWhenExpanded?: boolean
+  children?: ReactNode
+}
+
+export type AndroidOngoingNotificationInboxProps = AndroidOngoingNotificationCommonDisplayProps & {
+  lines: string[]
+  text?: string
+  summaryText?: string
+  largeIcon?: ImageSource
+  children?: ReactNode
+}
+
 export type AndroidOngoingNotificationProgressPayload = {
   v: 1
   kind: 'progress'
@@ -90,9 +110,45 @@ export type AndroidOngoingNotificationBigTextPayload = {
   actions?: AndroidOngoingNotificationActionPayload[]
 }
 
+export type AndroidOngoingNotificationBigPicturePayload = {
+  v: 1
+  kind: 'bigPicture'
+  title?: string
+  subText?: string
+  text?: string
+  picture: ImageSource
+  summaryText?: string
+  pictureContentDescription?: string
+  showPictureWhenCollapsed?: boolean
+  largeIcon?: ImageSource
+  bigLargeIcon?: ImageSource
+  hideLargeIconWhenExpanded?: boolean
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  actions?: AndroidOngoingNotificationActionPayload[]
+}
+
+export type AndroidOngoingNotificationInboxPayload = {
+  v: 1
+  kind: 'inbox'
+  title?: string
+  subText?: string
+  text: string
+  lines: string[]
+  summaryText?: string
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  largeIcon?: ImageSource
+  actions?: AndroidOngoingNotificationActionPayload[]
+}
+
 export type AndroidOngoingNotificationPayload =
   | AndroidOngoingNotificationProgressPayload
   | AndroidOngoingNotificationBigTextPayload
+  | AndroidOngoingNotificationBigPicturePayload
+  | AndroidOngoingNotificationInboxPayload
 
 export type AndroidOngoingNotificationContent = ReactNode
 

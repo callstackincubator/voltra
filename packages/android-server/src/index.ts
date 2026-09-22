@@ -23,9 +23,13 @@ import { createElement, Fragment as ReactFragment, type ReactNode } from 'react'
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationBigPicturePayload,
+  AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationContent,
+  AndroidOngoingNotificationInboxPayload,
+  AndroidOngoingNotificationInboxProps,
   AndroidOngoingNotificationPayload,
   AndroidOngoingNotificationProgressPayload,
   AndroidOngoingNotificationProgressPoint,

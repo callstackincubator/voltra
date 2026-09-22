@@ -81,6 +81,55 @@ const payload = renderAndroidOngoingNotificationPayloadToJson(
 
 Then send that payload inside a push message.
 
+A picture works the same way:
+
+```tsx
+const payload = renderAndroidOngoingNotificationPayloadToJson(
+  <AndroidOngoingNotification.BigPicture
+    title="Parcel delivered"
+    text="Left at the front door"
+    picture={{ assetName: 'delivery_photo_123' }}
+    summaryText="Order 123"
+  />
+)
+```
+
+```json
+{
+  "v": 1,
+  "kind": "bigPicture",
+  "title": "Parcel delivered",
+  "text": "Left at the front door",
+  "picture": {
+    "assetName": "delivery_photo_123"
+  },
+  "summaryText": "Order 123"
+}
+```
+
+An `inbox` payload carries its lines in the same shape:
+
+```tsx
+const payload = renderAndroidOngoingNotificationPayloadToJson(
+  <AndroidOngoingNotification.Inbox
+    title="3 stops remaining"
+    lines={['12 Oak Street', '4 Elm Road', 'Depot']}
+    summaryText="Route 7"
+  />
+)
+```
+
+```json
+{
+  "v": 1,
+  "kind": "inbox",
+  "title": "3 stops remaining",
+  "text": "12 Oak Street",
+  "lines": ["12 Oak Street", "4 Elm Road", "Depot"],
+  "summaryText": "Route 7"
+}
+```
+
 If your push provider expects strings for nested payload data, use `renderAndroidOngoingNotificationPayload()` instead and send the JSON string directly.
 
 ### 2. Send the payload through your push provider
@@ -107,6 +156,8 @@ Example Expo push request:
 Voltra accepts either an object or a JSON string for `data.voltraOngoingNotification`. Stringifying it is often the safest option when sending through push providers.
 
 To stop the notification remotely, send the same `notificationId` with `operation: "stop"` and omit `payload`.
+
+**Pictures in a remote payload.** A `bigPicture` or `largeIcon` entry in a push payload should reference an image the app can already find, through `assetName` for a bundled or preloaded image. Android push providers cap the data of a message well below the size of a photo — Firebase caps a data message at 4096 bytes — so a `base64` picture does not fit. Download the image on the device with `preloadImages()` from `@use-voltra/android-client`, see [Image Preloading](./image-preloading), and send its key.
 
 ### 3. Apply the payload in your background task
 
@@ -168,3 +219,7 @@ await Notifications.registerTaskAsync(TASK_NAME)
 ### Channel setup for remote updates
 
 Your background task should ensure that the target notification channel exists before calling `upsertAndroidOngoingNotification()`. Create the channel on startup, and also ensure it exists again inside the background handler.
+
+## Compatibility
+
+The client chooses its parser by the `kind` field, so your server and the installed app have to agree on the available kinds. A build that does not know `bigPicture` or `inbox` fails to parse that payload rather than falling back to a layout it does know, and the update is reported as a failure. Serve `progress` or `bigText` to older installs, which means a server that picks a layout per device needs the app version that device reports.
