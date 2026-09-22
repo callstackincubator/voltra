@@ -147,19 +147,25 @@ test('warns about an oversized inline picture but still renders it', () => {
   const warnings = []
   console.warn = (...args) => warnings.push(args.join(' '))
 
+  // Base64 grows an image by a third, so the size of the picture and the length of its base64 form
+  // are not the same number. The warning has to talk about the picture.
+  const base64OfImageBytes = (bytes) => 'A'.repeat(Math.ceil((bytes * 4) / 3))
+
   let payload
   try {
-    payload = renderAndroidOngoingNotificationPayloadToJson(
-      React.createElement(BigPicture, { picture: { base64: 'A'.repeat(256 * 1024 + 1) } })
+    renderAndroidOngoingNotificationPayloadToJson(
+      React.createElement(BigPicture, { picture: { base64: base64OfImageBytes(256 * 1024 - 1) } })
     )
-    renderAndroidOngoingNotificationPayloadToJson(React.createElement(BigPicture, { picture: { base64: 'aW1hZ2U=' } }))
+    payload = renderAndroidOngoingNotificationPayloadToJson(
+      React.createElement(BigPicture, { picture: { base64: base64OfImageBytes(256 * 1024 + 1) } })
+    )
   } finally {
     console.warn = originalWarn
   }
 
   assert.equal(warnings.length, 1)
-  assert.match(warnings[0], /"picture".*assetName/)
-  assert.equal(payload.picture.base64.length, 256 * 1024 + 1)
+  assert.match(warnings[0], /exceeds 262144 bytes.*assetName/)
+  assert.ok(payload.picture.base64.length > 256 * 1024)
 })
 
 test('renders an Inbox payload and defaults the collapsed line to the first line', () => {

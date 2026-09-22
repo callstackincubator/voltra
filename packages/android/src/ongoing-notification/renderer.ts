@@ -31,11 +31,16 @@ const PAYLOAD_VERSION = 1 as const
 const MAX_INBOX_LINES = 6
 
 /**
- * Push providers cap data payloads at a few kilobytes (FCM allows 4096 bytes), so an inline base64
- * picture can never travel through a push message. Warns instead of failing: local starts and
- * self-hosted transports can legitimately carry more.
+ * Size of an inline picture that is still reasonable to hand to a native post. Push providers cap
+ * data payloads at a few kilobytes (FCM allows 4096 bytes), so no inline picture travels through a
+ * push message. Warns instead of failing: local starts and self-hosted transports can legitimately
+ * carry more. Compared against the decoded size, because a base64 string is four characters per
+ * three bytes and its length flatters the image.
  */
 const MAX_INLINE_PICTURE_BYTES = 256 * 1024
+
+/** Bytes a base64 string holds once decoded. Padding leaves this at most two bytes high. */
+const decodedBase64Bytes = (base64: string): number => Math.ceil((base64.length * 3) / 4)
 
 const flattenChildren = (node: ReactNode): ReactNode[] => {
   if (node === null || node === undefined || typeof node === 'boolean') {
@@ -259,9 +264,15 @@ const normalizeInboxLines = (value: unknown): string[] => {
 const warnInlinePicture = (picture: ImageSource): void => {
   const base64 = 'base64' in picture ? picture.base64 : undefined
 
-  if (base64 !== undefined && base64.length > MAX_INLINE_PICTURE_BYTES) {
+  if (base64 === undefined) {
+    return
+  }
+
+  const pictureBytes = decodedBase64Bytes(base64)
+
+  if (pictureBytes > MAX_INLINE_PICTURE_BYTES) {
     console.warn(
-      `[Voltra] [Android] Ongoing notification prop "picture" carries ${base64.length} bytes of base64, which exceeds ${MAX_INLINE_PICTURE_BYTES} bytes. Inline pictures cannot travel through push messages: preload the image and reference it with assetName instead.`
+      `[Voltra] [Android] Ongoing notification prop "picture" carries a ${pictureBytes}-byte image, which exceeds ${MAX_INLINE_PICTURE_BYTES} bytes. Inline pictures cannot travel through push messages: preload the image and reference it with assetName instead.`
     )
   }
 }
