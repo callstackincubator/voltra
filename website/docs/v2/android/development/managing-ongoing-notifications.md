@@ -284,6 +284,28 @@ await startAndroidOngoingNotification(content, {
 
 This is separate from action button deep links.
 
+## Showing a chip in the status bar
+
+On Android 16 and above, a promoted ongoing notification shows a chip in the status bar. You fill it with either a short text or a clock:
+
+```tsx
+<AndroidOngoingNotification.Progress
+  title="Driver is on the way"
+  value={32}
+  max={100}
+  shortCriticalText="8 min"
+/>
+```
+
+- `shortCriticalText` shows a short text in the chip. Keep it to about 7 characters; the chip is at most 96dp wide and longer text is cut.
+- `chronometer: true` shows elapsed time since `when`, counting up. `'countUp'` means the same as `true`.
+- `chronometer: 'countDown'` shows the time remaining until `when`, counting down — the right choice for an ETA, a timer, or a parking meter. It requires `when`; rendering throws without it.
+
+When you set several of these, the chip picks one in this order:
+
+1. `shortCriticalText` (an empty string means no chip text at all)
+2. time derived from `when` — the chronometer when `chronometer` is set, otherwise the remaining time
+
 ## Status and capability helpers
 
 Use these helpers to adapt your UI to the device state:
@@ -294,6 +316,7 @@ import {
   getAndroidOngoingNotificationCapabilities,
   getAndroidOngoingNotificationStatus,
   openAndroidNotificationSettings,
+  openAndroidPromotedNotificationSettings,
 } from '@use-voltra/android-client'
 
 const status = getAndroidOngoingNotificationStatus('order-123')
@@ -309,35 +332,84 @@ Useful values include:
 
 - `status.isActive`
 - `status.isDismissed`
+- `status.isPromoted` and `status.hasPromotableCharacteristics` — set on Android 16 and above, `undefined` below it
 - `capabilities.notificationsEnabled`
 - `capabilities.supportsPromotedNotifications`
 - `capabilities.canPostPromotedNotifications`
 - `capabilities.canRequestPromotedOngoing`
 
+`openAndroidNotificationSettings()` opens your app's channel list. When the user has turned Live Updates off for your app (`canPostPromotedNotifications === false`), use `openAndroidPromotedNotificationSettings()` to open the page where they turn them back on. It resolves `true` when the Live Updates page opened and `false` when the regular notification settings opened instead, because the device has no such page.
+
+## When posting fails
+
+Start, update, and upsert reject with a code instead of posting something broken:
+
+| Code                                     | What happened                                                                                             | What to do                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `VOLTRA_NOTIFICATION_CHANNEL_REQUIRED`   | No `channelId` was given                                                                                   | Pass `channelId` in the start options                             |
+| `VOLTRA_NOTIFICATION_CHANNEL_NOT_FOUND`  | The channel was never created — Android drops such notifications silently                                 | Create the channel before posting                                 |
+| `VOLTRA_NOTIFICATION_INVALID_PAYLOAD`    | The payload is malformed or breaks a rule (e.g. a remote payload with `chronometerCountDown` but no `when`) | Fix the payload                                                   |
+| `VOLTRA_NOTIFICATION_NOT_PROMOTABLE`     | Promotion was requested with `fallbackBehavior: 'error'` and the notification is not eligible              | Read the reasons in the message (see below)                       |
+| `VOLTRA_NOTIFICATION_INTERNAL_ERROR`     | An unexpected device failure                                                                               | Retry; if it persists, file an issue with the message             |
+
+A dismissed notification is different: updates return `ok: false, reason: 'dismissed'` and nothing is re-posted. If your flow legitimately restarts after a dismissal, start a new notification instead of updating.
+
 ## Promoted ongoing notifications
 
-If your app wants to request promoted ongoing presentation when the device supports it, pass `requestPromotedOngoing: true`:
+On Android 16 and above, eligible ongoing notifications can be promoted to Live Updates: they expand into the status bar and show up on the lock screen and home screen. Pass `requestPromotedOngoing: true` to ask for it:
 
 ```tsx
-await startAndroidOngoingNotification(content, {
+const result = await startAndroidOngoingNotification(content, {
   notificationId: 'ride-44',
   channelId: 'ride_updates',
   requestPromotedOngoing: true,
 })
 ```
 
-You can also set `fallbackBehavior` if promoted presentation is unavailable:
+You don't need the user to have turned Live Updates on first. Voltra records the request on every post, so when the user enables Live Updates in Settings, the next update is promoted without any change in your app.
+
+### Reading why a notification is not promoted
+
+When you request promotion, a successful result carries a `promotion` object:
 
 ```tsx
-await startAndroidOngoingNotification(content, {
-  notificationId: 'ride-44',
-  channelId: 'ride_updates',
-  requestPromotedOngoing: true,
-  fallbackBehavior: 'standard',
-})
+if (result.ok && result.promotion) {
+  console.log(result.promotion.eligible, result.promotion.reasons)
+}
 ```
 
-Check device support first with `getAndroidOngoingNotificationCapabilities()` if you want to tailor the UX.
+- `promotion.requested` — always `true` when the object is present
+- `promotion.eligible` — `true` when the notification can be promoted
+- `promotion.reasons` — what stands in the way, as a list
+- `promotion.hasPromotableCharacteristics` — the platform's own verdict on the built notification; only set on Android 16 and above
+
+| Reason                       | Meaning                                                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------------------- |
+| `unsupported_api_level`      | The device runs below Android 16                                                               |
+| `permission_not_declared`    | `enableNotifications` is not on, so `POST_PROMOTED_NOTIFICATIONS` is missing from the manifest |
+| `notifications_disabled`     | Notifications are turned off for your app                                                      |
+| `promotion_disabled_by_user` | The user turned Live Updates off for your app                                                  |
+| `channel_importance_min`     | The channel's importance is `MIN`; use at least `LOW`                                          |
+| `missing_title`              | The notification has no `title`; promotion requires one                                        |
+| `not_promotable`             | The platform rejected the built notification for another reason                                |
+
+With the default `fallbackBehavior: 'standard'`, a notification that cannot be promoted is still posted as a normal ongoing notification and you read the reasons from the result. With `fallbackBehavior: 'error'`, the call rejects with `VOLTRA_NOTIFICATION_NOT_PROMOTABLE`, the message lists the reasons, and nothing is posted.
+
+### Checking before you post
+
+`checkAndroidOngoingNotificationPromotion()` answers the same questions for a payload without posting it or recording anything:
+
+```tsx
+import { checkAndroidOngoingNotificationPromotion } from '@use-voltra/android-client'
+
+const check = await checkAndroidOngoingNotificationPromotion(content, {
+  channelId: 'ride_updates',
+})
+
+if (!check.eligible) {
+  console.warn('Would not promote:', check.reasons)
+}
+```
 
 ## Current limitations
 

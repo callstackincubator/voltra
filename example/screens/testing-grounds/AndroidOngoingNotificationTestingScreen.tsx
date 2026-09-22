@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState, PermissionsAndroid, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   AndroidOngoingNotification,
+  type AndroidOngoingNotificationChronometer,
   type AndroidOngoingNotificationPayload,
   type StartAndroidOngoingNotificationOptions,
 } from '@use-voltra/android'
@@ -77,7 +78,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
   const [progressValue, setProgressValue] = useState('32')
   const [progressMax, setProgressMax] = useState('100')
   const [indeterminate, setIndeterminate] = useState(false)
-  const [chronometer, setChronometer] = useState(false)
+  const [chronometer, setChronometer] = useState<AndroidOngoingNotificationChronometer>(false)
   const [largeIcon, setLargeIcon] = useState('')
   const [progressTrackerIcon, setProgressTrackerIcon] = useState('')
   const [progressStartIcon, setProgressStartIcon] = useState('')
@@ -112,6 +113,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
   useFocusEffect(refreshCapabilities)
 
   const content = useMemo(() => {
+    // A count-up clock runs from the moment the notification started; a countdown
+    // chip targets ten minutes ahead so the example shows a live countdown.
+    const chronometerWhen =
+      chronometer === false ? undefined : chronometer === 'countDown' ? Date.now() + 10 * 60 * 1000 : Date.now()
+
     if (style === 'progress') {
       return (
         <AndroidOngoingNotification.Progress
@@ -123,7 +129,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
           indeterminate={indeterminate}
           shortCriticalText={shortCriticalText || undefined}
           chronometer={chronometer}
-          when={chronometer ? Date.now() : undefined}
+          when={chronometerWhen}
           largeIcon={toImageSource(largeIcon)}
           progressTrackerIcon={toImageSource(progressTrackerIcon)}
           progressStartIcon={toImageSource(progressStartIcon)}
@@ -156,7 +162,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
         bigText={bigText || undefined}
         shortCriticalText={shortCriticalText || undefined}
         chronometer={chronometer}
-        when={chronometer ? Date.now() : undefined}
+        when={chronometerWhen}
         largeIcon={toImageSource(largeIcon)}
       >
         {toOptionalNonEmptyString(primaryActionTitle) && toOptionalNonEmptyString(primaryActionDeepLinkUrl) ? (
@@ -483,9 +489,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>Chronometer</Text>
           <Button
-            title={chronometer ? 'ON' : 'OFF'}
-            variant={chronometer ? 'primary' : 'secondary'}
-            onPress={() => setChronometer((current) => !current)}
+            title={chronometer === false ? 'OFF' : chronometer}
+            variant={chronometer === false ? 'secondary' : 'primary'}
+            onPress={() =>
+              setChronometer((current) => (current === false ? 'countUp' : current === 'countUp' ? 'countDown' : false))
+            }
             style={styles.smButton}
           />
         </View>

@@ -5,9 +5,9 @@ import android.app.Notification.BigTextStyle
 import android.app.Notification.Builder
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -29,7 +29,13 @@ import voltra.ongoingnotification.AndroidOngoingNotificationPayloadParser
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressPointPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressSegmentPayload
+import voltra.ongoingnotification.AndroidOngoingNotificationPromotionEvaluator
+import voltra.ongoingnotification.AndroidOngoingNotificationPromotionInfo
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
+import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
+import voltra.ongoingnotification.PROMOTION_MIN_SDK
+import voltra.ongoingnotification.VoltraNotificationException
+import voltra.ongoingnotification.hasPromotedNotificationsPermission
 import voltra.styling.JSColorParser
 import voltra.styling.VoltraColorValue
 
@@ -67,6 +73,7 @@ data class AndroidOngoingNotificationStartResult(
     val notificationId: String,
     val action: String? = null,
     val reason: String? = null,
+    val promotion: AndroidOngoingNotificationPromotionInfo? = null,
 )
 
 data class AndroidOngoingNotificationUpdateResult(
@@ -74,6 +81,7 @@ data class AndroidOngoingNotificationUpdateResult(
     val notificationId: String,
     val action: String? = null,
     val reason: String? = null,
+    val promotion: AndroidOngoingNotificationPromotionInfo? = null,
 )
 
 data class AndroidOngoingNotificationUpsertResult(
@@ -81,6 +89,7 @@ data class AndroidOngoingNotificationUpsertResult(
     val notificationId: String,
     val action: String? = null,
     val reason: String? = null,
+    val promotion: AndroidOngoingNotificationPromotionInfo? = null,
 )
 
 data class AndroidOngoingNotificationStopResult(
@@ -99,8 +108,12 @@ class VoltraNotificationManager(
         private const val KEY_RECORDS = "records"
         private const val KEY_NEXT_NOTIFICATION_ID = "next_notification_id"
         private const val DEFAULT_NOTIFICATION_ID = 10000
-        private const val PROMOTED_PERMISSION = "android.permission.POST_PROMOTED_NOTIFICATIONS"
-        private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
+        private const val PROMOTION_CHECK_NOTIFICATION_ID = "promotion-check"
+
+        // Never allocated to a real notification (the allocator starts at 10000), so the
+        // throwaway notification built by the promotion pre-flight cannot share its
+        // PendingIntent request codes with a real one.
+        private const val PROMOTION_CHECK_SYSTEM_NOTIFICATION_ID = -1
         const val EXTRA_NOTIFICATION_ID = "voltra.extra.NOTIFICATION_ID"
 
         private val json =
@@ -149,6 +162,7 @@ class VoltraNotificationManager(
     private val appContext = context.applicationContext
     private val notificationManager =
         appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val promotionEvaluator = AndroidOngoingNotificationPromotionEvaluator(appContext, notificationManager)
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val lock = Any()
 
@@ -157,6 +171,7 @@ class VoltraNotificationManager(
         options: AndroidOngoingNotificationOptions,
     ): AndroidOngoingNotificationStartResult =
         withContext(Dispatchers.Default) {
+            val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
             val notificationId = options.notificationId ?: createGeneratedNotificationId()
             val existingRecord = getRecord(notificationId)
             if (existingRecord != null) {
@@ -177,16 +192,13 @@ class VoltraNotificationManager(
                     dismissed = false,
                 )
 
-            postNotification(
-                record,
-                AndroidOngoingNotificationPayloadParser.parse(payload),
-                onlyAlertOnce = existingRecord != null,
-            )
+            val promotion = postNotification(record, parsedPayload, onlyAlertOnce = false)
             saveRecord(record)
             AndroidOngoingNotificationStartResult(
                 ok = true,
                 notificationId = notificationId,
                 action = "started",
+                promotion = promotion,
             )
         }
 
@@ -196,6 +208,7 @@ class VoltraNotificationManager(
         options: AndroidOngoingNotificationOptions?,
     ): AndroidOngoingNotificationUpdateResult =
         withContext(Dispatchers.Default) {
+            val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
             val currentRecord =
                 getRecord(notificationId)
                     ?: return@withContext AndroidOngoingNotificationUpdateResult(
@@ -223,12 +236,13 @@ class VoltraNotificationManager(
                     dismissed = false,
                 )
 
-            postNotification(record, AndroidOngoingNotificationPayloadParser.parse(payload), onlyAlertOnce = true)
+            val promotion = postNotification(record, parsedPayload, onlyAlertOnce = true)
             saveRecord(record)
             AndroidOngoingNotificationUpdateResult(
                 ok = true,
                 notificationId = notificationId,
                 action = "updated",
+                promotion = promotion,
             )
         }
 
@@ -247,6 +261,7 @@ class VoltraNotificationManager(
                     notificationId = startResult.notificationId,
                     action = if (startResult.ok) "started" else null,
                     reason = startResult.reason,
+                    promotion = startResult.promotion,
                 )
             }
 
@@ -256,6 +271,7 @@ class VoltraNotificationManager(
                 notificationId = notificationId,
                 action = if (updateResult.ok) "updated" else null,
                 reason = updateResult.reason,
+                promotion = updateResult.promotion,
             )
         }
 
@@ -325,12 +341,12 @@ class VoltraNotificationManager(
 
     fun getOngoingNotificationCapabilities(): AndroidOngoingNotificationCapabilities {
         val notificationsEnabled = notificationManager.areNotificationsEnabled()
-        val supportsPromoted = Build.VERSION.SDK_INT >= 36
+        val supportsPromoted = Build.VERSION.SDK_INT >= PROMOTION_MIN_SDK
         val canPostPromoted =
             supportsPromoted &&
                 notificationsEnabled &&
                 notificationManager.canPostPromotedNotifications() &&
-                hasPromotedNotificationsPermission()
+                hasPromotedNotificationsPermission(appContext)
 
         return AndroidOngoingNotificationCapabilities(
             apiLevel = Build.VERSION.SDK_INT,
@@ -343,21 +359,65 @@ class VoltraNotificationManager(
 
     // Settings.ACTION_APP_NOTIFICATION_SETTINGS only resolves to an activity on API 26+.
     // On 24-25 no activity handles it and startActivity throws ActivityNotFoundException,
-    // so fall back to the app details screen, which has existed since API 9.
-    fun openPromotedNotificationSettings() {
-        val intent =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    // so fall back to the app details screen, which has existed since API 9. The same
+    // fallback applies on 26+ devices that ship no activity for the action (Android TV,
+    // Automotive, stripped OEM ROMs): neither start may propagate ActivityNotFoundException.
+    fun openAppNotificationSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelList =
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, appContext.packageName)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-            } else {
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", appContext.packageName, null)
+            try {
+                appContext.startActivity(channelList)
+                return
+            } catch (_: ActivityNotFoundException) {
+                // No channel-list page on this device: fall through to app details.
+            }
+        }
+
+        val appDetails =
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", appContext.packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        try {
+            appContext.startActivity(appDetails)
+        } catch (error: ActivityNotFoundException) {
+            // Pathological ROM with no details page either: keep it in logcat, never
+            // across the bridge.
+            Log.w(TAG, "No activity handles the notification settings fallback", error)
+        }
+    }
+
+    /**
+     * Opens the system page where the user turns Live Updates on for this app. Returns
+     * true when the promotion settings activity opened and false when it fell back to
+     * the app notification settings (below API 36, or on devices where no activity
+     * handles the action — the Settings reference warns it may be missing). The fallback
+     * chain (channel list → app details) never throws either.
+     */
+    fun openPromotedNotificationSettings(): Boolean {
+        if (Build.VERSION.SDK_INT >= PROMOTION_MIN_SDK) {
+            val intent =
+                Intent(Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, appContext.packageName)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
+
+            try {
+                if (intent.resolveActivity(appContext.packageManager) != null) {
+                    appContext.startActivity(intent)
+                    return true
+                }
+            } catch (_: ActivityNotFoundException) {
+                // Racing an uninstall/overlay change between resolve and start: fall through.
             }
-        appContext.startActivity(intent)
+        }
+
+        openAppNotificationSettings()
+        return false
     }
 
     private fun createGeneratedNotificationId(): String {
@@ -376,22 +436,63 @@ class VoltraNotificationManager(
             Builder(appContext).setPriority(Notification.PRIORITY_DEFAULT)
         }
 
+    /**
+     * The pre-flight twin of a post: same payload, channel and eligibility checks, and
+     * the same build so `hasPromotableCharacteristics()` is available — but it never
+     * calls `notify()` and never writes a record.
+     */
+    suspend fun checkAndroidOngoingNotificationPromotion(
+        payload: String,
+        options: AndroidOngoingNotificationOptions,
+    ): AndroidOngoingNotificationPromotionInfo =
+        withContext(Dispatchers.Default) {
+            val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
+            val channelId =
+                options.channelId
+                    ?: throw VoltraNotificationException(
+                        VoltraNotificationException.CHANNEL_REQUIRED,
+                        "channelId is required for Android ongoing notifications.",
+                    )
+            ensureChannelExists(channelId)
+
+            // A record stand-in that is never saved. The negative system id keeps the
+            // content and delete PendingIntents built for this throwaway notification
+            // from sharing a request code with any real ongoing notification.
+            val transientRecord =
+                AndroidOngoingNotificationRecord(
+                    notificationId = PROMOTION_CHECK_NOTIFICATION_ID,
+                    systemNotificationId = PROMOTION_CHECK_SYSTEM_NOTIFICATION_ID,
+                    channelId = channelId,
+                    smallIcon = options.smallIcon,
+                    requestPromotedOngoing = true,
+                    fallbackBehavior = "standard",
+                )
+
+            val notification = buildNotification(transientRecord, parsedPayload, onlyAlertOnce = false)
+            promotionEvaluator.evaluate(parsedPayload, channelId, notification)
+        }
+
     private fun postNotification(
         record: AndroidOngoingNotificationRecord,
         payload: AndroidOngoingNotificationPayload,
         onlyAlertOnce: Boolean,
-    ) {
-        if (record.requestPromotedOngoing &&
-            resolveFallbackBehavior(record.fallbackBehavior) == AndroidOngoingNotificationFallbackBehavior.ERROR
-        ) {
-            val capabilities = getOngoingNotificationCapabilities()
-            if (!capabilities.canRequestPromotedOngoing) {
-                throw IllegalStateException(
-                    "Promoted ongoing notifications are unavailable on this device/app configuration.",
-                )
-            }
-        }
+    ): AndroidOngoingNotificationPromotionInfo? {
+        ensureChannelExists(record.channelId)
 
+        val notification = buildNotification(record, payload, onlyAlertOnce)
+        // Evaluates before notify(): with fallbackBehavior 'error' an ineligible
+        // notification must leave nothing posted and no record written.
+        val promotion = evaluatePromotion(record, payload, notification)
+
+        notificationManager.notify(record.systemNotificationId, notification)
+        return promotion
+    }
+
+    private fun buildNotification(
+        record: AndroidOngoingNotificationRecord,
+        payload: AndroidOngoingNotificationPayload,
+        onlyAlertOnce: Boolean,
+    ): Notification {
         val builder =
             newBuilder(record.channelId)
                 .setSmallIcon(resolveSmallIcon(record.smallIcon))
@@ -409,7 +510,50 @@ class VoltraNotificationManager(
         applyActions(builder, record, payload)
         requestPromotionIfPossible(builder, record)
 
-        notificationManager.notify(record.systemNotificationId, builder.build())
+        return builder.build()
+    }
+
+    // The platform decides promotion at post time from the request bit plus the user
+    // preference, so writing the bit while the preference is off is what makes the next
+    // update promoted after the user enables Live Updates, without an app change.
+    private fun evaluatePromotion(
+        record: AndroidOngoingNotificationRecord,
+        payload: AndroidOngoingNotificationPayload,
+        notification: Notification,
+    ): AndroidOngoingNotificationPromotionInfo? {
+        if (!record.requestPromotedOngoing) {
+            return null
+        }
+
+        val promotion = promotionEvaluator.evaluate(payload, record.channelId, notification)
+
+        if (!promotion.eligible &&
+            resolveFallbackBehavior(record.fallbackBehavior) == AndroidOngoingNotificationFallbackBehavior.ERROR
+        ) {
+            throw VoltraNotificationException(
+                VoltraNotificationException.NOT_PROMOTABLE,
+                "Promoted ongoing notification is not eligible on this device/app configuration: " +
+                    promotion.reasons.joinToString(", "),
+            )
+        }
+
+        return promotion
+    }
+
+    // notify() on a channel id that getNotificationChannel does not return silently
+    // drops the notification on API 26+, so a missing channel becomes an explicit
+    // rejection instead of an ok: true that posted nothing.
+    private fun ensureChannelExists(channelId: String?) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || channelId == null) {
+            return
+        }
+
+        if (notificationManager.getNotificationChannel(channelId) == null) {
+            throw VoltraNotificationException(
+                VoltraNotificationException.CHANNEL_NOT_FOUND,
+                "Notification channel '$channelId' does not exist. Create it before posting ongoing notifications.",
+            )
+        }
     }
 
     private fun applyCommonFields(
@@ -438,7 +582,15 @@ class VoltraNotificationManager(
         if (payload.whenEpochMillis != null || payload.chronometer == true) {
             builder.setWhen(payload.whenEpochMillis ?: System.currentTimeMillis())
             builder.setShowWhen(true)
-            builder.setUsesChronometer(payload.chronometer == true)
+            // Remote payloads bypass the renderer (which always pairs the two flags), so
+            // a countdown may arrive without `chronometer: true`. A countdown chip is
+            // still a chip: show the chronometer rather than a static timestamp.
+            builder.setUsesChronometer(payload.chronometer == true || payload.chronometerCountDown == true)
+            // Validation guarantees a countdown always has `when` to count down to.
+            // setChronometerCountDown is API 24 — Voltra's minSdk — so no gate is needed.
+            if (payload.chronometerCountDown == true) {
+                builder.setChronometerCountDown(true)
+            }
         } else {
             builder.setShowWhen(false)
         }
@@ -562,7 +714,10 @@ class VoltraNotificationManager(
         builder: Builder,
         record: AndroidOngoingNotificationRecord,
     ) {
-        if (!record.requestPromotedOngoing || !getOngoingNotificationCapabilities().canRequestPromotedOngoing) {
+        // Written whenever requested, regardless of canPostPromotedNotifications(): the
+        // user preference is the system's to apply at post time, and the bit is what
+        // lets the next update be promoted after the user enables Live Updates.
+        if (!record.requestPromotedOngoing || Build.VERSION.SDK_INT < PROMOTION_MIN_SDK) {
             return
         }
 
@@ -673,18 +828,6 @@ class VoltraNotificationManager(
             AndroidOngoingNotificationFallbackBehavior.STANDARD
         }
 
-    private fun hasPromotedNotificationsPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < 36) {
-            return false
-        }
-
-        return try {
-            appContext.checkSelfPermission(PROMOTED_PERMISSION) == PackageManager.PERMISSION_GRANTED
-        } catch (_: Throwable) {
-            true
-        }
-    }
-
     private fun createMergedRecord(
         notificationId: String,
         currentRecord: AndroidOngoingNotificationRecord?,
@@ -693,7 +836,10 @@ class VoltraNotificationManager(
     ): AndroidOngoingNotificationRecord {
         val channelId = options.channelId ?: currentRecord?.channelId
         if (channelId.isNullOrBlank() && !allowMissingChannel) {
-            throw IllegalArgumentException("channelId is required for Android ongoing notifications.")
+            throw VoltraNotificationException(
+                VoltraNotificationException.CHANNEL_REQUIRED,
+                "channelId is required for Android ongoing notifications.",
+            )
         }
 
         val systemNotificationId = currentRecord?.systemNotificationId ?: allocateNotificationId()
@@ -702,7 +848,11 @@ class VoltraNotificationManager(
             notificationId = notificationId,
             systemNotificationId = systemNotificationId,
             channelId =
-                channelId ?: throw IllegalArgumentException("channelId is required for Android ongoing notifications."),
+                channelId
+                    ?: throw VoltraNotificationException(
+                        VoltraNotificationException.CHANNEL_REQUIRED,
+                        "channelId is required for Android ongoing notifications.",
+                    ),
             smallIcon = options.smallIcon ?: currentRecord?.smallIcon,
             deepLinkUrl = options.deepLinkUrl ?: currentRecord?.deepLinkUrl,
             requestPromotedOngoing =
