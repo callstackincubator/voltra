@@ -74,6 +74,13 @@ an update that omits it posts without one, exactly as an update that omits `subT
 message, so it is an option that survives every update until the app changes it. A notification can
 therefore be private with a public version chosen per update.
 
+One mirror in the public version reaches past the text it is meant to replace: it copies the whole
+timestamp block from the content, so a notification that shows a `when` or a running chronometer
+shows that same clock on the lock-screen copy, and `chronometerCountDown` is mirrored with it. This
+is deliberate: a timestamp reveals no content, and a public copy that reads "Ride in progress" while
+silently dropping the timer the real notification started would be the more surprising choice. It is
+also a deviation from "the public version is text", recorded here so the behavior has a home.
+
 ### What went where
 
 | Field                                   | Home                     | Default                                     |
