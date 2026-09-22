@@ -9,7 +9,6 @@ import android.util.Base64
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -43,6 +42,13 @@ class VoltraNotificationImageResolverTest {
         assertEquals(256 to 171, targetSize(3000, 2000, MAX_ICON_LONG_EDGE_PX))
         assertEquals(800 to 600, targetSize(800, 600, MAX_PICTURE_LONG_EDGE_PX))
         assertEquals(1024 to 1, targetSize(3000, 1, MAX_PICTURE_LONG_EDGE_PX))
+    }
+
+    @Test
+    fun `fills the budget when the artwork has no pixels of its own`() {
+        assertEquals(1024 to 1024, renderSize(24, 24, MAX_PICTURE_LONG_EDGE_PX))
+        assertEquals(256 to 128, renderSize(48, 24, MAX_ICON_LONG_EDGE_PX))
+        assertEquals(1024 to 768, renderSize(1600, 1200, MAX_PICTURE_LONG_EDGE_PX))
     }
 
     @Test
@@ -95,7 +101,7 @@ class VoltraNotificationImageResolverTest {
     }
 
     @Test
-    fun `renders a bundled drawable when the platform only takes a bitmap`() {
+    fun `renders a vector at the picture budget rather than at its intrinsic size`() {
         val bitmap =
             resolver.resolveBitmap(
                 AndroidOngoingNotificationImageSource(assetName = TEST_DRAWABLE),
@@ -103,7 +109,7 @@ class VoltraNotificationImageResolverTest {
             )
 
         assertNotNull(bitmap)
-        assertTrue(bitmap!!.width > 0)
+        assertEquals(MAX_PICTURE_LONG_EDGE_PX, maxOf(bitmap!!.width, bitmap.height))
         assertEquals(bitmap.width, bitmap.height)
     }
 

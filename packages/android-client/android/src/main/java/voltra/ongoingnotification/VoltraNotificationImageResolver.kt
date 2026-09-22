@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.util.Base64
@@ -26,7 +27,8 @@ import kotlin.math.roundToInt
  * [Icon.createWithResource] and never decoded here, which keeps their pixels out of the app heap.
  * Decoding a drawable is unavoidable when the platform only accepts a bitmap for it: bitmap
  * resources go through [BitmapFactory], where they can be subsampled while decoding, and anything
- * that is not a bitmap (a vector, a layer list) is drawn to a canvas.
+ * that carries no pixels of its own (a vector, a shape) is drawn to a canvas at the full budget,
+ * the only size at which the launcher cannot turn it into a blur.
  */
 internal class VoltraNotificationImageResolver(
     private val context: Context,
@@ -215,7 +217,16 @@ internal class VoltraNotificationImageResolver(
                 return null
             }
 
-            val (targetWidth, targetHeight) = targetSize(width, height, maxLongEdgePx)
+            // A bitmap-backed drawable already has pixels, so it is only ever shrunk. Anything else
+            // is resolution-free: drawing it at its authored dp size would post a 24dp vector as 72
+            // pixels at 3x and leave the launcher to stretch that across the picture slot.
+            val (targetWidth, targetHeight) =
+                if (drawable is BitmapDrawable) {
+                    targetSize(width, height, maxLongEdgePx)
+                } else {
+                    renderSize(width, height, maxLongEdgePx)
+                }
+
             val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
             drawable.setBounds(0, 0, targetWidth, targetHeight)
             drawable.draw(Canvas(bitmap))
@@ -285,6 +296,23 @@ internal fun targetSize(
     if (longEdge <= maxLongEdgePx) return width to height
 
     val scale = maxLongEdgePx.toFloat() / longEdge
+
+    return maxOf(1, (width * scale).roundToInt()) to maxOf(1, (height * scale).roundToInt())
+}
+
+/**
+ * Dimensions for a drawable that carries no pixels of its own, such as a vector: the whole budget at
+ * the authored ratio. Rendering one at its intrinsic dp size instead hands the launcher a 24dp icon
+ * worth of pixels to stretch across a 416dp slot.
+ */
+internal fun renderSize(
+    width: Int,
+    height: Int,
+    maxLongEdgePx: Int,
+): Pair<Int, Int> {
+    if (width <= 0 || height <= 0 || maxLongEdgePx <= 0) return width to height
+
+    val scale = maxLongEdgePx.toFloat() / maxOf(width, height)
 
     return maxOf(1, (width * scale).roundToInt()) to maxOf(1, (height * scale).roundToInt())
 }
