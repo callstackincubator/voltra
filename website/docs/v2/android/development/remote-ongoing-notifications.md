@@ -167,6 +167,8 @@ await Notifications.registerTaskAsync(TASK_NAME)
 
 When the options request promotion, a successful upsert result carries `result.promotion.reasons` — the machine-readable list of what would block promotion on this device — so your handler can log it. A payload that breaks a rule (`kind` unknown, malformed JSON, a countdown without `when`) rejects with a `VOLTRA_NOTIFICATION_...` code instead of posting something broken, and a channel that was never created rejects too. Wrap the call in `try`/`catch` if you want to react to those.
 
+`AndroidOngoingNotification.Metric` renders server-side too, so one metric payload fits every device: below Android 17 it posts as a standard notification whose text line joins the readings, and the upsert result then carries `styleFallback: 'standard'`.
+
 ### Channel setup for remote updates
 
 Your background task should ensure that the target notification channel exists before calling `upsertAndroidOngoingNotification()`. Create the channel on startup, and also ensure it exists again inside the background handler.
