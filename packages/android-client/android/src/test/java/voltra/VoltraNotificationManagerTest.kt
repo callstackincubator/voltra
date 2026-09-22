@@ -99,6 +99,25 @@ class VoltraNotificationManagerTest {
         assertNull(startWith().publicVersion)
     }
 
+    /**
+     * The public version is the one place Voltra builds a second `Notification.Builder`, and on this
+     * release range that goes down the deprecated `Builder(Context)` constructor, so the whole path
+     * has to run here rather than only be argued about.
+     */
+    @Test
+    @Config(sdk = [24])
+    fun thePublicVersionIsBuiltTheSameWayOnTheOldestSupportedRelease() {
+        val notification = startWith(payload = progressPayload(PUBLIC_VERSION_FIELDS), color = "#1E88E5")
+        val publicVersion = requireNotNull(notification.publicVersion)
+        val publicExtras = requireNotNull(publicVersion.extras)
+
+        assertEquals("Ride in progress", publicExtras.getCharSequence(Notification.EXTRA_TITLE).toString())
+        assertEquals("Unlock to see driver details", publicExtras.getCharSequence(Notification.EXTRA_TEXT).toString())
+        assertEquals(Notification.VISIBILITY_PUBLIC, publicVersion.visibility)
+        assertEquals(notification.smallIcon!!.resId, publicVersion.smallIcon!!.resId)
+        assertEquals(notification.color, publicVersion.color)
+    }
+
     @Test
     fun colorOptionSetsTheAccentColorFromAnyStaticColorString() {
         assertEquals(0xFF1E88E5.toInt(), startWith(color = "#1E88E5").color)
@@ -193,6 +212,29 @@ class VoltraNotificationManagerTest {
     fun groupAndSortKeyOptionsOrderTheNotificationInItsGroup() {
         val notification = startWith(group = "rides", sortKey = "2026-09-22T12:00")
 
+        assertEquals("rides", notification.group)
+        assertEquals("2026-09-22T12:00", notification.sortKey)
+    }
+
+    /**
+     * The same options at once, read back on the two oldest releases Voltra supports: they all sit on
+     * setters far below `minSdk`, and this is what turns that argument into a regression test.
+     */
+    @Test
+    @Config(sdk = [24, 25])
+    fun everyPresentationOptionIsAppliedOnTheOldestSupportedReleases() {
+        val notification =
+            startWith(
+                visibility = "private",
+                color = "#1E88E5",
+                localOnly = true,
+                group = "rides",
+                sortKey = "2026-09-22T12:00",
+            )
+
+        assertEquals(Notification.VISIBILITY_PRIVATE, notification.visibility)
+        assertEquals(0xFF1E88E5.toInt(), notification.color)
+        assertTrue(notification.flags and Notification.FLAG_LOCAL_ONLY != 0)
         assertEquals("rides", notification.group)
         assertEquals("2026-09-22T12:00", notification.sortKey)
     }
@@ -318,6 +360,20 @@ class VoltraNotificationManagerTest {
                 payload = progressPayload("\"when\":1758540000000,\"chronometer\":true,\"chronometerCountDown\":true,"),
             )
 
+        assertTrue(notification.extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN, false))
+    }
+
+    @Test
+    @Config(sdk = [24, 25])
+    fun chronometerCountDownIsAppliedOnTheOldestSupportedReleases() {
+        // `setChronometerCountDown` arrived exactly at minSdk 24, the one ungated call sitting on
+        // the floor of the supported range, so it has to be proven there rather than by the docs.
+        val notification =
+            startWith(
+                payload = progressPayload("\"when\":1758540000000,\"chronometer\":true,\"chronometerCountDown\":true,"),
+            )
+
+        assertTrue(notification.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER, false))
         assertTrue(notification.extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN, false))
     }
 
