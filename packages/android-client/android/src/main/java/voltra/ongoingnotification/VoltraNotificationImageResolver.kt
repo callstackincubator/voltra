@@ -11,8 +11,6 @@ import android.util.Base64
 import android.util.Log
 import androidx.core.content.ContextCompat
 import voltra.images.VoltraImageManager
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
 import kotlin.math.roundToInt
 
 /**
@@ -99,19 +97,41 @@ internal class VoltraNotificationImageResolver(
     private fun drawableResourceId(assetName: String): Int =
         context.resources.getIdentifier(assetName, "drawable", context.packageName)
 
+    /**
+     * A preloaded image goes through the content provider twice: once for its dimensions, once for
+     * its pixels. Buffering the stream in order to decode it from memory would add the whole file to
+     * the heap on top of the bitmap, which is the cost this class is trying to avoid.
+     */
     private fun decodePreloaded(
         assetName: String,
         maxLongEdgePx: Int,
     ): Bitmap? {
-        val uriString = imageManager.getUriForKey(assetName) ?: return null
+        val uri = imageManager.getUriForKey(assetName)?.let { Uri.parse(it) } ?: return null
 
         return try {
-            val bytes =
-                context.contentResolver.openInputStream(Uri.parse(uriString))?.use { stream ->
-                    readFully(stream)
-                } ?: return null
+            val bounds =
+                BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, bounds)
+            }
 
-            decodeBytes(bytes, assetName, maxLongEdgePx)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                Log.e(TAG, "Failed to read the dimensions of notification image asset: $assetName")
+                return null
+            }
+
+            val options =
+                BitmapFactory.Options().apply {
+                    inSampleSize = computeInSampleSize(bounds.outWidth, bounds.outHeight, maxLongEdgePx)
+                }
+
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                BitmapFactory
+                    .decodeStream(stream, null, options)
+                    ?.let { scaleDown(it, maxLongEdgePx) }
+            }
         } catch (error: Exception) {
             Log.e(TAG, "Failed to decode notification image asset: $assetName", error)
             null
@@ -248,19 +268,6 @@ internal class VoltraNotificationImageResolver(
         }
 
         return Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, true)
-    }
-
-    private fun readFully(stream: InputStream): ByteArray {
-        val buffer = ByteArrayOutputStream()
-        val chunk = ByteArray(DEFAULT_READ_BUFFER_SIZE)
-        var read = stream.read(chunk)
-
-        while (read != -1) {
-            buffer.write(chunk, 0, read)
-            read = stream.read(chunk)
-        }
-
-        return buffer.toByteArray()
     }
 }
 

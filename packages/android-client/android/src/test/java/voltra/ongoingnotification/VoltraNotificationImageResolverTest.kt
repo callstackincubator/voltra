@@ -156,14 +156,16 @@ class VoltraNotificationImageResolverTest {
     /**
      * Leaves an image behind the way the preload API does: a URI reachable under the asset name. The
      * store's own FileProvider caches one directory for the lifetime of a JVM, which Robolectric
-     * replaces per test, so these tests answer the content resolver directly instead.
+     * replaces per test, so these tests answer the content resolver directly instead. The resolver
+     * opens a preloaded image twice, for its bounds and for its pixels, so every open has to be
+     * handed a stream that has not been read.
      */
     private fun registerPreloaded(
         key: String,
         bytes: ByteArray,
     ) {
         val uri = Uri.parse("content://$PRELOAD_AUTHORITY/$key")
-        shadowOf(context.contentResolver).registerInputStream(uri, ByteArrayInputStream(bytes))
+        shadowOf(context.contentResolver).registerInputStreamSupplier(uri) { ByteArrayInputStream(bytes) }
         context
             .getSharedPreferences(PRELOAD_PREFS, Context.MODE_PRIVATE)
             .edit()
