@@ -8,6 +8,7 @@ import type {
   AndroidOngoingNotificationActionProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
+  AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationPayload,
   AndroidOngoingNotificationProgressPayload,
@@ -232,6 +233,40 @@ const normalizeWhen = (value: unknown): number | undefined => {
   throw new Error('[Voltra] [Android] Ongoing notification prop "when" must be a valid Date or timestamp.')
 }
 
+// `true` keeps meaning "count up" for payloads and props written before the
+// chip gained a direction; only 'countDown' sets chronometerCountDown, and a
+// countdown without `when` has nothing to count down to.
+const normalizeChronometer = (
+  value: unknown,
+  when: number | undefined
+): { chronometer?: boolean; chronometerCountDown?: boolean } => {
+  if (value === undefined) {
+    return {}
+  }
+
+  if (typeof value === 'boolean') {
+    return { chronometer: value }
+  }
+
+  if (value === 'countUp') {
+    return { chronometer: true }
+  }
+
+  if (value === 'countDown') {
+    if (when === undefined) {
+      throw new Error(
+        '[Voltra] [Android] Ongoing notification prop "chronometer" set to "countDown" requires the "when" prop.'
+      )
+    }
+
+    return { chronometer: true, chronometerCountDown: true }
+  }
+
+  throw new Error(
+    '[Voltra] [Android] Ongoing notification prop "chronometer" must be a boolean, "countUp" or "countDown".'
+  )
+}
+
 const getElementKind = (element: ReactElement<Record<string, unknown>>) => {
   const elementType = element.type as unknown
 
@@ -247,6 +282,29 @@ const normalizeActionPayload = (
     title: assertString(props.title, 'title'),
     deepLinkUrl: assertString(props.deepLinkUrl, 'deepLinkUrl'),
     icon: assertOptionalImageSource(props.icon, 'icon'),
+  }
+}
+
+const normalizeCommonDisplayFields = (
+  props: AndroidOngoingNotificationCommonDisplayProps & { largeIcon?: ImageSource }
+): {
+  title?: string
+  subText?: string
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  chronometerCountDown?: boolean
+  largeIcon?: ImageSource
+} => {
+  const when = normalizeWhen(props.when)
+
+  return {
+    title: assertOptionalNonEmptyString(props.title, 'title'),
+    subText: assertOptionalString(props.subText, 'subText'),
+    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
+    when,
+    ...normalizeChronometer(props.chronometer, when),
+    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
   }
 }
 
@@ -293,16 +351,11 @@ const normalizeProgressPayload = (
   return {
     v: PAYLOAD_VERSION,
     kind: 'progress',
-    title: assertOptionalNonEmptyString(props.title, 'title'),
-    subText: assertOptionalString(props.subText, 'subText'),
+    ...normalizeCommonDisplayFields(props),
     text: assertOptionalString(props.text, 'text'),
     value,
     max,
     indeterminate: assertBoolean(props.indeterminate, 'indeterminate'),
-    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
-    when: normalizeWhen(props.when),
-    chronometer: assertBoolean(props.chronometer, 'chronometer'),
-    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
     progressTrackerIcon: assertOptionalImageSource(props.progressTrackerIcon, 'progressTrackerIcon'),
     progressStartIcon: assertOptionalImageSource(props.progressStartIcon, 'progressStartIcon'),
     progressEndIcon: assertOptionalImageSource(props.progressEndIcon, 'progressEndIcon'),
@@ -320,14 +373,9 @@ const normalizeBigTextPayload = (
   return {
     v: PAYLOAD_VERSION,
     kind: 'bigText',
-    title: assertOptionalNonEmptyString(props.title, 'title'),
-    subText: assertOptionalString(props.subText, 'subText'),
+    ...normalizeCommonDisplayFields(props),
     text,
     bigText: assertOptionalString(props.bigText, 'bigText') ?? text,
-    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
-    when: normalizeWhen(props.when),
-    chronometer: assertBoolean(props.chronometer, 'chronometer'),
-    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
     actions: normalizeActions(props.children),
   }
 }
