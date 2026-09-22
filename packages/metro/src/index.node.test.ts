@@ -38,9 +38,11 @@ function makeTempProject(files: Record<string, string>): TempProject {
   }
 }
 
-function installProjectModuleStubs() {
+function installProjectModuleStubs({ widgetMetroError }: { widgetMetroError?: Error } = {}) {
   const originalLoad = Module._load
   const calls: string[] = []
+  const mounted: Array<{ path: string; middleware: any }> = []
+  const widgetRequests: string[] = []
   let widgetConfig: any
 
   mock.method(Module, '_load', function mockedLoad(request: string, parent: NodeModule, isMain: boolean) {
@@ -65,8 +67,12 @@ function installProjectModuleStubs() {
         async createConnectMiddleware(config: any) {
           calls.push('metro.createConnectMiddleware')
           widgetConfig = config
+          if (widgetMetroError) {
+            throw widgetMetroError
+          }
           return {
-            middleware(_req: unknown, _res: unknown, next: () => void) {
+            middleware(req: { url: string }, _res: unknown, next: () => void) {
+              widgetRequests.push(req.url)
               next()
             },
           }
@@ -78,7 +84,10 @@ function installProjectModuleStubs() {
       calls.push(request)
       return function connect() {
         return {
-          use() {
+          use(pathOrMiddleware: unknown, middleware?: unknown) {
+            if (typeof pathOrMiddleware === 'string') {
+              mounted.push({ path: pathOrMiddleware, middleware })
+            }
             return this
           },
         }
@@ -90,7 +99,9 @@ function installProjectModuleStubs() {
 
   return {
     calls,
+    widgetRequests,
     getWidgetConfig: () => widgetConfig,
+    getVoltraMiddleware: () => mounted.find((entry) => entry.path === '/voltra')?.middleware,
   }
 }
 
@@ -123,8 +134,8 @@ describe('withVoltra Metro config transformer', () => {
     assert.equal(typeof config.resolver.resolveRequest, 'function')
   })
 
-  test('starts widget Metro when at least one Dynamic Widget is configured', async () => {
-    const { projectRoot, cleanup } = makeTempProject({
+  const configuredWidgetProject = () =>
+    makeTempProject({
       '.voltra/manifest.ios.json': JSON.stringify(
         { version: 1, platform: 'ios', widgets: [{ id: 'home', entry: 'widgets/home.js' }] },
         null,
@@ -133,6 +144,26 @@ describe('withVoltra Metro config transformer', () => {
       '.voltra/manifest.android.json': JSON.stringify({ version: 1, platform: 'android', widgets: [] }, null, 2),
       'widgets/home.js': 'export default function HomeWidget() { return null }\n',
     })
+
+  // `react-native bundle` loads the config and then waits for the event loop to drain, so a
+  // Metro server created here would keep a release build hanging forever.
+  test('does not start widget Metro while loading the config', async () => {
+    const { projectRoot, cleanup } = configuredWidgetProject()
+    cleanups.push(cleanup)
+
+    const { calls } = installProjectModuleStubs()
+    const config = await withVoltra({
+      projectRoot,
+      resolver: {},
+      server: {},
+    })
+
+    assert.equal(calls.includes('metro.createConnectMiddleware'), false)
+    assert.equal(typeof config.server.enhanceMiddleware, 'function')
+  })
+
+  test('starts widget Metro once when the dev server enhances its middleware', async () => {
+    const { projectRoot, cleanup } = configuredWidgetProject()
     cleanups.push(cleanup)
 
     const { calls, getWidgetConfig } = installProjectModuleStubs()
@@ -144,9 +175,59 @@ describe('withVoltra Metro config transformer', () => {
       watchFolders: [additionalWatchFolder],
     })
 
-    assert.equal(calls.includes('metro-config'), true)
-    assert.equal(calls.includes('metro.createConnectMiddleware'), true)
+    config.server.enhanceMiddleware(() => {}, {})
+    config.server.enhanceMiddleware(() => {}, {})
+    await new Promise((resolve) => setImmediate(resolve))
+
+    assert.equal(calls.filter((call) => call === 'metro.createConnectMiddleware').length, 1)
     assert.deepEqual(getWidgetConfig().watchFolders, [projectRoot, additionalWatchFolder])
-    assert.equal(typeof config.server.enhanceMiddleware, 'function')
+  })
+
+  test('serves widget bundles through the widget Metro started by the dev server', async () => {
+    const { projectRoot, cleanup } = configuredWidgetProject()
+    cleanups.push(cleanup)
+
+    const { widgetRequests, getVoltraMiddleware } = installProjectModuleStubs()
+    const config = await withVoltra({ projectRoot, resolver: {}, server: {} })
+    config.server.enhanceMiddleware(() => {}, {})
+
+    const forwarded = await new Promise<boolean>((resolve) => {
+      getVoltraMiddleware()({ url: '/widgets/home.bundle?platform=ios' }, {}, () => resolve(true))
+    })
+
+    assert.equal(forwarded, true)
+    assert.equal(widgetRequests.length, 1)
+    assert.match(widgetRequests[0], /^\/voltra-widget\.bundle\?/)
+  })
+
+  test('answers widget bundle requests with a 500 when widget Metro fails to start', async () => {
+    const { projectRoot, cleanup } = configuredWidgetProject()
+    cleanups.push(cleanup)
+
+    const consoleError = mock.method(console, 'error', () => {})
+    const { getVoltraMiddleware } = installProjectModuleStubs({ widgetMetroError: new Error('no watcher') })
+    const config = await withVoltra({ projectRoot, resolver: {}, server: {} })
+    config.server.enhanceMiddleware(() => {}, {})
+
+    const response = await new Promise<{ status: number; body: string }>((resolve, reject) => {
+      let status = 0
+      getVoltraMiddleware()(
+        { url: '/widgets/home.bundle?platform=ios' },
+        {
+          writeHead(code: number) {
+            status = code
+          },
+          end(body: string) {
+            resolve({ status, body })
+          },
+        },
+        () => reject(new Error('request should not fall through'))
+      )
+    })
+
+    assert.equal(response.status, 500)
+    assert.deepEqual(JSON.parse(response.body), { error: 'no watcher' })
+    assert.equal(consoleError.mock.callCount(), 1)
+    assert.match(String(consoleError.mock.calls[0].arguments[0]), /failed to start widget Metro/)
   })
 })

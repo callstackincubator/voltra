@@ -84,6 +84,52 @@ function listConfiguredWidgets(registry: WidgetRegistry): RegisteredVoltraWidget
   return widgets
 }
 
+type Middleware = (req: any, res: any, next: () => void) => void
+type WidgetMetro = { middleware: Middleware }
+
+/**
+ * Defer the widget Metro server until a dev server actually needs it.
+ *
+ * A Metro server owns a file watcher and a pool of transform workers, and nothing ends the
+ * one created here. Loading the config must therefore not create it: `react-native bundle`
+ * loads the config, builds, and then relies on the event loop draining to exit, so a server
+ * created during config load keeps that process — and the Gradle or Xcode build waiting on
+ * it — alive forever.
+ */
+function createLazyWidgetMetro(create: () => Promise<WidgetMetro>): WidgetMetro & { start(): void } {
+  let pending: Promise<WidgetMetro> | null = null
+
+  const get = (): Promise<WidgetMetro> => {
+    if (!pending) {
+      pending = create()
+      pending.catch((error) => {
+        console.error(
+          `[voltra] failed to start widget Metro: ${
+            error instanceof Error ? error.stack || error.message : String(error)
+          }`
+        )
+      })
+    }
+
+    return pending
+  }
+
+  return {
+    start() {
+      void get()
+    },
+    middleware(req, res, next) {
+      get().then(
+        (widgetMetro) => widgetMetro.middleware(req, res, next),
+        (error) => {
+          res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' })
+          res.end(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2))
+        }
+      )
+    },
+  }
+}
+
 export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) => {
   const projectRoot = metroConfig.projectRoot ?? process.cwd()
   const registry = createWidgetRegistry({ projectRoot })
@@ -112,20 +158,23 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
     return configWithResolver
   }
 
-  const widgetConfig = await createWidgetMetroConfig({
-    projectRoot,
-    appConfig: metroConfig,
-  })
-  const Metro = requireProjectModule<{ createConnectMiddleware(config: any, options?: any): Promise<any> }>(
-    'metro',
-    projectRoot
-  )
   const connect = requireProjectModule<() => { use(pathOrMiddleware: string | unknown, middleware?: unknown): any }>(
     'connect',
     projectRoot
   )
-  const widgetMetro = await Metro.createConnectMiddleware(widgetConfig, {
-    port: metroConfig.server?.port,
+  const widgetMetro = createLazyWidgetMetro(async () => {
+    const widgetConfig = await createWidgetMetroConfig({
+      projectRoot,
+      appConfig: metroConfig,
+    })
+    const Metro = requireProjectModule<{ createConnectMiddleware(config: any, options?: any): Promise<WidgetMetro> }>(
+      'metro',
+      projectRoot
+    )
+
+    return Metro.createConnectMiddleware(widgetConfig, {
+      port: metroConfig.server?.port,
+    })
   })
   const voltraMiddleware = createVoltraMiddleware({
     registry,
@@ -141,6 +190,10 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
       ...metroConfig.server,
       enhanceMiddleware(metroMiddleware: unknown, metroServer: unknown) {
         const enhancedAppMetroMiddleware = previousEnhanceMiddleware(metroMiddleware, metroServer)
+
+        // Metro only enhances middleware when it serves, so this is the earliest point that
+        // is known to be a dev server rather than a one-off build.
+        widgetMetro.start()
 
         return connect().use('/voltra', voltraMiddleware).use(enhancedAppMetroMiddleware)
       },
