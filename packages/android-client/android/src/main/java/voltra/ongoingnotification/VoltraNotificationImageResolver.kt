@@ -24,8 +24,9 @@ import kotlin.math.roundToInt
  *
  * Drawable resources that stay in the collapsed-thumbnail path are handed over as
  * [Icon.createWithResource] and never decoded here, which keeps their pixels out of the app heap.
- * Decoding a drawable is unavoidable when the platform only accepts a bitmap for it, and that decode
- * goes through [ContextCompat.getDrawable] so vector drawables work too.
+ * Decoding a drawable is unavoidable when the platform only accepts a bitmap for it: bitmap
+ * resources go through [BitmapFactory], where they can be subsampled while decoding, and anything
+ * that is not a bitmap (a vector, a layer list) is drawn to a canvas.
  */
 internal class VoltraNotificationImageResolver(
     private val context: Context,
@@ -159,7 +160,48 @@ internal class VoltraNotificationImageResolver(
             null
         }
 
+    /**
+     * A bitmap resource is sampled by the decoder itself. Inflating it into a drawable first would
+     * allocate it at full resolution, which is the allocation the cap exists to avoid, and the
+     * framework only trims notification artwork after that. Drawables that are not bitmaps answer
+     * no bounds to the decoder, so those are drawn to a canvas instead.
+     */
     private fun decodeDrawable(
+        resId: Int,
+        maxLongEdgePx: Int,
+    ): Bitmap? = decodeBitmapResource(resId, maxLongEdgePx) ?: renderDrawable(resId, maxLongEdgePx)
+
+    private fun decodeBitmapResource(
+        resId: Int,
+        maxLongEdgePx: Int,
+    ): Bitmap? {
+        return try {
+            val bounds =
+                BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+            BitmapFactory.decodeResource(context.resources, resId, bounds)
+
+            // Vector, layer-list and state-list resources carry no pixel dimensions to decode by.
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                return null
+            }
+
+            val options =
+                BitmapFactory.Options().apply {
+                    inSampleSize = computeInSampleSize(bounds.outWidth, bounds.outHeight, maxLongEdgePx)
+                }
+
+            BitmapFactory
+                .decodeResource(context.resources, resId, options)
+                ?.let { scaleDown(it, maxLongEdgePx) }
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to decode notification bitmap resource $resId", error)
+            null
+        }
+    }
+
+    private fun renderDrawable(
         resId: Int,
         maxLongEdgePx: Int,
     ): Bitmap? {

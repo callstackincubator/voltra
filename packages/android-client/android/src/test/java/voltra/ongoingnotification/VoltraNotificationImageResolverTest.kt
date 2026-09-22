@@ -108,6 +108,19 @@ class VoltraNotificationImageResolverTest {
     }
 
     @Test
+    fun `subsamples a bundled bitmap resource while decoding it`() {
+        val bitmap =
+            resolver.resolveBitmap(
+                AndroidOngoingNotificationImageSource(assetName = TEST_PHOTO),
+                MAX_PICTURE_LONG_EDGE_PX,
+            )
+
+        assertNotNull(bitmap)
+        assertEquals(MAX_PICTURE_LONG_EDGE_PX, maxOf(bitmap!!.width, bitmap.height))
+        assertEquals(1.5f, bitmap.width.toFloat() / bitmap.height, 0.02f)
+    }
+
+    @Test
     fun `gives up quietly on artwork it cannot decode`() {
         val unparsable =
             AndroidOngoingNotificationImageSource(
@@ -154,6 +167,9 @@ class VoltraNotificationImageResolverTest {
 
     private companion object {
         const val TEST_DRAWABLE = "voltra_test_picture"
+
+        /** A 3000x2000 bitmap resource, big enough that the decoder has to subsample it. */
+        const val TEST_PHOTO = "voltra_test_photo"
 
         // The preferences and authority VoltraImageStore registers preloaded images under.
         const val PRELOAD_PREFS = "voltra_preload_images"

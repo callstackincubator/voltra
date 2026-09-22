@@ -79,6 +79,15 @@ class VoltraNotificationManagerOngoingStyleTest {
     }
 
     @Test
+    @Config(sdk = [30])
+    fun `renders a bundled drawable into the picture below API 31`() {
+        val posted = post(bigPicturePayload(assetPictureField()))
+
+        assertNotNull(posted.extras.getParcelable(Notification.EXTRA_PICTURE) as? Bitmap)
+        assertNull(posted.extras.getParcelable(Notification.EXTRA_PICTURE_ICON) as? Icon)
+    }
+
+    @Test
     fun `posts an inline picture as a bitmap`() {
         val posted = post(bigPicturePayload(pictureField(SMALL_PICTURE)))
 
