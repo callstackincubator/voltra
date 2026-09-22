@@ -174,7 +174,7 @@ The remaining picture props are optional, and the two that need a newer Android 
 | `hideLargeIconWhenExpanded` | Shows the `largeIcon` thumbnail only while collapsed | - |
 | `summaryText` | Short trailing line, such as an order number | - |
 
-**How large should the image be?** Android draws an expanded picture at 416dp by 284dp at most. Voltra hands over at most 1024 px on the long edge for a picture and 256 px for an icon, so a full-resolution camera photo buys you no extra detail and costs your app memory and decode time. Bundled drawables are passed to Android as resources and resized by the system.
+**How large should the image be?** Android draws an expanded picture at 416dp by 284dp at most. Voltra hands over at most 1024 px on the long edge for a picture and 256 px for an icon, so a full-resolution camera photo buys you no extra detail and costs your app memory and decode time. A bundled drawable is handed to the system as a resource on Android 12 and later, which resizes it; on Android 11 and older Voltra draws it out to those same limits itself, so a small vector fills the picture slot on every version.
 
 **A picture notification cannot become a Live Update.** Android 16 promotes ongoing notifications with the standard, big text, call, and progress styles; `requestPromotedOngoing` is accepted for this layout and has no effect on it. If you need promotion and artwork, use `largeIcon` on a `Progress` notification.
 
