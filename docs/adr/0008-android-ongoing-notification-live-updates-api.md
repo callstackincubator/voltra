@@ -1,7 +1,7 @@
 # ADR 0008: Android ongoing notification Live Updates API surface
 
-Status: Accepted — not yet implemented (the Metric payload kind lands after the
-promotion/eligibility work; the rest lands with it)
+Status: Accepted — implemented by #325; the Metric payload kind lands with its
+stacked follow-up PR
 
 Implemented by #325 (promotion request, status-bar chip, eligibility and
 error codes) and by its stacked follow-up PR (Metric payload kind and the
