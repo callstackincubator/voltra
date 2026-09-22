@@ -4,7 +4,11 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -361,24 +365,81 @@ abstract class VoltraNotificationManagerTestBase(
         assertNotNull(status.hasPromotableCharacteristics)
     }
 
+    /**
+     * A context whose `startActivity` rejects the given actions with
+     * `ActivityNotFoundException`, like Android TV, Automotive and stripped OEM ROMs
+     * where no activity handles them. Returning the wrapper from `getApplicationContext`
+     * keeps it in place through the manager's `context.applicationContext` unwrap.
+     */
+    protected fun contextWithoutActivitiesFor(vararg actions: String): Context =
+        object : ContextWrapper(context) {
+            override fun getApplicationContext(): Context = this
+
+            override fun startActivity(intent: Intent) {
+                if (intent.action in actions) {
+                    throw ActivityNotFoundException("No activity handles ${intent.action}")
+                }
+                super.startActivity(intent)
+            }
+        }
+
     @Test
-    fun openAppNotificationSettingsOpensTheChannelListPage() {
+    fun openAppNotificationSettingsOpensTheSettingsPageThisApiLevelHas() {
         manager.openAppNotificationSettings()
 
         val started = shadowOf(context).nextStartedActivity
-        assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, started.action)
-        assertEquals(context.packageName, started.getStringExtra(Settings.EXTRA_APP_PACKAGE))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, started.action)
+            assertEquals(context.packageName, started.getStringExtra(Settings.EXTRA_APP_PACKAGE))
+        } else {
+            assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, started.action)
+            assertEquals("package:${context.packageName}", started.data?.toString())
+        }
+    }
+
+    @Test
+    fun openAppNotificationSettingsFallsBackToAppDetailsWhenTheChannelListIsMissing() {
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        val deviceWithoutChannelList = contextWithoutActivitiesFor(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+
+        VoltraNotificationManager(deviceWithoutChannelList).openAppNotificationSettings()
+
+        val started = shadowOf(context).nextStartedActivity
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, started.action)
+        assertEquals("package:${context.packageName}", started.data?.toString())
     }
 
     @Test
     fun openPromotedNotificationSettingsFallsBackWhenNoActivityResolves() {
         // No activity is registered for the promotion action, so the guarded resolve
-        // must fall back to the channel list instead of throwing ActivityNotFoundException.
+        // must fall back without throwing ActivityNotFoundException; the page it lands
+        // on is whatever this API level has (channel list on 26+, app details below).
         val openedPromotionPage = manager.openPromotedNotificationSettings()
 
         assertFalse(openedPromotionPage)
         val started = shadowOf(context).nextStartedActivity
-        assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, started.action)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, started.action)
+        } else {
+            assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, started.action)
+        }
+    }
+
+    @Test
+    fun openPromotedNotificationSettingsWalksTheWholeFallbackChainWithoutThrowing() {
+        // Promotion page unresolvable (Robolectric default), channel list throws, so the
+        // chain must land on the app details page and the call must return false.
+        val bareDevice =
+            contextWithoutActivitiesFor(
+                Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS,
+                Settings.ACTION_APP_NOTIFICATION_SETTINGS,
+            )
+
+        val openedPromotionPage = VoltraNotificationManager(bareDevice).openPromotedNotificationSettings()
+
+        assertFalse(openedPromotionPage)
+        val started = shadowOf(context).nextStartedActivity
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, started.action)
     }
 
     @Test
