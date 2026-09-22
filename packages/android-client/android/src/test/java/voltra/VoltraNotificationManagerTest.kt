@@ -335,6 +335,15 @@ class VoltraNotificationManagerTest {
         assertNull(notification.extras.getCharSequence(Notification.EXTRA_INFO_TEXT))
         // Notification.setSettingsText has no public extra key to name, so this is the key it writes.
         assertFalse(notification.extras.containsKey("android.settingsText"))
+        // Sound, vibration, lights and defaults all moved to the channel in API 26, and none of
+        // them is something Voltra sets. Sound and vibration are only reachable as fields the
+        // public SDK stopped naming, so reflection reads them; whatever `Notification.Builder`
+        // puts on its own (the default audio attributes) stays as delivered.
+        assertNull(ReflectionHelpers.getField<Any?>(notification, "sound"))
+        assertNull(ReflectionHelpers.getField<LongArray?>(notification, "vibrate"))
+        assertEquals(0, notification.ledARGB)
+        assertEquals(0, notification.defaults and Notification.DEFAULT_ALL)
+        assertNull(notification.tickerText)
     }
 
     @Test
