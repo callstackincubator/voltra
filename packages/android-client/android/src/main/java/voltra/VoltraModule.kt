@@ -238,7 +238,7 @@ class VoltraModule(
         settleAndroidOngoingNotificationCall(promise, "checkAndroidOngoingNotificationPromotion") {
             notificationManager
                 .checkAndroidOngoingNotificationPromotion(payload, opts)
-                .toWritableMap()
+                .toCheckResultWritableMap()
         }
     }
 

@@ -66,14 +66,13 @@ data class AndroidOngoingNotificationPromotionInfo(
  */
 class AndroidOngoingNotificationPromotionEvaluator(
     private val context: Context,
+    private val notificationManager: NotificationManager,
 ) {
     fun evaluate(
         payload: AndroidOngoingNotificationPayload,
         channelId: String?,
         notification: Notification?,
     ): AndroidOngoingNotificationPromotionInfo {
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val reasons = mutableListOf<String>()
         val promotionSupported = Build.VERSION.SDK_INT >= PROMOTION_MIN_SDK
 
@@ -111,7 +110,12 @@ class AndroidOngoingNotificationPromotionEvaluator(
                 null
             }
 
-        if (hasPromotableCharacteristics == false) {
+        // `not_promotable` means "the platform rejected this shape for a reason Voltra
+        // did not already name". A missing title fails the platform check for that same
+        // missing title, so the platform verdict is not reported a second time next to
+        // the specific reason.
+        val explainedByAShapeReason = reasons.contains(AndroidOngoingNotificationPromotionIssue.MISSING_TITLE)
+        if (hasPromotableCharacteristics == false && !explainedByAShapeReason) {
             reasons += AndroidOngoingNotificationPromotionIssue.NOT_PROMOTABLE
         }
 

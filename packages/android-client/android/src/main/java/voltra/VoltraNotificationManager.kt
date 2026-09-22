@@ -169,7 +169,7 @@ class VoltraNotificationManager(
     private val appContext = context.applicationContext
     private val notificationManager =
         appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val promotionEvaluator = AndroidOngoingNotificationPromotionEvaluator(appContext)
+    private val promotionEvaluator = AndroidOngoingNotificationPromotionEvaluator(appContext, notificationManager)
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val lock = Any()
 
@@ -370,28 +370,44 @@ class VoltraNotificationManager(
 
     // Settings.ACTION_APP_NOTIFICATION_SETTINGS only resolves to an activity on API 26+.
     // On 24-25 no activity handles it and startActivity throws ActivityNotFoundException,
-    // so fall back to the app details screen, which has existed since API 9.
+    // so fall back to the app details screen, which has existed since API 9. The same
+    // fallback applies on 26+ devices that ship no activity for the action (Android TV,
+    // Automotive, stripped OEM ROMs): neither start may propagate ActivityNotFoundException.
     fun openAppNotificationSettings() {
-        val intent =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelList =
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, appContext.packageName)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-            } else {
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", appContext.packageName, null)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+            try {
+                appContext.startActivity(channelList)
+                return
+            } catch (_: ActivityNotFoundException) {
+                // No channel-list page on this device: fall through to app details.
             }
-        appContext.startActivity(intent)
+        }
+
+        val appDetails =
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", appContext.packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        try {
+            appContext.startActivity(appDetails)
+        } catch (error: ActivityNotFoundException) {
+            // Pathological ROM with no details page either: keep it in logcat, never
+            // across the bridge.
+            Log.w(TAG, "No activity handles the notification settings fallback", error)
+        }
     }
 
     /**
      * Opens the system page where the user turns Live Updates on for this app. Returns
      * true when the promotion settings activity opened and false when it fell back to
      * the app notification settings (below API 36, or on devices where no activity
-     * handles the action — the Settings reference warns it may be missing).
+     * handles the action — the Settings reference warns it may be missing). The fallback
+     * chain (channel list → app details) never throws either.
      */
     fun openPromotedNotificationSettings(): Boolean {
         if (Build.VERSION.SDK_INT >= PROMOTION_MIN_SDK) {
@@ -582,7 +598,10 @@ class VoltraNotificationManager(
         if (payload.whenEpochMillis != null || payload.chronometer == true) {
             builder.setWhen(payload.whenEpochMillis ?: System.currentTimeMillis())
             builder.setShowWhen(true)
-            builder.setUsesChronometer(payload.chronometer == true)
+            // Remote payloads bypass the renderer (which always pairs the two flags), so
+            // a countdown may arrive without `chronometer: true`. A countdown chip is
+            // still a chip: show the chronometer rather than a static timestamp.
+            builder.setUsesChronometer(payload.chronometer == true || payload.chronometerCountDown == true)
             // Validation guarantees a countdown always has `when` to count down to.
             // setChronometerCountDown is API 24 — Voltra's minSdk — so no gate is needed.
             if (payload.chronometerCountDown == true) {
