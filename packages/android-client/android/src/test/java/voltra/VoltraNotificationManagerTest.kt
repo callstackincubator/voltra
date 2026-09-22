@@ -10,6 +10,25 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
+ * Floor of Voltra's supported range: channels, the channel-not-found rejection, the
+ * platform progress style and promotion do not exist, so every post goes through the
+ * pre-API-26 single-argument `Builder(context)` and every settings helper lands on the
+ * app-details page.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [24])
+class VoltraNotificationManagerApi24Test : VoltraNotificationManagerTestBase(false)
+
+/**
+ * First API level with notification channels: channel lookups, the channel-not-found
+ * rejection and the channel-list settings page become live, while promotion and the
+ * platform progress style are still out of the picture.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [26])
+class VoltraNotificationManagerApi26Test : VoltraNotificationManagerTestBase(false)
+
+/**
  * Pre-Live-Update behavior contract: everything Voltra did on Android 15 and below must
  * keep working — countdown chip extras included (`setChronometerCountDown` is API 24),
  * while the promotion bit, promotion info and `ProgressStyle` must stay absent.

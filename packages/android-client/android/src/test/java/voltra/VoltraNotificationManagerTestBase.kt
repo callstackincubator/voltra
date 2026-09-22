@@ -27,11 +27,13 @@ import voltra.ongoingnotification.VoltraNotificationException
 
 /**
  * Runs the same behavioral assertions against the real `Notification` the manager hands
- * to `NotificationManager.notify` (captured through `ShadowNotificationManager`) at two
- * platform levels: the SDK-35 class proves the pre-Live-Update behavior stays intact and
+ * to `NotificationManager.notify` (captured through `ShadowNotificationManager`) at four
+ * platform levels: the SDK-24 class covers the floor of Voltra's supported range (no
+ * channels, pre-channel builder and settings), the SDK-26 class covers the first
+ * channel era, the SDK-35 class proves the pre-Live-Update behavior stays intact and
  * the SDK-36 class runs the promoted-ongoing and countdown-chip requirements. Assertions
- * that only make sense on one level use `assumeTrue(promotionSupported)` so the shared
- * list stays readable. Nothing here mocks the manager itself.
+ * that only make sense on one level use `assumeTrue(promotionSupported)` (or an SDK
+ * check) so the shared list stays readable. Nothing here mocks the manager itself.
  */
 abstract class VoltraNotificationManagerTestBase(
     protected val promotionSupported: Boolean,
@@ -51,6 +53,10 @@ abstract class VoltraNotificationManagerTestBase(
         channelId: String = CHANNEL_ID,
         importance: Int = NotificationManager.IMPORTANCE_DEFAULT,
     ) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            // No channels exist below API 26; posting works without any channel setup.
+            return
+        }
         notificationManager.createNotificationChannel(NotificationChannel(channelId, "Voltra test channel", importance))
     }
 
@@ -167,11 +173,25 @@ abstract class VoltraNotificationManagerTestBase(
 
     @Test
     fun postToUnknownChannelIsRejectedAndNeverNotified() {
+        // Below API 26 there are no channels and no channel check to reject with.
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+
         expectRejection(VoltraNotificationException.CHANNEL_NOT_FOUND) {
             start(bigTextPayload(), channelId = "voltra-channel-that-was-never-created")
         }
 
         assertTrue(postedNotifications().isEmpty())
+    }
+
+    @Test
+    fun preChannelApisPostThroughTheLegacyBuilderWithAnyChannelId() {
+        assumeTrue(Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
+
+        val result = start(bigTextPayload(), channelId = "channel-that-cannot-exist-below-o")
+
+        assertTrue(result.ok)
+        val notification = lastPosted()
+        assertEquals(Notification.PRIORITY_DEFAULT, notification.priority)
     }
 
     @Test
