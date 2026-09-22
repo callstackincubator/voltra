@@ -20,11 +20,12 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
-type OngoingNotificationStyle = 'progress' | 'bigText'
+type OngoingNotificationStyle = 'progress' | 'bigText' | 'bigPicture' | 'inbox'
 
 const DEFAULT_NOTIFICATION_ID = 'testing-ground-android-ongoing-notification'
 const DEFAULT_SEGMENTS = '[{"length": 40, "color": "#34D399"}, {"length": 60}]'
 const DEFAULT_POINTS = '[{"position": 20, "color": "#F59E0B"}, {"position": 72}]'
+const DEFAULT_LINES = '12 Oak Street\n4 Elm Road\nDepot'
 const DEFAULT_PRIMARY_ACTION_DEEP_LINK = 'voltra://orders/123'
 const DEFAULT_SECONDARY_ACTION_DEEP_LINK = 'voltra://orders/123/track'
 const DEFAULT_PRIMARY_ACTION_ICON = 'voltra_icon'
@@ -58,6 +59,16 @@ const toImageSource = (value: string) => {
   return { assetName: trimmed } as const
 }
 
+// Keeps an empty picture or line field reachable on purpose: the renderer then reports the missing
+// prop, which is what the screen is for.
+const toRequiredImageSource = (value: string) => toImageSource(value) ?? { assetName: '' }
+
+const toLines = (value: string) =>
+  value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
 const toOptionalNonEmptyString = (value: string) => {
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : undefined
@@ -72,6 +83,13 @@ export default function AndroidOngoingNotificationTestingScreen() {
   const [title, setTitle] = useState('Driver is approaching')
   const [text, setText] = useState('2 stops away')
   const [bigText, setBigText] = useState('Your courier is moving through the final neighborhood.')
+  const [lines, setLines] = useState(DEFAULT_LINES)
+  const [summaryText, setSummaryText] = useState('Order 123')
+  const [picture, setPicture] = useState('voltra_widget_voltra_preview')
+  const [pictureContentDescription, setPictureContentDescription] = useState('Photo of the parcel at the front door')
+  const [showPictureWhenCollapsed, setShowPictureWhenCollapsed] = useState(false)
+  const [bigLargeIcon, setBigLargeIcon] = useState('')
+  const [hideLargeIconWhenExpanded, setHideLargeIconWhenExpanded] = useState(false)
   const [subText, setSubText] = useState('ETA 4 min')
   const [shortCriticalText, setShortCriticalText] = useState('Soon')
   const [progressValue, setProgressValue] = useState('32')
@@ -112,6 +130,24 @@ export default function AndroidOngoingNotificationTestingScreen() {
   useFocusEffect(refreshCapabilities)
 
   const content = useMemo(() => {
+    const actionChildren = (
+      <>
+        {toOptionalNonEmptyString(primaryActionTitle) && toOptionalNonEmptyString(primaryActionDeepLinkUrl) ? (
+          <AndroidOngoingNotification.Action
+            title={toOptionalNonEmptyString(primaryActionTitle)!}
+            deepLinkUrl={toOptionalNonEmptyString(primaryActionDeepLinkUrl)!}
+            icon={toImageSource(primaryActionIcon)}
+          />
+        ) : null}
+        {toOptionalNonEmptyString(secondaryActionTitle) && toOptionalNonEmptyString(secondaryActionDeepLinkUrl) ? (
+          <AndroidOngoingNotification.Action
+            title={toOptionalNonEmptyString(secondaryActionTitle)!}
+            deepLinkUrl={toOptionalNonEmptyString(secondaryActionDeepLinkUrl)!}
+          />
+        ) : null}
+      </>
+    )
+
     if (style === 'progress') {
       return (
         <AndroidOngoingNotification.Progress
@@ -131,20 +167,48 @@ export default function AndroidOngoingNotificationTestingScreen() {
           segments={parseJsonArray(segmentsJson, [])}
           points={parseJsonArray(pointsJson, [])}
         >
-          {toOptionalNonEmptyString(primaryActionTitle) && toOptionalNonEmptyString(primaryActionDeepLinkUrl) ? (
-            <AndroidOngoingNotification.Action
-              title={toOptionalNonEmptyString(primaryActionTitle)!}
-              deepLinkUrl={toOptionalNonEmptyString(primaryActionDeepLinkUrl)!}
-              icon={toImageSource(primaryActionIcon)}
-            />
-          ) : null}
-          {toOptionalNonEmptyString(secondaryActionTitle) && toOptionalNonEmptyString(secondaryActionDeepLinkUrl) ? (
-            <AndroidOngoingNotification.Action
-              title={toOptionalNonEmptyString(secondaryActionTitle)!}
-              deepLinkUrl={toOptionalNonEmptyString(secondaryActionDeepLinkUrl)!}
-            />
-          ) : null}
+          {actionChildren}
         </AndroidOngoingNotification.Progress>
+      )
+    }
+
+    if (style === 'bigPicture') {
+      return (
+        <AndroidOngoingNotification.BigPicture
+          title={title}
+          subText={subText || undefined}
+          text={text || undefined}
+          picture={toRequiredImageSource(picture)}
+          summaryText={summaryText || undefined}
+          pictureContentDescription={pictureContentDescription || undefined}
+          showPictureWhenCollapsed={showPictureWhenCollapsed}
+          largeIcon={toImageSource(largeIcon)}
+          bigLargeIcon={toImageSource(bigLargeIcon)}
+          hideLargeIconWhenExpanded={hideLargeIconWhenExpanded}
+          shortCriticalText={shortCriticalText || undefined}
+          chronometer={chronometer}
+          when={chronometer ? Date.now() : undefined}
+        >
+          {actionChildren}
+        </AndroidOngoingNotification.BigPicture>
+      )
+    }
+
+    if (style === 'inbox') {
+      return (
+        <AndroidOngoingNotification.Inbox
+          title={title}
+          subText={subText || undefined}
+          text={text || undefined}
+          lines={toLines(lines)}
+          summaryText={summaryText || undefined}
+          largeIcon={toImageSource(largeIcon)}
+          shortCriticalText={shortCriticalText || undefined}
+          chronometer={chronometer}
+          when={chronometer ? Date.now() : undefined}
+        >
+          {actionChildren}
+        </AndroidOngoingNotification.Inbox>
       )
     }
 
@@ -159,26 +223,19 @@ export default function AndroidOngoingNotificationTestingScreen() {
         when={chronometer ? Date.now() : undefined}
         largeIcon={toImageSource(largeIcon)}
       >
-        {toOptionalNonEmptyString(primaryActionTitle) && toOptionalNonEmptyString(primaryActionDeepLinkUrl) ? (
-          <AndroidOngoingNotification.Action
-            title={toOptionalNonEmptyString(primaryActionTitle)!}
-            deepLinkUrl={toOptionalNonEmptyString(primaryActionDeepLinkUrl)!}
-            icon={toImageSource(primaryActionIcon)}
-          />
-        ) : null}
-        {toOptionalNonEmptyString(secondaryActionTitle) && toOptionalNonEmptyString(secondaryActionDeepLinkUrl) ? (
-          <AndroidOngoingNotification.Action
-            title={toOptionalNonEmptyString(secondaryActionTitle)!}
-            deepLinkUrl={toOptionalNonEmptyString(secondaryActionDeepLinkUrl)!}
-          />
-        ) : null}
+        {actionChildren}
       </AndroidOngoingNotification.BigText>
     )
   }, [
+    bigLargeIcon,
     bigText,
     chronometer,
+    hideLargeIconWhenExpanded,
     indeterminate,
     largeIcon,
+    lines,
+    picture,
+    pictureContentDescription,
     pointsJson,
     primaryActionDeepLinkUrl,
     primaryActionIcon,
@@ -192,8 +249,10 @@ export default function AndroidOngoingNotificationTestingScreen() {
     secondaryActionTitle,
     segmentsJson,
     shortCriticalText,
+    showPictureWhenCollapsed,
     style,
     subText,
+    summaryText,
     text,
     title,
   ])
@@ -376,6 +435,21 @@ export default function AndroidOngoingNotificationTestingScreen() {
       </Card>
 
       <Card>
+        <Card.Title>Picture And Lines</Card.Title>
+        <Card.Text>
+          Picture When Collapsed and Picture Description are read on API 31+; on older devices the picture still posts,
+          without those two options.
+        </Card.Text>
+        <Card.Text>
+          A picture is downscaled to 1024 px on the long edge, and any icon to 256 px, before posting.
+        </Card.Text>
+        <Card.Text>Inbox posts six lines. A seventh is rejected while the payload is rendered.</Card.Text>
+        <Card.Text>
+          Neither layout is promoted to a Live Update on Android 16, even with Request Promoted Ongoing on.
+        </Card.Text>
+      </Card>
+
+      <Card>
         <Card.Title>Runtime Capabilities</Card.Title>
         <Card.Text>{`API ${capabilities.apiLevel} • notifications ${
           capabilities.notificationsEnabled ? 'enabled' : 'disabled'
@@ -449,6 +523,18 @@ export default function AndroidOngoingNotificationTestingScreen() {
               title="Big Text"
               variant={style === 'bigText' ? 'primary' : 'secondary'}
               onPress={() => setStyle('bigText')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Big Picture"
+              variant={style === 'bigPicture' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('bigPicture')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Inbox"
+              variant={style === 'inbox' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('inbox')}
               style={styles.smButton}
             />
           </View>
@@ -567,100 +653,126 @@ export default function AndroidOngoingNotificationTestingScreen() {
                 multiline
               />
             </View>
-            <View style={styles.column}>
-              <Text style={styles.label}>Action Buttons</Text>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Title</Text>
-                <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionDeepLinkUrl}
-                  onChangeText={setPrimaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Icon</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionIcon}
-                  onChangeText={setPrimaryActionIcon}
-                  autoCapitalize="none"
-                  placeholder="assetName"
-                  placeholderTextColor="#6B7280"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Title</Text>
-                <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={secondaryActionDeepLinkUrl}
-                  onChangeText={setSecondaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
           </>
-        ) : (
+        ) : null}
+
+        {style === 'bigText' ? (
+          <View style={styles.column}>
+            <Text style={styles.label}>Big Text</Text>
+            <TextInput
+              style={[styles.input, styles.multilineInput]}
+              value={bigText}
+              onChangeText={setBigText}
+              multiline
+            />
+          </View>
+        ) : null}
+
+        {style === 'bigPicture' || style === 'inbox' ? (
+          <View style={styles.row}>
+            <Text style={styles.label}>Summary Text</Text>
+            <TextInput style={styles.input} value={summaryText} onChangeText={setSummaryText} />
+          </View>
+        ) : null}
+
+        {style === 'bigPicture' ? (
           <>
-            <View style={styles.column}>
-              <Text style={styles.label}>Big Text</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>Picture</Text>
               <TextInput
-                style={[styles.input, styles.multilineInput]}
-                value={bigText}
-                onChangeText={setBigText}
-                multiline
+                style={styles.input}
+                value={picture}
+                onChangeText={setPicture}
+                placeholder="assetName"
+                placeholderTextColor="#6B7280"
               />
             </View>
-            <View style={styles.column}>
-              <Text style={styles.label}>Action Buttons</Text>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Title</Text>
-                <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionDeepLinkUrl}
-                  onChangeText={setPrimaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Icon</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionIcon}
-                  onChangeText={setPrimaryActionIcon}
-                  autoCapitalize="none"
-                  placeholder="assetName"
-                  placeholderTextColor="#6B7280"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Title</Text>
-                <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={secondaryActionDeepLinkUrl}
-                  onChangeText={setSecondaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Picture Description</Text>
+              <TextInput
+                style={styles.input}
+                value={pictureContentDescription}
+                onChangeText={setPictureContentDescription}
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Big Large Icon</Text>
+              <TextInput
+                style={styles.input}
+                value={bigLargeIcon}
+                onChangeText={setBigLargeIcon}
+                placeholder="assetName"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Picture When Collapsed</Text>
+              <Button
+                title={showPictureWhenCollapsed ? 'ON' : 'OFF'}
+                variant={showPictureWhenCollapsed ? 'primary' : 'secondary'}
+                onPress={() => setShowPictureWhenCollapsed((current) => !current)}
+                style={styles.smButton}
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Hide Thumbnail When Expanded</Text>
+              <Button
+                title={hideLargeIconWhenExpanded ? 'ON' : 'OFF'}
+                variant={hideLargeIconWhenExpanded ? 'primary' : 'secondary'}
+                onPress={() => setHideLargeIconWhenExpanded((current) => !current)}
+                style={styles.smButton}
+              />
             </View>
           </>
-        )}
+        ) : null}
+
+        {style === 'inbox' ? (
+          <View style={styles.column}>
+            <Text style={styles.label}>Lines, one per row</Text>
+            <TextInput style={[styles.input, styles.multilineInput]} value={lines} onChangeText={setLines} multiline />
+          </View>
+        ) : null}
+
+        <View style={styles.column}>
+          <Text style={styles.label}>Action Buttons</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Primary Title</Text>
+            <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Primary Deep Link</Text>
+            <TextInput
+              style={styles.input}
+              value={primaryActionDeepLinkUrl}
+              onChangeText={setPrimaryActionDeepLinkUrl}
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Primary Icon</Text>
+            <TextInput
+              style={styles.input}
+              value={primaryActionIcon}
+              onChangeText={setPrimaryActionIcon}
+              autoCapitalize="none"
+              placeholder="assetName"
+              placeholderTextColor="#6B7280"
+            />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Secondary Title</Text>
+            <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Secondary Deep Link</Text>
+            <TextInput
+              style={styles.input}
+              value={secondaryActionDeepLinkUrl}
+              onChangeText={setSecondaryActionDeepLinkUrl}
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
       </Card>
 
       <Card>
@@ -714,7 +826,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     textAlignVertical: 'top',
   },
-  toggleGroup: { flexDirection: 'row', gap: 8 },
+  toggleGroup: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
   buttonRow: { marginTop: 16 },
   smButton: { paddingVertical: 8, paddingHorizontal: 16 },
   badge: {

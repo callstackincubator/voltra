@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Only used by unit tests: it lets them tell a bundled drawable apart from decoded artwork,
+  which is the difference between handing the framework a resource icon and putting pixels
+  into the notification.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#34D399"
+        android:pathData="M2,2h20v20h-20z" />
+</vector>

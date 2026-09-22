@@ -2,13 +2,15 @@ import type { ComponentType } from 'react'
 
 import type {
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextProps,
+  AndroidOngoingNotificationInboxProps,
   AndroidOngoingNotificationProgressProps,
 } from './types.js'
 
 export const ANDROID_ONGOING_NOTIFICATION_COMPONENT_TAG = Symbol.for('VOLTRA_ANDROID_ONGOING_NOTIFICATION_COMPONENT')
 
-type AndroidOngoingNotificationComponentKind = 'progress' | 'bigText' | 'action'
+type AndroidOngoingNotificationComponentKind = 'progress' | 'bigText' | 'bigPicture' | 'inbox' | 'action'
 
 type AndroidOngoingNotificationComponent<TProps extends Record<string, unknown>> = ComponentType<TProps> & {
   displayName: string
@@ -37,6 +39,16 @@ export const BigText = createAndroidOngoingNotificationComponent<AndroidOngoingN
   'bigText'
 )
 
+export const BigPicture = createAndroidOngoingNotificationComponent<AndroidOngoingNotificationBigPictureProps>(
+  'AndroidOngoingNotification.BigPicture',
+  'bigPicture'
+)
+
+export const Inbox = createAndroidOngoingNotificationComponent<AndroidOngoingNotificationInboxProps>(
+  'AndroidOngoingNotification.Inbox',
+  'inbox'
+)
+
 export const Action = createAndroidOngoingNotificationComponent<AndroidOngoingNotificationActionProps>(
   'AndroidOngoingNotification.Action',
   'action'
@@ -45,5 +57,7 @@ export const Action = createAndroidOngoingNotificationComponent<AndroidOngoingNo
 export const AndroidOngoingNotification = {
   Progress,
   BigText,
+  BigPicture,
+  Inbox,
   Action,
 } as const

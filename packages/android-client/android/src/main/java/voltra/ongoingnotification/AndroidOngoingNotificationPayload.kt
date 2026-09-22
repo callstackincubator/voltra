@@ -80,6 +80,44 @@ data class AndroidOngoingNotificationBigTextPayload(
 ) : AndroidOngoingNotificationPayload()
 
 @Serializable
+@SerialName("bigPicture")
+data class AndroidOngoingNotificationBigPicturePayload(
+    override val v: Int,
+    override val title: String? = null,
+    override val subText: String? = null,
+    val text: String? = null,
+    val picture: AndroidOngoingNotificationImageSource,
+    val summaryText: String? = null,
+    val pictureContentDescription: String? = null,
+    val showPictureWhenCollapsed: Boolean? = null,
+    override val largeIcon: AndroidOngoingNotificationImageSource? = null,
+    val bigLargeIcon: AndroidOngoingNotificationImageSource? = null,
+    val hideLargeIconWhenExpanded: Boolean? = null,
+    override val shortCriticalText: String? = null,
+    @SerialName("when")
+    override val whenEpochMillis: Long? = null,
+    override val chronometer: Boolean? = null,
+    override val actions: List<AndroidOngoingNotificationActionPayload>? = null,
+) : AndroidOngoingNotificationPayload()
+
+@Serializable
+@SerialName("inbox")
+data class AndroidOngoingNotificationInboxPayload(
+    override val v: Int,
+    override val title: String? = null,
+    override val subText: String? = null,
+    val text: String,
+    val lines: List<String>,
+    val summaryText: String? = null,
+    override val shortCriticalText: String? = null,
+    @SerialName("when")
+    override val whenEpochMillis: Long? = null,
+    override val chronometer: Boolean? = null,
+    override val largeIcon: AndroidOngoingNotificationImageSource? = null,
+    override val actions: List<AndroidOngoingNotificationActionPayload>? = null,
+) : AndroidOngoingNotificationPayload()
+
+@Serializable
 data class AndroidOngoingNotificationRecord(
     val notificationId: String,
     val systemNotificationId: Int,

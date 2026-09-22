@@ -6,9 +6,13 @@ export {
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationBigPicturePayload,
+  AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationContent,
+  AndroidOngoingNotificationInboxPayload,
+  AndroidOngoingNotificationInboxProps,
   AndroidOngoingNotificationPayload,
   AndroidOngoingNotificationProgressPayload,
   AndroidOngoingNotificationProgressPoint,

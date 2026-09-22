@@ -6,9 +6,13 @@ import { ANDROID_ONGOING_NOTIFICATION_COMPONENT_TAG } from './components.js'
 import type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationBigPicturePayload,
+  AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationContent,
+  AndroidOngoingNotificationInboxPayload,
+  AndroidOngoingNotificationInboxProps,
   AndroidOngoingNotificationPayload,
   AndroidOngoingNotificationProgressPayload,
   AndroidOngoingNotificationProgressPoint,
@@ -19,6 +23,19 @@ import type {
 void getAndroidComponentId
 
 const PAYLOAD_VERSION = 1 as const
+
+/**
+ * InboxStyle only renders six lines, so more than that is rejected at render time instead of being
+ * silently truncated. Kept in sync with MAX_INBOX_LINES in the Android client.
+ */
+const MAX_INBOX_LINES = 6
+
+/**
+ * Push providers cap data payloads at a few kilobytes (FCM allows 4096 bytes), so an inline base64
+ * picture can never travel through a push message. Warns instead of failing: local starts and
+ * self-hosted transports can legitimately carry more.
+ */
+const MAX_INLINE_PICTURE_BYTES = 256 * 1024
 
 const flattenChildren = (node: ReactNode): ReactNode[] => {
   if (node === null || node === undefined || typeof node === 'boolean') {
@@ -123,6 +140,16 @@ const assertOptionalImageSource = (value: unknown, propName: string): ImageSourc
   return value
 }
 
+const assertRequiredImageSource = (value: unknown, propName: string): ImageSource => {
+  const source = assertOptionalImageSource(value, propName)
+
+  if (source === undefined) {
+    throw new Error(`[Voltra] [Android] Ongoing notification prop "${propName}" is required.`)
+  }
+
+  return source
+}
+
 const assertBoolean = (value: unknown, propName: string): boolean | undefined => {
   if (value === undefined) {
     return undefined
@@ -209,6 +236,34 @@ const normalizeProgressPoints = (value: unknown): AndroidOngoingNotificationProg
       color: assertOptionalColorString((point as { color?: unknown }).color, `points[${index}].color`),
     }
   })
+}
+
+const normalizeInboxLines = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "lines" must be an array of non-empty strings.')
+  }
+
+  if (value.length === 0) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "lines" must contain at least one line.')
+  }
+
+  if (value.length > MAX_INBOX_LINES) {
+    throw new Error(
+      `[Voltra] [Android] Ongoing notification prop "lines" must contain at most ${MAX_INBOX_LINES} lines, got ${value.length}.`
+    )
+  }
+
+  return value.map((line, index) => assertString(line, `lines[${index}]`))
+}
+
+const warnInlinePicture = (picture: ImageSource): void => {
+  const base64 = 'base64' in picture ? picture.base64 : undefined
+
+  if (base64 !== undefined && base64.length > MAX_INLINE_PICTURE_BYTES) {
+    console.warn(
+      `[Voltra] [Android] Ongoing notification prop "picture" carries ${base64.length} bytes of base64, which exceeds ${MAX_INLINE_PICTURE_BYTES} bytes. Inline pictures cannot travel through push messages: preload the image and reference it with assetName instead.`
+    )
+  }
 }
 
 const normalizeWhen = (value: unknown): number | undefined => {
@@ -332,6 +387,54 @@ const normalizeBigTextPayload = (
   }
 }
 
+const normalizeBigPicturePayload = (
+  props: AndroidOngoingNotificationBigPictureProps
+): AndroidOngoingNotificationBigPicturePayload => {
+  const picture = assertRequiredImageSource(props.picture, 'picture')
+  warnInlinePicture(picture)
+
+  return {
+    v: PAYLOAD_VERSION,
+    kind: 'bigPicture',
+    title: assertOptionalNonEmptyString(props.title, 'title'),
+    subText: assertOptionalString(props.subText, 'subText'),
+    text: assertOptionalString(props.text, 'text'),
+    picture,
+    summaryText: assertOptionalNonEmptyString(props.summaryText, 'summaryText'),
+    pictureContentDescription: assertOptionalNonEmptyString(
+      props.pictureContentDescription,
+      'pictureContentDescription'
+    ),
+    showPictureWhenCollapsed: assertBoolean(props.showPictureWhenCollapsed, 'showPictureWhenCollapsed'),
+    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
+    bigLargeIcon: assertOptionalImageSource(props.bigLargeIcon, 'bigLargeIcon'),
+    hideLargeIconWhenExpanded: assertBoolean(props.hideLargeIconWhenExpanded, 'hideLargeIconWhenExpanded'),
+    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
+    when: normalizeWhen(props.when),
+    chronometer: assertBoolean(props.chronometer, 'chronometer'),
+    actions: normalizeActions(props.children),
+  }
+}
+
+const normalizeInboxPayload = (props: AndroidOngoingNotificationInboxProps): AndroidOngoingNotificationInboxPayload => {
+  const lines = normalizeInboxLines(props.lines)
+
+  return {
+    v: PAYLOAD_VERSION,
+    kind: 'inbox',
+    title: assertOptionalNonEmptyString(props.title, 'title'),
+    subText: assertOptionalString(props.subText, 'subText'),
+    text: props.text === undefined ? lines[0] : assertString(props.text, 'text'),
+    lines,
+    summaryText: assertOptionalNonEmptyString(props.summaryText, 'summaryText'),
+    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
+    when: normalizeWhen(props.when),
+    chronometer: assertBoolean(props.chronometer, 'chronometer'),
+    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
+    actions: normalizeActions(props.children),
+  }
+}
+
 export const renderAndroidOngoingNotificationPayloadToJson = (
   content: ReactNode
 ): AndroidOngoingNotificationPayload => {
@@ -346,8 +449,16 @@ export const renderAndroidOngoingNotificationPayloadToJson = (
     return normalizeBigTextPayload(element.props as AndroidOngoingNotificationBigTextProps)
   }
 
+  if (kind === 'bigPicture') {
+    return normalizeBigPicturePayload(element.props as AndroidOngoingNotificationBigPictureProps)
+  }
+
+  if (kind === 'inbox') {
+    return normalizeInboxPayload(element.props as AndroidOngoingNotificationInboxProps)
+  }
+
   throw new Error(
-    '[Voltra] [Android] Ongoing notification content must use AndroidOngoingNotification.Progress or AndroidOngoingNotification.BigText.'
+    '[Voltra] [Android] Ongoing notification content must use AndroidOngoingNotification.Progress, AndroidOngoingNotification.BigText, AndroidOngoingNotification.BigPicture, or AndroidOngoingNotification.Inbox.'
   )
 }
 
