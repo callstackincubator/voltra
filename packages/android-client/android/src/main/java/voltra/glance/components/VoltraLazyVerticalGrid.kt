@@ -6,6 +6,8 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.lazy.GridCells
 import androidx.glance.appwidget.lazy.LazyVerticalGrid
+import androidx.glance.layout.Box
+import androidx.glance.layout.padding
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderNode
@@ -19,7 +21,7 @@ fun VoltraLazyVerticalGrid(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
+    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
             modifier ?: baseModifier,
@@ -29,16 +31,20 @@ fun VoltraLazyVerticalGrid(
             element.t,
             element.hashCode(),
         )
+    val gap = compositeStyle?.layout?.gap
+    val gridCells = extractGridCells(element.p)
+    // Adaptive grids have no column count we can see here; see LayoutGaps.gridCellPadding.
+    val columns = (gridCells as? GridCells.Fixed)?.count
 
     LazyVerticalGrid(
-        gridCells = extractGridCells(element.p),
+        gridCells = gridCells,
         modifier = finalModifier,
         horizontalAlignment = extractHorizontalAlignment(element.p),
     ) {
         when (val children = element.c) {
             is VoltraNode.Array -> {
                 items(children.elements.size) { index ->
-                    RenderNode(children.elements[index])
+                    RenderGridCell(children.elements[index], LayoutGaps.gridCellPadding(index, columns, gap))
                 }
             }
 
@@ -46,19 +52,41 @@ fun VoltraLazyVerticalGrid(
                 val resolved = context.sharedElements?.getOrNull(children.ref)
                 if (resolved is VoltraNode.Array) {
                     items(resolved.elements.size) { index ->
-                        RenderNode(resolved.elements[index])
+                        RenderGridCell(resolved.elements[index], LayoutGaps.gridCellPadding(index, columns, gap))
                     }
                 } else {
-                    item { RenderNode(resolved) }
+                    item { RenderGridCell(resolved, LayoutGaps.gridCellPadding(0, columns, gap)) }
                 }
             }
 
             null -> { /* Empty grid */ }
 
             else -> {
-                item { RenderNode(children) }
+                item { RenderGridCell(children, LayoutGaps.gridCellPadding(0, columns, gap)) }
             }
         }
+    }
+}
+
+@Composable
+private fun RenderGridCell(
+    node: VoltraNode?,
+    cellPadding: LayoutGaps.CellPadding?,
+) {
+    if (cellPadding != null) {
+        Box(
+            modifier =
+                GlanceModifier.padding(
+                    start = cellPadding.start,
+                    top = cellPadding.top,
+                    end = cellPadding.end,
+                    bottom = cellPadding.bottom,
+                ),
+        ) {
+            RenderNode(node)
+        }
+    } else {
+        RenderNode(node)
     }
 }
 

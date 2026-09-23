@@ -15,6 +15,8 @@ A vertical container that arranges its children in a column.
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center-vertically"`, `"bottom"`.
 
+Supports the `gap` style to space children apart vertically.
+
 ---
 
 ### Row
@@ -29,6 +31,8 @@ A horizontal container that arranges its children in a row.
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center-vertically"`, `"bottom"`.
+
+Supports the `gap` style to space children apart horizontally.
 
 ---
 
@@ -85,6 +89,8 @@ A scrollable vertical list that only renders visible items.
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 
+Supports the `gap` style to space items apart vertically.
+
 ---
 
 ### LazyVerticalGrid
@@ -97,3 +103,5 @@ A scrollable grid of items.
 - `minSize` (number, optional): Minimum size (in dp) for items in adaptive grid mode.
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center"`, `"bottom"`.
+
+Supports the `gap` style to space cells apart horizontally and vertically. With a fixed number of `columns`, the gap goes only between cells. With adaptive columns, the grid's outer edge also gets half the gap.
