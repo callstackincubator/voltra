@@ -1,0 +1,256 @@
+[
+  {
+    "url": "myapp://portfolio",
+    "$type": "widgetURL"
+  },
+  {
+    "color": "#101828",
+    "$type": "containerBackground"
+  },
+  {
+    "accentable": true,
+    "$type": "widgetAccentable"
+  },
+  {
+    "accentable": false,
+    "$type": "widgetAccentable"
+  },
+  {
+    "sensitive": true,
+    "$type": "privacySensitive"
+  },
+  {
+    "sensitive": false,
+    "$type": "privacySensitive"
+  },
+  {
+    "reason": "placeholder",
+    "$type": "redacted"
+  },
+  {
+    "reason": "privacy",
+    "$type": "redacted"
+  },
+  {
+    "reason": "invalidated",
+    "$type": "redacted"
+  },
+  {
+    "$type": "unredacted"
+  },
+  {
+    "invalidatable": true,
+    "$type": "invalidatableContent"
+  },
+  {
+    "color": "rgba(16, 24, 40, 0.8)",
+    "$type": "activityBackgroundTint"
+  },
+  {
+    "color": null,
+    "$type": "activityBackgroundTint"
+  },
+  {
+    "color": "#FFFFFF",
+    "$type": "activitySystemActionForegroundColor"
+  },
+  {
+    "transition": "identity",
+    "$type": "contentTransition"
+  },
+  {
+    "transition": "opacity",
+    "$type": "contentTransition"
+  },
+  {
+    "transition": "interpolate",
+    "$type": "contentTransition"
+  },
+  {
+    "transition": "numericText",
+    "countsDown": true,
+    "$type": "contentTransition"
+  },
+  {
+    "transition": "symbolEffect",
+    "$type": "contentTransition"
+  },
+  {
+    "transition": "identity",
+    "$type": "transition"
+  },
+  {
+    "transition": "opacity",
+    "$type": "transition"
+  },
+  {
+    "transition": "scale",
+    "$type": "transition"
+  },
+  {
+    "transition": "slide",
+    "$type": "transition"
+  },
+  {
+    "transition": "push",
+    "edge": "top",
+    "$type": "transition"
+  },
+  {
+    "transition": "move",
+    "edge": "leading",
+    "$type": "transition"
+  },
+  {
+    "curve": "default",
+    "value": 42,
+    "$type": "animation"
+  },
+  {
+    "curve": "easeInOut",
+    "value": "price",
+    "duration": 0.5,
+    "$type": "animation"
+  },
+  {
+    "curve": "bouncy",
+    "value": true,
+    "$type": "animation"
+  },
+  {
+    "effect": "pulse",
+    "$type": "symbolEffect"
+  },
+  {
+    "effect": "variableColor",
+    "$type": "symbolEffect"
+  },
+  {
+    "effect": "breathe",
+    "$type": "symbolEffect"
+  },
+  {
+    "effect": "rotate",
+    "$type": "symbolEffect"
+  },
+  {
+    "effect": "wiggle",
+    "$type": "symbolEffect"
+  },
+  {
+    "shape": "circle",
+    "$type": "clipShape"
+  },
+  {
+    "shape": "capsule",
+    "cornerStyle": "continuous",
+    "$type": "clipShape"
+  },
+  {
+    "shape": "roundedRectangle",
+    "cornerRadius": 12,
+    "cornerStyle": "continuous",
+    "$type": "clipShape"
+  },
+  {
+    "shape": "rectangle",
+    "$type": "clipShape"
+  },
+  {
+    "shape": "ellipse",
+    "$type": "clipShape"
+  },
+  {
+    "radius": 4,
+    "$type": "blur"
+  },
+  {
+    "radius": 8,
+    "opaque": true,
+    "$type": "blur"
+  },
+  {
+    "amount": 1,
+    "$type": "grayscale"
+  },
+  {
+    "amount": 0.5,
+    "$type": "saturation"
+  },
+  {
+    "amount": 0.1,
+    "$type": "brightness"
+  },
+  {
+    "amount": 1.2,
+    "$type": "contrast"
+  },
+  {
+    "mode": "multiply",
+    "$type": "blendMode"
+  },
+  {
+    "mode": "plusLighter",
+    "$type": "blendMode"
+  },
+  {
+    "degrees": -15,
+    "$type": "rotationEffect"
+  },
+  {
+    "x": 0.9,
+    "y": 0.9,
+    "$type": "scaleEffect"
+  },
+  {
+    "x": 1.2,
+    "$type": "scaleEffect"
+  },
+  {
+    "x": 4,
+    "y": -2,
+    "$type": "offset"
+  },
+  {
+    "$type": "fixedSize"
+  },
+  {
+    "horizontal": false,
+    "$type": "fixedSize"
+  },
+  {
+    "priority": 1,
+    "$type": "layoutPriority"
+  },
+  {
+    "axes": "horizontal",
+    "$type": "containerRelativeFrame"
+  },
+  {
+    "axes": "both",
+    "$type": "containerRelativeFrame"
+  },
+  {
+    "size": "xxLarge",
+    "$type": "dynamicTypeSize"
+  },
+  {
+    "size": "accessibility2",
+    "$type": "dynamicTypeSize"
+  },
+  {
+    "factor": 0.6,
+    "$type": "minimumScaleFactor"
+  },
+  {
+    "mode": "middle",
+    "$type": "truncationMode"
+  },
+  {
+    "alignment": "center",
+    "$type": "multilineTextAlignment"
+  },
+  {
+    "$type": "monospacedDigit"
+  }
+]

@@ -42,12 +42,25 @@ export default function ClientRenderedDemoWidget(
   const valueStyle = { fontSize: 9, color: '#94A3B8' } as const
 
   return (
-    <Voltra.VStack alignment="leading" spacing={3} style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}>
+    <Voltra.VStack
+      alignment="leading"
+      spacing={3}
+      style={{ flex: 1, padding: 12 }}
+      modifiers={[Voltra.modifiers.containerBackground('#000000'), Voltra.modifiers.widgetURL('voltra://ios/widgets')]}
+    >
       <Voltra.Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Client-rendered demo</Voltra.Text>
 
-      <Voltra.Text style={{ fontSize: 14, fontWeight: '600', color: '#34D399' }}>{hotReloadMarker}</Voltra.Text>
+      <Voltra.Text
+        style={{ fontSize: 14, fontWeight: '600', color: '#000000', backgroundColor: '#34D399', padding: 2 }}
+        modifiers={[Voltra.modifiers.clipShape('capsule'), Voltra.modifiers.privacySensitive()]}
+      >
+        {hotReloadMarker}
+      </Voltra.Text>
 
-      <Voltra.Text style={{ fontSize: 10, color: '#34D399' }}>
+      <Voltra.Text
+        style={{ fontSize: 10, color: '#34D399' }}
+        modifiers={[Voltra.modifiers.contentTransition('numericText'), Voltra.modifiers.monospacedDigit()]}
+      >
         {headline} · {unreadCount} unread
       </Voltra.Text>
 

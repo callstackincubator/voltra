@@ -75,6 +75,8 @@ export default function OrderFinished(
 
 `LiveActivityEnvironment` provides `date`, `colorScheme`, `locale`, `widgetRenderingMode`, `build`, `isStale`, and, for applicable iOS 18+ activity families, `activityFamily`. It deliberately does not expose Home Screen widget fields such as `widgetFamily`, `showsWidgetContainerBackground`, or `configuration`.
 
+To use SwiftUI modifiers that `style` does not cover, such as `contentTransition` or `privacySensitive`, see [Native modifiers](./native-modifiers.md).
+
 Props are opaque in V1. They must be a complete JSON-compatible object (strings, finite numbers, booleans, `null`, arrays, and plain nested objects). Each update replaces the whole record; it does not merge it. Voltra does not generate definition-specific prop types or validate that the producer supplied the props this entry expects.
 
 ## Start and update locally

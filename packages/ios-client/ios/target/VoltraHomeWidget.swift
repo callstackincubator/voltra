@@ -298,7 +298,9 @@ public struct VoltraHomeWidgetView: View {
           )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .widgetURL(resolveDeepLinkURL(entry))
+        .voltraIfLet(
+          VoltraRootDefaults.widgetURL(configured: configuredDeepLinkURL(entry), fallback: { defaultDeepLinkURL(entry) }, root: root)
+        ) { view, url in view.widgetURL(url) }
 
         if showRefreshButton {
           content.overlay(alignment: .topTrailing) {
@@ -311,7 +313,7 @@ public struct VoltraHomeWidgetView: View {
         placeholderView(widgetId: entry.widgetId)
       }
     }
-    .disableWidgetMarginsIfAvailable()
+    .voltraDefaultContainerBackground(root: entry.rootNode)
   }
 
   private func mapWidgetRenderingMode(_ mode: WidgetRenderingMode) -> VoltraWidgetRenderingMode {
@@ -442,18 +444,8 @@ private func reconstructWithSharedData(content: Any, root: [String: Any]) -> Dat
 
 // MARK: - Deep link helpers
 
-private extension View {
-  @ViewBuilder
-  func disableWidgetMarginsIfAvailable() -> some View {
-    if #available(iOSApplicationExtension 17.0, *) {
-      containerBackground(.clear, for: .widget)
-    } else {
-      self
-    }
-  }
-}
-
-private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
+/// The deep link configured for the widget: the timeline entry's, else the stored static one.
+private func configuredDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
   // Prefer the timeline entry's deep link URL if available
   if let entryUrl = entry.deepLinkUrl, !entryUrl.isEmpty {
     if entryUrl.contains("://"), let url = URL(string: entryUrl) {
@@ -476,7 +468,11 @@ private func resolveDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
     }
   }
 
-  // Default deep link with widget info
+  return nil
+}
+
+/// The synthetic deep link used when nothing is configured.
+private func defaultDeepLinkURL(_ entry: VoltraHomeWidgetEntry) -> URL? {
   guard let scheme = VoltraDeepLinkResolver.deepLinkScheme() else { return nil }
 
   var tag = "unknown"

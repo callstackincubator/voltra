@@ -29,7 +29,7 @@ public struct VoltraWidget: Widget {
   private func adaptiveConfig() -> some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
       adaptiveLocksScreenView(context: context)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
         .voltraIfLet(context.state.activityBackgroundTint) { view, tint in
           let color = JSColorParser.parse(tint)
           view.activityBackgroundTint(color)
@@ -45,7 +45,7 @@ public struct VoltraWidget: Widget {
   private func defaultConfig() -> some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
       Voltra(root: rootNode(for: .lockScreen, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
         .voltraIfLet(context.state.activityBackgroundTint) { view, tint in
           let color = JSColorParser.parse(tint)
           view.activityBackgroundTint(color)
@@ -68,29 +68,29 @@ public struct VoltraWidget: Widget {
     let dynamicIsland = DynamicIsland {
       DynamicIslandExpandedRegion(.leading) {
         Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
       }
       DynamicIslandExpandedRegion(.trailing) {
         Voltra(root: rootNode(for: .islandExpandedTrailing, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
       }
       DynamicIslandExpandedRegion(.center) {
         Voltra(root: rootNode(for: .islandExpandedCenter, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
       }
       DynamicIslandExpandedRegion(.bottom) {
         Voltra(root: rootNode(for: .islandExpandedBottom, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
       }
     } compactLeading: {
       Voltra(root: rootNode(for: .islandCompactLeading, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
     } compactTrailing: {
       Voltra(root: rootNode(for: .islandCompactTrailing, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
     } minimal: {
       Voltra(root: rootNode(for: .islandMinimal, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraIfLet(VoltraDeepLinkResolver.resolve(context.attributes)) { view, url in view.widgetURL(url) }
     }
 
     // Apply keylineTint if specified
