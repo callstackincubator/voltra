@@ -422,8 +422,13 @@ jobs:
         env:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
-          USE_FRAMEWORKS: ${{ matrix.linkage == 'static-frameworks' && 'static' || '' }}
-        run: pod install
+        # The Podfile treats an exported USE_FRAMEWORKS as a linkage value and
+        # rejects an empty string, so only export it for the frameworks leg.
+        run: |
+          if [ "${{ matrix.linkage }}" = "static-frameworks" ]; then
+            export USE_FRAMEWORKS=static
+          fi
+          pod install
 
       # CocoaPods writes a per-user scheme for every development pod, and the
       # `Voltra` pod's scheme shadows the example app's `Voltra` scheme under
