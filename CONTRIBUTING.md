@@ -50,6 +50,13 @@ Voltra's Swift sources for the iOS React Native client live under `@use-voltra/i
 - **`Voltra.podspec`**: React Native Turbo Module + Fabric view + shared Swift UI (`ios/app/`, `ios/ui/`, `ios/shared/`).
 - **`VoltraWidget.podspec`**: Widget extension Swift (`ios/ui/`, `ios/shared/`, `ios/target/`).
 
+The pods compile under distinct Swift module names, `VoltraRuntime` and
+`VoltraWidgetRuntime`. Keep them distinct: under `use_frameworks!` CocoaPods
+names each framework and its App Intents metadata after the module, so a shared
+name makes both pods emit the same build product and Xcode fails with "Multiple
+commands produce … Metadata.appintents". Generated Swift that compiles in both
+targets imports the module conditionally with `#if canImport(...)`.
+
 ```ruby
 # From packages/ios-client/Voltra.podspec (paths relative to the podspec)
 s.source_files = [

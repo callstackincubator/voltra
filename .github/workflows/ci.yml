@@ -374,3 +374,96 @@ jobs:
               fi
             done <<< "$alignments"
           done
+
+  ios-example-build:
+    name: '[iOS] Example app build (${{ matrix.linkage }})'
+    runs-on: macos-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # Static libraries are the Expo default; static frameworks is what
+        # `ios.useFrameworks: "static"` (common on EAS, e.g. with Firebase)
+        # produces. The two layouts resolve pod build products differently, so
+        # a podspec that builds in one can still break the other (the 2.3.0
+        # duplicated `module_name` incident only surfaced under frameworks).
+        linkage: [static-libraries, static-frameworks]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.14.0'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The config plugins run from build/**, so the monorepo must be built
+      # before `expo prebuild` can generate the native project.
+      - name: Build monorepo
+        run: pnpm run build:all
+
+      - name: Generate iOS native project
+        working-directory: example
+        run: CI=1 pnpm exec expo prebuild --platform ios --no-install
+
+      - name: Install CocoaPods dependencies
+        working-directory: example/ios
+        env:
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+          USE_FRAMEWORKS: ${{ matrix.linkage == 'static-frameworks' && 'static' || '' }}
+        run: pod install
+
+      # CocoaPods writes a per-user scheme for every development pod, and the
+      # `Voltra` pod's scheme shadows the example app's `Voltra` scheme under
+      # frameworks linkage, so xcodebuild would silently build only the pod.
+      - name: Drop CocoaPods user schemes
+        working-directory: example/ios
+        run: rm -rf Pods/Pods.xcodeproj/xcuserdata
+
+      # Debug skips Voltra's release widget bundling and Metro is not needed,
+      # so this compiles the app, the Live Activity extension, and both
+      # Voltra pods exactly as a consumer's `expo run:ios` would.
+      - name: Build example app for iOS Simulator
+        working-directory: example/ios
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace Voltra.xcworkspace \
+            -scheme Voltra \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee xcodebuild.log
+
+      # Guard against the build resolving to something other than the app:
+      # both Voltra pods only get compiled when the app and its Live Activity
+      # extension are in the build graph.
+      - name: Verify app and extension were built
+        working-directory: example/ios
+        run: |
+          app=build/DerivedData/Build/Products/Debug-iphonesimulator/Voltra.app
+          test -d "$app" || { echo "::error::$app was not built"; exit 1; }
+          test -d "$app/PlugIns/VoltraLiveActivity.appex" || { echo "::error::Live Activity extension missing from $app"; exit 1; }
+
+      - name: Upload xcodebuild log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-${{ matrix.linkage }}.log
+          path: example/ios/xcodebuild.log
