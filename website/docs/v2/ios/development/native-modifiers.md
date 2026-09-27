@@ -37,7 +37,7 @@ Modifiers wrap the finished component, including everything `style` does, in lis
 
 - `clipShape`, `blur` and the color adjustments apply to the whole component, background included.
 - Geometry modifiers such as `rotationEffect`, `scaleEffect` and `offset` add to a `style.transform`, they do not replace it.
-- Text modifiers set a value for the text inside, and SwiftUI uses the setting closest to the text. A value the component sets itself wins over the modifier: `style.textAlign` or the `multilineTextAlignment` prop over a `multilineTextAlignment` modifier, and `numberOfLines` over a line limit.
+- Text modifiers set a value for the text inside, and SwiftUI uses the setting closest to the text. A value the component sets itself wins over the modifier, such as `style.textAlign` or the `multilineTextAlignment` prop over a `multilineTextAlignment` modifier.
 - To apply a modifier between two style steps, such as clipping before a shadow, nest a `Voltra.View` with the inner style and put the modifier on it.
 
 Text modifiers such as `minimumScaleFactor`, `truncationMode` and `monospacedDigit` work on any component. On a container they apply to every `Text` inside it that does not set the same thing itself.

@@ -82,7 +82,7 @@ Android client depends on), and Apple's WidgetKit and SwiftUI documentation.
   called" cannot tell Dynamic from payload; an explicit option can.
 - On iOS every component funnels through one call, `.applyStyle(...)` in
   `ui/Style/View+applyStyle.swift`, and every component is dispatched from
-  one `switch` in `VoltraElementView` (`shared/VoltraNode.swift`). On
+  one `switch` in `VoltraElementView` (`ui/Extensions/VoltraNode+View.swift`). On
   Android every renderer calls `resolveAndApplyStyle` in
   `glance/StyleUtils.kt`, which builds the `GlanceModifier` chain, and
   `applyClickableIfNeeded` appends `clickable` afterwards.
@@ -202,9 +202,8 @@ its own catalog.
 
 There is no distinction between view and text modifiers in the type
 system, and none is needed. On iOS every text-related modifier in the
-catalog (`lineLimit`, `truncationMode`, `multilineTextAlignment`,
-`minimumScaleFactor`, `monospacedDigit`, `bold`, `italic`, `kerning`) has a
-`View` overload since iOS 16, and the pod's minimum is iOS 16.4. Modifiers
+catalog (`truncationMode`, `multilineTextAlignment`, `minimumScaleFactor`,
+`monospacedDigit`) has a `View` overload since iOS 16, and the pod's minimum is iOS 16.4. Modifiers
 newer than that (iOS 17 and 18) are gated with `#available` and leave the
 component unchanged on older systems. Applied to a
 container, these set the environment for every `Text` below it, which is
@@ -367,7 +366,7 @@ without the other fails CI. The wire prop name
 - `View.applyNativeModifiers(_:)`: a `reduce` over the decoded list, skipped
   entirely for an empty list so components without modifiers pay nothing.
 
-The single insertion point is `VoltraElementView` in `shared/VoltraNode.swift`:
+The single insertion point is `VoltraElementView` in `ui/Extensions/VoltraNode+View.swift`:
 the existing `switch` moves into a `@ViewBuilder` property and `body` returns
 it with `.applyNativeModifiers(element.nativeModifiers)`. No view under
 `ui/Views` changes, and `applyStyle` keeps its signature.
@@ -394,7 +393,8 @@ the same absolute URLs and paths as `deepLinkUrl`. The same rule covers `contain
 home widget root sets `containerBackground(.clear, for: .widget)` only when
 the tree carries no `containerBackground` modifier. Both checks look through
 children and through nodes stored in component props, such as a Gauge
-label, and count only descriptors that decode. `VoltraElement` parses those
+label, and count only descriptors that decode. The home widget finds both in
+one walk per render through `VoltraRootModifiers`. `VoltraElement` parses those
 prop nodes once in `init`, and `componentProp(_:)` returns the stored node. They live in
 `VoltraRootDefaults.swift` under `ui/Modifiers`, so host code never names a
 modifier. An `activityBackgroundTint` passed when starting or updating a Live
@@ -441,7 +441,15 @@ only source of a click. Children of `Row` and `Column` get modifiers through
 the scoped weight path in `LayoutRenderers.kt`, which calls
 `resolveAndApplyStyle` once and passes the result to the child renderer;
 renderers build their own modifiers only when none is passed in, and the
-weight lookup reads style alone through `resolveElementStyle`.
+weight lookup reads style alone through `resolveElementStyle`. Renderers that
+size themselves (`Chart`, `ArcProgressIndicator`, and `Text` drawn as a
+bitmap) read the size the native modifiers set through `nativeModifierSize()`
+and fall back to style only on axes no modifier sets, so the width and height
+they append agree with the modifiers; a `wrapContent…` modifier on them keeps
+their default size. Renderers that pass a description to a Glance component
+that sets its own semantics after the modifier (`Chart`, bitmap `Text`,
+`Image`, the icon buttons, the arc's image) pass the `semantics` modifier's
+`contentDescription` when there is one.
 
 The Android catalog is the public `GlanceModifier` surface minus what
 `style` already covers or what cannot be typed on the child: `padding`,
@@ -466,6 +474,7 @@ the whole tree and provided once at the Glance render root, names the one
 element allowed to carry it: the first in tree order that is rendered only
 once (a shared element referenced twice would mark two views), and none when
 the tree contains a Scaffold, because Glance's `Scaffold` marks its own root.
+The render root computes it once per tree with `remember(node, sharedElements)`.
 The owner is matched by value, not identity, so a structurally equal tree
 parsed again, or a prop node resolved again, keeps the marker; the other
 elements log and skip it. The composable

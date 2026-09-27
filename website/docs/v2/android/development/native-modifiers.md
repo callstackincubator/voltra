@@ -41,6 +41,7 @@ Glance applies modifiers after `style`, and it does not care about their order:
 - Where a modifier and a `style` property set the same thing, such as a width or a background, the modifier wins. There are two exceptions:
   - `style.flex` on a child of a `Row` or `Column` replaces the child's `width`, `height`, `size`, `fillMax…` and `wrapContent…` modifiers along the row or column.
   - A `Scaffold` always fills the widget and draws its own background and rounded corners, so size modifiers, `background` and `cornerRadius` on the `Scaffold` itself have no effect. Use its `backgroundColor` prop instead.
+- `Chart`, `ArcProgressIndicator` and `Text` with `renderAsBitmap` size their image from the size modifiers. `wrapContentWidth`, `wrapContentHeight` and `wrapContentSize` on them keep their default size.
 - Padding adds up. `style={{ padding: 8 }}` with `modifiers={[padding(8)]}` gives 16 dp.
 - Using the same modifier twice keeps the last one, except for `padding` and `absolutePadding`, which add up.
 
@@ -57,7 +58,7 @@ Glance applies modifiers after `style`, and it does not care about their order:
 | `cornerRadius(dp)` | Rounds the corners. | 12 |
 | `visibility('visible' \| 'invisible' \| 'gone')` | Shows the component, hides it but keeps its space, or removes it from layout. | 7.0 |
 | `semantics({ contentDescription?, testTag? })` | Sets the text read by accessibility services. `testTag` is only visible to Glance's own test APIs, not to UI tests of the widget on a device. At least one of the two is required. | 7.0 |
-| `appWidgetBackground()` | Marks the widget background so the launcher can animate it when the widget opens your app. Use it once, on the outermost component. If several components set it, only one keeps it: the first one that appears once in the widget, so identical copies of a component never get it. A `Scaffold` marks its own background, so inside a widget with a `Scaffold` the modifier is skipped. | 12 |
+| `appWidgetBackground()` | Marks the widget background so the launcher can animate it when the widget opens your app. Use it once, on the outermost component. If several components set it, only one keeps it: the first one that appears once in the widget, so identical copies of a component never get it. The `fallback` of an `Image` counts only when the `Image` has no `source`. A `Scaffold` marks its own background, so inside a widget with a `Scaffold` the modifier is skipped. | 12 |
 
 For light and dark colors, `background({ day, night })` takes two static color strings; `AndroidDynamicColors` tokens are a type error there. To follow the device's Material You theme instead, pass an `AndroidDynamicColors` token. See [Dynamic Colors](./dynamic-colors.md).
 
