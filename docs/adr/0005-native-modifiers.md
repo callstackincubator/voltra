@@ -378,7 +378,7 @@ configured. Apple leaves more than one `widgetURL` in a widget's hierarchy
 undefined, and for Live Activities it expects one per presentation, with
 `DynamicIsland.widgetURL(_:)` as the default for every region. So the hosts
 apply a configured deep link (a widget's `deepLinkUrl`, or a Live
-Activity's) once per hierarchy: `voltraWidgetURL(configured:root:fallback:)`
+Activity's) once per hierarchy: `voltraWidgetURL(configured:tree:fallback:)`
 on the home widget and on each Lock Screen presentation, including the
 iOS 18 small family that shows two compact regions side by side, and
 `DynamicIsland.widgetURL` for the Dynamic Island, whose regions use
@@ -393,7 +393,9 @@ the same absolute URLs and paths as `deepLinkUrl`. The same rule covers `contain
 home widget root sets `containerBackground(.clear, for: .widget)` only when
 the tree carries no `containerBackground` modifier. Both checks look through
 children and through nodes stored in component props, such as a Gauge
-label, and count only descriptors that decode. The home widget finds both in
+label, and count only descriptors that decode. The `fallback` of an Image
+with a `source` is skipped, because it is drawn only if the source fails to
+load, and a default dropped for it would leave the widget without one. The home widget finds both in
 one walk per render through `VoltraRootModifiers`. `VoltraElement` parses those
 prop nodes once in `init`, and `componentProp(_:)` returns the stored node. They live in
 `VoltraRootDefaults.swift` under `ui/Modifiers`, so host code never names a
@@ -446,10 +448,15 @@ size themselves (`Chart`, `ArcProgressIndicator`, and `Text` drawn as a
 bitmap) read the size the native modifiers set through `nativeModifierSize()`
 and fall back to style only on axes no modifier sets, so the width and height
 they append agree with the modifiers; a `wrapContent…` modifier on them keeps
-their default size. Renderers that pass a description to a Glance component
-that sets its own semantics after the modifier (`Chart`, bitmap `Text`,
-`Image`, the icon buttons, the arc's image) pass the `semantics` modifier's
-`contentDescription` when there is one.
+their default size; a weight still decides a `Chart`'s height, so its bitmap
+ignores a native height then. Glance's `Image` sets its own semantics after
+the modifier it receives, so the renderers that draw one on the element's own
+view (`Chart`, bitmap `Text`, `Image`) pass it the `semantics` modifier's
+`contentDescription`. Like Glance, only the last `semantics` modifier counts.
+The arc draws its image inside a Box that carries the modifier, so the image
+gets no description when the modifier sets one, and is not read twice.
+Glance's button components append their own background and corner rounding
+after the modifier, which the documentation lists next to `Scaffold`.
 
 The Android catalog is the public `GlanceModifier` surface minus what
 `style` already covers or what cannot be typed on the child: `padding`,
@@ -474,6 +481,9 @@ the whole tree and provided once at the Glance render root, names the one
 element allowed to carry it: the first in tree order that is rendered only
 once (a shared element referenced twice would mark two views), and none when
 the tree contains a Scaffold, because Glance's `Scaffold` marks its own root.
+An Image `fallback` is drawn only when the image fails to load, so every
+fallback counts toward that uniqueness, but the fallback of an Image with a
+`source` is never picked as the owner: it may not be drawn.
 The render root computes it once per tree with `remember(node, sharedElements)`.
 The owner is matched by value, not identity, so a structurally equal tree
 parsed again, or a prop node resolved again, keeps the marker; the other
