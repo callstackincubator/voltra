@@ -146,7 +146,8 @@ export const activitySystemActionForegroundColor = (color: string | null) =>
 // MARK: - Transitions and animation
 
 /**
- * Animates changes to the content between timeline entries or activity states.
+ * Animates changes to the content between updates: timeline entries, activity states, or renders
+ * of an in-app preview. Pair it with `animation` on the same component.
  *
  * @since iOS 16.0. `symbolEffect` requires iOS 17.0.
  */
@@ -154,8 +155,10 @@ export const contentTransition = (transition: ContentTransition, options: { coun
   createIosModifier('contentTransition', { transition, countsDown: options.countsDown })
 
 /**
- * Animates the component in or out when it appears or disappears between two timeline entries or
- * activity states. It has no effect on a component that is present in both.
+ * Animates the component in or out when it appears or disappears between two updates. It has no
+ * effect on a component that is present in both. The insertion is animated by the parent, so put
+ * `animation` with the value that toggles the component on a parent that stays, and give the
+ * siblings an `id` so SwiftUI can tell which one appeared.
  *
  * @since iOS 16.0
  */

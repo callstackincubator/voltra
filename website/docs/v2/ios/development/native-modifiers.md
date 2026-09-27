@@ -65,7 +65,7 @@ Modifiers that need a newer iOS version than the device runs leave the component
 | Modifier | What it does | iOS |
 | --- | --- | --- |
 | `contentTransition(kind, { countsDown? })` | Animates content changes: `identity`, `opacity`, `interpolate`, `numericText`, or `symbolEffect` (iOS 17). | 16.0 |
-| `transition(kind, { edge? })` | Animates a component that appears or disappears between two updates: `identity`, `opacity`, `scale`, `slide`, `push`, `move`. | 16.0 |
+| `transition(kind, { edge? })` | Animates a component that appears or disappears between two updates: `identity`, `opacity`, `scale`, `slide`, `push`, `move`. Put `animation` on a parent that stays, and give the siblings an `id`. | 16.0 |
 | `animation(curve, { value, duration? })` | Animates the component when `value` changes. `duration` does not apply to `default` and `spring`. `bouncy`, `smooth` and `snappy` need iOS 17. | 13.0 |
 | `symbolEffect(effect)` | Applies an indefinite effect to `Symbol` components: `pulse`, `variableColor`, or `breathe`, `rotate`, `wiggle` (iOS 18). Widgets and Live Activities may show it as a still frame. | 17.0 |
 
@@ -108,5 +108,7 @@ Modifiers that need a newer iOS version than the device runs leave the component
 **The widget background does not change.** Put `containerBackground` on the widget's outermost component, and use it only once. It needs iOS 17; on iOS 16 use `style.backgroundColor` instead.
 
 **Values change without animating.** SwiftUI animates between updates only when each position in the list keeps the same modifier. Changing the modifier at a position, or adding and removing the whole list, redraws the component instead.
+
+**A component appears or disappears without animating.** SwiftUI animates an insertion or removal in the parent, so `animation` on the component itself has nothing to animate. Put `animation({ value })` on a parent that is present before and after, keep `transition` on the component, and give the parent's children an `id`; without one, children are matched by position, and a sibling can take the place of the component that disappeared.
 
 **A pushed update fails with a payload size error.** Move the UI that needs modifiers to a Dynamic Live Activity or Dynamic Widget, or remove modifiers from the pushed tree.
