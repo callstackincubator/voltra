@@ -45,7 +45,8 @@ export default function ClientRenderedDemoWidget(
     <Voltra.VStack
       alignment="leading"
       spacing={3}
-      style={{ flex: 1, padding: 12 }}
+      // containerBackground needs iOS 17; the style background keeps the tile black on iOS 16.
+      style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}
       modifiers={[Voltra.modifiers.containerBackground('#000000'), Voltra.modifiers.widgetURL('voltra://ios/widgets')]}
     >
       <Voltra.Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Client-rendered demo</Voltra.Text>

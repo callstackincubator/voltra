@@ -41,6 +41,7 @@ export default function AndroidClientDemoWidget(
   const serverCity = props.city ?? '(no server data)'
   const serverTemp = typeof props.temperature === 'number' ? `${props.temperature}°` : '(no server data)'
   const instanceKey = env.instance ?? '(no instance)'
+  const unreadCount = props.unreadCount ?? 0
 
   // Material You tokens — resolved natively from the system dynamic color scheme.
   const bg = AndroidDynamicColors.surface
