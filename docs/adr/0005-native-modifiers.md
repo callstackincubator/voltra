@@ -245,16 +245,19 @@ which adds.
 The renderer's `transformProps` gains a second special case next to `style`:
 when it meets the `modifiers` key it emits a JSON-encoded string under the
 short name `mods`, registered in `components.json` (`m` is taken by
-`margin`). `false`, `null` and `undefined`, for the whole prop or for an
-entry, mean "no modifier", so `modifiers={[stale && visibility('gone')]}`
-from untyped code does not fail a render on the device; an empty list emits
+`margin`). Every falsy value (`false`, `null`, `undefined`, `0`, `''`,
+`NaN`), for the whole prop or for an entry, means "no modifier", the way
+React skips falsy children, so `modifiers={[count && visibility('gone')]}`
+with `count = 0` does not fail a render on the device; an empty list emits
 nothing. Anything else that is not a descriptor is a programming error and
 throws. A
 string survives every existing parsing layer on both platforms without
 changes: the core renderer does not treat it as children, the Kotlin
 decompressor does not rewrite its keys, and both `VoltraElement`
-implementations pass it through as a prop. The native side parses the string
-with its platform JSON decoder at the single application point.
+implementations pass it through as a prop. Each native `VoltraElement` decodes
+the string once with its platform JSON decoder and keeps the descriptors: iOS
+in `init`, next to the resolved style, and Android in a lazy property, so
+repeated body evaluations and recompositions never parse it again.
 
 Each entry is `{ "$type": "<name>", ...params }`. `$type` is the name the
 factory was created with; params are the factory's parameter names with
@@ -360,19 +363,20 @@ The widget and Live Activity roots used to apply `.widgetURL(...)` with a
 possibly `nil` URL on every render, and the home widget fell back to a
 synthetic `<scheme>://voltraui?kind=widget...` link when none was
 configured. Apple leaves more than one `widgetURL` in a hierarchy undefined,
-and in practice the root one wins, so the roots now set it only when a deep
-link resolves, the way the Dynamic Live Activity renderer already did, and
-the home widget skips its synthetic fallback when the rendered tree carries
-a `widgetURL` modifier. The same rule covers `containerBackground`: the home
-widget root sets `containerBackground(.clear, for: .widget)` only when the
-tree carries no `containerBackground` modifier. Both decisions live in
-`VoltraRootDefaults` under `ui/Modifiers`, so host code never names a
-modifier. Values configured
-explicitly outside the tree keep precedence: a widget's `deepLinkUrl`, and
-an `activityBackgroundTint` passed when starting or updating a Live
-Activity. A `widgetURL` modifier is therefore the only one in
-the tree unless the widget also configures an explicit deep link, which the
-documentation calls out.
+so every root now goes through `voltraWidgetURL(configured:root:fallback:)`,
+which guarantees exactly one. A configured deep link (a widget's
+`deepLinkUrl`, or a Live Activity's) takes precedence: the root applies it
+and sets the `voltraHostAppliedModifierTypes` environment value, so
+`VoltraStableModifier` skips the tree's `widgetURL` descriptors. Without a
+configured link, a `widgetURL` modifier in the tree wins and the home widget
+skips its synthetic fallback. The same rule covers `containerBackground`: the
+home widget root sets `containerBackground(.clear, for: .widget)` only when
+the tree carries no `containerBackground` modifier. Both checks look through
+children and through nodes stored in component props, such as a Gauge
+label, and count only descriptors that decode. They live in
+`VoltraRootDefaults.swift` under `ui/Modifiers`, so host code never names a
+modifier. An `activityBackgroundTint` passed when starting or updating a Live
+Activity is applied outside the tree and keeps precedence as well.
 
 The initial iOS catalog is limited to value-only modifiers that matter in
 widgets and Live Activities: `widgetURL`, `containerBackground`,
@@ -409,9 +413,11 @@ wait for accessory families.
 The single insertion point is `resolveAndApplyStyle` in
 `glance/StyleUtils.kt`, after `applyStyle`. `applyClickableIfNeeded` is
 untouched: the catalog has no action modifier, so `deepLinkUrl` remains the
-only source of a click. The scoped weight path in `LayoutRenderers.kt`
-already goes through `resolveAndApplyStyle`, so children of `Row` and
-`Column` get modifiers without further changes.
+only source of a click. Children of `Row` and `Column` get modifiers through
+the scoped weight path in `LayoutRenderers.kt`, which calls
+`resolveAndApplyStyle` once and passes the result to the child renderer;
+renderers build their own modifiers only when none is passed in, and the
+weight lookup reads style alone through `resolveElementStyle`.
 
 The Android catalog is the public `GlanceModifier` surface minus what
 `style` already covers or what cannot be typed on the child: `padding`,
@@ -431,10 +437,15 @@ see. Because the Row and Column renderers append `defaultWeight` after
 `resolveAndApplyStyle`, `style.flex` replaces a child's native size
 modifiers along the main axis; the documentation states this exception to
 "the modifier wins". Glance fails the whole widget when two views carry
-`appWidgetBackground`, so a per-render `VoltraModifierRenderState`, provided
-once at the Glance render root, records the first element that claims it
-and later claims are logged and skipped. The composable
-`GlanceModifier.applyNativeModifiers(props)` in `voltra/modifiers` reads that
+`appWidgetBackground`, so `VoltraModifierRenderState.forTree`, computed from
+the whole tree and provided once at the Glance render root, names the one
+element allowed to carry it: the first in tree order that is rendered only
+once (a shared element referenced twice would mark two views), and none when
+the tree contains a Scaffold, because Glance's `Scaffold` marks its own root.
+The owner is matched by value, not identity, so a structurally equal tree
+parsed again, or a prop node resolved again, keeps the marker; the other
+elements log and skip it. The composable
+`GlanceModifier.applyNativeModifiers(element)` in `voltra/modifiers` reads that
 state and the theme, so `resolveAndApplyStyle` makes a single call.
 
 ### Documentation

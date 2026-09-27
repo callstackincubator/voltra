@@ -54,10 +54,10 @@ Glance applies modifiers after `style`, and it does not care about their order:
 | `background(color \| { day, night })` | Fills the background with a color, an `AndroidDynamicColors` token, or separate light and dark colors. | 7.0 |
 | `cornerRadius(dp)` | Rounds the corners. | 12 |
 | `visibility('visible' \| 'invisible' \| 'gone')` | Shows the component, hides it but keeps its space, or removes it from layout. | 7.0 |
-| `semantics({ contentDescription?, testTag? })` | Sets the text read by accessibility services and a tag for UI tests. | 7.0 |
-| `appWidgetBackground()` | Marks the widget background so the launcher can animate it when the widget opens your app. Use it once, on the outermost component; if several components set it, only the first one keeps it. | 12 |
+| `semantics({ contentDescription?, testTag? })` | Sets the text read by accessibility services and a tag for UI tests. At least one of the two is required. | 7.0 |
+| `appWidgetBackground()` | Marks the widget background so the launcher can animate it when the widget opens your app. Use it once, on the outermost component; if several components set it, only the first one keeps it. A `Scaffold` marks its own background, so inside a widget with a `Scaffold` the modifier is skipped. | 12 |
 
-For light and dark colors, `background({ day, night })` takes two color strings. To follow the device's Material You theme instead, pass an `AndroidDynamicColors` token. See [Dynamic Colors](./dynamic-colors.md).
+For light and dark colors, `background({ day, night })` takes two static color strings; `AndroidDynamicColors` tokens are a type error there. To follow the device's Material You theme instead, pass an `AndroidDynamicColors` token. See [Dynamic Colors](./dynamic-colors.md).
 
 Native modifiers do not handle taps. To open your app from a component, use its `deepLinkUrl` prop.
 
