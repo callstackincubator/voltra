@@ -21,6 +21,7 @@ import voltra.glance.renderers.loadTypeface
 import voltra.glance.renderers.parseContentScale
 import voltra.glance.renderers.renderTextBitmap
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.models.componentProp
@@ -37,7 +38,7 @@ fun RenderText(
     compositeStyle: voltra.styling.CompositeStyle? = null,
 ) {
     val renderContext = LocalVoltraRenderContext.current
-    val baseModifier = modifier ?: resolveAndApplyStyle(element.p, renderContext.sharedStyles).modifier
+    val baseModifier = modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier
     val finalModifier =
         applyClickableIfNeeded(
             baseModifier,
@@ -52,7 +53,7 @@ fun RenderText(
         if (compositeStyle != null) {
             compositeStyle
         } else {
-            resolveAndApplyStyle(element.p, renderContext.sharedStyles).compositeStyle
+            resolveElementStyle(element, renderContext.sharedStyles)
         }
 
     val text = extractTextFromNode(element.c)
@@ -114,7 +115,7 @@ fun RenderImage(
     modifier: GlanceModifier? = null,
 ) {
     val renderContext = LocalVoltraRenderContext.current
-    val baseModifier = modifier ?: resolveAndApplyStyle(element.p, renderContext.sharedStyles).modifier
+    val baseModifier = modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier
     val finalModifier =
         applyClickableIfNeeded(
             baseModifier,

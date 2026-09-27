@@ -39,7 +39,7 @@ class VoltraModifierDefinition(
  * element may take the widget's single `appWidgetBackground`.
  */
 class VoltraModifierScope(
-    private val claimAppWidgetBackground: () -> Boolean = { true },
+    private val mayCarryAppWidgetBackground: () -> Boolean = { true },
     private val resolveThemeColor: (VoltraThemeColorRole) -> ColorProvider,
 ) {
     fun colorProvider(value: VoltraColorValue): ColorProvider =
@@ -48,7 +48,7 @@ class VoltraModifierScope(
             is VoltraColorValue.Dynamic -> resolveThemeColor(value.role)
         }
 
-    fun claimAppWidgetBackground(): Boolean = claimAppWidgetBackground.invoke()
+    fun mayCarryAppWidgetBackground(): Boolean = mayCarryAppWidgetBackground.invoke()
 
     companion object {
         /** For callers outside composition: static colors resolve, theme tokens are rejected. */

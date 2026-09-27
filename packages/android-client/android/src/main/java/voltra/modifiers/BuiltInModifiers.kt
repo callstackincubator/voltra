@@ -101,9 +101,11 @@ internal val builtInModifierDefinitions: Map<String, VoltraModifierDefinition> =
             },
         "appWidgetBackground" to
             VoltraModifierDefinition(emptySet()) { _, scope ->
-                // Glance fails the whole widget when two views are marked; keep the first one.
-                if (!scope.claimAppWidgetBackground()) {
-                    throw VoltraModifierException("appWidgetBackground is already set on another component")
+                // Glance fails the whole widget when two views are marked; the render state picks one.
+                if (!scope.mayCarryAppWidgetBackground()) {
+                    throw VoltraModifierException(
+                        "appWidgetBackground is kept only on the first component that uses it, and never next to a Scaffold",
+                    )
                 }
                 GlanceModifier.appWidgetBackground()
             },

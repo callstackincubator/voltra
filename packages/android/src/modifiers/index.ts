@@ -1,4 +1,4 @@
-import type { AndroidColorValue } from '../dynamic-colors.js'
+import type { AndroidColorValue, AndroidDynamicColorToken } from '../dynamic-colors.js'
 import { createAndroidModifier } from './createAndroidModifier.js'
 
 export type { AndroidModifier } from './createAndroidModifier.js'
@@ -23,19 +23,33 @@ export type AbsolutePaddingValues = {
   bottom?: number
 }
 
-export type DayNightColors = {
-  /** Static color used in light mode. */
-  day: string
-  /** Static color used in dark mode. */
-  night: string
+/**
+ * A static color string. Resolves to `never` for an `AndroidDynamicColors` token, so passing one
+ * where Glance needs a concrete color is a compile-time error.
+ */
+export type StaticColor<Color extends string> = Color extends AndroidDynamicColorToken ? never : Color
+
+export type DayNightColors<Day extends string = string, Night extends string = string> = {
+  /** Static color used in light mode. `AndroidDynamicColors` tokens are not accepted. */
+  day: StaticColor<Day>
+  /** Static color used in dark mode. `AndroidDynamicColors` tokens are not accepted. */
+  night: StaticColor<Night>
 }
 
-export type SemanticsValues = {
-  /** Text read by accessibility services. */
-  contentDescription?: string
-  /** Identifier for UI tests. */
-  testTag?: string
-}
+/** At least one of the two keys is required. */
+export type SemanticsValues =
+  | {
+      /** Text read by accessibility services. */
+      contentDescription: string
+      /** Identifier for UI tests. */
+      testTag?: string
+    }
+  | {
+      /** Text read by accessibility services. */
+      contentDescription?: string
+      /** Identifier for UI tests. */
+      testTag: string
+    }
 
 /**
  * Adds padding in dp, mirrored in right-to-left layouts. The most specific edge wins (`start` over
@@ -109,8 +123,9 @@ export const wrapContentSize = () => createAndroidModifier('wrapContentSize')
  *
  * @since Android 7.0
  */
-export const background = (color: AndroidColorValue | DayNightColors) =>
-  createAndroidModifier('background', typeof color === 'string' ? { color } : { day: color.day, night: color.night })
+export const background = <Day extends string, Night extends string>(
+  color: AndroidColorValue | DayNightColors<Day, Night>
+) => createAndroidModifier('background', typeof color === 'string' ? { color } : { day: color.day, night: color.night })
 
 /**
  * Rounds the corners in dp. Glance ignores it below Android 12 (API 31).

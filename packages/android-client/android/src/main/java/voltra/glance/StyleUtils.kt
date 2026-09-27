@@ -5,6 +5,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import voltra.glance.renderers.getOnClickAction
+import voltra.models.VoltraElement
 import voltra.modifiers.applyNativeModifiers
 import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
@@ -16,19 +17,17 @@ data class ResolvedStyle(
     val compositeStyle: CompositeStyle?,
 )
 
+/**
+ * The element's style with its native modifiers appended. Call it once per rendered element; use
+ * [resolveElementStyle] when only the style values are needed.
+ */
 @Composable
 fun resolveAndApplyStyle(
-    props: Map<String, Any?>?,
+    element: VoltraElement,
     sharedStyles: List<Map<String, Any?>>?,
 ): ResolvedStyle {
     val renderContext = LocalVoltraRenderContext.current
-    val resolvedStyle = resolveStyle(props, sharedStyles)
-    val compositeStyle =
-        if (resolvedStyle != null) {
-            StyleConverter.convert(resolvedStyle)
-        } else {
-            null
-        }
+    val compositeStyle = resolveElementStyle(element, sharedStyles)
     val styledModifier =
         if (compositeStyle != null) {
             GlanceModifier.applyStyle(compositeStyle, renderContext.widgetSize)
@@ -36,8 +35,14 @@ fun resolveAndApplyStyle(
             GlanceModifier
         }
     // Native modifiers go after style, so Glance keeps their value where both set the same thing.
-    return ResolvedStyle(styledModifier.applyNativeModifiers(props), compositeStyle)
+    return ResolvedStyle(styledModifier.applyNativeModifiers(element), compositeStyle)
 }
+
+/** The element's style values alone, without building modifiers. */
+fun resolveElementStyle(
+    element: VoltraElement,
+    sharedStyles: List<Map<String, Any?>>?,
+): CompositeStyle? = resolveStyle(element.p, sharedStyles)?.let(StyleConverter::convert)
 
 /**
  * Resolve style reference to actual style map.

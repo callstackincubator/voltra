@@ -24,6 +24,7 @@ import voltra.glance.renderers.arc.ArcSpec
 import voltra.glance.renderers.arc.resolveArcSize
 import voltra.glance.renderers.parseColorStringList
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser
 import voltra.styling.SizeValue
@@ -76,10 +77,10 @@ fun RenderArcProgressIndicator(
     modifier: GlanceModifier? = null,
 ) {
     val renderContext = LocalVoltraRenderContext.current
-    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
+    val compositeStyle = resolveElementStyle(element, renderContext.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier,
             element.p,
             element.i,
             renderContext.widgetId,

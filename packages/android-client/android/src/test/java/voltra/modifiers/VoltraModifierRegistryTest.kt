@@ -11,6 +11,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import voltra.models.VoltraElement
+import voltra.models.VoltraNode
+import voltra.models.componentProp
+import voltra.payload.ComponentTypeID
 import voltra.styling.VoltraThemeColorRole
 
 /**
@@ -156,25 +160,120 @@ class VoltraModifierRegistryTest {
         assertSame(GlanceModifier, result)
     }
 
+    private val backgroundModifiers = """[{"${'$'}type":"appWidgetBackground"}]"""
+
+    private fun element(
+        type: Int = ComponentTypeID.BOX,
+        id: String? = null,
+        children: VoltraNode? = null,
+        props: Map<String, Any?>? = mapOf("modifiers" to backgroundModifiers),
+    ) = VoltraElement(t = type, i = id, c = children, p = props)
+
+    private fun renderBackground(
+        renderState: VoltraModifierRenderState,
+        element: VoltraElement,
+    ): List<String> =
+        GlanceModifier
+            .applyNativeModifiers(
+                element.nativeModifiers,
+                VoltraModifierScope(
+                    mayCarryAppWidgetBackground = { renderState.mayCarryAppWidgetBackground(element) },
+                ) {
+                    ColorProvider(Color.Magenta)
+                },
+            ).elementNames()
+
     @Test
     fun keepsOnlyTheFirstAppWidgetBackground() {
-        val renderState = VoltraModifierRenderState()
-        val first = mapOf<String, Any?>("id" to "first")
-        val second = mapOf<String, Any?>("id" to "second")
-        val descriptors = listOf(VoltraModifierDescriptor("appWidgetBackground", emptyMap()))
+        val first = element(id = "first")
+        val second = element(id = "second")
+        val renderState =
+            VoltraModifierRenderState.forTree(
+                VoltraNode.Element(
+                    element(
+                        type = ComponentTypeID.COLUMN,
+                        props = null,
+                        children = VoltraNode.Array(listOf(VoltraNode.Element(first), VoltraNode.Element(second))),
+                    ),
+                ),
+                null,
+            )
 
-        fun render(owner: Map<String, Any?>) =
-            GlanceModifier
-                .applyNativeModifiers(
-                    descriptors,
-                    VoltraModifierScope(claimAppWidgetBackground = { renderState.claimAppWidgetBackground(owner) }) {
-                        ColorProvider(Color.Magenta)
-                    },
-                ).elementNames()
+        assertEquals(1, renderBackground(renderState, first).size)
+        assertTrue(
+            "A second component must not mark the widget background again",
+            renderBackground(renderState, second).isEmpty(),
+        )
+        assertEquals("The same component keeps it on recomposition", 1, renderBackground(renderState, first).size)
+    }
 
-        assertEquals(1, render(first).size)
-        assertTrue("A second component must not mark the widget background again", render(second).isEmpty())
-        assertEquals("The same component keeps it on recomposition", 1, render(first).size)
+    @Test
+    fun keepsTheBackgroundWhenAnEqualTreeIsParsedAgain() {
+        fun tree() =
+            VoltraNode.Element(
+                element(
+                    id = "root",
+                    props =
+                        mapOf("modifiers" to String(backgroundModifiers.toCharArray())),
+                ),
+            )
+        val renderState = VoltraModifierRenderState.forTree(tree(), null)
+        // A structurally equal tree from a later render: new instances, same content.
+        val reparsed = tree().element
+        assertEquals(1, renderBackground(renderState, reparsed).size)
+    }
+
+    @Test
+    fun skipsASharedElementThatIsRenderedTwice() {
+        val shared = listOf<VoltraNode>(VoltraNode.Element(element(id = "shared")))
+        val later = element(id = "later")
+        val root =
+            VoltraNode.Element(
+                element(
+                    type = ComponentTypeID.COLUMN,
+                    props = null,
+                    children =
+                        VoltraNode.Array(
+                            listOf(VoltraNode.Ref(0), VoltraNode.Ref(0), VoltraNode.Element(later)),
+                        ),
+                ),
+            )
+        val renderState = VoltraModifierRenderState.forTree(root, shared)
+
+        assertTrue(renderBackground(renderState, (shared[0] as VoltraNode.Element).element).isEmpty())
+        assertEquals(1, renderBackground(renderState, later).size)
+    }
+
+    @Test
+    fun leavesTheBackgroundToAScaffold() {
+        val column = element(type = ComponentTypeID.COLUMN)
+        val root =
+            VoltraNode.Element(
+                element(type = ComponentTypeID.SCAFFOLD, props = null, children = VoltraNode.Element(column)),
+            )
+        val renderState = VoltraModifierRenderState.forTree(root, null)
+
+        assertTrue(renderBackground(renderState, column).isEmpty())
+    }
+
+    @Test
+    fun findsTheBackgroundInAnImageFallback() {
+        val fallback = mapOf("t" to ComponentTypeID.BOX, "p" to mapOf("modifiers" to backgroundModifiers))
+        val image = element(type = ComponentTypeID.IMAGE, props = mapOf("fallback" to fallback))
+        val sibling = element(id = "sibling")
+        val root =
+            VoltraNode.Element(
+                element(
+                    type = ComponentTypeID.COLUMN,
+                    props = null,
+                    children = VoltraNode.Array(listOf(VoltraNode.Element(image), VoltraNode.Element(sibling))),
+                ),
+            )
+        val renderState = VoltraModifierRenderState.forTree(root, null)
+        val renderedFallback = (image.componentProp("fallback", null, null) as VoltraNode.Element).element
+
+        assertEquals(1, renderBackground(renderState, renderedFallback).size)
+        assertTrue(renderBackground(renderState, sibling).isEmpty())
     }
 
     @Test

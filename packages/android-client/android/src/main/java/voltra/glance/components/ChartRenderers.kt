@@ -22,6 +22,7 @@ import voltra.glance.renderers.parseMarksJson
 import voltra.glance.renderers.parseYScale
 import voltra.glance.renderers.renderChartBitmap
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
 import voltra.styling.JSColorParser
 import voltra.styling.SizeValue
@@ -39,10 +40,9 @@ fun RenderChart(
     modifier: GlanceModifier? = null,
 ) {
     val renderContext = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier,
             element.p,
             element.i,
             renderContext.widgetId,
@@ -70,7 +70,7 @@ fun RenderChart(
     val yAxisGridVisible = (element.p?.get("yAxisGridVisible") as? Boolean) ?: true
     val yScale = parseYScale(element.p?.get("yScale") as? String)
 
-    val (_, compositeStyle) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
+    val compositeStyle = resolveElementStyle(element, renderContext.sharedStyles)
     val styleWidth = compositeStyle?.layout?.width
     val styleHeight = compositeStyle?.layout?.height
     val hasWeight = compositeStyle?.layout?.weight != null && compositeStyle.layout.weight!! > 0
