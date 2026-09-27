@@ -77,7 +77,7 @@ await setDynamicWidgetLocale('pl') // every render now sees env.appLocale === 'p
 await setDynamicWidgetLocale(null) // back to the system languages
 ```
 
-The tag is stored in the App Group, so this requires `groupIdentifier` in the plugin configuration and rejects without one. Widgets reload as soon as the value is stored; Dynamic Live Activities pick it up on their next update. `resolveLocale` gives `appLocale` precedence automatically.
+The tag is stored in the App Group, so this requires `groupIdentifier` in the plugin configuration and rejects without one. Widgets reload and running Dynamic Live Activities re-render as soon as the value is stored. `resolveLocale` gives `appLocale` precedence automatically.
 
 ## Declaring the app's languages
 
@@ -88,7 +88,7 @@ The list is built from:
 - the keys of the Expo [`locales`](https://docs.expo.dev/guides/localization/#translating-app-metadata) config,
 - `ios.infoPlist.CFBundleLocalizations`, if you set it,
 - every locale used in a widget's locale maps (gallery labels and Edit Widget sheet copy),
-- plus `en`, where Voltra's English fallback strings live.
+- plus the app's development language (`ios.infoPlist.CFBundleDevelopmentRegion`, or `en` when it is not set), which iOS falls back to when none of the user's languages match. Every language gets every string: a missing translation falls back to the development language, then English.
 
 Declare every language your widgets translate into, for example with `"locales": { "pl": "./locales/pl.json" }`. Without a Polish entry, a Polish user of your app gets `env.locale === "en-PL"`; `env.preferredLanguages` still lists Polish first.
 

@@ -343,12 +343,17 @@ public class VoltraModuleImpl {
   }
 
   /// Stores the app's language override in the App Group, where the widget extension reads it as
-  /// `env.appLocale` (ADR 0008 §3), then reloads every widget so it takes effect at once. Dynamic
-  /// Live Activities pick it up on their next render. Throws `WidgetError.appGroupNotConfigured`
-  /// without a `groupIdentifier`, since the extension could never see the value.
-  func setDynamicWidgetLocale(tag: String?) throws {
+  /// `env.appLocale` (ADR 0008 §3), then reloads every widget and re-renders running Dynamic Live
+  /// Activities so it takes effect at once. Throws `WidgetError.appGroupNotConfigured` without a
+  /// `groupIdentifier`, since the extension could never see the value.
+  func setDynamicWidgetLocale(tag: String?) async throws {
     try VoltraWidgetDefaults.setDynamicWidgetLocale(tag)
     VoltraWidgetService.reloadAllTimelines()
+    // Re-send each running Dynamic Live Activity its current content so WidgetKit renders it again
+    // with the new env.appLocale (the render cache is keyed on the locale environment). This is the
+    // release-safe half of `reloadDynamicLiveActivities`, which is DEBUG-only because it also
+    // refetches bundles from Metro.
+    await VoltraDynamicLiveActivityRegistry.shared.reload(definitionIds: nil)
   }
 
   func updateWidget(widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws {

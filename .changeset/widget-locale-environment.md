@@ -14,6 +14,6 @@ translation with the same fallback order as localized initial states, and `pickL
 now exported from `@use-voltra/core`, `@use-voltra/ios` and `@use-voltra/android`.
 
 `setDynamicWidgetLocale(tag | null)` lets an app render widgets in a language it chooses; the tag
-reaches every render as `env.appLocale`. On iOS it is stored in the App Group and needs
-`groupIdentifier`. Android Dynamic Widgets now re-render after a device, per-app or regional
+reaches every render as `env.appLocale`, and placed widgets and running Dynamic Live Activities
+re-render straight away. On iOS it is stored in the App Group and needs `groupIdentifier`. Android Dynamic Widgets now re-render after a device, per-app or regional
 language change, even when the app is not running.

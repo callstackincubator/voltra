@@ -246,11 +246,13 @@ public enum VoltraErrors: Error, CustomNSError {
   }
 
   @objc public func setDynamicWidgetLocale(_ tag: String?, completion: @escaping (Error?) -> Void) {
-    do {
-      try impl.setDynamicWidgetLocale(tag: tag)
-      completion(nil)
-    } catch {
-      completion(error)
+    Task {
+      do {
+        try await impl.setDynamicWidgetLocale(tag: tag)
+        completion(nil)
+      } catch {
+        completion(error)
+      }
     }
   }
 

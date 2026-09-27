@@ -24,6 +24,7 @@ class VoltraLocaleChangedReceiver : BroadcastReceiver() {
     ) {
         if (intent.action != Intent.ACTION_LOCALE_CHANGED) return
 
+        Log.d(TAG, "Locale changed; reloading Dynamic Widgets")
         val pendingResult = goAsync()
         val appContext = context.applicationContext
         CoroutineScope(Dispatchers.Default).launch {

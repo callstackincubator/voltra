@@ -22,19 +22,27 @@ final class VoltraLocaleEnvironmentTests: XCTestCase {
     XCTAssertNil(env.appLocale)
   }
 
-  func testHourCycleFollowsTheLocaleExtension() {
-    let twelve = VoltraLocaleEnvironment.capture(locale: Locale(identifier: "en-US"))
-    let twentyFour = VoltraLocaleEnvironment.capture(locale: Locale(identifier: "en-US-u-hc-h23"))
+  func testHourCycleFollowsTheLocaleOverride() {
+    let twelve = VoltraLocaleEnvironment.capture(locale: Locale(identifier: "en_US"))
+    // Built through Locale.Components rather than a BCP-47 string, whose extension parsing through
+    // Locale(identifier:) is not documented. This is how the 24-Hour Time override arrives.
+    var components = Locale.Components(identifier: "en_US")
+    components.hourCycle = .zeroToTwentyThree
+    let twentyFour = VoltraLocaleEnvironment.capture(locale: Locale(components: components))
 
     XCTAssertEqual(twelve.hourCycle, "h12")
     XCTAssertEqual(twentyFour.hourCycle, "h23")
+    // The override must reach JS inside the tag too, so Intl formats 24-hour on its own. Verified
+    // on-device by ADR 0008 test T7.
     XCTAssertEqual(twentyFour.locale, "en-US-u-hc-h23")
   }
 
   func testRegionalFormats() {
     let us = VoltraLocaleEnvironment.capture(locale: Locale(identifier: "en_US"))
     let uk = VoltraLocaleEnvironment.capture(locale: Locale(identifier: "en_GB"))
-    let japanese = VoltraLocaleEnvironment.capture(locale: Locale(identifier: "ja_JP@calendar=japanese"))
+    var japaneseComponents = Locale.Components(identifier: "ja_JP")
+    japaneseComponents.calendar = .japanese
+    let japanese = VoltraLocaleEnvironment.capture(locale: Locale(components: japaneseComponents))
 
     XCTAssertEqual(us.measurementSystem, "us")
     XCTAssertEqual(us.firstDayOfWeek, 1)

@@ -32,7 +32,7 @@ export const updateDynamicWidget = async (
  * `"pl"` or `"pt-BR"`) is stored in the App Group and reaches every render as `env.appLocale`;
  * `resolveLocale` gives it precedence over the user's system languages. Pass `null` to clear it.
  *
- * Widgets reload once the value is stored; Live Activities pick it up on their next update.
+ * Widgets reload and running Dynamic Live Activities re-render once the value is stored.
  * Requires `groupIdentifier` in the Voltra config plugin, and rejects without one.
  */
 export const setDynamicWidgetLocale = async (tag: string | null): Promise<void> => {
