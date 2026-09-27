@@ -1,6 +1,6 @@
 # ADR 0008: Localisation for Dynamic Widgets and Dynamic Live Activities
 
-Status: Proposed
+Status: Accepted
 
 ## Introduction
 

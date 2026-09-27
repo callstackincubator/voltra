@@ -27,4 +27,4 @@ Status values:
 | [0004](0004-android-arc-progress-indicator.md)        | Bitmap-rendered arc progress indicator for Android widgets   | Accepted |
 | [0006](0006-android-widget-instance-configuration.md) | Per-instance configuration for Android Dynamic Widgets       | Accepted |
 | [0007](0007-per-instance-server-fetches.md)           | Per-instance server fetches for Dynamic Widgets              | Accepted |
-| [0008](0008-dynamic-widget-localisation.md)           | Localisation for Dynamic Widgets and Dynamic Live Activities | Proposed |
+| [0008](0008-dynamic-widget-localisation.md)           | Localisation for Dynamic Widgets and Dynamic Live Activities | Accepted |
