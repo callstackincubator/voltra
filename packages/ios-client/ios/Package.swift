@@ -76,6 +76,7 @@ let package = Package(
         // by `ui/VoltraNode+View.swift`, which the podspecs compile alongside them.
         "ShortNames.swift",
         "VoltraElement.swift",
+        "VoltraModifierDescriptor.swift",
         "VoltraNode.swift",
       ]
     ),
@@ -86,6 +87,7 @@ let package = Package(
     ),
     .target(
       name: "VoltraStyleCore",
+      dependencies: ["VoltraSharedCore"],
       path: "ui",
       sources: [
         "Style/BackgroundValue.swift",
@@ -93,6 +95,7 @@ let package = Package(
         "Style/JSGradientParser.swift",
         "Modifiers/VoltraModifierRegistry.swift",
         "Modifiers/BuiltInModifiers.swift",
+        "Modifiers/VoltraElement+nativeModifiers.swift",
       ]
     ),
     .testTarget(

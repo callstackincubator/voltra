@@ -284,7 +284,7 @@ private struct VoltraDynamicLiveActivityResolvedContent {
     if let nodes = payload?.regions[region], !nodes.isEmpty {
       let root: VoltraNode = nodes.count == 1 ? nodes[0] : .array(nodes)
       Voltra(root: root, activityId: activityId)
-        .voltraIfLet(deepLink.flatMap(VoltraDeepLinkResolver.resolveUrl)) { view, url in view.widgetURL(url) }
+        .voltraWidgetURL(configured: deepLink.flatMap(VoltraDeepLinkResolver.resolveUrl))
     }
   }
 }

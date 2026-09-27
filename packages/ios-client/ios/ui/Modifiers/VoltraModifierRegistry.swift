@@ -1,12 +1,11 @@
 import Foundation
 import os
 import SwiftUI
-
-/// One entry of a component's `modifiers` prop: `{ "$type": "<name>", ...params }` (ADR 0005).
-struct VoltraModifierDescriptor {
-  let type: String
-  let params: [String: Any]
-}
+#if canImport(VoltraSharedCore)
+  // The Swift package splits the SwiftUI-free parsing layer into its own module; the podspec
+  // compiles both folders into one.
+  import VoltraSharedCore
+#endif
 
 enum VoltraModifierError: Error, Equatable {
   case missingParameter(String)
@@ -40,17 +39,7 @@ enum VoltraModifierRegistry {
 
   /// Decodes the JSON-encoded `modifiers` prop. Entries without a string `$type` are dropped.
   static func parseDescriptors(_ json: String?) -> [VoltraModifierDescriptor] {
-    guard let json, let data = json.data(using: .utf8) else { return [] }
-    guard let entries = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] else {
-      logger.warning("Ignoring modifiers that are not a JSON array of objects")
-      return []
-    }
-    return entries.compactMap { entry in
-      guard let type = entry["$type"] as? String else { return nil }
-      var params = entry
-      params.removeValue(forKey: "$type")
-      return VoltraModifierDescriptor(type: type, params: params)
-    }
+    VoltraModifierDescriptor.parseList(json)
   }
 
   /// Builds the modifier for a descriptor, or `nil` when the type is unknown.
@@ -93,8 +82,27 @@ enum VoltraModifierRegistry {
 struct VoltraStableModifier: ViewModifier {
   let descriptor: VoltraModifierDescriptor
 
+  @Environment(\.voltraHostAppliedModifierTypes) private var hostAppliedModifierTypes
+
   func body(content: Content) -> some View {
-    VoltraModifierRegistry.apply(descriptor, to: content)
+    // The widget host applies this modifier itself with a configured value that takes
+    // precedence; applying the tree's as well would leave SwiftUI two of them.
+    hostAppliedModifierTypes.contains(descriptor.type)
+      ? AnyView(content)
+      : VoltraModifierRegistry.apply(descriptor, to: content)
+  }
+}
+
+private struct VoltraHostAppliedModifierTypesKey: EnvironmentKey {
+  static let defaultValue: Set<String> = []
+}
+
+extension EnvironmentValues {
+  /// Native modifier types that a widget or Live Activity host applies outside the rendered tree,
+  /// so the tree's own descriptors of these types are skipped.
+  var voltraHostAppliedModifierTypes: Set<String> {
+    get { self[VoltraHostAppliedModifierTypesKey.self] }
+    set { self[VoltraHostAppliedModifierTypesKey.self] = newValue }
   }
 }
 

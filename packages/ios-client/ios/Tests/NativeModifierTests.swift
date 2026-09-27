@@ -1,4 +1,5 @@
 import Foundation
+@testable import VoltraSharedCore
 @testable import VoltraStyleCore
 import XCTest
 
@@ -112,5 +113,39 @@ final class NativeModifierTests: XCTestCase {
   func testBooleanParameterRejectsNumbers() {
     let descriptor = VoltraModifierDescriptor(type: "privacySensitive", params: ["sensitive": NSNumber(value: 1)])
     XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor))
+  }
+
+  // MARK: - Parsed tree
+
+  private func parseNode(_ json: String) throws -> VoltraNode {
+    try VoltraNode.parse(from: JSONValue.parse(from: json))
+  }
+
+  func testElementDecodesItsModifiersWhileParsing() throws {
+    let node = try parseNode(##"{"t":11,"p":{"mods":"[{\"$type\":\"widgetURL\",\"url\":\"a://b\"}]"}}"##)
+    guard case let .element(element) = node else { return XCTFail("Expected an element") }
+    XCTAssertEqual(element.nativeModifiers.map(\.type), ["widgetURL"])
+    XCTAssertEqual(element.nativeModifiers.first?.params["url"] as? String, "a://b")
+  }
+
+  func testContainsNativeModifierLooksThroughChildren() throws {
+    let node = try parseNode(
+      ##"{"t":11,"c":[{"t":0,"c":"Hi","p":{"mods":"[{\"$type\":\"widgetURL\",\"url\":\"a://b\"}]"}}]}"##
+    )
+    XCTAssertTrue(node.containsNativeModifier("widgetURL"))
+    XCTAssertFalse(node.containsNativeModifier("containerBackground"))
+  }
+
+  func testContainsNativeModifierLooksThroughComponentProps() throws {
+    // A Gauge label is stored in a prop and rendered through `componentProp`, not as a child.
+    let node = try parseNode(
+      ##"{"t":8,"p":{"currentValueLabel":{"t":0,"c":"42","p":{"mods":"[{\"$type\":\"containerBackground\",\"color\":\"#101828\"}]"}}}}"##
+    )
+    XCTAssertTrue(node.containsNativeModifier("containerBackground"))
+  }
+
+  func testContainsNativeModifierIgnoresDescriptorsThatDoNotDecode() throws {
+    let node = try parseNode(##"{"t":11,"p":{"mods":"[{\"$type\":\"containerBackground\",\"color\":\"nope\"}]"}}"##)
+    XCTAssertFalse(node.containsNativeModifier("containerBackground"))
   }
 }

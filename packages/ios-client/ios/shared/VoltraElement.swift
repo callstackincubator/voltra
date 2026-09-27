@@ -20,11 +20,15 @@ public struct VoltraElement: Hashable {
   /// Style dictionary with expanded keys, resolved once while parsing.
   private let _style: [String: JSONValue]?
 
+  /// The `modifiers` prop, decoded once while parsing because renderers read it on every body
+  /// evaluation. Derived from `_props`, so identity leaves it out like `_style`.
+  public let nativeModifiers: [VoltraModifierDescriptor]
+
   // MARK: - Hashable
 
   /// `_props` carries fully resolved values, so it alone distinguishes elements that render
-  /// differently. Identity deliberately omits `_style`, which is derived from `_props` and would
-  /// only restate it.
+  /// differently. Identity deliberately omits `_style` and `nativeModifiers`, which are derived from `_props`
+  /// and would only restate it.
   public func hash(into hasher: inout Hasher) {
     hasher.combine(type)
     hasher.combine(id)
@@ -106,6 +110,7 @@ public struct VoltraElement: Hashable {
 
     _props = resolvedProps
     _style = Self.expandedStyle(from: resolvedProps)
+    nativeModifiers = VoltraModifierDescriptor.parseList((resolvedProps?["mods"] ?? resolvedProps?["modifiers"])?.stringValue)
   }
 
   /// Get component prop by name - handles both single component and array
