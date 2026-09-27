@@ -12,7 +12,19 @@ import type { VoltraNodeJson } from '../types.js'
  */
 export type LiveActivityEnvironment = Pick<
   WidgetEnvironment,
-  'date' | 'colorScheme' | 'locale' | 'widgetRenderingMode' | 'build'
+  | 'date'
+  | 'colorScheme'
+  | 'locale'
+  | 'preferredLanguages'
+  | 'appLocale'
+  | 'layoutDirection'
+  | 'hourCycle'
+  | 'timeZone'
+  | 'measurementSystem'
+  | 'calendar'
+  | 'firstDayOfWeek'
+  | 'widgetRenderingMode'
+  | 'build'
 > & {
   /** Whether ActivityKit currently considers this activity stale. */
   isStale: boolean

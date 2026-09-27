@@ -18,6 +18,12 @@
       "import": "./build/esm/dynamic-live-activity.js",
       "default": "./build/esm/dynamic-live-activity.js"
     },
+    "./locale": {
+      "types": "./build/types/locale.d.ts",
+      "require": "./build/cjs/locale.js",
+      "import": "./build/esm/locale.js",
+      "default": "./build/esm/locale.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

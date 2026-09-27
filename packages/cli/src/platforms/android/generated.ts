@@ -613,6 +613,10 @@ async function prerenderClientRenderedAndroidWidgets(
     widgetFamily: '200x200',
     colorScheme: 'light',
     locale: 'en-US',
+    preferredLanguages: ['en-US'],
+    layoutDirection: 'ltr',
+    hourCycle: 'h12',
+    timeZone: 'UTC',
     configuration: undefined,
     build: createDynamicWidgetBuildInfo(voltraVersion),
   }

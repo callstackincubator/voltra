@@ -33,8 +33,48 @@ export type WidgetEnvironment<TConfig extends Record<string, unknown> | undefine
    * doesn't expose it (rare). */
   colorScheme?: 'light' | 'dark'
 
-  /** BCP-47 locale tag — for example `"en-US"` or `"pl-PL"`. */
-  locale?: string
+  // ---------------------------------------------------------------------------
+  // Locale and formatting preferences (ADR 0008)
+  // Always pass these explicitly to `Intl` / `toLocale*` calls: the JS runtime's own default
+  // locale and time zone are the process's, which may not match what the widget is drawn for.
+  // ---------------------------------------------------------------------------
+
+  /** BCP-47 locale tag the widget is being drawn in, including Unicode extensions for user
+   * overrides — for example `"pl-PL"` or `"en-US-u-hc-h23"`. On iOS this is the locale the
+   * widget extension resolved from the languages the app declares; see `preferredLanguages`
+   * for the user's full list. */
+  locale: string
+
+  /** The user's ordered language list as BCP-47 tags, independent of what the app or the
+   * widget extension supports. Use it (or `resolveLocale`) to pick a translation. */
+  preferredLanguages: string[]
+
+  /** Language the app asked Voltra to render widgets in with `setDynamicWidgetLocale`.
+   * `undefined` unless the app set one. `resolveLocale` gives it precedence. */
+  appLocale?: string
+
+  /** Writing direction of `locale`. */
+  layoutDirection: 'ltr' | 'rtl'
+
+  /** Effective clock preference, already reconciled with the user's 12/24-hour setting. Pass it
+   * as `hourCycle` to `Intl.DateTimeFormat`. */
+  hourCycle: 'h12' | 'h23'
+
+  /** IANA time zone of the device, for example `"Europe/Warsaw"`. Pass it as `timeZone` to
+   * `Intl.DateTimeFormat` when formatting `date`. */
+  timeZone: string
+
+  /** Measurement system of the user's region. Absent when the platform cannot tell
+   * (Android below API 28). */
+  measurementSystem?: 'metric' | 'us' | 'uk'
+
+  /** Unicode calendar identifier as `Intl` spells it, for example `"gregory"` or
+   * `"japanese"`. */
+  calendar?: string
+
+  /** First day of the week in the user's region: `1` is Sunday, `2` is Monday … `7` is
+   * Saturday (the `Calendar.firstWeekday` / `java.util.Calendar` numbering). */
+  firstDayOfWeek?: 1 | 2 | 3 | 4 | 5 | 6 | 7
 
   // ---------------------------------------------------------------------------
   // iOS-only runtime values

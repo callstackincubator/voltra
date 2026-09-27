@@ -28,6 +28,10 @@ function buildPlaceholderEnv(voltraVersion: string): Record<string, unknown> {
     widgetFamily: '200x200',
     colorScheme: 'light',
     locale: 'en-US',
+    preferredLanguages: ['en-US'],
+    layoutDirection: 'ltr',
+    hourCycle: 'h12',
+    timeZone: 'UTC',
     configuration: undefined,
     build: {
       isDev: false,
