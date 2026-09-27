@@ -69,6 +69,18 @@ class VoltraModifierRegistryTest {
     }
 
     @Test
+    fun fixtureCoversEveryParameterOfEveryModifier() {
+        // A parameter renamed or added on one side only must fail here, not reach a device.
+        val fixtureParameters =
+            fixtureDescriptors()
+                .groupBy { it.type }
+                .mapValues { (_, descriptors) -> descriptors.flatMap { it.params.keys }.toSet() }
+        for ((type, definition) in builtInModifierDefinitions) {
+            assertEquals("Parameters of $type", definition.parameters, fixtureParameters[type].orEmpty())
+        }
+    }
+
+    @Test
     fun parseDescriptorsKeepsOrderAndDropsEntriesWithoutType() {
         val descriptors =
             VoltraModifierRegistry.parseDescriptors(

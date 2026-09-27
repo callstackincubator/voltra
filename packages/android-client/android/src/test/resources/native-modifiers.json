@@ -21,6 +21,11 @@
     "$type": "absolutePadding"
   },
   {
+    "horizontal": 12,
+    "vertical": 4,
+    "$type": "absolutePadding"
+  },
+  {
     "left": 6,
     "top": 1,
     "right": 3,

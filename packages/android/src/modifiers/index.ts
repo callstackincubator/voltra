@@ -41,13 +41,19 @@ export type SemanticsValues =
   | {
       /** Text read by accessibility services. */
       contentDescription: string
-      /** Identifier for UI tests. */
+      /**
+       * Identifier for Glance's own test APIs. The widget on a device does not expose it, so UI
+       * tests cannot find it.
+       */
       testTag?: string
     }
   | {
       /** Text read by accessibility services. */
       contentDescription?: string
-      /** Identifier for UI tests. */
+      /**
+       * Identifier for Glance's own test APIs. The widget on a device does not expose it, so UI
+       * tests cannot find it.
+       */
       testTag: string
     }
 
@@ -152,7 +158,8 @@ export const semantics = (values: SemanticsValues) =>
 
 /**
  * Marks the widget's background view so the launcher can animate it when the widget opens the app.
- * Use it once per widget, on the outermost component.
+ * Use it once per widget, on the outermost component. Only one component keeps it: the first that
+ * appears once in the widget, and none inside a widget with a `Scaffold`, which marks its own.
  *
  * @since Android 12
  */

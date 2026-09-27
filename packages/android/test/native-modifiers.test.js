@@ -42,7 +42,11 @@ const SAMPLES = {
     padding({ horizontal: 12, vertical: 4 }),
     padding({ all: 2, start: 6, top: 1, end: 3, bottom: 5 }),
   ],
-  absolutePadding: [absolutePadding(4), absolutePadding({ left: 6, top: 1, right: 3, bottom: 5 })],
+  absolutePadding: [
+    absolutePadding(4),
+    absolutePadding({ horizontal: 12, vertical: 4 }),
+    absolutePadding({ left: 6, top: 1, right: 3, bottom: 5 }),
+  ],
   width: [width(120)],
   height: [height(48)],
   size: [size(24), size({ width: 64, height: 32 })],
