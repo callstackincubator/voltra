@@ -77,8 +77,8 @@ fun GlanceModifier.applyNativeModifiers(element: VoltraElement): GlanceModifier 
 
 /**
  * Visits every element the Glance renderers draw, in render order: children, shared element
- * references (once per reference), and the Image `fallback` node, the only component prop the
- * Android renderers draw as a node.
+ * references (once per reference), and the `fallback` of an Image without a `source`, the only
+ * component prop the Android renderers draw as a node.
  */
 private fun visitRenderedElements(
     node: VoltraNode?,
@@ -90,7 +90,9 @@ private fun visitRenderedElements(
             val element = node.element
             visit(element)
             visitRenderedElements(element.c, sharedElements, visit)
-            if (element.t == ComponentTypeID.IMAGE) {
+            // RenderImage draws the fallback when it has no image to show. A missing `source` is the
+            // case that can be known before rendering; a source that fails to load is not counted.
+            if (element.t == ComponentTypeID.IMAGE && element.p?.get("source") == null) {
                 visitRenderedElements(element.componentProp("fallback", null, sharedElements), sharedElements, visit)
             }
         }

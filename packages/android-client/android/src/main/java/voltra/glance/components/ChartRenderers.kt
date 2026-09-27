@@ -24,6 +24,8 @@ import voltra.glance.renderers.renderChartBitmap
 import voltra.glance.resolveAndApplyStyle
 import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
+import voltra.modifiers.nativeContentDescription
+import voltra.modifiers.nativeModifierSize
 import voltra.styling.JSColorParser
 import voltra.styling.SizeValue
 import voltra.styling.resolveColor
@@ -71,8 +73,10 @@ fun RenderChart(
     val yScale = parseYScale(element.p?.get("yScale") as? String)
 
     val compositeStyle = resolveElementStyle(element, renderContext.sharedStyles)
-    val styleWidth = compositeStyle?.layout?.width
-    val styleHeight = compositeStyle?.layout?.height
+    // Native size modifiers are applied after style, so they decide the size where they set one.
+    val nativeSize = element.nativeModifierSize()
+    val styleWidth = nativeSize.width ?: compositeStyle?.layout?.width
+    val styleHeight = nativeSize.height ?: compositeStyle?.layout?.height
     val hasWeight = compositeStyle?.layout?.weight != null && compositeStyle.layout.weight!! > 0
 
     val widthIsFill = styleWidth is SizeValue.Fill
@@ -151,7 +155,8 @@ fun RenderChart(
     // allocated space (important when flex/weight controls the height).
     Image(
         provider = ImageProvider(icon),
-        contentDescription = "Chart",
+        // Glance's Image sets this after the modifier, so a semantics modifier's text goes here.
+        contentDescription = element.nativeContentDescription() ?: "Chart",
         contentScale = if (hasSectors) ContentScale.Fit else ContentScale.FillBounds,
         modifier = sizeModifier,
     )

@@ -1,6 +1,7 @@
 package voltra.modifiers
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.unit.ColorProvider
 import org.junit.Assert.assertEquals
@@ -15,6 +16,7 @@ import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.models.componentProp
 import voltra.payload.ComponentTypeID
+import voltra.styling.SizeValue
 import voltra.styling.VoltraThemeColorRole
 
 /**
@@ -286,6 +288,61 @@ class VoltraModifierRegistryTest {
 
         assertEquals(1, renderBackground(renderState, renderedFallback).size)
         assertTrue(renderBackground(renderState, sibling).isEmpty())
+    }
+
+    @Test
+    fun ignoresTheFallbackOfAnImageWithASource() {
+        val fallback = mapOf("t" to ComponentTypeID.BOX, "p" to mapOf("modifiers" to backgroundModifiers))
+        val image = element(type = ComponentTypeID.IMAGE, props = mapOf("source" to "logo", "fallback" to fallback))
+        val sibling = element(id = "sibling")
+        val root =
+            VoltraNode.Element(
+                element(
+                    type = ComponentTypeID.COLUMN,
+                    props = null,
+                    children = VoltraNode.Array(listOf(VoltraNode.Element(image), VoltraNode.Element(sibling))),
+                ),
+            )
+        val renderState = VoltraModifierRenderState.forTree(root, null)
+
+        assertEquals(
+            "The fallback is not drawn, so the sibling keeps the marker",
+            1,
+            renderBackground(renderState, sibling).size,
+        )
+    }
+
+    @Test
+    fun readsTheSizeTheModifiersSetLastOneWins() {
+        val sized =
+            element(
+                props =
+                    mapOf(
+                        "modifiers" to
+                            """[{"${'$'}type":"width","width":40},{"${'$'}type":"fillMaxWidth"},""" +
+                            """{"${'$'}type":"size","width":10,"height":20},{"${'$'}type":"height","height":"tall"}]""",
+                    ),
+            )
+        val size = sized.nativeModifierSize()
+        assertEquals(SizeValue.Fixed(10.dp), size.width)
+        // The last height does not decode, so the size modifier's height stands.
+        assertEquals(SizeValue.Fixed(20.dp), size.height)
+        assertEquals(NativeModifierSize(null, null), element(props = null).nativeModifierSize())
+    }
+
+    @Test
+    fun readsTheContentDescriptionOfASemanticsModifier() {
+        val described =
+            element(
+                props =
+                    mapOf(
+                        "modifiers" to
+                            """[{"${'$'}type":"semantics","contentDescription":"Revenue up 12%"},""" +
+                            """{"${'$'}type":"semantics","testTag":"chart"}]""",
+                    ),
+            )
+        assertEquals("Revenue up 12%", described.nativeContentDescription())
+        assertEquals(null, element(props = null).nativeContentDescription())
     }
 
     @Test

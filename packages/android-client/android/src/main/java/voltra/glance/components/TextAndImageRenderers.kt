@@ -25,6 +25,8 @@ import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.models.componentProp
+import voltra.modifiers.nativeContentDescription
+import voltra.modifiers.nativeModifierSize
 import voltra.styling.JSColorParser
 import voltra.styling.VoltraColorValue
 import voltra.styling.resolveColor
@@ -92,14 +94,18 @@ fun RenderText(
             val icon = Icon.createWithBitmap(bitmap)
             val widthDp = (bitmap.width / density).toInt()
             val heightDp = (bitmap.height / density).toInt()
+            // The bitmap's own size applies only on axes that no native size modifier sets, since
+            // Glance keeps the last width and height.
+            val nativeSize = element.nativeModifierSize()
+            var sizedModifier = finalModifier
+            if (nativeSize.width == null) sizedModifier = sizedModifier.width(widthDp.dp)
+            if (nativeSize.height == null) sizedModifier = sizedModifier.height(heightDp.dp)
             Image(
                 provider = ImageProvider(icon),
-                contentDescription = text,
+                // Glance's Image sets this after the modifier, so a semantics modifier's text goes here.
+                contentDescription = element.nativeContentDescription() ?: text,
                 contentScale = ContentScale.Fit,
-                modifier =
-                    finalModifier
-                        .width(widthDp.dp)
-                        .height(heightDp.dp),
+                modifier = sizedModifier,
             )
             return
         }
@@ -126,7 +132,8 @@ fun RenderImage(
             element.hashCode(),
         )
 
-    val contentDescription = element.p?.get("contentDescription") as? String
+    // A semantics modifier wins over the prop, as native modifiers do over style.
+    val contentDescription = element.nativeContentDescription() ?: element.p?.get("contentDescription") as? String
     val contentScale =
         parseContentScale(
             (element.p?.get("contentScale") as? String) ?: (element.p?.get("resizeMode") as? String),

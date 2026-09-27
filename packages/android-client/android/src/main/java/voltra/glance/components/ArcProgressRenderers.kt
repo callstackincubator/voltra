@@ -26,6 +26,8 @@ import voltra.glance.renderers.parseColorStringList
 import voltra.glance.resolveAndApplyStyle
 import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
+import voltra.modifiers.nativeContentDescription
+import voltra.modifiers.nativeModifierSize
 import voltra.styling.JSColorParser
 import voltra.styling.SizeValue
 import voltra.styling.resolveColor
@@ -100,8 +102,10 @@ fun RenderArcProgressIndicator(
             ?: ProgressIndicatorDefaults.BackgroundColorProvider.getColor(context).toArgb()
     val gradientColorsArgb = resolveGradientColors(props?.get("gradientColors") as? String, context)
 
-    val styleWidth = compositeStyle?.layout?.width
-    val styleHeight = compositeStyle?.layout?.height
+    // Native size modifiers are applied after style, so they decide the size where they set one.
+    val nativeSize = element.nativeModifierSize()
+    val styleWidth = nativeSize.width ?: compositeStyle?.layout?.width
+    val styleHeight = nativeSize.height ?: compositeStyle?.layout?.height
     val arcSize =
         resolveArcSize(
             width = styleWidth,
@@ -150,7 +154,7 @@ fun RenderArcProgressIndicator(
         // counted against the widget's bitmap budget and deduplicated by RemoteViews.BitmapCache.
         Image(
             provider = ImageProvider(bitmap),
-            contentDescription = "Progress indicator",
+            contentDescription = element.nativeContentDescription() ?: "Progress indicator",
             contentScale = ContentScale.Fit,
             modifier = GlanceModifier.fillMaxSize(),
         )
