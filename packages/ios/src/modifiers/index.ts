@@ -72,8 +72,10 @@ export type SymbolEffect = 'pulse' | 'variableColor' | 'breathe' | 'rotate' | 'w
 // MARK: - Widgets and Live Activities
 
 /**
- * Opens the URL in the app when the widget is tapped. Use it once per widget. It replaces Voltra's
- * default widget link, but a `deepLinkUrl` configured for the widget takes precedence.
+ * Opens the URL in the app when the widget or Live Activity is tapped. Takes an absolute URL or a
+ * path, which gets the app's URL scheme like `deepLinkUrl`. Use it once per widget, or once per
+ * Live Activity presentation. It replaces Voltra's default widget link, but a `deepLinkUrl`
+ * configured for the widget or Live Activity takes precedence.
  *
  * @since iOS 14.0
  */
@@ -260,7 +262,8 @@ export const containerRelativeFrame = (axes: 'horizontal' | 'vertical' | 'both')
   createIosModifier('containerRelativeFrame', { axes })
 
 /**
- * Uses a fixed Dynamic Type size for text inside the component, regardless of the system setting.
+ * Uses a fixed Dynamic Type size for content inside the component, regardless of the system
+ * setting. Voltra `Text` uses fixed font sizes, so it does not change.
  *
  * @since iOS 15.0
  */
@@ -283,7 +286,8 @@ export const minimumScaleFactor = (factor: number) => createIosModifier('minimum
 export const truncationMode = (mode: 'head' | 'middle' | 'tail') => createIosModifier('truncationMode', { mode })
 
 /**
- * Aligns the lines of multi-line text inside.
+ * Aligns the lines of multi-line text inside. A `Text` with `style.textAlign` or its own
+ * `multilineTextAlignment` prop keeps that value.
  *
  * @since iOS 13.0
  */

@@ -219,6 +219,11 @@
     "$type": "fixedSize"
   },
   {
+    "horizontal": true,
+    "vertical": false,
+    "$type": "fixedSize"
+  },
+  {
     "priority": 1,
     "$type": "layoutPriority"
   },

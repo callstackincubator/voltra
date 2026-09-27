@@ -30,6 +30,17 @@ final class NativeModifierTests: XCTestCase {
     XCTAssertEqual(VoltraModifierRegistry.registeredTypes, fixtureTypes)
   }
 
+  func testFixtureCoversEveryParameterOfEveryModifier() throws {
+    // A parameter renamed or added on one side only must fail here, not reach a device.
+    var fixtureParameters: [String: Set<String>] = [:]
+    for descriptor in try VoltraModifierRegistry.parseDescriptors(fixtureJSON()) {
+      fixtureParameters[descriptor.type, default: []].formUnion(descriptor.params.keys)
+    }
+    for (type, definition) in VoltraModifierRegistry.definitions {
+      XCTAssertEqual(fixtureParameters[type] ?? [], definition.parameters, "Parameters of \(type)")
+    }
+  }
+
   func testUnknownTypeReturnsNil() throws {
     let descriptor = VoltraModifierDescriptor(type: "doesNotExist", params: [:])
     XCTAssertNil(try VoltraModifierRegistry.makeModifier(descriptor))
@@ -103,6 +114,17 @@ final class NativeModifierTests: XCTestCase {
     XCTAssertFalse(VoltraModifierRegistry.canApply(VoltraModifierDescriptor(type: "doesNotExist", params: [:])))
   }
 
+  func testWidgetURLResolvesPathsLikeDeepLinkURL() throws {
+    let absolute = VoltraModifierDescriptor(type: "widgetURL", params: ["url": "myapp://portfolio"])
+    XCTAssertEqual(try (VoltraModifierRegistry.makeModifier(absolute) as? WidgetURLModifier)?.url.absoluteString, "myapp://portfolio")
+
+    // A path gets the app's URL scheme, the way `deepLinkUrl` does.
+    let path = VoltraModifierDescriptor(type: "widgetURL", params: ["url": "/portfolio"])
+    let resolved = try XCTUnwrap(VoltraModifierRegistry.makeModifier(path) as? WidgetURLModifier)
+    XCTAssertEqual(resolved.url.absoluteString, VoltraDeepLinkResolver.resolveUrl("/portfolio")?.absoluteString)
+    XCTAssertNotNil(resolved.url.scheme)
+  }
+
   func testAnimationRequiresAValue() {
     let descriptor = VoltraModifierDescriptor(type: "animation", params: ["curve": "linear"])
     XCTAssertThrowsError(try VoltraModifierRegistry.makeModifier(descriptor)) { error in
@@ -142,6 +164,13 @@ final class NativeModifierTests: XCTestCase {
       ##"{"t":8,"p":{"currentValueLabel":{"t":0,"c":"42","p":{"mods":"[{\"$type\":\"containerBackground\",\"color\":\"#101828\"}]"}}}}"##
     )
     XCTAssertTrue(node.containsNativeModifier("containerBackground"))
+  }
+
+  func testComponentPropReturnsTheNodeParsedWithTheElement() throws {
+    let node = try parseNode(##"{"t":8,"p":{"currentValueLabel":{"t":0,"c":"42"}}}"##)
+    guard case let .element(element) = node else { return XCTFail("Expected an element") }
+    XCTAssertEqual(element.propNodes.keys.sorted(), ["currentValueLabel"])
+    XCTAssertEqual(element.componentProp("currentValueLabel"), element.propNodes["currentValueLabel"])
   }
 
   func testContainsNativeModifierIgnoresDescriptorsThatDoNotDecode() throws {

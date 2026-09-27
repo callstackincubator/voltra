@@ -96,6 +96,7 @@ let package = Package(
         "Modifiers/VoltraModifierRegistry.swift",
         "Modifiers/BuiltInModifiers.swift",
         "Modifiers/VoltraElement+nativeModifiers.swift",
+        "Helpers/VoltraDeepLinkResolver+URL.swift",
       ]
     ),
     .testTarget(

@@ -73,7 +73,7 @@ const SAMPLES = {
   rotationEffect: [m.rotationEffect(-15)],
   scaleEffect: [m.scaleEffect(0.9), m.scaleEffect({ x: 1.2 })],
   offset: [m.offset({ x: 4, y: -2 })],
-  fixedSize: [m.fixedSize(), m.fixedSize({ horizontal: false })],
+  fixedSize: [m.fixedSize(), m.fixedSize({ horizontal: false }), m.fixedSize({ horizontal: true, vertical: false })],
   layoutPriority: [m.layoutPriority(1)],
   containerRelativeFrame: [m.containerRelativeFrame('horizontal'), m.containerRelativeFrame('both')],
   dynamicTypeSize: [m.dynamicTypeSize('xxLarge'), m.dynamicTypeSize('accessibility2')],

@@ -8,7 +8,10 @@ let builtInModifierDefinitions: [String: VoltraModifierDefinition] = [
   // MARK: Widgets and Live Activities
 
   "widgetURL": VoltraModifierDefinition(parameters: ["url"]) { params in
-    guard let url = try URL(string: params.requiredString("url")) else { throw VoltraModifierError.invalidParameter("url") }
+    // Same forms as `deepLinkUrl`: an absolute URL, or a path that gets the app's URL scheme.
+    guard let url = try VoltraDeepLinkResolver.resolveUrl(params.requiredString("url")) else {
+      throw VoltraModifierError.invalidParameter("url")
+    }
     return WidgetURLModifier(url: url)
   },
   "containerBackground": VoltraModifierDefinition(parameters: ["color"]) { params in

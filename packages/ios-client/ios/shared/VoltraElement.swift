@@ -24,10 +24,15 @@ public struct VoltraElement: Hashable {
   /// evaluation. Derived from `_props`, so identity leaves it out like `_style`.
   public let nativeModifiers: [VoltraModifierDescriptor]
 
+  /// Element-shaped props, such as a Gauge label, parsed once while parsing and keyed by their
+  /// expanded name. `componentProp(_:)` reads them, and so do the hosts that look for native
+  /// modifiers anywhere in the rendered tree. Derived from `_props`, like `_style`.
+  public let propNodes: [String: VoltraNode]
+
   // MARK: - Hashable
 
   /// `_props` carries fully resolved values, so it alone distinguishes elements that render
-  /// differently. Identity deliberately omits `_style` and `nativeModifiers`, which are derived from `_props`
+  /// differently. Identity deliberately omits `_style`, `nativeModifiers` and `propNodes`, which are derived from `_props`
   /// and would only restate it.
   public func hash(into hasher: inout Hasher) {
     hasher.combine(type)
@@ -111,13 +116,44 @@ public struct VoltraElement: Hashable {
     _props = resolvedProps
     _style = Self.expandedStyle(from: resolvedProps)
     nativeModifiers = VoltraModifierDescriptor.parseList((resolvedProps?["mods"] ?? resolvedProps?["modifiers"])?.stringValue)
+    propNodes = Self.elementNodes(in: resolvedProps)
   }
 
   /// Get component prop by name - handles both single component and array
   public func componentProp(_ propName: String) -> VoltraNode {
+    if let node = propNodes[propName] {
+      return node
+    }
     guard let propValue = props?[propName] else { return .empty }
 
     return VoltraNode(from: propValue)
+  }
+
+  /// Parses the props whose values are serialized elements, or arrays of them. Other values, such
+  /// as a string label, are left to `componentProp(_:)`.
+  private static func elementNodes(in props: [String: JSONValue]?) -> [String: VoltraNode] {
+    guard let props else { return [:] }
+    var nodes: [String: VoltraNode] = [:]
+    for (key, value) in props where isElementShaped(value) {
+      let name = ShortNames.expand(key)
+      guard name != "style", name != "modifiers" else { continue }
+      let node = VoltraNode(from: value)
+      if !node.isEmpty {
+        nodes[name] = node
+      }
+    }
+    return nodes
+  }
+
+  private static func isElementShaped(_ value: JSONValue) -> Bool {
+    switch value {
+    case let .object(dict):
+      return dict["t"]?.intValue != nil
+    case let .array(items):
+      return !items.isEmpty && items.allSatisfy(isElementShaped)
+    default:
+      return false
+    }
   }
 
   /// Decode parameters from props
