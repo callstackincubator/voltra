@@ -1,3 +1,4 @@
+import type { NativeModifiersProp } from '@use-voltra/core'
 import { ReactNode } from 'react'
 
 import type { IosModifier } from '../modifiers/createIosModifier.js'
@@ -8,8 +9,9 @@ export type VoltraBaseProps = {
   style?: VoltraStyleProp
   /**
    * SwiftUI modifiers from `Voltra.modifiers`, applied on top of the styled component in array
-   * order: the first entry is innermost.
+   * order: the first entry is innermost. Falsy entries, such as `count && modifier` with `count = 0`,
+   * mean no modifier.
    */
-  modifiers?: readonly IosModifier[]
+  modifiers?: NativeModifiersProp<IosModifier>
   children?: ReactNode
 }

@@ -1,3 +1,4 @@
+import type { NativeModifiersProp } from '@use-voltra/core'
 import { ReactNode } from 'react'
 
 import type { AndroidModifier } from '../modifiers/createAndroidModifier.js'
@@ -9,9 +10,10 @@ export type VoltraAndroidBaseProps = {
   style?: VoltraAndroidStyleProp
   /**
    * Jetpack Glance modifiers from `VoltraAndroid.modifiers`, applied after `style`. Glance
-   * ignores their order, except that repeated `padding` adds up.
+   * ignores their order, except that repeated `padding` adds up. Falsy entries, such as
+   * `count && modifier` with `count = 0`, mean no modifier.
    */
-  modifiers?: readonly AndroidModifier[]
+  modifiers?: NativeModifiersProp<AndroidModifier>
   children?: ReactNode
 }
 
