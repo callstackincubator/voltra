@@ -31,6 +31,11 @@
   },
   {
     "type": "file",
+    "name": "localisation",
+    "label": "Localisation"
+  },
+  {
+    "type": "file",
     "name": "querying-active-widgets",
     "label": "Querying Active Widgets"
   },

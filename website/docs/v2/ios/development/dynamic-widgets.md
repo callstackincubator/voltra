@@ -10,7 +10,7 @@ That means your Dynamic Widget can react to:
 
 - `env.widgetFamily`
 - `env.colorScheme`
-- `env.locale`
+- `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](./localisation)
 - `env.widgetRenderingMode`
 - `env.showsWidgetContainerBackground`
 - `env.configuration` when you also add widget parameters
@@ -59,9 +59,12 @@ export default function WeatherDynamicWidget(
   const headline = props.headline ?? 'Weather update'
   const unreadCount = props.unreadCount ?? 0
 
-  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString('en-US', {
+  // Format with the env's locale, clock preference and time zone, never the runtime default.
+  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: env.hourCycle,
+    timeZone: env.timeZone,
   })
 
   return (
@@ -160,6 +163,10 @@ The response object becomes the same first argument `updateDynamicWidget` passes
 Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, edited by the user in the native iOS Edit Widget sheet, and read from `env.configuration`. Updating runtime props does not replace configuration.
 
 If you want user-editable values, add `appIntent` too. See [Configurable Widgets](./configurable-widgets).
+
+## Localisation
+
+Pass `env.locale` to every `Intl` and `toLocale*` call, and use `resolveLocale(env, messages)` to pick a translation. See [Localisation](./localisation) for the full locale environment, declaring the app's languages, and `setDynamicWidgetLocale`.
 
 ## Notes
 

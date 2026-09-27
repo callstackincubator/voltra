@@ -11,6 +11,11 @@
   },
   {
     "type": "file",
+    "name": "localisation",
+    "label": "Localisation"
+  },
+  {
+    "type": "file",
     "name": "managing-ongoing-notifications",
     "label": "Managing Ongoing Notifications"
   },

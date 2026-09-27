@@ -18,8 +18,11 @@ It requires iOS 17+, because Voltra wires it through `AppIntentConfiguration`.
 Each parameter has:
 
 - `name`: key that appears in `env.configuration`
-- `title`: label shown in the Edit Widget sheet
+- `title`: label shown in the Edit Widget sheet, as a plain string or a locale map
 - `default`: code-defined starting value before the user changes anything
+- `options` (optional): fixed values to pick from, each `{ "value": "...", "title": ... }`. The sheet shows a picker with the titles instead of a free-text field, and `env.configuration` receives the `value`. `default` must be one of the values; without it the first option is the default.
+
+The sheet's title defaults to `Configure <displayName>`. Set `configurationTitle` on the widget, as a plain string or a locale map, to change it.
 
 ## How to use it
 
@@ -84,6 +87,53 @@ Plugin config:
 ```
 
 If you need more than one value, add more entries to `appIntent.parameters` and read each key from `env.configuration`.
+
+## Offering fixed choices
+
+When a parameter has a known set of values, list them as `options`. The sheet then shows a picker:
+
+```json
+{
+  "name": "units",
+  "title": "Units",
+  "default": "metric",
+  "options": [
+    { "value": "metric", "title": "Metric" },
+    { "value": "imperial", "title": "Imperial" }
+  ]
+}
+```
+
+`env.configuration.units` is `"metric"` or `"imperial"`, whichever the user picked.
+
+## Localising the sheet
+
+The Edit Widget sheet is drawn by iOS, in the system language, and never runs your JavaScript, so its copy is translated at build time. `title`, `options[].title` and `configurationTitle` accept locale maps, the same way `displayName` does:
+
+```json
+{
+  "id": "weather_widget",
+  "entry": "./widgets/ios/weather-widget.tsx",
+  "displayName": { "en": "Weather", "pl": "Pogoda" },
+  "description": { "en": "Current conditions", "pl": "Aktualne warunki" },
+  "configurationTitle": { "en": "Weather settings", "pl": "Ustawienia pogody" },
+  "appIntent": {
+    "parameters": [
+      {
+        "name": "units",
+        "title": { "en": "Units", "pl": "Jednostki" },
+        "default": "metric",
+        "options": [
+          { "value": "metric", "title": { "en": "Metric", "pl": "Metryczne" } },
+          { "value": "imperial", "title": { "en": "Imperial", "pl": "Imperialne" } }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Voltra writes the translations to `Localizable.strings` in the widget extension, one `<language>.lproj` per language, and every language falls back to English for a string it has no translation for. See [Localisation](./localisation) for how the extension's languages are chosen.
 
 ## Notes
 

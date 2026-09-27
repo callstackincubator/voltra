@@ -72,6 +72,8 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   - `url`: The Voltra SSR endpoint URL
   - `intervalMinutes`: Update interval in minutes (default: `60`, or `15` for a widget with `entry`; minimum 15)
   - `refresh`: Show a native refresh button (default: `false`)
+- `appIntent`: (optional, Dynamic Widgets) Configuration parameters surfaced as `env.configuration`. Each has a `name`, an optional `title` and `options` (`[{ "value", "title" }]`) whose titles may be locale maps, and an optional `default` applied before `setWidgetConfiguration` changes it
+- `configurationTitle`: (optional) Title for an in-app configuration screen, as a plain string or locale map. Configuration copy is written to `voltra_widgets.xml`; see [Localisation](../development/localisation#picker-and-configuration-copy)
 
 ### Localizing `displayName` and `description`
 

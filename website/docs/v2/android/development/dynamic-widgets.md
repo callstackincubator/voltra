@@ -10,7 +10,7 @@ Your Dynamic Widget can react to:
 
 - `env.widgetFamily`
 - `env.colorScheme`
-- `env.locale`
+- `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](./localisation)
 - `env.configuration`
 - `AndroidDynamicColors` tokens, which resolve to the current Material You palette natively
 
@@ -63,9 +63,12 @@ export default function InboxDynamicWidget(
   const unreadCount = props.unreadCount ?? 0
   const label = env.configuration?.label ?? 'Inbox'
 
-  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString('en-US', {
+  // Format with the env's locale, 12/24-hour setting and time zone, never the runtime default.
+  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: env.hourCycle,
+    timeZone: env.timeZone,
   })
 
   return (
@@ -230,6 +233,10 @@ The Home Screen's own edit gesture does not open a Voltra configuration screen y
 ## Runtime props and configuration are separate
 
 Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, updated in-app with `setWidgetConfiguration` for every placement or `setWidgetInstanceConfiguration` for one, and read from `env.configuration`. Updating one does not replace the other.
+
+## Localisation
+
+Pass `env.locale` and `env.hourCycle` to every `Intl` and `toLocale*` call, and use `resolveLocale(env, messages)` to pick a translation. Hermes lacks `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat` and `Intl.DisplayNames`; see [Localisation](./localisation) for the opt-in polyfills, locale-change re-rendering and `setDynamicWidgetLocale`.
 
 ## Notes
 

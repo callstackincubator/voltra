@@ -108,6 +108,8 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   - `url`: The Voltra SSR endpoint URL
   - `intervalMinutes`: Update interval in minutes (default: `15`)
   - `refresh`: Show a native refresh button (default: `false`, requires iOS 17+)
+- `appIntent`: (optional, Dynamic Widgets, iOS 17+) Parameters the user edits in the Edit Widget sheet. Each parameter has a `name`, a `title` (plain string or locale map), an optional `default`, and optional `options` (`[{ "value", "title" }]`) for a picker. See [Configurable Widgets](../development/configurable-widgets)
+- `configurationTitle`: (optional) Title of the Edit Widget sheet, as a plain string or locale map. Defaults to `Configure <displayName>`
 
 **Example:**
 
@@ -185,3 +187,7 @@ Fallback behavior:
 - If there is no exact match, it falls back to the language-only match.
 - If there is still no match, it prefers an English locale such as `en` or `en-US`.
 - If no English entry exists, it uses the first configured locale.
+
+### Languages of the widget extension
+
+The generated widget extension declares the app's languages, so the locale it runs in (and `env.locale`) resolves like the app's. Voltra writes `CFBundleLocalizations` into the extension's `Info.plist`, and a `<language>.lproj/Localizable.strings` for each language, built from the Expo `locales` config keys, `ios.infoPlist.CFBundleLocalizations`, every locale used in a widget locale map, and `en`. See [Localisation](../development/localisation).
