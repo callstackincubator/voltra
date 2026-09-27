@@ -60,6 +60,33 @@ export type WidgetLocalizedCopy = Record<string, string>
 export type WidgetLabel = string | WidgetLocalizedCopy
 
 /**
+ * One value a configuration parameter offers. iOS shows `title` in a picker on the Edit Widget
+ * sheet; `env.configuration` receives `value`.
+ */
+export interface WidgetConfigurationOption {
+  value: string
+  title: WidgetLabel
+}
+
+/**
+ * The shape of `appIntent.parameters[]` both platform plugins share. iOS requires `title`.
+ */
+export interface WidgetConfigurationParameter {
+  name: string
+  title?: WidgetLabel
+  default?: string
+  options?: WidgetConfigurationOption[]
+}
+
+/** The widget fields that carry configuration-sheet copy. */
+export interface WidgetConfigurationCopySource {
+  id: string
+  /** Title of the configuration sheet (iOS intent title). */
+  configurationTitle?: WidgetLabel
+  appIntent?: { parameters: WidgetConfigurationParameter[] }
+}
+
+/**
  * Build-time widget initial state source: a single file path, or per-locale paths (same key rules as `WidgetLocalizedCopy`).
  * Each path must point to a module that exports the widget variants / default export for prerendering.
  */

@@ -1181,7 +1181,17 @@ function generateWidgetStringsXml(widgets: NormalizedAndroidWidgetConfig[], loca
     .map((widget) => {
       const label = escapeAndroidString(resolveWidgetLabel(widget.displayName, localeKey))
       const description = escapeAndroidString(resolveWidgetLabel(widget.description, localeKey))
-      return `    <string name="voltra_widget_${widget.id}_label">${label}</string>\n    <string name="voltra_widget_${widget.id}_description">${description}</string>`
+      // Configuration copy (ADR 0008 §6), under the keys the Expo plugin writes, for an in-app
+      // configuration screen to read.
+      const configurationEntries = collectWidgetConfigurationStrings(widget).map(
+        ({ key, label: configurationLabel }) =>
+          `\n    <string name="${key}">${escapeAndroidString(
+            resolveConfigurationLabel(configurationLabel, localeKey)
+          )}</string>`
+      )
+      return `    <string name="voltra_widget_${widget.id}_label">${label}</string>\n    <string name="voltra_widget_${
+        widget.id
+      }_description">${description}</string>${configurationEntries.join('')}`
     })
     .join('\n')
 
@@ -1195,11 +1205,60 @@ function generateWidgetStringsXml(widgets: NormalizedAndroidWidgetConfig[], loca
   ].join('\n')
 }
 
+/** Android resource names allow only `[a-z0-9_]`; mirrors the Expo plugin's `androidWidgetResourceId`. */
+function androidResourceSegment(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+}
+
+/**
+ * Configuration-sheet strings under the same keys as the Expo plugin and the iOS
+ * `Localizable.strings` (ADR 0008 §6), sanitised into resource names.
+ */
+function collectWidgetConfigurationStrings(
+  widget: NormalizedAndroidWidgetConfig
+): Array<{ key: string; label: WidgetLabel }> {
+  const id = androidResourceSegment(widget.id)
+  const strings: Array<{ key: string; label: WidgetLabel }> = []
+  if (widget.configurationTitle !== undefined) {
+    strings.push({ key: `voltra_widget_${id}_intent_title`, label: widget.configurationTitle })
+  }
+  for (const parameter of widget.appIntent?.parameters ?? []) {
+    const name = androidResourceSegment(parameter.name)
+    if (parameter.title !== undefined) {
+      strings.push({ key: `voltra_widget_${id}_param_${name}_title`, label: parameter.title })
+    }
+    for (const option of parameter.options ?? []) {
+      strings.push({
+        key: `voltra_widget_${id}_param_${name}_option_${androidResourceSegment(option.value)}`,
+        label: option.title,
+      })
+    }
+  }
+  return strings
+}
+
+/** Exact tag, then language, then English; `null` is the English `values/` folder. */
+function resolveConfigurationLabel(label: WidgetLabel, localeKey: string | null): string {
+  if (!isWidgetLocalizedMap(label) || localeKey === null) {
+    return widgetLabelEnglish(label)
+  }
+  const normalize = (tag: string) => tag.trim().toLowerCase().replace(/_/g, '-')
+  const wanted = normalize(localeKey)
+  const entries = Object.entries(label).filter(([, value]) => value.trim())
+  const exact = entries.find(([key]) => normalize(key) === wanted)
+  if (exact) {
+    return exact[1]
+  }
+  const sameLanguage = entries.find(([key]) => normalize(key).split('-')[0] === wanted.split('-')[0])
+  return sameLanguage ? sameLanguage[1] : widgetLabelEnglish(label)
+}
+
 function collectWidgetLocaleKeys(widgets: NormalizedAndroidWidgetConfig[]): Set<string> {
   const localeKeys = new Set<string>()
 
   for (const widget of widgets) {
-    for (const value of [widget.displayName, widget.description]) {
+    const configurationLabels = collectWidgetConfigurationStrings(widget).map(({ label }) => label)
+    for (const value of [widget.displayName, widget.description, ...configurationLabels]) {
       if (isWidgetLocalizedMap(value)) {
         for (const [localeKey, text] of Object.entries(value)) {
           if (text.trim()) {
@@ -1382,4 +1441,9 @@ function pushChange(changes: ReportedChange[], change: ReportedChange | undefine
   if (change) {
     changes.push(change)
   }
+}
+
+export const __test__ = {
+  generateWidgetStringsXml,
+  collectWidgetLocaleKeys,
 }

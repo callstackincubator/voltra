@@ -6,13 +6,16 @@ import {
   isWidgetLocalizedMap,
   logger,
   prerenderWidgetState,
+  widgetIntentTitleKey,
   widgetLabelEnglish,
+  widgetParameterOptionKey,
+  widgetParameterTitleKey,
   type PrerenderedWidgetStates,
   type WidgetLabel,
 } from '@use-voltra/expo-plugin'
 
 import { DEFAULT_WIDGET_FAMILIES, WIDGET_FAMILY_MAP, widgetKind } from '../../constants'
-import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
+import type { AppIntentParameter, IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 import { VOLTRA_WIDGET_STRINGS_BASENAME } from '../../utils/fileDiscovery'
 import { detectClientRenderedWidgets, type DetectedIOSWidget } from '../clientRendered'
 import { prerenderClientRenderedWidgets } from '../clientRenderedPrerender'
@@ -378,30 +381,109 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
  * bundle via the shared client runtime, and an AppIntentConfiguration widget. The configured
  * params are passed into the render as env.configuration; the native "Edit Widget" sheet edits them.
  */
+/**
+ * A string literal for a title on the Edit Widget sheet (ADR 0008 §6). A plain string is compiled in
+ * as-is. A locale map becomes a bare string-literal key into the extension's default `Localizable`
+ * table, which `syncExtensionLocalizableStrings` fills for every declared language: the one form
+ * the App Intents metadata processor is documented to accept without question.
+ */
+function sheetStringLiteral(label: WidgetLabel, key: string): string {
+  return `"${escapeForSwiftStringLiteral(isWidgetLocalizedMap(label) ? key : label)}"`
+}
+
+function parameterOptionEnumName(widgetId: string, parameterName: string): string {
+  return `VoltraWidget_${widgetId}_${parameterName}_Option`
+}
+
+/**
+ * Static `options` become an `AppEnum`, so the sheet shows a picker of localised labels instead of
+ * a free-text field. Cases are positional (`option0`…) because option values are free-form; the raw
+ * value is the option's `value`, which is what `env.configuration` receives.
+ */
+function generateParameterOptionEnum(widgetId: string, parameter: AppIntentParameter): string {
+  const options = parameter.options ?? []
+  const enumName = parameterOptionEnumName(widgetId, parameter.name)
+  const cases = options
+    .map((option, index) => `  case option${index} = "${escapeForSwiftStringLiteral(option.value)}"`)
+    .join('\n')
+  const representations = options
+    .map(
+      (option, index) =>
+        `    .option${index}: ${sheetStringLiteral(
+          option.title,
+          widgetParameterOptionKey(widgetId, parameter.name, option.value)
+        )},`
+    )
+    .join('\n')
+  const typeTitle = sheetStringLiteral(parameter.title, widgetParameterTitleKey(widgetId, parameter.name))
+
+  return [
+    '@available(iOS 17.0, *)',
+    `enum ${enumName}: String, AppEnum {`,
+    cases,
+    '',
+    `  static var typeDisplayRepresentation: TypeDisplayRepresentation = ${typeTitle}`,
+    `  static var caseDisplayRepresentations: [${enumName}: DisplayRepresentation] = [`,
+    representations,
+    '  ]',
+    '}',
+  ].join('\n')
+}
+
+/** Index of the option `parameter.default` names, or the first option. */
+function defaultOptionIndex(parameter: AppIntentParameter): number {
+  const index = (parameter.options ?? []).findIndex((option) => option.value === parameter.default)
+  return index >= 0 ? index : 0
+}
+
+/**
+ * Generates a Dynamic Widget backed by AppIntentConfiguration (iOS 17+): a
+ * WidgetConfigurationIntent (params + code defaults), an AppIntentTimelineProvider that loads the
+ * bundle via the shared client runtime, and an AppIntentConfiguration widget. The configured
+ * params are passed into the render as env.configuration; the native "Edit Widget" sheet edits them.
+ */
 function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
   const params = widget.appIntent!.parameters
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
   const intentName = `VoltraWidget_${widget.id}_Intent`
   const providerName = `VoltraWidget_${widget.id}_ClientProvider`
-  const intentTitle = escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)
+  const intentTitle =
+    widget.configurationTitle !== undefined
+      ? sheetStringLiteral(widget.configurationTitle, widgetIntentTitleKey(widget.id))
+      : `"${escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)}"`
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
 
-  const swiftDefault = (p: { default?: string }) => `"${escapeForSwiftStringLiteral(p.default ?? '')}"`
+  const hasOptions = (p: AppIntentParameter) => (p.options?.length ?? 0) > 0
+  // The raw default, as env.configuration sees it before the user configures anything.
+  const swiftDefault = (p: AppIntentParameter) =>
+    hasOptions(p)
+      ? `"${escapeForSwiftStringLiteral(p.options![defaultOptionIndex(p)]!.value)}"`
+      : `"${escapeForSwiftStringLiteral(p.default ?? '')}"`
+  const swiftType = (p: AppIntentParameter) => (hasOptions(p) ? parameterOptionEnumName(widget.id, p.name) : 'String')
+  const parameterDefault = (p: AppIntentParameter) =>
+    hasOptions(p) ? `.option${defaultOptionIndex(p)}` : swiftDefault(p)
+  const configuredValue = (p: AppIntentParameter) =>
+    hasOptions(p) ? `configuration.${p.name}.rawValue` : `configuration.${p.name}`
   const dictLiteral = (entries: string[]) => (entries.length > 0 ? `[${entries.join(', ')}]` : '[:]')
 
+  const optionEnums = params
+    .filter(hasOptions)
+    .map((p) => generateParameterOptionEnum(widget.id, p))
+    .join('\n\n')
   const paramDecls = params
     .map(
       (p) =>
-        `  @Parameter(title: "${escapeForSwiftStringLiteral(p.title)}", default: ${swiftDefault(p)})\n  var ${
-          p.name
-        }: String`
+        `  @Parameter(title: ${sheetStringLiteral(
+          p.title,
+          widgetParameterTitleKey(widget.id, p.name)
+        )}, default: ${parameterDefault(p)})\n  var ${p.name}: ${swiftType(p)}`
     )
     .join('\n\n')
-  const initParams = params.map((p) => `${p.name}: String`).join(', ')
+  const initParams = params.map((p) => `${p.name}: ${swiftType(p)}`).join(', ')
   const initBody = params.map((p) => `    self.${p.name} = ${p.name}`).join('\n')
-  const configuredDict = dictLiteral(params.map((p) => `"${p.name}": configuration.${p.name}`))
+  const configuredDict = dictLiteral(params.map((p) => `"${p.name}": ${configuredValue(p)}`))
   const defaultDict = dictLiteral(params.map((p) => `"${p.name}": ${swiftDefault(p)}`))
   // A server-driven Dynamic Widget fetches on every timeline request and schedules the next one
   // from its resolved interval; a plain one has nothing to ask again for, so its policy is .never.
@@ -418,10 +500,10 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
 
   return dedent`
     // MARK: - Client-rendered AppIntent widget: ${widget.id}
-
+    ${optionEnums ? `\n${optionEnums}\n` : ''}
     @available(iOS 17.0, *)
     struct ${intentName}: WidgetConfigurationIntent {
-      static var title: LocalizedStringResource = "${intentTitle}"
+      static var title: LocalizedStringResource = ${intentTitle}
 
     ${paramDecls}
 

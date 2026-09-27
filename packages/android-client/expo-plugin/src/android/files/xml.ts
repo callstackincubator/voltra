@@ -2,7 +2,15 @@ import dedent from 'dedent'
 import * as fs from 'fs'
 import * as path from 'path'
 
-import { isWidgetLocalizedMap, logger, widgetLabelEnglish } from '@use-voltra/expo-plugin'
+import {
+  collectLabelLocaleKeys,
+  collectWidgetConfigurationStrings,
+  isWidgetLocalizedMap,
+  logger,
+  pickLocalizedValue,
+  widgetLabelEnglish,
+  type WidgetLabel,
+} from '@use-voltra/expo-plugin'
 
 import type { AndroidWidgetConfig } from '../../types'
 import { androidWidgetResourceId } from '../resourceName'
@@ -223,6 +231,8 @@ function localeKeyToAndroidValuesQualifier(localeKey: string): string {
 export const __test__ = {
   localeKeyToAndroidValuesQualifier,
   generateWidgetInfoXml,
+  generateVoltraWidgetsStringResourcesXml,
+  collectAndroidLocaleKeysFromWidgets,
 }
 
 function collectAndroidLocaleKeysFromWidgets(widgets: AndroidWidgetConfig[]): Set<string> {
@@ -238,8 +248,27 @@ function collectAndroidLocaleKeysFromWidgets(widgets: AndroidWidgetConfig[]): Se
         }
       }
     }
+    // Configuration copy (ADR 0008 §6) shares the same values-<qualifier>/ folders.
+    const configurationLabels = collectWidgetConfigurationStrings(w).map(({ label }) => label)
+    for (const localeKey of collectLabelLocaleKeys(configurationLabels)) {
+      locales.add(localeKey)
+    }
   }
   return locales
+}
+
+/**
+ * A configuration string for one locale: the exact entry, else the usual fallback (language, then
+ * English). `null` is the unqualified `values/` folder, which carries the English copy.
+ */
+function resolveAndroidConfigurationLabel(label: WidgetLabel, localeKey: string | null): string {
+  if (!isWidgetLocalizedMap(label)) {
+    return label
+  }
+  if (localeKey === null) {
+    return widgetLabelEnglish(label)
+  }
+  return pickLocalizedValue(label, [localeKey]) ?? widgetLabelEnglish(label)
 }
 
 function resolveAndroidWidgetLabel(
@@ -283,7 +312,17 @@ function generateVoltraWidgetsStringResourcesXml(widgets: AndroidWidgetConfig[],
       const label = escapeAndroidStringRes(resolveAndroidWidgetLabel(widget, 'displayName', localeKey))
       const desc = escapeAndroidStringRes(resolveAndroidWidgetLabel(widget, 'description', localeKey))
       const resId = androidWidgetResourceId(widget.id)
-      return `<string name="voltra_widget_${resId}_label">${label}</string>\n    <string name="voltra_widget_${resId}_description">${desc}</string>`
+      // Configuration copy (ADR 0008 §6): the same keys as the iOS Localizable.strings, sanitised
+      // into resource names, for an in-app configuration screen to read.
+      const configurationEntries = collectWidgetConfigurationStrings(widget, androidWidgetResourceId).map(
+        ({ key, label: configurationLabel }) =>
+          `\n    <string name="${key}">${escapeAndroidStringRes(
+            resolveAndroidConfigurationLabel(configurationLabel, localeKey)
+          )}</string>`
+      )
+      return `<string name="voltra_widget_${resId}_label">${label}</string>\n    <string name="voltra_widget_${resId}_description">${desc}</string>${configurationEntries.join(
+        ''
+      )}`
     })
     .join('\n    ')
 

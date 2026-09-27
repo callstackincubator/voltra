@@ -6,6 +6,7 @@ import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 import { generateAssets } from './assets'
 import { generateEntitlements } from './entitlements'
 import { generateInfoPlist } from './infoPlist'
+import { resolveExtensionLocalizations, syncExtensionLocalizableStrings } from './localization'
 import { generateIOSDynamicLiveActivitiesManifest, generateIOSDynamicWidgetsManifest } from './manifest'
 import { generateSwiftFiles } from './swift'
 
@@ -29,6 +30,7 @@ export interface GenerateWidgetExtensionFilesProps {
  * - VoltraWidgetBundle.swift (widget bundle definition)
  * - VoltraWidgetInitialStates.swift (pre-rendered widget states)
  * - {targetName}.entitlements (entitlements file)
+ * - <locale>.lproj/Localizable.strings (declared languages and Edit Widget sheet strings)
  *
  * This should run before configureXcodeProject so the files exist when Xcode project is configured.
  */
@@ -51,8 +53,11 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         fs.mkdirSync(targetPath, { recursive: true })
       }
 
+      // Languages the extension declares, mirrored from the app (ADR 0008 §4)
+      const localizations = resolveExtensionLocalizations(config, widgets)
+
       // Generate Info.plist
-      generateInfoPlist(targetPath, targetName, version, buildNumber, voltraVersion)
+      generateInfoPlist(targetPath, targetName, version, buildNumber, voltraVersion, localizations)
 
       // Generate Assets.xcassets and copy user images
       generateAssets({ targetPath })
@@ -64,6 +69,10 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         widgets,
         liveActivities,
       })
+
+      // <locale>.lproj/Localizable.strings: Edit Widget sheet strings, and one real resource per
+      // declared language. Runs after the gallery strings, which share the .lproj folders.
+      syncExtensionLocalizableStrings(targetPath, localizations, widgets)
 
       // Write the iOS-owned Dynamic Widgets manifest for Metro to consume later.
       generateIOSDynamicWidgetsManifest({

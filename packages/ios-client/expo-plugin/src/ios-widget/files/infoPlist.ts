@@ -3,6 +3,10 @@ import * as path from 'path'
 
 import { logger } from '@use-voltra/expo-plugin'
 
+function escapeXml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 /**
  * Generates the Info.plist content for a WidgetKit extension.
  *
@@ -13,8 +17,17 @@ function generateInfoPlistContent(
   targetName: string,
   version: string,
   buildNumber: string,
-  voltraVersion: string
+  voltraVersion: string,
+  localizations: string[]
 ): string {
+  // CFBundleLocalizations mirrors the app's languages into the extension (ADR 0008 §4), so
+  // Locale.current and SwiftUI's \.locale there resolve the way they do in the app.
+  const localizationsEntry =
+    localizations.length > 0
+      ? `\t<key>CFBundleLocalizations</key>\n\t<array>\n${localizations
+          .map((locale) => `\t\t<string>${escapeXml(locale)}</string>\n`)
+          .join('')}\t</array>\n`
+      : ''
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -27,7 +40,7 @@ function generateInfoPlistContent(
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
+${localizationsEntry}	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
@@ -57,15 +70,21 @@ function generateInfoPlistContent(
  * @param version - The app version (CFBundleShortVersionString)
  * @param buildNumber - The build number (CFBundleVersion)
  * @param voltraVersion - The installed @use-voltra/ios-client package version
+ * @param localizations - Languages the extension declares (`CFBundleLocalizations`); see
+ *   `resolveExtensionLocalizations`
  */
 export function generateInfoPlist(
   targetPath: string,
   targetName: string,
   version: string,
   buildNumber: string,
-  voltraVersion: string
+  voltraVersion: string,
+  localizations: string[] = []
 ): void {
   const infoPlistPath = path.join(targetPath, 'Info.plist')
-  fs.writeFileSync(infoPlistPath, generateInfoPlistContent(targetName, version, buildNumber, voltraVersion))
+  fs.writeFileSync(
+    infoPlistPath,
+    generateInfoPlistContent(targetName, version, buildNumber, voltraVersion, localizations)
+  )
   logger.info('Generated Info.plist')
 }

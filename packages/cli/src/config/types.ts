@@ -12,6 +12,14 @@ export type WidgetLocalizedValue = Record<string, string>
 /** Widget display text, either as a single string or localized by locale identifier. */
 export type WidgetLabel = string | WidgetLocalizedValue
 
+/** One value a configuration parameter offers; `env.configuration` receives `value`. */
+export interface WidgetConfigurationOption {
+  /** Raw value passed to env.configuration. */
+  value: string
+  /** Label shown for the value, either as a single string or localized by locale identifier. */
+  title: WidgetLabel
+}
+
 /** Path to a widget initial state module, either as a single path or localized by locale identifier. */
 export type WidgetInitialStatePath = string | WidgetLocalizedValue
 
@@ -30,10 +38,12 @@ export interface AndroidWidgetServerUpdateConfig {
 export interface AndroidWidgetAppIntentParameter {
   /** Configuration key surfaced to env.configuration. */
   name: string
-  /** Optional label for runtime configuration UIs. */
-  title?: string
+  /** Optional label for runtime configuration UIs, either as a single string or localized. */
+  title?: WidgetLabel
   /** Default value used before runtime configuration overrides it. */
   default?: string
+  /** Fixed values to pick from, written to voltra_widgets.xml for a configuration UI. */
+  options?: WidgetConfigurationOption[]
 }
 
 export interface AndroidWidgetAppIntentConfig {
@@ -94,6 +104,8 @@ export interface AndroidWidgetConfig {
   previewLayout?: string
   /** Dynamic Widget configuration parameters surfaced to env.configuration. */
   appIntent?: AndroidWidgetAppIntentConfig
+  /** Title of a configuration screen, either as a single string or localized. */
+  configurationTitle?: WidgetLabel
 }
 
 export type IOSWidgetFamily =
@@ -120,10 +132,12 @@ export interface IOSWidgetServerUpdateConfig {
 export interface IOSWidgetAppIntentParameter {
   /** Configuration key surfaced to env.configuration. */
   name: string
-  /** Label shown in the native Edit Widget sheet. */
-  title: string
-  /** Default value used before the user configures the widget. */
+  /** Label shown in the native Edit Widget sheet, either as a single string or localized. */
+  title: WidgetLabel
+  /** Default value used before the user configures the widget. Must be one of `options` when set. */
   default?: string
+  /** Fixed values the Edit Widget sheet offers as a picker instead of a free-text field. */
+  options?: WidgetConfigurationOption[]
 }
 
 export interface IOSWidgetAppIntentConfig {
@@ -154,6 +168,8 @@ export interface IOSWidgetConfig {
   serverUpdate?: IOSWidgetServerUpdateConfig
   /** Dynamic Widget AppIntent configuration. */
   appIntent?: IOSWidgetAppIntentConfig
+  /** Title of the Edit Widget sheet, either as a single string or localized. */
+  configurationTitle?: WidgetLabel
 }
 
 export interface AndroidProjectOverrides {

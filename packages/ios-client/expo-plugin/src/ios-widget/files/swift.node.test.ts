@@ -202,6 +202,72 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     expect(swift).not.toContain('VoltraDynamicWidgetServerUpdateProvider')
   })
 
+  it('keys locale-mapped sheet titles into Localizable.strings with bare string literals', () => {
+    const swift = __test__.generateWidgetBundleSwift([
+      {
+        ...configurableWidget,
+        id: 'weather',
+        configurationTitle: { en: 'Weather settings', pl: 'Ustawienia pogody' },
+        appIntent: {
+          parameters: [
+            { name: 'label', title: { en: 'Label', pl: 'Etykieta' }, default: 'Hello' },
+            { name: 'plain', title: 'Plain', default: 'x' },
+          ],
+        },
+      },
+    ])
+
+    expect(swift).toContain('static var title: LocalizedStringResource = "voltra_widget_weather_intent_title"')
+    expect(swift).toContain('@Parameter(title: "voltra_widget_weather_param_label_title", default: "Hello")')
+    expect(swift).toContain('@Parameter(title: "Plain", default: "x")')
+    // The `table:` initializer form is deliberately not used at the @Parameter site (ADR 0008 T5).
+    expect(swift).not.toMatch(/@Parameter\(title: LocalizedStringResource/)
+  })
+
+  it('keeps the English "Configure <name>" intent title without a configurationTitle', () => {
+    const swift = __test__.generateWidgetBundleSwift([
+      { ...configurableWidget, displayName: { en: 'Weather', pl: 'Pogoda' } },
+    ])
+
+    expect(swift).toContain('static var title: LocalizedStringResource = "Configure Weather"')
+  })
+
+  it('turns static options into an AppEnum picker and passes the raw value to env.configuration', () => {
+    const swift = __test__.generateWidgetBundleSwift([
+      {
+        ...configurableWidget,
+        id: 'weather',
+        appIntent: {
+          parameters: [
+            {
+              name: 'units',
+              title: { en: 'Units', pl: 'Jednostki' },
+              default: 'imperial',
+              options: [
+                { value: 'metric', title: { en: 'Metric', pl: 'Metryczne' } },
+                { value: 'imperial', title: 'Imperial' },
+              ],
+            },
+          ],
+        },
+      },
+    ])
+
+    expect(swift).toContain('enum VoltraWidget_weather_units_Option: String, AppEnum {')
+    expect(swift).toContain('case option0 = "metric"')
+    expect(swift).toContain('case option1 = "imperial"')
+    expect(swift).toContain(
+      'static var typeDisplayRepresentation: TypeDisplayRepresentation = "voltra_widget_weather_param_units_title"'
+    )
+    expect(swift).toContain('.option0: "voltra_widget_weather_param_units_option_metric",')
+    expect(swift).toContain('.option1: "Imperial",')
+    expect(swift).toMatch(
+      /@Parameter\(title: "voltra_widget_weather_param_units_title", default: \.option1\)\s*var units: VoltraWidget_weather_units_Option/
+    )
+    expect(swift).toContain('["units": configuration.units.rawValue]')
+    expect(swift).toContain('configuration: ["units": "imperial"])')
+  })
+
   it('does NOT emit AppIntent code for a client widget without appIntent', () => {
     const swift = __test__.generateWidgetBundleSwift([plainClientWidget])
     expect(swift).toContain('VoltraClientWidgetProvider(')

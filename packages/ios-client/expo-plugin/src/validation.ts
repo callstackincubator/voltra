@@ -1,6 +1,7 @@
 import {
   validateHomeScreenWidgetId,
   validateInitialStatePath,
+  validateWidgetConfigurationCopy,
   validateWidgetEntry,
   validateWidgetLabel,
   validateWidgetServerUpdate,
@@ -55,6 +56,7 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: s
   }
 
   validateWidgetServerUpdate(widget.serverUpdate, widget.id, iosServerUpdateRules(widget))
+  validateWidgetConfigurationCopy(widget, { requireParameterTitle: true })
 
   if (widget.supportedFamilies) {
     if (!Array.isArray(widget.supportedFamilies)) {
