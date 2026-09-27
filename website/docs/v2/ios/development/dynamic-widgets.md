@@ -59,7 +59,7 @@ export default function WeatherDynamicWidget(
   const headline = props.headline ?? 'Weather update'
   const unreadCount = props.unreadCount ?? 0
 
-  // Format with the env's locale, clock preference and time zone, never the runtime default.
+  // Format with the user's locale, 12/24-hour setting and time zone.
   const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
@@ -166,7 +166,7 @@ If you want user-editable values, add `appIntent` too. See [Configurable Widgets
 
 ## Localisation
 
-Pass `env.locale` to every `Intl` and `toLocale*` call, and use `resolveLocale(env, messages)` to pick a translation. See [Localisation](./localisation) for the full locale environment, declaring the app's languages, and `setDynamicWidgetLocale`.
+Pass `env.locale` to every `Intl` and `toLocale*` call, and pick a translation with `resolveLocale(env, messages)`. See [Localisation](./localisation) for every locale field, how to declare the languages your app supports, and how to let the app choose the widget language.
 
 ## Notes
 

@@ -6,14 +6,16 @@
 '@use-voltra/android-client': minor
 ---
 
-Dynamic Widgets and Dynamic Live Activities receive a complete locale environment:
-`env.preferredLanguages`, `env.layoutDirection`, `env.hourCycle` (reconciled with the user's
-12/24-hour setting), `env.timeZone`, `env.measurementSystem`, `env.calendar` and
-`env.firstDayOfWeek`, alongside `env.locale`. `resolveLocale(env, messages)` picks the best
-translation with the same fallback order as localized initial states, and `pickLocalizedValue` is
-now exported from `@use-voltra/core`, `@use-voltra/ios` and `@use-voltra/android`.
+Dynamic Widgets and Dynamic Live Activities receive the user's language and regional settings on
+`env`: `preferredLanguages`, `layoutDirection`, `hourCycle` (matching the 12/24-hour setting),
+`timeZone`, `measurementSystem`, `calendar` and `firstDayOfWeek`, alongside `locale`.
+`resolveLocale(env, messages)` picks the best translation with the same fallback order as
+localized initial states, and `pickLocalizedValue` is exported from `@use-voltra/core`,
+`@use-voltra/ios` and `@use-voltra/android`.
 
-`setDynamicWidgetLocale(tag | null)` lets an app render widgets in a language it chooses; the tag
-reaches every render as `env.appLocale`, and placed widgets and running Dynamic Live Activities
-re-render straight away. On iOS it is stored in the App Group and needs `groupIdentifier`. Android Dynamic Widgets now re-render after a device, per-app or regional
-language change, even when the app is not running.
+`setDynamicWidgetLocale(tag | null)` renders widgets in a language the app chooses. The tag reaches
+every render as `env.appLocale`, and placed widgets and running Dynamic Live Activities render
+again at once. On iOS it needs `groupIdentifier` in the plugin configuration.
+
+Android Dynamic Widgets render again after the device language, the app's per-app language or the
+regional preferences change, even when the app is not running.

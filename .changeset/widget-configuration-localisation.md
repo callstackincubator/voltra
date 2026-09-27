@@ -5,12 +5,13 @@
 'voltra': minor
 ---
 
-The Edit Widget sheet can be localized: `appIntent.parameters[].title` and the new
-`configurationTitle` accept locale maps like `displayName`, and parameters accept static `options`,
-which iOS shows as a picker while `env.configuration` still receives the raw value. On Android the
-same strings are written to `voltra_widgets.xml` for an in-app configuration screen.
+The Edit Widget sheet can be translated. `appIntent.parameters[].title` and the new
+`configurationTitle` accept locale maps like `displayName`, and a parameter can list `options`
+(`[{ "value": "metric", "title": "Metric" }]`), which iOS shows as a picker while
+`env.configuration` still receives the `value`. On Android the same titles are stored as string
+resources for a configuration screen you build in the app.
 
-The generated iOS widget extension now declares the app's languages (from the Expo `locales` config,
-`CFBundleLocalizations` and widget locale maps), so the extension, and `env.locale`, resolve the
-same language as the app instead of only the languages that happen to have a localized gallery
-label.
+Widgets now declare the same languages as the app, taken from the Expo `locales` config,
+`ios.infoPlist.CFBundleLocalizations`, widget locale maps and the app's development language. On
+iOS this decides which language `env.locale` resolves to; before, only languages with a translated
+gallery label counted.

@@ -108,7 +108,7 @@ When a parameter has a known set of values, list them as `options`. The sheet th
 
 ## Localising the sheet
 
-The Edit Widget sheet is drawn by iOS, in the system language, and never runs your JavaScript, so its copy is translated at build time. `title`, `options[].title` and `configurationTitle` accept locale maps, the same way `displayName` does:
+iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather than from your widget code. `title`, `options[].title` and `configurationTitle` accept locale maps, the same way `displayName` does:
 
 ```json
 {
@@ -133,7 +133,7 @@ The Edit Widget sheet is drawn by iOS, in the system language, and never runs yo
 }
 ```
 
-Voltra writes the translations to `Localizable.strings` in the widget extension, one `<language>.lproj` per language, and every language falls back to English for a string it has no translation for. See [Localisation](./localisation) for how the extension's languages are chosen.
+iOS shows the sheet in the system language. A language with no translation for a string shows your app's development language instead. Rebuild the native app after changing these. See [Localisation](./localisation) for how the app's languages are declared.
 
 ## Notes
 

@@ -63,7 +63,7 @@ export default function InboxDynamicWidget(
   const unreadCount = props.unreadCount ?? 0
   const label = env.configuration?.label ?? 'Inbox'
 
-  // Format with the env's locale, 12/24-hour setting and time zone, never the runtime default.
+  // Format with the user's locale, 12/24-hour setting and time zone.
   const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
@@ -236,7 +236,7 @@ Dynamic Widget props are app-owned state passed as the entry component's first a
 
 ## Localisation
 
-Pass `env.locale` and `env.hourCycle` to every `Intl` and `toLocale*` call, and use `resolveLocale(env, messages)` to pick a translation. Hermes lacks `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat` and `Intl.DisplayNames`; see [Localisation](./localisation) for the opt-in polyfills, locale-change re-rendering and `setDynamicWidgetLocale`.
+Pass `env.locale` and `env.hourCycle` to every `Intl` and `toLocale*` call, and pick a translation with `resolveLocale(env, messages)`. `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat` and `Intl.DisplayNames` are not available in Android widgets unless you add the polyfills. See [Localisation](./localisation) for the polyfills, every locale field, and how to let the app choose the widget language.
 
 ## Notes
 

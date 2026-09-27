@@ -1,41 +1,39 @@
 # Localisation
 
-Dynamic Widgets and Dynamic Live Activities run their JavaScript on the device every time they render, so the same code that draws the widget can also translate it and format dates, numbers and units for the user. Voltra gives the entry everything it needs through the environment, and re-renders when it changes.
+A Dynamic Widget or Dynamic Live Activity renders on the device, so your JavaScript can translate the widget and format dates, numbers and units for the person looking at it. Every render receives the language and regional settings on `env`, and widgets render again when those settings change.
 
-Two surfaces are drawn by iOS itself rather than by your JavaScript: the widget gallery and the Edit Widget sheet. Their copy is translated at build time from locale maps in `app.json`.
+Two parts of a widget are drawn by iOS, not by your code: the widget gallery and the Edit Widget sheet. You translate those in `app.json`; see [Translate the gallery and the Edit Widget sheet](#translate-the-gallery-and-the-edit-widget-sheet).
 
-## The locale environment
+## What the widget knows about the user
 
-Every render receives these fields on `env` (Dynamic Widgets) and on the Live Activity `environment`:
+These fields are on `env` in a Dynamic Widget and on `environment` in a Dynamic Live Activity:
 
-| Field                | Example                    | Notes                                                                                                                                                      |
-| -------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `locale`             | `"pl-PL"`, `"en-US-u-hc-h23"` | BCP-47 tag of the locale the widget extension resolved, including Unicode extensions for the user's overrides. Pass it to every `Intl` and `toLocale*` call. |
-| `preferredLanguages` | `["pl-PL", "en-US"]`       | The user's ordered language list, independent of which languages the app supports.                                                                         |
-| `appLocale`          | `"pl"`                     | The language the app chose with `setDynamicWidgetLocale`. Absent unless set.                                                                               |
-| `layoutDirection`    | `"ltr"`                    | `"rtl"` for Arabic, Hebrew and other right-to-left languages.                                                                                               |
-| `hourCycle`          | `"h23"`                    | The effective clock, already reconciled with the user's 24-Hour Time setting.                                                                               |
-| `timeZone`           | `"Europe/Warsaw"`          | The device's IANA time zone.                                                                                                                               |
-| `measurementSystem`  | `"metric"`                 | `"metric"`, `"us"` or `"uk"`.                                                                                                                              |
-| `calendar`           | `"gregory"`                | Unicode calendar identifier as `Intl` spells it.                                                                                                           |
-| `firstDayOfWeek`     | `2`                        | `1` is Sunday, `2` is Monday, … `7` is Saturday.                                                                                                            |
+| Field                | Example                       | What it tells you                                                                                                                                         |
+| -------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `locale`             | `"pl-PL"`, `"en-US-u-hc-h23"` | The language and region the widget is drawn in, as a BCP-47 tag. It includes the user's overrides, such as 24-Hour Time. Pass it to every `Intl` and `toLocale*` call. |
+| `preferredLanguages` | `["pl-PL", "en-US"]`          | The user's language list from Settings, in order, whether or not your app supports those languages.                                                     |
+| `appLocale`          | `"pl"`                        | The language your app chose with `setDynamicWidgetLocale`. Absent unless you set one.                                                                    |
+| `layoutDirection`    | `"ltr"`                       | `"rtl"` for Arabic, Hebrew and other right-to-left languages.                                                                                             |
+| `hourCycle`          | `"h23"`                       | `"h12"` or `"h23"`, matching the user's 24-Hour Time setting.                                                                                             |
+| `timeZone`           | `"Europe/Warsaw"`             | The device time zone.                                                                                                                                     |
+| `measurementSystem`  | `"metric"`                    | `"metric"`, `"us"` or `"uk"`.                                                                                                                             |
+| `calendar`           | `"gregory"`                   | The user's calendar, spelled the way `Intl` expects.                                                                                                      |
+| `firstDayOfWeek`     | `2`                           | `1` is Sunday, `2` is Monday, up to `7` for Saturday.                                                                                                     |
 
-WidgetKit reloads widgets by itself when the system language changes, so a widget that reads these fields at render time always shows the current language. There is nothing to wire up.
+`locale` follows the languages your app declares, not the device language on its own. A Polish user of an app that only declares English gets `"en-PL"`. See [Declare the languages your app supports](#declare-the-languages-your-app-supports).
 
-:::info `env.locale` is a BCP-47 tag
-Before this release iOS passed the ICU form (`pl_PL`), which `Intl` rejects with a `RangeError`. If your widget parsed the underscore form, switch to the hyphenated one.
-:::
+Versions of `@use-voltra/ios-client` before 2.4.0 passed `locale` as `pl_PL`. If your widget compared it against that form, switch to the hyphenated tag.
 
-## Translating widget content
+## Translate widget content
 
-Keep one messages object per language and let `resolveLocale` pick one. It tries the app's override first, then the user's preferred languages (exact tag, then language), then `env.locale`, and finally falls back to `en`, `__default`, or the first key.
+Keep one messages object per language and let `resolveLocale` choose. It tries `appLocale`, then each entry of `preferredLanguages` (exact tag, then language only), then `locale`. If none match, it returns `en`, then `__default`, then the first key. It returns `undefined` only when the object is empty.
 
 ```tsx
 import { resolveLocale, Voltra, type WidgetEnvironment } from '@use-voltra/ios'
 
 const messages = {
-  en: { title: 'Next train', minutes: (n: number) => `in ${n} min` },
-  pl: { title: 'Następny pociąg', minutes: (n: number) => `za ${n} min` },
+  en: { title: 'Next train' },
+  pl: { title: 'Następny pociąg' },
 }
 
 export default function TrainWidget(props: { departure?: number }, env: WidgetEnvironment) {
@@ -58,17 +56,25 @@ export default function TrainWidget(props: { departure?: number }, env: WidgetEn
 }
 ```
 
-Always pass `env.locale` (and `env.timeZone` for dates) explicitly. A call without a locale uses the JavaScript runtime's default, which comes from the device's language list rather than from the language the widget is drawn in, so the two can disagree.
+`pickLocalizedValue(map, languages)` applies the same fallback to any locale-keyed map when you want to pass the language list yourself.
 
-Stacks mirror by themselves in right-to-left languages (`leading` is the right edge there); use `env.layoutDirection` for anything you position by hand, such as the direction of an arrow symbol.
+## Format dates, numbers and units
 
-JavaScriptCore on iOS supports the whole `Intl` API — `PluralRules`, `RelativeTimeFormat`, `ListFormat`, `DisplayNames` and `DateTimeFormat` with `dateStyle`/`timeStyle` — so no polyfills are needed on iOS.
+Pass `env.locale` to every `Intl` and `toLocale*` call, and `env.timeZone` whenever you format a date. A call without a locale uses the device language list, which can differ from the language the widget is drawn in, so the widget text and its dates would disagree.
 
-`pickLocalizedValue(map, languages)` applies the same fallback to any locale-keyed map if you prefer to pass the language list yourself.
+The full `Intl` API is available on iOS: `DateTimeFormat` with `dateStyle` and `timeStyle`, `NumberFormat`, `PluralRules`, `RelativeTimeFormat`, `ListFormat` and `DisplayNames`. You do not need polyfills.
 
-## Letting the app choose the language
+Use `env.measurementSystem` to choose between kilometres and miles, or Celsius and Fahrenheit, and `env.firstDayOfWeek` when you draw a week.
 
-iOS 17 and 18 do not pass a per-app language chosen in Settings to widget extensions, and apps with their own in-app language picker have no other way to reach them. Tell Voltra which language to use instead:
+## Support right-to-left languages
+
+Stacks mirror on their own in right-to-left languages, so `leading` is the right edge there. Use `env.layoutDirection` for anything you position by hand, such as the direction of an arrow symbol.
+
+## Let the app choose the language
+
+Use this when your app has its own language picker, or when you need the per-app language from Settings to reach widgets on iOS 17 and 18, which do not pass it to widgets on their own.
+
+Requires `groupIdentifier` in the plugin configuration. Without it the call rejects, because widgets cannot read the value.
 
 ```ts
 import { setDynamicWidgetLocale } from '@use-voltra/ios-client'
@@ -77,22 +83,20 @@ await setDynamicWidgetLocale('pl') // every render now sees env.appLocale === 'p
 await setDynamicWidgetLocale(null) // back to the system languages
 ```
 
-The tag is stored in the App Group, so this requires `groupIdentifier` in the plugin configuration and rejects without one. Widgets reload and running Dynamic Live Activities re-render as soon as the value is stored. `resolveLocale` gives `appLocale` precedence automatically.
+Widgets reload and running Dynamic Live Activities render again as soon as the value is stored. The value survives app restarts. `resolveLocale` prefers `appLocale` over everything else.
 
-## Declaring the app's languages
+## Declare the languages your app supports
 
-iOS decides which language the widget extension runs in from the languages the extension itself declares. Voltra mirrors your app's languages into the generated extension so `env.locale` resolves the way it does in the app: it writes `CFBundleLocalizations` into the extension's `Info.plist` and adds a `<language>.lproj/Localizable.strings` for each one.
-
-The list is built from:
+iOS picks the widget's language from the languages the app declares. Voltra declares the same languages for widgets as for the app, taken from:
 
 - the keys of the Expo [`locales`](https://docs.expo.dev/guides/localization/#translating-app-metadata) config,
 - `ios.infoPlist.CFBundleLocalizations`, if you set it,
 - every locale used in a widget's locale maps (gallery labels and Edit Widget sheet copy),
-- plus the app's development language (`ios.infoPlist.CFBundleDevelopmentRegion`, or `en` when it is not set), which iOS falls back to when none of the user's languages match. Every language gets every string: a missing translation falls back to the development language, then English.
+- your app's development language (`ios.infoPlist.CFBundleDevelopmentRegion`, otherwise `en`).
 
-Declare every language your widgets translate into, for example with `"locales": { "pl": "./locales/pl.json" }`. Without a Polish entry, a Polish user of your app gets `env.locale === "en-PL"`; `env.preferredLanguages` still lists Polish first.
+Declare every language your widgets translate into, for example with `"locales": { "pl": "./locales/pl.json" }`. If Polish is missing, a Polish user gets `env.locale === "en-PL"`, while `env.preferredLanguages` still lists Polish first. Rebuild the native app after changing the list.
 
-## Gallery and Edit Widget sheet copy
+## Translate the gallery and the Edit Widget sheet
 
 The widget gallery name and description, and the titles on the Edit Widget sheet, accept locale maps in `app.json`:
 
@@ -119,8 +123,8 @@ The widget gallery name and description, and the titles on the Edit Widget sheet
 }
 ```
 
-These surfaces are drawn by iOS in the system language, not in the app's language, and they never run your JavaScript. See [Configurable Widgets](./configurable-widgets) for `options` and `configurationTitle`.
+iOS shows these in the system language, not in your app's language, and `setDynamicWidgetLocale` does not affect them. A language with no translation for a string shows your development language instead. Rebuild the native app after changing them. See [Configurable Widgets](./configurable-widgets) for `options` and `configurationTitle`.
 
-## Live Activity push alerts
+## Translate Live Activity alerts
 
-The `alert` of an ActivityKit push is shown by iOS and is not rendered by Voltra. Localise it with the APNs `title-loc-key`/`loc-key` fields and strings in the app bundle.
+The `alert` of an ActivityKit push is shown by iOS and is not rendered by Voltra. Localise it with the APNs `title-loc-key` and `loc-key` fields and strings in the app bundle.

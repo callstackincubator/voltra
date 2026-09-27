@@ -1,26 +1,26 @@
 # Localisation
 
-Dynamic Widgets run their JavaScript in Hermes every time they render, so the same code that draws the widget can also translate it and format dates, numbers and units for the user. Voltra gives the entry everything it needs through `env`, and re-renders placed widgets when the language changes.
+A Dynamic Widget renders on the device, so your JavaScript can translate the widget and format dates, numbers and units for the person looking at it. Every render receives the language and regional settings on `env`, and placed widgets render again when those settings change.
 
-## The locale environment
+## What the widget knows about the user
 
-| Field                | Example              | Notes                                                                                                         |
-| -------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `locale`             | `"pl-PL"`            | BCP-47 tag of the first configured locale. Pass it to every `Intl` and `toLocale*` call.                     |
-| `preferredLanguages` | `["pl-PL", "en-US"]` | Every configured locale in order: a per-app language (Android 13+) first, then the system languages.         |
-| `appLocale`          | `"pl"`               | The language the app chose with `setDynamicWidgetLocale`. Absent unless set.                                 |
-| `layoutDirection`    | `"ltr"`              | `"rtl"` for Arabic, Hebrew and other right-to-left languages.                                                 |
-| `hourCycle`          | `"h23"`              | From the user's 24-hour setting, which is not part of the locale and which `Intl` cannot see on its own.      |
-| `timeZone`           | `"Europe/Warsaw"`    | The device's IANA time zone.                                                                                  |
-| `measurementSystem`  | `"metric"`           | `"metric"`, `"us"` or `"uk"`. Absent below Android 9 (API 28), where the UK system cannot be told apart.      |
-| `calendar`           | `"gregory"`          | Unicode calendar identifier as `Intl` spells it.                                                              |
-| `firstDayOfWeek`     | `2`                  | `1` is Sunday, `2` is Monday, … `7` is Saturday.                                                               |
+| Field                | Example              | What it tells you                                                                                                  |
+| -------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `locale`             | `"pl-PL"`            | The language and region the widget is drawn in, as a BCP-47 tag. Pass it to every `Intl` and `toLocale*` call.    |
+| `preferredLanguages` | `["pl-PL", "en-US"]` | The user's languages in order. A per-app language (Android 13 and newer) comes first, then the system languages.  |
+| `appLocale`          | `"pl"`               | The language your app chose with `setDynamicWidgetLocale`. Absent unless you set one.                             |
+| `layoutDirection`    | `"ltr"`              | `"rtl"` for Arabic, Hebrew and other right-to-left languages.                                                      |
+| `hourCycle`          | `"h23"`              | `"h12"` or `"h23"`, matching the user's 24-hour time setting. This setting is not part of `locale`.               |
+| `timeZone`           | `"Europe/Warsaw"`    | The device time zone.                                                                                              |
+| `measurementSystem`  | `"metric"`           | `"metric"`, `"us"` or `"uk"`. Absent on Android 8 and older.                                                       |
+| `calendar`           | `"gregory"`          | The user's calendar, spelled the way `Intl` expects.                                                               |
+| `firstDayOfWeek`     | `2`                  | `1` is Sunday, `2` is Monday, up to `7` for Saturday.                                                              |
 
-Android does not re-render widgets when the language changes, so Voltra does it: a receiver for `LOCALE_CHANGED` re-renders every placed Dynamic Widget after a change of the device language, the app's per-app language or the regional preferences, even when the app is not running. While the app is running, an in-app language switch through `LocaleManager` re-renders them immediately too.
+Placed widgets render again after the device language, the app's per-app language or the regional preferences change, even when the app is not running. A language change your app makes while it is running takes effect at once.
 
-## Translating widget content
+## Translate widget content
 
-Keep one messages object per language and let `resolveLocale` pick one. It tries the app's override first, then the user's languages (exact tag, then language), then `env.locale`, and finally falls back to `en`, `__default`, or the first key.
+Keep one messages object per language and let `resolveLocale` choose. It tries `appLocale`, then each entry of `preferredLanguages` (exact tag, then language only), then `locale`. If none match, it returns `en`, then `__default`, then the first key. It returns `undefined` only when the object is empty.
 
 ```tsx
 import { resolveLocale, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
@@ -49,13 +49,19 @@ export default function TrainWidget(props: { departure?: number }, env: WidgetEn
 }
 ```
 
-Always pass `env.locale` and `env.hourCycle` explicitly. The runtime's default locale is the process's, and the 24-hour setting only reaches `Intl` through `hourCycle`.
+`pickLocalizedValue(map, languages)` applies the same fallback to any locale-keyed map when you want to pass the language list yourself.
 
-## Intl on Hermes
+## Format dates, numbers and units
 
-Hermes on Android implements `Intl.Collator`, `Intl.NumberFormat`, `Intl.DateTimeFormat` and the `toLocale*` methods. It does not implement `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat`, `Intl.DisplayNames` or `Intl.Locale`, and i18n libraries that rely on plural rules (i18next v21+, FormatJS) need them.
+Pass `env.locale` to every `Intl` and `toLocale*` call, `env.timeZone` whenever you format a date, and `env.hourCycle` whenever you format a time. The user's 24-hour setting is separate from the locale on Android, so `Intl` only honours it when you pass `hourCycle`.
 
-`@use-voltra/metro` can load the [FormatJS](https://formatjs.github.io/docs/polyfills) polyfills into Android widget bundles only. Install the packages in the app:
+Use `env.measurementSystem` to choose between kilometres and miles, or Celsius and Fahrenheit, and `env.firstDayOfWeek` when you draw a week.
+
+### Intl support on Android
+
+Android widgets have `Intl.Collator`, `Intl.NumberFormat`, `Intl.DateTimeFormat` and the `toLocale*` methods. They do not have `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat`, `Intl.DisplayNames` or `Intl.Locale`. Calling one of those throws, and i18n libraries that rely on plural rules (i18next 21 and newer, FormatJS) fail without them.
+
+To use them, add the [FormatJS](https://formatjs.github.io/docs/polyfills) polyfills to Android widget bundles. Install the packages in the app:
 
 ```sh
 npm install @formatjs/intl-getcanonicallocales @formatjs/intl-locale @formatjs/intl-pluralrules \
@@ -73,11 +79,11 @@ module.exports = withVoltra(getDefaultConfig(__dirname), {
 })
 ```
 
-Locale data is loaded per language, so `pt-BR` and `pt-PT` both load `pt`. The polyfills are added only to Android widget bundles; iOS bundles, where JavaScriptCore has the full `Intl` API, are unchanged. Each language adds to the bundle size, so list only the ones you translate into.
+Locale data is loaded per language, so `pt-BR` and `pt-PT` both load `pt`. Each language adds to the Android bundle size, so list only the ones you translate into. iOS bundles are not changed. If a package is missing, Metro fails at startup with a message naming the packages to install.
 
-## Letting the app choose the language
+## Let the app choose the language
 
-On Android 13 and newer, a per-app language set through `LocaleManager` (or the system's per-app language settings) already reaches widgets as `env.locale`. Apps that keep their own language setting can pass it explicitly:
+On Android 13 and newer, a per-app language the user picks in Settings already reaches widgets as `env.locale`. If your app has its own language picker, pass its choice to widgets:
 
 ```ts
 import { setDynamicWidgetLocale } from '@use-voltra/android-client'
@@ -86,8 +92,18 @@ await setDynamicWidgetLocale('pl') // every render now sees env.appLocale === 'p
 await setDynamicWidgetLocale(null) // back to the system languages
 ```
 
-The value survives app restarts, and every placed Dynamic Widget re-renders once it is stored. `resolveLocale` gives `appLocale` precedence automatically.
+Every placed Dynamic Widget renders again as soon as the value is stored, and the value survives app restarts. `resolveLocale` prefers `appLocale` over everything else.
 
-## Picker and configuration copy
+## Translate the picker and configuration copy
 
-The widget picker name and description accept locale maps and are written to `res/values-<locale>/voltra_widgets.xml`. Configuration copy — `configurationTitle`, `appIntent.parameters[].title` and `options[].title` — accepts locale maps too and is written to the same files under the keys `voltra_widget_<id>_intent_title`, `voltra_widget_<id>_param_<name>_title` and `voltra_widget_<id>_param_<name>_option_<value>` (lower-cased, with anything other than letters, digits and underscores replaced by `_`), so an in-app configuration screen can read it with `getString`.
+The widget picker name and description accept locale maps; see [Localizing `displayName` and `description`](../api/plugin-configuration#localizing-displayname-and-description).
+
+`configurationTitle`, `appIntent.parameters[].title` and `options[].title` accept locale maps too. Android has no system screen that shows them, so Voltra stores them as string resources for a configuration screen you build in the app. Read them with `getString` by name:
+
+| Copy                         | Resource name                                         |
+| ---------------------------- | ----------------------------------------------------- |
+| `configurationTitle`         | `voltra_widget_<id>_intent_title`                     |
+| a parameter's `title`        | `voltra_widget_<id>_param_<name>_title`               |
+| an option's `title`          | `voltra_widget_<id>_param_<name>_option_<value>`      |
+
+`<id>`, `<name>` and `<value>` are lower-cased, and anything other than letters, digits and underscores becomes `_`. Rebuild the native app after changing them.
