@@ -180,6 +180,14 @@ final class NativeModifierTests: XCTestCase {
     XCTAssertEqual(node.nativeModifierTypes(among: ["widgetURL", "containerBackground", "clipShape"]), ["widgetURL", "containerBackground"])
   }
 
+  func testIgnoresTheFallbackOfAnImageWithASource() throws {
+    let fallback = ##"{"t":20,"p":{"mods":"[{\"$type\":\"containerBackground\",\"color\":\"#101828\"}]"}}"##
+    let withSource = try parseNode(##"{"t":3,"p":{"source":"{\"assetName\":\"logo\"}","fallback":"## + fallback + "}}")
+    XCTAssertFalse(withSource.containsNativeModifier("containerBackground"))
+    let withoutSource = try parseNode(##"{"t":3,"p":{"fallback":"## + fallback + "}}")
+    XCTAssertTrue(withoutSource.containsNativeModifier("containerBackground"))
+  }
+
   func testContainsNativeModifierIgnoresDescriptorsThatDoNotDecode() throws {
     let node = try parseNode(##"{"t":11,"p":{"mods":"[{\"$type\":\"containerBackground\",\"color\":\"nope\"}]"}}"##)
     XCTAssertFalse(node.containsNativeModifier("containerBackground"))

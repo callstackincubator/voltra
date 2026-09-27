@@ -21,7 +21,7 @@ extension VoltraNode {
         found.insert(descriptor.type)
       }
       element.children?.collectNativeModifierTypes(among: types, into: &found)
-      for node in element.propNodes.values {
+      for (name, node) in element.propNodes where !element.skipsPropNode(name) {
         node.collectNativeModifierTypes(among: types, into: &found)
       }
     case let .array(nodes):
@@ -40,5 +40,14 @@ extension VoltraNode {
   /// replaces.
   func containsNativeModifier(_ type: String) -> Bool {
     !nativeModifierTypes(among: [type]).isEmpty
+  }
+}
+
+private extension VoltraElement {
+  /// An Image draws its `fallback` only when its `source` fails to load. When there is a source,
+  /// the fallback is assumed not to be drawn, so a modifier inside it does not make the host drop a
+  /// default the widget then lacks.
+  func skipsPropNode(_ name: String) -> Bool {
+    type == "Image" && name == "fallback" && props?["source"] != nil
   }
 }
