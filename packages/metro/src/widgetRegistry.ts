@@ -10,15 +10,26 @@ import {
   validateWidgetEntry,
 } from '@use-voltra/expo-plugin'
 
+import { createAndroidIntlPreludeSource, type AndroidIntlPolyfillsOptions } from './intlPolyfills'
+
 const MANIFEST_PLATFORMS = ['ios', 'android'] as const
 const DEV_BARREL_PLATFORMS = MANIFEST_PLATFORMS
 
 const RENDER_SHIM_BASENAME = 'voltra-render-shim'
-const RENDER_SHIM_FILES: Record<string, string> = {
-  [`${RENDER_SHIM_BASENAME}.ios.js`]:
-    "export { renderVoltraVariantToJson as renderVariantToJson } from '@use-voltra/ios'\n",
-  [`${RENDER_SHIM_BASENAME}.android.js`]:
-    "export { renderAndroidVariantToJson as renderVariantToJson } from '@use-voltra/android'\n",
+const ANDROID_INTL_PRELUDE_BASENAME = 'voltra-intl-polyfills.android.js'
+
+/**
+ * Per-platform render shims. The Android one imports the Intl prelude first when it is enabled, so
+ * the polyfills run before any widget module; the iOS one never does.
+ */
+function renderShimFiles(androidIntlPolyfills: boolean): Record<string, string> {
+  return {
+    [`${RENDER_SHIM_BASENAME}.ios.js`]:
+      "export { renderVoltraVariantToJson as renderVariantToJson } from '@use-voltra/ios'\n",
+    [`${RENDER_SHIM_BASENAME}.android.js`]:
+      (androidIntlPolyfills ? `import './${ANDROID_INTL_PRELUDE_BASENAME}'\n` : '') +
+      "export { renderAndroidVariantToJson as renderVariantToJson } from '@use-voltra/android'\n",
+  }
 }
 
 type PlatformState = {
@@ -148,10 +159,17 @@ export function ensureEmptyDevBarrel(projectRoot: string): string {
   return emptyBarrelPath
 }
 
-function ensureRenderShim(generatedRoot: string): void {
+function ensureRenderShim(generatedRoot: string, androidIntlPolyfills?: AndroidIntlPolyfillsOptions): void {
   ensureDirectory(generatedRoot)
 
-  for (const [fileName, content] of Object.entries(RENDER_SHIM_FILES)) {
+  const preludePath = path.join(generatedRoot, ANDROID_INTL_PRELUDE_BASENAME)
+  if (androidIntlPolyfills) {
+    writeFileIfChanged(preludePath, createAndroidIntlPreludeSource(androidIntlPolyfills))
+  } else {
+    fs.rmSync(preludePath, { force: true })
+  }
+
+  for (const [fileName, content] of Object.entries(renderShimFiles(!!androidIntlPolyfills))) {
     writeFileIfChanged(path.join(generatedRoot, fileName), content)
   }
 }
@@ -318,11 +336,12 @@ function loadManifest(projectRoot: string, platform: DynamicWidgetPlatform): Dyn
 function createGeneratedEntry(
   projectRoot: string,
   generatedRoot: string,
-  widget: RegisteredVoltraWidget
+  widget: RegisteredVoltraWidget,
+  androidIntlPolyfills?: AndroidIntlPolyfillsOptions
 ): Pick<RegisteredVoltraWidget, 'generatedEntryPath' | 'generatedEntryRelativePath'> {
   const generatedEntryRoot = path.join(generatedRoot, 'widgets')
   ensureDirectory(generatedEntryRoot)
-  ensureRenderShim(generatedRoot)
+  ensureRenderShim(generatedRoot, androidIntlPolyfills)
 
   const entryFileName = `${widget.platform}-${safeFileName(widget.id)}-${hash(widget.entry)}.js`
   const generatedEntryPath = path.join(generatedEntryRoot, entryFileName)
@@ -404,7 +423,14 @@ function createEmptyPlatformState(): PlatformState {
   }
 }
 
-export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectRoot?: string } = {}): WidgetRegistry {
+export function createWidgetRegistry({
+  projectRoot = process.cwd(),
+  androidIntlPolyfills,
+}: {
+  projectRoot?: string
+  /** Opt-in Android Intl polyfill prelude (ADR 0008 §5); see `withVoltra`. */
+  androidIntlPolyfills?: AndroidIntlPolyfillsOptions
+} = {}): WidgetRegistry {
   const generatedRoot = path.join(projectRoot, '.voltra', 'metro')
   const platformStates: Record<DynamicWidgetPlatform, PlatformState> = {
     ios: createEmptyPlatformState(),
@@ -446,7 +472,7 @@ export function createWidgetRegistry({ projectRoot = process.cwd() }: { projectR
 
         return {
           ...baseWidget,
-          ...createGeneratedEntry(projectRoot, generatedRoot, baseWidget),
+          ...createGeneratedEntry(projectRoot, generatedRoot, baseWidget, androidIntlPolyfills),
         }
       })
 
