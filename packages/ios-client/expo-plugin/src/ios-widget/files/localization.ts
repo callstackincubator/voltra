@@ -36,6 +36,17 @@ function widgetLabels(widget: IOSWidgetConfig): Array<WidgetLabel | undefined> {
   ]
 }
 
+const LOCALE_TAG_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/
+
+/**
+ * The app's development language: `ios.infoPlist.CFBundleDevelopmentRegion` when it is a literal
+ * locale tag, otherwise `en` (Expo's default, and what `$(DEVELOPMENT_LANGUAGE)` is in practice).
+ */
+export function resolveDevelopmentRegion(config: AppLocalizationSource | undefined): string {
+  const region = config?.ios?.infoPlist?.CFBundleDevelopmentRegion
+  return typeof region === 'string' && LOCALE_TAG_PATTERN.test(region.trim()) ? region.trim() : 'en'
+}
+
 /**
  * The languages the widget extension declares (ADR 0008 §4).
  *
@@ -44,8 +55,9 @@ function widgetLabels(widget: IOSWidgetConfig): Array<WidgetLabel | undefined> {
  * of a Polish app. Mirroring the app's languages makes the extension resolve the way the app does.
  *
  * Sources: the Expo `locales` keys, `ios.infoPlist.CFBundleLocalizations`, and every locale used
- * by a widget's locale maps. `en` is added whenever anything is declared, because Voltra's English
- * fallback strings live in `en.lproj` and the development region of an Expo app is English.
+ * by a widget's locale maps. The app's development language (see `resolveDevelopmentRegion`) is
+ * added whenever anything is declared: it is the language iOS falls back to when none of the user's
+ * languages match, so its `.lproj` must exist and carry every string.
  */
 export function resolveExtensionLocalizations(
   config: AppLocalizationSource | undefined,
@@ -71,7 +83,7 @@ export function resolveExtensionLocalizations(
   const byNormalized = new Map<string, string>()
   for (const candidate of candidates) {
     const trimmed = candidate.trim()
-    if (!trimmed || trimmed === '__default' || !/^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/.test(trimmed)) {
+    if (!trimmed || trimmed === '__default' || !LOCALE_TAG_PATTERN.test(trimmed)) {
       continue
     }
     const normalized = normalizeLocaleTag(trimmed)
@@ -80,21 +92,25 @@ export function resolveExtensionLocalizations(
     }
   }
 
-  if (byNormalized.size > 0 && ![...byNormalized.keys()].some((key) => key.split('-')[0] === 'en')) {
-    byNormalized.set('en', 'en')
+  const developmentRegion = resolveDevelopmentRegion(config)
+  const developmentLanguage = normalizeLocaleTag(developmentRegion).split('-')[0]
+  if (byNormalized.size > 0 && ![...byNormalized.keys()].some((key) => key.split('-')[0] === developmentLanguage)) {
+    byNormalized.set(normalizeLocaleTag(developmentRegion), developmentRegion)
   }
 
   return [...byNormalized.values()].sort((a, b) => a.localeCompare(b))
 }
 
 /**
- * The Edit Widget sheet strings for one locale: every locale-mapped title, resolved for `locale`
- * with the usual fallback (language, then English). Plain-string titles are compiled into the Swift
- * source as literals and need no entry.
+ * The Edit Widget sheet strings for one locale: every locale-mapped title, resolved for `locale`,
+ * then the development language, then the usual fallback (English, `__default`, first), so every
+ * key resolves in every `.lproj` and none shows verbatim. Plain-string titles are compiled into the
+ * Swift source as literals and need no entry.
  */
 export function collectSheetStringsForLocale(
   widgets: IOSWidgetConfig[] | undefined,
-  locale: string
+  locale: string,
+  developmentRegion = 'en'
 ): Record<string, string> {
   const entries: Record<string, string> = {}
   for (const widget of widgets ?? []) {
@@ -102,7 +118,7 @@ export function collectSheetStringsForLocale(
       if (!isWidgetLocalizedMap(label)) {
         continue
       }
-      entries[key] = pickLocalizedValue(label, [locale]) ?? widgetLabelEnglish(label)
+      entries[key] = pickLocalizedValue(label, [locale, developmentRegion]) ?? widgetLabelEnglish(label)
     }
   }
   return entries
@@ -126,7 +142,8 @@ function formatLocalizableStrings(entries: Record<string, string>): string {
 export function syncExtensionLocalizableStrings(
   targetPath: string,
   locales: string[],
-  widgets: IOSWidgetConfig[] | undefined
+  widgets: IOSWidgetConfig[] | undefined,
+  developmentRegion = 'en'
 ): void {
   if (fs.existsSync(targetPath)) {
     for (const entry of fs.readdirSync(targetPath)) {
@@ -153,7 +170,7 @@ export function syncExtensionLocalizableStrings(
     fs.mkdirSync(lproj, { recursive: true })
     fs.writeFileSync(
       path.join(lproj, VOLTRA_LOCALIZABLE_STRINGS_BASENAME),
-      formatLocalizableStrings(collectSheetStringsForLocale(widgets, locale)),
+      formatLocalizableStrings(collectSheetStringsForLocale(widgets, locale, developmentRegion)),
       'utf8'
     )
   }

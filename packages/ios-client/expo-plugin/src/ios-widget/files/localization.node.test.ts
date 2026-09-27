@@ -7,6 +7,7 @@ import { getIOSWidgetExtensionFiles } from '../../utils/fileDiscovery'
 import { generateInfoPlist } from './infoPlist'
 import {
   collectSheetStringsForLocale,
+  resolveDevelopmentRegion,
   resolveExtensionLocalizations,
   syncExtensionLocalizableStrings,
 } from './localization'
@@ -73,6 +74,35 @@ describe('resolveExtensionLocalizations', () => {
         },
       ])
     ).toEqual(['en', 'pt-BR'])
+  })
+})
+
+describe('development language', () => {
+  const polishFirst = {
+    locales: { fr: './fr.json' },
+    ios: { infoPlist: { CFBundleDevelopmentRegion: 'pl' } },
+  }
+
+  it('reads CFBundleDevelopmentRegion, falling back to en for a missing or build-setting value', () => {
+    expect(resolveDevelopmentRegion(polishFirst)).toBe('pl')
+    expect(
+      resolveDevelopmentRegion({ ios: { infoPlist: { CFBundleDevelopmentRegion: '$(DEVELOPMENT_LANGUAGE)' } } })
+    ).toBe('en')
+    expect(resolveDevelopmentRegion({})).toBe('en')
+  })
+
+  it('declares a non-English development language instead of en', () => {
+    expect(resolveExtensionLocalizations(polishFirst, [])).toEqual(['fr', 'pl'])
+  })
+
+  it('falls back to the development language before English in Localizable.strings', () => {
+    withTempDir((dir) => {
+      syncExtensionLocalizableStrings(dir, ['fr', 'pl'], [weather], 'pl')
+
+      const french = fs.readFileSync(path.join(dir, 'fr.lproj', 'Localizable.strings'), 'utf8')
+      expect(french).toContain('"voltra_widget_weather_param_units_title" = "Jednostki";')
+      expect(fs.existsSync(path.join(dir, 'en.lproj'))).toBe(false)
+    })
   })
 })
 

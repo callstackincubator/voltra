@@ -6,7 +6,11 @@ import type { IOSDynamicLiveActivityConfig, IOSWidgetConfig } from '../../types'
 import { generateAssets } from './assets'
 import { generateEntitlements } from './entitlements'
 import { generateInfoPlist } from './infoPlist'
-import { resolveExtensionLocalizations, syncExtensionLocalizableStrings } from './localization'
+import {
+  resolveDevelopmentRegion,
+  resolveExtensionLocalizations,
+  syncExtensionLocalizableStrings,
+} from './localization'
 import { generateIOSDynamicLiveActivitiesManifest, generateIOSDynamicWidgetsManifest } from './manifest'
 import { generateSwiftFiles } from './swift'
 
@@ -72,7 +76,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
 
       // <locale>.lproj/Localizable.strings: Edit Widget sheet strings, and one real resource per
       // declared language. Runs after the gallery strings, which share the .lproj folders.
-      syncExtensionLocalizableStrings(targetPath, localizations, widgets)
+      syncExtensionLocalizableStrings(targetPath, localizations, widgets, resolveDevelopmentRegion(config))
 
       // Write the iOS-owned Dynamic Widgets manifest for Metro to consume later.
       generateIOSDynamicWidgetsManifest({

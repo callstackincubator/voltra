@@ -91,6 +91,22 @@ describe('localisation (ADR 0008)', () => {
     assert.deepEqual(__test__.resolveExtensionLocalizations([], []), [])
   })
 
+  test('uses a non-English development language for the declared set and the string fallback', async () => {
+    assert.deepEqual(__test__.resolveExtensionLocalizations(['fr'], [], 'de'), ['de', 'fr'])
+
+    const fs = await import('node:fs')
+    const os = await import('node:os')
+    const path = await import('node:path')
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-devregion-'))
+    try {
+      await __test__.generateLocalizableStrings(root, path.join(root, 'Ext'), ['fr'], [configurable], 'pl')
+      const french = fs.readFileSync(path.join(root, 'Ext', 'fr.lproj', 'Localizable.strings'), 'utf8')
+      assert.ok(french.includes('"voltra_widget_weather_param_units_title" = "Jednostki";'))
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   test('keys locale-mapped sheet titles and emits an AppEnum for static options', () => {
     const swift = __test__.generateWidgetBundleSwift([configurable])
 

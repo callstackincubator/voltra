@@ -190,4 +190,4 @@ Fallback behavior:
 
 ### Languages of the widget extension
 
-The generated widget extension declares the app's languages, so the locale it runs in (and `env.locale`) resolves like the app's. Voltra writes `CFBundleLocalizations` into the extension's `Info.plist`, and a `<language>.lproj/Localizable.strings` for each language, built from the Expo `locales` config keys, `ios.infoPlist.CFBundleLocalizations`, every locale used in a widget locale map, and `en`. See [Localisation](../development/localisation).
+The generated widget extension declares the app's languages, so the locale it runs in (and `env.locale`) resolves like the app's. Voltra writes `CFBundleLocalizations` into the extension's `Info.plist`, and a `<language>.lproj/Localizable.strings` for each language, built from the Expo `locales` config keys, `ios.infoPlist.CFBundleLocalizations`, every locale used in a widget locale map, and the app's development language (`ios.infoPlist.CFBundleDevelopmentRegion`, or `en`). See [Localisation](../development/localisation).

@@ -126,6 +126,8 @@ interface MainAppMetadata {
   urlTypes?: Array<{ CFBundleURLSchemes: string[] }>
   /** The app's own `CFBundleLocalizations`, mirrored into the extension (ADR 0008 §4). */
   localizations: string[]
+  /** The app's `CFBundleDevelopmentRegion` when it is a literal tag, otherwise `en`. */
+  developmentRegion: string
 }
 
 type WidgetVariants = Record<string, unknown>
@@ -232,8 +234,9 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
   const localizableStringResults = await generateLocalizableStrings(
     projectRoot,
     targetPath,
-    resolveExtensionLocalizations(mainAppMetadata.localizations, detectedWidgets),
-    detectedWidgets
+    resolveExtensionLocalizations(mainAppMetadata.localizations, detectedWidgets, mainAppMetadata.developmentRegion),
+    detectedWidgets,
+    mainAppMetadata.developmentRegion
   )
   mergeResult(localizableStringResults, changes, warnings, generatedFiles)
 
@@ -256,7 +259,11 @@ async function generateInfoPlistFile(
   voltraVersion: string
 ): Promise<GeneratedFileResult> {
   const plistPath = path.join(targetPath, 'Info.plist')
-  const extensionLocalizations = resolveExtensionLocalizations(mainAppMetadata.localizations, widgets)
+  const extensionLocalizations = resolveExtensionLocalizations(
+    mainAppMetadata.localizations,
+    widgets,
+    mainAppMetadata.developmentRegion
+  )
   const fontNames = ios.fonts.map((fontPath) => path.basename(fontPath)).sort()
   const serverWidgets = widgets.filter((widget) => widget.serverUpdate)
   const hasClientRenderedWidget = widgets.some((widget) => widget.clientRendered)
@@ -460,12 +467,19 @@ async function generateLocalizedWidgetStrings(
   }
 }
 
+const LOCALE_TAG_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/
+
 /**
  * The languages the widget extension declares (ADR 0008 §4): the app's `CFBundleLocalizations` and
- * every locale a widget's locale maps use, plus `en`, where Voltra's English fallback strings live.
- * Mirrors `resolveExtensionLocalizations` in the Expo plugin.
+ * every locale a widget's locale maps use, plus the app's development language, which iOS falls back
+ * to when none of the user's languages match. Mirrors `resolveExtensionLocalizations` in the Expo
+ * plugin.
  */
-function resolveExtensionLocalizations(appLocalizations: string[], widgets: NormalizedIOSWidgetConfig[]): string[] {
+function resolveExtensionLocalizations(
+  appLocalizations: string[],
+  widgets: NormalizedIOSWidgetConfig[],
+  developmentRegion = 'en'
+): string[] {
   const candidates = [...appLocalizations]
   for (const widget of widgets) {
     for (const label of widgetLabels(widget)) {
@@ -478,11 +492,7 @@ function resolveExtensionLocalizations(appLocalizations: string[], widgets: Norm
   const byNormalized = new Map<string, string>()
   for (const candidate of candidates) {
     const trimmed = candidate.trim()
-    if (
-      !trimmed ||
-      trimmed === DEFAULT_INITIAL_STATE_LOCALE ||
-      !/^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/.test(trimmed)
-    ) {
+    if (!trimmed || trimmed === DEFAULT_INITIAL_STATE_LOCALE || !LOCALE_TAG_PATTERN.test(trimmed)) {
       continue
     }
     const normalized = normalizeLocaleTag(trimmed)
@@ -491,8 +501,9 @@ function resolveExtensionLocalizations(appLocalizations: string[], widgets: Norm
     }
   }
 
-  if (byNormalized.size > 0 && ![...byNormalized.keys()].some((key) => key.split('-')[0] === 'en')) {
-    byNormalized.set('en', 'en')
+  const developmentLanguage = normalizeLocaleTag(developmentRegion).split('-')[0]
+  if (byNormalized.size > 0 && ![...byNormalized.keys()].some((key) => key.split('-')[0] === developmentLanguage)) {
+    byNormalized.set(normalizeLocaleTag(developmentRegion), developmentRegion)
   }
 
   return [...byNormalized.values()].sort((a, b) => a.localeCompare(b))
@@ -540,14 +551,16 @@ function widgetParameterOptionKey(widgetId: string, parameterName: string, optio
 
 /**
  * `<locale>.lproj/Localizable.strings` for every declared language: the locale-mapped sheet strings,
- * resolved with language and English fallback so a key never shows verbatim, and — even when empty —
+ * resolved with development-language and English fallback so a key never shows verbatim, and — even
+ * when empty —
  * the resource that makes the `.lproj` folder part of the extension.
  */
 async function generateLocalizableStrings(
   projectRoot: string,
   targetPath: string,
   locales: string[],
-  widgets: NormalizedIOSWidgetConfig[]
+  widgets: NormalizedIOSWidgetConfig[],
+  developmentRegion = 'en'
 ): Promise<GenerateIOSFilesResult> {
   const changes: ReportedChange[] = []
   const generatedFiles = new Set<string>()
@@ -557,7 +570,7 @@ async function generateLocalizableStrings(
     for (const widget of widgets) {
       for (const { key, label } of collectWidgetConfigurationStrings(widget)) {
         if (isWidgetLocalizedMap(label)) {
-          entries[key] = pickLocalizedLabel(label, locale)
+          entries[key] = pickLocalizedLabel(label, [locale, developmentRegion])
         }
       }
     }
@@ -586,17 +599,22 @@ function normalizeLocaleTag(tag: string): string {
   return tag.trim().toLowerCase().replace(/_/g, '-')
 }
 
-/** Exact tag, then language, then English: the initial-state picker's order for one locale. */
-function pickLocalizedLabel(label: Record<string, string>, locale: string): string {
-  const wanted = normalizeLocaleTag(locale)
+/** For each wanted locale an exact tag, then its language; then English: the initial-state order. */
+function pickLocalizedLabel(label: Record<string, string>, locales: string[]): string {
   const entries = Object.entries(label).filter(([, value]) => value.trim())
-  const exact = entries.find(([key]) => normalizeLocaleTag(key) === wanted)
-  if (exact) {
-    return exact[1]
+  for (const locale of locales) {
+    const wanted = normalizeLocaleTag(locale)
+    const exact = entries.find(([key]) => normalizeLocaleTag(key) === wanted)
+    if (exact) {
+      return exact[1]
+    }
+    const language = wanted.split('-')[0]
+    const sameLanguage = entries.find(([key]) => normalizeLocaleTag(key).split('-')[0] === language)
+    if (sameLanguage) {
+      return sameLanguage[1]
+    }
   }
-  const language = wanted.split('-')[0]
-  const sameLanguage = entries.find(([key]) => normalizeLocaleTag(key).split('-')[0] === language)
-  return sameLanguage ? sameLanguage[1] : widgetLabelEnglish(label)
+  return widgetLabelEnglish(label)
 }
 
 /**
@@ -648,11 +666,18 @@ async function readMainAppMetadata(infoPlistPath: string): Promise<MainAppMetada
     ? localizationsValue.filter((value): value is string => typeof value === 'string')
     : []
 
+  // RN CLI templates set `$(DEVELOPMENT_LANGUAGE)`, which only the build resolves; `en` is what that
+  // is in practice.
+  const developmentRegionValue = readPlistString(dict, 'CFBundleDevelopmentRegion')?.trim()
+  const developmentRegion =
+    developmentRegionValue && LOCALE_TAG_PATTERN.test(developmentRegionValue) ? developmentRegionValue : 'en'
+
   return {
     shortVersionString,
     buildNumber,
     urlTypes: urlTypes.length > 0 ? urlTypes : undefined,
     localizations,
+    developmentRegion,
   }
 }
 
