@@ -6,7 +6,9 @@ struct TextStyle {
   var fontSize: CGFloat = 17
   var fontWeight: Font.Weight = .regular
   var fontFamily: String?
-  var alignment: TextAlignment = .leading
+  /// Only set when `textAlign` is given, so an unset alignment leaves the inherited value, such
+  /// as a `multilineTextAlignment` native modifier, in effect.
+  var alignment: TextAlignment?
   var lineLimit: Int?
   var lineSpacing: CGFloat = 0 // Extra space between lines
   var decoration: TextDecoration = .none
@@ -43,7 +45,7 @@ struct TextStyleModifier: ViewModifier {
       // 2. Color
       .foregroundColor(resolvedColor)
       // 3. Layout / Spacing
-      .multilineTextAlignment(style.alignment)
+      .voltraIfLet(style.alignment) { view, alignment in view.multilineTextAlignment(alignment) }
       .lineLimit(style.lineLimit)
       .lineSpacing(style.lineSpacing)
   }
