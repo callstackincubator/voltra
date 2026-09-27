@@ -1,12 +1,14 @@
-const isSkippedModifier = (value: unknown) => value === undefined || value === null || value === false
+// Every falsy value means "no modifier", the way React skips falsy children, so `count && modifier` with
+// `count = 0` or `label && [...]` with `label = ''` renders without the modifier instead of failing.
+const isSkippedModifier = (value: unknown) => !value
 
 /**
  * Encodes the `modifiers` prop as a JSON string, so that no parsing layer treats the descriptors as
  * children or rewrites their keys (ADR 0005). Returns `undefined` when there is nothing to send.
  */
 export function encodeNativeModifiers(value: unknown): string | undefined {
-  // `modifiers={condition && [...]}` and `[condition && modifier]` are common in untyped JS; they
-  // mean "no modifier", not a render error.
+  // `modifiers={condition && [...]}` and `[condition && modifier]` mean "no modifier", not a render
+  // error, whatever falsy value the condition produces.
   if (isSkippedModifier(value)) {
     return undefined
   }

@@ -41,6 +41,18 @@ test('treats false and falsy entries as no modifier', () => {
   })
 })
 
+test('treats numeric and string falsy conditions as no modifier', () => {
+  for (const falsy of [0, '', NaN]) {
+    assert.deepStrictEqual(renderVariantToJson(React.createElement(View, { modifiers: falsy }), componentRegistry), {
+      t: 1,
+    })
+    assert.deepStrictEqual(
+      renderVariantToJson(React.createElement(View, { modifiers: [falsy, padding] }), componentRegistry),
+      { t: 1, p: { mods: JSON.stringify([padding]) } }
+    )
+  }
+})
+
 test('omits empty and missing modifier lists', () => {
   assert.deepStrictEqual(renderVariantToJson(React.createElement(View, { modifiers: [] }), componentRegistry), { t: 1 })
   assert.deepStrictEqual(renderVariantToJson(React.createElement(View, { modifiers: undefined }), componentRegistry), {
