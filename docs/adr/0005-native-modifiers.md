@@ -360,7 +360,9 @@ without the other fails CI. The wire prop name
   unchanged. Every link in the chain has this same outer type, so the
   shape of the view depends only on the list length. Inside a link the
   erased type is the concrete modifier: value changes of the same modifier
-  diff and animate between timeline entries and activity states, while a
+  diff and animate between timeline entries, activity states, and payloads
+  of an in-app `VoltraView`, whose `VoltraViewRoot` keeps one hosting
+  controller and replaces its `rootView` rather than rebuilding it, while a
   different `$type` at a position, an entry that stops decoding, or a list
   that becomes empty or non-empty rebuilds the wrapped component.
 - `View.applyNativeModifiers(_:)`: a `reduce` over the decoded list, skipped
