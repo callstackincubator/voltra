@@ -171,7 +171,7 @@ own. No public library serializes Glance modifiers from JSON.
 
 ### JSX API
 
-Every component gains `modifiers?: readonly Modifier[]` in its base props.
+Every component gains a `modifiers` prop, a list of modifiers, in its base props.
 Modifiers are values produced by factory functions that live on the
 existing component namespaces, `Voltra.modifiers` and
 `VoltraAndroid.modifiers`. There is no new package entry point: subpaths in
@@ -190,10 +190,13 @@ type IosModifier = { readonly $type: string; readonly [MODIFIER_BRAND]: 'ios' }
 type AndroidModifier = { readonly $type: string; readonly [MODIFIER_BRAND]: 'android' }
 ```
 
-`VoltraBaseProps` on iOS declares `modifiers?: readonly IosModifier[]` and
-`VoltraAndroidBaseProps` declares `modifiers?: readonly AndroidModifier[]`,
-both in the hand-written `baseProps.tsx` that the generated component props
-already extend. A `VoltraAndroid` modifier on a `Voltra` component fails to
+`VoltraBaseProps` on iOS declares `modifiers?: NativeModifiersProp<IosModifier>`
+and `VoltraAndroidBaseProps` declares
+`modifiers?: NativeModifiersProp<AndroidModifier>`, both in the hand-written
+`baseProps.tsx` that the generated component props already extend.
+`NativeModifiersProp<M>` from `@use-voltra/core` is a readonly list of `M` or
+falsy values, or a falsy value, so the conditional forms the renderer skips
+type-check. A `VoltraAndroid` modifier on a `Voltra` component fails to
 compile. Nothing at runtime branches on platform; each package only knows
 its own catalog.
 
@@ -236,9 +239,17 @@ documentation spells out:
 
 On Android order is irrelevant except that repeated `padding` sums, which
 is Glance's own rule. Where a native modifier and a style key set the same
-thing, the modifier wins, because it is applied last on iOS and Glance
-keeps the last value on Android. The one exception is Glance padding,
-which adds.
+thing, the modifier wins on Android, because Glance keeps the last value;
+Glance padding adds instead, and a `Scaffold` applies its own size,
+background and corner radius after the modifiers it is given. On iOS the
+modifier wraps the styled component, so what "wins" depends on the modifier:
+view-level effects such as `clipShape` apply to the whole styled component,
+geometry effects such as `rotationEffect` add to a style transform, and
+environment values such as `multilineTextAlignment` lose to a value the
+component sets itself, because SwiftUI uses the setting closest to the
+view. `VoltraText` and the text style therefore set alignment only when
+`textAlign` or the `multilineTextAlignment` prop is given, so an inherited
+modifier value applies otherwise.
 
 ### Wire format
 
@@ -326,7 +337,9 @@ color parsers the modifiers use, and the Kotlin test under
 `android/src/test` decode every fixture entry through the registry and fail
 on an unknown `$type`, an unexpected parameter name, or a parameter that
 does not decode. They also require the registry and the fixture to name the
-same set of modifiers. A modifier added, or a parameter renamed, on one side
+same set of modifiers, and every definition's parameter set to equal the
+parameter names its fixture entries use, so the samples must exercise every
+parameter. A modifier added, or a parameter added or renamed, on one side
 without the other fails CI. The wire prop name
 `modifiers` gets one short-name entry in `components.json`, the same way
 `style` has one, so both native `props` accessors expand it.
@@ -362,21 +375,32 @@ it with `.applyNativeModifiers(element.nativeModifiers)`. No view under
 The widget and Live Activity roots used to apply `.widgetURL(...)` with a
 possibly `nil` URL on every render, and the home widget fell back to a
 synthetic `<scheme>://voltraui?kind=widget...` link when none was
-configured. Apple leaves more than one `widgetURL` in a hierarchy undefined,
-so every root now goes through `voltraWidgetURL(configured:root:fallback:)`,
-which guarantees exactly one. A configured deep link (a widget's
-`deepLinkUrl`, or a Live Activity's) takes precedence: the root applies it
-and sets the `voltraHostAppliedModifierTypes` environment value, so
-`VoltraStableModifier` skips the tree's `widgetURL` descriptors. Without a
-configured link, a `widgetURL` modifier in the tree wins and the home widget
-skips its synthetic fallback. The same rule covers `containerBackground`: the
+configured. Apple leaves more than one `widgetURL` in a widget's hierarchy
+undefined, and for Live Activities it expects one per presentation, with
+`DynamicIsland.widgetURL(_:)` as the default for every region. So the hosts
+apply a configured deep link (a widget's `deepLinkUrl`, or a Live
+Activity's) once per hierarchy: `voltraWidgetURL(configured:root:fallback:)`
+on the home widget and on each Lock Screen presentation, including the
+iOS 18 small family that shows two compact regions side by side, and
+`DynamicIsland.widgetURL` for the Dynamic Island, whose regions use
+`voltraDeferringWidgetURL(to:)`. A configured link takes precedence: the
+host adds `widgetURL` to the `voltraHostAppliedModifierTypes` environment
+value, so `VoltraStableModifier` skips the tree's `widgetURL` descriptors.
+Without a configured link, a `widgetURL` modifier in the tree wins and the
+home widget skips its synthetic fallback; using it once per presentation is
+the author's job, which the documentation states. The `widgetURL` modifier
+resolves its string with `VoltraDeepLinkResolver.resolveUrl`, so it accepts
+the same absolute URLs and paths as `deepLinkUrl`. The same rule covers `containerBackground`: the
 home widget root sets `containerBackground(.clear, for: .widget)` only when
 the tree carries no `containerBackground` modifier. Both checks look through
 children and through nodes stored in component props, such as a Gauge
-label, and count only descriptors that decode. They live in
+label, and count only descriptors that decode. `VoltraElement` parses those
+prop nodes once in `init`, and `componentProp(_:)` returns the stored node. They live in
 `VoltraRootDefaults.swift` under `ui/Modifiers`, so host code never names a
 modifier. An `activityBackgroundTint` passed when starting or updating a Live
-Activity is applied outside the tree and keeps precedence as well.
+Activity keeps precedence the same way: `voltraActivityBackgroundTint`
+applies it and adds `activityBackgroundTint` to the environment set, which
+hosts extend rather than replace.
 
 The initial iOS catalog is limited to value-only modifiers that matter in
 widgets and Live Activities: `widgetURL`, `containerBackground`,

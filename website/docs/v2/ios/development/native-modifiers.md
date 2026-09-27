@@ -36,10 +36,11 @@ export default function PortfolioWidget({ balance }: { balance: string }) {
 Modifiers wrap the finished component, including everything `style` does, in list order. The first modifier is innermost:
 
 - `clipShape`, `blur` and the color adjustments apply to the whole component, background included.
-- A native modifier wins over a `style` property that sets the same thing, because it is applied last.
+- Geometry modifiers such as `rotationEffect`, `scaleEffect` and `offset` add to a `style.transform`, they do not replace it.
+- Text modifiers set a value for the text inside, and SwiftUI uses the setting closest to the text. A value the component sets itself wins over the modifier: `style.textAlign` or the `multilineTextAlignment` prop over a `multilineTextAlignment` modifier, and `numberOfLines` over a line limit.
 - To apply a modifier between two style steps, such as clipping before a shadow, nest a `Voltra.View` with the inner style and put the modifier on it.
 
-Text modifiers such as `minimumScaleFactor`, `truncationMode` and `monospacedDigit` work on any component. On a container they apply to every `Text` inside it.
+Text modifiers such as `minimumScaleFactor`, `truncationMode` and `monospacedDigit` work on any component. On a container they apply to every `Text` inside it that does not set the same thing itself.
 
 ## Available modifiers
 
@@ -49,7 +50,7 @@ Modifiers that need a newer iOS version than the device runs leave the component
 
 | Modifier | What it does | iOS |
 | --- | --- | --- |
-| `widgetURL(url)` | Opens the URL in your app when the widget is tapped. | 14.0 |
+| `widgetURL(url)` | Opens the URL in your app when the widget or Live Activity is tapped. Takes an absolute URL or a path, like `deepLinkUrl`. | 14.0 |
 | `containerBackground(color)` | Sets the widget's removable container background. Use it on the outermost component. | 17.0 |
 | `widgetAccentable(accentable?)` | Adds the component to the accent group in accented rendering mode. | 16.0 |
 | `privacySensitive(sensitive?)` | Redacts the component while the device is locked. | 15.0 |
@@ -87,7 +88,7 @@ Modifiers that need a newer iOS version than the device runs leave the component
 | `fixedSize({ horizontal?, vertical? })` | Keeps the ideal size instead of shrinking to fit. | 13.0 |
 | `layoutPriority(priority)` | Gives the component a larger share of space in its stack. | 13.0 |
 | `containerRelativeFrame(axes)` | Sizes the component relative to its container: `horizontal`, `vertical`, or `both`. | 17.0 |
-| `dynamicTypeSize(size)` | Uses a fixed Dynamic Type size for text inside. | 15.0 |
+| `dynamicTypeSize(size)` | Uses a fixed Dynamic Type size for content inside. Voltra `Text` uses fixed font sizes, so it does not change. | 15.0 |
 
 ### Text
 
@@ -102,7 +103,7 @@ Modifiers that need a newer iOS version than the device runs leave the component
 
 **A modifier has no effect.** Check the iOS version in the table. On older systems the component renders without the modifier. An invalid value, such as an unknown color string, is also skipped; the widget extension logs `Ignoring modifier <name>` under the `com.voltra` subsystem in Console.
 
-**Tapping the widget opens the wrong URL.** A `deepLinkUrl` configured for the widget takes precedence over `widgetURL`. Remove one of them, and use `widgetURL` only once per widget.
+**Tapping the widget opens the wrong URL.** A `deepLinkUrl` configured for the widget or Live Activity takes precedence over `widgetURL`. Remove one of them, and use `widgetURL` only once per widget. In a Live Activity, use it once per presentation, and give the compact leading and trailing regions the same URL, because they appear together.
 
 **The widget background does not change.** Put `containerBackground` on the widget's outermost component, and use it only once. It needs iOS 17; on iOS 16 use `style.backgroundColor` instead.
 
