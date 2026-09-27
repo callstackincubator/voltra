@@ -205,9 +205,6 @@ class VoltraClientGlanceWidget(
             val nightMode =
                 context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
             val colorScheme = if (nightMode == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
-            val locale =
-                context.resources.configuration.locales[0]
-                    .toLanguageTag()
             val dev = isDev(context)
             val appVersion =
                 try {
@@ -233,9 +230,12 @@ class VoltraClientGlanceWidget(
                     .put("date", System.currentTimeMillis())
                     .put("widgetFamily", family)
                     .put("colorScheme", colorScheme)
-                    .put("locale", locale)
                     .put("configuration", configObject)
                     .put("build", build)
+
+            // Locale, preferred languages, 12/24-hour, direction, time zone and regional formats
+            // (ADR 0008 §1). `locale` keeps its BCP-47 `toLanguageTag()` form.
+            DynamicWidgetLocaleEnvironment.capture(context).putInto(env)
 
             // The instance key (ADR 0007): the hash of this placement's merged configuration, or
             // absent for a widget with no configuration parameters at all — matching what the
