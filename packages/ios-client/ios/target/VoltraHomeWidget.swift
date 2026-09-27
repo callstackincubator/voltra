@@ -284,6 +284,7 @@ public struct VoltraHomeWidgetView: View {
 
   public var body: some View {
     let mappedRenderingMode = mapWidgetRenderingMode(widgetRenderingMode)
+    let rootModifiers = VoltraRootModifiers(root: entry.rootNode)
 
     Group {
       if let root = entry.rootNode {
@@ -298,7 +299,7 @@ public struct VoltraHomeWidgetView: View {
           )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .voltraWidgetURL(configured: configuredDeepLinkURL(entry), root: root) { defaultDeepLinkURL(entry) }
+        .voltraWidgetURL(configured: configuredDeepLinkURL(entry), tree: rootModifiers) { defaultDeepLinkURL(entry) }
 
         if showRefreshButton {
           content.overlay(alignment: .topTrailing) {
@@ -311,7 +312,7 @@ public struct VoltraHomeWidgetView: View {
         placeholderView(widgetId: entry.widgetId)
       }
     }
-    .voltraDefaultContainerBackground(root: entry.rootNode)
+    .voltraDefaultContainerBackground(tree: rootModifiers)
   }
 
   private func mapWidgetRenderingMode(_ mode: WidgetRenderingMode) -> VoltraWidgetRenderingMode {

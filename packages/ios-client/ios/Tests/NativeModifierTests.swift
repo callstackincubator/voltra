@@ -173,6 +173,13 @@ final class NativeModifierTests: XCTestCase {
     XCTAssertEqual(element.componentProp("currentValueLabel"), element.propNodes["currentValueLabel"])
   }
 
+  func testNativeModifierTypesFindsSeveralTypesInOneWalk() throws {
+    let node = try parseNode(
+      ##"{"t":11,"p":{"mods":"[{\"$type\":\"widgetURL\",\"url\":\"a://b\"}]"},"c":[{"t":8,"p":{"currentValueLabel":{"t":0,"c":"42","p":{"mods":"[{\"$type\":\"containerBackground\",\"color\":\"#101828\"}]"}}}}]}"##
+    )
+    XCTAssertEqual(node.nativeModifierTypes(among: ["widgetURL", "containerBackground", "clipShape"]), ["widgetURL", "containerBackground"])
+  }
+
   func testContainsNativeModifierIgnoresDescriptorsThatDoNotDecode() throws {
     let node = try parseNode(##"{"t":11,"p":{"mods":"[{\"$type\":\"containerBackground\",\"color\":\"nope\"}]"}}"##)
     XCTAssertFalse(node.containsNativeModifier("containerBackground"))

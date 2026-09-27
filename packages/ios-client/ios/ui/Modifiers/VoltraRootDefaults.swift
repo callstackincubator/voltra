@@ -4,6 +4,19 @@ import WidgetKit
   import VoltraSharedCore
 #endif
 
+/// The native modifiers in a rendered tree that replace a host default, found in one walk so a
+/// host that checks both pays for a single pass.
+struct VoltraRootModifiers {
+  let setsWidgetURL: Bool
+  let setsContainerBackground: Bool
+
+  init(root: VoltraNode?) {
+    let found = root?.nativeModifierTypes(among: ["widgetURL", "containerBackground"]) ?? []
+    setsWidgetURL = found.contains("widgetURL")
+    setsContainerBackground = found.contains("containerBackground")
+  }
+}
+
 /// Defaults that widget and Live Activity hosts apply outside the rendered tree (ADR 0005). Host
 /// code calls these instead of naming modifiers.
 extension View {
@@ -11,11 +24,11 @@ extension View {
   /// undefined. A configured deep link takes precedence and the tree's `widgetURL` modifiers are
   /// skipped. Otherwise a `widgetURL` modifier in the tree wins over the synthetic fallback.
   @ViewBuilder
-  func voltraWidgetURL(configured: URL?, root: VoltraNode? = nil, fallback: () -> URL? = { nil }) -> some View {
+  func voltraWidgetURL(configured: URL?, tree: VoltraRootModifiers? = nil, fallback: () -> URL? = { nil }) -> some View {
     if let configured {
       voltraHostApplies("widgetURL")
         .widgetURL(configured)
-    } else if root?.containsNativeModifier("widgetURL") == true {
+    } else if tree?.setsWidgetURL == true {
       self
     } else if let url = fallback() {
       widgetURL(url)
@@ -51,8 +64,8 @@ extension View {
   /// Clears the widget's container background, unless the tree sets its own with a
   /// `containerBackground` modifier.
   @ViewBuilder
-  func voltraDefaultContainerBackground(root: VoltraNode?) -> some View {
-    if root?.containsNativeModifier("containerBackground") == true {
+  func voltraDefaultContainerBackground(tree: VoltraRootModifiers) -> some View {
+    if tree.setsContainerBackground {
       self
     } else if #available(iOS 17.0, *) {
       containerBackground(.clear, for: .widget)
