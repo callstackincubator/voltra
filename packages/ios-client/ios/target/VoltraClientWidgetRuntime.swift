@@ -255,6 +255,7 @@ public enum VoltraClientWidgetEnvBuilder {
     widgetRenderingMode: WidgetRenderingMode,
     showsWidgetContainerBackground: Bool,
     locale: Locale,
+    layoutDirection: LayoutDirection? = nil,
     configuration: [String: String],
     serverUpdateJSON: String? = nil
   ) -> String {
@@ -299,12 +300,20 @@ public enum VoltraClientWidgetEnvBuilder {
     // sends and what WidgetScope.of(widgetId, configuration:) resolves to.
     let instanceEntry = WidgetCanonicalConfiguration.key(configuration).map { ",\n  \"instance\": \(jsonString($0))" } ?? ""
 
+    // Locale fields (ADR 0008 §1). `locale` is BCP-47 (`pl-PL`), never the ICU `pl_PL` that
+    // `Locale.identifier` gives and `Intl` rejects.
+    let localeEnvironment = VoltraLocaleEnvironment.capture(
+      locale: locale,
+      isRightToLeft: layoutDirection.map { $0 == .rightToLeft },
+      appLocale: VoltraWidgetDefaults.dynamicWidgetLocale()
+    )
+
     return """
     {
       "date": \(timestampMs),
       "widgetFamily": \(jsonString(familyString(widgetFamily))),
       "colorScheme": \(jsonString(schemeString(colorScheme))),
-      "locale": \(jsonString(locale.identifier)),
+      \(localeEnvironment.jsonFields),
       "widgetRenderingMode": \(jsonString(renderingModeString(widgetRenderingMode))),
       "showsWidgetContainerBackground": \(showsWidgetContainerBackground),
       "configuration": \(configurationJSON),
@@ -355,6 +364,7 @@ public struct VoltraClientWidgetContentView: View {
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
   @Environment(\.showsWidgetContainerBackground) private var showsWidgetContainerBackground
   @Environment(\.locale) private var locale
+  @Environment(\.layoutDirection) private var layoutDirection
 
   public init(entry: VoltraClientWidgetEntry, initialState: Data?) {
     self.entry = entry
@@ -381,6 +391,7 @@ public struct VoltraClientWidgetContentView: View {
         widgetRenderingMode: widgetRenderingMode,
         showsWidgetContainerBackground: showsWidgetContainerBackground,
         locale: locale,
+        layoutDirection: layoutDirection,
         configuration: entry.configuration,
         serverUpdateJSON: entry.serverUpdateJSON
       )

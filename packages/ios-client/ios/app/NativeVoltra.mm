@@ -375,6 +375,19 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
   }];
 }
 
+- (void)setDynamicWidgetLocale:(NSString *)tag
+                       resolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module setDynamicWidgetLocale:tag completion:^(NSError *error) {
+    if (error) {
+      reject(@"setDynamicWidgetLocale", error.localizedDescription, error);
+    } else {
+      resolve(nil);
+    }
+  }];
+}
+
 - (void)scheduleWidget:(NSString *)widgetId
           timelineJson:(NSString *)timelineJson
                resolve:(RCTPromiseResolveBlock)resolve

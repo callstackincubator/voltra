@@ -68,6 +68,7 @@ let package = Package(
         "JSONValue.swift",
         "VoltraConfig.swift",
         "VoltraConstants.swift",
+        "VoltraLocaleEnvironment.swift",
         "VoltraWidgetKind.swift",
         "VoltraPayloadMigrator.swift",
         "VoltraRegion.swift",

@@ -81,6 +81,7 @@ public enum VoltraDynamicLiveActivityRenderer {
     activityFamily: String?,
     colorScheme: ColorScheme? = nil,
     locale: Locale = .current,
+    layoutDirection: LayoutDirection? = nil,
     widgetRenderingMode: WidgetRenderingMode = .fullColor
   ) -> VoltraDynamicLiveActivityResolvedContent {
     guard VoltraDynamicLiveActivityRegistry.shared.contains(definitionId) else {
@@ -91,6 +92,13 @@ public enum VoltraDynamicLiveActivityRenderer {
       logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Could not encode content-state props")
       return .empty
     }
+    // Captured once so every region shares it and the cache key covers every locale field,
+    // including the app's `setDynamicWidgetLocale` override (ADR 0008).
+    let localeEnvironment = VoltraLocaleEnvironment.capture(
+      locale: locale,
+      isRightToLeft: layoutDirection.map { $0 == .rightToLeft },
+      appLocale: VoltraWidgetDefaults.dynamicWidgetLocale()
+    )
     // WidgetKit asks each Dynamic Island region (and each presentation) to render
     // independently, all with identical state/environment. Cache the resolved
     // variants shape so those siblings share one bundle load, one JS evaluation,
@@ -103,7 +111,7 @@ public enum VoltraDynamicLiveActivityRenderer {
       props: propsJSON,
       activityFamily: activityFamily,
       colorScheme: String(describing: colorScheme ?? .light),
-      locale: locale.identifier,
+      locale: localeEnvironment,
       widgetRenderingMode: String(describing: widgetRenderingMode),
       isStale: context.isStale
     )
@@ -114,7 +122,7 @@ public enum VoltraDynamicLiveActivityRenderer {
         propsJSON: propsJSON,
         activityFamily: activityFamily,
         colorScheme: colorScheme,
-        locale: locale,
+        localeEnvironment: localeEnvironment,
         widgetRenderingMode: widgetRenderingMode
       )
     }
@@ -126,13 +134,13 @@ public enum VoltraDynamicLiveActivityRenderer {
     propsJSON: String,
     activityFamily: String?,
     colorScheme: ColorScheme?,
-    locale: Locale,
+    localeEnvironment: VoltraLocaleEnvironment,
     widgetRenderingMode: WidgetRenderingMode
   ) -> VoltraDynamicLiveActivityResolvedContent {
     let environmentJSON = VoltraDynamicLiveActivityEnvironmentBuilder.build(
       date: Date(),
       colorScheme: colorScheme,
-      locale: locale,
+      localeEnvironment: localeEnvironment,
       widgetRenderingMode: widgetRenderingMode,
       isStale: context.isStale,
       activityFamily: activityFamily
@@ -176,6 +184,7 @@ private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: Volt
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.locale) private var locale
+  @Environment(\.layoutDirection) private var layoutDirection
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
@@ -185,6 +194,7 @@ private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: Volt
       activityFamily: nil,
       colorScheme: colorScheme,
       locale: locale,
+      layoutDirection: layoutDirection,
       widgetRenderingMode: widgetRenderingMode
     )
     .view(for: region, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
@@ -197,6 +207,7 @@ private struct VoltraDynamicLiveActivityLockScreenView<Attributes: VoltraDynamic
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.locale) private var locale
+  @Environment(\.layoutDirection) private var layoutDirection
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
@@ -206,6 +217,7 @@ private struct VoltraDynamicLiveActivityLockScreenView<Attributes: VoltraDynamic
       activityFamily: nil,
       colorScheme: colorScheme,
       locale: locale,
+      layoutDirection: layoutDirection,
       widgetRenderingMode: widgetRenderingMode
     )
     if let tint = content.payload?.activityBackgroundTint, let color = JSColorParser.parse(tint) {
@@ -225,6 +237,7 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
   @Environment(\.activityFamily) private var activityFamily
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.locale) private var locale
+  @Environment(\.layoutDirection) private var layoutDirection
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
@@ -234,6 +247,7 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
       activityFamily: String(describing: activityFamily),
       colorScheme: colorScheme,
       locale: locale,
+      layoutDirection: layoutDirection,
       widgetRenderingMode: widgetRenderingMode
     )
     familyContent(content: content)
@@ -302,7 +316,7 @@ private final class VoltraDynamicLiveActivityRenderCache: @unchecked Sendable {
     let props: String
     let activityFamily: String?
     let colorScheme: String
-    let locale: String
+    let locale: VoltraLocaleEnvironment
     let widgetRenderingMode: String
     let isStale: Bool
   }
@@ -330,7 +344,7 @@ private enum VoltraDynamicLiveActivityEnvironmentBuilder {
   static func build(
     date: Date,
     colorScheme: ColorScheme?,
-    locale: Locale,
+    localeEnvironment: VoltraLocaleEnvironment,
     widgetRenderingMode: WidgetRenderingMode,
     isStale: Bool,
     activityFamily: String?
@@ -351,11 +365,12 @@ private enum VoltraDynamicLiveActivityEnvironmentBuilder {
     var environment: [String: Any] = [
       "date": Int(date.timeIntervalSince1970 * 1000),
       "colorScheme": String(describing: colorScheme ?? .light),
-      "locale": locale.identifier,
       "widgetRenderingMode": String(describing: widgetRenderingMode),
       "build": build,
       "isStale": isStale,
     ]
+    // BCP-47 `locale` and the rest of the ADR 0008 locale fields.
+    environment.merge(localeEnvironment.dictionary) { current, _ in current }
     if let activityFamily {
       environment["activityFamily"] = activityFamily
     }
