@@ -30,22 +30,31 @@ data class VoltraModifierRenderState(
          * only once in the rendered tree; a shared element referenced twice would mark two views.
          * None is picked when the tree contains a Scaffold, because Glance's Scaffold already marks
          * its own root.
+         *
+         * An Image `fallback` is drawn only when the image fails to load, which is known before
+         * rendering only when there is no `source`. So every fallback counts toward uniqueness, in
+         * case it is drawn, but the fallback of an Image with a `source` is never picked: it may not
+         * be drawn, and the widget would then have no marker at all.
          */
         fun forTree(
             root: VoltraNode?,
             sharedElements: List<VoltraNode>?,
         ): VoltraModifierRenderState {
             val carriers = mutableListOf<VoltraElement>()
+            val eligible = mutableListOf<VoltraElement>()
             var hasScaffold = false
-            visitRenderedElements(root, sharedElements) { element ->
+            visitRenderedElements(root, sharedElements, alwaysDrawn = true) { element, alwaysDrawn ->
                 if (element.t == ComponentTypeID.SCAFFOLD) hasScaffold = true
-                if (element.nativeModifiers.any { it.type == APP_WIDGET_BACKGROUND }) carriers += element
+                if (element.nativeModifiers.any { it.type == APP_WIDGET_BACKGROUND }) {
+                    carriers += element
+                    if (alwaysDrawn) eligible += element
+                }
             }
             val owner =
                 if (hasScaffold) {
                     null
                 } else {
-                    carriers.firstOrNull { candidate -> carriers.count { it == candidate } == 1 }
+                    eligible.firstOrNull { candidate -> carriers.count { it == candidate } == 1 }
                 }
             return VoltraModifierRenderState(owner)
         }
@@ -76,33 +85,38 @@ fun GlanceModifier.applyNativeModifiers(element: VoltraElement): GlanceModifier 
 }
 
 /**
- * Visits every element the Glance renderers draw, in render order: children, shared element
- * references (once per reference), and the `fallback` of an Image without a `source`, the only
- * component prop the Android renderers draw as a node.
+ * Visits every element the Glance renderers may draw, in render order: children, shared element
+ * references (once per reference), and Image `fallback` nodes, the only component prop the
+ * Android renderers draw as a node. `alwaysDrawn` is false inside the fallback of an Image with a
+ * `source`, which is drawn only if that source fails to load.
  */
 private fun visitRenderedElements(
     node: VoltraNode?,
     sharedElements: List<VoltraNode>?,
-    visit: (VoltraElement) -> Unit,
+    alwaysDrawn: Boolean,
+    visit: (VoltraElement, Boolean) -> Unit,
 ) {
     when (node) {
         is VoltraNode.Element -> {
             val element = node.element
-            visit(element)
-            visitRenderedElements(element.c, sharedElements, visit)
-            // RenderImage draws the fallback when it has no image to show. A missing `source` is the
-            // case that can be known before rendering; a source that fails to load is not counted.
-            if (element.t == ComponentTypeID.IMAGE && element.p?.get("source") == null) {
-                visitRenderedElements(element.componentProp("fallback", null, sharedElements), sharedElements, visit)
+            visit(element, alwaysDrawn)
+            visitRenderedElements(element.c, sharedElements, alwaysDrawn, visit)
+            if (element.t == ComponentTypeID.IMAGE) {
+                visitRenderedElements(
+                    element.componentProp("fallback", null, sharedElements),
+                    sharedElements,
+                    alwaysDrawn && element.p?.get("source") == null,
+                    visit,
+                )
             }
         }
 
         is VoltraNode.Array -> {
-            node.elements.forEach { visitRenderedElements(it, sharedElements, visit) }
+            node.elements.forEach { visitRenderedElements(it, sharedElements, alwaysDrawn, visit) }
         }
 
         is VoltraNode.Ref -> {
-            visitRenderedElements(sharedElements?.getOrNull(node.ref), sharedElements, visit)
+            visitRenderedElements(sharedElements?.getOrNull(node.ref), sharedElements, alwaysDrawn, visit)
         }
 
         is VoltraNode.Text, null -> {}

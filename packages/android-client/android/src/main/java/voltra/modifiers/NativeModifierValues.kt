@@ -66,11 +66,12 @@ fun VoltraElement.nativeModifierSize(): NativeModifierSize {
 
 /**
  * The description a `semantics` modifier sets, for renderers that pass their own description to a
- * Glance component, which would otherwise replace the modifier's.
+ * Glance component, which would otherwise replace the modifier's. Like Glance, only the last
+ * `semantics` modifier counts, so one that sets only a `testTag` leaves no description.
  */
 fun VoltraElement.nativeContentDescription(): String? =
     appliedNativeModifiers()
-        .lastOrNull { it.type == "semantics" && it.params["contentDescription"] is String }
+        .lastOrNull { it.type == "semantics" }
         ?.params
         ?.get("contentDescription") as? String
 

@@ -306,10 +306,33 @@ class VoltraModifierRegistryTest {
         val renderState = VoltraModifierRenderState.forTree(root, null)
 
         assertEquals(
-            "The fallback is not drawn, so the sibling keeps the marker",
+            "The fallback may not be drawn, so the sibling keeps the marker",
             1,
             renderBackground(renderState, sibling).size,
         )
+    }
+
+    @Test
+    fun neverMarksTwiceWhenAFallbackRepeatsTheOwner() {
+        // The same component as a sibling and as the fallback of an Image whose source may fail to
+        // load: if both were marked, Glance would fail the widget.
+        val background = element(id = "bg")
+        val shared = listOf<VoltraNode>(VoltraNode.Element(background))
+        val image =
+            element(type = ComponentTypeID.IMAGE, props = mapOf("source" to "avatar", "fallback" to mapOf("\$r" to 0)))
+        val root =
+            VoltraNode.Element(
+                element(
+                    type = ComponentTypeID.COLUMN,
+                    props = null,
+                    children = VoltraNode.Array(listOf(VoltraNode.Ref(0), VoltraNode.Element(image))),
+                ),
+            )
+        val renderState = VoltraModifierRenderState.forTree(root, shared)
+        val renderedFallback = (image.componentProp("fallback", null, shared) as VoltraNode.Element).element
+
+        assertTrue(renderBackground(renderState, background).isEmpty())
+        assertTrue(renderBackground(renderState, renderedFallback).isEmpty())
     }
 
     @Test
@@ -331,17 +354,14 @@ class VoltraModifierRegistryTest {
     }
 
     @Test
-    fun readsTheContentDescriptionOfASemanticsModifier() {
-        val described =
-            element(
-                props =
-                    mapOf(
-                        "modifiers" to
-                            """[{"${'$'}type":"semantics","contentDescription":"Revenue up 12%"},""" +
-                            """{"${'$'}type":"semantics","testTag":"chart"}]""",
-                    ),
-            )
-        assertEquals("Revenue up 12%", described.nativeContentDescription())
+    fun readsTheContentDescriptionOfTheLastSemanticsModifier() {
+        fun described(modifiers: String) = element(props = mapOf("modifiers" to modifiers)).nativeContentDescription()
+
+        val tag = """{"${'$'}type":"semantics","testTag":"chart"}"""
+        val description = """{"${'$'}type":"semantics","contentDescription":"Revenue up 12%"}"""
+        assertEquals("Revenue up 12%", described("[$tag,$description]"))
+        // Glance keeps only the last semantics modifier, so a later testTag-only one clears it.
+        assertEquals(null, described("[$description,$tag]"))
         assertEquals(null, element(props = null).nativeContentDescription())
     }
 

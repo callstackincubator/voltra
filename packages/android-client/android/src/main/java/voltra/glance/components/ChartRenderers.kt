@@ -73,11 +73,13 @@ fun RenderChart(
     val yScale = parseYScale(element.p?.get("yScale") as? String)
 
     val compositeStyle = resolveElementStyle(element, renderContext.sharedStyles)
+    val hasWeight = compositeStyle?.layout?.weight != null && compositeStyle.layout.weight!! > 0
     // Native size modifiers are applied after style, so they decide the size where they set one.
+    // A weight is applied after both and decides the height, as below, so the bitmap is not drawn
+    // at a native height the layout replaces.
     val nativeSize = element.nativeModifierSize()
     val styleWidth = nativeSize.width ?: compositeStyle?.layout?.width
-    val styleHeight = nativeSize.height ?: compositeStyle?.layout?.height
-    val hasWeight = compositeStyle?.layout?.weight != null && compositeStyle.layout.weight!! > 0
+    val styleHeight = (if (hasWeight) null else nativeSize.height) ?: compositeStyle?.layout?.height
 
     val widthIsFill = styleWidth is SizeValue.Fill
     val heightIsFill = styleHeight is SizeValue.Fill

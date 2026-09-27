@@ -20,7 +20,6 @@ import voltra.glance.renderers.extractImageProvider
 import voltra.glance.renderers.getOnClickAction
 import voltra.glance.resolveAndApplyStyle
 import voltra.models.VoltraElement
-import voltra.modifiers.nativeContentDescription
 import voltra.styling.JSColorParser
 import voltra.styling.toColorProvider
 
@@ -131,9 +130,7 @@ fun RenderCircleIconButton(
     val computedModifier = modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier
 
     val componentId = element.i ?: "button_${element.hashCode()}"
-    // A semantics modifier wins over the prop, as native modifiers do over style.
-    val contentDescription =
-        element.nativeContentDescription() ?: (element.p?.get("contentDescription") as? String) ?: ""
+    val contentDescription = (element.p?.get("contentDescription") as? String) ?: ""
     val imageProvider = extractImageProvider(element.p?.get("icon")) ?: ImageProvider(android.R.drawable.ic_menu_add)
     val enabled = (element.p?.get("enabled") as? Boolean) ?: true
 
@@ -174,9 +171,7 @@ fun RenderSquareIconButton(
     val computedModifier = modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier
 
     val componentId = element.i ?: "button_${element.hashCode()}"
-    // A semantics modifier wins over the prop, as native modifiers do over style.
-    val contentDescription =
-        element.nativeContentDescription() ?: (element.p?.get("contentDescription") as? String) ?: ""
+    val contentDescription = (element.p?.get("contentDescription") as? String) ?: ""
     val imageProvider = extractImageProvider(element.p?.get("icon")) ?: ImageProvider(android.R.drawable.ic_menu_add)
     val enabled = (element.p?.get("enabled") as? Boolean) ?: true
 

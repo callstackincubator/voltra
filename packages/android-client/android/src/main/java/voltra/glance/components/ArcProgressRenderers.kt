@@ -154,7 +154,9 @@ fun RenderArcProgressIndicator(
         // counted against the widget's bitmap budget and deduplicated by RemoteViews.BitmapCache.
         Image(
             provider = ImageProvider(bitmap),
-            contentDescription = element.nativeContentDescription() ?: "Progress indicator",
+            // A semantics modifier describes the outer Box; describing the image as well would make
+            // TalkBack read the same text twice.
+            contentDescription = if (element.nativeContentDescription() != null) null else "Progress indicator",
             contentScale = ContentScale.Fit,
             modifier = GlanceModifier.fillMaxSize(),
         )
