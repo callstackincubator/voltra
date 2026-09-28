@@ -57,6 +57,48 @@ export type AndroidOngoingNotificationBigTextProps = AndroidOngoingNotificationC
   children?: ReactNode
 }
 
+export type AndroidOngoingNotificationMetricSemanticStyle = 'unspecified' | 'info' | 'safe' | 'caution' | 'danger'
+
+export type AndroidOngoingNotificationMetricTimeFormat = 'adaptive' | 'chronometer'
+
+/**
+ * A metric reading. Plain numbers and strings are shorthands: an integer becomes
+ * `int`, any other number becomes `float`, and a string becomes `text`.
+ */
+export type AndroidOngoingNotificationMetricValue =
+  | { type: 'int'; value: number; unit?: string }
+  | {
+      type: 'float'
+      value: number
+      unit?: string
+      min?: number
+      max?: number
+      fractionDigits?: number
+    }
+  | { type: 'text'; value: string; unit?: string }
+  | { type: 'time'; value: string }
+  | { type: 'timer'; endsAt: number | Date; format?: AndroidOngoingNotificationMetricTimeFormat }
+  | { type: 'stopwatch'; startedAt: number | Date; format?: AndroidOngoingNotificationMetricTimeFormat }
+  | { type: 'pausedTimer'; remainingMillis: number }
+  | { type: 'pausedStopwatch'; elapsedMillis: number }
+  | number
+  | string
+
+export type AndroidOngoingNotificationMetricDescriptor = {
+  label: string
+  value: AndroidOngoingNotificationMetricValue
+  /** Shorthand for the unit of a number value; moved into the value object when rendering. */
+  unit?: string
+}
+
+export type AndroidOngoingNotificationMetricProps = AndroidOngoingNotificationCommonDisplayProps & {
+  metrics: AndroidOngoingNotificationMetricDescriptor[]
+  criticalMetric?: number
+  semanticStyle?: AndroidOngoingNotificationMetricSemanticStyle
+  largeIcon?: ImageSource
+  children?: ReactNode
+}
+
 export type AndroidOngoingNotificationProgressPayload = {
   v: 1
   kind: 'progress'
@@ -94,9 +136,48 @@ export type AndroidOngoingNotificationBigTextPayload = {
   actions?: AndroidOngoingNotificationActionPayload[]
 }
 
+export type AndroidOngoingNotificationMetricValuePayload =
+  | { type: 'int'; value: number; unit?: string }
+  | {
+      type: 'float'
+      value: number
+      unit?: string
+      min?: number
+      max?: number
+      fractionDigits?: number
+    }
+  | { type: 'text'; value: string; unit?: string }
+  | { type: 'time'; value: string }
+  | { type: 'timer'; endsAt: number; format?: AndroidOngoingNotificationMetricTimeFormat }
+  | { type: 'stopwatch'; startedAt: number; format?: AndroidOngoingNotificationMetricTimeFormat }
+  | { type: 'pausedTimer'; remainingMillis: number }
+  | { type: 'pausedStopwatch'; elapsedMillis: number }
+
+export type AndroidOngoingNotificationMetricEntryPayload = {
+  label: string
+  value: AndroidOngoingNotificationMetricValuePayload
+}
+
+export type AndroidOngoingNotificationMetricPayload = {
+  v: 1
+  kind: 'metric'
+  title?: string
+  subText?: string
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  chronometerCountDown?: boolean
+  largeIcon?: ImageSource
+  metrics: AndroidOngoingNotificationMetricEntryPayload[]
+  criticalMetric?: number
+  semanticStyle?: AndroidOngoingNotificationMetricSemanticStyle
+  actions?: AndroidOngoingNotificationActionPayload[]
+}
+
 export type AndroidOngoingNotificationPayload =
   | AndroidOngoingNotificationProgressPayload
   | AndroidOngoingNotificationBigTextPayload
+  | AndroidOngoingNotificationMetricPayload
 
 export type AndroidOngoingNotificationContent = ReactNode
 
@@ -166,6 +247,9 @@ export type AndroidOngoingNotificationCheckPromotionResult = {
   hasPromotableCharacteristics?: boolean
 }
 
+/** Set when a style the device cannot show yet was posted as a standard notification. */
+export type AndroidOngoingNotificationStyleFallback = 'standard'
+
 export type AndroidOngoingNotificationStartResult =
   | {
       ok: true
@@ -173,6 +257,7 @@ export type AndroidOngoingNotificationStartResult =
       action: 'started'
       reason?: undefined
       promotion?: AndroidOngoingNotificationPromotionInfo
+      styleFallback?: AndroidOngoingNotificationStyleFallback
     }
   | {
       ok: false
@@ -188,6 +273,7 @@ export type AndroidOngoingNotificationUpdateResult =
       action: 'updated'
       reason?: undefined
       promotion?: AndroidOngoingNotificationPromotionInfo
+      styleFallback?: AndroidOngoingNotificationStyleFallback
     }
   | {
       ok: false
@@ -203,6 +289,7 @@ export type AndroidOngoingNotificationUpsertResult =
       action: 'started' | 'updated'
       reason?: undefined
       promotion?: AndroidOngoingNotificationPromotionInfo
+      styleFallback?: AndroidOngoingNotificationStyleFallback
     }
   | {
       ok: false

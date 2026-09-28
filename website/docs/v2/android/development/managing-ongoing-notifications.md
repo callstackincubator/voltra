@@ -73,12 +73,36 @@ if (!granted) {
 }
 ```
 
+### 4. Compile against Android 17 (SDK 37)
+
+Voltra builds ongoing-notification support against API 37, and your app has to compile against it too. Raise it through [expo-build-properties](https://docs.expo.dev/versions/latest/sdk/build-properties/):
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 37
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+If the app compiles against an older SDK, the Gradle build stops with a Voltra error naming the value to raise — instead of a confusing Kotlin compile error later.
+
 ## Starting a notification
 
-Voltra provides two built-in layouts:
+Voltra provides three built-in layouts:
 
 - `AndroidOngoingNotification.Progress`
 - `AndroidOngoingNotification.BigText`
+- `AndroidOngoingNotification.Metric`
 
 ### Progress notification
 
@@ -127,6 +151,43 @@ await startAndroidOngoingNotification(
   }
 )
 ```
+
+### Metric notification
+
+Show up to three readings — distance, pace, time remaining — instead of a progress bar or a text body:
+
+```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
+import {
+  startAndroidOngoingNotification,
+} from '@use-voltra/android-client'
+
+await startAndroidOngoingNotification(
+  <AndroidOngoingNotification.Metric
+    title="Morning run"
+    metrics={[
+      { label: 'Dist', value: 5.2, unit: 'km' },
+      { label: 'Pace', value: '5:30' },
+      { label: 'ETA', value: { type: 'timer', endsAt: Date.now() + 10 * 60 * 1000 } },
+    ]}
+    criticalMetric={2}
+    semanticStyle="safe"
+  />,
+  {
+    notificationId: 'run-7',
+    channelId: 'activity_updates',
+  }
+)
+```
+
+- Pass 1 to 3 metrics, and keep each `label` between 1 and 10 characters.
+- A plain number is a reading and a plain string is text. `unit` next to a number is shorthand for the unit of that reading, so `{ label: 'Dist', value: 5.2, unit: 'km' }` is the same as passing the value as `{ type: 'float', value: 5.2, unit: 'km' }`.
+- `criticalMetric` is the index of the reading to highlight. `semanticStyle` tints the metrics: `'info'`, `'safe'`, `'caution'`, `'danger'`, or the default `'unspecified'`.
+- Values that change on their own: `{ type: 'timer', endsAt }` counts down to a moment and `{ type: 'stopwatch', startedAt }` counts up from it — each accepts a `Date` or an epoch timestamp, and an optional `format: 'chronometer'`. Frozen durations are `{ type: 'pausedTimer', remainingMillis }` and `{ type: 'pausedStopwatch', elapsedMillis }`. `{ type: 'time', value: '18:40' }` shows a clock time, and `{ type: 'float', value: 5.2, fractionDigits: 1 }` (with optional `min`/`max`) controls how a reading is formatted.
+
+The full metric layout needs Android 17 and later. On older versions the notification posts normally and the readings appear as a text line (`Dist 5.2km, Pace 5:30, ETA 9:52`), and the result carries `styleFallback: 'standard'` so you can tell. Your server can send the same metric payload to every device without knowing their versions. Time-driven values are rendered when the notification is posted, so an `updateAndroidOngoingNotification` call every minute keeps the text line fresh on those devices.
+
+Unlike the other layouts, a metric notification can be promoted to a Live Update without a `title`.
 
 ## Updating a notification
 
@@ -257,7 +318,7 @@ import { AndroidOngoingNotification } from '@use-voltra/android'
 Action buttons currently:
 
 - open the provided deep link
-- can be used with `Progress` and `BigText`
+- can be used with `Progress`, `BigText`, and `Metric`
 - support an optional `icon`
 
 ```tsx
@@ -304,7 +365,8 @@ On Android 16 and above, a promoted ongoing notification shows a chip in the sta
 When you set several of these, the chip picks one in this order:
 
 1. `shortCriticalText` (an empty string means no chip text at all)
-2. time derived from `when` — the chronometer when `chronometer` is set, otherwise the remaining time
+2. for a metric notification on Android 17 and later, the value of the `criticalMetric`
+3. time derived from `when` — the chronometer when `chronometer` is set, otherwise the remaining time
 
 ## Status and capability helpers
 

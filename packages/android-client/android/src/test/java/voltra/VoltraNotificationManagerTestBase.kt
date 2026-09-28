@@ -5,9 +5,11 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.provider.Settings
 import kotlinx.coroutines.runBlocking
@@ -27,16 +29,18 @@ import voltra.ongoingnotification.VoltraNotificationException
 
 /**
  * Runs the same behavioral assertions against the real `Notification` the manager hands
- * to `NotificationManager.notify` (captured through `ShadowNotificationManager`) at four
+ * to `NotificationManager.notify` (captured through `ShadowNotificationManager`) at five
  * platform levels: the SDK-24 class covers the floor of Voltra's supported range (no
  * channels, pre-channel builder and settings), the SDK-26 class covers the first
- * channel era, the SDK-35 class proves the pre-Live-Update behavior stays intact and
- * the SDK-36 class runs the promoted-ongoing and countdown-chip requirements. Assertions
- * that only make sense on one level use `assumeTrue(promotionSupported)` (or an SDK
- * check) so the shared list stays readable. Nothing here mocks the manager itself.
+ * channel era, the SDK-35 class proves the pre-Live-Update behavior stays intact, the
+ * SDK-36 class runs the promoted-ongoing and countdown-chip requirements, and the
+ * SDK-37 class runs the platform `MetricStyle`. Assertions that only make sense on one
+ * level use `assumeTrue(promotionSupported)`, `assumeTrue(metricStyleSupported)` or an
+ * SDK check so the shared list stays readable. Nothing here mocks the manager itself.
  */
 abstract class VoltraNotificationManagerTestBase(
     protected val promotionSupported: Boolean,
+    protected val metricStyleSupported: Boolean = false,
 ) {
     protected val context: Application = RuntimeEnvironment.getApplication()
     protected val notificationManager: NotificationManager by lazy {
@@ -96,8 +100,22 @@ abstract class VoltraNotificationManagerTestBase(
         }
     }
 
-    /** Registers an activity for the promotion settings action; a no-op below API 36. */
+    /**
+     * Registers an activity for the promotion settings action; a no-op in the classes
+     * whose platform has no such page. `resolveActivity` matches with CATEGORY_DEFAULT
+     * added to the intent, so the filter must carry it too.
+     */
     protected open fun registerPromotionSettingsActivity() = Unit
+
+    protected fun registerActivityForAction(
+        action: String,
+        className: String,
+    ) {
+        val component = ComponentName(context.packageName, className)
+        val filter = IntentFilter(action).apply { addCategory(Intent.CATEGORY_DEFAULT) }
+        shadowOf(context.packageManager).addActivityIfNotPresent(component)
+        shadowOf(context.packageManager).addIntentFilterForActivity(component, filter)
+    }
 
     @Test
     fun everyPostedNotificationIsOngoingNonColorizedAndWithoutCustomViews() {
@@ -522,6 +540,94 @@ abstract class VoltraNotificationManagerTestBase(
         assertTrue((recovered as Notification.ProgressStyle).isStyledByProgress())
     }
 
+    @Test
+    fun metricFallsBackToJoinedContentTextBelowTheMetricStyleApi() {
+        assumeTrue(!metricStyleSupported)
+        startChannel()
+
+        val result = start(metricPayload())
+
+        assertTrue(result.ok)
+        assertEquals("standard", result.styleFallback)
+        val notification = lastPosted()
+        assertEquals(
+            "Dist 5.2km, Pace 5:30, ETA 18:40",
+            notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
+        )
+        assertTrue(notification.extras.getString(Notification.EXTRA_TEMPLATE)?.contains("MetricStyle") != true)
+        assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
+    }
+
+    @Test
+    fun metricPostsThePlatformMetricStyleOnTheMetricStyleApi() {
+        assumeTrue(metricStyleSupported)
+        startChannel()
+
+        val result = start(metricPayload(semanticStyle = "safe", criticalMetric = 1))
+
+        assertTrue(result.ok)
+        assertNull(result.styleFallback)
+        val notification = lastPosted()
+        // Pin the exact template string the platform writes for MetricStyle.
+        assertEquals(
+            "android.app.Notification\$MetricStyle",
+            notification.extras.getString(Notification.EXTRA_TEMPLATE),
+        )
+
+        val style =
+            Notification.Builder
+                .recoverBuilder(context, notification)
+                .style as
+                Notification.MetricStyle
+        assertEquals(3, style.metrics.size)
+        assertEquals("Pace", style.criticalMetric?.label?.toString())
+        assertEquals(Notification.SEMANTIC_STYLE_SAFE, style.metrics[0].semanticStyle)
+        assertEquals(5.2f, (style.metrics[0].value as Notification.Metric.FixedFloat).value, 0.0f)
+        assertEquals("km", style.metrics[0].metricUnit().toString())
+    }
+
+    private fun Notification.Metric.metricUnit(): CharSequence? =
+        when (val metricValue = value) {
+            is Notification.Metric.FixedInt -> metricValue.unit
+            is Notification.Metric.FixedFloat -> metricValue.unit
+            is Notification.Metric.FixedText -> metricValue.unit
+            else -> null
+        }
+
+    @Test
+    fun metricPromotionDoesNotRequireATitle() {
+        assumeTrue(promotionSupported)
+        startChannel()
+
+        val result = start(metricPayload(title = null), requestPromotedOngoing = true)
+
+        assertTrue(
+            "metric payloads must not carry missing_title: " + result.promotion?.reasons,
+            result.promotion?.reasons?.contains(AndroidOngoingNotificationPromotionIssue.MISSING_TITLE) != true,
+        )
+    }
+
+    @Test
+    fun promotionRequestIsVisibleThroughThePlatformAccessorOnApi37() {
+        assumeTrue(metricStyleSupported)
+        startChannel()
+
+        start(bigTextPayload(), requestPromotedOngoing = true)
+
+        assertTrue(lastPosted().isRequestPromotedOngoing)
+    }
+
+    @Test
+    fun malformedMetricPayloadIsRejectedAndNothingIsPosted() {
+        startChannel()
+
+        expectRejection(VoltraNotificationException.INVALID_PAYLOAD) {
+            start(metricPayload(metricsJson = "[{\"label\":\"WayTooLongLabel\",\"value\":1}]"))
+        }
+
+        assertTrue(postedNotifications().isEmpty())
+    }
+
     protected companion object {
         const val CHANNEL_ID = "voltra-test-channel"
         const val PAYLOAD_WHEN_MILLIS = 1_780_000_000_000L // far future; the value is opaque to these code paths
@@ -540,6 +646,28 @@ abstract class VoltraNotificationManagerTestBase(
             whenMillis?.let { fields += "\"when\":$it" }
             chronometer?.let { fields += "\"chronometer\":$it" }
             chronometerCountDown?.let { fields += "\"chronometerCountDown\":$it" }
+            return "{${fields.joinToString(",")}}"
+        }
+
+        fun metricPayload(
+            title: String? = "Workout",
+            metricsJson: String =
+                "[{\"label\":\"Dist\",\"value\":{\"type\":\"float\",\"value\":5.2," +
+                    "\"unit\":\"km\",\"fractionDigits\":1}}," +
+                    "{\"label\":\"Pace\",\"value\":{\"type\":\"text\",\"value\":\"5:30\"}}," +
+                    "{\"label\":\"ETA\",\"value\":{\"type\":\"time\",\"value\":\"18:40\"}}]",
+            criticalMetric: Int? = null,
+            semanticStyle: String? = null,
+        ): String {
+            val fields =
+                mutableListOf(
+                    "\"v\":1",
+                    "\"kind\":\"metric\"",
+                    "\"metrics\":$metricsJson",
+                )
+            title?.let { fields += "\"title\":\"$it\"" }
+            criticalMetric?.let { fields += "\"criticalMetric\":$it" }
+            semanticStyle?.let { fields += "\"semanticStyle\":\"$it\"" }
             return "{${fields.joinToString(",")}}"
         }
 

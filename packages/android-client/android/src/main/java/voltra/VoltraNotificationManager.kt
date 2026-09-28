@@ -24,6 +24,7 @@ import voltra.images.VoltraImageManager
 import voltra.ongoingnotification.AndroidOngoingNotificationActionPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationBigTextPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationImageSource
+import voltra.ongoingnotification.AndroidOngoingNotificationMetricPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationPayloadParser
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressPayload
@@ -33,9 +34,12 @@ import voltra.ongoingnotification.AndroidOngoingNotificationPromotionEvaluator
 import voltra.ongoingnotification.AndroidOngoingNotificationPromotionInfo
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
 import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
+import voltra.ongoingnotification.METRIC_STYLE_MIN_SDK
 import voltra.ongoingnotification.PROMOTION_MIN_SDK
 import voltra.ongoingnotification.VoltraNotificationException
+import voltra.ongoingnotification.buildMetricStyle
 import voltra.ongoingnotification.hasPromotedNotificationsPermission
+import voltra.ongoingnotification.renderMetricFallbackText
 import voltra.styling.JSColorParser
 import voltra.styling.VoltraColorValue
 
@@ -74,6 +78,7 @@ data class AndroidOngoingNotificationStartResult(
     val action: String? = null,
     val reason: String? = null,
     val promotion: AndroidOngoingNotificationPromotionInfo? = null,
+    val styleFallback: String? = null,
 )
 
 data class AndroidOngoingNotificationUpdateResult(
@@ -82,6 +87,7 @@ data class AndroidOngoingNotificationUpdateResult(
     val action: String? = null,
     val reason: String? = null,
     val promotion: AndroidOngoingNotificationPromotionInfo? = null,
+    val styleFallback: String? = null,
 )
 
 data class AndroidOngoingNotificationUpsertResult(
@@ -90,6 +96,7 @@ data class AndroidOngoingNotificationUpsertResult(
     val action: String? = null,
     val reason: String? = null,
     val promotion: AndroidOngoingNotificationPromotionInfo? = null,
+    val styleFallback: String? = null,
 )
 
 data class AndroidOngoingNotificationStopResult(
@@ -199,6 +206,7 @@ class VoltraNotificationManager(
                 notificationId = notificationId,
                 action = "started",
                 promotion = promotion,
+                styleFallback = resolveStyleFallback(parsedPayload),
             )
         }
 
@@ -243,6 +251,7 @@ class VoltraNotificationManager(
                 notificationId = notificationId,
                 action = "updated",
                 promotion = promotion,
+                styleFallback = resolveStyleFallback(parsedPayload),
             )
         }
 
@@ -262,6 +271,7 @@ class VoltraNotificationManager(
                     action = if (startResult.ok) "started" else null,
                     reason = startResult.reason,
                     promotion = startResult.promotion,
+                    styleFallback = startResult.styleFallback,
                 )
             }
 
@@ -272,6 +282,7 @@ class VoltraNotificationManager(
                 action = if (updateResult.ok) "updated" else null,
                 reason = updateResult.reason,
                 promotion = updateResult.promotion,
+                styleFallback = updateResult.styleFallback,
             )
         }
 
@@ -569,6 +580,11 @@ class VoltraNotificationManager(
             is AndroidOngoingNotificationBigTextPayload -> {
                 builder.setContentText(payload.text)
             }
+
+            // The metrics render through the style (or the fallback text line set there).
+            is AndroidOngoingNotificationMetricPayload -> {
+                Unit
+            }
         }
 
         payload.subText?.let { builder.setSubText(it) }
@@ -630,12 +646,25 @@ class VoltraNotificationManager(
                     builder.setStyle(style)
                 }
             }
+
+            is AndroidOngoingNotificationMetricPayload -> {
+                if (Build.VERSION.SDK_INT >= METRIC_STYLE_MIN_SDK) {
+                    builder.setStyle(buildMetricStyle(payload))
+                } else {
+                    builder.setContentText(renderMetricFallbackText(payload))
+                }
+            }
         }
     }
 
     private fun getNotificationCategory(payload: AndroidOngoingNotificationPayload): String? =
         when (payload) {
+            // Metrics double as live-update material, which requires a progress (or call)
+            // category for promotable characteristics.
             is AndroidOngoingNotificationProgressPayload -> Notification.CATEGORY_PROGRESS
+
+            is AndroidOngoingNotificationMetricPayload -> Notification.CATEGORY_PROGRESS
+
             is AndroidOngoingNotificationBigTextPayload -> null
         }
 
@@ -709,6 +738,15 @@ class VoltraNotificationManager(
         val value = JSColorParser.parse(color) as? VoltraColorValue.Static ?: return null
         return value.color.toArgb()
     }
+
+    // Metrics have a real presentation only from API 37; below that the post succeeds as a
+    // standard notification whose contentText lists the readings, and the result says so.
+    private fun resolveStyleFallback(payload: AndroidOngoingNotificationPayload): String? =
+        if (payload is AndroidOngoingNotificationMetricPayload && Build.VERSION.SDK_INT < METRIC_STYLE_MIN_SDK) {
+            "standard"
+        } else {
+            null
+        }
 
     private fun requestPromotionIfPossible(
         builder: Builder,

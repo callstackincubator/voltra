@@ -81,8 +81,81 @@ class AndroidOngoingNotificationPayloadParserTest {
 
     @Test
     fun pinsTheDocumentedPromotionExtrasKey() {
-        // Builder.setRequestPromotedOngoing is SDK 36.1+, so the extras key is written
-        // directly; the platform's value for it must never drift from this string.
+        // The constant now reads through the platform's own EXTRA_REQUEST_PROMOTED_ONGOING;
+        // the system contract is the documented string, and it must never drift.
         assertEquals("android.requestPromotedOngoing", EXTRA_REQUEST_PROMOTED_ONGOING)
+    }
+
+    @Test
+    fun acceptsAMetricPayloadAndDecodesMetricValues() {
+        val payload =
+            AndroidOngoingNotificationPayloadParser.parseValidated(
+                """{"v":1,"kind":"metric","metrics":[{"label":"Dist","value":{"type":"float",""" +
+                    """"value":5.2,"unit":"km","fractionDigits":1}},""" +
+                    """{"label":"ETA","value":{"type":"timer","endsAt":1758535200000,"format":"adaptive"}}]}""",
+            )
+
+        assertTrue(payload is AndroidOngoingNotificationMetricPayload)
+        val metric = payload as AndroidOngoingNotificationMetricPayload
+        assertEquals(false, metric.promotionRequiresTitle)
+        assertEquals(
+            AndroidOngoingNotificationMetricFloatPayload(5.2, "km", null, null, 1),
+            metric.metrics[0].value,
+        )
+        assertEquals(
+            AndroidOngoingNotificationMetricTimerPayload(1758535200000L, "adaptive"),
+            metric.metrics[1].value,
+        )
+    }
+
+    @Test
+    fun rejectsMetricPayloadViolatingItsOwnConstraints() {
+        expectInvalidPayload("""{"v":1,"kind":"metric","metrics":[]}""", "metrics")
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"WayTooLongLabel","value":{"type":"int","value":1}}]}""",
+            "label",
+        )
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"Dist","value":{"type":"int","value":1}}],""" +
+                """"criticalMetric":1}""",
+            "criticalMetric",
+        )
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"Pace","value":{"type":"text","value":"5:30"}}],""" +
+                """"semanticStyle":"urgent"}""",
+            "semanticStyle",
+        )
+    }
+
+    @Test
+    fun rejectsMetricValuesBreakingTheirRules() {
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"ETA","value":{"type":"time","value":"25:00"}}]}""",
+            "HH:mm",
+        )
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"Dist","value":{"type":"float","value":1,""" +
+                """"min":5,"max":2}}]}""",
+            "min",
+        )
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"Dist","value":{"type":"float","value":1,""" +
+                """"fractionDigits":-1}}]}""",
+            "fractionDigits",
+        )
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"Rest","value":{"type":"pausedTimer",""" +
+                """"remainingMillis":-5}}]}""",
+            "remainingMillis",
+        )
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"To go","value":{"type":"timer",""" +
+                """"endsAt":1758535200000,"format":"sandclock"}}]}""",
+            "format",
+        )
+        expectInvalidPayload(
+            """{"v":1,"kind":"metric","metrics":[{"label":"Now","value":{"type":"epoch","value":1}}]}""",
+            "parse",
+        )
     }
 }

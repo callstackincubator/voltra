@@ -56,6 +56,7 @@ type AndroidOngoingNotificationResultSpec = Readonly<{
   action?: string
   reason?: string
   promotion?: AndroidOngoingNotificationPromotionSpec
+  styleFallback?: string
 }>
 
 type CheckAndroidOngoingNotificationPromotionOptionsSpec = Readonly<{

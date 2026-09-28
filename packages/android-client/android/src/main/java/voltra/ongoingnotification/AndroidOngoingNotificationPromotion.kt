@@ -10,12 +10,11 @@ import android.os.Build
 internal const val PROMOTION_MIN_SDK = 36
 
 /**
- * The extras bit that requests promotion. `Builder.setRequestPromotedOngoing` was added
- * in SDK 36.1 while Live Update devices start at 36.0, so the documented extras key stays
- * the mechanism and must keep matching `Notification.EXTRA_REQUEST_PROMOTED_ONGOING`
- * ("android.requestPromotedOngoing") — a test pins the value.
+ * The extras bit that requests promotion. compileSdk 37 exposes the platform constant,
+ * so the key is the framework's own — the contract with the system is pinned against
+ * the documented value ("android.requestPromotedOngoing") in a test.
  */
-internal const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
+internal val EXTRA_REQUEST_PROMOTED_ONGOING = Notification.EXTRA_REQUEST_PROMOTED_ONGOING
 
 private const val PROMOTED_PERMISSION = "android.permission.POST_PROMOTED_NOTIFICATIONS"
 
