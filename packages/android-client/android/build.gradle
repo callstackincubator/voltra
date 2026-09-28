@@ -1,3 +1,5 @@
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
 buildscript {
   repositories {
     google()
@@ -40,6 +42,22 @@ if (hostMinSdk < 24) {
   throw new GradleException(
     "@use-voltra/android-client requires minSdkVersion 24 (Android 7.0); this app sets ${hostMinSdk}."
   )
+}
+
+// Robolectric's SDK 36+ android-all jars contain JDK 21 class files, so test classes
+// running @Config(sdk = [36]) (or above) need a JDK 21+ test JVM. Unit tests therefore
+// run on a JDK 21 toolchain (downloaded automatically when none is installed). The
+// launcher is resolved lazily, so consuming apps — which never run this library's unit
+// test tasks — never pay for the lookup.
+try {
+  def voltraToolchainService = project.extensions.findByName('javaToolchains')
+  if (voltraToolchainService != null) {
+    project.ext.voltraUnitTestJdkLauncher = voltraToolchainService.launcherFor { spec ->
+      spec.languageVersion = JavaLanguageVersion.of(21)
+    }
+  }
+} catch (Throwable ignored) {
+  project.ext.voltraUnitTestJdkLauncher = null
 }
 
 android {
@@ -103,6 +121,14 @@ android {
   testOptions {
     unitTests.includeAndroidResources = true
     unitTests.all {
+      def unitTestJdkLauncher = project.ext.voltraUnitTestJdkLauncher
+      if (unitTestJdkLauncher != null) {
+        javaLauncher.set(unitTestJdkLauncher)
+      }
+      // The SDK 36 sandbox shares app state through ApplicationSharedMemory, which reaches
+      // into jdk.internal.access.JavaIOFileDescriptorAccess; JDK 16+ denies that without
+      // this export.
+      jvmArgs "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED"
       testLogging {
         events "passed", "failed", "skipped"
         exceptionFormat "full"
@@ -171,5 +197,5 @@ dependencies {
   // Unit tests
   testImplementation "junit:junit:4.13.2"
   testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1"
-  testImplementation "org.robolectric:robolectric:4.14.1"
+  testImplementation "org.robolectric:robolectric:4.17"
 }

@@ -128,7 +128,9 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          # 21: Robolectric's SDK 36+ android-all jars need a JDK 21+ test JVM
+          # (see testOptions in packages/android-client/android/build.gradle).
+          java-version: '21'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4

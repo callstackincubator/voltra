@@ -4,12 +4,14 @@ import type { ImageSource } from '../jsx/Image.js'
 
 export type AndroidOngoingNotificationFallbackBehavior = 'standard' | 'error'
 
+export type AndroidOngoingNotificationChronometer = boolean | 'countUp' | 'countDown'
+
 export type AndroidOngoingNotificationCommonDisplayProps = {
   title?: string
   subText?: string
   shortCriticalText?: string
   when?: Date | number
-  chronometer?: boolean
+  chronometer?: AndroidOngoingNotificationChronometer
 }
 
 export type AndroidOngoingNotificationProgressSegment = {
@@ -67,6 +69,7 @@ export type AndroidOngoingNotificationProgressPayload = {
   shortCriticalText?: string
   when?: number
   chronometer?: boolean
+  chronometerCountDown?: boolean
   largeIcon?: ImageSource
   progressTrackerIcon?: ImageSource
   progressStartIcon?: ImageSource
@@ -86,6 +89,7 @@ export type AndroidOngoingNotificationBigTextPayload = {
   shortCriticalText?: string
   when?: number
   chronometer?: boolean
+  chronometerCountDown?: boolean
   largeIcon?: ImageSource
   actions?: AndroidOngoingNotificationActionPayload[]
 }
@@ -135,12 +139,40 @@ export type AndroidOngoingNotificationStatus = {
   hasPromotableCharacteristics?: boolean
 }
 
+export type AndroidOngoingNotificationPromotionIssue =
+  | 'unsupported_api_level'
+  | 'permission_not_declared'
+  | 'notifications_disabled'
+  | 'promotion_disabled_by_user'
+  | 'channel_importance_min'
+  | 'missing_title'
+  | 'not_promotable'
+
+export type AndroidOngoingNotificationPromotionInfo = {
+  requested: boolean
+  eligible: boolean
+  reasons: AndroidOngoingNotificationPromotionIssue[]
+  hasPromotableCharacteristics?: boolean
+}
+
+export type CheckAndroidOngoingNotificationPromotionOptions = Pick<
+  StartAndroidOngoingNotificationOptions,
+  'channelId' | 'smallIcon'
+>
+
+export type AndroidOngoingNotificationCheckPromotionResult = {
+  eligible: boolean
+  reasons: AndroidOngoingNotificationPromotionIssue[]
+  hasPromotableCharacteristics?: boolean
+}
+
 export type AndroidOngoingNotificationStartResult =
   | {
       ok: true
       notificationId: string
       action: 'started'
       reason?: undefined
+      promotion?: AndroidOngoingNotificationPromotionInfo
     }
   | {
       ok: false
@@ -155,6 +187,7 @@ export type AndroidOngoingNotificationUpdateResult =
       notificationId: string
       action: 'updated'
       reason?: undefined
+      promotion?: AndroidOngoingNotificationPromotionInfo
     }
   | {
       ok: false
@@ -169,6 +202,7 @@ export type AndroidOngoingNotificationUpsertResult =
       notificationId: string
       action: 'started' | 'updated'
       reason?: undefined
+      promotion?: AndroidOngoingNotificationPromotionInfo
     }
   | {
       ok: false

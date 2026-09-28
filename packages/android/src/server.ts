@@ -8,6 +8,7 @@ export type {
   AndroidOngoingNotificationActionProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
+  AndroidOngoingNotificationChronometer,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationPayload,
   AndroidOngoingNotificationProgressPayload,

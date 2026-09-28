@@ -35,9 +35,28 @@ sealed class AndroidOngoingNotificationPayload {
     abstract val subText: String?
     abstract val shortCriticalText: String?
     abstract val chronometer: Boolean?
+    abstract val chronometerCountDown: Boolean?
     abstract val whenEpochMillis: Long?
     abstract val largeIcon: AndroidOngoingNotificationImageSource?
     abstract val actions: List<AndroidOngoingNotificationActionPayload>?
+
+    /** Whether the platform needs `contentTitle` to promote this style. */
+    open val promotionRequiresTitle: Boolean
+        get() = true
+
+    /**
+     * Cross-kind payload rules; kind subclasses extend this. Remote payloads bypass the
+     * JS renderer, so the Kotlin side is the authority and rejects with
+     * [VoltraNotificationException] instead of throwing a bare exception.
+     */
+    open fun validate() {
+        if (chronometerCountDown == true && whenEpochMillis == null) {
+            throw VoltraNotificationException(
+                VoltraNotificationException.INVALID_PAYLOAD,
+                "chronometerCountDown requires the \"when\" prop: a countdown needs a target time.",
+            )
+        }
+    }
 }
 
 @Serializable
@@ -54,6 +73,7 @@ data class AndroidOngoingNotificationProgressPayload(
     @SerialName("when")
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
+    override val chronometerCountDown: Boolean? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
     val progressTrackerIcon: AndroidOngoingNotificationImageSource? = null,
     val progressStartIcon: AndroidOngoingNotificationImageSource? = null,
@@ -75,6 +95,7 @@ data class AndroidOngoingNotificationBigTextPayload(
     @SerialName("when")
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
+    override val chronometerCountDown: Boolean? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
     override val actions: List<AndroidOngoingNotificationActionPayload>? = null,
 ) : AndroidOngoingNotificationPayload()
