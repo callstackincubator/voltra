@@ -1,5 +1,6 @@
 package voltra.styling
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,5 +52,33 @@ class StyleConverterTest {
         assertNull(style.decoration.backgroundImage)
         assertTrue(style.layout.width is SizeValue.Fixed)
         assertTrue(style.layout.height is SizeValue.Fill)
+    }
+
+    @Test
+    fun parsesNumericGapToDp() {
+        val style = StyleConverter.convert(mapOf("gap" to 12))
+
+        assertEquals(12f, style.layout.gap?.value)
+    }
+
+    @Test
+    fun missingGapIsNull() {
+        val style = StyleConverter.convert(mapOf("width" to 100))
+
+        assertNull(style.layout.gap)
+    }
+
+    @Test
+    fun invalidGapIsNull() {
+        val style = StyleConverter.convert(mapOf("gap" to "not-a-number"))
+
+        assertNull(style.layout.gap)
+    }
+
+    @Test
+    fun negativeGapIsNull() {
+        val style = StyleConverter.convert(mapOf("gap" to -8))
+
+        assertNull(style.layout.gap)
     }
 }

@@ -1,6 +1,7 @@
 package voltra.glance.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 import androidx.glance.GlanceModifier
 import androidx.glance.layout.*
 import androidx.glance.text.Text
@@ -14,13 +15,30 @@ import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.styling.applyFlex
 
+/**
+ * Computes the leaf children a Column/Row should render.
+ *
+ * When [gap] is null or non-positive, this is a no-op beyond flattening: no per-child
+ * style resolution happens and Gone children are left in place, so rendering stays
+ * identical to before the `gap` style existed. Only when [gap] is positive are Gone
+ * children filtered out (see [LayoutGaps.visibleChildren]) so they don't get a gap.
+ */
+private fun resolveGapChildren(
+    element: VoltraElement,
+    context: VoltraRenderContext,
+    gap: Dp?,
+): List<VoltraNode> {
+    val allChildren = LayoutGaps.flattenChildren(element.c, context.sharedElements)
+    return LayoutGaps.visibleChildren(allChildren, gap, context.sharedStyles)
+}
+
 @Composable
 fun RenderColumn(
     element: VoltraElement,
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
+    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
             modifier ?: baseModifier,
@@ -47,20 +65,20 @@ fun RenderColumn(
             else -> Alignment.Vertical.Top
         }
 
+    val gap = compositeStyle?.layout?.gap
+    val visibleChildren = resolveGapChildren(element, context, gap)
+
     Column(
         modifier = finalModifier,
         horizontalAlignment = horizontalAlignment,
         verticalAlignment = verticalAlignment,
     ) {
-        when (val children = element.c) {
-            is VoltraNode.Array -> {
-                children.elements.forEach { child ->
-                    RenderChildWithWeight(child)
-                }
-            }
-
-            else -> {
-                RenderChildWithWeight(children)
+        visibleChildren.forEachIndexed { index, child ->
+            val insets = LayoutGaps.gapInsets(index, visibleChildren.size, gap)
+            if (insets != null) {
+                RenderChildWithGap(child, insets)
+            } else {
+                RenderChildWithWeight(child)
             }
         }
     }
@@ -72,7 +90,7 @@ fun RenderRow(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
+    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
             modifier ?: baseModifier,
@@ -99,20 +117,20 @@ fun RenderRow(
             else -> Alignment.Vertical.CenterVertically
         }
 
+    val gap = compositeStyle?.layout?.gap
+    val visibleChildren = resolveGapChildren(element, context, gap)
+
     Row(
         modifier = finalModifier,
         horizontalAlignment = horizontalAlignment,
         verticalAlignment = verticalAlignment,
     ) {
-        when (val children = element.c) {
-            is VoltraNode.Array -> {
-                children.elements.forEach { child ->
-                    RenderChildWithWeight(child)
-                }
-            }
-
-            else -> {
-                RenderChildWithWeight(children)
+        visibleChildren.forEachIndexed { index, child ->
+            val insets = LayoutGaps.gapInsets(index, visibleChildren.size, gap)
+            if (insets != null) {
+                RenderChildWithGap(child, insets)
+            } else {
+                RenderChildWithWeight(child)
             }
         }
     }
@@ -232,6 +250,67 @@ private fun RowScope.RenderChildWithWeight(child: VoltraNode?) {
 
         is VoltraNode.Text -> {
             Text(child.text)
+        }
+    }
+}
+
+/**
+ * Renders a leaf child of a Column that has the `gap` style.
+ *
+ * The gap is top/bottom padding on a `Box` wrapping the child (see [LayoutGaps.gapInsets])
+ * instead of a separate `Spacer`, so it does not use up one of Glance's 10 direct-child
+ * slots, and it sits outside the child's own background. A weighted child moves its weight
+ * to the wrapper and fills it, so it still takes its share of the Column's free space.
+ */
+@Composable
+private fun ColumnScope.RenderChildWithGap(
+    child: VoltraNode,
+    insets: LayoutGaps.GapInsets,
+) {
+    val context = LocalVoltraRenderContext.current
+    val weighted = (extractWeightFromChild(child, context) ?: 0f) > 0f
+    val wrapper = GlanceModifier.padding(top = insets.leading, bottom = insets.trailing)
+    Box(modifier = applyFlex(wrapper, if (weighted) 1f else null)) {
+        RenderGapWrappedChild(child) { if (weighted) it.fillMaxHeight() else it }
+    }
+}
+
+/**
+ * Renders a leaf child of a Row that has the `gap` style. See the Column overload; the gap
+ * is start/end padding here, so it follows the layout direction.
+ */
+@Composable
+private fun RowScope.RenderChildWithGap(
+    child: VoltraNode,
+    insets: LayoutGaps.GapInsets,
+) {
+    val context = LocalVoltraRenderContext.current
+    val weighted = (extractWeightFromChild(child, context) ?: 0f) > 0f
+    val wrapper = GlanceModifier.padding(start = insets.leading, end = insets.trailing)
+    Box(modifier = applyFlex(wrapper, if (weighted) 1f else null)) {
+        RenderGapWrappedChild(child) { if (weighted) it.fillMaxWidth() else it }
+    }
+}
+
+@Composable
+private fun RenderGapWrappedChild(
+    child: VoltraNode,
+    fillWeightedAxis: (GlanceModifier) -> GlanceModifier,
+) {
+    val context = LocalVoltraRenderContext.current
+    when (child) {
+        is VoltraNode.Element -> {
+            val (baseModifier, compositeStyle) = resolveAndApplyStyle(child.element.p, context.sharedStyles)
+            RenderElementWithModifier(child.element, fillWeightedAxis(baseModifier), compositeStyle)
+        }
+
+        is VoltraNode.Text -> {
+            Text(child.text)
+        }
+
+        // Column/Row children are flattened to Element and Text leaves before rendering.
+        else -> {
+            RenderNode(child)
         }
     }
 }
