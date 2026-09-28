@@ -11,10 +11,11 @@ class GlanceFactory(
     private val sharedElements: List<VoltraNode>? = null,
     private val sharedStyles: List<Map<String, Any?>>? = null,
     private val widgetSize: DpSize? = null,
+    private val isPreview: Boolean = false,
 ) {
     @Composable
     fun Render(node: VoltraNode?) {
-        val context = VoltraRenderContext(widgetId, sharedElements, sharedStyles, widgetSize)
+        val context = VoltraRenderContext(widgetId, sharedElements, sharedStyles, widgetSize, isPreview)
         CompositionLocalProvider(LocalVoltraRenderContext provides context) {
             RenderNode(node)
         }
