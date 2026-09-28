@@ -16,7 +16,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@appduct/react-native": "^0.11.0",
+    "@appduct/react-native": "^0.13.0",
     "@expo-google-fonts/merriweather": "^0.4.2",
     "@expo-google-fonts/pacifico": "^0.4.1",
     "@expo-google-fonts/press-start-2p": "^0.4.1",

@@ -60,8 +60,8 @@ importers:
   example:
     dependencies:
       '@appduct/react-native':
-        specifier: ^0.11.0
-        version: 0.11.0(expo@55.0.25)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)
+        specifier: ^0.13.0
+        version: 0.13.0(expo@55.0.25)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)
       '@expo-google-fonts/merriweather':
         specifier: ^0.4.2
         version: 0.4.2
@@ -530,8 +530,8 @@ importers:
 
 packages:
 
-  '@appduct/react-native@0.11.0':
-    resolution: {integrity: sha512-ftcqnlndgwqzWmSz27kZd0cQLsPv7XCJltjA+Hl4kvpzXMU1sfj0KEqLOQVRHSyOCN5wb7AzYACchXE/5AuH4w==}
+  '@appduct/react-native@0.13.0':
+    resolution: {integrity: sha512-pn4F8A6Q3p7Tt/mja2+yqGKdtifY1SmQmvCy5YGxD/1Ac9ScWJLJ9xM5bmvB+mTeTypOVG2gAQPeUZ9bNsz3Xg==}
     peerDependencies:
       expo: '>=54.0.0'
       react: '*'
@@ -540,8 +540,8 @@ packages:
       expo:
         optional: true
 
-  '@appduct/shared@0.11.0':
-    resolution: {integrity: sha512-rNRbYH6OOTE6/dUvrmpNk/29MiYPPE/Wl0a+AcbKhhgAubxl2f8vkO2ac1CfQ/WjlJNb2tMHZ8OmSI8N8SH/Vg==}
+  '@appduct/shared@0.13.0':
+    resolution: {integrity: sha512-N7hIlF04nW10zjSbirNmDp2/3MCfPSzMBpDzUB6UqMxvR2cIHvR1yt055rvtLQky/Y3+n94jkoMzwK5UnHyQlw==}
 
   '@ark/schema@0.56.0':
     resolution: {integrity: sha512-ECg3hox/6Z/nLajxXqNhgPtNdHWC9zNsDyskwO28WinoFEnWow4IsERNz9AnXRhTZJnYIlAJ4uGn3nlLk65vZA==}
@@ -9220,15 +9220,15 @@ packages:
 
 snapshots:
 
-  '@appduct/react-native@0.11.0(expo@55.0.25)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)':
+  '@appduct/react-native@0.13.0(expo@55.0.25)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)':
     dependencies:
-      '@appduct/shared': 0.11.0
+      '@appduct/shared': 0.13.0
       react: 19.2.4
       react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4)
     optionalDependencies:
       expo: 55.0.25(@babel/core@7.29.0)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.11)(expo-router@55.0.15)(react-dom@19.2.4(react@19.2.4))(react-native-webview@13.16.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4))(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.15)(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
 
-  '@appduct/shared@0.11.0': {}
+  '@appduct/shared@0.13.0': {}
 
   '@ark/schema@0.56.0':
     dependencies:

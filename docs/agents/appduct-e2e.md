@@ -35,13 +35,17 @@ simulator you are driving.
 npm install -g appduct            # once, on this machine
 
 cd example
-appduct link --open android --device emulator-5554   # or: --open ios-sim
-appduct ls                                           # confirm the session is active
+appduct sessions link --open android --device emulator-5554   # or: --open ios-sim
+appduct sessions ls                                           # confirm the session is active
 ```
 
-`link` reads the deep-link scheme (`voltra`) out of `example/app.json`, so it needs no `--scheme`
-when run from `example/`. `--open` delivers the link through `adb`/`simctl` — no QR scanning.
-Sessions survive Metro reloads and backgrounding, so one `link` normally covers a whole run.
+`sessions link` reads the deep-link scheme (`voltra`) out of `example/app.json`, so it needs no
+`--scheme` when run from `example/`. `--open` delivers the link through `adb`/`simctl` — no QR
+scanning. Sessions survive Metro reloads, but a tool call only runs while the app is in the
+foreground: after the device locks or the app is backgrounded for a while, the session shows
+`suspended` and calls fail with `tool_timeout` or `session_suspended`. Foregrounding the app does
+not revive it — run `appduct sessions link --open …` again, then `appduct sessions revoke <alias>`
+for the stale one, since `appduct tools call` refuses to choose between two live sessions.
 
 For an MCP client (Claude Code, Cursor) instead of the CLI:
 
@@ -49,16 +53,18 @@ For an MCP client (Claude Code, Cursor) instead of the CLI:
 { "mcpServers": { "appduct": { "command": "appduct", "args": ["mcp"] } } }
 ```
 
-The tools then arrive as `appduct_list_tools`, `appduct_describe_tool`, and `appduct_call_tool`.
+The tools then arrive as `appduct_list_tools`, `appduct_describe_tool`, and `appduct_call_tool`,
+alongside `appduct_connect`, `appduct_events`, `appduct_wait_for_event` and
+`appduct_wait_for_session`.
 
 ## Look before you invoke
 
 ```bash
-appduct tools --groups                 # voltra/ios or voltra/android, with counts
-appduct tools --group voltra/android   # the connected platform's tools
-appduct tools ios_update_dynamic_widget   # one tool's full input/output schema
-appduct invoke android_list_widgets
-appduct invoke ios_update_dynamic_widget --input '{"widgetId":"ClientRenderedDemoWidget","props":{"city":"Paris"}}'
+appduct tools ls --groups                          # voltra/ios or voltra/android, with counts
+appduct tools ls --group voltra/android            # the connected platform's tools
+appduct tools describe ios_update_dynamic_widget   # one tool's full input/output schema
+appduct tools call android_list_widgets
+appduct tools call ios_update_dynamic_widget --input '{"widgetId":"ClientRenderedDemoWidget","props":{"city":"Paris"}}'
 ```
 
 Only one platform's group is ever present: if `--groups` shows `voltra/ios`, you are connected to
@@ -114,7 +120,7 @@ a simulator or an iPhone, and the `android_*` tools do not exist in that session
 **Put a widget into a known state and screenshot it.**
 
 ```bash
-appduct invoke android_update_dynamic_widget \
+appduct tools call android_update_dynamic_widget \
   --input '{"widgetId":"AndroidClientDemoWidget","props":{"city":"Paris","temperature":9}}'
 adb exec-out screencap -p > /tmp/widget.png
 ```
@@ -123,10 +129,10 @@ adb exec-out screencap -p > /tmp/widget.png
 `appWidgetId`; write per-placement values without touching the launcher:
 
 ```bash
-appduct invoke android_list_widgets
-appduct invoke android_set_widget_configuration --input '{"appWidgetId":42,"values":{"city":"Paris"}}'
-appduct invoke android_set_widget_configuration --input '{"appWidgetId":43,"values":{"city":"Berlin"}}'
-appduct invoke android_reload_widgets --input '{"widgetIds":["AndroidClientDemoWidget"]}'
+appduct tools call android_list_widgets
+appduct tools call android_set_widget_configuration --input '{"appWidgetId":42,"values":{"city":"Paris"}}'
+appduct tools call android_set_widget_configuration --input '{"appWidgetId":43,"values":{"city":"Berlin"}}'
+appduct tools call android_reload_widgets --input '{"widgetIds":["AndroidClientDemoWidget"]}'
 ```
 
 There is no iOS equivalent: a placement's configuration only changes through the system Edit
@@ -138,20 +144,20 @@ after the tool call that set the surface up. `ios_read_events` drains what arriv
 read, so an assertion is not a race:
 
 ```bash
-appduct invoke ios_read_events --input '{"drain":true}'   # clear the buffer
+appduct tools call ios_read_events --input '{"drain":true}'   # clear the buffer
 # ... tap the widget button with agent-device ...
-appduct invoke ios_read_events --input '{"kind":"interaction"}'
+appduct tools call ios_read_events --input '{"kind":"interaction"}'
 ```
 
-The same events are pushed onto Appduct's own event stream, so `appduct events` follows them live.
+The same events are pushed onto Appduct's own event stream, so `appduct events tail` follows them live.
 
 **Point a widget at the fake server.** `example/server/widget-server.tsx` (port 3333) serves the
 per-instance fetch demo:
 
 ```bash
-appduct invoke android_set_widget_server_update \
+appduct tools call android_set_widget_server_update \
   --input '{"widgetId":"AndroidClientDemoWidget","settings":{"url":"http://10.0.2.2:3333","intervalMinutes":15}}'
-appduct invoke android_get_widget_server_update --input '{"widgetId":"AndroidClientDemoWidget"}'
+appduct tools call android_get_widget_server_update --input '{"widgetId":"AndroidClientDemoWidget"}'
 ```
 
 Use `http://localhost:3333` on the iOS simulator. Plain `http` is accepted only in a debug build,
@@ -165,6 +171,9 @@ placements — that still needs the launcher.
 
 - A release build carries no native Appduct module. The registrations stay inert and `connect()`
   rejects with `appduct_disabled`; this is the intended behavior, not a setup failure.
+- Set state while the app is in the foreground. A call made after the app was backgrounded can
+  time out even though its write still landed, so put the surface in its state first, then
+  background the app (or open the launcher) to look at it.
 - A tool call gets 10 seconds unless its registration declares `timeoutMs`. `ios_preload_images`
   declares 30 seconds because it downloads.
 - Android needs at least one placement before the widget tools do anything visible.
