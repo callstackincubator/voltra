@@ -172,7 +172,7 @@ To remove the Live Activity from the Lock Screen right after it ends, set `dismi
 You can also set a timestamp up to four hours in the future to control when it’s dismissed.
 
 :::danger
-ActivityKit enforces a strict payload size limit of approximately 4 KB. Keep your UI JSON minimal to stay within this limit. Avoid deeply nested component trees and excessive styling to ensure your payloads fit within the constraint.
+ActivityKit enforces a strict payload size limit of approximately 4 KB. Keep your UI JSON minimal to stay within this limit. Avoid deeply nested component trees, excessive styling and [native modifiers](./native-modifiers) to ensure your payloads fit within the constraint.
 :::
 
 ## Getting push tokens

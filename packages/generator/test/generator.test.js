@@ -25,6 +25,7 @@ const createFixtureData = () => ({
   version: '9.9.9',
   shortNames: {
     style: 's',
+    modifiers: 'mods',
     backgroundColor: 'bg',
     numberOfLines: 'nol',
     maxLines: 'mxl',
