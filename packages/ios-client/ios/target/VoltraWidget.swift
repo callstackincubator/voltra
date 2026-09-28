@@ -29,11 +29,8 @@ public struct VoltraWidget: Widget {
   private func adaptiveConfig() -> some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
       adaptiveLocksScreenView(context: context)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-        .voltraIfLet(context.state.activityBackgroundTint) { view, tint in
-          let color = JSColorParser.parse(tint)
-          view.activityBackgroundTint(color)
-        }
+        .voltraWidgetURL(configured: VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraActivityBackgroundTint(configured: context.state.activityBackgroundTint.flatMap { JSColorParser.parse($0) })
     } dynamicIsland: { context in
       dynamicIslandContent(context: context)
     }
@@ -45,11 +42,8 @@ public struct VoltraWidget: Widget {
   private func defaultConfig() -> some WidgetConfiguration {
     ActivityConfiguration(for: VoltraAttributes.self) { context in
       Voltra(root: rootNode(for: .lockScreen, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
-        .voltraIfLet(context.state.activityBackgroundTint) { view, tint in
-          let color = JSColorParser.parse(tint)
-          view.activityBackgroundTint(color)
-        }
+        .voltraWidgetURL(configured: VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraActivityBackgroundTint(configured: context.state.activityBackgroundTint.flatMap { JSColorParser.parse($0) })
     } dynamicIsland: { context in
       dynamicIslandContent(context: context)
     }
@@ -65,32 +59,46 @@ public struct VoltraWidget: Widget {
   // MARK: - Dynamic Island (shared between iOS versions)
 
   private func dynamicIslandContent(context: ActivityViewContext<VoltraAttributes>) -> DynamicIsland {
-    let dynamicIsland = DynamicIsland {
+    // Set once on the Dynamic Island, which makes it the default for every region; the regions
+    // only drop the tree's own widgetURL so the configured link takes precedence.
+    let deepLinkURL = VoltraDeepLinkResolver.resolve(context.attributes)
+    for region in VoltraRootModifiers.islandTapRegions {
+      VoltraRootModifiers.warnIfIslandIgnoresWidgetURL(
+        in: region,
+        root: rootNode(for: region, from: context.state),
+        configured: deepLinkURL
+      )
+    }
+    var dynamicIsland = DynamicIsland {
       DynamicIslandExpandedRegion(.leading) {
         Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraDeferringWidgetURL(to: deepLinkURL)
       }
       DynamicIslandExpandedRegion(.trailing) {
         Voltra(root: rootNode(for: .islandExpandedTrailing, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraDeferringWidgetURL(to: deepLinkURL)
       }
       DynamicIslandExpandedRegion(.center) {
         Voltra(root: rootNode(for: .islandExpandedCenter, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraDeferringWidgetURL(to: deepLinkURL)
       }
       DynamicIslandExpandedRegion(.bottom) {
         Voltra(root: rootNode(for: .islandExpandedBottom, from: context.state), activityId: context.activityID)
-          .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+          .voltraDeferringWidgetURL(to: deepLinkURL)
       }
     } compactLeading: {
       Voltra(root: rootNode(for: .islandCompactLeading, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraDeferringWidgetURL(to: deepLinkURL)
     } compactTrailing: {
       Voltra(root: rootNode(for: .islandCompactTrailing, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraDeferringWidgetURL(to: deepLinkURL)
     } minimal: {
       Voltra(root: rootNode(for: .islandMinimal, from: context.state), activityId: context.activityID)
-        .widgetURL(VoltraDeepLinkResolver.resolve(context.attributes))
+        .voltraDeferringWidgetURL(to: deepLinkURL)
+    }
+
+    if let deepLinkURL {
+      dynamicIsland = dynamicIsland.widgetURL(deepLinkURL)
     }
 
     // Apply keylineTint if specified

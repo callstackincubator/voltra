@@ -1,5 +1,11 @@
 # voltra
 
+## 2.3.2
+
+### Patch Changes
+
+- @use-voltra/compiler@2.3.2
+
 ## 2.3.1
 
 ### Patch Changes

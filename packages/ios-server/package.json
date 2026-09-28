@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/ios-server",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "description": "Voltra server rendering for iOS",
   "main": "build/cjs/index.js",
   "module": "build/esm/index.js",

@@ -37,7 +37,7 @@ data class AndroidOngoingNotificationPresentation(
      * Applies one update on top of this presentation, keeping the fields the update does not
      * mention and clearing the ones it sends as `null`.
      *
-     * @throws IllegalArgumentException when the update sets a `color` this release cannot resolve,
+     * @throws VoltraNotificationException when the update sets a `color` this release cannot resolve,
      *   before anything is posted or stored.
      */
     fun mergedWith(update: AndroidOngoingNotificationPresentationUpdate): AndroidOngoingNotificationPresentation {
@@ -111,7 +111,8 @@ fun androidOngoingNotificationColor(color: String?): Int? =
  */
 fun requireAndroidOngoingNotificationColor(color: String): Int =
     androidOngoingNotificationColor(color)
-        ?: throw IllegalArgumentException(
+        ?: throw VoltraNotificationException(
+            VoltraNotificationException.INVALID_OPTIONS,
             "\"color\" must be a static color such as \"#1E88E5\", \"rgb(30, 136, 229)\" or a color " +
                 "name, and not a dynamic color token. Got: $color",
         )

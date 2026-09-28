@@ -117,6 +117,7 @@ public enum ShortNames {
     "minvl": "minimumValueLabel",
     "minl": "minLength",
     "minw": "minWidth",
+    "mods": "modifiers",
     "md": "monospacedDigit",
     "mta": "multilineTextAlignment",
     "n": "name",

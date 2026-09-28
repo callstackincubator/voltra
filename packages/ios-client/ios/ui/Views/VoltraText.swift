@@ -51,13 +51,9 @@ public struct VoltraText: VoltraView {
       return baseFont
     }
 
-    let alignment: TextAlignment = {
-      // Parameter takes precedence over style
-      if let mta = params.multilineTextAlignment {
-        return JSStyleParser.textAlignment(mta)
-      }
-      return textStyle.alignment
-    }()
+    // Parameter takes precedence over style. Without either, the inherited alignment applies, so a
+    // `multilineTextAlignment` native modifier on this Text or a container is not overridden.
+    let alignment: TextAlignment? = params.multilineTextAlignment.map { JSStyleParser.textAlignment($0) } ?? textStyle.alignment
 
     let resolvedColor: Color = {
       if let widget = voltraEnvironment.widget,
@@ -77,7 +73,7 @@ public struct VoltraText: VoltraView {
       // These technically work on View, but good to keep close
       .font(font)
       .foregroundColor(resolvedColor)
-      .multilineTextAlignment(alignment)
+      .voltraIfLet(alignment) { view, alignment in view.multilineTextAlignment(alignment) }
       .lineSpacing(textStyle.lineSpacing)
       .voltraIfLet(params.numberOfLines) { view, numberOfLines in
         view.lineLimit(Int(numberOfLines))

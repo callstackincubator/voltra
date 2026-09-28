@@ -11,4 +11,5 @@ export {
   VOLTRA_PAYLOAD_VERSION,
 } from './renderer.js'
 export { createStylesheetRegistry, type StylesheetRegistry } from './stylesheet-registry.js'
+export type { NativeModifiersProp, NoNativeModifier } from './native-modifiers.js'
 export type { VoltraVariantRenderer } from './types.js'

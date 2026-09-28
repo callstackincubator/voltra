@@ -24,7 +24,10 @@ import voltra.glance.renderers.arc.ArcSpec
 import voltra.glance.renderers.arc.resolveArcSize
 import voltra.glance.renderers.parseColorStringList
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
+import voltra.modifiers.nativeContentDescription
+import voltra.modifiers.nativeModifierSize
 import voltra.styling.JSColorParser
 import voltra.styling.SizeValue
 import voltra.styling.resolveColor
@@ -76,10 +79,10 @@ fun RenderArcProgressIndicator(
     modifier: GlanceModifier? = null,
 ) {
     val renderContext = LocalVoltraRenderContext.current
-    val (baseModifier, compositeStyle) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
+    val compositeStyle = resolveElementStyle(element, renderContext.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier,
             element.p,
             element.i,
             renderContext.widgetId,
@@ -99,8 +102,10 @@ fun RenderArcProgressIndicator(
             ?: ProgressIndicatorDefaults.BackgroundColorProvider.getColor(context).toArgb()
     val gradientColorsArgb = resolveGradientColors(props?.get("gradientColors") as? String, context)
 
-    val styleWidth = compositeStyle?.layout?.width
-    val styleHeight = compositeStyle?.layout?.height
+    // Native size modifiers are applied after style, so they decide the size where they set one.
+    val nativeSize = element.nativeModifierSize()
+    val styleWidth = nativeSize.width ?: compositeStyle?.layout?.width
+    val styleHeight = nativeSize.height ?: compositeStyle?.layout?.height
     val arcSize =
         resolveArcSize(
             width = styleWidth,
@@ -149,7 +154,9 @@ fun RenderArcProgressIndicator(
         // counted against the widget's bitmap budget and deduplicated by RemoteViews.BitmapCache.
         Image(
             provider = ImageProvider(bitmap),
-            contentDescription = "Progress indicator",
+            // A semantics modifier describes the outer Box; describing the image as well would make
+            // TalkBack read the same text twice.
+            contentDescription = if (element.nativeContentDescription() != null) null else "Progress indicator",
             contentScale = ContentScale.Fit,
             modifier = GlanceModifier.fillMaxSize(),
         )

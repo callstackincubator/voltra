@@ -47,8 +47,7 @@ test('emits a count-down chronometer and a title-only public version for a big t
   const payload = renderBigText({
     text: 'Workout in progress',
     when: 1758540000000,
-    chronometer: true,
-    chronometerCountDown: true,
+    chronometer: 'countDown',
     showWhen: true,
     publicVersion: { title: 'Workout in progress' },
   })
@@ -65,13 +64,13 @@ test('normalizes a Date in when the same way as before', () => {
   assert.equal(payload.when, 1758540000000)
 })
 
-test('rejects a count-down chronometer without a chronometer', () => {
-  assert.throws(() => renderProgress({ value: 1, max: 100, chronometerCountDown: true }), {
-    message: /"chronometerCountDown" requires "chronometer"/,
+test('rejects a count-down chronometer without a when to count down to', () => {
+  assert.throws(() => renderProgress({ value: 1, max: 100, chronometer: 'countDown' }), {
+    message: /"chronometer" set to "countDown" requires the "when" prop/,
   })
 
-  assert.throws(() => renderBigText({ text: 'Workout', chronometerCountDown: true }), {
-    message: /"chronometerCountDown" requires "chronometer"/,
+  assert.throws(() => renderBigText({ text: 'Workout', chronometer: 'countDown' }), {
+    message: /"chronometer" set to "countDown" requires the "when" prop/,
   })
 })
 
@@ -102,10 +101,6 @@ test('rejects malformed timestamp and lock-screen props', () => {
     message: /prop "showWhen" must be a boolean/,
   })
 
-  assert.throws(() => renderProgress({ value: 1, max: 100, chronometer: true, chronometerCountDown: 1 }), {
-    message: /prop "chronometerCountDown" must be a boolean/,
-  })
-
   assert.throws(() => renderBigText({ text: 'Workout', publicVersion: 'Unlock to see more' }), {
     message: /prop "publicVersion" must be an object/,
   })
@@ -113,6 +108,6 @@ test('rejects malformed timestamp and lock-screen props', () => {
 
 test('rejects content whose root is not an ongoing notification element', () => {
   assert.throws(() => renderAndroidOngoingNotificationPayload(React.createElement('span', null, 'nope')), {
-    message: /must use AndroidOngoingNotification\.Progress or AndroidOngoingNotification\.BigText/,
+    message: /must use AndroidOngoingNotification\.Progress, AndroidOngoingNotification\.BigText/,
   })
 })

@@ -1,4 +1,4 @@
-# ADR 0008: Where Android ongoing notification fields live
+# ADR 0010: Where Android ongoing notification fields live
 
 Status: Accepted
 
@@ -58,8 +58,8 @@ Three properties of the payload make the choice consequential:
    local-only, group and sort key join them.
 2. **Payload display props** (`AndroidOngoingNotification.Progress` and `.BigText` props): what the
    notification says right now. Replaced wholesale on every update, like every other payload field.
-   Title, text and progress are already here; the public version text, `showWhen` and
-   `chronometerCountDown` join them.
+   Title, text and progress are already here; the public version text and `showWhen` join them.
+   `chronometerCountDown` is a payload field too, set through `chronometer: 'countDown'` (ADR 0008).
 3. **Per-post options** (update options only, never persisted): flags that describe this one post.
    Today there is one, `alert`.
 
@@ -94,7 +94,7 @@ also a deviation from "the public version is text", recorded here so the behavio
 | `group`, `sortKey`                      | option                   | none                                        |
 | `allowSystemGeneratedContextualActions` | option                   | platform default, `true`                    |
 | `showWhen`                              | payload prop             | `true` when the payload carries a timestamp |
-| `chronometerCountDown`                  | payload prop             | `false`                                     |
+| `chronometerCountDown`                  | payload field (ADR 0008) | `false`                                     |
 | `alert`                                 | per-post option          | `false`                                     |
 
 `timeoutMs` is the one field whose home and its effect differ: it is an option, because the decision

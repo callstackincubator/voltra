@@ -87,11 +87,31 @@ type UpsertAndroidOngoingNotificationOptionsSpec = Readonly<{
   allowSystemGeneratedContextualActions?: boolean | null
 }>
 
+type AndroidOngoingNotificationPromotionSpec = Readonly<{
+  requested: boolean
+  eligible: boolean
+  reasons: string[]
+  hasPromotableCharacteristics?: boolean
+}>
+
 type AndroidOngoingNotificationResultSpec = Readonly<{
   ok: boolean
   notificationId: string
   action?: string
   reason?: string
+  promotion?: AndroidOngoingNotificationPromotionSpec
+  styleFallback?: string
+}>
+
+type CheckAndroidOngoingNotificationPromotionOptionsSpec = Readonly<{
+  channelId: string
+  smallIcon?: string
+}>
+
+type AndroidOngoingNotificationPromotionCheckResultSpec = Readonly<{
+  eligible: boolean
+  reasons: string[]
+  hasPromotableCharacteristics?: boolean
 }>
 
 type AndroidOngoingNotificationStatusSpec = Readonly<{
@@ -129,12 +149,19 @@ export interface Spec extends TurboModule {
     options?: UpdateAndroidOngoingNotificationOptionsSpec
   ): Promise<AndroidOngoingNotificationResultSpec>
   stopAndroidOngoingNotification(notificationId: string): Promise<AndroidOngoingNotificationResultSpec>
+  /** Runs the post-time promotion checks without posting and without writing a record. */
+  checkAndroidOngoingNotificationPromotion(
+    payload: string,
+    options: CheckAndroidOngoingNotificationPromotionOptionsSpec
+  ): Promise<AndroidOngoingNotificationPromotionCheckResultSpec>
   isAndroidOngoingNotificationActive(notificationId: string): boolean
   getAndroidOngoingNotificationStatus(notificationId: string): AndroidOngoingNotificationStatusSpec
   endAllAndroidOngoingNotifications(): Promise<void>
   canPostPromotedAndroidNotifications(): boolean
   getAndroidOngoingNotificationCapabilities(): AndroidOngoingNotificationCapabilitiesSpec
   openAndroidNotificationSettings(): Promise<void>
+  /** True when the Live Updates promotion page opened, false when it fell back to the notification settings. */
+  openAndroidPromotedNotificationSettings(): Promise<boolean>
   updateAndroidWidget(widgetId: string, jsonString: string, options?: Readonly<{ deepLinkUrl?: string }>): Promise<void>
   updateAndroidDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>

@@ -1,5 +1,18 @@
 # @use-voltra/ios-client
 
+## 2.3.2
+
+### Patch Changes
+
+- 3ba1b1b: The hot-reload hook used by both platforms is now a single shared implementation in
+  @use-voltra/core, re-exported by the iOS and Android packages instead of being duplicated in
+  each client. No API changes for apps.
+- Updated dependencies [910e7fe]
+- Updated dependencies [3ba1b1b]
+  - @use-voltra/ios@2.3.2
+  - @use-voltra/compiler@2.3.2
+  - @use-voltra/expo-plugin@2.3.2
+
 ## 2.3.1
 
 ### Patch Changes
