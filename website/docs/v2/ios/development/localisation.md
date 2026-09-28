@@ -76,6 +76,8 @@ Use this when your app has its own language picker, or when you need the per-app
 
 Requires `groupIdentifier` in the plugin configuration. Without it the call rejects, because widgets cannot read the value.
 
+The Language row under Settings > Apps > your app appears only when the device lists more than one language in Settings > General > Language & Region. Set `UIPrefersShowingLanguageSettings` to `true` in `ios.infoPlist` to show the row on every device.
+
 ```ts
 import { setDynamicWidgetLocale } from '@use-voltra/ios-client'
 
