@@ -16,7 +16,7 @@ A Dynamic Widget renders on the device, so your JavaScript can translate the wid
 | `calendar`           | `"gregory"`          | The user's calendar, spelled the way `Intl` expects.                                                               |
 | `firstDayOfWeek`     | `2`                  | `1` is Sunday, `2` is Monday, up to `7` for Saturday.                                                              |
 
-Placed widgets render again after the device language, the app's per-app language or the regional preferences change, even when the app is not running. A language change your app makes while it is running takes effect at once.
+Placed widgets render again after the device language, the app's per-app language or the regional preferences change, even when the app is not running. A language change your app makes while it is running takes effect at once. An app the user force-stopped in Settings receives no broadcasts, so its widgets update the next time the app runs.
 
 ## Translate widget content
 
