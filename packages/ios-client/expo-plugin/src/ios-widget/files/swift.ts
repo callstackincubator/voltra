@@ -518,7 +518,7 @@ function generateWidgetBundleSwift(
 
     ${foundationImport}${appIntentsImport}import SwiftUI
     import WidgetKit
-    import VoltraRuntime
+    import VoltraWidgetRuntime
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
@@ -552,7 +552,7 @@ function generateDefaultWidgetBundleSwift(): string {
 
     import SwiftUI
     import WidgetKit
-    import VoltraRuntime  // Import Voltra widgets
+    import VoltraWidgetRuntime  // Import Voltra widgets
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {

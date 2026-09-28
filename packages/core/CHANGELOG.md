@@ -1,5 +1,17 @@
 # @use-voltra/core
 
+## 2.3.2
+
+### Patch Changes
+
+- 910e7fe: Shared plumbing types (`EventSubscription`, the `PreloadImage*` types, and the
+  `WidgetServer*` types) now have one canonical definition in `@use-voltra/core` instead of
+  duplicated copies in `@use-voltra/ios` and `@use-voltra/android`. Import surfaces are unchanged:
+  both platform packages still export these names, and `UpdateWidgetOptions` remains iOS-only.
+- 3ba1b1b: The hot-reload hook used by both platforms is now a single shared implementation in
+  @use-voltra/core, re-exported by the iOS and Android packages instead of being duplicated in
+  each client. No API changes for apps.
+
 ## 2.3.1
 
 ## 2.3.0

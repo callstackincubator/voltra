@@ -21,7 +21,10 @@ public enum VoltraDynamicLiveActivityRenderer {
     definitionId: String,
     context: ActivityViewContext<Attributes>
   ) -> DynamicIsland {
-    DynamicIsland {
+    // Set once on the Dynamic Island, which makes it the default for every region; the regions
+    // only drop the tree's own widgetURL so the configured link takes precedence.
+    let deepLinkURL = context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl)
+    let dynamicIsland = DynamicIsland {
       DynamicIslandExpandedRegion(.leading) {
         VoltraDynamicLiveActivityDynamicIslandRegionView(
           definitionId: definitionId,
@@ -73,6 +76,7 @@ public enum VoltraDynamicLiveActivityRenderer {
     // DynamicIsland itself is not a View and cannot read SwiftUI Environment.
     // Do not execute a definition against fabricated values solely to obtain a
     // keyline tint; its region views below read the actual environment.
+    return deepLinkURL.map { dynamicIsland.widgetURL($0) } ?? dynamicIsland
   }
 
   fileprivate static func resolve<Attributes: VoltraDynamicLiveActivityDefinition>(
@@ -179,7 +183,8 @@ private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: Volt
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
-    VoltraDynamicLiveActivityRenderer.resolve(
+    let deepLinkURL = context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl)
+    let content = VoltraDynamicLiveActivityRenderer.resolve(
       definitionId: definitionId,
       context: context,
       activityFamily: nil,
@@ -187,7 +192,9 @@ private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: Volt
       locale: locale,
       widgetRenderingMode: widgetRenderingMode
     )
-    .view(for: region, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+    let _ = VoltraRootModifiers.warnIfIslandIgnoresWidgetURL(in: region, root: content.root(for: region), configured: deepLinkURL)
+    content.view(for: region, activityId: context.activityID)
+      .voltraDeferringWidgetURL(to: deepLinkURL)
   }
 }
 
@@ -208,12 +215,9 @@ private struct VoltraDynamicLiveActivityLockScreenView<Attributes: VoltraDynamic
       locale: locale,
       widgetRenderingMode: widgetRenderingMode
     )
-    if let tint = content.payload?.activityBackgroundTint, let color = JSColorParser.parse(tint) {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
-        .activityBackgroundTint(color)
-    } else {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
-    }
+    content.view(for: .lockScreen, activityId: context.activityID)
+      .voltraWidgetURL(configured: context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl))
+      .voltraActivityBackgroundTint(configured: content.payload?.activityBackgroundTint.flatMap { JSColorParser.parse($0) })
   }
 }
 
@@ -236,10 +240,11 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
       locale: locale,
       widgetRenderingMode: widgetRenderingMode
     )
+    // One widgetURL for the whole presentation, including the small family that shows two
+    // regions side by side.
     familyContent(content: content)
-      .voltraIfLet(content.payload?.activityBackgroundTint.flatMap { JSColorParser.parse($0) }) { view, color in
-        view.activityBackgroundTint(color)
-      }
+      .voltraWidgetURL(configured: context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl))
+      .voltraActivityBackgroundTint(configured: content.payload?.activityBackgroundTint.flatMap { JSColorParser.parse($0) })
   }
 
   @ViewBuilder
@@ -247,7 +252,7 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
     if activityFamily == .small {
       smallFamilyContent(content: content)
     } else {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+      content.view(for: .lockScreen, activityId: context.activityID)
     }
   }
 
@@ -256,14 +261,13 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
     if content.hasContent(for: .supplementalActivityFamiliesSmall) {
       content.view(
         for: .supplementalActivityFamiliesSmall,
-        activityId: context.activityID,
-        deepLink: context.attributes.deepLinkUrl
+        activityId: context.activityID
       )
     } else if content.hasContent(for: .islandCompactLeading) || content.hasContent(for: .islandCompactTrailing) {
       HStack(spacing: 0) {
-        content.view(for: .islandCompactLeading, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        content.view(for: .islandCompactLeading, activityId: context.activityID)
         Spacer()
-        content.view(for: .islandCompactTrailing, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        content.view(for: .islandCompactTrailing, activityId: context.activityID)
       }
       .frame(maxWidth: .infinity)
     }
@@ -279,12 +283,15 @@ private struct VoltraDynamicLiveActivityResolvedContent {
     !(payload?.regions[region] ?? []).isEmpty
   }
 
+  func root(for region: VoltraRegion) -> VoltraNode? {
+    guard let nodes = payload?.regions[region], !nodes.isEmpty else { return nil }
+    return nodes.count == 1 ? nodes[0] : .array(nodes)
+  }
+
   @ViewBuilder
-  func view(for region: VoltraRegion, activityId: String, deepLink: String?) -> some View {
-    if let nodes = payload?.regions[region], !nodes.isEmpty {
-      let root: VoltraNode = nodes.count == 1 ? nodes[0] : .array(nodes)
+  func view(for region: VoltraRegion, activityId: String) -> some View {
+    if let root = root(for: region) {
       Voltra(root: root, activityId: activityId)
-        .voltraIfLet(deepLink.flatMap(VoltraDeepLinkResolver.resolveUrl)) { view, url in view.widgetURL(url) }
     }
   }
 }

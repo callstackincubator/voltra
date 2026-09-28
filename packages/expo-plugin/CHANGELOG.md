@@ -1,5 +1,14 @@
 # @use-voltra/expo-plugin
 
+## 2.3.2
+
+### Patch Changes
+
+- Updated dependencies [910e7fe]
+- Updated dependencies [3ba1b1b]
+  - @use-voltra/core@2.3.2
+  - @use-voltra/compiler@2.3.2
+
 ## 2.3.1
 
 ### Patch Changes

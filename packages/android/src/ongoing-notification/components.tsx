@@ -5,12 +5,13 @@ import type {
   AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationInboxProps,
+  AndroidOngoingNotificationMetricProps,
   AndroidOngoingNotificationProgressProps,
 } from './types.js'
 
 export const ANDROID_ONGOING_NOTIFICATION_COMPONENT_TAG = Symbol.for('VOLTRA_ANDROID_ONGOING_NOTIFICATION_COMPONENT')
 
-type AndroidOngoingNotificationComponentKind = 'progress' | 'bigText' | 'bigPicture' | 'inbox' | 'action'
+type AndroidOngoingNotificationComponentKind = 'progress' | 'bigText' | 'bigPicture' | 'inbox' | 'metric' | 'action'
 
 type AndroidOngoingNotificationComponent<TProps extends Record<string, unknown>> = ComponentType<TProps> & {
   displayName: string
@@ -49,6 +50,11 @@ export const Inbox = createAndroidOngoingNotificationComponent<AndroidOngoingNot
   'inbox'
 )
 
+export const Metric = createAndroidOngoingNotificationComponent<AndroidOngoingNotificationMetricProps>(
+  'AndroidOngoingNotification.Metric',
+  'metric'
+)
+
 export const Action = createAndroidOngoingNotificationComponent<AndroidOngoingNotificationActionProps>(
   'AndroidOngoingNotification.Action',
   'action'
@@ -59,5 +65,6 @@ export const AndroidOngoingNotification = {
   BigText,
   BigPicture,
   Inbox,
+  Metric,
   Action,
 } as const

@@ -29,10 +29,9 @@ fun RenderButton(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier,
             element.p,
             element.i,
             context.widgetId,
@@ -51,7 +50,7 @@ fun RenderFilledButton(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val computedModifier = modifier ?: resolveAndApplyStyle(element.p, context.sharedStyles).modifier
+    val computedModifier = modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier
 
     val componentId = element.i ?: "button_${element.hashCode()}"
     val text = (element.p?.get("text") as? String) ?: ""
@@ -95,7 +94,7 @@ fun RenderOutlineButton(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val computedModifier = modifier ?: resolveAndApplyStyle(element.p, context.sharedStyles).modifier
+    val computedModifier = modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier
 
     val componentId = element.i ?: "button_${element.hashCode()}"
     val text = (element.p?.get("text") as? String) ?: extractTextFromNode(element.c)
@@ -128,7 +127,7 @@ fun RenderCircleIconButton(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val computedModifier = modifier ?: resolveAndApplyStyle(element.p, context.sharedStyles).modifier
+    val computedModifier = modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier
 
     val componentId = element.i ?: "button_${element.hashCode()}"
     val contentDescription = (element.p?.get("contentDescription") as? String) ?: ""
@@ -169,7 +168,7 @@ fun RenderSquareIconButton(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val computedModifier = modifier ?: resolveAndApplyStyle(element.p, context.sharedStyles).modifier
+    val computedModifier = modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier
 
     val componentId = element.i ?: "button_${element.hashCode()}"
     val contentDescription = (element.p?.get("contentDescription") as? String) ?: ""

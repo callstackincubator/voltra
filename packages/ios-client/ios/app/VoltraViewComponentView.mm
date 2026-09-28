@@ -1,7 +1,7 @@
 #import "VoltraViewComponentView.h"
 
-#if __has_include("Voltra/VoltraRuntime-Swift.h")
-#import "Voltra/VoltraRuntime-Swift.h"
+#if __has_include("VoltraRuntime/VoltraRuntime-Swift.h")
+#import "VoltraRuntime/VoltraRuntime-Swift.h"
 #else
 #import "VoltraRuntime-Swift.h"
 #endif

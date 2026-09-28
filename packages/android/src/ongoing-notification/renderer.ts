@@ -10,9 +10,14 @@ import type {
   AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
+  AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationInboxPayload,
   AndroidOngoingNotificationInboxProps,
+  AndroidOngoingNotificationMetricPayload,
+  AndroidOngoingNotificationMetricProps,
+  AndroidOngoingNotificationMetricSemanticStyle,
+  AndroidOngoingNotificationMetricValuePayload,
   AndroidOngoingNotificationPayload,
   AndroidOngoingNotificationProgressPayload,
   AndroidOngoingNotificationProgressPoint,
@@ -277,15 +282,11 @@ const warnInlinePicture = (picture: ImageSource): void => {
   }
 }
 
-const normalizeWhen = (value: unknown): number | undefined => {
-  if (value === undefined) {
-    return undefined
-  }
-
+const normalizeEpoch = (value: unknown, propName: string): number => {
   if (value instanceof Date) {
     const timestamp = value.getTime()
     if (!Number.isFinite(timestamp)) {
-      throw new Error('[Voltra] [Android] Ongoing notification prop "when" must be a valid Date or timestamp.')
+      throw new Error(`[Voltra] [Android] Ongoing notification prop "${propName}" must be a valid Date or timestamp.`)
     }
 
     return timestamp
@@ -295,7 +296,49 @@ const normalizeWhen = (value: unknown): number | undefined => {
     return value
   }
 
-  throw new Error('[Voltra] [Android] Ongoing notification prop "when" must be a valid Date or timestamp.')
+  throw new Error(`[Voltra] [Android] Ongoing notification prop "${propName}" must be a valid Date or timestamp.`)
+}
+
+const normalizeWhen = (value: unknown): number | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+
+  return normalizeEpoch(value, 'when')
+}
+
+// `true` keeps meaning "count up" for payloads and props written before the
+// chip gained a direction; only 'countDown' sets chronometerCountDown, and a
+// countdown without `when` has nothing to count down to.
+const normalizeChronometer = (
+  value: unknown,
+  when: number | undefined
+): { chronometer?: boolean; chronometerCountDown?: boolean } => {
+  if (value === undefined) {
+    return {}
+  }
+
+  if (typeof value === 'boolean') {
+    return { chronometer: value }
+  }
+
+  if (value === 'countUp') {
+    return { chronometer: true }
+  }
+
+  if (value === 'countDown') {
+    if (when === undefined) {
+      throw new Error(
+        '[Voltra] [Android] Ongoing notification prop "chronometer" set to "countDown" requires the "when" prop.'
+      )
+    }
+
+    return { chronometer: true, chronometerCountDown: true }
+  }
+
+  throw new Error(
+    '[Voltra] [Android] Ongoing notification prop "chronometer" must be a boolean, "countUp" or "countDown".'
+  )
 }
 
 const getElementKind = (element: ReactElement<Record<string, unknown>>) => {
@@ -313,6 +356,29 @@ const normalizeActionPayload = (
     title: assertString(props.title, 'title'),
     deepLinkUrl: assertString(props.deepLinkUrl, 'deepLinkUrl'),
     icon: assertOptionalImageSource(props.icon, 'icon'),
+  }
+}
+
+const normalizeCommonDisplayFields = (
+  props: AndroidOngoingNotificationCommonDisplayProps & { largeIcon?: ImageSource }
+): {
+  title?: string
+  subText?: string
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  chronometerCountDown?: boolean
+  largeIcon?: ImageSource
+} => {
+  const when = normalizeWhen(props.when)
+
+  return {
+    title: assertOptionalNonEmptyString(props.title, 'title'),
+    subText: assertOptionalString(props.subText, 'subText'),
+    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
+    when,
+    ...normalizeChronometer(props.chronometer, when),
+    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
   }
 }
 
@@ -359,16 +425,11 @@ const normalizeProgressPayload = (
   return {
     v: PAYLOAD_VERSION,
     kind: 'progress',
-    title: assertOptionalNonEmptyString(props.title, 'title'),
-    subText: assertOptionalString(props.subText, 'subText'),
+    ...normalizeCommonDisplayFields(props),
     text: assertOptionalString(props.text, 'text'),
     value,
     max,
     indeterminate: assertBoolean(props.indeterminate, 'indeterminate'),
-    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
-    when: normalizeWhen(props.when),
-    chronometer: assertBoolean(props.chronometer, 'chronometer'),
-    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
     progressTrackerIcon: assertOptionalImageSource(props.progressTrackerIcon, 'progressTrackerIcon'),
     progressStartIcon: assertOptionalImageSource(props.progressStartIcon, 'progressStartIcon'),
     progressEndIcon: assertOptionalImageSource(props.progressEndIcon, 'progressEndIcon'),
@@ -386,14 +447,248 @@ const normalizeBigTextPayload = (
   return {
     v: PAYLOAD_VERSION,
     kind: 'bigText',
-    title: assertOptionalNonEmptyString(props.title, 'title'),
-    subText: assertOptionalString(props.subText, 'subText'),
+    ...normalizeCommonDisplayFields(props),
     text,
     bigText: assertOptionalString(props.bigText, 'bigText') ?? text,
-    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
-    when: normalizeWhen(props.when),
-    chronometer: assertBoolean(props.chronometer, 'chronometer'),
-    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
+    actions: normalizeActions(props.children),
+  }
+}
+
+const METRIC_TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/
+
+const METRIC_SEMANTIC_STYLES = ['unspecified', 'info', 'safe', 'caution', 'danger'] as const
+
+const METRIC_TIME_FORMATS = ['adaptive', 'chronometer'] as const
+
+const assertMetricNonEmptyString = (value: unknown, propName: string): string => {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`[Voltra] [Android] Ongoing notification prop "${propName}" must be a non-empty string.`)
+  }
+
+  return value
+}
+
+const normalizeMetricTimeFormat = (value: unknown, propName: string) => {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (!(METRIC_TIME_FORMATS as readonly unknown[]).includes(value)) {
+    throw new Error(`[Voltra] [Android] Ongoing notification prop "${propName}" must be "adaptive" or "chronometer".`)
+  }
+
+  return value as (typeof METRIC_TIME_FORMATS)[number]
+}
+
+const normalizeMetricValue = (
+  value: unknown,
+  unit: unknown,
+  propName: string
+): AndroidOngoingNotificationMetricValuePayload => {
+  const topLevelUnit = assertOptionalString(unit, `${propName}.unit`)
+  const rejectTopLevelUnit = () => {
+    if (topLevelUnit !== undefined) {
+      throw new Error(
+        `[Voltra] [Android] Ongoing notification prop "${propName}.unit" only applies to "int", "float" and "text" values.`
+      )
+    }
+  }
+
+  // Shorthands: an integer reads as int, any other number as float, a string as text.
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw new Error(`[Voltra] [Android] Ongoing notification prop "${propName}.value" must be a finite number.`)
+    }
+
+    return Number.isInteger(value)
+      ? { type: 'int', value, unit: topLevelUnit }
+      : { type: 'float', value, unit: topLevelUnit }
+  }
+
+  if (typeof value === 'string') {
+    return { type: 'text', value: assertMetricNonEmptyString(value, `${propName}.value`), unit: topLevelUnit }
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(
+      `[Voltra] [Android] Ongoing notification prop "${propName}.value" must be a number, a string, or a metric value object.`
+    )
+  }
+
+  const source = value as Record<string, unknown>
+  const type = source.type
+
+  switch (type) {
+    case 'int': {
+      const numberValue = assertFiniteNumber(source.value, `${propName}.value`)
+      if (!Number.isInteger(numberValue)) {
+        throw new Error(`[Voltra] [Android] Ongoing notification prop "${propName}.value" must be an integer.`)
+      }
+
+      return {
+        type: 'int',
+        value: numberValue,
+        unit: assertOptionalString(source.unit, `${propName}.unit`) ?? topLevelUnit,
+      }
+    }
+    case 'float': {
+      const numberValue = assertFiniteNumber(source.value, `${propName}.value`)
+      const min = source.min === undefined ? undefined : assertFiniteNumber(source.min, `${propName}.min`)
+      const max = source.max === undefined ? undefined : assertFiniteNumber(source.max, `${propName}.max`)
+
+      if (min !== undefined && min < 0) {
+        throw new Error(
+          `[Voltra] [Android] Ongoing notification prop "${propName}.min" must be greater than or equal to 0.`
+        )
+      }
+
+      if (max !== undefined && max < 0) {
+        throw new Error(
+          `[Voltra] [Android] Ongoing notification prop "${propName}.max" must be greater than or equal to 0.`
+        )
+      }
+
+      if (min !== undefined && max !== undefined && min > max) {
+        throw new Error(
+          `[Voltra] [Android] Ongoing notification prop "${propName}.min" must not exceed "${propName}.max".`
+        )
+      }
+
+      let fractionDigits: number | undefined
+      if (source.fractionDigits !== undefined) {
+        fractionDigits = assertFiniteNumber(source.fractionDigits, `${propName}.fractionDigits`)
+        if (!Number.isInteger(fractionDigits) || fractionDigits < 0) {
+          throw new Error(
+            `[Voltra] [Android] Ongoing notification prop "${propName}.fractionDigits" must be an integer greater than or equal to 0.`
+          )
+        }
+      }
+
+      return {
+        type: 'float',
+        value: numberValue,
+        unit: assertOptionalString(source.unit, `${propName}.unit`) ?? topLevelUnit,
+        min,
+        max,
+        fractionDigits,
+      }
+    }
+    case 'text':
+      return {
+        type: 'text',
+        value: assertMetricNonEmptyString(source.value, `${propName}.value`),
+        unit: assertOptionalString(source.unit, `${propName}.unit`) ?? topLevelUnit,
+      }
+    case 'time': {
+      rejectTopLevelUnit()
+      const timeValue = assertMetricNonEmptyString(source.value, `${propName}.value`)
+      if (!METRIC_TIME_PATTERN.test(timeValue)) {
+        throw new Error(
+          `[Voltra] [Android] Ongoing notification prop "${propName}.value" must be a time in "HH:mm" or "HH:mm:ss" form.`
+        )
+      }
+
+      return { type: 'time', value: timeValue }
+    }
+    case 'timer':
+      rejectTopLevelUnit()
+      return {
+        type: 'timer',
+        endsAt: normalizeEpoch(source.endsAt, `${propName}.endsAt`),
+        format: normalizeMetricTimeFormat(source.format, `${propName}.format`),
+      }
+    case 'stopwatch':
+      rejectTopLevelUnit()
+      return {
+        type: 'stopwatch',
+        startedAt: normalizeEpoch(source.startedAt, `${propName}.startedAt`),
+        format: normalizeMetricTimeFormat(source.format, `${propName}.format`),
+      }
+    case 'pausedTimer': {
+      rejectTopLevelUnit()
+      const remainingMillis = assertFiniteNumber(source.remainingMillis, `${propName}.remainingMillis`)
+      if (remainingMillis < 0) {
+        throw new Error(
+          `[Voltra] [Android] Ongoing notification prop "${propName}.remainingMillis" must be greater than or equal to 0.`
+        )
+      }
+
+      return { type: 'pausedTimer', remainingMillis }
+    }
+    case 'pausedStopwatch': {
+      rejectTopLevelUnit()
+      const elapsedMillis = assertFiniteNumber(source.elapsedMillis, `${propName}.elapsedMillis`)
+      if (elapsedMillis < 0) {
+        throw new Error(
+          `[Voltra] [Android] Ongoing notification prop "${propName}.elapsedMillis" must be greater than or equal to 0.`
+        )
+      }
+
+      return { type: 'pausedStopwatch', elapsedMillis }
+    }
+    default:
+      throw new Error(
+        `[Voltra] [Android] Ongoing notification prop "${propName}.type" must be "int", "float", "text", "time", "timer", "stopwatch", "pausedTimer", or "pausedStopwatch".`
+      )
+  }
+}
+
+const normalizeMetricPayload = (
+  props: AndroidOngoingNotificationMetricProps
+): AndroidOngoingNotificationMetricPayload => {
+  if (!Array.isArray(props.metrics)) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "metrics" must be an array.')
+  }
+
+  if (props.metrics.length < 1 || props.metrics.length > 3) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "metrics" must contain between 1 and 3 metrics.')
+  }
+
+  const metrics = props.metrics.map((descriptor, index) => {
+    if (!descriptor || typeof descriptor !== 'object' || Array.isArray(descriptor)) {
+      throw new Error(`[Voltra] [Android] Ongoing notification prop "metrics[${index}]" must be an object.`)
+    }
+
+    const label = assertMetricNonEmptyString(descriptor.label, `metrics[${index}].label`)
+    if (label.length > 10) {
+      throw new Error(
+        `[Voltra] [Android] Ongoing notification prop "metrics[${index}].label" must be at most 10 characters long.`
+      )
+    }
+
+    return { label, value: normalizeMetricValue(descriptor.value, descriptor.unit, `metrics[${index}]`) }
+  })
+
+  let criticalMetric: number | undefined
+  if (props.criticalMetric !== undefined) {
+    criticalMetric = assertFiniteNumber(props.criticalMetric, 'criticalMetric')
+    if (!Number.isInteger(criticalMetric) || criticalMetric < 0 || criticalMetric >= metrics.length) {
+      throw new Error(
+        `[Voltra] [Android] Ongoing notification prop "criticalMetric" must be an index between 0 and ${
+          metrics.length - 1
+        }.`
+      )
+    }
+  }
+
+  let semanticStyle: AndroidOngoingNotificationMetricSemanticStyle | undefined
+  if (props.semanticStyle !== undefined) {
+    if (!(METRIC_SEMANTIC_STYLES as readonly string[]).includes(props.semanticStyle)) {
+      throw new Error(
+        '[Voltra] [Android] Ongoing notification prop "semanticStyle" must be "unspecified", "info", "safe", "caution", or "danger".'
+      )
+    }
+
+    semanticStyle = props.semanticStyle
+  }
+
+  return {
+    v: PAYLOAD_VERSION,
+    kind: 'metric',
+    ...normalizeCommonDisplayFields(props),
+    metrics,
+    criticalMetric,
+    semanticStyle,
     actions: normalizeActions(props.children),
   }
 }
@@ -407,8 +702,7 @@ const normalizeBigPicturePayload = (
   return {
     v: PAYLOAD_VERSION,
     kind: 'bigPicture',
-    title: assertOptionalNonEmptyString(props.title, 'title'),
-    subText: assertOptionalString(props.subText, 'subText'),
+    ...normalizeCommonDisplayFields(props),
     text: assertOptionalString(props.text, 'text'),
     picture,
     summaryText: assertOptionalNonEmptyString(props.summaryText, 'summaryText'),
@@ -417,12 +711,8 @@ const normalizeBigPicturePayload = (
       'pictureContentDescription'
     ),
     showPictureWhenCollapsed: assertBoolean(props.showPictureWhenCollapsed, 'showPictureWhenCollapsed'),
-    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
     bigLargeIcon: assertOptionalImageSource(props.bigLargeIcon, 'bigLargeIcon'),
     hideLargeIconWhenExpanded: assertBoolean(props.hideLargeIconWhenExpanded, 'hideLargeIconWhenExpanded'),
-    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
-    when: normalizeWhen(props.when),
-    chronometer: assertBoolean(props.chronometer, 'chronometer'),
     actions: normalizeActions(props.children),
   }
 }
@@ -433,15 +723,10 @@ const normalizeInboxPayload = (props: AndroidOngoingNotificationInboxProps): And
   return {
     v: PAYLOAD_VERSION,
     kind: 'inbox',
-    title: assertOptionalNonEmptyString(props.title, 'title'),
-    subText: assertOptionalString(props.subText, 'subText'),
+    ...normalizeCommonDisplayFields(props),
     text: props.text === undefined ? lines[0] : assertString(props.text, 'text'),
     lines,
     summaryText: assertOptionalNonEmptyString(props.summaryText, 'summaryText'),
-    shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
-    when: normalizeWhen(props.when),
-    chronometer: assertBoolean(props.chronometer, 'chronometer'),
-    largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
     actions: normalizeActions(props.children),
   }
 }
@@ -468,8 +753,12 @@ export const renderAndroidOngoingNotificationPayloadToJson = (
     return normalizeInboxPayload(element.props as AndroidOngoingNotificationInboxProps)
   }
 
+  if (kind === 'metric') {
+    return normalizeMetricPayload(element.props as AndroidOngoingNotificationMetricProps)
+  }
+
   throw new Error(
-    '[Voltra] [Android] Ongoing notification content must use AndroidOngoingNotification.Progress, AndroidOngoingNotification.BigText, AndroidOngoingNotification.BigPicture, or AndroidOngoingNotification.Inbox.'
+    '[Voltra] [Android] Ongoing notification content must use AndroidOngoingNotification.Progress, AndroidOngoingNotification.BigText, AndroidOngoingNotification.BigPicture, AndroidOngoingNotification.Inbox, or AndroidOngoingNotification.Metric.'
   )
 }
 

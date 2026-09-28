@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState, PermissionsAndroid, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   AndroidOngoingNotification,
+  type AndroidOngoingNotificationChronometer,
+  type AndroidOngoingNotificationMetricDescriptor,
   type AndroidOngoingNotificationPayload,
   type StartAndroidOngoingNotificationOptions,
 } from '@use-voltra/android'
@@ -20,7 +22,7 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
-type OngoingNotificationStyle = 'progress' | 'bigText' | 'bigPicture' | 'inbox'
+type OngoingNotificationStyle = 'progress' | 'bigText' | 'bigPicture' | 'inbox' | 'metric'
 
 const DEFAULT_NOTIFICATION_ID = 'testing-ground-android-ongoing-notification'
 const DEFAULT_SEGMENTS = '[{"length": 40, "color": "#34D399"}, {"length": 60}]'
@@ -29,6 +31,14 @@ const DEFAULT_LINES = '12 Oak Street\n4 Elm Road\nDepot'
 const DEFAULT_PRIMARY_ACTION_DEEP_LINK = 'voltra://orders/123'
 const DEFAULT_SECONDARY_ACTION_DEEP_LINK = 'voltra://orders/123/track'
 const DEFAULT_PRIMARY_ACTION_ICON = 'voltra_icon'
+
+// A timer endpoint ten minutes out, so the metric demo shows a live countdown.
+const defaultMetricsJson = () =>
+  JSON.stringify([
+    { label: 'Dist', value: 5.2, unit: 'km' },
+    { label: 'Pace', value: '5:30' },
+    { label: 'ETA', value: { type: 'timer', endsAt: Date.now() + 10 * 60 * 1000 } },
+  ])
 
 const formatJson = (value: unknown) => JSON.stringify(value, null, 2)
 
@@ -95,12 +105,13 @@ export default function AndroidOngoingNotificationTestingScreen() {
   const [progressValue, setProgressValue] = useState('32')
   const [progressMax, setProgressMax] = useState('100')
   const [indeterminate, setIndeterminate] = useState(false)
-  const [chronometer, setChronometer] = useState(false)
+  const [chronometer, setChronometer] = useState<AndroidOngoingNotificationChronometer>(false)
   const [largeIcon, setLargeIcon] = useState('')
   const [progressTrackerIcon, setProgressTrackerIcon] = useState('')
   const [progressStartIcon, setProgressStartIcon] = useState('')
   const [progressEndIcon, setProgressEndIcon] = useState('')
   const [segmentsJson, setSegmentsJson] = useState(DEFAULT_SEGMENTS)
+  const [metricsJson, setMetricsJson] = useState(defaultMetricsJson)
   const [pointsJson, setPointsJson] = useState(DEFAULT_POINTS)
   const [primaryActionTitle, setPrimaryActionTitle] = useState('Open order')
   const [primaryActionDeepLinkUrl, setPrimaryActionDeepLinkUrl] = useState(DEFAULT_PRIMARY_ACTION_DEEP_LINK)
@@ -148,6 +159,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
       </>
     )
 
+    // A count-up clock runs from the moment the notification started; a countdown
+    // chip targets ten minutes ahead so the example shows a live countdown.
+    const chronometerWhen =
+      chronometer === false ? undefined : chronometer === 'countDown' ? Date.now() + 10 * 60 * 1000 : Date.now()
+
     if (style === 'progress') {
       return (
         <AndroidOngoingNotification.Progress
@@ -159,7 +175,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
           indeterminate={indeterminate}
           shortCriticalText={shortCriticalText || undefined}
           chronometer={chronometer}
-          when={chronometer ? Date.now() : undefined}
+          when={chronometerWhen}
           largeIcon={toImageSource(largeIcon)}
           progressTrackerIcon={toImageSource(progressTrackerIcon)}
           progressStartIcon={toImageSource(progressStartIcon)}
@@ -187,7 +203,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
           hideLargeIconWhenExpanded={hideLargeIconWhenExpanded}
           shortCriticalText={shortCriticalText || undefined}
           chronometer={chronometer}
-          when={chronometer ? Date.now() : undefined}
+          when={chronometerWhen}
         >
           {actionChildren}
         </AndroidOngoingNotification.BigPicture>
@@ -205,10 +221,29 @@ export default function AndroidOngoingNotificationTestingScreen() {
           largeIcon={toImageSource(largeIcon)}
           shortCriticalText={shortCriticalText || undefined}
           chronometer={chronometer}
-          when={chronometer ? Date.now() : undefined}
+          when={chronometerWhen}
         >
           {actionChildren}
         </AndroidOngoingNotification.Inbox>
+      )
+    }
+
+    if (style === 'metric') {
+      return (
+        <AndroidOngoingNotification.Metric
+          title={title}
+          subText={subText || undefined}
+          shortCriticalText={shortCriticalText || undefined}
+          chronometer={chronometer}
+          when={chronometerWhen}
+          largeIcon={toImageSource(largeIcon)}
+          metrics={parseJsonArray<AndroidOngoingNotificationMetricDescriptor>(
+            metricsJson,
+            JSON.parse(defaultMetricsJson()) as AndroidOngoingNotificationMetricDescriptor[]
+          )}
+          criticalMetric={0}
+          semanticStyle="safe"
+        />
       )
     }
 
@@ -220,7 +255,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
         bigText={bigText || undefined}
         shortCriticalText={shortCriticalText || undefined}
         chronometer={chronometer}
-        when={chronometer ? Date.now() : undefined}
+        when={chronometerWhen}
         largeIcon={toImageSource(largeIcon)}
       >
         {actionChildren}
@@ -234,6 +269,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
     indeterminate,
     largeIcon,
     lines,
+    metricsJson,
     picture,
     pictureContentDescription,
     pointsJson,
@@ -537,8 +573,26 @@ export default function AndroidOngoingNotificationTestingScreen() {
               onPress={() => setStyle('inbox')}
               style={styles.smButton}
             />
+            <Button
+              title="Metric"
+              variant={style === 'metric' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('metric')}
+              style={styles.smButton}
+            />
           </View>
         </View>
+
+        {style === 'metric' ? (
+          <View style={styles.column}>
+            <Text style={styles.label}>Metrics JSON (1-3 entries)</Text>
+            <TextInput
+              style={[styles.input, styles.multilineInput]}
+              value={metricsJson}
+              onChangeText={setMetricsJson}
+              multiline
+            />
+          </View>
+        ) : null}
 
         <View style={styles.row}>
           <Text style={styles.label}>Title</Text>
@@ -569,9 +623,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>Chronometer</Text>
           <Button
-            title={chronometer ? 'ON' : 'OFF'}
-            variant={chronometer ? 'primary' : 'secondary'}
-            onPress={() => setChronometer((current) => !current)}
+            title={chronometer === false ? 'OFF' : chronometer === true ? 'countUp' : chronometer}
+            variant={chronometer === false ? 'secondary' : 'primary'}
+            onPress={() =>
+              setChronometer((current) => (current === false ? 'countUp' : current === 'countUp' ? 'countDown' : false))
+            }
             style={styles.smButton}
           />
         </View>
