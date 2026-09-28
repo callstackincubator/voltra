@@ -449,7 +449,8 @@ outcome:
   Repeat with a per-app language on Android 13+.
   Result on API 36: both pass. The receiver cold-started the process and
   rendered Polish; per-app German, Polish and Arabic rendered. Changes made
-  within 45 s of a render were dropped until the revision fix in §2; a
+  within 45 s of a render were dropped until the revision fix in §2; after
+  it, per-app and app-driven changes 5 s apart each rendered within 5 s. A
   force-stopped app receives no broadcast, as Android documents.
 - **T4** Android: cold process started only by WorkManager for a server
   update, widget calls `Intl.DateTimeFormat(env.locale)`: no fbjni crash.
