@@ -30,7 +30,7 @@ function makeProject(): { projectRoot: string; cleanup: () => void } {
   return { projectRoot, cleanup: () => fs.rmSync(projectRoot, { recursive: true, force: true }) }
 }
 
-describe('Android Intl polyfill prelude (ADR 0008)', () => {
+describe('Android Intl polyfill prelude (ADR 0009)', () => {
   test('loads the polyfills in dependency order with per-language data', () => {
     const source = createAndroidIntlPreludeSource({ locales: ['en', 'pl-PL', 'pt_BR', 'pt-PT'] })
     const imports = source.split('\n').filter((line) => line.startsWith('import'))

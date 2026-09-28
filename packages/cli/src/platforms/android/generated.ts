@@ -1181,7 +1181,7 @@ function generateWidgetStringsXml(widgets: NormalizedAndroidWidgetConfig[], loca
     .map((widget) => {
       const label = escapeAndroidString(resolveWidgetLabel(widget.displayName, localeKey))
       const description = escapeAndroidString(resolveWidgetLabel(widget.description, localeKey))
-      // Configuration copy (ADR 0008 §6), under the keys the Expo plugin writes, for an in-app
+      // Configuration copy (ADR 0009 §6), under the keys the Expo plugin writes, for an in-app
       // configuration screen to read.
       const configurationEntries = collectWidgetConfigurationStrings(widget).map(
         ({ key, label: configurationLabel }) =>
@@ -1212,7 +1212,7 @@ function androidResourceSegment(value: string): string {
 
 /**
  * Configuration-sheet strings under the same keys as the Expo plugin and the iOS
- * `Localizable.strings` (ADR 0008 §6), sanitised into resource names.
+ * `Localizable.strings` (ADR 0009 §6), sanitised into resource names.
  */
 function collectWidgetConfigurationStrings(
   widget: NormalizedAndroidWidgetConfig

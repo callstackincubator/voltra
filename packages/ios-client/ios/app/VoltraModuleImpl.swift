@@ -343,7 +343,7 @@ public class VoltraModuleImpl {
   }
 
   /// Stores the app's language override in the App Group, where the widget extension reads it as
-  /// `env.appLocale` (ADR 0008 §3), then reloads every widget and re-renders running Dynamic Live
+  /// `env.appLocale` (ADR 0009 §3), then reloads every widget and re-renders running Dynamic Live
   /// Activities so it takes effect at once. Throws `WidgetError.appGroupNotConfigured` without a
   /// `groupIdentifier`, since the extension could never see the value.
   func setDynamicWidgetLocale(tag: String?) async throws {

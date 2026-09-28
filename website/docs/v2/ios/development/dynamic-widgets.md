@@ -174,3 +174,4 @@ Pass `env.locale` to every `Intl` and `toLocale*` call, and pick a translation w
 - The default-exported function or component name does not need to match the widget `id`.
 - Use a real device to verify release rendering.
 - `initialStatePath` gives the widget a pre-rendered first view.
+- To use SwiftUI modifiers that `style` does not cover, such as `widgetURL` or `containerBackground`, see [Native modifiers](./native-modifiers).

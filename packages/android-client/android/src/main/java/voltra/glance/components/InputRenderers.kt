@@ -25,7 +25,7 @@ fun RenderSwitch(
 ) {
     val context = androidx.glance.LocalContext.current
     val renderContext = LocalVoltraRenderContext.current
-    val computedModifier = modifier ?: resolveAndApplyStyle(element.p, renderContext.sharedStyles).modifier
+    val computedModifier = modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier
 
     val componentId = element.i ?: "switch_${element.hashCode()}"
     val checked = (element.p?.get("checked") as? Boolean) ?: false
@@ -85,7 +85,7 @@ fun RenderRadioButton(
 ) {
     val context = androidx.glance.LocalContext.current
     val renderContext = LocalVoltraRenderContext.current
-    val computedModifier = modifier ?: resolveAndApplyStyle(element.p, renderContext.sharedStyles).modifier
+    val computedModifier = modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier
 
     val componentId = element.i ?: "radio_${element.hashCode()}"
     val checked = (element.p?.get("checked") as? Boolean) ?: false
@@ -137,7 +137,7 @@ fun RenderCheckBox(
 ) {
     val context = androidx.glance.LocalContext.current
     val renderContext = LocalVoltraRenderContext.current
-    val computedModifier = modifier ?: resolveAndApplyStyle(element.p, renderContext.sharedStyles).modifier
+    val computedModifier = modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier
 
     val componentId = element.i ?: "checkbox_${element.hashCode()}"
     val checked = (element.p?.get("checked") as? Boolean) ?: false

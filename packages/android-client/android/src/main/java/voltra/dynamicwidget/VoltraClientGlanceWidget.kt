@@ -234,7 +234,7 @@ class VoltraClientGlanceWidget(
                     .put("build", build)
 
             // Locale, preferred languages, 12/24-hour, direction, time zone and regional formats
-            // (ADR 0008 §1). `locale` keeps its BCP-47 `toLanguageTag()` form.
+            // (ADR 0009 §1). `locale` keeps its BCP-47 `toLanguageTag()` form.
             DynamicWidgetLocaleEnvironment.capture(context).putInto(env)
 
             // The instance key (ADR 0007): the hash of this placement's merged configuration, or

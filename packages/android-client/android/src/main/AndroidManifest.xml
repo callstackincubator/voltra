@@ -9,7 +9,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/voltra_file_paths" />
         </provider>
-        <!-- Re-renders Dynamic Widgets after a device, per-app or regional locale change (ADR 0008). -->
+        <!-- Re-renders Dynamic Widgets after a device, per-app or regional locale change (ADR 0009). -->
         <receiver
             android:name="voltra.VoltraLocaleChangedReceiver"
             android:exported="false">

@@ -1,6 +1,6 @@
 import Foundation
 
-/// The locale and formatting fields of `WidgetEnvironment` (ADR 0008 §1), captured once per render
+/// The locale and formatting fields of `WidgetEnvironment` (ADR 0009 §1), captured once per render
 /// and shared by the Dynamic Widget and Dynamic Live Activity env builders so both hand JS the same
 /// shape.
 ///

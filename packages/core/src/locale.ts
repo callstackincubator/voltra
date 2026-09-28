@@ -1,6 +1,6 @@
 /**
  * Locale negotiation shared by the Expo config plugins (initial-state and gallery-label pickers)
- * and by widget code at render time (ADR 0008 §5).
+ * and by widget code at render time (ADR 0009 §5).
  *
  * The fallback order is the one the native initial-state pickers use: for each preferred tag an
  * exact match, then a language-only match; then `en` (or any `en-*`), then `__default`, then the

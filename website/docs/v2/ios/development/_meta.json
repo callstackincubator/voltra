@@ -66,6 +66,11 @@
   },
   {
     "type": "file",
+    "name": "native-modifiers",
+    "label": "Native modifiers"
+  },
+  {
+    "type": "file",
     "name": "gradients",
     "label": "Gradients"
   },

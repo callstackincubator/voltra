@@ -105,8 +105,11 @@ describe('Dynamic Live Activity Swift generation', () => {
     expect(types).toContain('public typealias ContentState = VoltraDynamicLiveActivityContentState')
     expect(types).toContain('public let name: String')
     expect(types).toContain('public let deepLinkUrl: String?')
+    expect(types).toContain('#if canImport(VoltraWidgetRuntime)')
+    expect(types).toContain('import VoltraWidgetRuntime')
     expect(types).toContain('import VoltraRuntime')
-    expect(types).not.toContain('import VoltraWidget')
+    expect(configurations).toContain('import VoltraWidgetRuntime')
+    expect(configurations).not.toContain('import VoltraRuntime')
     expect(types).toContain('@objc(VoltraGeneratedDynamicLiveActivityRegistration)')
     expect(types).toContain('public final class VoltraGeneratedDynamicLiveActivityRegistration: NSObject')
     expect(types).toContain(
@@ -124,7 +127,7 @@ describe('Dynamic Live Activity Swift generation', () => {
   })
 
   it('keeps the legacy empty bundle unchanged when no Dynamic Live Activities are declared', () => {
-    expect(__test__.generateWidgetBundleSwift([], [])).toContain('import VoltraRuntime')
+    expect(__test__.generateWidgetBundleSwift([], [])).toContain('import VoltraWidgetRuntime')
     expect(__test__.generateWidgetBundleSwift([], [])).not.toContain('VoltraDynamicLiveActivity_')
   })
 })
@@ -218,7 +221,7 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
 
     expect(swift).toContain('@Parameter(title: "voltra_widget_weather_param_label_title", default: "Hello")')
     expect(swift).toContain('@Parameter(title: "Plain", default: "x")')
-    // The `table:` initializer form is deliberately not used at the @Parameter site (ADR 0008 T5).
+    // The `table:` initializer form is deliberately not used at the @Parameter site (ADR 0009 T5).
     expect(swift).not.toMatch(/@Parameter\(title: LocalizedStringResource/)
   })
 

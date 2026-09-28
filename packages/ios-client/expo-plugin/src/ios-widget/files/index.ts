@@ -57,7 +57,7 @@ export const generateWidgetExtensionFiles: ConfigPlugin<GenerateWidgetExtensionF
         fs.mkdirSync(targetPath, { recursive: true })
       }
 
-      // Languages the extension declares, mirrored from the app (ADR 0008 §4)
+      // Languages the extension declares, mirrored from the app (ADR 0009 §4)
       const localizations = resolveExtensionLocalizations(config, widgets)
 
       // Generate Info.plist

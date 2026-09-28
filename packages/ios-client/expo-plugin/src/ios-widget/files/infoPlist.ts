@@ -20,7 +20,7 @@ function generateInfoPlistContent(
   voltraVersion: string,
   localizations: string[]
 ): string {
-  // CFBundleLocalizations mirrors the app's languages into the extension (ADR 0008 §4), so
+  // CFBundleLocalizations mirrors the app's languages into the extension (ADR 0009 §4), so
   // Locale.current and SwiftUI's \.locale there resolve the way they do in the app.
   const localizationsEntry =
     localizations.length > 0

@@ -6,7 +6,7 @@ import { validateWidgetLabel } from './validation'
 const PARAMETER_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
 /**
- * A string the operating system shows while the user configures a widget (ADR 0008 §6): a
+ * A string the operating system shows while the user configures a widget (ADR 0009 §6): a
  * parameter title or an option label. `key` is the same on both platforms, apart from the
  * resource-name sanitising Android needs.
  */

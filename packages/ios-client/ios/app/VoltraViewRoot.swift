@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 @objc public class VoltraViewRoot: UIView {
-  private var hostingController: UIHostingController<AnyView>?
+  private var hostingController: UIHostingController<Voltra>?
   private var root: VoltraNode = .empty
   private var viewId: String = UUID().uuidString
 
@@ -20,8 +20,7 @@ import UIKit
   }
 
   private func setupHostingController() {
-    let view = Voltra(root: .empty, activityId: viewId)
-    let hostingController = UIHostingController(rootView: AnyView(view))
+    let hostingController = UIHostingController(rootView: Voltra(root: .empty, activityId: viewId))
     hostingController.view.backgroundColor = .clear
     addSubview(hostingController.view)
     self.hostingController = hostingController
@@ -49,15 +48,10 @@ import UIKit
     updateView()
   }
 
+  /// Updates the existing hosting controller in place. SwiftUI then diffs the new tree against the
+  /// previous one, so `animation`, `transition` and `contentTransition` modifiers animate between
+  /// payloads and view state survives updates, as it does in widgets and Live Activities.
   private func updateView() {
-    hostingController?.view.removeFromSuperview()
-
-    let newView = Voltra(root: root, activityId: viewId)
-    let newHostingController = UIHostingController(rootView: AnyView(newView))
-    newHostingController.view.backgroundColor = .clear
-    newHostingController.view.frame = bounds
-    addSubview(newHostingController.view)
-
-    hostingController = newHostingController
+    hostingController?.rootView = Voltra(root: root, activityId: viewId)
   }
 }

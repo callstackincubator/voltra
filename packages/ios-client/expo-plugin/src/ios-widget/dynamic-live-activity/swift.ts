@@ -26,7 +26,15 @@ export function generateDynamicLiveActivityTypesSwift(liveActivities: IOSDynamic
     import ActivityKit
     import Foundation
 
+    // This file compiles in both the app target (pod Voltra, module
+    // VoltraRuntime) and the widget extension target (pod VoltraWidget,
+    // module VoltraWidgetRuntime). The two pods must keep distinct module
+    // names so their build products never collide.
+    #if canImport(VoltraWidgetRuntime)
+    import VoltraWidgetRuntime
+    #else
     import VoltraRuntime
+    #endif
 
     @objc(VoltraGeneratedDynamicLiveActivityRegistration)
     public final class VoltraGeneratedDynamicLiveActivityRegistration: NSObject {
@@ -97,7 +105,7 @@ export function generateDynamicLiveActivitiesSwift(liveActivities: IOSDynamicLiv
     import ActivityKit
     import SwiftUI
     import WidgetKit
-    import VoltraRuntime
+    import VoltraWidgetRuntime
 
   `
   return [header.trim(), configurations.trim()].filter(Boolean).join('\n\n')

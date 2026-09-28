@@ -11,7 +11,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-/** The locale fields of `WidgetEnvironment` on Android (ADR 0008 §1). */
+/** The locale fields of `WidgetEnvironment` on Android (ADR 0009 §1). */
 @RunWith(RobolectricTestRunner::class)
 class DynamicWidgetLocaleEnvironmentTest {
     private val context get() = RuntimeEnvironment.getApplication()

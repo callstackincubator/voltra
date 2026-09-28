@@ -15,7 +15,7 @@ import java.util.TimeZone
 import android.icu.util.Calendar as IcuCalendar
 
 /**
- * The locale and formatting fields of `WidgetEnvironment` (ADR 0008 §1): everything a JS entry
+ * The locale and formatting fields of `WidgetEnvironment` (ADR 0009 §1): everything a JS entry
  * needs to pick a translation and to format dates, numbers and units the way the user expects,
  * read from the configuration the widget renders with.
  */

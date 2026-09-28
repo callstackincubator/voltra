@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Re-renders every placed Dynamic Widget when the device locale, the app's per-app locale or the
- * regional preferences change (ADR 0008 §2).
+ * regional preferences change (ADR 0009 §2).
  *
  * The launcher keeps re-applying the last RemoteViews, in which Glance has already baked literal
  * strings, and the system does not re-broadcast `APPWIDGET_UPDATE` on a locale change. Declared in

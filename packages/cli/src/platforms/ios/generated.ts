@@ -124,7 +124,7 @@ interface MainAppMetadata {
   shortVersionString: string
   buildNumber: string
   urlTypes?: Array<{ CFBundleURLSchemes: string[] }>
-  /** The app's own `CFBundleLocalizations`, mirrored into the extension (ADR 0008 §4). */
+  /** The app's own `CFBundleLocalizations`, mirrored into the extension (ADR 0009 §4). */
   localizations: string[]
   /** The app's `CFBundleDevelopmentRegion` when it is a literal tag, otherwise `en`. */
   developmentRegion: string
@@ -287,7 +287,7 @@ async function generateInfoPlistFile(
       CFBundleExecutable: '$(EXECUTABLE_NAME)',
       CFBundleIdentifier: '$(PRODUCT_BUNDLE_IDENTIFIER)',
       // Mirrors the app's languages so Locale.current and \.locale in the extension resolve like
-      // they do in the app (ADR 0008 §4).
+      // they do in the app (ADR 0009 §4).
       CFBundleLocalizations: extensionLocalizations.length > 0 ? extensionLocalizations : undefined,
       CFBundleInfoDictionaryVersion: '6.0',
       CFBundleName: '$(PRODUCT_NAME)',
@@ -470,7 +470,7 @@ async function generateLocalizedWidgetStrings(
 const LOCALE_TAG_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/
 
 /**
- * The languages the widget extension declares (ADR 0008 §4): the app's `CFBundleLocalizations` and
+ * The languages the widget extension declares (ADR 0009 §4): the app's `CFBundleLocalizations` and
  * every locale a widget's locale maps use, plus the app's development language, which iOS falls back
  * to when none of the user's languages match. Mirrors `resolveExtensionLocalizations` in the Expo
  * plugin.
@@ -518,7 +518,7 @@ function widgetLabels(widget: NormalizedIOSWidgetConfig): Array<WidgetLabel | un
 }
 
 /**
- * The Edit Widget sheet strings (ADR 0008 §6), keyed the same way on both platforms. Mirrors
+ * The Edit Widget sheet strings (ADR 0009 §6), keyed the same way on both platforms. Mirrors
  * `collectWidgetConfigurationStrings` in `@use-voltra/expo-plugin`.
  */
 function collectWidgetConfigurationStrings(
@@ -1050,7 +1050,7 @@ function parameterDefaultExpression(parameter: IOSWidgetAppIntentParameter): str
 }
 
 /**
- * A title on the Edit Widget sheet (ADR 0008 §6): a plain string is compiled in as-is; a locale map
+ * A title on the Edit Widget sheet (ADR 0009 §6): a plain string is compiled in as-is; a locale map
  * becomes a bare string-literal key into the extension's `Localizable` table.
  */
 function sheetStringLiteral(label: WidgetLabel, key: string): string {

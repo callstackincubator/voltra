@@ -428,7 +428,7 @@ export function createWidgetRegistry({
   androidIntlPolyfills,
 }: {
   projectRoot?: string
-  /** Opt-in Android Intl polyfill prelude (ADR 0008 §5); see `withVoltra`. */
+  /** Opt-in Android Intl polyfill prelude (ADR 0009 §5); see `withVoltra`. */
   androidIntlPolyfills?: AndroidIntlPolyfillsOptions
 } = {}): WidgetRegistry {
   const generatedRoot = path.join(projectRoot, '.voltra', 'metro')

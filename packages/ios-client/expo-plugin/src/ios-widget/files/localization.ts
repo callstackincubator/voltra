@@ -47,7 +47,7 @@ export function resolveDevelopmentRegion(config: AppLocalizationSource | undefin
 }
 
 /**
- * The languages the widget extension declares (ADR 0008 §4).
+ * The languages the widget extension declares (ADR 0009 §4).
  *
  * iOS resolves `Locale.current` and SwiftUI's `\.locale` in the extension against the extension
  * bundle's own localisations, so an extension that declares none reports `en_PL` to a Polish user
@@ -132,7 +132,7 @@ function formatLocalizableStrings(entries: Record<string, string>): string {
 
 /**
  * Writes `<locale>.lproj/Localizable.strings` for every declared language. The file carries the
- * Edit Widget sheet strings (ADR 0008 §6) and, even when empty, makes the `.lproj` folder a real
+ * Edit Widget sheet strings (ADR 0009 §6) and, even when empty, makes the `.lproj` folder a real
  * resource of the extension target so iOS sees the language as supported.
  *
  * The extension is generated and owned by Voltra, so every `Localizable.strings` in it is ours to

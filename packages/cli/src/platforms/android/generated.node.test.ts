@@ -5,7 +5,7 @@ import { __test__ } from './generated.ts'
 
 import type { NormalizedAndroidWidgetConfig } from '../../config/types.ts'
 
-describe('configuration strings in voltra_widgets.xml (ADR 0008)', () => {
+describe('configuration strings in voltra_widgets.xml (ADR 0009)', () => {
   const widget = {
     id: 'Weather',
     displayName: 'Weather',

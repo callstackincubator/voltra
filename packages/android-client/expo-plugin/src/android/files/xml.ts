@@ -248,7 +248,7 @@ function collectAndroidLocaleKeysFromWidgets(widgets: AndroidWidgetConfig[]): Se
         }
       }
     }
-    // Configuration copy (ADR 0008 §6) shares the same values-<qualifier>/ folders.
+    // Configuration copy (ADR 0009 §6) shares the same values-<qualifier>/ folders.
     const configurationLabels = collectWidgetConfigurationStrings(w).map(({ label }) => label)
     for (const localeKey of collectLabelLocaleKeys(configurationLabels)) {
       locales.add(localeKey)
@@ -312,7 +312,7 @@ function generateVoltraWidgetsStringResourcesXml(widgets: AndroidWidgetConfig[],
       const label = escapeAndroidStringRes(resolveAndroidWidgetLabel(widget, 'displayName', localeKey))
       const desc = escapeAndroidStringRes(resolveAndroidWidgetLabel(widget, 'description', localeKey))
       const resId = androidWidgetResourceId(widget.id)
-      // Configuration copy (ADR 0008 §6): the same keys as the iOS Localizable.strings, sanitised
+      // Configuration copy (ADR 0009 §6): the same keys as the iOS Localizable.strings, sanitised
       // into resource names, for an in-app configuration screen to read.
       const configurationEntries = collectWidgetConfigurationStrings(widget, androidWidgetResourceId).map(
         ({ key, label: configurationLabel }) =>

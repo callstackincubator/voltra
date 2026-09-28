@@ -1,7 +1,9 @@
 package voltra
 
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableNativeMap
+import voltra.ongoingnotification.AndroidOngoingNotificationPromotionInfo
 
 fun AndroidOngoingNotificationOptions(map: ReadableMap) =
     AndroidOngoingNotificationOptions(
@@ -22,6 +24,8 @@ fun AndroidOngoingNotificationStartResult.toWritableMap() =
         putString("notificationId", notificationId)
         action?.let { putString("action", it) }
         reason?.let { putString("reason", it) }
+        promotion?.let { putMap("promotion", it.toWritableMap()) }
+        styleFallback?.let { putString("styleFallback", it) }
     }
 
 fun AndroidOngoingNotificationUpdateResult.toWritableMap() =
@@ -30,6 +34,8 @@ fun AndroidOngoingNotificationUpdateResult.toWritableMap() =
         putString("notificationId", notificationId)
         action?.let { putString("action", it) }
         reason?.let { putString("reason", it) }
+        promotion?.let { putMap("promotion", it.toWritableMap()) }
+        styleFallback?.let { putString("styleFallback", it) }
     }
 
 fun AndroidOngoingNotificationUpsertResult.toWritableMap() =
@@ -38,6 +44,8 @@ fun AndroidOngoingNotificationUpsertResult.toWritableMap() =
         putString("notificationId", notificationId)
         action?.let { putString("action", it) }
         reason?.let { putString("reason", it) }
+        promotion?.let { putMap("promotion", it.toWritableMap()) }
+        styleFallback?.let { putString("styleFallback", it) }
     }
 
 fun AndroidOngoingNotificationStopResult.toWritableMap() =
@@ -46,4 +54,21 @@ fun AndroidOngoingNotificationStopResult.toWritableMap() =
         putString("notificationId", notificationId)
         action?.let { putString("action", it) }
         reason?.let { putString("reason", it) }
+    }
+
+fun AndroidOngoingNotificationPromotionInfo.toWritableMap() =
+    WritableNativeMap().apply {
+        putBoolean("requested", requested)
+        putBoolean("eligible", eligible)
+        putArray("reasons", Arguments.fromList(reasons))
+        hasPromotableCharacteristics?.let { putBoolean("hasPromotableCharacteristics", it) }
+    }
+
+// The pre-flight result type deliberately has no `requested` field: a check is always
+// a request, so the key would be an undeclared constant riding along to JS.
+fun AndroidOngoingNotificationPromotionInfo.toCheckResultWritableMap() =
+    WritableNativeMap().apply {
+        putBoolean("eligible", eligible)
+        putArray("reasons", Arguments.fromList(reasons))
+        hasPromotableCharacteristics?.let { putBoolean("hasPromotableCharacteristics", it) }
     }

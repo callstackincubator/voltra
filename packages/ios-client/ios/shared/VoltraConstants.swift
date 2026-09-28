@@ -53,7 +53,7 @@ public enum VoltraStorageKeys {
   public static let devServerURL = "Voltra_DevServerURL"
 
   /// BCP-47 tag the app chose with `setDynamicWidgetLocale`, surfaced to widgets as
-  /// `env.appLocale` (ADR 0008 §3). Absent when the app has not set one.
+  /// `env.appLocale` (ADR 0009 §3). Absent when the app has not set one.
   public static let dynamicWidgetLocale = "Voltra_DynamicWidgetLocale"
 
   // MARK: - Info.plist keys

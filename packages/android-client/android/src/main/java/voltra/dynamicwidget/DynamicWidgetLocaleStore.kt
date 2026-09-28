@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 
 /**
  * The language the app asked Voltra to render Dynamic Widgets in (`setDynamicWidgetLocale`),
- * surfaced to the JS entry as `env.appLocale` (ADR 0008 §3).
+ * surfaced to the JS entry as `env.appLocale` (ADR 0009 §3).
  *
  * Widgets render in the app process on Android, so plain SharedPreferences are enough; the value
  * outlives the process so a widget re-rendered by WorkManager or the launcher still sees it.

@@ -34,7 +34,7 @@ export type WidgetEnvironment<TConfig extends Record<string, unknown> | undefine
   colorScheme?: 'light' | 'dark'
 
   // ---------------------------------------------------------------------------
-  // Locale and formatting preferences (ADR 0008)
+  // Locale and formatting preferences (ADR 0009)
   // Always pass these explicitly to `Intl` / `toLocale*` calls: the JS runtime's own default
   // locale and time zone are the process's, which may not match what the widget is drawn for.
   // ---------------------------------------------------------------------------

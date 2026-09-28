@@ -244,3 +244,4 @@ Pass `env.locale` and `env.hourCycle` to every `Intl` and `toLocale*` call, and 
 - The default-exported Dynamic Widget function or component name does not need to match the widget `id`.
 - Use a real device to verify release rendering.
 - `initialStatePath` gives the Dynamic Widget a pre-rendered first view.
+- To use Glance modifiers that `style` does not cover, such as `semantics` or `appWidgetBackground`, see [Native modifiers](./native-modifiers).

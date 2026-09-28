@@ -381,7 +381,7 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
  * params are passed into the render as env.configuration; the native "Edit Widget" sheet edits them.
  */
 /**
- * A string literal for a title on the Edit Widget sheet (ADR 0008 §6). A plain string is compiled in
+ * A string literal for a title on the Edit Widget sheet (ADR 0009 §6). A plain string is compiled in
  * as-is. A locale map becomes a bare string-literal key into the extension's default `Localizable`
  * table, which `syncExtensionLocalizableStrings` fills for every declared language: the one form
  * the App Intents metadata processor is documented to accept without question.
@@ -596,7 +596,7 @@ function generateWidgetBundleSwift(
 
     ${foundationImport}${appIntentsImport}import SwiftUI
     import WidgetKit
-    import VoltraRuntime
+    import VoltraWidgetRuntime
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {
@@ -630,7 +630,7 @@ function generateDefaultWidgetBundleSwift(): string {
 
     import SwiftUI
     import WidgetKit
-    import VoltraRuntime  // Import Voltra widgets
+    import VoltraWidgetRuntime  // Import Voltra widgets
 
     @main
     struct VoltraWidgetBundle: WidgetBundle {

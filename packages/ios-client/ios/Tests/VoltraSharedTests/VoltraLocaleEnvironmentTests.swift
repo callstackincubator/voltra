@@ -4,7 +4,7 @@ import XCTest
 
 final class VoltraLocaleEnvironmentTests: XCTestCase {
   func testLocaleIsBCP47NotICU() throws {
-    // ADR 0008 G1: `Locale.identifier` gives `pl_PL`, which `Intl` rejects with a RangeError.
+    // ADR 0009 G1: `Locale.identifier` gives `pl_PL`, which `Intl` rejects with a RangeError.
     let env = try VoltraLocaleEnvironment.capture(
       locale: Locale(identifier: "pl_PL"),
       preferredLanguages: ["pl-PL", "en-US"],
@@ -33,7 +33,7 @@ final class VoltraLocaleEnvironmentTests: XCTestCase {
     XCTAssertEqual(twelve.hourCycle, "h12")
     XCTAssertEqual(twentyFour.hourCycle, "h23")
     // The override must reach JS inside the tag too, so Intl formats 24-hour on its own. Verified
-    // on-device by ADR 0008 test T7.
+    // on-device by ADR 0009 test T7.
     XCTAssertEqual(twentyFour.locale, "en-US-u-hc-h23")
   }
 

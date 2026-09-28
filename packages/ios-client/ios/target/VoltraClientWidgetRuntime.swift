@@ -300,7 +300,7 @@ public enum VoltraClientWidgetEnvBuilder {
     // sends and what WidgetScope.of(widgetId, configuration:) resolves to.
     let instanceEntry = WidgetCanonicalConfiguration.key(configuration).map { ",\n  \"instance\": \(jsonString($0))" } ?? ""
 
-    // Locale fields (ADR 0008 §1). `locale` is BCP-47 (`pl-PL`), never the ICU `pl_PL` that
+    // Locale fields (ADR 0009 §1). `locale` is BCP-47 (`pl-PL`), never the ICU `pl_PL` that
     // `Locale.identifier` gives and `Intl` rejects.
     let localeEnvironment = VoltraLocaleEnvironment.capture(
       locale: locale,

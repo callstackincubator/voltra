@@ -60,7 +60,7 @@ describe('generateWidgetBundleSwift', () => {
   })
 })
 
-describe('localisation (ADR 0008)', () => {
+describe('localisation (ADR 0009)', () => {
   const configurable: DetectedIOSWidget = {
     id: 'weather',
     entry: './widgets/weather.tsx',
