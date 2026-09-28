@@ -17,7 +17,6 @@ const weather: IOSWidgetConfig = {
   entry: './widgets/weather.tsx',
   displayName: { en: 'Weather', pl: 'Pogoda' },
   description: 'Forecast',
-  configurationTitle: { en: 'Weather settings', pl: 'Ustawienia pogody' },
   appIntent: {
     parameters: [
       {
@@ -56,11 +55,7 @@ describe('resolveExtensionLocalizations', () => {
   it('adds en once anything is declared, and nothing when nothing is', () => {
     expect(resolveExtensionLocalizations({ locales: { pl: './pl.json' } }, [])).toEqual(['en', 'pl'])
     expect(resolveExtensionLocalizations({ locales: { 'en-GB': './en.json' } }, [])).toEqual(['en-GB'])
-    expect(
-      resolveExtensionLocalizations({}, [
-        { ...weather, displayName: 'W', configurationTitle: undefined, appIntent: undefined },
-      ])
-    ).toEqual([])
+    expect(resolveExtensionLocalizations({}, [{ ...weather, displayName: 'W', appIntent: undefined }])).toEqual([])
   })
 
   it('treats underscore and hyphen spellings as one language and ignores __default', () => {
@@ -69,7 +64,6 @@ describe('resolveExtensionLocalizations', () => {
         {
           ...weather,
           displayName: { pt_BR: 'Tempo', __default: 'Weather' },
-          configurationTitle: undefined,
           appIntent: undefined,
         },
       ])
@@ -109,13 +103,11 @@ describe('development language', () => {
 describe('collectSheetStringsForLocale', () => {
   it('resolves every locale-mapped sheet string with language and English fallback', () => {
     expect(collectSheetStringsForLocale([weather], 'pl')).toEqual({
-      voltra_widget_weather_intent_title: 'Ustawienia pogody',
       voltra_widget_weather_param_units_title: 'Jednostki',
       voltra_widget_weather_param_units_option_metric: 'Metryczne',
     })
     // `fr` has no translation: the key must still resolve, or the sheet would show it verbatim.
     expect(collectSheetStringsForLocale([weather], 'fr')).toEqual({
-      voltra_widget_weather_intent_title: 'Weather settings',
       voltra_widget_weather_param_units_title: 'Units',
       voltra_widget_weather_param_units_option_metric: 'Metric',
     })

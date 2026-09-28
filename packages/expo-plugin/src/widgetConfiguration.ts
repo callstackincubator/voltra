@@ -6,9 +6,9 @@ import { validateWidgetLabel } from './validation'
 const PARAMETER_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
 /**
- * A string the operating system shows while the user configures a widget (ADR 0008 §6): the
- * sheet title, a parameter title, or an option label. `key` is the same on both platforms, apart
- * from the resource-name sanitising Android needs.
+ * A string the operating system shows while the user configures a widget (ADR 0008 §6): a
+ * parameter title or an option label. `key` is the same on both platforms, apart from the
+ * resource-name sanitising Android needs.
  */
 export interface WidgetConfigurationString {
   key: string
@@ -18,10 +18,6 @@ export interface WidgetConfigurationString {
 type KeyPart = (value: string) => string
 
 const identity: KeyPart = (value) => value
-
-export function widgetIntentTitleKey(widgetId: string, part: KeyPart = identity): string {
-  return `voltra_widget_${part(widgetId)}_intent_title`
-}
 
 export function widgetParameterTitleKey(widgetId: string, parameterName: string, part: KeyPart = identity): string {
   return `voltra_widget_${part(widgetId)}_param_${part(parameterName)}_title`
@@ -45,10 +41,6 @@ export function collectWidgetConfigurationStrings(
   part: KeyPart = identity
 ): WidgetConfigurationString[] {
   const strings: WidgetConfigurationString[] = []
-
-  if (widget.configurationTitle !== undefined) {
-    strings.push({ key: widgetIntentTitleKey(widget.id, part), label: widget.configurationTitle })
-  }
 
   for (const parameter of widget.appIntent?.parameters ?? []) {
     if (parameter.title !== undefined) {
@@ -82,8 +74,8 @@ export function collectLabelLocaleKeys(labels: Iterable<WidgetLabel | undefined>
 }
 
 /**
- * Validates `configurationTitle` and `appIntent.parameters[]` (titles as plain strings or locale
- * maps, and static `options`).
+ * Validates `appIntent.parameters[]` (titles as plain strings or locale maps, and static
+ * `options`).
  */
 export function validateWidgetConfigurationCopy(
   widget: WidgetConfigurationCopySource,
@@ -94,10 +86,6 @@ export function validateWidgetConfigurationCopy(
   }
 ): void {
   const widgetId = widget.id
-
-  if (widget.configurationTitle !== undefined) {
-    validateWidgetLabel(widget.configurationTitle, widgetId, 'configurationTitle')
-  }
 
   const appIntent = widget.appIntent as unknown
   if (appIntent === undefined) {

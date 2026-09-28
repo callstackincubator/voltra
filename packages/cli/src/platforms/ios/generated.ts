@@ -525,9 +525,6 @@ function collectWidgetConfigurationStrings(
   widget: NormalizedIOSWidgetConfig
 ): Array<{ key: string; label: WidgetLabel }> {
   const strings: Array<{ key: string; label: WidgetLabel }> = []
-  if (widget.configurationTitle !== undefined) {
-    strings.push({ key: widgetIntentTitleKey(widget.id), label: widget.configurationTitle })
-  }
   for (const parameter of widget.appIntent?.parameters ?? []) {
     strings.push({ key: widgetParameterTitleKey(widget.id, parameter.name), label: parameter.title })
     for (const option of parameter.options ?? []) {
@@ -535,10 +532,6 @@ function collectWidgetConfigurationStrings(
     }
   }
   return strings
-}
-
-function widgetIntentTitleKey(widgetId: string): string {
-  return `voltra_widget_${widgetId}_intent_title`
 }
 
 function widgetParameterTitleKey(widgetId: string, parameterName: string): string {
@@ -899,10 +892,7 @@ function generateClientAppIntentWidgetCode(
   const familiesSwift = widget.supportedFamilies.map((family) => IOS_WIDGET_FAMILY_MAP[family]).join(', ')
   const intentName = `VoltraWidget_${widget.id}_Intent`
   const providerName = `VoltraWidget_${widget.id}_ClientProvider`
-  const intentTitle =
-    widget.configurationTitle !== undefined
-      ? sheetStringLiteral(widget.configurationTitle, widgetIntentTitleKey(widget.id))
-      : JSON.stringify(`Configure ${widgetLabelEnglish(widget.displayName)}`)
+  const intentTitle = `Configure ${widgetLabelEnglish(widget.displayName)}`
   const displayNameExpr = createSwiftLabelExpression(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = createSwiftLabelExpression(widget.id, 'description', widget.description)
   const optionEnums = widget.appIntent.parameters
@@ -958,7 +948,7 @@ function generateClientAppIntentWidgetCode(
     ...optionEnums.flatMap((optionEnum) => [optionEnum, '']),
     `@available(iOS 17.0, *)`,
     `struct ${intentName}: WidgetConfigurationIntent {`,
-    `  static var title: LocalizedStringResource = ${intentTitle}`,
+    `  static var title: LocalizedStringResource = ${JSON.stringify(intentTitle)}`,
     '',
     parameterDeclarations,
     '',

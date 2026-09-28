@@ -104,8 +104,6 @@ export interface AndroidWidgetConfig {
   previewLayout?: string
   /** Dynamic Widget configuration parameters surfaced to env.configuration. */
   appIntent?: AndroidWidgetAppIntentConfig
-  /** Title of a configuration screen, either as a single string or localized. */
-  configurationTitle?: WidgetLabel
 }
 
 export type IOSWidgetFamily =
@@ -168,8 +166,6 @@ export interface IOSWidgetConfig {
   serverUpdate?: IOSWidgetServerUpdateConfig
   /** Dynamic Widget AppIntent configuration. */
   appIntent?: IOSWidgetAppIntentConfig
-  /** Title of the Edit Widget sheet, either as a single string or localized. */
-  configurationTitle?: WidgetLabel
 }
 
 export interface AndroidProjectOverrides {

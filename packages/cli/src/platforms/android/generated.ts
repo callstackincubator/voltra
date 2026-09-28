@@ -1219,9 +1219,6 @@ function collectWidgetConfigurationStrings(
 ): Array<{ key: string; label: WidgetLabel }> {
   const id = androidResourceSegment(widget.id)
   const strings: Array<{ key: string; label: WidgetLabel }> = []
-  if (widget.configurationTitle !== undefined) {
-    strings.push({ key: `voltra_widget_${id}_intent_title`, label: widget.configurationTitle })
-  }
   for (const parameter of widget.appIntent?.parameters ?? []) {
     const name = androidResourceSegment(parameter.name)
     if (parameter.title !== undefined) {

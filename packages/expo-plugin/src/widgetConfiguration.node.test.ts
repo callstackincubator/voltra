@@ -2,7 +2,6 @@ import { collectWidgetConfigurationStrings, validateWidgetConfigurationCopy } fr
 
 const widget = {
   id: 'Weather',
-  configurationTitle: { en: 'Weather settings', pl: 'Ustawienia pogody' },
   appIntent: {
     parameters: [
       {
@@ -20,9 +19,8 @@ const widget = {
 }
 
 describe('collectWidgetConfigurationStrings', () => {
-  it('lists the sheet title, parameter titles and option labels under stable keys', () => {
+  it('lists parameter titles and option labels under stable keys', () => {
     expect(collectWidgetConfigurationStrings(widget).map(({ key }) => key)).toEqual([
-      'voltra_widget_Weather_intent_title',
       'voltra_widget_Weather_param_units_title',
       'voltra_widget_Weather_param_units_option_metric',
       'voltra_widget_Weather_param_units_option_us-customary',
@@ -89,7 +87,10 @@ describe('validateWidgetConfigurationCopy', () => {
       )
     ).toThrow('.name must start with a letter')
     expect(() =>
-      validateWidgetConfigurationCopy({ ...base, configurationTitle: {} }, { requireParameterTitle: true })
-    ).toThrow('configurationTitle locale map must not be empty')
+      validateWidgetConfigurationCopy(
+        { ...base, appIntent: { parameters: [{ name: 'units', title: {} }] } },
+        { requireParameterTitle: true }
+      )
+    ).toThrow("appIntent parameter 'units' title locale map must not be empty")
   })
 })

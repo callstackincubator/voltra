@@ -76,9 +76,6 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
    * it before any runtime configuration; runtime values (set via `setWidgetConfiguration`) override.
    */
   appIntent?: AndroidWidgetAppIntentConfig
-  /** Title of a configuration screen, as a plain string or a locale map. Written to
-   * `voltra_widgets.xml` as `voltra_widget_<id>_intent_title`. */
-  configurationTitle?: WidgetLabel
 }
 
 /**

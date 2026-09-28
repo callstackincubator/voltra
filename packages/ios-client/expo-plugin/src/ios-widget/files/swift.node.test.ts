@@ -202,12 +202,11 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     expect(swift).not.toContain('VoltraDynamicWidgetServerUpdateProvider')
   })
 
-  it('keys locale-mapped sheet titles into Localizable.strings with bare string literals', () => {
+  it('keys locale-mapped parameter titles into Localizable.strings with bare string literals', () => {
     const swift = __test__.generateWidgetBundleSwift([
       {
         ...configurableWidget,
         id: 'weather',
-        configurationTitle: { en: 'Weather settings', pl: 'Ustawienia pogody' },
         appIntent: {
           parameters: [
             { name: 'label', title: { en: 'Label', pl: 'Etykieta' }, default: 'Hello' },
@@ -217,14 +216,13 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
       },
     ])
 
-    expect(swift).toContain('static var title: LocalizedStringResource = "voltra_widget_weather_intent_title"')
     expect(swift).toContain('@Parameter(title: "voltra_widget_weather_param_label_title", default: "Hello")')
     expect(swift).toContain('@Parameter(title: "Plain", default: "x")')
     // The `table:` initializer form is deliberately not used at the @Parameter site (ADR 0008 T5).
     expect(swift).not.toMatch(/@Parameter\(title: LocalizedStringResource/)
   })
 
-  it('keeps the English "Configure <name>" intent title without a configurationTitle', () => {
+  it('keeps the English "Configure <name>" intent title', () => {
     const swift = __test__.generateWidgetBundleSwift([
       { ...configurableWidget, displayName: { en: 'Weather', pl: 'Pogoda' } },
     ])

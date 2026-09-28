@@ -106,7 +106,6 @@ The widget gallery name and description, and the titles on the Edit Widget sheet
   "entry": "./widgets/ios/weather.tsx",
   "displayName": { "en": "Weather", "pl": "Pogoda" },
   "description": { "en": "Current conditions", "pl": "Aktualne warunki" },
-  "configurationTitle": { "en": "Weather settings", "pl": "Ustawienia pogody" },
   "appIntent": {
     "parameters": [
       {
@@ -123,7 +122,7 @@ The widget gallery name and description, and the titles on the Edit Widget sheet
 }
 ```
 
-iOS shows these in the system language, not in your app's language, and `setDynamicWidgetLocale` does not affect them. A language with no translation for a string shows your development language instead. Rebuild the native app after changing them. See [Configurable Widgets](./configurable-widgets) for `options` and `configurationTitle`.
+iOS shows these in the system language, not in your app's language, and `setDynamicWidgetLocale` does not affect them. A language with no translation for a string shows your development language instead. Rebuild the native app after changing them. The sheet header shows the widget's `displayName`, so the same locale map translates it. See [Configurable Widgets](./configurable-widgets) for `options`.
 
 ## Translate Live Activity alerts
 

@@ -81,8 +81,6 @@ export interface WidgetConfigurationParameter {
 /** The widget fields that carry configuration-sheet copy. */
 export interface WidgetConfigurationCopySource {
   id: string
-  /** Title of the configuration sheet (iOS intent title). */
-  configurationTitle?: WidgetLabel
   appIntent?: { parameters: WidgetConfigurationParameter[] }
 }
 

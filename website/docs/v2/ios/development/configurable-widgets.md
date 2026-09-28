@@ -22,8 +22,6 @@ Each parameter has:
 - `default`: code-defined starting value before the user changes anything
 - `options` (optional): fixed values to pick from, each `{ "value": "...", "title": ... }`. The sheet shows a picker with the titles instead of a free-text field, and `env.configuration` receives the `value`. `default` must be one of the values; without it the first option is the default.
 
-The sheet's title defaults to `Configure <displayName>`. Set `configurationTitle` on the widget, as a plain string or a locale map, to change it.
-
 ## How to use it
 
 ```tsx
@@ -108,7 +106,7 @@ When a parameter has a known set of values, list them as `options`. The sheet th
 
 ## Localising the sheet
 
-iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather than from your widget code. `title`, `options[].title` and `configurationTitle` accept locale maps, the same way `displayName` does:
+iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather than from your widget code. `title` and `options[].title` accept locale maps, the same way `displayName` does. The sheet header shows the widget's `displayName`, so translate it the same way:
 
 ```json
 {
@@ -116,7 +114,6 @@ iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather
   "entry": "./widgets/ios/weather-widget.tsx",
   "displayName": { "en": "Weather", "pl": "Pogoda" },
   "description": { "en": "Current conditions", "pl": "Aktualne warunki" },
-  "configurationTitle": { "en": "Weather settings", "pl": "Ustawienia pogody" },
   "appIntent": {
     "parameters": [
       {

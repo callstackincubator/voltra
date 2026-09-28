@@ -98,11 +98,10 @@ Every placed Dynamic Widget renders again as soon as the value is stored, and th
 
 The widget picker name and description accept locale maps; see [Localizing `displayName` and `description`](../api/plugin-configuration#localizing-displayname-and-description).
 
-`configurationTitle`, `appIntent.parameters[].title` and `options[].title` accept locale maps too. Android has no system screen that shows them, so Voltra stores them as string resources for a configuration screen you build in the app. Read them with `getString` by name:
+`appIntent.parameters[].title` and `options[].title` accept locale maps too. Android has no system screen that shows them, so Voltra stores them as string resources for a configuration screen you build in the app. Read them with `getString` by name:
 
 | Copy                         | Resource name                                         |
 | ---------------------------- | ----------------------------------------------------- |
-| `configurationTitle`         | `voltra_widget_<id>_intent_title`                     |
 | a parameter's `title`        | `voltra_widget_<id>_param_<name>_title`               |
 | an option's `title`          | `voltra_widget_<id>_param_<name>_option_<value>`      |
 

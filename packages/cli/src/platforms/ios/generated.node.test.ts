@@ -69,7 +69,6 @@ describe('localisation (ADR 0008)', () => {
     supportedFamilies: ['systemSmall'],
     clientRendered: true,
     clientSourcePath: '/tmp/weather.tsx',
-    configurationTitle: { en: 'Weather settings', pl: 'Ustawienia pogody' },
     appIntent: {
       parameters: [
         {
@@ -110,7 +109,7 @@ describe('localisation (ADR 0008)', () => {
   test('keys locale-mapped sheet titles and emits an AppEnum for static options', () => {
     const swift = __test__.generateWidgetBundleSwift([configurable])
 
-    assert.ok(swift.includes('static var title: LocalizedStringResource = "voltra_widget_weather_intent_title"'))
+    assert.ok(swift.includes('static var title: LocalizedStringResource = "Configure Weather"'))
     assert.ok(swift.includes('enum VoltraWidget_weather_units_Option: String, AppEnum {'))
     assert.ok(swift.includes('.option0: "voltra_widget_weather_param_units_option_metric",'))
     assert.ok(swift.includes('.option1: "Imperial",'))
@@ -144,7 +143,7 @@ describe('localisation (ADR 0008)', () => {
       const polish = fs.readFileSync(path.join(root, 'Ext', 'pl.lproj', 'Localizable.strings'), 'utf8')
       assert.ok(polish.includes('"voltra_widget_weather_param_units_title" = "Jednostki";'))
       const french = fs.readFileSync(path.join(root, 'Ext', 'fr.lproj', 'Localizable.strings'), 'utf8')
-      assert.ok(french.includes('"voltra_widget_weather_intent_title" = "Weather settings";'))
+      assert.ok(french.includes('"voltra_widget_weather_param_units_title" = "Units";'))
     } finally {
       fs.rmSync(root, { recursive: true, force: true })
     }

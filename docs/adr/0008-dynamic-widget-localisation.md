@@ -313,11 +313,10 @@ a gallery label silently changes `env.locale`.
 
 ### 6. Edit Widget sheet: locale maps, generated strings, literal keys
 
-Allow `title` on `appIntent.parameters[]` and a new `configurationTitle` on
-the widget to be a `WidgetLocalizedCopy` map, like `displayName`. The iOS
-generator emits, per locale, `Localizable.strings` in the extension with
-keys `voltra_widget_<id>_param_<name>_title` and
-`voltra_widget_<id>_intent_title`, and writes the parameter as
+Allow `title` on `appIntent.parameters[]` to be a `WidgetLocalizedCopy`
+map, like `displayName`. The iOS generator emits, per locale,
+`Localizable.strings` in the extension with keys
+`voltra_widget_<id>_param_<name>_title`, and writes the parameter as
 
 ```swift
 @Parameter(title: "voltra_widget_weather_param_units_title", default: "metric")
@@ -341,6 +340,19 @@ unit/theme/source cases the docs describe and need no process to be alive.
 The Android generator writes the same keys into
 `res/values-<qualifier>/voltra_widgets.xml` so a future configuration
 Activity can read them with no new configuration surface.
+
+The intent title is not made localisable, because it has no visible surface.
+Apple's
+[`WidgetConfigurationIntent`](https://developer.apple.com/documentation/appintents/widgetconfigurationintent)
+documentation says: "The system uses the intent's title and description for
+the display name and description of the widget if those values aren't set
+explicitly on the `AppIntentConfiguration`." The intent title is therefore
+only a fallback for the display name, and Voltra always sets
+`configurationDisplayName`, so the generator keeps the English
+`Configure <displayName>` title and the intent-title part of G7 has no
+effect. The Edit Widget sheet header shows the widget's display name, which
+the gallery locale map already translates. The device run on iOS 18.0
+confirmed this: the header was the display name, never the intent title.
 
 ### 7. Documentation and version plans
 
@@ -433,6 +445,11 @@ outcome:
 - **T5** iOS: `@Parameter(title: LocalizedStringResource("key",
 defaultValue: "…", table: "VoltraWidgets"))` builds and the sheet shows
   the Polish title; otherwise fall back to a bare key in `Localizable`.
+  Result on iOS 18.0: the bare-key `@Parameter` titles, the `AppEnum`
+  option labels and the Polish parameter rows were confirmed (rows shown as
+  Etykieta / Miasto / Jednostki, picker Metryczne / Imperialne). The
+  `LocalizedStringResource(key, defaultValue:, table:)` variant remains
+  untested.
 - **T6** Arabic device: `env.layoutDirection === 'rtl'` and `HStack`/`Row`
   mirror.
 - **T7** 24-Hour Time on in a `en_US` region on both platforms:
@@ -446,7 +463,7 @@ timeStyle: 'short' })` prints 24-hour on iOS through the `-u-hc-h23`
 - Apple, Foundation, [`Locale.current`](https://developer.apple.com/documentation/foundation/locale/current), [`Locale.preferredLanguages`](https://developer.apple.com/documentation/foundation/locale/preferredlanguages), [`Locale.identifier(_:)`](<https://developer.apple.com/documentation/foundation/locale/identifier(_:)>), [`Locale.IdentifierType.bcp47`](https://developer.apple.com/documentation/foundation/locale/identifiertype/bcp47), [`Locale.hourCycle`](https://developer.apple.com/documentation/foundation/locale/hourcycle), [`Locale.Language.characterDirection`](https://developer.apple.com/documentation/foundation/locale/language-swift.struct/characterdirection).
 - Apple, [QA1828: How iOS Determines the Language For Your App](https://developer.apple.com/library/archive/qa/qa1828/_index.html).
 - Apple, Foundation, [`LocalizedStringResource`](https://developer.apple.com/documentation/foundation/localizedstringresource).
-- Apple, App Intents, [`IntentParameter`](https://developer.apple.com/documentation/appintents/intentparameter), [`DynamicOptionsProvider`](https://developer.apple.com/documentation/appintents/dynamicoptionsprovider); WidgetKit, [Making a configurable widget](https://developer.apple.com/documentation/widgetkit/making-a-configurable-widget).
+- Apple, App Intents, [`IntentParameter`](https://developer.apple.com/documentation/appintents/intentparameter), [`WidgetConfigurationIntent`](https://developer.apple.com/documentation/appintents/widgetconfigurationintent), [`DynamicOptionsProvider`](https://developer.apple.com/documentation/appintents/dynamicoptionsprovider); WidgetKit, [Making a configurable widget](https://developer.apple.com/documentation/widgetkit/making-a-configurable-widget).
 - Apple, SwiftUI, [`configurationDisplayName(_:)`](<https://developer.apple.com/documentation/swiftui/widgetconfiguration/configurationdisplayname(_:)>).
 - Apple Developer Forums: [719808](https://developer.apple.com/forums/thread/719808) and [756597](https://developer.apple.com/forums/thread/756597) (extensions ignore per-app language, DTS: iOS 17 regression), [797431](https://developer.apple.com/forums/thread/797431) (iOS 26.0 bug fixed in 26.1), [772209](https://developer.apple.com/forums/thread/772209) (configuration UI follows system language), [661833](https://developer.apple.com/forums/thread/661833) (App Group language sharing), [781162](https://developer.apple.com/forums/thread/781162) (metadata processor requires literal or initializer).
 - MDN browser-compat-data for [`Intl.PluralRules`](https://github.com/mdn/browser-compat-data/blob/main/javascript/builtins/Intl/PluralRules.json), [`Intl.RelativeTimeFormat`](https://github.com/mdn/browser-compat-data/blob/main/javascript/builtins/Intl/RelativeTimeFormat.json), [`Intl.ListFormat`](https://github.com/mdn/browser-compat-data/blob/main/javascript/builtins/Intl/ListFormat.json), [`Intl.DisplayNames`](https://github.com/mdn/browser-compat-data/blob/main/javascript/builtins/Intl/DisplayNames.json), [`Intl.DateTimeFormat`](https://github.com/mdn/browser-compat-data/blob/main/javascript/builtins/Intl/DateTimeFormat.json).

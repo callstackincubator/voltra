@@ -73,7 +73,6 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   - `intervalMinutes`: Update interval in minutes (default: `60`, or `15` for a widget with `entry`; minimum 15)
   - `refresh`: Show a native refresh button (default: `false`)
 - `appIntent`: (optional, Dynamic Widgets) Configuration parameters the widget reads from `env.configuration`. Each has a `name`, an optional `default` used until `setWidgetConfiguration` changes it, an optional `title` and optional `options` (`[{ "value": "metric", "title": "Metric" }]`). Titles accept plain strings or locale maps
-- `configurationTitle`: (optional) Title for a configuration screen you build in the app, as a plain string or locale map. Android has no system configuration sheet; the titles are stored as string resources. See [Localisation](../development/localisation#translate-the-picker-and-configuration-copy)
 
 ### Localizing `displayName` and `description`
 

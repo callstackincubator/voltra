@@ -6,7 +6,6 @@ import {
   isWidgetLocalizedMap,
   logger,
   prerenderWidgetState,
-  widgetIntentTitleKey,
   widgetLabelEnglish,
   widgetParameterOptionKey,
   widgetParameterTitleKey,
@@ -448,10 +447,7 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
   const intentName = `VoltraWidget_${widget.id}_Intent`
   const providerName = `VoltraWidget_${widget.id}_ClientProvider`
-  const intentTitle =
-    widget.configurationTitle !== undefined
-      ? sheetStringLiteral(widget.configurationTitle, widgetIntentTitleKey(widget.id))
-      : `"${escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)}"`
+  const intentTitle = escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
 
@@ -503,7 +499,7 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
     ${optionEnums ? `\n${optionEnums}\n` : ''}
     @available(iOS 17.0, *)
     struct ${intentName}: WidgetConfigurationIntent {
-      static var title: LocalizedStringResource = ${intentTitle}
+      static var title: LocalizedStringResource = "${intentTitle}"
 
     ${paramDecls}
 

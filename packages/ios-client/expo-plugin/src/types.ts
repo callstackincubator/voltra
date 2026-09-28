@@ -79,11 +79,6 @@ export interface IOSWidgetConfig extends DynamicWidgetEntryConfig {
    * widget's `env.configuration` on each render.
    */
   appIntent?: IOSWidgetAppIntentConfig
-  /**
-   * Title of the Edit Widget sheet, as a plain string or a locale map. Defaults to
-   * `Configure <English displayName>`.
-   */
-  configurationTitle?: WidgetLabel
 }
 
 /**

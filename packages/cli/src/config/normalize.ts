@@ -514,10 +514,6 @@ function normalizeAndroidWidget(
     previewImage: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewImage),
     previewLayout: resolveOptionalPathFromProjectRoot(projectRoot, widget.previewLayout),
     appIntent: androidAppIntent,
-    configurationTitle:
-      widget.configurationTitle === undefined
-        ? undefined
-        : normalizeLabel(widget.configurationTitle, `android.widgets[${widget.id}].configurationTitle`),
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(widget.serverUpdate, {
           context: `android.widgets[${widget.id}].serverUpdate`,
@@ -573,10 +569,6 @@ function normalizeIOSWidget(
       `ios.widgets[${widget.id}].initialStatePath`
     ),
     appIntent: iosAppIntent,
-    configurationTitle:
-      widget.configurationTitle === undefined
-        ? undefined
-        : normalizeLabel(widget.configurationTitle, `ios.widgets[${widget.id}].configurationTitle`),
     serverUpdate: widget.serverUpdate
       ? normalizeServerUpdate(widget.serverUpdate, {
           context: `ios.widgets[${widget.id}].serverUpdate`,

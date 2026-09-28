@@ -91,7 +91,6 @@ describe('configuration strings in voltra_widgets.xml', () => {
     description: 'Forecast',
     targetCellWidth: 2,
     targetCellHeight: 2,
-    configurationTitle: { en: 'Weather settings', pl: 'Ustawienia pogody' },
     appIntent: {
       parameters: [
         {
@@ -109,7 +108,6 @@ describe('configuration strings in voltra_widgets.xml', () => {
 
   it('writes the iOS sheet keys, sanitised into resource names, in the default folder', () => {
     const xml = __test__.generateVoltraWidgetsStringResourcesXml([widget], null)
-    expect(xml).toContain('<string name="voltra_widget_weather_intent_title">Weather settings</string>')
     expect(xml).toContain('<string name="voltra_widget_weather_param_units_title">Units</string>')
     expect(xml).toContain('<string name="voltra_widget_weather_param_units_option_metric">Metric</string>')
     expect(xml).toContain('<string name="voltra_widget_weather_param_units_option_us_customary">US customary</string>')

@@ -109,7 +109,6 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   - `intervalMinutes`: Update interval in minutes (default: `15`)
   - `refresh`: Show a native refresh button (default: `false`, requires iOS 17+)
 - `appIntent`: (optional, Dynamic Widgets, iOS 17+) Parameters the user edits in the Edit Widget sheet. Each parameter has a `name`, a `title` (plain string or locale map), an optional `default`, and optional `options` (`[{ "value": "metric", "title": "Metric" }]`) that turn the field into a picker. See [Configurable Widgets](../development/configurable-widgets)
-- `configurationTitle`: (optional) Title of the Edit Widget sheet, as a plain string or locale map. Defaults to `Configure <displayName>`
 
 **Example:**
 

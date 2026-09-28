@@ -61,7 +61,6 @@ export {
   collectLabelLocaleKeys,
   collectWidgetConfigurationStrings,
   validateWidgetConfigurationCopy,
-  widgetIntentTitleKey,
   widgetParameterOptionKey,
   widgetParameterTitleKey,
 } from './widgetConfiguration'

@@ -12,7 +12,6 @@ describe('configuration strings in voltra_widgets.xml (ADR 0008)', () => {
     description: 'Forecast',
     targetCellWidth: 2,
     targetCellHeight: 2,
-    configurationTitle: { en: 'Weather settings', pl: 'Ustawienia pogody' },
     appIntent: {
       parameters: [
         {
@@ -31,7 +30,6 @@ describe('configuration strings in voltra_widgets.xml (ADR 0008)', () => {
   test('writes the same keys as the Expo plugin in the default folder', () => {
     const xml = __test__.generateWidgetStringsXml([widget], null)
 
-    assert.ok(xml.includes('<string name="voltra_widget_weather_intent_title">Weather settings</string>'))
     assert.ok(xml.includes('<string name="voltra_widget_weather_param_units_title">Units</string>'))
     assert.ok(
       xml.includes('<string name="voltra_widget_weather_param_units_option_us_customary">US customary</string>')

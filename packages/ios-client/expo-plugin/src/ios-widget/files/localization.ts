@@ -28,7 +28,6 @@ function widgetLabels(widget: IOSWidgetConfig): Array<WidgetLabel | undefined> {
   return [
     widget.displayName,
     widget.description,
-    widget.configurationTitle,
     ...(widget.appIntent?.parameters ?? []).flatMap((parameter) => [
       parameter.title,
       ...(parameter.options ?? []).map((option) => option.title),
