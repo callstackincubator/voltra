@@ -50,7 +50,7 @@ Modifiers that need a newer iOS version than the device runs leave the component
 
 | Modifier | What it does | iOS |
 | --- | --- | --- |
-| `widgetURL(url)` | Opens the URL in your app when the widget or Live Activity is tapped. Takes an absolute URL or a path, like `deepLinkUrl`. | 14.0 |
+| `widgetURL(url)` | Opens the URL in your app when the widget or Live Activity is tapped. Takes an absolute URL or a path, like `deepLinkUrl`. The compact and minimal Dynamic Island ignore it. | 14.0 |
 | `containerBackground(color)` | Sets the widget's removable container background. Use it on the outermost component. | 17.0 |
 | `widgetAccentable(accentable?)` | Adds the component to the accent group in accented rendering mode. | 16.0 |
 | `privacySensitive(sensitive?)` | Redacts the component while the device is locked. | 15.0 |
@@ -103,7 +103,9 @@ Modifiers that need a newer iOS version than the device runs leave the component
 
 **A modifier has no effect.** Check the iOS version in the table. On older systems the component renders without the modifier. An invalid value, such as an unknown color string, is also skipped; the widget extension logs `Ignoring modifier <name>` under the `com.voltra` subsystem in Console.
 
-**Tapping the widget opens the wrong URL.** A `deepLinkUrl` configured for the widget or Live Activity takes precedence over `widgetURL`. Remove one of them, and use `widgetURL` only once per widget. In a Live Activity, use it once per presentation, and give the compact leading and trailing regions the same URL, because they appear together.
+**Tapping the widget opens the wrong URL.** A `deepLinkUrl` configured for the widget or Live Activity takes precedence over `widgetURL`. Remove one of them, and use `widgetURL` only once per widget. In a Live Activity, use it once per presentation.
+
+**Tapping the Dynamic Island opens the app but not the URL.** A tap on the compact or minimal Dynamic Island opens only the Live Activity's `deepLinkUrl`, which Voltra sets on the whole Dynamic Island. A `widgetURL` inside those regions is not used, and Voltra logs a warning (`subsystem == "com.voltra"`). Pass `deepLinkUrl` when you start the Live Activity.
 
 **The widget background does not change.** Put `containerBackground` on the widget's outermost component, and use it only once. It needs iOS 17; on iOS 16 use `style.backgroundColor` instead.
 

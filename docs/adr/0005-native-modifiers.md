@@ -389,7 +389,15 @@ host adds `widgetURL` to the `voltraHostAppliedModifierTypes` environment
 value, so `VoltraStableModifier` skips the tree's `widgetURL` descriptors.
 Without a configured link, a `widgetURL` modifier in the tree wins and the
 home widget skips its synthetic fallback; using it once per presentation is
-the author's job, which the documentation states. The `widgetURL` modifier
+the author's job, which the documentation states. The exception is the
+compact and minimal Dynamic Island: E2E testing on iOS 18 showed that a tap
+there opens only `DynamicIsland.widgetURL`, and ignores a `widgetURL` inside
+the compact regions even though WidgetKit reads it from the region views.
+Lifting a tree URL to the `DynamicIsland` would mean resolving a dynamic
+definition outside any view environment, so the hosts don't. Instead,
+`VoltraRootModifiers.warnIfIslandIgnoresWidgetURL` logs a warning when those
+regions set one with no configured link, and the documentation points to
+`deepLinkUrl`. The `widgetURL` modifier
 resolves its string with `VoltraDeepLinkResolver.resolveUrl`, so it accepts
 the same absolute URLs and paths as `deepLinkUrl`. The same rule covers `containerBackground`: the
 home widget root sets `containerBackground(.clear, for: .widget)` only when

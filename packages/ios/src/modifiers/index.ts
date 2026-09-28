@@ -75,7 +75,8 @@ export type SymbolEffect = 'pulse' | 'variableColor' | 'breathe' | 'rotate' | 'w
  * Opens the URL in the app when the widget or Live Activity is tapped. Takes an absolute URL or a
  * path, which gets the app's URL scheme like `deepLinkUrl`. Use it once per widget, or once per
  * Live Activity presentation. It replaces Voltra's default widget link, but a `deepLinkUrl`
- * configured for the widget or Live Activity takes precedence.
+ * configured for the widget or Live Activity takes precedence. A tap on the compact or minimal
+ * Dynamic Island ignores it: pass `deepLinkUrl` when starting the Live Activity instead.
  *
  * @since iOS 14.0
  */

@@ -183,7 +183,8 @@ private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: Volt
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
-    VoltraDynamicLiveActivityRenderer.resolve(
+    let deepLinkURL = context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl)
+    let content = VoltraDynamicLiveActivityRenderer.resolve(
       definitionId: definitionId,
       context: context,
       activityFamily: nil,
@@ -191,8 +192,9 @@ private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: Volt
       locale: locale,
       widgetRenderingMode: widgetRenderingMode
     )
-    .view(for: region, activityId: context.activityID)
-    .voltraDeferringWidgetURL(to: context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl))
+    let _ = VoltraRootModifiers.warnIfIslandIgnoresWidgetURL(in: region, root: content.root(for: region), configured: deepLinkURL)
+    content.view(for: region, activityId: context.activityID)
+      .voltraDeferringWidgetURL(to: deepLinkURL)
   }
 }
 
@@ -281,10 +283,14 @@ private struct VoltraDynamicLiveActivityResolvedContent {
     !(payload?.regions[region] ?? []).isEmpty
   }
 
+  func root(for region: VoltraRegion) -> VoltraNode? {
+    guard let nodes = payload?.regions[region], !nodes.isEmpty else { return nil }
+    return nodes.count == 1 ? nodes[0] : .array(nodes)
+  }
+
   @ViewBuilder
   func view(for region: VoltraRegion, activityId: String) -> some View {
-    if let nodes = payload?.regions[region], !nodes.isEmpty {
-      let root: VoltraNode = nodes.count == 1 ? nodes[0] : .array(nodes)
+    if let root = root(for: region) {
       Voltra(root: root, activityId: activityId)
     }
   }

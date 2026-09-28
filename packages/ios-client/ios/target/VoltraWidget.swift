@@ -62,6 +62,13 @@ public struct VoltraWidget: Widget {
     // Set once on the Dynamic Island, which makes it the default for every region; the regions
     // only drop the tree's own widgetURL so the configured link takes precedence.
     let deepLinkURL = VoltraDeepLinkResolver.resolve(context.attributes)
+    for region in VoltraRootModifiers.islandTapRegions {
+      VoltraRootModifiers.warnIfIslandIgnoresWidgetURL(
+        in: region,
+        root: rootNode(for: region, from: context.state),
+        configured: deepLinkURL
+      )
+    }
     var dynamicIsland = DynamicIsland {
       DynamicIslandExpandedRegion(.leading) {
         Voltra(root: rootNode(for: .islandExpandedLeading, from: context.state), activityId: context.activityID)

@@ -1,3 +1,4 @@
+import os
 import SwiftUI
 import WidgetKit
 #if canImport(VoltraSharedCore)
@@ -14,6 +15,23 @@ struct VoltraRootModifiers {
     let found = root?.nativeModifierTypes(among: ["widgetURL", "containerBackground"]) ?? []
     setsWidgetURL = found.contains("widgetURL")
     setsContainerBackground = found.contains("containerBackground")
+  }
+
+  private static let logger = Logger(subsystem: "com.voltra", category: "modifier")
+
+  /// A tap on the compact or minimal Dynamic Island opens only `DynamicIsland.widgetURL`, which
+  /// hosts set from the configured deep link; a `widgetURL` inside these regions is not used.
+  static let islandTapRegions: Set<VoltraRegion> = [.islandCompactLeading, .islandCompactTrailing, .islandMinimal]
+
+  /// Warns when a compact or minimal Dynamic Island region sets `widgetURL` with no deep link
+  /// configured, because tapping the island then opens the app without a URL.
+  static func warnIfIslandIgnoresWidgetURL(in region: VoltraRegion, root: VoltraNode?, configured: URL?) {
+    guard configured == nil, islandTapRegions.contains(region), VoltraRootModifiers(root: root).setsWidgetURL else {
+      return
+    }
+    logger.warning(
+      "widgetURL in the Dynamic Island region \(region.rawValue, privacy: .public) does not set where a tap opens; pass deepLinkUrl when starting the Live Activity"
+    )
   }
 }
 
