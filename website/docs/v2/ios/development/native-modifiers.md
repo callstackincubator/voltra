@@ -3,7 +3,7 @@
 Native modifiers apply SwiftUI modifiers that `style` does not cover, such as `widgetURL`, `containerBackground`, `privacySensitive` and `contentTransition`, to any Voltra component.
 
 :::warning Use them in Dynamic Widgets and Dynamic Live Activities
-Native modifiers are meant for [Dynamic Widgets](./dynamic-widgets.md) and [Dynamic Live Activities](./dynamic-live-activities.md). Payload widgets and pushed Live Activities accept them too, but every modifier is sent with every update and counts against the payload size limit. A pushed Live Activity update can go over the 4 KB ActivityKit limit, and Voltra then throws when it renders the update.
+Native modifiers are meant for [Dynamic Widgets](./dynamic-widgets) and [Dynamic Live Activities](./dynamic-live-activities). [Payload widgets](./server-driven-widgets) and [pushed Live Activities](./server-side-updates) accept them too, but every modifier is sent with every update and counts against the payload size limit. Voltra keeps Live Activity payloads under about 3.3 KB so they fit ActivityKit's 4 KB limit, and throws a payload size error when you render an update that is larger.
 :::
 
 ## Add a modifier
@@ -38,74 +38,74 @@ Modifiers wrap the finished component, including everything `style` does, in lis
 - `clipShape`, `blur` and the color adjustments apply to the whole component, background included.
 - Geometry modifiers such as `rotationEffect`, `scaleEffect` and `offset` add to a `style.transform`, they do not replace it.
 - Text modifiers set a value for the text inside, and SwiftUI uses the setting closest to the text. A value the component sets itself wins over the modifier, such as `style.textAlign` or the `multilineTextAlignment` prop over a `multilineTextAlignment` modifier.
-- To apply a modifier between two style steps, such as clipping before a shadow, nest a `Voltra.View` with the inner style and put the modifier on it.
+- To apply a modifier before part of the style, such as clipping before a shadow is drawn, nest a `Voltra.View`: put the modifier on the inner one and the shadow on the outer one.
 
 Text modifiers such as `minimumScaleFactor`, `truncationMode` and `monospacedDigit` work on any component. On a container they apply to every `Text` inside it that does not set the same thing itself.
 
 ## Available modifiers
 
-Modifiers that need a newer iOS version than the device runs leave the component unchanged.
+Modifiers marked iOS 17+ leave the component unchanged on older systems. The same applies to options marked iOS 17 or iOS 18.
 
 ### Widgets and Live Activities
 
-| Modifier | What it does | iOS |
-| --- | --- | --- |
-| `widgetURL(url)` | Opens the URL in your app when the widget or Live Activity is tapped. Takes an absolute URL or a path, like `deepLinkUrl`. The compact and minimal Dynamic Island ignore it. | 14.0 |
-| `containerBackground(color)` | Sets the widget's removable container background. Use it on the outermost component. | 17.0 |
-| `widgetAccentable(accentable?)` | Adds the component to the accent group in accented rendering mode. | 16.0 |
-| `privacySensitive(sensitive?)` | Redacts the component while the device is locked. | 15.0 |
-| `redacted(reason)` | Renders the component redacted: `placeholder`, `privacy`, or `invalidated` (iOS 17). | 14.0 |
-| `unredacted()` | Keeps the component visible inside a redacted container. | 14.0 |
-| `invalidatableContent(invalidatable?)` | Marks content that goes stale while an interactive widget updates. | 17.0 |
-| `activityBackgroundTint(color \| null)` | Tints the Live Activity's Lock Screen background. A tint passed when starting or updating the Live Activity takes precedence. | 16.1 |
-| `activitySystemActionForegroundColor(color \| null)` | Colors the system action button next to the Live Activity. | 16.1 |
+| Modifier | What it does |
+| --- | --- |
+| `widgetURL(url)` | Opens the URL in your app when the widget or Live Activity is tapped. Takes an absolute URL or a path, like `deepLinkUrl`. The compact and minimal Dynamic Island ignore it. |
+| `containerBackground(color)` | Sets the widget's removable container background. Use it on the outermost component. iOS 17+. |
+| `widgetAccentable(accentable?)` | Adds the component to the accent group in accented rendering mode. |
+| `privacySensitive(sensitive?)` | Redacts the component while the device is locked. |
+| `redacted(reason)` | Renders the component redacted: `placeholder`, `privacy`, or `invalidated` (iOS 17). |
+| `unredacted()` | Keeps the component visible inside a redacted container. |
+| `invalidatableContent(invalidatable?)` | Marks content that goes stale while an interactive widget updates. iOS 17+. |
+| `activityBackgroundTint(color \| null)` | Tints the Live Activity's Lock Screen background. A tint passed when starting or updating the Live Activity takes precedence. |
+| `activitySystemActionForegroundColor(color \| null)` | Colors the system action button next to the Live Activity. |
 
 ### Transitions and animation
 
-| Modifier | What it does | iOS |
-| --- | --- | --- |
-| `contentTransition(kind, { countsDown? })` | Animates content changes: `identity`, `opacity`, `interpolate`, `numericText`, or `symbolEffect` (iOS 17). | 16.0 |
-| `transition(kind, { edge? })` | Animates a component that appears or disappears between two updates: `identity`, `opacity`, `scale`, `slide`, `push`, `move`. Put `animation` on a parent that stays, and give the siblings an `id`. | 16.0 |
-| `animation(curve, { value, duration? })` | Animates the component when `value` changes. `duration` does not apply to `default` and `spring`. `bouncy`, `smooth` and `snappy` need iOS 17. | 13.0 |
-| `symbolEffect(effect)` | Applies an indefinite effect to `Symbol` components: `pulse`, `variableColor`, or `breathe`, `rotate`, `wiggle` (iOS 18). Widgets and Live Activities may show it as a still frame. | 17.0 |
+| Modifier | What it does |
+| --- | --- |
+| `contentTransition(kind, { countsDown? })` | Animates content changes: `identity`, `opacity`, `interpolate`, `numericText`, or `symbolEffect` (iOS 17). |
+| `transition(kind, { edge? })` | Animates a component that appears or disappears between two updates: `identity`, `opacity`, `scale`, `slide`, `push`, `move`. Put `animation` on a parent that stays, and give the siblings an `id`. |
+| `animation(curve, { value, duration? })` | Animates the component when `value` changes. `duration` does not apply to `default` and `spring`. `bouncy`, `smooth` and `snappy` need iOS 17. |
+| `symbolEffect(effect)` | Applies an indefinite effect to `Symbol` components: `pulse`, `variableColor`, or `breathe`, `rotate`, `wiggle` (iOS 18). Widgets and Live Activities may show it as a still frame. iOS 17+. |
 
 ### Visual effects
 
-| Modifier | What it does | iOS |
-| --- | --- | --- |
-| `clipShape(shape, { cornerRadius?, cornerStyle? })` | Clips to `rectangle`, `roundedRectangle`, `circle`, `capsule`, or `ellipse`. `cornerRadius` only applies to `roundedRectangle`. | 13.0 |
-| `blur(radius, { opaque? })` | Applies a Gaussian blur. | 13.0 |
-| `grayscale(amount)`, `saturation(amount)`, `brightness(amount)`, `contrast(amount)` | Adjusts colors. | 13.0 |
-| `blendMode(mode)` | Sets how the component blends with what is behind it. | 13.0 |
+| Modifier | What it does |
+| --- | --- |
+| `clipShape(shape, { cornerRadius?, cornerStyle? })` | Clips to `rectangle`, `roundedRectangle`, `circle`, `capsule`, or `ellipse`. `cornerRadius` only applies to `roundedRectangle`. |
+| `blur(radius, { opaque? })` | Applies a Gaussian blur. |
+| `grayscale(amount)`, `saturation(amount)`, `brightness(amount)`, `contrast(amount)` | Adjusts colors. |
+| `blendMode(mode)` | Sets how the component blends with what is behind it. |
 
 ### Geometry and layout
 
-| Modifier | What it does | iOS |
-| --- | --- | --- |
-| `rotationEffect(degrees)` | Rotates the rendered component without changing layout. | 13.0 |
-| `scaleEffect(scale \| { x?, y? })` | Scales the rendered component without changing layout. | 13.0 |
-| `offset({ x?, y? })` | Moves the rendered component without changing layout. | 13.0 |
-| `fixedSize({ horizontal?, vertical? })` | Keeps the ideal size instead of shrinking to fit. | 13.0 |
-| `layoutPriority(priority)` | Gives the component a larger share of space in its stack. | 13.0 |
-| `containerRelativeFrame(axes)` | Sizes the component relative to its container: `horizontal`, `vertical`, or `both`. | 17.0 |
-| `dynamicTypeSize(size)` | Uses a fixed Dynamic Type size for content inside. Voltra `Text` uses fixed font sizes, so it does not change. | 15.0 |
+| Modifier | What it does |
+| --- | --- |
+| `rotationEffect(degrees)` | Rotates the rendered component without changing layout. |
+| `scaleEffect(scale \| { x?, y? })` | Scales the rendered component without changing layout. |
+| `offset({ x?, y? })` | Moves the rendered component without changing layout. |
+| `fixedSize({ horizontal?, vertical? })` | Keeps the ideal size instead of shrinking to fit. |
+| `layoutPriority(priority)` | Gives the component a larger share of space in its stack. |
+| `containerRelativeFrame(axes)` | Sizes the component relative to its container: `horizontal`, `vertical`, or `both`. iOS 17+. |
+| `dynamicTypeSize(size)` | Uses a fixed Dynamic Type size for content inside. Voltra `Text` uses fixed font sizes, so it does not change. |
 
 ### Text
 
-| Modifier | What it does | iOS |
-| --- | --- | --- |
-| `minimumScaleFactor(factor)` | Lets text shrink to this fraction of its size to fit. | 13.0 |
-| `truncationMode(mode)` | Truncates at the `head`, `middle`, or `tail`. | 13.0 |
-| `multilineTextAlignment(alignment)` | Aligns lines of multi-line text: `leading`, `center`, `trailing`. | 13.0 |
-| `monospacedDigit()` | Uses fixed-width digits so changing numbers do not shift. | 16.0 |
+| Modifier | What it does |
+| --- | --- |
+| `minimumScaleFactor(factor)` | Lets text shrink to this fraction of its size to fit. |
+| `truncationMode(mode)` | Truncates at the `head`, `middle`, or `tail`. |
+| `multilineTextAlignment(alignment)` | Aligns lines of multi-line text: `leading`, `center`, `trailing`. |
+| `monospacedDigit()` | Uses fixed-width digits so changing numbers do not shift. |
 
 ## Troubleshooting
 
-**A modifier has no effect.** Check the iOS version in the table. On older systems the component renders without the modifier. An invalid value, such as an unknown color string, is also skipped; the widget extension logs `Ignoring modifier <name>` under the `com.voltra` subsystem in Console.
+**A modifier has no effect.** Check whether the table marks it iOS 17+. On older systems the component renders without the modifier. An invalid value, such as an unknown color string, is also skipped; the widget extension logs `Ignoring modifier <name>` under the `com.voltra` subsystem in Console.
 
 **Tapping the widget opens the wrong URL.** A `deepLinkUrl` configured for the widget or Live Activity takes precedence over `widgetURL`. Remove one of them, and use `widgetURL` only once per widget. In a Live Activity, use it once per presentation.
 
-**Tapping the Dynamic Island opens the app but not the URL.** A tap on the compact or minimal Dynamic Island opens only the Live Activity's `deepLinkUrl`, which Voltra sets on the whole Dynamic Island. A `widgetURL` inside those regions is not used, and Voltra logs a warning (`subsystem == "com.voltra"`). Pass `deepLinkUrl` when you start the Live Activity.
+**Tapping the Dynamic Island opens the app but not the URL.** A tap on the compact or minimal Dynamic Island opens only the Live Activity's `deepLinkUrl`. A `widgetURL` inside those regions is not used, and Voltra logs a warning under the `com.voltra` subsystem in Console. Pass `deepLinkUrl` when you start the Live Activity.
 
 **The widget background does not change.** Put `containerBackground` on the widget's outermost component, and use it only once. It needs iOS 17; on iOS 16 use `style.backgroundColor` instead.
 
@@ -113,4 +113,4 @@ Modifiers that need a newer iOS version than the device runs leave the component
 
 **A component appears or disappears without animating.** SwiftUI animates an insertion or removal in the parent, so `animation` on the component itself has nothing to animate. Put `animation({ value })` on a parent that is present before and after, keep `transition` on the component, and give the parent's children an `id`; without one, children are matched by position, and a sibling can take the place of the component that disappeared.
 
-**A pushed update fails with a payload size error.** Move the UI that needs modifiers to a Dynamic Live Activity or Dynamic Widget, or remove modifiers from the pushed tree.
+**Rendering a pushed update fails with `Compressed payload size … exceeds safe budget`.** Move the UI that needs modifiers to a Dynamic Live Activity or Dynamic Widget, or remove modifiers from the pushed tree.
