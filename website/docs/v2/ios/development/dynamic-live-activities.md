@@ -73,7 +73,7 @@ export default function OrderFinished(
 }
 ```
 
-`LiveActivityEnvironment` provides `date`, `colorScheme`, `locale`, `widgetRenderingMode`, `build`, `isStale`, and, for applicable iOS 18+ activity families, `activityFamily`. It deliberately does not expose Home Screen widget fields such as `widgetFamily`, `showsWidgetContainerBackground`, or `configuration`.
+`LiveActivityEnvironment` provides `date`, `colorScheme`, `widgetRenderingMode`, `build`, `isStale`, the [locale fields](./localization) (`locale`, `preferredLanguages`, `appLocale`, `layoutDirection`, `hourCycle`, `timeZone`, `measurementSystem`, `calendar` and `firstDayOfWeek`), and, for applicable iOS 18+ activity families, `activityFamily`. Pass `locale` to every `Intl` call and pick translations with `resolveLocale(environment, messages)`. It deliberately does not expose Home Screen widget fields such as `widgetFamily`, `showsWidgetContainerBackground`, or `configuration`.
 
 To use SwiftUI modifiers that `style` does not cover, such as `contentTransition` or `privacySensitive`, see [Native modifiers](./native-modifiers).
 

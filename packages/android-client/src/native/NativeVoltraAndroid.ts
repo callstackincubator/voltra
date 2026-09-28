@@ -165,6 +165,8 @@ export interface Spec extends TurboModule {
   updateAndroidWidget(widgetId: string, jsonString: string, options?: Readonly<{ deepLinkUrl?: string }>): Promise<void>
   updateAndroidDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
+  /** Language override for Dynamic Widgets (`env.appLocale`); null clears it. */
+  setDynamicWidgetLocale(tag: string | null): Promise<void>
   setWidgetConfiguration(widgetId: string, key: string, value: string): Promise<void>
   /** Values cross as a JSON object so several keys cost one bridge call and one re-render. */
   setWidgetInstanceConfiguration(appWidgetId: number, valuesJson: string): Promise<void>

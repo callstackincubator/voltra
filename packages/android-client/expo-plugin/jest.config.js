@@ -4,6 +4,7 @@ module.exports = {
   testMatch: ['<rootDir>/src/**/*.node.test.ts'],
   modulePathIgnorePatterns: ['<rootDir>/build'],
   moduleNameMapper: {
+    '^@use-voltra/core/locale$': '<rootDir>/../../core/src/locale.ts',
     '^@use-voltra/expo-plugin$': '<rootDir>/../../expo-plugin/src/index.ts',
     '^@use-voltra/expo-plugin/(.*)$': '<rootDir>/../../expo-plugin/src/$1',
   },

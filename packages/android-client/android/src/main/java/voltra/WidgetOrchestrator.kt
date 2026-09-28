@@ -10,7 +10,6 @@ import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
 import voltra.widget.VoltraWidgetKind
 import voltra.widget.VoltraWidgetKindResolution
 import voltra.widget.VoltraWidgetKindResolver
-import voltra.widget.VoltraWidgetReceiver
 import voltra.widget.VoltraWidgetReceivers
 import voltra.widget.payload.VoltraWidgetManager
 import voltra.widget.payload.VoltraWidgetUpdateScheduler
@@ -75,8 +74,6 @@ internal class WidgetOrchestrator(
                 false
             }
         },
-    private val clientWidgetGlanceUpdateTrigger: suspend (String) -> Unit =
-        { widgetId -> VoltraWidgetReceiver.triggerGlanceUpdate(context, widgetId) },
 ) {
     companion object {
         private const val TAG = "WidgetOrchestrator"
@@ -237,7 +234,15 @@ internal class WidgetOrchestrator(
 
     /**
      * Re-render only Dynamic Widgets. Used to react to environment changes that affect `env` but
-     * not server payloads, e.g. a light/dark (color scheme) toggle.
+     * not server payloads: a light/dark (color scheme) toggle, a locale change, or
+     * `setDynamicWidgetLocale`.
+     *
+     * Goes through the same revision-advancing trigger as [reloadDynamicWidget], not a bare
+     * `GlanceAppWidget.update`. A Glance session stays open for 45 s after a render
+     * (`TimeoutOptions.initialTimeout`), and `update` on an open session only reloads Glance state
+     * and recomposes what read a changed key; with no key changed, the composition, and with it the
+     * JS render that reads `env`, never re-ran, so a change inside that window was dropped until
+     * the session idled out.
      */
     suspend fun reloadClientWidgets() {
         // Classification does reflection/PackageManager lookups (via the resolver), so it runs off
@@ -253,7 +258,7 @@ internal class WidgetOrchestrator(
             Log.d(TAG, "reloadClientWidgets: ${clientIds.size} client widget(s)")
             for (widgetId in clientIds) {
                 try {
-                    clientWidgetGlanceUpdateTrigger(widgetId)
+                    dynamicWidgetGlanceUpdateTrigger(widgetId)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to reload client widget $widgetId: ${e.message}")
                 }

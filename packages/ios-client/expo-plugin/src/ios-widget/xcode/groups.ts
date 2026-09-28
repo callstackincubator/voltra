@@ -1,7 +1,7 @@
 import { XcodeProject } from '@expo/config-plugins'
 
 import type { IOSWidgetExtensionFiles } from '../../types'
-import { ensureWidgetFileReference } from './fileReferences'
+import { ensureWidgetFileReference, normalizeRef } from './fileReferences'
 
 const pbxFile = require('xcode/lib/pbxFile')
 
@@ -89,8 +89,11 @@ export function ensurePbxGroup(xcodeProject: XcodeProject, options: AddPbxGroupO
   for (const filePath of allFiles) {
     const file = new pbxFile(filePath)
     const fileRef = ensureWidgetFileReference(xcodeProject, filePath, targetName)
+    // Localized files share a basename across `.lproj` folders (`pl.lproj/Localizable.strings`,
+    // `de.lproj/Localizable.strings`), so for them only the file reference itself identifies the child.
+    const isLocalized = filePath.includes('.lproj/')
     const alreadyInGroup = existingGroup.children.some(
-      (child: any) => child.value === fileRef || child.comment === file.basename
+      (child: any) => normalizeRef(child.value) === fileRef || (!isLocalized && child.comment === file.basename)
     )
     if (!alreadyInGroup) {
       existingGroup.children.push({ value: fileRef, comment: file.basename })

@@ -4,6 +4,7 @@ import path from 'node:path'
 import type { DynamicWidgetPlatform } from '@use-voltra/expo-plugin'
 
 import { createWidgetMetroConfig } from './createWidgetMetroConfig'
+import { readVoltraMetroOptions } from './intlPolyfills'
 import { requireProjectModule } from './resolveProjectModule'
 import { createWidgetRegistry } from './widgetRegistry'
 import {
@@ -81,7 +82,7 @@ export async function bundleWidgets({
     throw new Error('bundleWidgets: --out-dir is required')
   }
 
-  const registry = createWidgetRegistry({ projectRoot })
+  let registry = createWidgetRegistry({ projectRoot })
   const liveActivityRegistry = platform === 'ios' ? createLiveActivityRegistry({ projectRoot }) : null
 
   try {
@@ -105,6 +106,13 @@ export async function bundleWidgets({
       projectRoot
     )
     const appConfig = await loadAppMetroConfig(projectRoot)
+    // `withVoltra` options travel on the loaded config. The Android Intl prelude changes the
+    // generated render shim, so regenerate the entries with it before bundling.
+    const { androidIntlPolyfills } = readVoltraMetroOptions(appConfig)
+    if (androidIntlPolyfills) {
+      registry.close()
+      registry = createWidgetRegistry({ projectRoot, androidIntlPolyfills })
+    }
     const widgetConfig = await createWidgetMetroConfig({ projectRoot, appConfig })
 
     fs.mkdirSync(outDir, { recursive: true })
