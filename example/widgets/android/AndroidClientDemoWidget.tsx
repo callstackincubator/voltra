@@ -29,11 +29,14 @@ export default function AndroidClientDemoWidget(
   const hotReloadMarker = 'edit me'
 
   const date = env.date ? new Date(env.date) : new Date()
-  const renderedAt = date.toLocaleTimeString('en-US', {
+  // Always format with the env's locale, clock preference and time zone: the JS runtime's own
+  // defaults are the process's, not what the widget is drawn for.
+  const renderedAt = date.toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false,
+    hourCycle: env.hourCycle,
+    timeZone: env.timeZone,
   })
 
   const config = env.configuration as Record<string, unknown> | undefined

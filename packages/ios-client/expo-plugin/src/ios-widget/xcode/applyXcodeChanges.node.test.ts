@@ -91,6 +91,32 @@ describe('applyXcodeChanges — fresh Expo project (fixture a)', () => {
     expect(afterThird).toEqual(afterSecond)
   })
 
+  it('keeps one reference per localized file when several .lproj folders share a basename', () => {
+    const project = loadFixtureProject('fresh.pbxproj')
+    useDeterministicUuids(project)
+    const localizedFiles: IOSWidgetExtensionFiles = {
+      ...WIDGET_FILES,
+      localizedStringResources: [
+        'en.lproj/Localizable.strings',
+        'en.lproj/VoltraWidgets.strings',
+        'pl.lproj/Localizable.strings',
+        'pl.lproj/VoltraWidgets.strings',
+      ],
+    }
+
+    applyXcodeChanges(project, PROPS, localizedFiles)
+    const afterFirst = project.writeSync()
+    // The second run takes the existing-group path, which used to match children by basename.
+    applyXcodeChanges(project, PROPS, localizedFiles)
+
+    const references = Object.entries(project.hash.project.objects.PBXFileReference).filter(
+      ([key, reference]: [string, any]) => !key.endsWith('_comment') && String(reference.path).includes('.lproj/')
+    )
+    expect(references).toHaveLength(4)
+    expect(project.writeSync()).toEqual(afterFirst)
+    expect(() => assertPbxConsistency(project)).not.toThrow()
+  })
+
   it('matches the committed snapshot', () => {
     const project = loadFixtureProject('fresh.pbxproj')
     useDeterministicUuids(project)

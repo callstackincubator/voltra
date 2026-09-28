@@ -43,6 +43,17 @@ public enum VoltraWidgetDefaults {
     try? resolvedDefaults().string(forKey: VoltraStorageKeys.devServerURL)
   }
 
+  /// The app's language override for Dynamic Widgets and Dynamic Live Activities
+  /// (`env.appLocale`). nil when none is set or the app group is not configured.
+  public static func dynamicWidgetLocale() -> String? {
+    guard let tag = try? resolvedDefaults().string(forKey: VoltraStorageKeys.dynamicWidgetLocale),
+          !tag.isEmpty
+    else {
+      return nil
+    }
+    return tag
+  }
+
   // MARK: - Write
 
   public static func setWidgetJson(_ json: String, for widgetId: String, deepLinkUrl: String?) throws {
@@ -81,6 +92,19 @@ public enum VoltraWidgetDefaults {
   public static func setDevServerURL(_ url: String) {
     guard let defaults = try? resolvedDefaults() else { return }
     defaults.set(url, forKey: VoltraStorageKeys.devServerURL)
+    defaults.synchronize()
+  }
+
+  /// Stores (or, with nil, clears) the app's language override for Dynamic Widgets. Throws
+  /// `WidgetError.appGroupNotConfigured` without a `groupIdentifier`, since the extension could
+  /// never read the value.
+  public static func setDynamicWidgetLocale(_ tag: String?) throws {
+    let defaults = try resolvedDefaults()
+    if let tag, !tag.isEmpty {
+      defaults.set(tag, forKey: VoltraStorageKeys.dynamicWidgetLocale)
+    } else {
+      defaults.removeObject(forKey: VoltraStorageKeys.dynamicWidgetLocale)
+    }
     defaults.synchronize()
   }
 

@@ -1,6 +1,11 @@
 import type { ConfigPlugin } from '@expo/config-plugins'
 
-import type { DynamicWidgetEntryConfig, WidgetInitialStatePath, WidgetLabel } from '@use-voltra/expo-plugin'
+import type {
+  DynamicWidgetEntryConfig,
+  WidgetConfigurationOption,
+  WidgetInitialStatePath,
+  WidgetLabel,
+} from '@use-voltra/expo-plugin'
 
 /**
  * A single user-configurable parameter for a Dynamic Widget. Android has no system-managed
@@ -10,8 +15,15 @@ import type { DynamicWidgetEntryConfig, WidgetInitialStatePath, WidgetLabel } fr
  */
 export interface AppIntentParameter {
   name: string
-  title?: string
+  /**
+   * Label for a configuration UI, as a plain string or a locale map. Written to
+   * `voltra_widgets.xml` as `voltra_widget_<id>_param_<name>_title` so an in-app configuration
+   * screen can read it.
+   */
+  title?: WidgetLabel
   default?: string
+  /** Fixed values to pick from; titles are written as `…_param_<name>_option_<value>` strings. */
+  options?: WidgetConfigurationOption[]
 }
 
 export interface AndroidWidgetAppIntentConfig {

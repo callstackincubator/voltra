@@ -3,6 +3,7 @@ package voltra
 import android.appwidget.AppWidgetManager
 import android.content.ComponentCallbacks
 import android.content.res.Configuration
+import android.os.LocaleList
 import android.util.Log
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,7 @@ import org.json.JSONObject
 import voltra.dynamicwidget.AndroidDynamicWidgetInstanceBoundary
 import voltra.dynamicwidget.DynamicWidgetInstanceRejection
 import voltra.dynamicwidget.DynamicWidgetInstanceResolver
+import voltra.dynamicwidget.DynamicWidgetLocaleStore
 import voltra.dynamicwidget.DynamicWidgetPropsStore
 import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
@@ -120,31 +122,42 @@ class VoltraModule(
         )
     }
 
-    // Last-seen night-mode bit. ACTION_CONFIGURATION_CHANGED also fires for rotation, font scale,
-    // locale, etc., so we re-render only when the light/dark bit actually changes.
+    // Last-seen night-mode bit and locale list. ACTION_CONFIGURATION_CHANGED also fires for
+    // rotation, font scale, etc., so we re-render only when one of the two actually changes.
     private var lastNightMode: Int =
         reactContext.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    private var lastLocales: LocaleList = reactContext.resources.configuration.locales
 
-    // Re-renders client widgets when the system color scheme (light/dark) flips. Client widgets read
-    // env.colorScheme on-device, so a flip must re-run their render. Uses ComponentCallbacks rather
-    // than an ACTION_CONFIGURATION_CHANGED BroadcastReceiver: onConfigurationChanged delivers the
-    // authoritative new Configuration (a receiver's context.resources lags the change), and it isn't
-    // subject to the cached-process broadcast restrictions. Active while the host process is alive.
+    // Re-renders client widgets when the system color scheme (light/dark) flips or the locale list
+    // changes (ADR 0009 §2: an in-app language switch through LocaleManager re-renders at once).
+    // Client widgets read env.colorScheme and env.locale on-device, so either change must re-run
+    // their render. Uses ComponentCallbacks rather than an ACTION_CONFIGURATION_CHANGED
+    // BroadcastReceiver: onConfigurationChanged delivers the authoritative new Configuration (a
+    // receiver's context.resources lags the change), and it isn't subject to the cached-process
+    // broadcast restrictions. Active while the host process is alive; VoltraLocaleChangedReceiver
+    // covers a locale change while it is not.
     private val configurationCallbacks =
         object : ComponentCallbacks {
             override fun onConfigurationChanged(newConfig: Configuration) {
                 val nightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                if (nightMode == lastNightMode) return
+                val locales = newConfig.locales
+                val nightModeChanged = nightMode != lastNightMode
+                val localesChanged = locales != lastLocales
+                if (!nightModeChanged && !localesChanged) return
                 lastNightMode = nightMode
-                // Arc bitmaps are keyed by their resolved colors, so entries rendered for the old
-                // scheme stay correct but are unlikely to be requested again. Drop them here so
-                // the cache does not hold both schemes' bitmaps for the life of the process.
-                ArcBitmapCache.clear()
+                lastLocales = locales
+                if (nightModeChanged) {
+                    // Arc bitmaps are keyed by their resolved colors, so entries rendered for the
+                    // old scheme stay correct but are unlikely to be requested again. Drop them
+                    // here so the cache does not hold both schemes' bitmaps for the life of the
+                    // process.
+                    ArcBitmapCache.clear()
+                }
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         widgetOrchestrator.reloadClientWidgets()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Color-scheme reload failed: ${e.message}")
+                        Log.e(TAG, "Configuration-change reload failed: ${e.message}")
                     }
                 }
             }
@@ -399,6 +412,26 @@ class VoltraModule(
         runBlocking { widgetOrchestrator.reloadWidgets(ids) }
         Log.d(TAG, "reloadAndroidWidgets completed")
         promise.resolve(null)
+    }
+
+    /**
+     * Store the language Dynamic Widgets should render in (`env.appLocale`, ADR 0009 §3), or clear
+     * it with null, then re-render every placed Dynamic Widget so the change shows at once.
+     */
+    override fun setDynamicWidgetLocale(
+        tag: String?,
+        promise: Promise,
+    ) {
+        runBlocking {
+            try {
+                DynamicWidgetLocaleStore(reactApplicationContext).set(tag)
+                widgetOrchestrator.reloadClientWidgets()
+                promise.resolve(null)
+            } catch (e: Exception) {
+                Log.e(TAG, "setDynamicWidgetLocale failed", e)
+                promise.reject("VOLTRA_DYNAMIC_WIDGET_LOCALE_ERROR", e.message, e)
+            }
+        }
     }
 
     override fun setWidgetConfiguration(

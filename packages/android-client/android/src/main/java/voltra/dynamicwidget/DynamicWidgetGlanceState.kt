@@ -11,6 +11,10 @@ import voltra.widget.server.WidgetScope
 internal val dynamicWidgetPropsRevisionKey =
     longPreferencesKey("voltra.dynamic_widget.props_revision")
 
+// The props revision is also what an environment-only reload advances (a locale or colour-scheme
+// change, `setDynamicWidgetLocale`): the render reads `env` on every composition, so any key that
+// forces a recomposition of a live session re-runs it. See `WidgetOrchestrator.reloadClientWidgets`.
+
 /**
  * Bumped whenever the app writes configuration, for the same reason the props revision exists.
  *

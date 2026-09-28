@@ -83,3 +83,41 @@ describe('generateWidgetInfoXml', () => {
     )
   })
 })
+
+describe('configuration strings in voltra_widgets.xml', () => {
+  const widget = {
+    id: 'Weather',
+    displayName: 'Weather',
+    description: 'Forecast',
+    targetCellWidth: 2,
+    targetCellHeight: 2,
+    appIntent: {
+      parameters: [
+        {
+          name: 'units',
+          title: { en: 'Units', pl: 'Jednostki' },
+          options: [
+            { value: 'metric', title: { en: 'Metric', pl: 'Metryczne' } },
+            { value: 'us-customary', title: 'US customary' },
+          ],
+        },
+        { name: 'city' },
+      ],
+    },
+  }
+
+  it('writes the iOS sheet keys, sanitised into resource names, in the default folder', () => {
+    const xml = __test__.generateVoltraWidgetsStringResourcesXml([widget], null)
+    expect(xml).toContain('<string name="voltra_widget_weather_param_units_title">Units</string>')
+    expect(xml).toContain('<string name="voltra_widget_weather_param_units_option_metric">Metric</string>')
+    expect(xml).toContain('<string name="voltra_widget_weather_param_units_option_us_customary">US customary</string>')
+    expect(xml).not.toContain('param_city_title')
+  })
+
+  it('translates them per locale folder and adds the locales to the generated set', () => {
+    const xml = __test__.generateVoltraWidgetsStringResourcesXml([widget], 'pl')
+    expect(xml).toContain('<string name="voltra_widget_weather_param_units_title">Jednostki</string>')
+    expect(xml).toContain('<string name="voltra_widget_weather_param_units_option_us_customary">US customary</string>')
+    expect([...__test__.collectAndroidLocaleKeysFromWidgets([widget])].sort()).toEqual(['en', 'pl'])
+  })
+})

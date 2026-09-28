@@ -61,6 +61,7 @@ export type {
   UseAndroidOngoingNotificationResult,
 } from '@use-voltra/android'
 export {
+  setDynamicWidgetLocale,
   updateAndroidDynamicWidget,
   type AndroidDynamicWidgetProps,
   type AndroidDynamicWidgetPropsValue,
