@@ -92,7 +92,7 @@ await setDynamicWidgetLocale('pl') // every render now sees env.appLocale === 'p
 await setDynamicWidgetLocale(null) // back to the system languages
 ```
 
-Every placed Dynamic Widget renders again as soon as the value is stored, and the value survives app restarts. `resolveLocale` prefers `appLocale` over everything else.
+Every placed Dynamic Widget renders again as soon as the value is stored, and the value survives app restarts. `resolveLocale` prefers `appLocale` over everything else. The override changes the translation only: `locale`, `layoutDirection`, `hourCycle` and the other formatting fields keep following the system, because the launcher mirrors stacks by the system direction, not by your app's language. If you translate into a right-to-left language while the system runs left-to-right, position hand-placed content by `env.layoutDirection`, not by the language you chose.
 
 ## Translate the picker and configuration copy
 
