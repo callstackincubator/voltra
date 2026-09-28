@@ -18,4 +18,5 @@ every render as `env.appLocale`, and placed widgets and running Dynamic Live Act
 again at once. On iOS it needs `groupIdentifier` in the plugin configuration.
 
 Android Dynamic Widgets render again after the device language, the app's per-app language or the
-regional preferences change, even when the app is not running.
+regional preferences change, even when the app is not running. A light/dark or language change
+within 45 seconds of the last render now re-renders too; before, it was dropped.

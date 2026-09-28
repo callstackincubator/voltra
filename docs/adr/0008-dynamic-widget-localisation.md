@@ -273,6 +273,13 @@ process's.
   let the existing `ComponentCallbacks` in `VoltraModule` react to a
   `locales` change while the process is alive, so an in-app language switch
   re-renders immediately.
+- Android, found in the device run: `reloadClientWidgets` must advance each
+  placement's Glance revision before calling `update`, as the props path
+  does. A Glance session stays open for 45 s after a render
+  (`TimeoutOptions.initialTimeout`), and `GlanceAppWidget.update` on an open
+  session only reloads Glance state and recomposes what read a changed key,
+  so a bare `update` inside that window re-ran nothing and the change was
+  dropped until the session idled out.
 
 ### 3. An app-controlled language override
 
@@ -440,6 +447,10 @@ outcome:
 - **T3** Android: change the system language with the app process killed;
   the placed Dynamic Widget re-renders through the `LOCALE_CHANGED` receiver.
   Repeat with a per-app language on Android 13+.
+  Result on API 36: both pass. The receiver cold-started the process and
+  rendered Polish; per-app German, Polish and Arabic rendered. Changes made
+  within 45 s of a render were dropped until the revision fix in §2; a
+  force-stopped app receives no broadcast, as Android documents.
 - **T4** Android: cold process started only by WorkManager for a server
   update, widget calls `Intl.DateTimeFormat(env.locale)`: no fbjni crash.
 - **T5** iOS: `@Parameter(title: LocalizedStringResource("key",
