@@ -10,7 +10,7 @@ That means your Dynamic Widget can react to:
 
 - `env.widgetFamily`
 - `env.colorScheme`
-- `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](./localisation)
+- `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](./localization)
 - `env.widgetRenderingMode`
 - `env.showsWidgetContainerBackground`
 - `env.configuration` when you also add widget parameters
@@ -164,9 +164,9 @@ Dynamic Widget props are app-owned state passed as the entry component's first a
 
 If you want user-editable values, add `appIntent` too. See [Configurable Widgets](./configurable-widgets).
 
-## Localisation
+## Localization
 
-Pass `env.locale` to every `Intl` and `toLocale*` call, and pick a translation with `resolveLocale(env, messages)`. See [Localisation](./localisation) for every locale field, how to declare the languages your app supports, and how to let the app choose the widget language.
+Pass `env.locale` to every `Intl` and `toLocale*` call, and pick a translation with `resolveLocale(env, messages)`. See [Localization](./localization) for every locale field, how to declare the languages your app supports, and how to let the app choose the widget language.
 
 ## Notes
 

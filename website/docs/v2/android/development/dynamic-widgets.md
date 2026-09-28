@@ -10,7 +10,7 @@ Your Dynamic Widget can react to:
 
 - `env.widgetFamily`
 - `env.colorScheme`
-- `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](./localisation)
+- `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](./localization)
 - `env.configuration`
 - `AndroidDynamicColors` tokens, which resolve to the current Material You palette natively
 
@@ -234,9 +234,9 @@ The Home Screen's own edit gesture does not open a Voltra configuration screen y
 
 Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, updated in-app with `setWidgetConfiguration` for every placement or `setWidgetInstanceConfiguration` for one, and read from `env.configuration`. Updating one does not replace the other.
 
-## Localisation
+## Localization
 
-Pass `env.locale` and `env.hourCycle` to every `Intl` and `toLocale*` call, and pick a translation with `resolveLocale(env, messages)`. `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat` and `Intl.DisplayNames` are not available in Android widgets unless you add the polyfills. See [Localisation](./localisation) for the polyfills, every locale field, and how to let the app choose the widget language.
+Pass `env.locale` and `env.hourCycle` to every `Intl` and `toLocale*` call, and pick a translation with `resolveLocale(env, messages)`. `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat` and `Intl.DisplayNames` are not available in Android widgets unless you add the polyfills. See [Localization](./localization) for the polyfills, every locale field, and how to let the app choose the widget language.
 
 ## Notes
 

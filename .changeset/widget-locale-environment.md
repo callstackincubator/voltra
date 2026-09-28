@@ -19,4 +19,4 @@ again at once. On iOS it needs `groupIdentifier` in the plugin configuration.
 
 Android Dynamic Widgets render again after the device language, the app's per-app language or the
 regional preferences change, even when the app is not running. A light/dark or language change
-within 45 seconds of the last render now re-renders too; before, it was dropped.
+within 45 seconds of the last render now renders the widget again; before, it was ignored.

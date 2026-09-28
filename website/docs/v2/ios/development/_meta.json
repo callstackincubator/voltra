@@ -31,8 +31,8 @@
   },
   {
     "type": "file",
-    "name": "localisation",
-    "label": "Localisation"
+    "name": "localization",
+    "label": "Localization"
   },
   {
     "type": "file",

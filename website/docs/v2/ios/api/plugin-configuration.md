@@ -187,6 +187,6 @@ Fallback behavior:
 - If there is still no match, it prefers an English locale such as `en` or `en-US`.
 - If no English entry exists, it uses the first configured locale.
 
-### Languages of the widget extension
+### Languages widgets can use
 
-Widgets declare the same languages as the app, so `env.locale` resolves to the same language the app runs in. The list comes from the Expo `locales` config keys, `ios.infoPlist.CFBundleLocalizations`, every locale used in a widget locale map, and the app's development language (`ios.infoPlist.CFBundleDevelopmentRegion`, otherwise `en`). A language missing from this list is never used for `env.locale`, even when the user prefers it. See [Localisation](../development/localisation#declare-the-languages-your-app-supports).
+Widgets declare the same languages as the app, so `env.locale` resolves to the same language the app runs in. The list comes from the Expo `locales` config keys, `ios.infoPlist.CFBundleLocalizations`, every locale used in a widget locale map, and the app's development language (`ios.infoPlist.CFBundleDevelopmentRegion`, otherwise `en`). A language missing from this list is never used for `env.locale`, even when the user prefers it. See [Localization](../development/localization#declare-the-languages-your-app-supports).

@@ -20,7 +20,7 @@ Each parameter has:
 - `name`: key that appears in `env.configuration`
 - `title`: label shown in the Edit Widget sheet, as a plain string or a locale map
 - `default`: code-defined starting value before the user changes anything
-- `options` (optional): fixed values to pick from, each `{ "value": "...", "title": ... }`. The sheet shows a picker with the titles instead of a free-text field, and `env.configuration` receives the `value`. `default` must be one of the values; without it the first option is the default.
+- `options` (optional): fixed values to pick from, each with a `value` and a `title`. The sheet shows a picker with the titles instead of a free-text field, and `env.configuration` receives the `value`. `default` must be one of the values; without a `default`, the first option is used.
 
 ## How to use it
 
@@ -86,7 +86,7 @@ Plugin config:
 
 If you need more than one value, add more entries to `appIntent.parameters` and read each key from `env.configuration`.
 
-## Offering fixed choices
+## Offer fixed choices
 
 When a parameter has a known set of values, list them as `options`. The sheet then shows a picker:
 
@@ -104,7 +104,9 @@ When a parameter has a known set of values, list them as `options`. The sheet th
 
 `env.configuration.units` is `"metric"` or `"imperial"`, whichever the user picked.
 
-## Localising the sheet
+Expo Prebuild and Voltra Apply stop with an error that names the parameter if `default` is not one of the values, a value is empty or listed twice, or an option has no `title`.
+
+## Translate the Edit Widget sheet
 
 iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather than from your widget code. `title` and `options[].title` accept locale maps, the same way `displayName` does. The sheet header shows the widget's `displayName`, so translate it the same way:
 
@@ -130,7 +132,7 @@ iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather
 }
 ```
 
-iOS shows the sheet in the system language. A language with no translation for a string shows your app's development language instead. Rebuild the native app after changing these. See [Localisation](./localisation) for how the app's languages are declared.
+iOS shows the sheet in the system language, and `setDynamicWidgetLocale` does not affect it. A language with no translation for a string shows your app's development language instead. Rebuild the native app after changing these. See [Localization](./localization) for how the app's languages are declared.
 
 ## Notes
 
