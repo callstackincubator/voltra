@@ -46,6 +46,7 @@ A flexible component for displaying live-updating time intervals. Crucial for Li
 - `textStyle` (string, optional): Formatting style.
   - `'timer'`: Standard clock format (e.g., `05:00`).
   - `'relative'`: Relative format (e.g., `5m`).
+  - `'minutes'`: Minutes without seconds (e.g., `19 minutes`), still updating live. iOS 18+; falls back to `'timer'` on earlier versions. With `showHours`, longer intervals include hours.
 - `showHours` (boolean, optional): Whether to show hours (e.g., `1:30:00` vs `90:00`). Defaults to `false`.
 - `textTemplates` (string, optional): JSON-encoded object with `running` and `completed` templates. Use `{time}` as a placeholder.
 
@@ -62,6 +63,13 @@ A flexible component for displaying live-updating time intervals. Crucial for Li
 <Voltra.Timer
   startAtMs={Date.now()}
   direction="up"
+/>
+
+// Minutes-only countdown (iOS 18+)
+<Voltra.Timer
+  endAtMs={Date.now() + 20 * 60 * 1000}
+  textStyle="minutes"
+  textTemplates={JSON.stringify({ running: "Starts in {time}" })}
 />
 
 // Relative Timer with Template

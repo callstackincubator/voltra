@@ -22,7 +22,7 @@ public struct TimerParameters: ComponentParameters {
   /// Count direction
   public let direction: String
 
-  /// Text formatting style
+  /// Text formatting style. 'minutes' (iOS 18+) updates live without seconds (e.g. "19 minutes") and falls back to 'timer' on earlier versions
   public let textStyle: String
 
   /// JSON-encoded TextTemplates object with running/completed templates

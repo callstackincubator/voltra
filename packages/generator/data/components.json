@@ -850,9 +850,9 @@
         "textStyle": {
           "type": "string",
           "optional": true,
-          "enum": ["timer", "relative"],
+          "enum": ["timer", "relative", "minutes"],
           "default": "timer",
-          "description": "Text formatting style"
+          "description": "Text formatting style. 'minutes' (iOS 18+) updates live without seconds (e.g. \"19 minutes\") and falls back to 'timer' on earlier versions"
         },
         "textTemplates": {
           "type": "string",

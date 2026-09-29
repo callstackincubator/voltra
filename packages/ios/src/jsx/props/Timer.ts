@@ -13,8 +13,8 @@ export type TimerProps = VoltraBaseProps & {
   durationMs?: number
   /** Count direction */
   direction?: 'up' | 'down'
-  /** Text formatting style */
-  textStyle?: 'timer' | 'relative'
+  /** Text formatting style. 'minutes' (iOS 18+) updates live without seconds (e.g. "19 minutes") and falls back to 'timer' on earlier versions */
+  textStyle?: 'timer' | 'relative' | 'minutes'
   /** JSON-encoded TextTemplates object with running/completed templates */
   textTemplates?: string
   /** Whether to show hours component when duration exceeds 60 minutes. If false, minutes will exceed 60 (e.g., 94:00 instead of 1:34:00) */

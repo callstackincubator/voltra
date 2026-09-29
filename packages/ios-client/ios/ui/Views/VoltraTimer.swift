@@ -91,6 +91,15 @@ public struct VoltraTimer: VoltraView {
     if style == "relative" {
       let targetDate = isCountDown ? range.upperBound : range.lowerBound
       Text(targetDate, style: .relative).monospacedDigit()
+    } else if style == "minutes", #available(iOS 18.0, macOS 15.0, *) {
+      // Updates live like `Text(timerInterval:)`, without the seconds field.
+      let targetDate = isCountDown ? range.upperBound : range.lowerBound
+      let allowedFields: Set<Date.ComponentsFormatStyle.Field> = showHours ? [.hour, .minute] : [.minute]
+      Text(
+        .currentDate,
+        format: .offset(to: targetDate, allowedFields: allowedFields, sign: .never)
+      )
+      .monospacedDigit()
     } else {
       // Live Activities require Text(timerInterval:...) for automatic updates
       Text(timerInterval: range, countsDown: isCountDown, showsHours: showHours)
