@@ -57,6 +57,26 @@ export type AndroidOngoingNotificationBigTextProps = AndroidOngoingNotificationC
   children?: ReactNode
 }
 
+export type AndroidOngoingNotificationBigPictureProps = AndroidOngoingNotificationCommonDisplayProps & {
+  picture: ImageSource
+  text?: string
+  summaryText?: string
+  pictureContentDescription?: string
+  showPictureWhenCollapsed?: boolean
+  largeIcon?: ImageSource
+  bigLargeIcon?: ImageSource
+  hideLargeIconWhenExpanded?: boolean
+  children?: ReactNode
+}
+
+export type AndroidOngoingNotificationInboxProps = AndroidOngoingNotificationCommonDisplayProps & {
+  lines: string[]
+  text?: string
+  summaryText?: string
+  largeIcon?: ImageSource
+  children?: ReactNode
+}
+
 export type AndroidOngoingNotificationMetricSemanticStyle = 'unspecified' | 'info' | 'safe' | 'caution' | 'danger'
 
 export type AndroidOngoingNotificationMetricTimeFormat = 'adaptive' | 'chronometer'
@@ -136,6 +156,42 @@ export type AndroidOngoingNotificationBigTextPayload = {
   actions?: AndroidOngoingNotificationActionPayload[]
 }
 
+export type AndroidOngoingNotificationBigPicturePayload = {
+  v: 1
+  kind: 'bigPicture'
+  title?: string
+  subText?: string
+  text?: string
+  picture: ImageSource
+  summaryText?: string
+  pictureContentDescription?: string
+  showPictureWhenCollapsed?: boolean
+  largeIcon?: ImageSource
+  bigLargeIcon?: ImageSource
+  hideLargeIconWhenExpanded?: boolean
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  chronometerCountDown?: boolean
+  actions?: AndroidOngoingNotificationActionPayload[]
+}
+
+export type AndroidOngoingNotificationInboxPayload = {
+  v: 1
+  kind: 'inbox'
+  title?: string
+  subText?: string
+  text: string
+  lines: string[]
+  summaryText?: string
+  shortCriticalText?: string
+  when?: number
+  chronometer?: boolean
+  chronometerCountDown?: boolean
+  largeIcon?: ImageSource
+  actions?: AndroidOngoingNotificationActionPayload[]
+}
+
 export type AndroidOngoingNotificationMetricValuePayload =
   | { type: 'int'; value: number; unit?: string }
   | {
@@ -177,6 +233,8 @@ export type AndroidOngoingNotificationMetricPayload = {
 export type AndroidOngoingNotificationPayload =
   | AndroidOngoingNotificationProgressPayload
   | AndroidOngoingNotificationBigTextPayload
+  | AndroidOngoingNotificationBigPicturePayload
+  | AndroidOngoingNotificationInboxPayload
   | AndroidOngoingNotificationMetricPayload
 
 export type AndroidOngoingNotificationContent = ReactNode

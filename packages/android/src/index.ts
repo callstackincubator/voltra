@@ -64,6 +64,8 @@ export type {
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationBigPicturePayload,
+  AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationCapabilities,
@@ -72,6 +74,8 @@ export type {
   AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationFallbackBehavior,
+  AndroidOngoingNotificationInboxPayload,
+  AndroidOngoingNotificationInboxProps,
   AndroidOngoingNotificationInput,
   AndroidOngoingNotificationMetricDescriptor,
   AndroidOngoingNotificationMetricEntryPayload,
