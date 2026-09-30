@@ -8,7 +8,6 @@ import android.app.PendingIntent
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
@@ -19,10 +18,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import voltra.images.VoltraImageManager
 import voltra.ongoingnotification.AndroidOngoingNotificationActionPayload
+import voltra.ongoingnotification.AndroidOngoingNotificationBigPicturePayload
 import voltra.ongoingnotification.AndroidOngoingNotificationBigTextPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationImageSource
+import voltra.ongoingnotification.AndroidOngoingNotificationInboxPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationMetricPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationPayloadParser
@@ -39,6 +39,9 @@ import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
 import voltra.ongoingnotification.METRIC_STYLE_MIN_SDK
 import voltra.ongoingnotification.PROMOTION_MIN_SDK
 import voltra.ongoingnotification.VoltraNotificationException
+import voltra.ongoingnotification.VoltraNotificationImageResolver
+import voltra.ongoingnotification.VoltraNotificationImageResolver.Companion.MAX_ICON_LONG_EDGE_PX
+import voltra.ongoingnotification.VoltraNotificationImageResolver.Companion.MAX_PICTURE_LONG_EDGE_PX
 import voltra.ongoingnotification.androidOngoingNotificationCategory
 import voltra.ongoingnotification.androidOngoingNotificationColor
 import voltra.ongoingnotification.applyAndroidOngoingNotificationPresentation
@@ -127,6 +130,11 @@ class VoltraNotificationManager(
         // throwaway notification built by the promotion pre-flight cannot share its
         // PendingIntent request codes with a real one.
         private const val PROMOTION_CHECK_SYSTEM_NOTIFICATION_ID = -1
+
+        // The expanded InboxStyle template has six line slots. The platform stores every line you
+        // hand it, so the cap that keeps the seventh from being silently invisible is ours.
+        // Mirrors MAX_INBOX_LINES in packages/android/src/ongoing-notification/renderer.ts.
+        private const val MAX_INBOX_LINES = 6
         const val EXTRA_NOTIFICATION_ID = "voltra.extra.NOTIFICATION_ID"
 
         private val json =
@@ -178,6 +186,7 @@ class VoltraNotificationManager(
     private val promotionEvaluator = AndroidOngoingNotificationPromotionEvaluator(appContext, notificationManager)
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val lock = Any()
+    private val imageResolver by lazy { VoltraNotificationImageResolver(appContext) }
 
     suspend fun startOngoingNotification(
         payload: String,
@@ -623,6 +632,14 @@ class VoltraNotificationManager(
                 builder.setContentText(payload.text)
             }
 
+            is AndroidOngoingNotificationBigPicturePayload -> {
+                builder.setContentText(payload.text)
+            }
+
+            is AndroidOngoingNotificationInboxPayload -> {
+                builder.setContentText(payload.text)
+            }
+
             // The metrics render through the style (or the fallback text line set there).
             is AndroidOngoingNotificationMetricPayload -> {
                 Unit
@@ -705,6 +722,14 @@ class VoltraNotificationManager(
                 }
             }
 
+            is AndroidOngoingNotificationBigPicturePayload -> {
+                applyBigPictureStyle(builder, payload)
+            }
+
+            is AndroidOngoingNotificationInboxPayload -> {
+                applyInboxStyle(builder, payload)
+            }
+
             is AndroidOngoingNotificationMetricPayload -> {
                 if (Build.VERSION.SDK_INT >= METRIC_STYLE_MIN_SDK) {
                     builder.setStyle(buildMetricStyle(payload))
@@ -725,6 +750,71 @@ class VoltraNotificationManager(
         payload: AndroidOngoingNotificationPayload,
     ): String? = androidOngoingNotificationCategory(record.presentation.category) ?: getNotificationCategory(payload)
 
+    /**
+     * Notification.BigPictureStyle only began accepting [Icon] in API 31, so older releases get
+     * decoded pixels instead. Both paths carry the same downscale cap.
+     */
+    private fun applyBigPictureStyle(
+        builder: Builder,
+        payload: AndroidOngoingNotificationBigPicturePayload,
+    ) {
+        val style = Notification.BigPictureStyle()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            imageResolver
+                .resolveIcon(payload.picture, MAX_PICTURE_LONG_EDGE_PX)
+                ?.let { style.bigPicture(it) }
+
+            payload.pictureContentDescription?.let { style.setContentDescription(it) }
+            payload.showPictureWhenCollapsed?.let { style.showBigPictureWhenCollapsed(it) }
+        } else {
+            imageResolver
+                .resolveBitmap(payload.picture, MAX_PICTURE_LONG_EDGE_PX)
+                ?.let { style.bigPicture(it) }
+        }
+
+        // An expanded thumbnail wins over hiding one, but only one that actually decoded. Artwork
+        // that failed to resolve has to fall through to an explicit hide, otherwise asking to drop
+        // the thumbnail would end up showing the collapsed one in its place.
+        val bigLargeIcon = payload.bigLargeIcon?.let { imageResolver.resolveIcon(it, MAX_ICON_LONG_EDGE_PX) }
+
+        when {
+            bigLargeIcon != null -> style.bigLargeIcon(bigLargeIcon)
+
+            // Passing an explicit null marks the expanded thumbnail as cleared, which is how the
+            // platform expresses "thumbnail only while collapsed". Leaving the key unset instead
+            // would keep showing the collapsed large icon.
+            payload.hideLargeIconWhenExpanded == true -> style.bigLargeIcon(null as Icon?)
+        }
+
+        payload.summaryText?.let { style.setSummaryText(it) }
+
+        builder.setStyle(style)
+    }
+
+    private fun applyInboxStyle(
+        builder: Builder,
+        payload: AndroidOngoingNotificationInboxPayload,
+    ) {
+        val style = Notification.InboxStyle()
+
+        if (payload.lines.isEmpty()) {
+            Log.w(TAG, "Inbox ongoing notification carries no lines, the expanded view stays empty")
+        } else if (payload.lines.size > MAX_INBOX_LINES) {
+            Log.w(
+                TAG,
+                "Inbox ongoing notification carries ${payload.lines.size} lines, " +
+                    "posting the first $MAX_INBOX_LINES",
+            )
+        }
+
+        payload.lines.take(MAX_INBOX_LINES).forEach { line -> style.addLine(line) }
+
+        payload.summaryText?.let { style.setSummaryText(it) }
+
+        builder.setStyle(style)
+    }
+
     private fun getNotificationCategory(payload: AndroidOngoingNotificationPayload): String? =
         when (payload) {
             // Metrics double as live-update material, which requires a progress (or call)
@@ -734,48 +824,19 @@ class VoltraNotificationManager(
             is AndroidOngoingNotificationMetricPayload -> Notification.CATEGORY_PROGRESS
 
             is AndroidOngoingNotificationBigTextPayload -> null
+
+            is AndroidOngoingNotificationBigPicturePayload -> null
+
+            is AndroidOngoingNotificationInboxPayload -> null
         }
 
-    private fun resolveNotificationIcon(source: AndroidOngoingNotificationImageSource?): Icon? {
-        if (source == null) return null
-
-        source.assetName?.takeIf { it.isNotBlank() }?.let { assetName ->
-            val resId = appContext.resources.getIdentifier(assetName, "drawable", appContext.packageName)
-            if (resId != 0) {
-                return Icon.createWithResource(appContext, resId)
-            }
-
-            val imageManager = VoltraImageManager(appContext)
-            val uriString = imageManager.getUriForKey(assetName)
-            if (uriString != null) {
-                try {
-                    val uri = Uri.parse(uriString)
-                    appContext.contentResolver.openInputStream(uri)?.use { stream ->
-                        val bitmap = BitmapFactory.decodeStream(stream)
-                        if (bitmap != null) {
-                            return Icon.createWithBitmap(bitmap)
-                        }
-                    }
-                } catch (error: Exception) {
-                    Log.e(TAG, "Failed to decode notification icon asset: $assetName", error)
-                }
-            }
-        }
-
-        source.base64?.takeIf { it.isNotBlank() }?.let { base64 ->
-            try {
-                val decoded = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
-                val bitmap = BitmapFactory.decodeByteArray(decoded, 0, decoded.size)
-                if (bitmap != null) {
-                    return Icon.createWithBitmap(bitmap)
-                }
-            } catch (error: Exception) {
-                Log.e(TAG, "Failed to decode notification base64 icon", error)
-            }
-        }
-
-        return null
-    }
+    /**
+     * Notification artwork is rendered at 48dp at most, so everything reaching this point is capped
+     * at the icon size. A source that cannot be decoded yields null: a broken image must not stop a
+     * status update.
+     */
+    private fun resolveNotificationIcon(source: AndroidOngoingNotificationImageSource?): Icon? =
+        imageResolver.resolveIcon(source, MAX_ICON_LONG_EDGE_PX)
 
     private fun getActiveStatusBarNotification(
         systemNotificationId: Int,

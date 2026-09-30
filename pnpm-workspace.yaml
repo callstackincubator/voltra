@@ -10,4 +10,11 @@ allowBuilds:
   vd-tool: true
 
 minimumReleaseAge: 20160
+# Appduct is the agent-facing E2E tool bridge the example app registers its tools with
+# (see docs/agents/appduct-e2e.md). It is a Callstack Incubator package that still ships
+# faster than the 14-day quarantine above, so it is exempt; drop these entries once its
+# release cadence settles.
+minimumReleaseAgeExclude:
+  - '@appduct/react-native'
+  - '@appduct/shared'
 strictDepBuilds: true
