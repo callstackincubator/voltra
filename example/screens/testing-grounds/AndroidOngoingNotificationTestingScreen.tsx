@@ -52,6 +52,10 @@ const CLEARED_PRESENTATION_OPTIONS: UpdateAndroidOngoingNotificationOptions = {
 }
 
 // A timer endpoint ten minutes out, so the metric demo shows a live countdown.
+// Shows when a layout fell back, e.g. a Metric notification posted as a text line because the
+// device or the app's compileSdk is below 37.
+const formatStyleFallback = (styleFallback?: string) => (styleFallback ? ` (styleFallback: ${styleFallback})` : '')
+
 const defaultMetricsJson = () =>
   JSON.stringify([
     { label: 'Dist', value: 5.2, unit: 'km' },
@@ -438,7 +442,9 @@ export default function AndroidOngoingNotificationTestingScreen() {
       syncActiveState(result.notificationId)
       setStatusMessage(
         result.ok
-          ? `Started Android ongoing notification "${result.notificationId}".`
+          ? `Started Android ongoing notification "${result.notificationId}"${formatStyleFallback(
+              result.styleFallback
+            )}.`
           : `Did not start Android ongoing notification "${result.notificationId}": ${result.reason}.`
       )
       setRenderedPayload(renderAndroidOngoingNotificationPayload(content))
@@ -459,7 +465,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
       syncActiveState(notificationId)
       setStatusMessage(
         result.ok
-          ? `Updated Android ongoing notification "${notificationId}".`
+          ? `Updated Android ongoing notification "${notificationId}"${formatStyleFallback(result.styleFallback)}.`
           : `Did not update Android ongoing notification "${notificationId}": ${result.reason}.`
       )
       setRenderedPayload(renderAndroidOngoingNotificationPayload(content))
