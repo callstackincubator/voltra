@@ -19,13 +19,25 @@ internal const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngo
 private const val PROMOTED_PERMISSION = "android.permission.POST_PROMOTED_NOTIFICATIONS"
 
 /**
- * The permission behind promoted ongoing notifications. The catch-all return keeps the
- * historical capability semantics: a failing permission read is assumed granted rather
- * than reported as missing.
+ * `Build.VERSION_CODES_FULL.BAKLAVA_1` (Android 16 QPR2), spelled out because the constant is
+ * public only from compileSdk 36.1. `POST_PROMOTED_NOTIFICATIONS` exists from this release;
+ * Android 16.0 devices promote without it and never grant it.
+ */
+internal const val PROMOTED_PERMISSION_MIN_SDK_FULL = 3_600_001
+
+/**
+ * The permission behind promoted ongoing notifications. Its protection level is `normal`, so
+ * where it exists, a denial means the app's manifest does not declare it. Android 16.0 does not
+ * define it, so it is not required there. The catch-all return keeps the historical capability
+ * semantics: a failing permission read is assumed granted rather than reported as missing.
  */
 internal fun hasPromotedNotificationsPermission(context: Context): Boolean {
     if (Build.VERSION.SDK_INT < PROMOTION_MIN_SDK) {
         return false
+    }
+
+    if (Build.VERSION.SDK_INT_FULL < PROMOTED_PERMISSION_MIN_SDK_FULL) {
+        return true
     }
 
     return try {

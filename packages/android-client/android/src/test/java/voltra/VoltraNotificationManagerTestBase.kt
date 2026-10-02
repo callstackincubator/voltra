@@ -13,6 +13,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.provider.Settings
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -23,9 +24,12 @@ import org.junit.Before
 import org.junit.Test
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.util.ReflectionHelpers
 import voltra.ongoingnotification.AndroidOngoingNotificationPromotionIssue
 import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
+import voltra.ongoingnotification.PROMOTED_PERMISSION_MIN_SDK_FULL
 import voltra.ongoingnotification.VoltraNotificationException
+import voltra.ongoingnotification.hasPromotedNotificationsPermission
 
 /**
  * Runs the same behavioral assertions against the real `Notification` the manager hands
@@ -271,6 +275,8 @@ abstract class VoltraNotificationManagerTestBase(
     fun promotionReasonsReflectThePermissionAndUserPreferenceState() {
         assumeTrue(promotionSupported)
         startChannel()
+        // The permission exists from Android 16 QPR2; pin a release that defines it.
+        setSdkIntFull(maxOf(Build.VERSION.SDK_INT_FULL, PROMOTED_PERMISSION_MIN_SDK_FULL))
 
         val denied = start(bigTextPayload(), notificationId = "reasons-denied", requestPromotedOngoing = true)
         assertTrue(
@@ -289,6 +295,21 @@ abstract class VoltraNotificationManagerTestBase(
             )
         assertFalse(
             granted.promotion!!.reasons.contains(AndroidOngoingNotificationPromotionIssue.PERMISSION_NOT_DECLARED),
+        )
+    }
+
+    @Test
+    fun promotionDoesNotRequireThePermissionBeforeTheReleaseThatDefinesIt() {
+        assumeTrue(promotionSupported)
+        startChannel()
+        // Android 16.0 has no POST_PROMOTED_NOTIFICATIONS, so the app can never hold it there.
+        setSdkIntFull(PROMOTED_PERMISSION_MIN_SDK_FULL - 1)
+
+        val result = start(bigTextPayload(), notificationId = "reasons-16-0", requestPromotedOngoing = true)
+
+        assertTrue(hasPromotedNotificationsPermission(context))
+        assertFalse(
+            result.promotion!!.reasons.contains(AndroidOngoingNotificationPromotionIssue.PERMISSION_NOT_DECLARED),
         )
     }
 
@@ -626,6 +647,21 @@ abstract class VoltraNotificationManagerTestBase(
         }
 
         assertTrue(postedNotifications().isEmpty())
+    }
+
+    private var originalSdkIntFull: Int? = null
+
+    // SDK_INT_FULL is a static the sandbox shares between tests, so restore what the test pinned.
+    private fun setSdkIntFull(value: Int) {
+        if (originalSdkIntFull == null) {
+            originalSdkIntFull = Build.VERSION.SDK_INT_FULL
+        }
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT_FULL", value)
+    }
+
+    @After
+    fun restoreSdkIntFull() {
+        originalSdkIntFull?.let { ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT_FULL", it) }
     }
 
     protected companion object {
