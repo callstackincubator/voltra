@@ -36,7 +36,6 @@ import voltra.ongoingnotification.AndroidOngoingNotificationPromotionInfo
 import voltra.ongoingnotification.AndroidOngoingNotificationPublicVersionPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
 import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
-import voltra.ongoingnotification.METRIC_STYLE_MIN_SDK
 import voltra.ongoingnotification.PROMOTION_MIN_SDK
 import voltra.ongoingnotification.VoltraNotificationException
 import voltra.ongoingnotification.VoltraNotificationImageResolver
@@ -46,6 +45,7 @@ import voltra.ongoingnotification.androidOngoingNotificationCategory
 import voltra.ongoingnotification.androidOngoingNotificationColor
 import voltra.ongoingnotification.applyAndroidOngoingNotificationPresentation
 import voltra.ongoingnotification.buildMetricStyle
+import voltra.ongoingnotification.canUseMetricStyle
 import voltra.ongoingnotification.hasPromotedNotificationsPermission
 import voltra.ongoingnotification.renderMetricFallbackText
 
@@ -731,7 +731,7 @@ class VoltraNotificationManager(
             }
 
             is AndroidOngoingNotificationMetricPayload -> {
-                if (Build.VERSION.SDK_INT >= METRIC_STYLE_MIN_SDK) {
+                if (canUseMetricStyle()) {
                     builder.setStyle(buildMetricStyle(payload))
                 } else {
                     builder.setContentText(renderMetricFallbackText(payload))
@@ -863,10 +863,11 @@ class VoltraNotificationManager(
         return point
     }
 
-    // Metrics have a real presentation only from API 37; below that the post succeeds as a
-    // standard notification whose contentText lists the readings, and the result says so.
+    // Metrics have a real presentation only from API 37, and only when the app compiles against
+    // SDK 37; otherwise the post succeeds as a standard notification whose contentText lists
+    // the readings, and the result says so.
     private fun resolveStyleFallback(payload: AndroidOngoingNotificationPayload): String? =
-        if (payload is AndroidOngoingNotificationMetricPayload && Build.VERSION.SDK_INT < METRIC_STYLE_MIN_SDK) {
+        if (payload is AndroidOngoingNotificationMetricPayload && !canUseMetricStyle()) {
             "standard"
         } else {
             null

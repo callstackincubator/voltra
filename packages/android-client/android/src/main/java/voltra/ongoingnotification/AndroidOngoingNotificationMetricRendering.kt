@@ -1,115 +1,20 @@
 package voltra.ongoingnotification
 
-import android.app.Notification
-import androidx.annotation.RequiresApi
-import java.time.Duration
-import java.time.Instant
-import java.time.LocalTime
+import android.os.Build
+import androidx.annotation.ChecksSdkIntAtLeast
 import java.util.Locale
 
 /** `Notification.MetricStyle` is API 37; metrics fall back to a plain text line below it. */
 internal const val METRIC_STYLE_MIN_SDK = 37
 
 /**
- * Builds the platform `MetricStyle` for a metric payload. Only reached with
- * `SDK_INT >= METRIC_STYLE_MIN_SDK`; the `java.time` conversions would not load below API 26
- * anyway, and the guarded call sites keep them from ever being verified on old devices.
+ * Whether this post can use the platform `MetricStyle`: the device runs API 37+ and the app
+ * compiled Voltra against SDK 37+. build.gradle compiles `buildMetricStyle` from
+ * `src/main/metricStyle/sdk37` only when the host's compileSdk has the API, and from
+ * `src/main/metricStyle/unavailable` otherwise, so apps on compileSdk 36 still build.
  */
-@RequiresApi(METRIC_STYLE_MIN_SDK)
-internal fun buildMetricStyle(payload: AndroidOngoingNotificationMetricPayload): Notification.MetricStyle {
-    val semanticStyle = metricSemanticStyle(payload.semanticStyle)
-
-    val style =
-        Notification
-            .MetricStyle()
-
-    payload.metrics.forEach { entry ->
-        val metric =
-            if (semanticStyle == Notification.SEMANTIC_STYLE_UNSPECIFIED) {
-                Notification.Metric(entry.value.toPlatformMetricValue(), entry.label)
-            } else {
-                Notification.Metric(entry.value.toPlatformMetricValue(), entry.label, semanticStyle)
-            }
-        style.addMetric(metric)
-    }
-
-    payload.criticalMetric?.let { style.setCriticalMetric(it) }
-
-    return style
-}
-
-private fun metricSemanticStyle(semanticStyle: String?): Int =
-    when (semanticStyle) {
-        "info" -> Notification.SEMANTIC_STYLE_INFO
-        "safe" -> Notification.SEMANTIC_STYLE_SAFE
-        "caution" -> Notification.SEMANTIC_STYLE_CAUTION
-        "danger" -> Notification.SEMANTIC_STYLE_DANGER
-        else -> Notification.SEMANTIC_STYLE_UNSPECIFIED
-    }
-
-@RequiresApi(METRIC_STYLE_MIN_SDK)
-private fun metricTimeFormat(format: String?): Int =
-    if (format == "chronometer") {
-        Notification.Metric.TimeDifference.FORMAT_CHRONOMETER
-    } else {
-        Notification.Metric.TimeDifference.FORMAT_ADAPTIVE
-    }
-
-@RequiresApi(METRIC_STYLE_MIN_SDK)
-private fun AndroidOngoingNotificationMetricValuePayload.toPlatformMetricValue(): Notification.Metric.MetricValue =
-    when (this) {
-        is AndroidOngoingNotificationMetricIntPayload -> {
-            if (unit != null) {
-                Notification.Metric.FixedInt(value, unit)
-            } else {
-                Notification.Metric.FixedInt(value)
-            }
-        }
-
-        is AndroidOngoingNotificationMetricFloatPayload -> {
-            if (fractionDigits != null) {
-                Notification.Metric.FixedFloat(value.toFloat(), unit ?: "", fractionDigits, fractionDigits)
-            } else if (unit != null) {
-                Notification.Metric.FixedFloat(value.toFloat(), unit)
-            } else {
-                Notification.Metric.FixedFloat(value.toFloat())
-            }
-        }
-
-        is AndroidOngoingNotificationMetricTextPayload -> {
-            if (unit != null) {
-                Notification.Metric.FixedText(value, unit)
-            } else {
-                Notification.Metric.FixedText(value)
-            }
-        }
-
-        is AndroidOngoingNotificationMetricTimePayload -> {
-            Notification.Metric.FixedTime(LocalTime.parse(value))
-        }
-
-        is AndroidOngoingNotificationMetricTimerPayload -> {
-            Notification.Metric.TimeDifference.forTimer(Instant.ofEpochMilli(endsAt), metricTimeFormat(format))
-        }
-
-        is AndroidOngoingNotificationMetricStopwatchPayload -> {
-            Notification.Metric.TimeDifference.forStopwatch(Instant.ofEpochMilli(startedAt), metricTimeFormat(format))
-        }
-
-        is AndroidOngoingNotificationMetricPausedTimerPayload -> {
-            Notification.Metric.TimeDifference.forPausedTimer(
-                Duration.ofMillis(remainingMillis),
-                Notification.Metric.TimeDifference.FORMAT_ADAPTIVE,
-            )
-        }
-
-        is AndroidOngoingNotificationMetricPausedStopwatchPayload -> {
-            Notification.Metric.TimeDifference.forPausedStopwatch(
-                Duration.ofMillis(elapsedMillis),
-                Notification.Metric.TimeDifference.FORMAT_ADAPTIVE,
-            )
-        }
-    }
+@ChecksSdkIntAtLeast(api = METRIC_STYLE_MIN_SDK)
+internal fun canUseMetricStyle(): Boolean = METRIC_STYLE_COMPILED && Build.VERSION.SDK_INT >= METRIC_STYLE_MIN_SDK
 
 /**
  * The pre-API-37 rendering: `"<label> <value><unit>"` joined by `", "`. Time-driven
