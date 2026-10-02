@@ -10,11 +10,11 @@ import android.os.Build
 internal const val PROMOTION_MIN_SDK = 36
 
 /**
- * The extras bit that requests promotion. compileSdk 37 exposes the platform constant,
- * so the key is the framework's own — the contract with the system is pinned against
- * the documented value ("android.requestPromotedOngoing") in a test.
+ * The extras bit that requests promotion. `Notification.EXTRA_REQUEST_PROMOTED_ONGOING` is
+ * public only from SDK 37 and apps may compile against 36, so the documented value is
+ * spelled out here and pinned in a test.
  */
-internal val EXTRA_REQUEST_PROMOTED_ONGOING = Notification.EXTRA_REQUEST_PROMOTED_ONGOING
+internal const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
 
 private const val PROMOTED_PERMISSION = "android.permission.POST_PROMOTED_NOTIFICATIONS"
 

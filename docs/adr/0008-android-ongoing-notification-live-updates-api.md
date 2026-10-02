@@ -3,7 +3,8 @@
 Status: Accepted
 
 Implemented by #325 (promotion request, status-bar chip, eligibility and
-error codes) and #326 (Metric payload kind and the compileSdk 37 floor).
+error codes) and #326 (Metric payload kind). A follow-up keeps the compileSdk floor at 36 by
+compiling MetricStyle only against SDK 37.
 
 Resolves [#322](https://github.com/callstackincubator/voltra/issues/322).
 
@@ -123,16 +124,25 @@ notification settings returning `false`. (The Live Update guide names an
 1..3 metrics (`label` 1..10 characters), a `criticalMetric` index, and
 values in eight forms (int, float, text, time of day, timer, stopwatch,
 paused timer, paused stopwatch) normalised to object form by the renderer.
-MetricStyle requires `compileSdkVersion 37`, so the Gradle default moves to 37
-with a configuration-time floor check that names the requirement, and the
-render is gated on `SDK_INT >= 37`.
+MetricStyle exists only in SDK 37, but apps compiling against 36 must keep
+building, so a compileSdk 37 floor is not an option. Kotlin has no conditional
+compilation and `SDK_INT` checks do not remove symbols from the compile, so
+build.gradle compiles the code that names MetricStyle from
+`src/main/metricStyle/sdk37` when the host's compileSdk is 37 or higher, and a
+stand-in from `src/main/metricStyle/unavailable` otherwise. Both directories sit
+under `src/main` so the npm `files` list ships them. MetricStyle is used when
+the device runs API 37+ _and_ it was compiled in; any other case takes the text
+fallback below. The compileSdk floor stays at 36, which the API 36 promotion and
+ProgressStyle calls already need.
 
 Below API 37 the payload posts a standard notification whose `contentText`
 joins the metrics as `"<label> <value><unit>"` and the result carries
 `styleFallback: 'standard'`. Refusing to post on older devices was rejected:
 a remote server would have to care about the device API level. Reflection to
 avoid the SDK 37 compile dependency was rejected: lint cannot check it and it
-hides the requirement. `FixedDate` and `Notification.CallStyle` are out of
+hides the requirement. `NotificationCompat.MetricStyle` (androidx.core 1.19)
+was rejected too: that release requires compileSdk 37 and AGP 9.1, so it
+reintroduces the floor. `FixedDate` and `Notification.CallStyle` are out of
 scope (CallStyle needs a `Person` model and PendingIntents that act without
 opening the app; it gets its own issue).
 

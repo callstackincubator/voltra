@@ -340,6 +340,13 @@ jobs:
           ./gradlew :use-voltra_android-client:externalNativeBuildDebug
           -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64
 
+      # The example app compiles against SDK 37, but apps on compileSdk 36 must keep
+      # building: build.gradle swaps the MetricStyle sources for a stand-in below 37.
+      # Compiling the shipped tarball at 36 catches an API 37 symbol leaking outside them.
+      - name: Compile Kotlin against compileSdk 36
+        working-directory: example/android
+        run: ./gradlew :use-voltra_android-client:compileDebugKotlin -Pandroid.compileSdkVersion=36
+
       - name: Verify 16 KB ELF alignment
         working-directory: example/android
         shell: bash

@@ -44,16 +44,20 @@ if (hostMinSdk < 24) {
   )
 }
 
-// Notification.MetricStyle is API 37. Failing configuration with this message beats a
-// Kotlin "unresolved reference" once the module compiles against the newer platform.
-def hostCompileSdk = safeExtGet("compileSdkVersion", 37)
-if (hostCompileSdk < 37) {
+// The host's compileSdk, as an API level. Expo and the React Native template set an Int, but
+// Gradle also accepts the "android-37" string form; read the major level from either.
+def hostCompileSdk = safeExtGet("compileSdkVersion", 36)
+def hostCompileSdkLevel = hostCompileSdk.toString().replaceFirst(/^android-/, "").tokenize(".")[0].toInteger()
+if (hostCompileSdkLevel < 36) {
   throw new GradleException(
-    "@use-voltra/android-client requires compileSdkVersion 37 for ongoing-notification MetricStyle; " +
-      "this app sets ${hostCompileSdk}. Raise it, e.g. with expo-build-properties: " +
-      "[\"expo-build-properties\", { \"android\": { \"compileSdkVersion\": 37 } }]."
+    "@use-voltra/android-client requires compileSdkVersion 36 (Android 16); this app sets ${hostCompileSdk}."
   )
 }
+
+// Notification.MetricStyle is API 37. Apps compiling against 36 must keep building, so the code
+// that names it is compiled only when the host's SDK has it; otherwise a stand-in reports it
+// unavailable and Metric notifications post with their text fallback (styleFallback: 'standard').
+def metricStyleSourceDir = hostCompileSdkLevel >= 37 ? "src/main/metricStyle/sdk37" : "src/main/metricStyle/unavailable"
 
 // Robolectric's SDK 36+ android-all jars contain JDK 21 class files, so test classes
 // running @Config(sdk = [36]) (or above) need a JDK 21+ test JVM. Unit tests therefore
@@ -75,6 +79,12 @@ android {
   namespace "voltra"
 
   compileSdkVersion hostCompileSdk
+
+  sourceSets {
+    main {
+      java.srcDirs += metricStyleSourceDir
+    }
+  }
 
   defaultConfig {
     minSdkVersion hostMinSdk

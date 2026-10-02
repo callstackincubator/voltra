@@ -73,9 +73,9 @@ if (!granted) {
 }
 ```
 
-### 4. Compile against Android 17 (SDK 37)
+### 4. Check the compile SDK
 
-Voltra builds ongoing-notification support against API 37, and your app has to compile against it too. Raise it through [expo-build-properties](https://docs.expo.dev/versions/latest/sdk/build-properties/):
+Voltra needs your app to compile against Android 16 (SDK 36) or later. To show [metric notifications](#metric-notification) in the full Android 17 layout, compile against SDK 37 through [expo-build-properties](https://docs.expo.dev/versions/latest/sdk/build-properties/):
 
 ```json
 {
@@ -94,7 +94,7 @@ Voltra builds ongoing-notification support against API 37, and your app has to c
 }
 ```
 
-If the app compiles against an older SDK, the Gradle build stops with a Voltra error naming the value to raise — instead of a confusing Kotlin compile error later.
+With SDK 36, everything else works the same, and metric notifications use the text-line fallback on every Android version.
 
 ## Starting a notification
 
@@ -263,10 +263,10 @@ await startAndroidOngoingNotification(
 
 - Pass 1 to 3 metrics, and keep each `label` between 1 and 10 characters.
 - A plain number is a reading and a plain string is text. `unit` next to a number is shorthand for the unit of that reading, so `{ label: 'Dist', value: 5.2, unit: 'km' }` is the same as passing the value as `{ type: 'float', value: 5.2, unit: 'km' }`.
-- `criticalMetric` is the index of the reading to highlight. `semanticStyle` tints the metrics: `'info'`, `'safe'`, `'caution'`, `'danger'`, or the default `'unspecified'`.
+- `criticalMetric` is the index of the most important reading. Android doesn't highlight it in the notification; it can show that reading in the [status bar chip](#showing-a-chip-in-the-status-bar) of a promoted notification. It defaults to the first reading. `semanticStyle` tints every metric: `'info'`, `'safe'`, `'caution'`, `'danger'`, or the default `'unspecified'`.
 - Values that change on their own: `{ type: 'timer', endsAt }` counts down to a moment and `{ type: 'stopwatch', startedAt }` counts up from it — each accepts a `Date` or an epoch timestamp, and an optional `format: 'chronometer'`. Frozen durations are `{ type: 'pausedTimer', remainingMillis }` and `{ type: 'pausedStopwatch', elapsedMillis }`. `{ type: 'time', value: '18:40' }` shows a clock time, and `{ type: 'float', value: 5.2, fractionDigits: 1 }` (with optional `min`/`max`) controls how a reading is formatted.
 
-The full metric layout needs Android 17 and later. On older versions the notification posts normally and the readings appear as a text line (`Dist 5.2km, Pace 5:30, ETA 9:52`), and the result carries `styleFallback: 'standard'` so you can tell. Your server can send the same metric payload to every device without knowing their versions. Time-driven values are rendered when the notification is posted, so an `updateAndroidOngoingNotification` call every minute keeps the text line fresh on those devices.
+The full metric layout needs Android 17 and later, and an app that [compiles against SDK 37](#4-check-the-compile-sdk). Otherwise the notification posts normally and the readings appear as a text line (`Dist 5.2km, Pace 5:30, ETA 9:52`), and the result carries `styleFallback: 'standard'` so you can tell. Your server can send the same metric payload to every device without knowing their versions. Time-driven values are rendered when the notification is posted, so an `updateAndroidOngoingNotification` call every minute keeps the text line fresh on those devices.
 
 Unlike the other layouts, a metric notification can be promoted to a Live Update without a `title`.
 
