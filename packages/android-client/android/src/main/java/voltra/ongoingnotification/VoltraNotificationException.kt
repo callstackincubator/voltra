@@ -13,6 +13,7 @@ class VoltraNotificationException(
         const val CHANNEL_REQUIRED = "VOLTRA_NOTIFICATION_CHANNEL_REQUIRED"
         const val CHANNEL_NOT_FOUND = "VOLTRA_NOTIFICATION_CHANNEL_NOT_FOUND"
         const val INVALID_PAYLOAD = "VOLTRA_NOTIFICATION_INVALID_PAYLOAD"
+        const val INVALID_OPTIONS = "VOLTRA_NOTIFICATION_INVALID_OPTIONS"
         const val NOT_PROMOTABLE = "VOLTRA_NOTIFICATION_NOT_PROMOTABLE"
 
         /** Catch-all for failures that are not the caller's input, so a promise is never left unsettled. */

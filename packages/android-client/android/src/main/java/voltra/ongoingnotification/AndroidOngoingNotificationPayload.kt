@@ -29,6 +29,12 @@ data class AndroidOngoingNotificationActionPayload(
 )
 
 @Serializable
+data class AndroidOngoingNotificationPublicVersionPayload(
+    val title: String,
+    val text: String? = null,
+)
+
+@Serializable
 sealed class AndroidOngoingNotificationPayload {
     abstract val v: Int
     abstract val title: String?
@@ -36,8 +42,10 @@ sealed class AndroidOngoingNotificationPayload {
     abstract val shortCriticalText: String?
     abstract val chronometer: Boolean?
     abstract val chronometerCountDown: Boolean?
+    abstract val showWhen: Boolean?
     abstract val whenEpochMillis: Long?
     abstract val largeIcon: AndroidOngoingNotificationImageSource?
+    abstract val publicVersion: AndroidOngoingNotificationPublicVersionPayload?
     abstract val actions: List<AndroidOngoingNotificationActionPayload>?
 
     /** Whether the platform needs `contentTitle` to promote this style. */
@@ -74,7 +82,9 @@ data class AndroidOngoingNotificationProgressPayload(
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
     override val chronometerCountDown: Boolean? = null,
+    override val showWhen: Boolean? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
+    override val publicVersion: AndroidOngoingNotificationPublicVersionPayload? = null,
     val progressTrackerIcon: AndroidOngoingNotificationImageSource? = null,
     val progressStartIcon: AndroidOngoingNotificationImageSource? = null,
     val progressEndIcon: AndroidOngoingNotificationImageSource? = null,
@@ -96,7 +106,9 @@ data class AndroidOngoingNotificationBigTextPayload(
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
     override val chronometerCountDown: Boolean? = null,
+    override val showWhen: Boolean? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
+    override val publicVersion: AndroidOngoingNotificationPublicVersionPayload? = null,
     override val actions: List<AndroidOngoingNotificationActionPayload>? = null,
 ) : AndroidOngoingNotificationPayload()
 
@@ -119,6 +131,8 @@ data class AndroidOngoingNotificationBigPicturePayload(
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
     override val chronometerCountDown: Boolean? = null,
+    override val showWhen: Boolean? = null,
+    override val publicVersion: AndroidOngoingNotificationPublicVersionPayload? = null,
     override val actions: List<AndroidOngoingNotificationActionPayload>? = null,
 ) : AndroidOngoingNotificationPayload()
 
@@ -136,6 +150,8 @@ data class AndroidOngoingNotificationInboxPayload(
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
     override val chronometerCountDown: Boolean? = null,
+    override val showWhen: Boolean? = null,
+    override val publicVersion: AndroidOngoingNotificationPublicVersionPayload? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
     override val actions: List<AndroidOngoingNotificationActionPayload>? = null,
 ) : AndroidOngoingNotificationPayload()
@@ -151,7 +167,9 @@ data class AndroidOngoingNotificationMetricPayload(
     override val whenEpochMillis: Long? = null,
     override val chronometer: Boolean? = null,
     override val chronometerCountDown: Boolean? = null,
+    override val showWhen: Boolean? = null,
     override val largeIcon: AndroidOngoingNotificationImageSource? = null,
+    override val publicVersion: AndroidOngoingNotificationPublicVersionPayload? = null,
     val metrics: List<AndroidOngoingNotificationMetricEntryPayload> = emptyList(),
     val criticalMetric: Int? = null,
     val semanticStyle: String? = null,
@@ -216,6 +234,7 @@ data class AndroidOngoingNotificationRecord(
     val deepLinkUrl: String? = null,
     val requestPromotedOngoing: Boolean = false,
     val fallbackBehavior: String = "standard",
+    val presentation: AndroidOngoingNotificationPresentation = AndroidOngoingNotificationPresentation(),
     val active: Boolean = true,
     val dismissed: Boolean = false,
 )

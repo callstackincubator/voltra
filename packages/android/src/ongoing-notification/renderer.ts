@@ -23,6 +23,7 @@ import type {
   AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
+  AndroidOngoingNotificationPublicVersion,
 } from './types.js'
 
 void getAndroidComponentId
@@ -341,6 +342,23 @@ const normalizeChronometer = (
   )
 }
 
+const normalizePublicVersion = (value: unknown): AndroidOngoingNotificationPublicVersion | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "publicVersion" must be an object with a title.')
+  }
+
+  const { title, text } = value as { title?: unknown; text?: unknown }
+
+  return {
+    title: assertString(title, 'publicVersion.title'),
+    text: assertOptionalString(text, 'publicVersion.text'),
+  }
+}
+
 const getElementKind = (element: ReactElement<Record<string, unknown>>) => {
   const elementType = element.type as unknown
 
@@ -368,7 +386,9 @@ const normalizeCommonDisplayFields = (
   when?: number
   chronometer?: boolean
   chronometerCountDown?: boolean
+  showWhen?: boolean
   largeIcon?: ImageSource
+  publicVersion?: AndroidOngoingNotificationPublicVersion
 } => {
   const when = normalizeWhen(props.when)
 
@@ -378,7 +398,9 @@ const normalizeCommonDisplayFields = (
     shortCriticalText: assertOptionalString(props.shortCriticalText, 'shortCriticalText'),
     when,
     ...normalizeChronometer(props.chronometer, when),
+    showWhen: assertBoolean(props.showWhen, 'showWhen'),
     largeIcon: assertOptionalImageSource(props.largeIcon, 'largeIcon'),
+    publicVersion: normalizePublicVersion(props.publicVersion),
   }
 }
 

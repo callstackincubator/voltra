@@ -140,6 +140,9 @@ android {
       // into jdk.internal.access.JavaIOFileDescriptorAccess; JDK 16+ denies that without
       // this export.
       jvmArgs "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED"
+      // Every Robolectric SDK level the suite configures keeps its own sandbox loaded for the
+      // whole run; Gradle's default 512 MB test heap no longer fits them all.
+      maxHeapSize = "2g"
       testLogging {
         events "passed", "failed", "skipped"
         exceptionFormat "full"

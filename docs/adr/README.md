@@ -30,3 +30,4 @@ Status values:
 | [0007](0007-per-instance-server-fetches.md)                   | Per-instance server fetches for Dynamic Widgets              | Accepted |
 | [0008](0008-android-ongoing-notification-live-updates-api.md) | Android ongoing notification Live Updates API surface        | Accepted |
 | [0009](0009-dynamic-widget-localisation.md)                   | Localisation for Dynamic Widgets and Dynamic Live Activities | Accepted |
+| [0010](0010-android-ongoing-notification-field-placement.md)  | Where Android ongoing notification fields live               | Accepted |

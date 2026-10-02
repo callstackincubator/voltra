@@ -28,6 +28,7 @@ export type {
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationChronometer,
+  AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationInboxPayload,
   AndroidOngoingNotificationInboxProps,
@@ -44,6 +45,7 @@ export type {
   AndroidOngoingNotificationProgressPoint,
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
+  AndroidOngoingNotificationPublicVersion,
 } from '@use-voltra/android/server'
 export type {
   WidgetRenderRequest,
