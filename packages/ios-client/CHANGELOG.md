@@ -1,5 +1,64 @@
 # @use-voltra/ios-client
 
+## 2.4.0
+
+### Minor Changes
+
+- a268ec2: Every Voltra component accepts a `modifiers` prop that applies platform-native modifiers on top of
+  its style. `Voltra.modifiers` provides SwiftUI modifiers such as `widgetURL`, `containerBackground`,
+  `privacySensitive`, `contentTransition` and `clipShape`; `VoltraAndroid.modifiers` provides Jetpack
+  Glance modifiers such as `semantics`, `appWidgetBackground`, `background`, `size` and `visibility`.
+  Passing a modifier from the other platform is a type error, and a modifier the device does not
+  support is skipped instead of breaking the widget. Native modifiers are meant for Dynamic Widgets and
+  Dynamic Live Activities; they count against the payload size limit of pushed updates.
+- 8beedea: The Edit Widget sheet can be translated. `appIntent.parameters[].title` accepts locale maps like
+  `displayName`, and a parameter can list `options` (`[{ "value": "metric", "title": "Metric" }]`),
+  which iOS shows as a picker while `env.configuration` still receives the `value`. On Android the
+  same titles are stored as string resources for a configuration screen you build in the app.
+
+  Widgets now declare the same languages as the app, taken from the Expo `locales` config,
+  `ios.infoPlist.CFBundleLocalizations`, widget locale maps and the app's development language. On
+  iOS this decides which language `env.locale` resolves to; before, only languages with a translated
+  gallery label counted.
+
+- 8beedea: Dynamic Widgets and Dynamic Live Activities receive the user's language and regional settings on
+  `env`: `preferredLanguages`, `layoutDirection`, `hourCycle` (matching the 12/24-hour setting),
+  `timeZone`, `measurementSystem`, `calendar` and `firstDayOfWeek`, alongside `locale`.
+  `resolveLocale(env, messages)` picks the best translation with the same fallback order as
+  localized initial states, and `pickLocalizedValue` is exported from `@use-voltra/core`,
+  `@use-voltra/ios` and `@use-voltra/android`.
+
+  `setDynamicWidgetLocale(tag | null)` renders widgets in a language the app chooses. The tag reaches
+  every render as `env.appLocale`, and placed widgets and running Dynamic Live Activities render
+  again at once. On iOS it needs `groupIdentifier` in the plugin configuration.
+
+  Android Dynamic Widgets render again after the device language, the app's per-app language or the
+  regional preferences change, even when the app is not running. A light/dark or language change
+  within 45 seconds of the last render now renders the widget again; before, it was ignored.
+
+### Patch Changes
+
+- 8beedea: On iOS, `env.locale` in Dynamic Widgets and Dynamic Live Activities is now a BCP-47 tag such as
+  `pl-PL` instead of `pl_PL`, matching Android and the documented type. Passing it to `Intl` or
+  `toLocaleString` no longer throws a `RangeError`. If your widget compared `env.locale` against the
+  underscore form, switch to the hyphenated one.
+- 935f7d5: iOS builds no longer fail with "Multiple commands produce … Metadata.appintents"
+  or a missing `VoltraRuntime-Swift.h` when the app uses `use_frameworks!`
+  (`ios.useFrameworks` in app.json, common on EAS). Since 2.3.0 the `Voltra` and
+  `VoltraWidget` pods shared one module name, so under frameworks linkage they
+  produced identically named build products. The widget extension pod now compiles
+  as `VoltraWidgetRuntime` while the app pod stays `VoltraRuntime`; run
+  `expo prebuild` again after updating so the generated Swift files pick up the
+  new import.
+- a268ec2: `animation`, `transition` and `contentTransition` modifiers now animate in `VoltraView` as they do in
+  widgets and Live Activities, and view state such as a timer's start time survives updates.
+- Updated dependencies [a268ec2]
+- Updated dependencies [8beedea]
+- Updated dependencies [8beedea]
+  - @use-voltra/ios@2.4.0
+  - @use-voltra/expo-plugin@2.4.0
+  - @use-voltra/compiler@2.4.0
+
 ## 2.3.2
 
 ### Patch Changes

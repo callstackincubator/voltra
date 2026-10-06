@@ -1,5 +1,21 @@
 # @use-voltra/metro
 
+## 2.4.0
+
+### Minor Changes
+
+- 8beedea: `withVoltra(config, { androidIntlPolyfills: { locales: ['en', 'pl'] } })` adds the FormatJS
+  polyfills for `Intl.PluralRules`, `Intl.RelativeTimeFormat`, `Intl.ListFormat`, `Intl.DisplayNames`
+  and `Intl.Locale` to Android widget bundles, with locale data for the listed languages. These APIs
+  are otherwise missing in Android widgets. iOS bundles are unchanged. Install the `@formatjs/*`
+  packages in the app first; Metro names any that are missing.
+
+### Patch Changes
+
+- Updated dependencies [8beedea]
+  - @use-voltra/expo-plugin@2.4.0
+  - @use-voltra/compiler@2.4.0
+
 ## 2.3.2
 
 ### Patch Changes
