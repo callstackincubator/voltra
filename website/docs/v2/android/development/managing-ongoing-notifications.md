@@ -663,7 +663,7 @@ if (result.ok && result.promotion) {
 | Reason                       | Meaning                                                                                       |
 | ---------------------------- | --------------------------------------------------------------------------------------------- |
 | `unsupported_api_level`      | The device runs below Android 16                                                               |
-| `permission_not_declared`    | `enableNotifications` is not on, so `POST_PROMOTED_NOTIFICATIONS` is missing from the manifest |
+| `permission_not_declared`    | `enableNotifications` is not on, so `POST_PROMOTED_NOTIFICATIONS` is missing from the manifest. Android 16 QPR2 and later only; Android 16.0 has no such permission |
 | `notifications_disabled`     | Notifications are turned off for your app                                                      |
 | `promotion_disabled_by_user` | The user turned Live Updates off for your app                                                  |
 | `channel_importance_min`     | The channel's importance is `MIN`; use at least `LOW`                                          |
