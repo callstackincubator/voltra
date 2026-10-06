@@ -9,14 +9,12 @@ import voltra.parsing.DynamicObjectSerializer
 import voltra.parsing.VoltraNodeSerializer
 
 /**
- * Root payload for both Live Updates and Widgets
+ * Root payload for widgets and in-app previews
  */
 @Serializable
 data class VoltraPayload(
     @SerialName("v")
     val v: Int, // Version
-    val collapsed: VoltraNode? = null, // Collapsed content (Live Updates)
-    val expanded: VoltraNode? = null, // Expanded content (Live Updates)
     val variants: Map<String, VoltraNode>? = null, // Size variants (Widgets)
     @Serializable(with = DynamicObjectListSerializer::class)
     val s: List<Map<String, Any?>>? = null, // Shared styles
