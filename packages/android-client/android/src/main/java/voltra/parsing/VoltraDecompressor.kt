@@ -18,8 +18,6 @@ object VoltraDecompressor {
      */
     fun decompress(payload: VoltraPayload): VoltraPayload =
         payload.copy(
-            collapsed = payload.collapsed?.let { decompressNode(it) },
-            expanded = payload.expanded?.let { decompressNode(it) },
             variants = payload.variants?.mapValues { decompressNode(it.value) },
             s = payload.s?.map { decompressMap(it) },
             e = payload.e?.map { decompressNode(it) },

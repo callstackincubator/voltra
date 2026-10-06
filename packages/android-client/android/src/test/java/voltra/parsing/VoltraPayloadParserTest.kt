@@ -22,11 +22,13 @@ class VoltraPayloadParserTest {
                 """
                 {
                   "v": 1,
-                  "collapsed": "Hello",
-                  "expanded": [{"t": 18, "p": {"txt": "Expanded"}}, {"${'$'}r": 0}],
                   "variants": {
-                    "100x100": {"t": 18, "i": "variant-text", "c": "Variant child", "p": {"txt": "Variant"}}
+                    "100x100": {"t": 18, "i": "variant-text", "c": "Variant child", "p": {"txt": "Variant"}},
+                    "text": "Hello",
+                    "list": [{"t": 18, "p": {"txt": "Expanded"}}, {"${'$'}r": 0}]
                   },
+                  "collapsed": {"also": "unknown key"},
+                  "expanded": {"also": "unknown key"},
                   "s": [{"bg": "#fff", "nullable": null}],
                   "e": [{"t": 18, "p": {"txt": "Shared"}}],
                   "unknown": true
@@ -35,23 +37,26 @@ class VoltraPayloadParserTest {
             )
 
         assertEquals(1, payload.v)
-        assertEquals(VoltraNode.Text("Hello"), payload.collapsed)
+        // The collapsed and expanded fields are unknown keys: ignore them even when they
+        // contain unsupported node shapes, and still decode the variants unchanged.
+        assertEquals(VoltraNode.Text("Hello"), payload.variants?.get("text"))
 
-        val expandedNode = payload.expanded
-        assertTrue(expandedNode is VoltraNode.Array)
-        val expanded = expandedNode as VoltraNode.Array
-        val expandedFirst = expanded.elements[0]
-        assertTrue(expandedFirst is VoltraNode.Element)
-        val expandedElement = expandedFirst as VoltraNode.Element
-        assertEquals(18, expandedElement.element.t)
-        assertEquals("Expanded", expandedElement.element.p?.get("text"))
-        assertEquals(VoltraNode.Ref(0), expanded.elements[1])
+        val listNode = payload.variants?.get("list")
+        assertTrue(listNode is VoltraNode.Array)
+        val list = listNode as VoltraNode.Array
+        val listFirst = list.elements[0]
+        assertTrue(listFirst is VoltraNode.Element)
+        val listElement = listFirst as VoltraNode.Element
+        assertEquals(18, listElement.element.t)
+        assertEquals("Expanded", listElement.element.p?.get("text"))
+        assertEquals(VoltraNode.Ref(0), list.elements[1])
 
         val variantNode = payload.variants?.get("100x100")
         assertTrue(variantNode is VoltraNode.Element)
         val variant = variantNode as VoltraNode.Element
         assertEquals("variant-text", variant.element.i)
         assertEquals(VoltraNode.Text("Variant child"), variant.element.c)
+        assertEquals("Variant", variant.element.p?.get("text"))
 
         assertEquals(1, payload.s?.size)
         assertTrue(payload.s?.first()?.containsKey("nullable") == true)
@@ -70,27 +75,29 @@ class VoltraPayloadParserTest {
                 """
                 {
                   "v": 1,
-                  "collapsed": {
-                    "t": 18,
-                    "p": {
-                      "txt": "hello",
-                      "enabled": true,
-                      "count": 7,
-                      "ratio": 1.5,
-                      "nullable": null,
-                      "nested": {"flag": false, "value": 2},
-                      "items": [1, null, {"deep": "value"}],
-                      "fallback": {"t": 18, "p": {"txt": "child"}},
-                      "listChildren": ["a", {"t": 18, "p": {"txt": "b"}}]
+                  "variants": {
+                    "content": {
+                      "t": 18,
+                      "p": {
+                        "txt": "hello",
+                        "enabled": true,
+                        "count": 7,
+                        "ratio": 1.5,
+                        "nullable": null,
+                        "nested": {"flag": false, "value": 2},
+                        "items": [1, null, {"deep": "value"}],
+                        "fallback": {"t": 18, "p": {"txt": "child"}},
+                        "listChildren": ["a", {"t": 18, "p": {"txt": "b"}}]
+                      }
                     }
                   }
                 }
                 """.trimIndent(),
             )
 
-        val collapsedNode = payload.collapsed
-        assertTrue(collapsedNode is VoltraNode.Element)
-        val element = (collapsedNode as VoltraNode.Element).element
+        val contentNode = payload.variants?.get("content")
+        assertTrue(contentNode is VoltraNode.Element)
+        val element = (contentNode as VoltraNode.Element).element
         assertTrue(element.p != null)
         val props = element.p as Map<String, Any?>
 
@@ -137,18 +144,20 @@ class VoltraPayloadParserTest {
                 """
                 {
                   "v": 1,
-                  "collapsed": {
-                    "t": 18,
-                    "p": {
-                      "txt": "Root",
-                      "s": {"bg": "#fff", "nullable": null},
-                      "fallback": {
-                        "t": 18,
-                        "p": {
-                          "txt": "Nested",
-                          "s": {"bg": "#000"}
-                        },
-                        "c": "Child"
+                  "variants": {
+                    "content": {
+                      "t": 18,
+                      "p": {
+                        "txt": "Root",
+                        "s": {"bg": "#fff", "nullable": null},
+                        "fallback": {
+                          "t": 18,
+                          "p": {
+                            "txt": "Nested",
+                            "s": {"bg": "#000"}
+                          },
+                          "c": "Child"
+                        }
                       }
                     }
                   },
@@ -157,21 +166,21 @@ class VoltraPayloadParserTest {
                 """.trimIndent(),
             )
 
-        val collapsedNode = payload.collapsed
-        assertTrue(collapsedNode is VoltraNode.Element)
-        val collapsed = (collapsedNode as VoltraNode.Element).element
-        assertEquals("Root", collapsed.p?.get("text"))
+        val contentNode = payload.variants?.get("content")
+        assertTrue(contentNode is VoltraNode.Element)
+        val content = (contentNode as VoltraNode.Element).element
+        assertEquals("Root", content.p?.get("text"))
 
-        assertTrue(collapsed.p != null)
-        val collapsedProps = collapsed.p as Map<String, Any?>
-        val styleValue = collapsedProps["style"]
+        assertTrue(content.p != null)
+        val contentProps = content.p as Map<String, Any?>
+        val styleValue = contentProps["style"]
         assertTrue(styleValue is Map<*, *>)
         val style = styleValue as Map<*, *>
         assertEquals("#fff", style["backgroundColor"])
         assertTrue(style.containsKey("nullable"))
         assertNull(style["nullable"])
 
-        val fallbackValue = collapsedProps["fallback"]
+        val fallbackValue = contentProps["fallback"]
         assertTrue(fallbackValue is Map<*, *>)
         val fallback = fallbackValue as Map<*, *>
         assertEquals(18, (fallback["t"] as Number).toInt())
@@ -196,7 +205,7 @@ class VoltraPayloadParserTest {
                     """
                     {
                       "v": 1,
-                      "collapsed": {"unexpected": true},
+                      "variants": {"content": {"unexpected": true}},
                       "ignored": "value"
                     }
                     """.trimIndent(),
@@ -210,7 +219,7 @@ class VoltraPayloadParserTest {
 
         val missingFieldError =
             try {
-                VoltraPayloadParser.parse("""{"collapsed":"missing version"}""")
+                VoltraPayloadParser.parse("""{"variants":{"content":"missing version"}}""")
                 null
             } catch (error: SerializationException) {
                 error
@@ -223,13 +232,13 @@ class VoltraPayloadParserTest {
                 """
                 {
                   "v": 1,
-                  "collapsed": "ok",
+                  "variants": {"content": "ok"},
                   "extra": {"ignored": true}
                 }
                 """.trimIndent(),
             )
 
-        assertEquals(VoltraNode.Text("ok"), payload.collapsed)
+        assertEquals(VoltraNode.Text("ok"), payload.variants?.get("content"))
         assertFalse(payload.variants?.containsKey("extra") == true)
     }
 }

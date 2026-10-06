@@ -28,7 +28,7 @@ object VoltraPayloadParser {
 
         Log.d(
             TAG,
-            "Parsed and decompressed: collapsed=${result.collapsed != null}, expanded=${result.expanded != null}, variants=${result.variants?.keys}",
+            "Parsed and decompressed: variants=${result.variants?.keys}",
         )
 
         return result
