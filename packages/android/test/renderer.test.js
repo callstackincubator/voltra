@@ -9,12 +9,15 @@ const {
   ANDROID_COMPONENT_NAME_TO_ID,
   VoltraAndroid,
   getAndroidComponentId,
-  renderAndroidLiveUpdateToJson,
-  renderAndroidLiveUpdateToString,
   renderAndroidViewToJson,
   renderAndroidWidgetToJson,
   renderAndroidWidgetToString,
 } = android
+
+test('does not export the abandoned Android live update renderers', () => {
+  assert.equal(android.renderAndroidLiveUpdateToJson, undefined)
+  assert.equal(android.renderAndroidLiveUpdateToString, undefined)
+})
 
 test('renders Android widget variants under the expected size keys', () => {
   const variants = [
@@ -262,35 +265,6 @@ test('omits gradientColors from the ArcProgressIndicator payload when it is not 
       },
     }
   )
-})
-
-test('renders Android live update roots and metadata into the expected fields', () => {
-  const liveUpdate = {
-    collapsed: React.createElement(VoltraAndroid.Text, null, 'Collapsed'),
-    expanded: React.createElement(VoltraAndroid.Box, null, React.createElement(VoltraAndroid.Text, null, 'Expanded')),
-    smallIcon: 'icon.png',
-    channelId: 'updates',
-  }
-
-  assert.deepEqual(renderAndroidLiveUpdateToJson(liveUpdate), {
-    v: 1,
-    collapsed: {
-      t: getAndroidComponentId('AndroidText'),
-      c: 'Collapsed',
-    },
-    expanded: {
-      t: getAndroidComponentId('AndroidBox'),
-      c: {
-        t: getAndroidComponentId('AndroidText'),
-        c: 'Expanded',
-      },
-    },
-    smallIcon: 'icon.png',
-    channelId: 'updates',
-  })
-
-  assert.equal(renderAndroidLiveUpdateToString(liveUpdate), JSON.stringify(renderAndroidLiveUpdateToJson(liveUpdate)))
-  assert.deepEqual(renderAndroidLiveUpdateToJson({}), { v: 1 })
 })
 
 test('uses generated Android component ids consistently in rendered payloads', () => {

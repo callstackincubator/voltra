@@ -35,30 +35,6 @@ import voltra.widget.VoltraRefreshActionCallback
 object RemoteViewsGenerator {
     private const val TAG = "RemoteViewsGenerator"
 
-    /**
-     * Generate RemoteViews for collapsed notification content
-     */
-    suspend fun generateCollapsed(
-        context: Context,
-        payload: VoltraPayload,
-    ): RemoteViews? {
-        val node = payload.collapsed ?: return null
-        Log.d(TAG, "Generating collapsed view")
-        return generate(context, node, payload.e, payload.s, DpSize(360.dp, 64.dp))
-    }
-
-    /**
-     * Generate RemoteViews for expanded notification content
-     */
-    suspend fun generateExpanded(
-        context: Context,
-        payload: VoltraPayload,
-    ): RemoteViews? {
-        val node = payload.expanded ?: return null
-        Log.d(TAG, "Generating expanded view")
-        return generate(context, node, payload.e, payload.s, DpSize(360.dp, 256.dp))
-    }
-
     private suspend fun generate(
         context: Context,
         node: VoltraNode,
@@ -68,7 +44,7 @@ object RemoteViewsGenerator {
     ): RemoteViews {
         // Create a new GlanceRemoteViews instance each time to avoid caching issues
         val glanceRemoteViews = GlanceRemoteViews()
-        // Use empty widgetId for notification RemoteViews (not widget-specific)
+        // Compose without widget-specific context.
         val factory = GlanceFactory("notification", sharedElements, sharedStyles, size)
 
         Log.d(TAG, "Composing Glance content with size: $size, sharedStyles count: ${sharedStyles?.size ?: 0}")
