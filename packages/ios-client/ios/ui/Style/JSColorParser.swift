@@ -1,8 +1,27 @@
 import SwiftUI
+#if canImport(UIKit)
+  import UIKit
+#endif
 
 enum JSColorParser {
-  /// Parses Hex, RGB, RGBA, HSL, HSLA, and named color strings into SwiftUI Color.
+  /// Parses color strings and iOS PlatformColor descriptors into SwiftUI Color.
   static func parse(_ value: Any?) -> Color? {
+    #if canImport(UIKit)
+      if let descriptor = value as? [String: Any], let names = descriptor["semantic"] as? [String] {
+        for name in names {
+          if let color = UIColor(named: name) {
+            return Color(uiColor: color)
+          }
+          let selector = NSSelectorFromString(name.hasSuffix("Color") ? name : "\(name)Color")
+          if !name.contains(":"), UIColor.responds(to: selector),
+             let color = UIColor.perform(selector)?.takeUnretainedValue() as? UIColor
+          {
+            return Color(uiColor: color)
+          }
+        }
+        return nil
+      }
+    #endif
     guard let string = value as? String else { return nil }
 
     // Optimize: standard trim and lowercase

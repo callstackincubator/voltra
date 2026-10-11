@@ -57,6 +57,35 @@ The following React Native style properties are supported:
 
 - `overflow: 'hidden'` - Clips content to bounds (maps to `clipped` modifier)
 
+### iOS PlatformColor
+
+Color styles accept React Native's `PlatformColor` values. UIKit resolves semantic
+colors and asset catalog colors on the device, preserving their light/dark
+appearance. Names are tried in order, so an unavailable name can fall back to the
+next one. Names are case-sensitive and may include the UIKit `Color` suffix.
+
+```tsx
+import { PlatformColor } from 'react-native'
+
+<Voltra.ZStack style={{ backgroundColor: PlatformColor('secondarySystemFill') }}>
+  <Voltra.Text style={{ color: PlatformColor('label') }}>AB</Voltra.Text>
+</Voltra.ZStack>
+```
+
+Server renderers can pass the same serializable descriptor without importing
+React Native:
+
+```tsx
+<Voltra.Text style={{ color: { semantic: ['customTextColor', 'label'] } }}>
+  Hello
+</Voltra.Text>
+```
+
+Descriptors work in `color`, `backgroundColor`, `borderColor`, and `shadowColor`.
+They require UIKit; Android resource descriptors and `DynamicColorIOS` are not
+supported by this iOS implementation. Existing CSS color strings and gradients
+continue to work. SwiftUI's `primary` and `secondary` retain their existing meaning.
+
 ### Flexbox Properties (Opt-in)
 
 When using the `View` component or enabling flexbox mode on `VStack`/`HStack` with `layout="flex"`, additional flexbox properties become available via the `style` prop:

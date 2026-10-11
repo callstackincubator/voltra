@@ -22,7 +22,13 @@ export type {
   DynamicLiveActivityPropsValue,
 } from './live-activity/dynamic.js'
 export { renderVoltraVariantToJson } from './renderer/index.js'
-export type { VoltraStyleProp, VoltraTextStyle, VoltraTextStyleProp, VoltraViewStyle } from './styles/index.js'
+export type {
+  VoltraColorValue,
+  VoltraStyleProp,
+  VoltraTextStyle,
+  VoltraTextStyleProp,
+  VoltraViewStyle,
+} from './styles/index.js'
 export type {
   EventSubscription,
   PreloadImageFailure,

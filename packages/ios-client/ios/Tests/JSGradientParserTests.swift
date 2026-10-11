@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+  import UIKit
+#endif
 @testable import VoltraStyleCore
 import XCTest
 
@@ -173,6 +176,35 @@ final class JSColorParserTests: XCTestCase {
     XCTAssertNotNil(JSColorParser.parse("red"))
     XCTAssertNotNil(JSColorParser.parse("green"))
     XCTAssertNotNil(JSColorParser.parse("blue"))
+  }
+
+  func testPlatformColorDescriptors() {
+    #if canImport(UIKit)
+      for (name, expected) in [("secondarySystemFill", UIColor.secondarySystemFill), ("label", UIColor.label), ("systemBlue", UIColor.systemBlue)] {
+        guard let parsed = JSColorParser.parse(["semantic": ["missingColor", name]]) else {
+          XCTFail("Expected UIKit semantic color: \(name)")
+          continue
+        }
+        for appearance in [UIUserInterfaceStyle.light, .dark] {
+          let traits = UITraitCollection(userInterfaceStyle: appearance)
+          func components(_ color: UIColor) -> [CGFloat] {
+            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+            color.resolvedColor(with: traits).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            return [red, green, blue, alpha]
+          }
+          for (actual, expected) in zip(components(UIColor(parsed)), components(expected)) {
+            XCTAssertEqual(actual, expected, accuracy: 0.001)
+          }
+        }
+      }
+      XCTAssertNotNil(JSColorParser.parse(["semantic": ["labelColor"]]))
+    #else
+      XCTAssertNil(JSColorParser.parse(["semantic": ["label"]]))
+    #endif
+    XCTAssertNil(JSColorParser.parse(["semantic": ["missingColor"]]))
+    XCTAssertNil(JSColorParser.parse(["semantic": ["setValue:forKey:"]]))
+    XCTAssertNil(JSColorParser.parse(["semantic": []]))
+    XCTAssertNil(JSColorParser.parse(["semantic": [1]]))
   }
 
   func testRGBSlashSyntaxParses() {

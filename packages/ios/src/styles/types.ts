@@ -1,3 +1,6 @@
+// React Native types PlatformColor as an opaque, branded symbol; its runtime value is a semantic descriptor.
+export type VoltraColorValue = string | symbol | { readonly semantic: readonly string[] }
+
 type StyleProp<T> = T | T[] | null | undefined | false
 
 type VoltraTransform =
@@ -43,12 +46,12 @@ export type VoltraViewStyle = {
   marginRight?: number | string
   marginHorizontal?: number | string
   marginVertical?: number | string
-  backgroundColor?: string
+  backgroundColor?: VoltraColorValue
   opacity?: number
   borderRadius?: number | string
   borderWidth?: number
-  borderColor?: string
-  shadowColor?: string
+  borderColor?: VoltraColorValue
+  shadowColor?: VoltraColorValue
   shadowOffset?: { width: number; height: number }
   shadowOpacity?: number
   shadowRadius?: number
@@ -66,7 +69,7 @@ export type VoltraTextStyle = VoltraViewStyle & {
   fontSize?: number
   fontWeight?: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900'
   fontFamily?: string
-  color?: string
+  color?: VoltraColorValue
   letterSpacing?: number
   fontVariant?: ('small-caps' | 'tabular-nums' | 'oldstyle-nums' | 'lining-nums' | 'proportional-nums')[]
   textDecorationLine?: 'none' | 'underline' | 'line-through' | 'underline line-through'
