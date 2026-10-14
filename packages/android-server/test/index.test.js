@@ -9,7 +9,21 @@ const {
   createAndroidWidgetUpdateNodeHandler,
   renderAndroidWidgetToString,
 } = require('../build/cjs/index.js')
-const { VoltraAndroid } = require('../../android/build/commonjs/index.js')
+const {
+  VoltraAndroid,
+  AndroidOngoingNotification: ClientOngoingNotification,
+} = require('../../android/build/commonjs/index.js')
+const {
+  renderAndroidOngoingNotificationPayload: renderClientOngoingNotificationPayload,
+} = require('../../android/build/commonjs/server.js')
+const {
+  AndroidOngoingNotification,
+  renderAndroidOngoingNotificationPayload,
+  renderAndroidOngoingNotificationPayloadToJson,
+} = require('../build/cjs/index.js')
+
+const { BigPicture, Inbox } = AndroidOngoingNotification
+const { BigPicture: ClientBigPicture, Inbox: ClientInbox } = ClientOngoingNotification
 
 function createNodeResponseRecorder() {
   return {
@@ -99,6 +113,64 @@ test('passes validateToken through unchanged and preserves null render results',
   assert.equal(validToken.status, 404)
   assert.deepEqual(await validToken.json(), { error: 'No content for Android widget: weather' })
   assert.deepEqual(authCalls, ['nope', 'valid-token'])
+})
+
+test('renders ongoing notification payloads byte-identically to @use-voltra/android', () => {
+  const bigPictureProps = {
+    title: 'Parcel delivered',
+    text: 'Left at the front door',
+    picture: { assetName: 'delivery_photo_123' },
+    largeIcon: { assetName: 'courier_avatar' },
+    hideLargeIconWhenExpanded: true,
+    pictureContentDescription: 'Photo of the parcel at the front door',
+    summaryText: 'Order 123',
+  }
+  const inboxProps = {
+    title: '3 stops remaining',
+    lines: ['12 Oak Street', '4 Elm Road', 'Depot'],
+    summaryText: 'Route 7',
+    chronometer: true,
+    when: 1760000000000,
+  }
+
+  const cases = [
+    { Component: BigPicture, ClientComponent: ClientBigPicture, props: bigPictureProps },
+    { Component: Inbox, ClientComponent: ClientInbox, props: inboxProps },
+  ]
+
+  for (const { Component, ClientComponent, props } of cases) {
+    const serverString = renderAndroidOngoingNotificationPayload(React.createElement(Component, props))
+    const clientString = renderClientOngoingNotificationPayload(React.createElement(ClientComponent, props))
+
+    assert.equal(serverString, clientString)
+    assert.equal(
+      JSON.stringify(renderAndroidOngoingNotificationPayloadToJson(React.createElement(Component, props))),
+      serverString
+    )
+  }
+
+  assert.equal(
+    renderAndroidOngoingNotificationPayload(
+      React.createElement(
+        BigPicture,
+        bigPictureProps,
+        React.createElement(AndroidOngoingNotification.Action, {
+          title: 'Confirm',
+          deepLinkUrl: 'myapp://orders/123/confirm',
+        })
+      )
+    ),
+    renderClientOngoingNotificationPayload(
+      React.createElement(
+        ClientBigPicture,
+        bigPictureProps,
+        React.createElement(ClientOngoingNotification.Action, {
+          title: 'Confirm',
+          deepLinkUrl: 'myapp://orders/123/confirm',
+        })
+      )
+    )
+  )
 })
 
 test('Node and Express adapters delegate through the same conversion path', async () => {

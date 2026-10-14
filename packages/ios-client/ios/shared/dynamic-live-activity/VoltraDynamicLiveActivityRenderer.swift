@@ -21,7 +21,10 @@ public enum VoltraDynamicLiveActivityRenderer {
     definitionId: String,
     context: ActivityViewContext<Attributes>
   ) -> DynamicIsland {
-    DynamicIsland {
+    // Set once on the Dynamic Island, which makes it the default for every region; the regions
+    // only drop the tree's own widgetURL so the configured link takes precedence.
+    let deepLinkURL = context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl)
+    let dynamicIsland = DynamicIsland {
       DynamicIslandExpandedRegion(.leading) {
         VoltraDynamicLiveActivityDynamicIslandRegionView(
           definitionId: definitionId,
@@ -73,6 +76,7 @@ public enum VoltraDynamicLiveActivityRenderer {
     // DynamicIsland itself is not a View and cannot read SwiftUI Environment.
     // Do not execute a definition against fabricated values solely to obtain a
     // keyline tint; its region views below read the actual environment.
+    return deepLinkURL.map { dynamicIsland.widgetURL($0) } ?? dynamicIsland
   }
 
   fileprivate static func resolve<Attributes: VoltraDynamicLiveActivityDefinition>(
@@ -81,6 +85,7 @@ public enum VoltraDynamicLiveActivityRenderer {
     activityFamily: String?,
     colorScheme: ColorScheme? = nil,
     locale: Locale = .current,
+    layoutDirection: LayoutDirection? = nil,
     widgetRenderingMode: WidgetRenderingMode = .fullColor
   ) -> VoltraDynamicLiveActivityResolvedContent {
     guard VoltraDynamicLiveActivityRegistry.shared.contains(definitionId) else {
@@ -91,6 +96,13 @@ public enum VoltraDynamicLiveActivityRenderer {
       logFailure(definitionId: definitionId, activityName: context.attributes.name, message: "Could not encode content-state props")
       return .empty
     }
+    // Captured once so every region shares it and the cache key covers every locale field,
+    // including the app's `setDynamicWidgetLocale` override (ADR 0009).
+    let localeEnvironment = VoltraLocaleEnvironment.capture(
+      locale: locale,
+      isRightToLeft: layoutDirection.map { $0 == .rightToLeft },
+      appLocale: VoltraWidgetDefaults.dynamicWidgetLocale()
+    )
     // WidgetKit asks each Dynamic Island region (and each presentation) to render
     // independently, all with identical state/environment. Cache the resolved
     // variants shape so those siblings share one bundle load, one JS evaluation,
@@ -103,7 +115,7 @@ public enum VoltraDynamicLiveActivityRenderer {
       props: propsJSON,
       activityFamily: activityFamily,
       colorScheme: String(describing: colorScheme ?? .light),
-      locale: locale.identifier,
+      locale: localeEnvironment,
       widgetRenderingMode: String(describing: widgetRenderingMode),
       isStale: context.isStale
     )
@@ -114,7 +126,7 @@ public enum VoltraDynamicLiveActivityRenderer {
         propsJSON: propsJSON,
         activityFamily: activityFamily,
         colorScheme: colorScheme,
-        locale: locale,
+        localeEnvironment: localeEnvironment,
         widgetRenderingMode: widgetRenderingMode
       )
     }
@@ -126,13 +138,13 @@ public enum VoltraDynamicLiveActivityRenderer {
     propsJSON: String,
     activityFamily: String?,
     colorScheme: ColorScheme?,
-    locale: Locale,
+    localeEnvironment: VoltraLocaleEnvironment,
     widgetRenderingMode: WidgetRenderingMode
   ) -> VoltraDynamicLiveActivityResolvedContent {
     let environmentJSON = VoltraDynamicLiveActivityEnvironmentBuilder.build(
       date: Date(),
       colorScheme: colorScheme,
-      locale: locale,
+      localeEnvironment: localeEnvironment,
       widgetRenderingMode: widgetRenderingMode,
       isStale: context.isStale,
       activityFamily: activityFamily
@@ -176,18 +188,23 @@ private struct VoltraDynamicLiveActivityDynamicIslandRegionView<Attributes: Volt
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.locale) private var locale
+  @Environment(\.layoutDirection) private var layoutDirection
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
-    VoltraDynamicLiveActivityRenderer.resolve(
+    let deepLinkURL = context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl)
+    let content = VoltraDynamicLiveActivityRenderer.resolve(
       definitionId: definitionId,
       context: context,
       activityFamily: nil,
       colorScheme: colorScheme,
       locale: locale,
+      layoutDirection: layoutDirection,
       widgetRenderingMode: widgetRenderingMode
     )
-    .view(for: region, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+    let _ = VoltraRootModifiers.warnIfIslandIgnoresWidgetURL(in: region, root: content.root(for: region), configured: deepLinkURL)
+    content.view(for: region, activityId: context.activityID)
+      .voltraDeferringWidgetURL(to: deepLinkURL)
   }
 }
 
@@ -197,6 +214,7 @@ private struct VoltraDynamicLiveActivityLockScreenView<Attributes: VoltraDynamic
 
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.locale) private var locale
+  @Environment(\.layoutDirection) private var layoutDirection
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
@@ -206,14 +224,12 @@ private struct VoltraDynamicLiveActivityLockScreenView<Attributes: VoltraDynamic
       activityFamily: nil,
       colorScheme: colorScheme,
       locale: locale,
+      layoutDirection: layoutDirection,
       widgetRenderingMode: widgetRenderingMode
     )
-    if let tint = content.payload?.activityBackgroundTint, let color = JSColorParser.parse(tint) {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
-        .activityBackgroundTint(color)
-    } else {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
-    }
+    content.view(for: .lockScreen, activityId: context.activityID)
+      .voltraWidgetURL(configured: context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl))
+      .voltraActivityBackgroundTint(configured: content.payload?.activityBackgroundTint.flatMap { JSColorParser.parse($0) })
   }
 }
 
@@ -225,6 +241,7 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
   @Environment(\.activityFamily) private var activityFamily
   @Environment(\.colorScheme) private var colorScheme
   @Environment(\.locale) private var locale
+  @Environment(\.layoutDirection) private var layoutDirection
   @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
   var body: some View {
@@ -234,12 +251,14 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
       activityFamily: String(describing: activityFamily),
       colorScheme: colorScheme,
       locale: locale,
+      layoutDirection: layoutDirection,
       widgetRenderingMode: widgetRenderingMode
     )
+    // One widgetURL for the whole presentation, including the small family that shows two
+    // regions side by side.
     familyContent(content: content)
-      .voltraIfLet(content.payload?.activityBackgroundTint.flatMap { JSColorParser.parse($0) }) { view, color in
-        view.activityBackgroundTint(color)
-      }
+      .voltraWidgetURL(configured: context.attributes.deepLinkUrl.flatMap(VoltraDeepLinkResolver.resolveUrl))
+      .voltraActivityBackgroundTint(configured: content.payload?.activityBackgroundTint.flatMap { JSColorParser.parse($0) })
   }
 
   @ViewBuilder
@@ -247,7 +266,7 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
     if activityFamily == .small {
       smallFamilyContent(content: content)
     } else {
-      content.view(for: .lockScreen, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+      content.view(for: .lockScreen, activityId: context.activityID)
     }
   }
 
@@ -256,14 +275,13 @@ private struct VoltraDynamicLiveActivityAdaptiveLockScreenView<Attributes: Voltr
     if content.hasContent(for: .supplementalActivityFamiliesSmall) {
       content.view(
         for: .supplementalActivityFamiliesSmall,
-        activityId: context.activityID,
-        deepLink: context.attributes.deepLinkUrl
+        activityId: context.activityID
       )
     } else if content.hasContent(for: .islandCompactLeading) || content.hasContent(for: .islandCompactTrailing) {
       HStack(spacing: 0) {
-        content.view(for: .islandCompactLeading, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        content.view(for: .islandCompactLeading, activityId: context.activityID)
         Spacer()
-        content.view(for: .islandCompactTrailing, activityId: context.activityID, deepLink: context.attributes.deepLinkUrl)
+        content.view(for: .islandCompactTrailing, activityId: context.activityID)
       }
       .frame(maxWidth: .infinity)
     }
@@ -279,12 +297,15 @@ private struct VoltraDynamicLiveActivityResolvedContent {
     !(payload?.regions[region] ?? []).isEmpty
   }
 
+  func root(for region: VoltraRegion) -> VoltraNode? {
+    guard let nodes = payload?.regions[region], !nodes.isEmpty else { return nil }
+    return nodes.count == 1 ? nodes[0] : .array(nodes)
+  }
+
   @ViewBuilder
-  func view(for region: VoltraRegion, activityId: String, deepLink: String?) -> some View {
-    if let nodes = payload?.regions[region], !nodes.isEmpty {
-      let root: VoltraNode = nodes.count == 1 ? nodes[0] : .array(nodes)
+  func view(for region: VoltraRegion, activityId: String) -> some View {
+    if let root = root(for: region) {
       Voltra(root: root, activityId: activityId)
-        .voltraIfLet(deepLink.flatMap(VoltraDeepLinkResolver.resolveUrl)) { view, url in view.widgetURL(url) }
     }
   }
 }
@@ -302,7 +323,7 @@ private final class VoltraDynamicLiveActivityRenderCache: @unchecked Sendable {
     let props: String
     let activityFamily: String?
     let colorScheme: String
-    let locale: String
+    let locale: VoltraLocaleEnvironment
     let widgetRenderingMode: String
     let isStale: Bool
   }
@@ -330,7 +351,7 @@ private enum VoltraDynamicLiveActivityEnvironmentBuilder {
   static func build(
     date: Date,
     colorScheme: ColorScheme?,
-    locale: Locale,
+    localeEnvironment: VoltraLocaleEnvironment,
     widgetRenderingMode: WidgetRenderingMode,
     isStale: Bool,
     activityFamily: String?
@@ -351,11 +372,12 @@ private enum VoltraDynamicLiveActivityEnvironmentBuilder {
     var environment: [String: Any] = [
       "date": Int(date.timeIntervalSince1970 * 1000),
       "colorScheme": String(describing: colorScheme ?? .light),
-      "locale": locale.identifier,
       "widgetRenderingMode": String(describing: widgetRenderingMode),
       "build": build,
       "isStale": isStale,
     ]
+    // BCP-47 `locale` and the rest of the ADR 0009 locale fields.
+    environment.merge(localeEnvironment.dictionary) { current, _ in current }
     if let activityFamily {
       environment["activityFamily"] = activityFamily
     }

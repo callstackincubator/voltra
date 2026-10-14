@@ -33,14 +33,65 @@ type StartAndroidOngoingNotificationOptionsSpec = Readonly<{
   deepLinkUrl?: string
   requestPromotedOngoing?: boolean
   fallbackBehavior?: string
+  visibility?: string
+  color?: string
+  category?: string
+  timeoutMs?: number
+  localOnly?: boolean
+  group?: string
+  sortKey?: string
+  allowSystemGeneratedContextualActions?: boolean
 }>
 
+/**
+ * An update option whose value is `null` clears the stored value, which a spec type cannot express
+ * with `?:` alone: an absent key means "keep it".
+ */
 type UpdateAndroidOngoingNotificationOptionsSpec = Readonly<{
   channelId?: string
   smallIcon?: string
   deepLinkUrl?: string
   requestPromotedOngoing?: boolean
   fallbackBehavior?: string
+  alert?: boolean
+  visibility?: string | null
+  color?: string | null
+  category?: string | null
+  timeoutMs?: number | null
+  localOnly?: boolean | null
+  group?: string | null
+  sortKey?: string | null
+  allowSystemGeneratedContextualActions?: boolean | null
+}>
+
+/**
+ * An upsert may update, so it takes the start shape plus what only an update can use. Written out in
+ * full because the TurboModule codegen parser resolves only inline object types: `Omit` and
+ * intersections of named types fail the schema generation.
+ */
+type UpsertAndroidOngoingNotificationOptionsSpec = Readonly<{
+  notificationId?: string
+  channelId: string
+  smallIcon?: string
+  deepLinkUrl?: string
+  requestPromotedOngoing?: boolean
+  fallbackBehavior?: string
+  alert?: boolean
+  visibility?: string | null
+  color?: string | null
+  category?: string | null
+  timeoutMs?: number | null
+  localOnly?: boolean | null
+  group?: string | null
+  sortKey?: string | null
+  allowSystemGeneratedContextualActions?: boolean | null
+}>
+
+type AndroidOngoingNotificationPromotionSpec = Readonly<{
+  requested: boolean
+  eligible: boolean
+  reasons: string[]
+  hasPromotableCharacteristics?: boolean
 }>
 
 type AndroidOngoingNotificationResultSpec = Readonly<{
@@ -48,6 +99,19 @@ type AndroidOngoingNotificationResultSpec = Readonly<{
   notificationId: string
   action?: string
   reason?: string
+  promotion?: AndroidOngoingNotificationPromotionSpec
+  styleFallback?: string
+}>
+
+type CheckAndroidOngoingNotificationPromotionOptionsSpec = Readonly<{
+  channelId: string
+  smallIcon?: string
+}>
+
+type AndroidOngoingNotificationPromotionCheckResultSpec = Readonly<{
+  eligible: boolean
+  reasons: string[]
+  hasPromotableCharacteristics?: boolean
 }>
 
 type AndroidOngoingNotificationStatusSpec = Readonly<{
@@ -77,7 +141,7 @@ export interface Spec extends TurboModule {
   ): Promise<AndroidOngoingNotificationResultSpec>
   upsertAndroidOngoingNotification(
     payload: string,
-    options: StartAndroidOngoingNotificationOptionsSpec
+    options: UpsertAndroidOngoingNotificationOptionsSpec
   ): Promise<AndroidOngoingNotificationResultSpec>
   updateAndroidOngoingNotification(
     notificationId: string,
@@ -85,15 +149,24 @@ export interface Spec extends TurboModule {
     options?: UpdateAndroidOngoingNotificationOptionsSpec
   ): Promise<AndroidOngoingNotificationResultSpec>
   stopAndroidOngoingNotification(notificationId: string): Promise<AndroidOngoingNotificationResultSpec>
+  /** Runs the post-time promotion checks without posting and without writing a record. */
+  checkAndroidOngoingNotificationPromotion(
+    payload: string,
+    options: CheckAndroidOngoingNotificationPromotionOptionsSpec
+  ): Promise<AndroidOngoingNotificationPromotionCheckResultSpec>
   isAndroidOngoingNotificationActive(notificationId: string): boolean
   getAndroidOngoingNotificationStatus(notificationId: string): AndroidOngoingNotificationStatusSpec
   endAllAndroidOngoingNotifications(): Promise<void>
   canPostPromotedAndroidNotifications(): boolean
   getAndroidOngoingNotificationCapabilities(): AndroidOngoingNotificationCapabilitiesSpec
   openAndroidNotificationSettings(): Promise<void>
+  /** True when the Live Updates promotion page opened, false when it fell back to the notification settings. */
+  openAndroidPromotedNotificationSettings(): Promise<boolean>
   updateAndroidWidget(widgetId: string, jsonString: string, options?: Readonly<{ deepLinkUrl?: string }>): Promise<void>
   updateAndroidDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
   reloadAndroidWidgets(widgetIds?: string[] | null): Promise<void>
+  /** Language override for Dynamic Widgets (`env.appLocale`); null clears it. */
+  setDynamicWidgetLocale(tag: string | null): Promise<void>
   setWidgetConfiguration(widgetId: string, key: string, value: string): Promise<void>
   /** Values cross as a JSON object so several keys cost one bridge call and one re-render. */
   setWidgetInstanceConfiguration(appWidgetId: number, valuesJson: string): Promise<void>

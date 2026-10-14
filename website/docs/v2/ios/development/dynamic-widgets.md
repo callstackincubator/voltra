@@ -10,7 +10,7 @@ That means your Dynamic Widget can react to:
 
 - `env.widgetFamily`
 - `env.colorScheme`
-- `env.locale`
+- `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](./localization)
 - `env.widgetRenderingMode`
 - `env.showsWidgetContainerBackground`
 - `env.configuration` when you also add widget parameters
@@ -59,9 +59,12 @@ export default function WeatherDynamicWidget(
   const headline = props.headline ?? 'Weather update'
   const unreadCount = props.unreadCount ?? 0
 
-  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString('en-US', {
+  // Format with the user's locale, 12/24-hour setting and time zone.
+  const renderedAt = (env.date ? new Date(env.date) : new Date()).toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: env.hourCycle,
+    timeZone: env.timeZone,
   })
 
   return (
@@ -161,9 +164,14 @@ Dynamic Widget props are app-owned state passed as the entry component's first a
 
 If you want user-editable values, add `appIntent` too. See [Configurable Widgets](./configurable-widgets).
 
+## Localization
+
+Pass `env.locale` to every `Intl` and `toLocale*` call, and pick a translation with `resolveLocale(env, messages)`. See [Localization](./localization) for every locale field, how to declare the languages your app supports, and how to let the app choose the widget language.
+
 ## Notes
 
 - There is no `export` field in app.json for Dynamic Widgets.
 - The default-exported function or component name does not need to match the widget `id`.
 - Use a real device to verify release rendering.
 - `initialStatePath` gives the widget a pre-rendered first view.
+- To use SwiftUI modifiers that `style` does not cover, such as `widgetURL` or `containerBackground`, see [Native modifiers](./native-modifiers).

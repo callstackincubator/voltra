@@ -18,10 +18,9 @@ fun RenderLinearProgress(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier,
             element.p,
             element.i,
             context.widgetId,
@@ -78,10 +77,9 @@ fun RenderCircularProgress(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier,
             element.p,
             element.i,
             context.widgetId,

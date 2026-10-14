@@ -20,6 +20,7 @@ import type {
   NormalizedVoltraConfig,
   NormalizedVoltraIOSConfig,
   NormalizedIOSWidgetConfig,
+  WidgetConfigurationOption,
   WidgetInitialStatePath,
   WidgetLabel,
   WidgetLocalizedValue,
@@ -271,6 +272,45 @@ function normalizeWidgetParameterName(value: unknown, context: string): string {
   return value
 }
 
+/** Swift property names; the iOS generator declares one `@Parameter` per name. */
+const IOS_PARAMETER_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+
+function normalizeParameterOptions(
+  value: unknown,
+  defaultValue: string | undefined,
+  context: string
+): WidgetConfigurationOption[] | undefined {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new VoltraConfigNormalizationError(`${context}.options must be a non-empty array`)
+  }
+
+  const seenValues = new Set<string>()
+  const options = value.map((option: unknown, index) => {
+    const optionContext = `${context}.options[${index}]`
+    assertObject(option, optionContext)
+    const optionRecord = option as { value?: unknown; title?: unknown }
+    assertNonEmptyString(optionRecord.value, `${optionContext}.value`)
+    const optionValue = optionRecord.value as string
+
+    if (seenValues.has(optionValue)) {
+      throw new VoltraConfigNormalizationError(`${context}.options contains duplicate value '${optionValue}'`)
+    }
+    seenValues.add(optionValue)
+
+    return { value: optionValue, title: normalizeLabel(optionRecord.title as WidgetLabel, `${optionContext}.title`) }
+  })
+
+  if (defaultValue !== undefined && !seenValues.has(defaultValue)) {
+    throw new VoltraConfigNormalizationError(`${context}.default '${defaultValue}' is not one of its options`)
+  }
+
+  return options
+}
+
 function normalizeAndroidAppIntent(
   value: AndroidWidgetAppIntentConfig | undefined,
   context: string
@@ -290,8 +330,10 @@ function normalizeAndroidAppIntent(
     const parameterContext = `${context}.parameters[${index}]`
     assertObject(parameter, parameterContext)
     const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
-    assertOptionalString(parameter.title, `${parameterContext}.title`)
+    const title =
+      parameter.title === undefined ? undefined : normalizeLabel(parameter.title, `${parameterContext}.title`)
     assertOptionalString(parameter.default, `${parameterContext}.default`)
+    const options = normalizeParameterOptions(parameter.options, parameter.default, parameterContext)
 
     if (seenNames.has(name)) {
       throw new VoltraConfigNormalizationError(`${context}.parameters contains duplicate name '${name}'`)
@@ -301,8 +343,9 @@ function normalizeAndroidAppIntent(
 
     return {
       name,
-      title: parameter.title,
+      title,
       default: parameter.default,
+      ...(options ? { options } : {}),
     }
   })
 
@@ -328,8 +371,17 @@ function normalizeIOSAppIntent(
     const parameterContext = `${context}.parameters[${index}]`
     assertObject(parameter, parameterContext)
     const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
-    assertNonEmptyString(parameter.title, `${parameterContext}.title`)
+    if (!IOS_PARAMETER_NAME_PATTERN.test(name)) {
+      throw new VoltraConfigNormalizationError(
+        `${parameterContext}.name must start with a letter or underscore and contain only letters, digits and underscores`
+      )
+    }
+    if (typeof parameter.title !== 'object') {
+      assertNonEmptyString(parameter.title, `${parameterContext}.title`)
+    }
+    const title = normalizeLabel(parameter.title, `${parameterContext}.title`)
     assertOptionalString(parameter.default, `${parameterContext}.default`)
+    const options = normalizeParameterOptions(parameter.options, parameter.default, parameterContext)
 
     if (seenNames.has(name)) {
       throw new VoltraConfigNormalizationError(`${context}.parameters contains duplicate name '${name}'`)
@@ -339,8 +391,9 @@ function normalizeIOSAppIntent(
 
     return {
       name,
-      title: parameter.title,
+      title,
       default: parameter.default,
+      ...(options ? { options } : {}),
     }
   })
 

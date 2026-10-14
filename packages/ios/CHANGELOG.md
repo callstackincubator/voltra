@@ -1,5 +1,37 @@
 # @use-voltra/ios
 
+## 2.4.0
+
+### Minor Changes
+
+- a268ec2: Every Voltra component accepts a `modifiers` prop that applies platform-native modifiers on top of
+  its style. `Voltra.modifiers` provides SwiftUI modifiers such as `widgetURL`, `containerBackground`,
+  `privacySensitive`, `contentTransition` and `clipShape`; `VoltraAndroid.modifiers` provides Jetpack
+  Glance modifiers such as `semantics`, `appWidgetBackground`, `background`, `size` and `visibility`.
+  Passing a modifier from the other platform is a type error, and a modifier the device does not
+  support is skipped instead of breaking the widget. Native modifiers are meant for Dynamic Widgets and
+  Dynamic Live Activities; they count against the payload size limit of pushed updates.
+- 8beedea: Dynamic Widgets and Dynamic Live Activities receive the user's language and regional settings on
+  `env`: `preferredLanguages`, `layoutDirection`, `hourCycle` (matching the 12/24-hour setting),
+  `timeZone`, `measurementSystem`, `calendar` and `firstDayOfWeek`, alongside `locale`.
+  `resolveLocale(env, messages)` picks the best translation with the same fallback order as
+  localized initial states, and `pickLocalizedValue` is exported from `@use-voltra/core`,
+  `@use-voltra/ios` and `@use-voltra/android`.
+
+  `setDynamicWidgetLocale(tag | null)` renders widgets in a language the app chooses. The tag reaches
+  every render as `env.appLocale`, and placed widgets and running Dynamic Live Activities render
+  again at once. On iOS it needs `groupIdentifier` in the plugin configuration.
+
+  Android Dynamic Widgets render again after the device language, the app's per-app language or the
+  regional preferences change, even when the app is not running. A light/dark or language change
+  within 45 seconds of the last render now renders the widget again; before, it was ignored.
+
+### Patch Changes
+
+- Updated dependencies [a268ec2]
+- Updated dependencies [8beedea]
+  - @use-voltra/core@2.4.0
+
 ## 2.3.2
 
 ### Patch Changes

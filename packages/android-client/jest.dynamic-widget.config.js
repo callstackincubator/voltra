@@ -5,6 +5,7 @@ module.exports = {
     '<rootDir>/src/dynamic-widget/**/*.node.test.ts',
     '<rootDir>/src/utils/**/*.node.test.ts',
     '<rootDir>/src/widgets/**/*.node.test.ts',
+    '<rootDir>/src/ongoing-notification/**/*.node.test.ts',
   ],
   modulePathIgnorePatterns: ['<rootDir>/build'],
   moduleNameMapper: {

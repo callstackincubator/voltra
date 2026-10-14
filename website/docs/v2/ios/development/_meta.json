@@ -31,6 +31,11 @@
   },
   {
     "type": "file",
+    "name": "localization",
+    "label": "Localization"
+  },
+  {
+    "type": "file",
     "name": "querying-active-widgets",
     "label": "Querying Active Widgets"
   },
@@ -58,6 +63,11 @@
     "type": "file",
     "name": "styling",
     "label": "Styling"
+  },
+  {
+    "type": "file",
+    "name": "native-modifiers",
+    "label": "Native modifiers"
   },
   {
     "type": "file",

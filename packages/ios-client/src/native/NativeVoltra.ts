@@ -117,6 +117,8 @@ export interface Spec extends TurboModule {
   reloadDynamicLiveActivities(definitionIds?: string[] | null): Promise<void>
   clearPreloadedImages(keys?: string[] | null): Promise<void>
   updateDynamicWidget(dynamicWidgetId: string, dynamicWidgetPropsJson: string): Promise<void>
+  /** Language override for Dynamic Widgets and Live Activities (`env.appLocale`); null clears it. */
+  setDynamicWidgetLocale(tag: string | null): Promise<void>
   updateWidget(widgetId: string, jsonString: string, options: UpdateWidgetOptions): Promise<void>
   scheduleWidget(widgetId: string, timelineJson: string): Promise<void>
   reloadWidgets(widgetIds?: string[] | null): Promise<void>

@@ -1,3 +1,5 @@
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+
 buildscript {
   repositories {
     google()
@@ -42,10 +44,47 @@ if (hostMinSdk < 24) {
   )
 }
 
+// The host's compileSdk, as an API level. Expo and the React Native template set an Int, but
+// Gradle also accepts the "android-37" string form; read the major level from either.
+def hostCompileSdk = safeExtGet("compileSdkVersion", 36)
+def hostCompileSdkLevel = hostCompileSdk.toString().replaceFirst(/^android-/, "").tokenize(".")[0].toInteger()
+if (hostCompileSdkLevel < 36) {
+  throw new GradleException(
+    "@use-voltra/android-client requires compileSdkVersion 36 (Android 16); this app sets ${hostCompileSdk}."
+  )
+}
+
+// Notification.MetricStyle is API 37. Apps compiling against 36 must keep building, so the code
+// that names it is compiled only when the host's SDK has it; otherwise a stand-in reports it
+// unavailable and Metric notifications post with their text fallback (styleFallback: 'standard').
+def metricStyleSourceDir = hostCompileSdkLevel >= 37 ? "src/main/metricStyle/sdk37" : "src/main/metricStyle/unavailable"
+
+// Robolectric's SDK 36+ android-all jars contain JDK 21 class files, so test classes
+// running @Config(sdk = [36]) (or above) need a JDK 21+ test JVM. Unit tests therefore
+// run on a JDK 21 toolchain (downloaded automatically when none is installed). The
+// launcher is resolved lazily, so consuming apps — which never run this library's unit
+// test tasks — never pay for the lookup.
+try {
+  def voltraToolchainService = project.extensions.findByName('javaToolchains')
+  if (voltraToolchainService != null) {
+    project.ext.voltraUnitTestJdkLauncher = voltraToolchainService.launcherFor { spec ->
+      spec.languageVersion = JavaLanguageVersion.of(21)
+    }
+  }
+} catch (Throwable ignored) {
+  project.ext.voltraUnitTestJdkLauncher = null
+}
+
 android {
   namespace "voltra"
 
-  compileSdkVersion safeExtGet("compileSdkVersion", 36)
+  compileSdkVersion hostCompileSdk
+
+  sourceSets {
+    main {
+      java.srcDirs += metricStyleSourceDir
+    }
+  }
 
   defaultConfig {
     minSdkVersion hostMinSdk
@@ -103,6 +142,17 @@ android {
   testOptions {
     unitTests.includeAndroidResources = true
     unitTests.all {
+      def unitTestJdkLauncher = project.ext.voltraUnitTestJdkLauncher
+      if (unitTestJdkLauncher != null) {
+        javaLauncher.set(unitTestJdkLauncher)
+      }
+      // The SDK 36 sandbox shares app state through ApplicationSharedMemory, which reaches
+      // into jdk.internal.access.JavaIOFileDescriptorAccess; JDK 16+ denies that without
+      // this export.
+      jvmArgs "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED"
+      // Every Robolectric SDK level the suite configures keeps its own sandbox loaded for the
+      // whole run; Gradle's default 512 MB test heap no longer fits them all.
+      maxHeapSize = "2g"
       testLogging {
         events "passed", "failed", "skipped"
         exceptionFormat "full"
@@ -171,5 +221,5 @@ dependencies {
   // Unit tests
   testImplementation "junit:junit:4.13.2"
   testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1"
-  testImplementation "org.robolectric:robolectric:4.14.1"
+  testImplementation "org.robolectric:robolectric:4.17"
 }

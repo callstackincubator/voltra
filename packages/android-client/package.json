@@ -1,6 +1,6 @@
 {
   "name": "@use-voltra/android-client",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "Client-only Voltra APIs for Android",
   "main": "./build/commonjs/index.js",
   "module": "./build/module/index.js",
@@ -63,6 +63,7 @@
     "react-native": "*"
   },
   "devDependencies": {
+    "react-test-renderer": "19.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.19.25",
     "jest": "^29.7.0",

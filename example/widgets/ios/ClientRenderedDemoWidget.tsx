@@ -24,11 +24,14 @@ export default function ClientRenderedDemoWidget(
   const unreadCount = props.unreadCount ?? 0
 
   const date = env.date ? new Date(env.date) : new Date()
-  const renderedAt = date.toLocaleTimeString('en-US', {
+  // Always format with the env's locale, clock preference and time zone: the JS runtime's own
+  // defaults are the process's, not what the widget is drawn for.
+  const renderedAt = date.toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false,
+    hourCycle: env.hourCycle,
+    timeZone: env.timeZone,
   })
 
   const config = env.configuration as Record<string, unknown> | undefined
@@ -42,12 +45,26 @@ export default function ClientRenderedDemoWidget(
   const valueStyle = { fontSize: 9, color: '#94A3B8' } as const
 
   return (
-    <Voltra.VStack alignment="leading" spacing={3} style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}>
+    <Voltra.VStack
+      alignment="leading"
+      spacing={3}
+      // containerBackground needs iOS 17; the style background keeps the tile black on iOS 16.
+      style={{ flex: 1, padding: 12, backgroundColor: '#000000' }}
+      modifiers={[Voltra.modifiers.containerBackground('#000000'), Voltra.modifiers.widgetURL('voltra://ios/widgets')]}
+    >
       <Voltra.Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>Client-rendered demo</Voltra.Text>
 
-      <Voltra.Text style={{ fontSize: 14, fontWeight: '600', color: '#34D399' }}>{hotReloadMarker}</Voltra.Text>
+      <Voltra.Text
+        style={{ fontSize: 14, fontWeight: '600', color: '#000000', backgroundColor: '#34D399', padding: 2 }}
+        modifiers={[Voltra.modifiers.clipShape('capsule'), Voltra.modifiers.privacySensitive()]}
+      >
+        {hotReloadMarker}
+      </Voltra.Text>
 
-      <Voltra.Text style={{ fontSize: 10, color: '#34D399' }}>
+      <Voltra.Text
+        style={{ fontSize: 10, color: '#34D399' }}
+        modifiers={[Voltra.modifiers.contentTransition('numericText'), Voltra.modifiers.monospacedDigit()]}
+      >
         {headline} · {unreadCount} unread
       </Voltra.Text>
 

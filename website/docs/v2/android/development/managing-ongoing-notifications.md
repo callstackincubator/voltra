@@ -73,12 +73,38 @@ if (!granted) {
 }
 ```
 
+### 4. Check the compile SDK
+
+Voltra needs your app to compile against Android 16 (SDK 36) or later. To show [metric notifications](#metric-notification) in the full Android 17 layout, compile against SDK 37 through [expo-build-properties](https://docs.expo.dev/versions/latest/sdk/build-properties/):
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 37
+          }
+        }
+      ]
+    ]
+  }
+}
+```
+
+With SDK 36, everything else works the same, and metric notifications use the text-line fallback on every Android version.
+
 ## Starting a notification
 
-Voltra provides two built-in layouts:
+Voltra provides five built-in layouts:
 
-- `AndroidOngoingNotification.Progress`
-- `AndroidOngoingNotification.BigText`
+- `AndroidOngoingNotification.Progress` — a task with a measured amount of progress
+- `AndroidOngoingNotification.BigText` — a paragraph of text
+- `AndroidOngoingNotification.BigPicture` — one image, such as a delivery photo or a map snapshot
+- `AndroidOngoingNotification.Inbox` — up to six short lines
+- `AndroidOngoingNotification.Metric` — up to three readings, such as distance, pace, and time remaining
 
 ### Progress notification
 
@@ -127,6 +153,255 @@ await startAndroidOngoingNotification(
   }
 )
 ```
+
+### Picture notification
+
+Use a picture when the image carries the status: the parcel left at the door, a snapshot of the route, the section of a climb you are on.
+
+```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
+import {
+  startAndroidOngoingNotification,
+} from '@use-voltra/android-client'
+
+await startAndroidOngoingNotification(
+  <AndroidOngoingNotification.BigPicture
+    title="Parcel delivered"
+    text="Left at the front door"
+    picture={{ assetName: 'delivery_photo_123' }}
+    largeIcon={{ assetName: 'courier_avatar' }}
+    hideLargeIconWhenExpanded
+    pictureContentDescription="Photo of the parcel at the front door"
+    summaryText="Order 123"
+  >
+    <AndroidOngoingNotification.Action
+      title="Confirm"
+      deepLinkUrl="myapp://orders/123/confirm"
+    />
+  </AndroidOngoingNotification.BigPicture>,
+  {
+    notificationId: 'order-123',
+    channelId: 'delivery_updates',
+  }
+)
+```
+
+`picture` is required and takes the same sources as every other notification image: an `assetName` you bundled or preloaded, or inline `base64`. `largeIcon` is the thumbnail you see while the notification is collapsed.
+
+The remaining picture props are optional, and the two that need a newer Android version are ignored on older devices rather than failing the update:
+
+| Prop | Effect | Needs |
+| --- | --- | --- |
+| `showPictureWhenCollapsed` | Fills the collapsed notification with the picture instead of showing it only when expanded | Android 12 or later |
+| `pictureContentDescription` | Screen reader label for the picture | Android 12 or later |
+| `bigLargeIcon` | Thumbnail shown while expanded, replacing `largeIcon` | - |
+| `hideLargeIconWhenExpanded` | Shows the `largeIcon` thumbnail only while collapsed | - |
+| `summaryText` | Short trailing line, such as an order number | - |
+
+**How large should the image be?** Android draws an expanded picture at 416dp by 284dp at most. Voltra hands over at most 1024 px on the long edge for a picture and 256 px for an icon, so a full-resolution camera photo buys you no extra detail and costs your app memory and decode time. A bundled drawable is handed to the system as a resource on Android 12 and later, which resizes it; on Android 11 and older Voltra draws it out to those same limits itself, so a small vector fills the picture slot on every version.
+
+**A picture notification cannot become a Live Update.** Android 16 promotes ongoing notifications with the standard, big text, call, and progress styles; `requestPromotedOngoing` is accepted for this layout and has no effect on it. If you need promotion and artwork, use `largeIcon` on a `Progress` notification.
+
+### Lines notification
+
+Use lines when the status is a short list: the stops left on a route, the files still uploading, the steps of an order.
+
+```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
+import {
+  startAndroidOngoingNotification,
+} from '@use-voltra/android-client'
+
+await startAndroidOngoingNotification(
+  <AndroidOngoingNotification.Inbox
+    title="3 stops remaining"
+    lines={['12 Oak Street', '4 Elm Road', 'Depot']}
+    summaryText="Route 7"
+    chronometer
+    when={Date.now()}
+  />,
+  {
+    notificationId: 'route-7',
+    channelId: 'delivery_updates',
+  }
+)
+```
+
+`lines` is required and holds one to six non-empty strings. Android shows six lines at most, so the renderer rejects a seventh instead of letting it disappear from the notification.
+
+`text` is the collapsed line. If you leave it out, it takes the value of the first line.
+
+A line holds text only. There is no per-line icon, check mark, or color, so a checklist reads as a list of sentences. If you need the lines to flow as one paragraph instead, use `BigText` with newlines.
+
+### Metric notification
+
+Show up to three readings — distance, pace, time remaining — instead of a progress bar or a text body:
+
+```tsx
+import { AndroidOngoingNotification } from '@use-voltra/android'
+import {
+  startAndroidOngoingNotification,
+} from '@use-voltra/android-client'
+
+await startAndroidOngoingNotification(
+  <AndroidOngoingNotification.Metric
+    title="Morning run"
+    metrics={[
+      { label: 'Dist', value: 5.2, unit: 'km' },
+      { label: 'Pace', value: '5:30' },
+      { label: 'ETA', value: { type: 'timer', endsAt: Date.now() + 10 * 60 * 1000 } },
+    ]}
+    criticalMetric={2}
+    semanticStyle="safe"
+  />,
+  {
+    notificationId: 'run-7',
+    channelId: 'activity_updates',
+  }
+)
+```
+
+- Pass 1 to 3 metrics, and keep each `label` between 1 and 10 characters.
+- A plain number is a reading and a plain string is text. `unit` next to a number is shorthand for the unit of that reading, so `{ label: 'Dist', value: 5.2, unit: 'km' }` is the same as passing the value as `{ type: 'float', value: 5.2, unit: 'km' }`.
+- `criticalMetric` is the index of the most important reading. Android doesn't highlight it in the notification; it can show that reading in the [status bar chip](#showing-a-chip-in-the-status-bar) of a promoted notification. It defaults to the first reading. `semanticStyle` tints every metric: `'info'`, `'safe'`, `'caution'`, `'danger'`, or the default `'unspecified'`.
+- Values that change on their own: `{ type: 'timer', endsAt }` counts down to a moment and `{ type: 'stopwatch', startedAt }` counts up from it — each accepts a `Date` or an epoch timestamp, and an optional `format: 'chronometer'`. Frozen durations are `{ type: 'pausedTimer', remainingMillis }` and `{ type: 'pausedStopwatch', elapsedMillis }`. `{ type: 'time', value: '18:40' }` shows a clock time, and `{ type: 'float', value: 5.2, fractionDigits: 1 }` (with optional `min`/`max`) controls how a reading is formatted.
+
+The full metric layout needs Android 17 and later, and an app that [compiles against SDK 37](#4-check-the-compile-sdk). Otherwise the notification posts normally and the readings appear as a text line (`Dist 5.2km, Pace 5:30, ETA 9:52`), and the result carries `styleFallback: 'standard'` so you can tell. Your server can send the same metric payload to every device without knowing their versions. Time-driven values are rendered when the notification is posted, so an `updateAndroidOngoingNotification` call every minute keeps the text line fresh on those devices.
+
+Unlike the other layouts, a metric notification can be promoted to a Live Update without a `title`.
+
+## Presentation options
+
+Everything that says how the system should treat the notification goes in the options, next to
+`channelId`. Everything that says what the notification means right now goes in the content, as props
+on the layout component, such as `AndroidOngoingNotification.Progress`.
+
+```tsx
+await startAndroidOngoingNotification(
+  <AndroidOngoingNotification.Progress
+    title="Driver is on the way"
+    text="Anna, silver Toyota"
+    value={32}
+    max={100}
+    when={Date.now() + 8 * 60 * 1000}
+    chronometer
+    publicVersion={{
+      title: 'Ride in progress',
+      text: 'Unlock to see driver details',
+    }}
+  />,
+  {
+    notificationId: 'ride-44',
+    channelId: 'ride_updates',
+    visibility: 'private',
+    color: '#1E88E5',
+    category: 'navigation',
+    timeoutMs: 30 * 60 * 1000,
+    group: 'rides',
+    sortKey: '2026-09-22T12:00',
+  }
+)
+```
+
+| Option                                    | Values                                                                                                     | Default                                                    | Applies on    | After an update that omits it |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------- | ----------------------------- |
+| `visibility`                              | `'public'`, `'private'`, `'secret'`                                                                         | system default, `'private'`                                | all versions  | kept                          |
+| `color`                                   | any static color string: `'#1E88E5'`, `'rgb(30, 136, 229)'`, `'crimson'`                                     | none                                                       | all versions  | kept                          |
+| `category`                                | `'progress'`, `'navigation'`, `'transport'`, `'service'`, `'status'`, `'workout'`, `'stopwatch'`, `'location_sharing'` | from the content: a progress notification reports `'progress'`, a big text notification reports none | all versions  | kept                          |
+| `timeoutMs`                               | milliseconds as a whole number                                                                              | none, the notification stays until you stop it             | Android 8.0+  | kept and the timer restarts   |
+| `localOnly`                               | `true` to keep it off Wear and Android Auto                                                                 | `false`                                                    | all versions  | kept                          |
+| `group`, `sortKey`                        | group key, and the order inside it                                                                          | none                                                       | all versions  | kept                          |
+| `allowSystemGeneratedContextualActions`   | `false` to stop the system adding its own actions, such as a directions chip                                | platform default, `true`                                   | Android 10+   | kept                          |
+
+Notes on individual options:
+
+- `visibility` decides what the lock screen shows. `'secret'` hides the notification entirely there.
+  Use `'private'` together with `publicVersion` to show a short copy of your own.
+- `color` is an accent: the system tints the notification with it, and shows it as background only for
+  styles that support that. A color the device cannot resolve, such as a theme token, rejects the
+  call rather than posting without a color.
+- `category` overrides what Voltra derives from your content, and does not change the channel.
+- `timeoutMs` is applied on every post, so each update restarts the countdown and a notification that
+  stops being updated eventually disappears on its own. Once the system removes it,
+  `getAndroidOngoingNotificationStatus()` reports it as no longer active, and starting that
+  `notificationId` again needs `stopAndroidOngoingNotification()` first, the same as after a swipe. On
+  Android 7.x and older the value is kept but not applied.
+- `group` puts the notification in the bundle the system builds from notifications sharing the key.
+  Voltra does not post a group summary of its own.
+
+### Lock-screen copy
+
+`publicVersion` is a prop on the content, not an option: it is text, so an update replaces it, and an
+update that leaves it out posts without one.
+
+```tsx
+<AndroidOngoingNotification.Progress
+  title="Driver is on the way"
+  text="Anna, silver Toyota · 46.021, 14.968"
+  value={32}
+  max={100}
+  when={Date.now()}
+  publicVersion={{ title: 'Ride in progress', text: 'Unlock to see driver details' }}
+/>
+```
+
+The copy is what the lock screen shows when `visibility` hides the real content. It carries the title
+and text you give it and nothing else: no progress, no action buttons.
+
+### Timestamps
+
+`showWhen` (default `true`, and `false` when the payload carries no timestamp) hides the time the
+notification shows while keeping the timestamp for sorting and timeouts. Set it to `false` for an
+absolute deadline, so the notification stops claiming it is "5 minutes ago". To count down to `when`
+instead, use `chronometer="countDown"` (see [Showing a chip in the status bar](#showing-a-chip-in-the-status-bar)).
+
+```tsx
+<AndroidOngoingNotification.BigText
+  title="Your table is ready"
+  text="Reserved until 20:30"
+  bigText="We hold it for 15 minutes. Reply in the app to keep it."
+  when={tableReadyUntil.getTime()}
+  showWhen={false}
+/>
+```
+
+### Changing a presentation option
+
+An update keeps every presentation option you do not mention. To change one, send it; to go back to
+the platform default, send `null`:
+
+```tsx
+await updateAndroidOngoingNotification('ride-44', content, {
+  channelId: 'ride_updates',
+  color: '#000000', // replace
+  timeoutMs: null, // stop timing this one out
+  // group and sortKey left out: they keep their stored values
+})
+```
+
+The pre-existing options (`smallIcon`, `deepLinkUrl`, `requestPromotedOngoing`, `fallbackBehavior`)
+behave as before: leaving one out reuses the stored value, and there is no way to clear them.
+
+`upsertAndroidOngoingNotification()` takes the same options, and the `null` clears mean the same thing
+there when the call ends up updating. When it ends up starting, nothing is stored to clear and the
+calls behave like a start.
+
+### Letting one update make a sound
+
+An ongoing notification alerts when it is first posted and is silent afterwards. `alert` is an update
+option that lets one update alert again:
+
+```tsx
+await updateAndroidOngoingNotification('ride-44', content, {
+  channelId: 'ride_updates',
+  alert: true,
+})
+```
+
+It applies to that post only and is never stored, so the next update is quiet again. Whether it
+audibly alerts is still decided by the channel you created: a channel on low importance stays silent
+however you set `alert`. `upsertAndroidOngoingNotification()` takes it too: it alerts when that call
+ends up updating, and a first post always alerts anyway.
 
 ## Updating a notification
 
@@ -179,7 +454,7 @@ if (result.ok) {
 }
 ```
 
-This API is especially useful for remote updates, where the same incoming push may need to create the notification the first time and update it later.
+This API is especially useful for remote updates, where the same incoming push may need to create the notification the first time and update it later. It takes the same options as the other two calls: a presentation option sent as `null` clears the stored value and `alert` makes the update branch alert, both only when the call ends up updating.
 
 ## Stopping a notification
 
@@ -237,7 +512,7 @@ Use `autoStart` to create the notification when the component mounts, and `autoU
 
 ## Action buttons
 
-You can add action buttons as children of `Progress` or `BigText`.
+You can add action buttons as children of any layout.
 
 ```tsx
 import { AndroidOngoingNotification } from '@use-voltra/android'
@@ -257,7 +532,7 @@ import { AndroidOngoingNotification } from '@use-voltra/android'
 Action buttons currently:
 
 - open the provided deep link
-- can be used with `Progress` and `BigText`
+- can be used with `Progress`, `BigText`, `BigPicture`, `Inbox`, and `Metric`
 - support an optional `icon`
 
 ```tsx
@@ -284,6 +559,29 @@ await startAndroidOngoingNotification(content, {
 
 This is separate from action button deep links.
 
+## Showing a chip in the status bar
+
+On Android 16 and above, a promoted ongoing notification shows a chip in the status bar. You fill it with either a short text or a clock:
+
+```tsx
+<AndroidOngoingNotification.Progress
+  title="Driver is on the way"
+  value={32}
+  max={100}
+  shortCriticalText="8 min"
+/>
+```
+
+- `shortCriticalText` shows a short text in the chip. Keep it to about 7 characters; the chip is at most 96dp wide and longer text is cut.
+- `chronometer: true` shows elapsed time since `when`, counting up. `'countUp'` means the same as `true`.
+- `chronometer: 'countDown'` shows the time remaining until `when`, counting down — the right choice for an ETA, a timer, or a parking meter. It requires `when`; rendering throws without it.
+
+When you set several of these, the chip picks one in this order:
+
+1. `shortCriticalText` (an empty string means no chip text at all)
+2. for a metric notification on Android 17 and later, the value of the `criticalMetric`
+3. time derived from `when` — the chronometer when `chronometer` is set, otherwise the remaining time
+
 ## Status and capability helpers
 
 Use these helpers to adapt your UI to the device state:
@@ -294,6 +592,7 @@ import {
   getAndroidOngoingNotificationCapabilities,
   getAndroidOngoingNotificationStatus,
   openAndroidNotificationSettings,
+  openAndroidPromotedNotificationSettings,
 } from '@use-voltra/android-client'
 
 const status = getAndroidOngoingNotificationStatus('order-123')
@@ -309,39 +608,113 @@ Useful values include:
 
 - `status.isActive`
 - `status.isDismissed`
+- `status.isPromoted` and `status.hasPromotableCharacteristics` — set on Android 16 and above, `undefined` below it
 - `capabilities.notificationsEnabled`
 - `capabilities.supportsPromotedNotifications`
 - `capabilities.canPostPromotedNotifications`
 - `capabilities.canRequestPromotedOngoing`
 
+`openAndroidNotificationSettings()` opens your app's channel list. When the user has turned Live Updates off for your app (`canPostPromotedNotifications === false`), use `openAndroidPromotedNotificationSettings()` to open the page where they turn them back on. It resolves `true` when the Live Updates page opened and `false` when the regular notification settings opened instead, because the device has no such page.
+
+## When posting fails
+
+Start, update, and upsert reject with a code instead of posting something broken:
+
+| Code                                     | What happened                                                                                             | What to do                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `VOLTRA_NOTIFICATION_CHANNEL_REQUIRED`   | No `channelId` was given                                                                                   | Pass `channelId` in the start options                             |
+| `VOLTRA_NOTIFICATION_CHANNEL_NOT_FOUND`  | The channel was never created — Android drops such notifications silently                                 | Create the channel before posting                                 |
+| `VOLTRA_NOTIFICATION_INVALID_PAYLOAD`    | The payload is malformed or breaks a rule (e.g. a remote payload with `chronometerCountDown` but no `when`) | Fix the payload                                                   |
+| `VOLTRA_NOTIFICATION_INVALID_OPTIONS` | An option cannot be applied on this device (e.g. a `color` that is a theme token rather than a static color) | Pass a static color such as `'#1E88E5'` |
+| `VOLTRA_NOTIFICATION_NOT_PROMOTABLE`     | Promotion was requested with `fallbackBehavior: 'error'` and the notification is not eligible              | Read the reasons in the message (see below)                       |
+| `VOLTRA_NOTIFICATION_INTERNAL_ERROR`     | An unexpected device failure                                                                               | Retry; if it persists, file an issue with the message             |
+
+A dismissed notification is different: updates return `ok: false, reason: 'dismissed'` and nothing is re-posted. If your flow legitimately restarts after a dismissal, start a new notification instead of updating.
+
 ## Promoted ongoing notifications
 
-If your app wants to request promoted ongoing presentation when the device supports it, pass `requestPromotedOngoing: true`:
+On Android 16 and above, eligible ongoing notifications can be promoted to Live Updates: they expand into the status bar and show up on the lock screen and home screen. Pass `requestPromotedOngoing: true` to ask for it:
 
 ```tsx
-await startAndroidOngoingNotification(content, {
+const result = await startAndroidOngoingNotification(content, {
   notificationId: 'ride-44',
   channelId: 'ride_updates',
   requestPromotedOngoing: true,
 })
 ```
 
-You can also set `fallbackBehavior` if promoted presentation is unavailable:
+You don't need the user to have turned Live Updates on first. Voltra records the request on every post, so when the user enables Live Updates in Settings, the next update is promoted without any change in your app.
+
+### Reading why a notification is not promoted
+
+When you request promotion, a successful result carries a `promotion` object:
 
 ```tsx
-await startAndroidOngoingNotification(content, {
-  notificationId: 'ride-44',
-  channelId: 'ride_updates',
-  requestPromotedOngoing: true,
-  fallbackBehavior: 'standard',
-})
+if (result.ok && result.promotion) {
+  console.log(result.promotion.eligible, result.promotion.reasons)
+}
 ```
 
-Check device support first with `getAndroidOngoingNotificationCapabilities()` if you want to tailor the UX.
+- `promotion.requested` — always `true` when the object is present
+- `promotion.eligible` — `true` when the notification can be promoted
+- `promotion.reasons` — what stands in the way, as a list
+- `promotion.hasPromotableCharacteristics` — the platform's own verdict on the built notification; only set on Android 16 and above
+
+| Reason                       | Meaning                                                                                       |
+| ---------------------------- | --------------------------------------------------------------------------------------------- |
+| `unsupported_api_level`      | The device runs below Android 16                                                               |
+| `permission_not_declared`    | `enableNotifications` is not on, so `POST_PROMOTED_NOTIFICATIONS` is missing from the manifest. Android 16 QPR2 and later only; Android 16.0 has no such permission |
+| `notifications_disabled`     | Notifications are turned off for your app                                                      |
+| `promotion_disabled_by_user` | The user turned Live Updates off for your app                                                  |
+| `channel_importance_min`     | The channel's importance is `MIN`; use at least `LOW`                                          |
+| `missing_title`              | The notification has no `title`; promotion requires one                                        |
+| `not_promotable`             | The platform rejected the built notification for another reason                                |
+
+With the default `fallbackBehavior: 'standard'`, a notification that cannot be promoted is still posted as a normal ongoing notification and you read the reasons from the result. With `fallbackBehavior: 'error'`, the call rejects with `VOLTRA_NOTIFICATION_NOT_PROMOTABLE`, the message lists the reasons, and nothing is posted.
+
+### Checking before you post
+
+`checkAndroidOngoingNotificationPromotion()` answers the same questions for a payload without posting it or recording anything:
+
+```tsx
+import { checkAndroidOngoingNotificationPromotion } from '@use-voltra/android-client'
+
+const check = await checkAndroidOngoingNotificationPromotion(content, {
+  channelId: 'ride_updates',
+})
+
+if (!check.eligible) {
+  console.warn('Would not promote:', check.reasons)
+}
+```
+
+Only `Progress` and `BigText` can be promoted. Android decides which layouts qualify, and a `BigPicture` or `Inbox` notification stays a standard ongoing notification even when you ask for promotion: the call succeeds, `requestPromotedOngoing` is remembered, and nothing is promoted. Check `status.hasPromotableCharacteristics` if you want to show the user why.
+
+## What Voltra does not cover
+
+Some Android notification templates look like ongoing status updates and are not one. Voltra does not build them:
+
+- **Conversations (`MessagingStyle`)** — needs `Person` objects, a conversation title, a direct reply field, and a long-lived shortcut on Android 11 and later. Use `expo-notifications` or Notifee.
+- **Playback controls (`MediaStyle`)** — needs a `MediaSession` token, which a media library owns and builds the notification from. Use Media3, `expo-notifications`, or Notifee.
+- **Bubbles** — need a pushed long-lived shortcut and a conversation, and Voltra does not own your host activity or your shortcuts. Use `expo-notifications` or Notifee.
+- **Full-screen intents** — an interruption, not a status. Android 14 grants `USE_FULL_SCREEN_INTENT` by default only to calling and alarm apps, and Google Play revokes it for others. Use `expo-notifications` or Notifee when you genuinely need one.
+
+A common combination is a Voltra ongoing notification for the status plus one of those templates posted through another library.
 
 ## Current limitations
 
 - Remote updates require your own push delivery and background task integration. See [Remote Ongoing Notifications](./remote-ongoing-notifications).
+- A push carrying a `bigPicture` or `inbox` payload reaches only app builds that know those payload kinds. See [Compatibility](./remote-ongoing-notifications#compatibility).
 - Your app must create the Android notification channel before starting a notification.
 - Notification permission still needs to be requested by your app on Android 13+.
 - Action buttons open deep links. They are not a JavaScript event system.
+- Some Android notification fields stay out of the API on purpose:
+  - Badge count and badge icon. The launcher dot belongs to the channel your app creates, and a count makes no sense for a single ongoing item.
+  - Group summary. Voltra posts no summary, and requesting one disqualifies the notification from promoted presentation.
+  - A color background on every notification (`colorized`). It does nothing for these styles outside a foreground service, which Voltra does not run, and it also disqualifies promoted presentation.
+  - Tapping to auto-dismiss. The ongoing lifecycle belongs to `stopAndroidOngoingNotification()`, and a tap-dismiss would leave the notification recorded as active while it is already gone.
+  - Sound, vibration, lights and their defaults, and importance. All of them are channel settings since Android 8.0.
+  - Priority below Android 8.0. Deprecated, and a second API level to document for the same result.
+  - A settings line under the notification, which needs a notification-preferences intent filter in your manifest, and the deprecated extra content-info line.
+  - A ticker, which older accessibility services read while TalkBack reads the title and text anyway.
+  - Whether a grouped notification alerts with its group. That only means something together with a summary Voltra does not post.

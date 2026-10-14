@@ -3,6 +3,7 @@ import type { ConfigPlugin } from '@expo/config-plugins'
 import type {
   DynamicLiveActivityEntryConfig,
   DynamicWidgetEntryConfig,
+  WidgetConfigurationOption,
   WidgetInitialStatePath,
   WidgetLabel,
 } from '@use-voltra/expo-plugin'
@@ -25,10 +26,19 @@ export type IOSWidgetFamily =
 export interface AppIntentParameter {
   /** Swift property name + the key under `env.configuration`. */
   name: string
-  /** Label shown in the widget configuration sheet. */
-  title: string
-  /** Default value used before the user configures the widget (the "from code" default). */
+  /**
+   * Label shown in the widget configuration sheet: a plain string, or a locale map
+   * (`{ "en": "Units", "pl": "Jednostki" }`) written to the extension's `Localizable.strings`.
+   */
+  title: WidgetLabel
+  /** Default value used before the user configures the widget (the "from code" default). Must be
+   * one of `options[].value` when `options` is set. */
   default?: string
+  /**
+   * Fixed values the user picks from. The sheet shows a picker with each option's (localisable)
+   * `title` instead of a free-text field; `env.configuration` receives the option's `value`.
+   */
+  options?: WidgetConfigurationOption[]
 }
 
 /**

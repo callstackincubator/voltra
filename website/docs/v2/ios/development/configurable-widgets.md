@@ -18,8 +18,9 @@ It requires iOS 17+, because Voltra wires it through `AppIntentConfiguration`.
 Each parameter has:
 
 - `name`: key that appears in `env.configuration`
-- `title`: label shown in the Edit Widget sheet
+- `title`: label shown in the Edit Widget sheet, as a plain string or a locale map
 - `default`: code-defined starting value before the user changes anything
+- `options` (optional): fixed values to pick from, each with a `value` and a `title`. The sheet shows a picker with the titles instead of a free-text field, and `env.configuration` receives the `value`. `default` must be one of the values; without a `default`, the first option is used.
 
 ## How to use it
 
@@ -84,6 +85,54 @@ Plugin config:
 ```
 
 If you need more than one value, add more entries to `appIntent.parameters` and read each key from `env.configuration`.
+
+## Offer fixed choices
+
+When a parameter has a known set of values, list them as `options`. The sheet then shows a picker:
+
+```json
+{
+  "name": "units",
+  "title": "Units",
+  "default": "metric",
+  "options": [
+    { "value": "metric", "title": "Metric" },
+    { "value": "imperial", "title": "Imperial" }
+  ]
+}
+```
+
+`env.configuration.units` is `"metric"` or `"imperial"`, whichever the user picked.
+
+Expo Prebuild and Voltra Apply stop with an error that names the parameter if `default` is not one of the values, a value is empty or listed twice, or an option has no `title`.
+
+## Translate the Edit Widget sheet
+
+iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather than from your widget code. `title` and `options[].title` accept locale maps, the same way `displayName` does. The sheet header shows the widget's `displayName`, so translate it the same way:
+
+```json
+{
+  "id": "weather_widget",
+  "entry": "./widgets/ios/weather-widget.tsx",
+  "displayName": { "en": "Weather", "pl": "Pogoda" },
+  "description": { "en": "Current conditions", "pl": "Aktualne warunki" },
+  "appIntent": {
+    "parameters": [
+      {
+        "name": "units",
+        "title": { "en": "Units", "pl": "Jednostki" },
+        "default": "metric",
+        "options": [
+          { "value": "metric", "title": { "en": "Metric", "pl": "Metryczne" } },
+          { "value": "imperial", "title": { "en": "Imperial", "pl": "Imperialne" } }
+        ]
+      }
+    ]
+  }
+}
+```
+
+iOS shows the sheet in the system language, and `setDynamicWidgetLocale` does not affect it. A language with no translation for a string shows your app's development language instead. Rebuild the native app after changing these. See [Localization](./localization) for how the app's languages are declared.
 
 ## Notes
 

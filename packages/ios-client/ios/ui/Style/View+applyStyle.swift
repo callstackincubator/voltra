@@ -25,7 +25,7 @@ extension View {
 
   func applyStyle(_ style: (LayoutStyle, DecorationStyle, RenderingStyle, TextStyle), contentAlignment: Alignment? = nil) -> some View {
     let (layout, decoration, rendering, text) = style
-    let frameAlignment = contentAlignment ?? Alignment(horizontal: text.alignment.horizontalAlignment, vertical: .top)
+    let frameAlignment = contentAlignment ?? Alignment(horizontal: (text.alignment ?? .leading).horizontalAlignment, vertical: .top)
     return self
       // 1. Text Properties (Propagate font size for measurement)
       .modifier(TextStyleModifier(style: text))

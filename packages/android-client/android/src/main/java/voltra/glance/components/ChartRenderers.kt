@@ -22,7 +22,10 @@ import voltra.glance.renderers.parseMarksJson
 import voltra.glance.renderers.parseYScale
 import voltra.glance.renderers.renderChartBitmap
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
+import voltra.modifiers.nativeContentDescription
+import voltra.modifiers.nativeModifierSize
 import voltra.styling.JSColorParser
 import voltra.styling.SizeValue
 import voltra.styling.resolveColor
@@ -39,10 +42,9 @@ fun RenderChart(
     modifier: GlanceModifier? = null,
 ) {
     val renderContext = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, renderContext.sharedStyles).modifier,
             element.p,
             element.i,
             renderContext.widgetId,
@@ -70,10 +72,14 @@ fun RenderChart(
     val yAxisGridVisible = (element.p?.get("yAxisGridVisible") as? Boolean) ?: true
     val yScale = parseYScale(element.p?.get("yScale") as? String)
 
-    val (_, compositeStyle) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
-    val styleWidth = compositeStyle?.layout?.width
-    val styleHeight = compositeStyle?.layout?.height
+    val compositeStyle = resolveElementStyle(element, renderContext.sharedStyles)
     val hasWeight = compositeStyle?.layout?.weight != null && compositeStyle.layout.weight!! > 0
+    // Native size modifiers are applied after style, so they decide the size where they set one.
+    // A weight is applied after both and decides the height, as below, so the bitmap is not drawn
+    // at a native height the layout replaces.
+    val nativeSize = element.nativeModifierSize()
+    val styleWidth = nativeSize.width ?: compositeStyle?.layout?.width
+    val styleHeight = (if (hasWeight) null else nativeSize.height) ?: compositeStyle?.layout?.height
 
     val widthIsFill = styleWidth is SizeValue.Fill
     val heightIsFill = styleHeight is SizeValue.Fill
@@ -151,7 +157,8 @@ fun RenderChart(
     // allocated space (important when flex/weight controls the height).
     Image(
         provider = ImageProvider(icon),
-        contentDescription = "Chart",
+        // Glance's Image sets this after the modifier, so a semantics modifier's text goes here.
+        contentDescription = element.nativeContentDescription() ?: "Chart",
         contentScale = if (hasSectors) ContentScale.Fit else ContentScale.FillBounds,
         modifier = sizeModifier,
     )

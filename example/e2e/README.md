@@ -4,6 +4,12 @@ This directory contains a minimal, reproducible way to prove per-instance server
 end-to-end: two placements of the same Dynamic Widget, each with its own `city`, fetching
 different data from the same fake server.
 
+> Much of the driving below — reading placements, writing each one's `city`, reloading widgets —
+> is now available as Appduct tools the app registers for the connected platform, callable from
+> the terminal or an MCP client. See [`docs/agents/appduct-e2e.md`](../../docs/agents/appduct-e2e.md).
+> `agent-device` is still what drives the launcher and the system widget dialogs, and what takes
+> the screenshots.
+
 Widgets under test:
 
 - Android: `AndroidClientDemoWidget` (`example/widgets/android/AndroidClientDemoWidget.tsx`)

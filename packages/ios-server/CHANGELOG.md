@@ -1,5 +1,15 @@
 # @use-voltra/ios-server
 
+## 2.4.0
+
+### Patch Changes
+
+- Updated dependencies [a268ec2]
+- Updated dependencies [8beedea]
+  - @use-voltra/core@2.4.0
+  - @use-voltra/ios@2.4.0
+  - @use-voltra/server@2.4.0
+
 ## 2.3.2
 
 ### Patch Changes

@@ -10,6 +10,7 @@ import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderElementWithModifier
 import voltra.glance.renderers.RenderNode
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
 import voltra.models.VoltraNode
 import voltra.styling.applyFlex
@@ -20,10 +21,9 @@ fun RenderColumn(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier,
             element.p,
             element.i,
             context.widgetId,
@@ -72,10 +72,9 @@ fun RenderRow(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier,
             element.p,
             element.i,
             context.widgetId,
@@ -124,10 +123,9 @@ fun RenderBox(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier,
             element.p,
             element.i,
             context.widgetId,
@@ -163,10 +161,9 @@ fun RenderSpacer(
     modifier: GlanceModifier? = null,
 ) {
     val context = LocalVoltraRenderContext.current
-    val (baseModifier, _) = resolveAndApplyStyle(element.p, context.sharedStyles)
     val finalModifier =
         applyClickableIfNeeded(
-            modifier ?: baseModifier,
+            modifier ?: resolveAndApplyStyle(element, context.sharedStyles).modifier,
             element.p,
             element.i,
             context.widgetId,
@@ -187,7 +184,7 @@ private fun ColumnScope.RenderChildWithWeight(child: VoltraNode?) {
 
     when (child) {
         is VoltraNode.Element -> {
-            val (baseModifier, compositeStyle) = resolveAndApplyStyle(child.element.p, context.sharedStyles)
+            val (baseModifier, compositeStyle) = resolveAndApplyStyle(child.element, context.sharedStyles)
             val finalModifier = applyFlex(baseModifier, weight)
             RenderElementWithModifier(child.element, finalModifier, compositeStyle)
         }
@@ -216,7 +213,7 @@ private fun RowScope.RenderChildWithWeight(child: VoltraNode?) {
 
     when (child) {
         is VoltraNode.Element -> {
-            val (baseModifier, compositeStyle) = resolveAndApplyStyle(child.element.p, context.sharedStyles)
+            val (baseModifier, compositeStyle) = resolveAndApplyStyle(child.element, context.sharedStyles)
             val finalModifier = applyFlex(baseModifier, weight)
             RenderElementWithModifier(child.element, finalModifier, compositeStyle)
         }
@@ -236,7 +233,6 @@ private fun RowScope.RenderChildWithWeight(child: VoltraNode?) {
     }
 }
 
-@Composable
 private fun extractWeightFromChild(
     child: VoltraNode?,
     context: voltra.glance.VoltraRenderContext,
@@ -257,6 +253,6 @@ private fun extractWeightFromChild(
             }
         } ?: return null
 
-    val (_, compositeStyle) = resolveAndApplyStyle(element.p, context.sharedStyles)
-    return compositeStyle?.layout?.weight
+    // Style only: the child's own renderer builds its modifiers.
+    return resolveElementStyle(element, context.sharedStyles)?.layout?.weight
 }

@@ -9,6 +9,7 @@ import { enableWidgetHotReload as enableAndroidWidgetHotReload } from '@use-volt
 import '@use-voltra/widget-hot-reload'
 import '@use-voltra/live-activity-hot-reload'
 
+import { AppductTools } from '~/appduct/AppductTools'
 import { useVoltraEvents } from '~/hooks/useVoltraEvents'
 import { useServerDrivenWidgetToken } from '~/hooks/useServerDrivenWidgetToken'
 import { updateAndroidVoltraWidget } from '~/widgets/android/updateAndroidVoltraWidget'
@@ -36,6 +37,7 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
+      <AppductTools />
       <Stack screenOptions={STACK_SCREEN_OPTIONS}>
         <Stack.Screen name="ios/(tabs)" />
         <Stack.Screen name="android/(tabs)" />

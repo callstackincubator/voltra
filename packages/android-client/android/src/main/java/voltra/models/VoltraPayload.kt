@@ -2,6 +2,8 @@ package voltra.models
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import voltra.modifiers.VoltraModifierDescriptor
+import voltra.modifiers.VoltraModifierRegistry
 import voltra.parsing.DynamicObjectListSerializer
 import voltra.parsing.DynamicObjectSerializer
 import voltra.parsing.VoltraNodeSerializer
@@ -37,7 +39,15 @@ data class VoltraElement(
     @SerialName("p")
     @Serializable(with = DynamicObjectSerializer::class)
     val p: Map<String, Any?>? = null, // Props including style
-)
+) {
+    /**
+     * The decoded `modifiers` prop. Decoded on first use and kept, because renderers read it on
+     * every composition. Delegated, so it takes no part in serialization or equality.
+     */
+    val nativeModifiers: List<VoltraModifierDescriptor> by lazy {
+        VoltraModifierRegistry.parseDescriptors(p?.get("modifiers") as? String)
+    }
+}
 
 /**
  * Reference to shared element { $r: index }

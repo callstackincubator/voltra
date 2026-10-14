@@ -9,8 +9,9 @@ type GeneratedFiles = {
  */
 const collectPropNames = (data: ComponentsData): Set<string> => {
   const propNames = new Set<string>()
-  // Always include 'style' as it's a universal prop
+  // Always include 'style' and 'modifiers' as they are universal props
   propNames.add('style')
+  propNames.add('modifiers')
 
   for (const component of data.components) {
     if (component.parameters) {

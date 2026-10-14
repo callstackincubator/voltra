@@ -4,6 +4,7 @@ import * as path from 'path'
 import {
   validateHomeScreenWidgetId,
   validateInitialStatePath,
+  validateWidgetConfigurationCopy,
   validateWidgetEntry,
   validateWidgetLabel,
   validateWidgetServerUpdate,
@@ -31,6 +32,7 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
   }
 
   validateWidgetServerUpdate(widget.serverUpdate, widget.id, androidServerUpdateRules(widget))
+  validateWidgetConfigurationCopy(widget, { requireParameterTitle: false, requireIdentifierName: false })
 
   if (typeof widget.targetCellWidth !== 'number') {
     throw new Error(`Widget '${widget.id}': targetCellWidth is required and must be a number`)

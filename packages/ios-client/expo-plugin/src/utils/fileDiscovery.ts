@@ -7,6 +7,9 @@ import { logger } from '@use-voltra/expo-plugin'
 /** Table name matches basename without extension; co-located per locale in *.lproj */
 export const VOLTRA_WIDGET_STRINGS_BASENAME = 'VoltraWidgets.strings'
 
+/** Default table: Edit Widget sheet strings, and the file that makes each `.lproj` a real resource. */
+export const VOLTRA_LOCALIZABLE_STRINGS_BASENAME = 'Localizable.strings'
+
 /**
  * Scans the widget extension target directory and returns categorized file lists.
  *
@@ -43,9 +46,10 @@ export function getIOSWidgetExtensionFiles(targetPath: string, targetName: strin
     if (!entry.endsWith('.lproj')) {
       continue
     }
-    const stringsPath = path.join(targetPath, entry, VOLTRA_WIDGET_STRINGS_BASENAME)
-    if (fs.existsSync(stringsPath)) {
-      widgetFiles.localizedStringResources.push(`${entry}/${VOLTRA_WIDGET_STRINGS_BASENAME}`)
+    for (const basename of [VOLTRA_WIDGET_STRINGS_BASENAME, VOLTRA_LOCALIZABLE_STRINGS_BASENAME]) {
+      if (fs.existsSync(path.join(targetPath, entry, basename))) {
+        widgetFiles.localizedStringResources.push(`${entry}/${basename}`)
+      }
     }
   }
 

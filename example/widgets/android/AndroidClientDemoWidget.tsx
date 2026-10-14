@@ -29,11 +29,14 @@ export default function AndroidClientDemoWidget(
   const hotReloadMarker = 'edit me'
 
   const date = env.date ? new Date(env.date) : new Date()
-  const renderedAt = date.toLocaleTimeString('en-US', {
+  // Always format with the env's locale, clock preference and time zone: the JS runtime's own
+  // defaults are the process's, not what the widget is drawn for.
+  const renderedAt = date.toLocaleTimeString(env.locale, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false,
+    hourCycle: env.hourCycle,
+    timeZone: env.timeZone,
   })
 
   const config = env.configuration as Record<string, unknown> | undefined
@@ -41,6 +44,7 @@ export default function AndroidClientDemoWidget(
   const serverCity = props.city ?? '(no server data)'
   const serverTemp = typeof props.temperature === 'number' ? `${props.temperature}°` : '(no server data)'
   const instanceKey = env.instance ?? '(no instance)'
+  const unreadCount = props.unreadCount ?? 0
 
   // Material You tokens — resolved natively from the system dynamic color scheme.
   const bg = AndroidDynamicColors.surface
@@ -60,13 +64,21 @@ export default function AndroidClientDemoWidget(
 
   return (
     <VoltraAndroid.Column
-      style={StyleSheet.flatten([styles.container, { backgroundColor: bg }])}
+      style={styles.container}
       verticalAlignment="center-vertically"
+      modifiers={[
+        VoltraAndroid.modifiers.appWidgetBackground(),
+        VoltraAndroid.modifiers.background(bg),
+        VoltraAndroid.modifiers.semantics({ contentDescription: `Dynamic Widget demo, ${unreadCount} unread` }),
+      ]}
     >
       <VoltraAndroid.Text style={StyleSheet.flatten([styles.title, { color: fg }])}>
         Dynamic Widget demo
       </VoltraAndroid.Text>
-      <VoltraAndroid.Text style={StyleSheet.flatten([styles.marker, { color: accent }])}>
+      <VoltraAndroid.Text
+        style={StyleSheet.flatten([styles.marker, { color: bg, backgroundColor: accent }])}
+        modifiers={[VoltraAndroid.modifiers.padding({ horizontal: 8 }), VoltraAndroid.modifiers.cornerRadius(8)]}
+      >
         {hotReloadMarker}
       </VoltraAndroid.Text>
       {/* Jetpack Glance truncates a Column past 10 direct children (see prebuild log warning), so

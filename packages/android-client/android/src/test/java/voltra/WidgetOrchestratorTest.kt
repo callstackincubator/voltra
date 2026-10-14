@@ -97,7 +97,8 @@ class WidgetOrchestratorTest {
                     pinnedWidgetIdsSource = {
                         setOf("dynamic-widget", "payload-widget", "unresolved-widget")
                     },
-                    clientWidgetGlanceUpdateTrigger = { widgetId -> dynamicWidgetUpdateCalls += widgetId },
+                    dynamicWidgetGlanceUpdateTrigger = { widgetId -> dynamicWidgetUpdateCalls += widgetId },
+                    dynamicWidgetServerFetchTrigger = { error("reloadClientWidgets must not refetch") },
                 )
 
             orchestrator.reloadClientWidgets()

@@ -120,6 +120,7 @@ object ShortNames {
             "minvl" to "minimumValueLabel",
             "minl" to "minLength",
             "minw" to "minWidth",
+            "mods" to "modifiers",
             "md" to "monospacedDigit",
             "mta" to "multilineTextAlignment",
             "n" to "name",

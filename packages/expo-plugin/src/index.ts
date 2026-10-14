@@ -9,6 +9,9 @@ export type {
   DynamicWidgetManifestWidget,
   DynamicWidgetPlatform,
   WidgetInitialStatePath,
+  WidgetConfigurationCopySource,
+  WidgetConfigurationOption,
+  WidgetConfigurationParameter,
   WidgetLabel,
   WidgetLocalizedCopy,
 } from './types'
@@ -53,3 +56,11 @@ export {
 } from './utils/prerender'
 export type { WidgetModuleLoader, WidgetModulePlatform } from '@use-voltra/compiler'
 export { isWidgetLocalizedMap, widgetLabelEnglish } from './utils/widgetLabel'
+export type { WidgetConfigurationString } from './widgetConfiguration'
+export {
+  collectLabelLocaleKeys,
+  collectWidgetConfigurationStrings,
+  validateWidgetConfigurationCopy,
+  widgetParameterOptionKey,
+  widgetParameterTitleKey,
+} from './widgetConfiguration'

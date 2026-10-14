@@ -29,6 +29,7 @@ const FONT_EXTENSIONS = new Set(['.ttf', '.otf', '.woff', '.woff2'])
 const MAX_IMAGE_SIZE_BYTES = 4096
 const DEFAULT_INITIAL_STATE_LOCALE = '__default'
 const VOLTRA_WIDGET_STRINGS_BASENAME = 'VoltraWidgets.strings'
+const VOLTRA_LOCALIZABLE_STRINGS_BASENAME = 'Localizable.strings'
 const IOS_DYNAMIC_WIDGET_MANIFEST_PATH = path.join('.voltra', 'manifest.ios.json')
 
 const IOS_WIDGET_FAMILY_MAP: Record<IOSWidgetFamily, string> = {
@@ -123,6 +124,10 @@ interface MainAppMetadata {
   shortVersionString: string
   buildNumber: string
   urlTypes?: Array<{ CFBundleURLSchemes: string[] }>
+  /** The app's own `CFBundleLocalizations`, mirrored into the extension (ADR 0009 §4). */
+  localizations: string[]
+  /** The app's `CFBundleDevelopmentRegion` when it is a literal tag, otherwise `en`. */
+  developmentRegion: string
 }
 
 type WidgetVariants = Record<string, unknown>
@@ -226,6 +231,15 @@ export async function generateIOSFiles(options: GenerateIOSFilesOptions): Promis
   const localizedStringResults = await generateLocalizedWidgetStrings(projectRoot, targetPath, detectedWidgets)
   mergeResult(localizedStringResults, changes, warnings, generatedFiles)
 
+  const localizableStringResults = await generateLocalizableStrings(
+    projectRoot,
+    targetPath,
+    resolveExtensionLocalizations(mainAppMetadata.localizations, detectedWidgets, mainAppMetadata.developmentRegion),
+    detectedWidgets,
+    mainAppMetadata.developmentRegion
+  )
+  mergeResult(localizableStringResults, changes, warnings, generatedFiles)
+
   return {
     changes,
     files: [...generatedFiles].sort(),
@@ -245,6 +259,11 @@ async function generateInfoPlistFile(
   voltraVersion: string
 ): Promise<GeneratedFileResult> {
   const plistPath = path.join(targetPath, 'Info.plist')
+  const extensionLocalizations = resolveExtensionLocalizations(
+    mainAppMetadata.localizations,
+    widgets,
+    mainAppMetadata.developmentRegion
+  )
   const fontNames = ios.fonts.map((fontPath) => path.basename(fontPath)).sort()
   const serverWidgets = widgets.filter((widget) => widget.serverUpdate)
   const hasClientRenderedWidget = widgets.some((widget) => widget.clientRendered)
@@ -267,6 +286,9 @@ async function generateInfoPlistFile(
       CFBundleDisplayName: targetName,
       CFBundleExecutable: '$(EXECUTABLE_NAME)',
       CFBundleIdentifier: '$(PRODUCT_BUNDLE_IDENTIFIER)',
+      // Mirrors the app's languages so Locale.current and \.locale in the extension resolve like
+      // they do in the app (ADR 0009 §4).
+      CFBundleLocalizations: extensionLocalizations.length > 0 ? extensionLocalizations : undefined,
       CFBundleInfoDictionaryVersion: '6.0',
       CFBundleName: '$(PRODUCT_NAME)',
       CFBundlePackageType: '$(PRODUCT_BUNDLE_PACKAGE_TYPE)',
@@ -445,6 +467,149 @@ async function generateLocalizedWidgetStrings(
   }
 }
 
+const LOCALE_TAG_PATTERN = /^[a-zA-Z][a-zA-Z0-9]*([_-][a-zA-Z0-9]+)*$/
+
+/**
+ * The languages the widget extension declares (ADR 0009 §4): the app's `CFBundleLocalizations` and
+ * every locale a widget's locale maps use, plus the app's development language, which iOS falls back
+ * to when none of the user's languages match. Mirrors `resolveExtensionLocalizations` in the Expo
+ * plugin.
+ */
+function resolveExtensionLocalizations(
+  appLocalizations: string[],
+  widgets: NormalizedIOSWidgetConfig[],
+  developmentRegion = 'en'
+): string[] {
+  const candidates = [...appLocalizations]
+  for (const widget of widgets) {
+    for (const label of widgetLabels(widget)) {
+      if (label !== undefined && isWidgetLocalizedMap(label)) {
+        candidates.push(...Object.keys(label).filter((locale) => label[locale]?.trim()))
+      }
+    }
+  }
+
+  const byNormalized = new Map<string, string>()
+  for (const candidate of candidates) {
+    const trimmed = candidate.trim()
+    if (!trimmed || trimmed === DEFAULT_INITIAL_STATE_LOCALE || !LOCALE_TAG_PATTERN.test(trimmed)) {
+      continue
+    }
+    const normalized = normalizeLocaleTag(trimmed)
+    if (!byNormalized.has(normalized)) {
+      byNormalized.set(normalized, trimmed)
+    }
+  }
+
+  const developmentLanguage = normalizeLocaleTag(developmentRegion).split('-')[0]
+  if (byNormalized.size > 0 && ![...byNormalized.keys()].some((key) => key.split('-')[0] === developmentLanguage)) {
+    byNormalized.set(normalizeLocaleTag(developmentRegion), developmentRegion)
+  }
+
+  return [...byNormalized.values()].sort((a, b) => a.localeCompare(b))
+}
+
+function widgetLabels(widget: NormalizedIOSWidgetConfig): Array<WidgetLabel | undefined> {
+  return [
+    widget.displayName,
+    widget.description,
+    ...collectWidgetConfigurationStrings(widget).map(({ label }) => label),
+  ]
+}
+
+/**
+ * The Edit Widget sheet strings (ADR 0009 §6), keyed the same way on both platforms. Mirrors
+ * `collectWidgetConfigurationStrings` in `@use-voltra/expo-plugin`.
+ */
+function collectWidgetConfigurationStrings(
+  widget: NormalizedIOSWidgetConfig
+): Array<{ key: string; label: WidgetLabel }> {
+  const strings: Array<{ key: string; label: WidgetLabel }> = []
+  for (const parameter of widget.appIntent?.parameters ?? []) {
+    strings.push({ key: widgetParameterTitleKey(widget.id, parameter.name), label: parameter.title })
+    for (const option of parameter.options ?? []) {
+      strings.push({ key: widgetParameterOptionKey(widget.id, parameter.name, option.value), label: option.title })
+    }
+  }
+  return strings
+}
+
+function widgetParameterTitleKey(widgetId: string, parameterName: string): string {
+  return `voltra_widget_${widgetId}_param_${parameterName}_title`
+}
+
+function widgetParameterOptionKey(widgetId: string, parameterName: string, optionValue: string): string {
+  return `voltra_widget_${widgetId}_param_${parameterName}_option_${optionValue}`
+}
+
+/**
+ * `<locale>.lproj/Localizable.strings` for every declared language: the locale-mapped sheet strings,
+ * resolved with development-language and English fallback so a key never shows verbatim, and — even
+ * when empty —
+ * the resource that makes the `.lproj` folder part of the extension.
+ */
+async function generateLocalizableStrings(
+  projectRoot: string,
+  targetPath: string,
+  locales: string[],
+  widgets: NormalizedIOSWidgetConfig[],
+  developmentRegion = 'en'
+): Promise<GenerateIOSFilesResult> {
+  const changes: ReportedChange[] = []
+  const generatedFiles = new Set<string>()
+
+  for (const locale of locales) {
+    const entries: Record<string, string> = {}
+    for (const widget of widgets) {
+      for (const { key, label } of collectWidgetConfigurationStrings(widget)) {
+        if (isWidgetLocalizedMap(label)) {
+          entries[key] = pickLocalizedLabel(label, [locale, developmentRegion])
+        }
+      }
+    }
+    const keys = Object.keys(entries).sort()
+    const content = `/* Voltra widget extension strings (auto-generated) */\n${keys
+      .map((key) => `${JSON.stringify(key)} = ${JSON.stringify(entries[key])};\n`)
+      .join('')}`
+    const result = await writeGeneratedTextFile(
+      projectRoot,
+      path.join(targetPath, `${locale}.lproj`, VOLTRA_LOCALIZABLE_STRINGS_BASENAME),
+      content
+    )
+    mergeSingleResult(result, changes, generatedFiles)
+  }
+
+  return {
+    changes,
+    files: [...generatedFiles],
+    warnings: [],
+    targetName: '',
+    targetPath,
+  }
+}
+
+function normalizeLocaleTag(tag: string): string {
+  return tag.trim().toLowerCase().replace(/_/g, '-')
+}
+
+/** For each wanted locale an exact tag, then its language; then English: the initial-state order. */
+function pickLocalizedLabel(label: Record<string, string>, locales: string[]): string {
+  const entries = Object.entries(label).filter(([, value]) => value.trim())
+  for (const locale of locales) {
+    const wanted = normalizeLocaleTag(locale)
+    const exact = entries.find(([key]) => normalizeLocaleTag(key) === wanted)
+    if (exact) {
+      return exact[1]
+    }
+    const language = wanted.split('-')[0]
+    const sameLanguage = entries.find(([key]) => normalizeLocaleTag(key).split('-')[0] === language)
+    if (sameLanguage) {
+      return sameLanguage[1]
+    }
+  }
+  return widgetLabelEnglish(label)
+}
+
 /**
  * The widget extension has a single Info.plist, so its version has to come from one of the app's.
  * An app whose build configurations disagree on the version would ship an extension that matches
@@ -489,11 +654,23 @@ async function readMainAppMetadata(infoPlistPath: string): Promise<MainAppMetada
   const shortVersionString = readPlistString(dict, 'CFBundleShortVersionString') ?? '1.0.0'
   const buildNumber = readPlistString(dict, 'CFBundleVersion') ?? '1'
   const urlTypes = readUrlTypes(dict)
+  const localizationsValue = dict.CFBundleLocalizations
+  const localizations = Array.isArray(localizationsValue)
+    ? localizationsValue.filter((value): value is string => typeof value === 'string')
+    : []
+
+  // RN CLI templates set `$(DEVELOPMENT_LANGUAGE)`, which only the build resolves; `en` is what that
+  // is in practice.
+  const developmentRegionValue = readPlistString(dict, 'CFBundleDevelopmentRegion')?.trim()
+  const developmentRegion =
+    developmentRegionValue && LOCALE_TAG_PATTERN.test(developmentRegionValue) ? developmentRegionValue : 'en'
 
   return {
     shortVersionString,
     buildNumber,
     urlTypes: urlTypes.length > 0 ? urlTypes : undefined,
+    localizations,
+    developmentRegion,
   }
 }
 
@@ -718,20 +895,34 @@ function generateClientAppIntentWidgetCode(
   const intentTitle = `Configure ${widgetLabelEnglish(widget.displayName)}`
   const displayNameExpr = createSwiftLabelExpression(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = createSwiftLabelExpression(widget.id, 'description', widget.description)
+  const optionEnums = widget.appIntent.parameters
+    .filter(hasParameterOptions)
+    .map((parameter) => generateParameterOptionEnum(widget.id, parameter))
   const parameterDeclarations = widget.appIntent.parameters
     .map(
       (parameter) =>
-        `  @Parameter(title: ${JSON.stringify(parameter.title)}, default: ${swiftDefaultValue(parameter)})\n  var ${
-          parameter.name
-        }: String`
+        `  @Parameter(title: ${sheetStringLiteral(
+          parameter.title,
+          widgetParameterTitleKey(widget.id, parameter.name)
+        )}, default: ${parameterDefaultExpression(parameter)})\n  var ${parameter.name}: ${parameterSwiftType(
+          widget.id,
+          parameter
+        )}`
     )
     .join('\n\n')
-  const initializerParameters = widget.appIntent.parameters.map((parameter) => `${parameter.name}: String`).join(', ')
+  const initializerParameters = widget.appIntent.parameters
+    .map((parameter) => `${parameter.name}: ${parameterSwiftType(widget.id, parameter)}`)
+    .join(', ')
   const initializerAssignments = widget.appIntent.parameters
     .map((parameter) => `    self.${parameter.name} = ${parameter.name}`)
     .join('\n')
   const configuredDictionary = createSwiftDictionaryLiteral(
-    widget.appIntent.parameters.map((parameter) => `${JSON.stringify(parameter.name)}: configuration.${parameter.name}`)
+    widget.appIntent.parameters.map(
+      (parameter) =>
+        `${JSON.stringify(parameter.name)}: configuration.${parameter.name}${
+          hasParameterOptions(parameter) ? '.rawValue' : ''
+        }`
+    )
   )
   const defaultDictionary = createSwiftDictionaryLiteral(
     widget.appIntent.parameters.map((parameter) => `${JSON.stringify(parameter.name)}: ${swiftDefaultValue(parameter)}`)
@@ -754,6 +945,7 @@ function generateClientAppIntentWidgetCode(
       ]
 
   return [
+    ...optionEnums.flatMap((optionEnum) => [optionEnum, '']),
     `@available(iOS 17.0, *)`,
     `struct ${intentName}: WidgetConfigurationIntent {`,
     `  static var title: LocalizedStringResource = ${JSON.stringify(intentTitle)}`,
@@ -828,8 +1020,67 @@ function createSwiftLabelExpression(
   )}), table: ${JSON.stringify('VoltraWidgets')}))`
 }
 
+/** The raw default, as env.configuration sees it before the user configures anything. */
 function swiftDefaultValue(parameter: IOSWidgetAppIntentParameter): string {
+  if (hasParameterOptions(parameter)) {
+    return JSON.stringify(parameter.options![defaultOptionIndex(parameter)]!.value)
+  }
   return JSON.stringify(parameter.default ?? '')
+}
+
+function hasParameterOptions(parameter: IOSWidgetAppIntentParameter): boolean {
+  return (parameter.options?.length ?? 0) > 0
+}
+
+function defaultOptionIndex(parameter: IOSWidgetAppIntentParameter): number {
+  const index = (parameter.options ?? []).findIndex((option) => option.value === parameter.default)
+  return index >= 0 ? index : 0
+}
+
+function parameterOptionEnumName(widgetId: string, parameterName: string): string {
+  return `VoltraWidget_${widgetId}_${parameterName}_Option`
+}
+
+function parameterSwiftType(widgetId: string, parameter: IOSWidgetAppIntentParameter): string {
+  return hasParameterOptions(parameter) ? parameterOptionEnumName(widgetId, parameter.name) : 'String'
+}
+
+function parameterDefaultExpression(parameter: IOSWidgetAppIntentParameter): string {
+  return hasParameterOptions(parameter) ? `.option${defaultOptionIndex(parameter)}` : swiftDefaultValue(parameter)
+}
+
+/**
+ * A title on the Edit Widget sheet (ADR 0009 §6): a plain string is compiled in as-is; a locale map
+ * becomes a bare string-literal key into the extension's `Localizable` table.
+ */
+function sheetStringLiteral(label: WidgetLabel, key: string): string {
+  return JSON.stringify(isWidgetLocalizedMap(label) ? key : label)
+}
+
+/** Static options become an AppEnum so the sheet shows a picker of (localised) labels. */
+function generateParameterOptionEnum(widgetId: string, parameter: IOSWidgetAppIntentParameter): string {
+  const enumName = parameterOptionEnumName(widgetId, parameter.name)
+  const options = parameter.options ?? []
+  return [
+    '@available(iOS 17.0, *)',
+    `enum ${enumName}: String, AppEnum {`,
+    ...options.map((option, index) => `  case option${index} = ${JSON.stringify(option.value)}`),
+    '',
+    `  static var typeDisplayRepresentation: TypeDisplayRepresentation = ${sheetStringLiteral(
+      parameter.title,
+      widgetParameterTitleKey(widgetId, parameter.name)
+    )}`,
+    `  static var caseDisplayRepresentations: [${enumName}: DisplayRepresentation] = [`,
+    ...options.map(
+      (option, index) =>
+        `    .option${index}: ${sheetStringLiteral(
+          option.title,
+          widgetParameterOptionKey(widgetId, parameter.name, option.value)
+        )},`
+    ),
+    '  ]',
+    '}',
+  ].join('\n')
 }
 
 function createSwiftDictionaryLiteral(entries: string[]): string {
@@ -975,6 +1226,10 @@ async function prerenderClientRenderedWidgets(
     widgetFamily: 'systemMedium',
     colorScheme: 'light',
     locale: 'en-US',
+    preferredLanguages: ['en-US'],
+    layoutDirection: 'ltr',
+    hourCycle: 'h12',
+    timeZone: 'UTC',
     widgetRenderingMode: 'fullColor',
     showsWidgetContainerBackground: true,
     configuration: undefined,
@@ -1328,5 +1583,7 @@ function mergeSingleResult(result: GeneratedFileResult, changes: ReportedChange[
 }
 
 export const __test__ = {
+  resolveExtensionLocalizations,
+  generateLocalizableStrings,
   generateWidgetBundleSwift,
 }

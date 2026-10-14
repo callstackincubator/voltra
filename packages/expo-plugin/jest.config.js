@@ -6,6 +6,7 @@ module.exports = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@use-voltra/core/dynamic-live-activity$': '<rootDir>/../core/src/dynamic-live-activity.ts',
+    '^@use-voltra/core/locale$': '<rootDir>/../core/src/locale.ts',
   },
   transform: {
     '^.+\\.tsx?$': [

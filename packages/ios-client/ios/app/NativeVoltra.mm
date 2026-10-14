@@ -1,8 +1,8 @@
 #import "NativeVoltra.h"
 #import <UIKit/UIKit.h>
 
-#if __has_include("Voltra/VoltraRuntime-Swift.h")
-#import "Voltra/VoltraRuntime-Swift.h"
+#if __has_include("VoltraRuntime/VoltraRuntime-Swift.h")
+#import "VoltraRuntime/VoltraRuntime-Swift.h"
 #else
 #import "VoltraRuntime-Swift.h"
 #endif
@@ -369,6 +369,19 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
                                                      dynamicWidgetId,
                                                      error.localizedDescription];
       reject(@"updateDynamicWidget", message, error);
+    } else {
+      resolve(nil);
+    }
+  }];
+}
+
+- (void)setDynamicWidgetLocale:(NSString *)tag
+                       resolve:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module setDynamicWidgetLocale:tag completion:^(NSError *error) {
+    if (error) {
+      reject(@"setDynamicWidgetLocale", error.localizedDescription, error);
     } else {
       resolve(nil);
     }

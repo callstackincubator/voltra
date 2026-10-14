@@ -27,17 +27,15 @@ fun RenderTitleBar(
 ) {
     val context = LocalContext.current
     val renderContext = LocalVoltraRenderContext.current
-    val (computedModifier, _) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
-    val modifierWithClickable =
-        applyClickableIfNeeded(
-            computedModifier,
+    val finalModifier =
+        modifier ?: applyClickableIfNeeded(
+            resolveAndApplyStyle(element, renderContext.sharedStyles).modifier,
             element.p,
             element.i,
             renderContext.widgetId,
             element.t,
             element.hashCode(),
         )
-    val finalModifier = modifier ?: modifierWithClickable
 
     val title = (element.p?.get("title") as? String) ?: ""
     val startIcon = extractImageProvider(element.p?.get("startIcon")) ?: ImageProvider(android.R.drawable.ic_menu_add)
@@ -84,17 +82,15 @@ fun RenderScaffold(
     modifier: GlanceModifier? = null,
 ) {
     val renderContext = LocalVoltraRenderContext.current
-    val (computedModifier, _) = resolveAndApplyStyle(element.p, renderContext.sharedStyles)
-    val modifierWithClickable =
-        applyClickableIfNeeded(
-            computedModifier,
+    val finalModifier =
+        modifier ?: applyClickableIfNeeded(
+            resolveAndApplyStyle(element, renderContext.sharedStyles).modifier,
             element.p,
             element.i,
             renderContext.widgetId,
             element.t,
             element.hashCode(),
         )
-    val finalModifier = modifier ?: modifierWithClickable
 
     val backgroundColor =
         element.p?.get("backgroundColor")?.let {

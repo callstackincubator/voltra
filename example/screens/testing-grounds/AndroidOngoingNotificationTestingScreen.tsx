@@ -3,8 +3,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState, PermissionsAndroid, Platform, StyleSheet, Text, TextInput, View } from 'react-native'
 import {
   AndroidOngoingNotification,
+  type AndroidOngoingNotificationCategory,
+  type AndroidOngoingNotificationChronometer,
+  type AndroidOngoingNotificationMetricDescriptor,
   type AndroidOngoingNotificationPayload,
+  type AndroidOngoingNotificationPresentationOptions,
+  type AndroidOngoingNotificationVisibility,
   type StartAndroidOngoingNotificationOptions,
+  type UpdateAndroidOngoingNotificationOptions,
+  type UpsertAndroidOngoingNotificationOptions,
 } from '@use-voltra/android'
 import {
   getAndroidOngoingNotificationCapabilities,
@@ -20,14 +27,41 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
-type OngoingNotificationStyle = 'progress' | 'bigText'
+type OngoingNotificationStyle = 'progress' | 'bigText' | 'bigPicture' | 'inbox' | 'metric'
 
 const DEFAULT_NOTIFICATION_ID = 'testing-ground-android-ongoing-notification'
 const DEFAULT_SEGMENTS = '[{"length": 40, "color": "#34D399"}, {"length": 60}]'
 const DEFAULT_POINTS = '[{"position": 20, "color": "#F59E0B"}, {"position": 72}]'
+const DEFAULT_LINES = '12 Oak Street\n4 Elm Road\nDepot'
 const DEFAULT_PRIMARY_ACTION_DEEP_LINK = 'voltra://orders/123'
 const DEFAULT_SECONDARY_ACTION_DEEP_LINK = 'voltra://orders/123/track'
 const DEFAULT_PRIMARY_ACTION_ICON = 'voltra_icon'
+
+const VISIBILITY_CHOICES: (AndroidOngoingNotificationVisibility | 'unset')[] = ['unset', 'public', 'private', 'secret']
+
+/** Every presentation option sent as `null`, which an update reads as "go back to the platform default". */
+const CLEARED_PRESENTATION_OPTIONS: UpdateAndroidOngoingNotificationOptions = {
+  visibility: null,
+  color: null,
+  category: null,
+  timeoutMs: null,
+  localOnly: null,
+  group: null,
+  sortKey: null,
+  allowSystemGeneratedContextualActions: null,
+}
+
+// A timer endpoint ten minutes out, so the metric demo shows a live countdown.
+// Shows when a layout fell back, e.g. a Metric notification posted as a text line because the
+// device or the app's compileSdk is below 37.
+const formatStyleFallback = (styleFallback?: string) => (styleFallback ? ` (styleFallback: ${styleFallback})` : '')
+
+const defaultMetricsJson = () =>
+  JSON.stringify([
+    { label: 'Dist', value: 5.2, unit: 'km' },
+    { label: 'Pace', value: '5:30' },
+    { label: 'ETA', value: { type: 'timer', endsAt: Date.now() + 10 * 60 * 1000 } },
+  ])
 
 const formatJson = (value: unknown) => JSON.stringify(value, null, 2)
 
@@ -58,9 +92,24 @@ const toImageSource = (value: string) => {
   return { assetName: trimmed } as const
 }
 
+// Keeps an empty picture or line field reachable on purpose: the renderer then reports the missing
+// prop, which is what the screen is for.
+const toRequiredImageSource = (value: string) => toImageSource(value) ?? { assetName: '' }
+
+const toLines = (value: string) =>
+  value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
 const toOptionalNonEmptyString = (value: string) => {
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : undefined
+}
+
+const toTimeoutMs = (seconds: string) => {
+  const parsed = Number.parseFloat(seconds)
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed * 1000) : undefined
 }
 
 export default function AndroidOngoingNotificationTestingScreen() {
@@ -69,20 +118,42 @@ export default function AndroidOngoingNotificationTestingScreen() {
   const [channelId, setChannelId] = useState('voltra_live_updates')
   const [smallIcon, setSmallIcon] = useState('')
   const [requestPromotedOngoing, setRequestPromotedOngoing] = useState(true)
+  const [visibility, setVisibility] = useState<AndroidOngoingNotificationVisibility | 'unset'>('unset')
+  const [color, setColor] = useState('')
+  const [category, setCategory] = useState('')
+  const [timeoutSeconds, setTimeoutSeconds] = useState('')
+  const [localOnly, setLocalOnly] = useState(false)
+  const [group, setGroup] = useState('')
+  const [sortKey, setSortKey] = useState('')
+  const [contextualActions, setContextualActions] = useState(true)
+  const [alertOnUpdate, setAlertOnUpdate] = useState(false)
+  const [clearOnUpdate, setClearOnUpdate] = useState(false)
   const [title, setTitle] = useState('Driver is approaching')
   const [text, setText] = useState('2 stops away')
   const [bigText, setBigText] = useState('Your courier is moving through the final neighborhood.')
+  const [lines, setLines] = useState(DEFAULT_LINES)
+  const [summaryText, setSummaryText] = useState('Order 123')
+  const [picture, setPicture] = useState('voltra_widget_voltra_preview')
+  const [pictureContentDescription, setPictureContentDescription] = useState('Photo of the parcel at the front door')
+  const [showPictureWhenCollapsed, setShowPictureWhenCollapsed] = useState(false)
+  const [bigLargeIcon, setBigLargeIcon] = useState('')
+  const [hideLargeIconWhenExpanded, setHideLargeIconWhenExpanded] = useState(false)
   const [subText, setSubText] = useState('ETA 4 min')
   const [shortCriticalText, setShortCriticalText] = useState('Soon')
   const [progressValue, setProgressValue] = useState('32')
   const [progressMax, setProgressMax] = useState('100')
   const [indeterminate, setIndeterminate] = useState(false)
-  const [chronometer, setChronometer] = useState(false)
+  const [chronometer, setChronometer] = useState<AndroidOngoingNotificationChronometer>(false)
+  const [showTimestamp, setShowTimestamp] = useState(false)
+  const [showWhen, setShowWhen] = useState(true)
+  const [publicTitle, setPublicTitle] = useState('')
+  const [publicText, setPublicText] = useState('')
   const [largeIcon, setLargeIcon] = useState('')
   const [progressTrackerIcon, setProgressTrackerIcon] = useState('')
   const [progressStartIcon, setProgressStartIcon] = useState('')
   const [progressEndIcon, setProgressEndIcon] = useState('')
   const [segmentsJson, setSegmentsJson] = useState(DEFAULT_SEGMENTS)
+  const [metricsJson, setMetricsJson] = useState(defaultMetricsJson)
   const [pointsJson, setPointsJson] = useState(DEFAULT_POINTS)
   const [primaryActionTitle, setPrimaryActionTitle] = useState('Open order')
   const [primaryActionDeepLinkUrl, setPrimaryActionDeepLinkUrl] = useState(DEFAULT_PRIMARY_ACTION_DEEP_LINK)
@@ -112,53 +183,8 @@ export default function AndroidOngoingNotificationTestingScreen() {
   useFocusEffect(refreshCapabilities)
 
   const content = useMemo(() => {
-    if (style === 'progress') {
-      return (
-        <AndroidOngoingNotification.Progress
-          title={title}
-          subText={subText || undefined}
-          text={text || undefined}
-          value={Math.max(0, parseInteger(progressValue, 0))}
-          max={Math.max(1, parseInteger(progressMax, 100))}
-          indeterminate={indeterminate}
-          shortCriticalText={shortCriticalText || undefined}
-          chronometer={chronometer}
-          when={chronometer ? Date.now() : undefined}
-          largeIcon={toImageSource(largeIcon)}
-          progressTrackerIcon={toImageSource(progressTrackerIcon)}
-          progressStartIcon={toImageSource(progressStartIcon)}
-          progressEndIcon={toImageSource(progressEndIcon)}
-          segments={parseJsonArray(segmentsJson, [])}
-          points={parseJsonArray(pointsJson, [])}
-        >
-          {toOptionalNonEmptyString(primaryActionTitle) && toOptionalNonEmptyString(primaryActionDeepLinkUrl) ? (
-            <AndroidOngoingNotification.Action
-              title={toOptionalNonEmptyString(primaryActionTitle)!}
-              deepLinkUrl={toOptionalNonEmptyString(primaryActionDeepLinkUrl)!}
-              icon={toImageSource(primaryActionIcon)}
-            />
-          ) : null}
-          {toOptionalNonEmptyString(secondaryActionTitle) && toOptionalNonEmptyString(secondaryActionDeepLinkUrl) ? (
-            <AndroidOngoingNotification.Action
-              title={toOptionalNonEmptyString(secondaryActionTitle)!}
-              deepLinkUrl={toOptionalNonEmptyString(secondaryActionDeepLinkUrl)!}
-            />
-          ) : null}
-        </AndroidOngoingNotification.Progress>
-      )
-    }
-
-    return (
-      <AndroidOngoingNotification.BigText
-        title={title}
-        subText={subText || undefined}
-        text={text || 'Ongoing notification body text'}
-        bigText={bigText || undefined}
-        shortCriticalText={shortCriticalText || undefined}
-        chronometer={chronometer}
-        when={chronometer ? Date.now() : undefined}
-        largeIcon={toImageSource(largeIcon)}
-      >
+    const actionChildren = (
+      <>
         {toOptionalNonEmptyString(primaryActionTitle) && toOptionalNonEmptyString(primaryActionDeepLinkUrl) ? (
           <AndroidOngoingNotification.Action
             title={toOptionalNonEmptyString(primaryActionTitle)!}
@@ -172,13 +198,140 @@ export default function AndroidOngoingNotificationTestingScreen() {
             deepLinkUrl={toOptionalNonEmptyString(secondaryActionDeepLinkUrl)!}
           />
         ) : null}
+      </>
+    )
+
+    // A count-up clock runs from the moment the notification started; a countdown
+    // chip targets ten minutes ahead so the example shows a live countdown.
+    const when =
+      chronometer === 'countDown'
+        ? Date.now() + 10 * 60 * 1000
+        : chronometer !== false || showTimestamp
+        ? Date.now()
+        : undefined
+    const publicVersionTitle = toOptionalNonEmptyString(publicTitle)
+    const publicVersion = publicVersionTitle
+      ? { title: publicVersionTitle, text: toOptionalNonEmptyString(publicText) }
+      : undefined
+
+    if (style === 'progress') {
+      return (
+        <AndroidOngoingNotification.Progress
+          title={title}
+          subText={subText || undefined}
+          text={text || undefined}
+          value={Math.max(0, parseInteger(progressValue, 0))}
+          max={Math.max(1, parseInteger(progressMax, 100))}
+          indeterminate={indeterminate}
+          shortCriticalText={shortCriticalText || undefined}
+          chronometer={chronometer}
+          when={when}
+          showWhen={when ? showWhen : undefined}
+          publicVersion={publicVersion}
+          largeIcon={toImageSource(largeIcon)}
+          progressTrackerIcon={toImageSource(progressTrackerIcon)}
+          progressStartIcon={toImageSource(progressStartIcon)}
+          progressEndIcon={toImageSource(progressEndIcon)}
+          segments={parseJsonArray(segmentsJson, [])}
+          points={parseJsonArray(pointsJson, [])}
+        >
+          {actionChildren}
+        </AndroidOngoingNotification.Progress>
+      )
+    }
+
+    if (style === 'bigPicture') {
+      return (
+        <AndroidOngoingNotification.BigPicture
+          title={title}
+          subText={subText || undefined}
+          text={text || undefined}
+          picture={toRequiredImageSource(picture)}
+          summaryText={summaryText || undefined}
+          pictureContentDescription={pictureContentDescription || undefined}
+          showPictureWhenCollapsed={showPictureWhenCollapsed}
+          largeIcon={toImageSource(largeIcon)}
+          bigLargeIcon={toImageSource(bigLargeIcon)}
+          hideLargeIconWhenExpanded={hideLargeIconWhenExpanded}
+          shortCriticalText={shortCriticalText || undefined}
+          chronometer={chronometer}
+          when={when}
+          showWhen={when ? showWhen : undefined}
+          publicVersion={publicVersion}
+        >
+          {actionChildren}
+        </AndroidOngoingNotification.BigPicture>
+      )
+    }
+
+    if (style === 'inbox') {
+      return (
+        <AndroidOngoingNotification.Inbox
+          title={title}
+          subText={subText || undefined}
+          text={text || undefined}
+          lines={toLines(lines)}
+          summaryText={summaryText || undefined}
+          largeIcon={toImageSource(largeIcon)}
+          shortCriticalText={shortCriticalText || undefined}
+          chronometer={chronometer}
+          when={when}
+          showWhen={when ? showWhen : undefined}
+          publicVersion={publicVersion}
+        >
+          {actionChildren}
+        </AndroidOngoingNotification.Inbox>
+      )
+    }
+
+    if (style === 'metric') {
+      return (
+        <AndroidOngoingNotification.Metric
+          title={title}
+          subText={subText || undefined}
+          shortCriticalText={shortCriticalText || undefined}
+          chronometer={chronometer}
+          when={when}
+          showWhen={when ? showWhen : undefined}
+          publicVersion={publicVersion}
+          largeIcon={toImageSource(largeIcon)}
+          metrics={parseJsonArray<AndroidOngoingNotificationMetricDescriptor>(
+            metricsJson,
+            JSON.parse(defaultMetricsJson()) as AndroidOngoingNotificationMetricDescriptor[]
+          )}
+          criticalMetric={0}
+          semanticStyle="safe"
+        />
+      )
+    }
+
+    return (
+      <AndroidOngoingNotification.BigText
+        title={title}
+        subText={subText || undefined}
+        text={text || 'Ongoing notification body text'}
+        bigText={bigText || undefined}
+        shortCriticalText={shortCriticalText || undefined}
+        chronometer={chronometer}
+        when={when}
+        showWhen={when ? showWhen : undefined}
+        publicVersion={publicVersion}
+        largeIcon={toImageSource(largeIcon)}
+      >
+        {actionChildren}
       </AndroidOngoingNotification.BigText>
     )
   }, [
+    bigLargeIcon,
     bigText,
     chronometer,
+    hideLargeIconWhenExpanded,
     indeterminate,
     largeIcon,
+    lines,
+    metricsJson,
+    picture,
+    pictureContentDescription,
     pointsJson,
     primaryActionDeepLinkUrl,
     primaryActionIcon,
@@ -188,12 +341,18 @@ export default function AndroidOngoingNotificationTestingScreen() {
     progressStartIcon,
     progressTrackerIcon,
     progressValue,
+    publicText,
+    publicTitle,
     secondaryActionDeepLinkUrl,
     secondaryActionTitle,
     segmentsJson,
     shortCriticalText,
+    showPictureWhenCollapsed,
+    showTimestamp,
+    showWhen,
     style,
     subText,
+    summaryText,
     text,
     title,
   ])
@@ -202,11 +361,26 @@ export default function AndroidOngoingNotificationTestingScreen() {
     setActiveState(isAndroidOngoingNotificationActive(id))
   }
 
-  const getOngoingNotificationOptions = () => ({
+  const presentationOptions = useMemo<AndroidOngoingNotificationPresentationOptions>(
+    () => ({
+      visibility: visibility === 'unset' ? undefined : visibility,
+      color: toOptionalNonEmptyString(color),
+      category: toOptionalNonEmptyString(category) as AndroidOngoingNotificationCategory | undefined,
+      timeoutMs: toTimeoutMs(timeoutSeconds),
+      localOnly,
+      group: toOptionalNonEmptyString(group),
+      sortKey: toOptionalNonEmptyString(sortKey),
+      allowSystemGeneratedContextualActions: contextualActions,
+    }),
+    [category, color, contextualActions, group, localOnly, sortKey, timeoutSeconds, visibility]
+  )
+
+  const getOngoingNotificationOptions = (): StartAndroidOngoingNotificationOptions => ({
     notificationId,
     channelId,
     smallIcon: smallIcon || undefined,
     requestPromotedOngoing,
+    ...presentationOptions,
   })
 
   const buildVoltraPushEnvelope = (operation: 'upsert' | 'stop' = 'upsert') => {
@@ -214,7 +388,7 @@ export default function AndroidOngoingNotificationTestingScreen() {
       voltraOngoingNotification: {
         notificationId: string
         operation: 'upsert' | 'stop'
-        options: StartAndroidOngoingNotificationOptions
+        options: UpsertAndroidOngoingNotificationOptions
         payload?: AndroidOngoingNotificationPayload
       }
     } = {
@@ -225,6 +399,8 @@ export default function AndroidOngoingNotificationTestingScreen() {
           channelId,
           smallIcon: smallIcon || undefined,
           requestPromotedOngoing,
+          ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : presentationOptions),
+          ...(alertOnUpdate ? { alert: true } : {}),
         },
       },
     }
@@ -252,9 +428,12 @@ export default function AndroidOngoingNotificationTestingScreen() {
   }, [buildVoltraPushEnvelope])
 
   const handleRenderPayload = () => {
-    const payload = renderAndroidOngoingNotificationPayload(content)
-    setRenderedPayload(payload)
-    setStatusMessage('Rendered semantic payload from JSX content.')
+    try {
+      setRenderedPayload(renderAndroidOngoingNotificationPayload(content))
+      setStatusMessage('Rendered semantic payload from JSX content.')
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Failed to render the payload.')
+    }
   }
 
   const handleStart = async () => {
@@ -263,7 +442,9 @@ export default function AndroidOngoingNotificationTestingScreen() {
       syncActiveState(result.notificationId)
       setStatusMessage(
         result.ok
-          ? `Started Android ongoing notification "${result.notificationId}".`
+          ? `Started Android ongoing notification "${result.notificationId}"${formatStyleFallback(
+              result.styleFallback
+            )}.`
           : `Did not start Android ongoing notification "${result.notificationId}": ${result.reason}.`
       )
       setRenderedPayload(renderAndroidOngoingNotificationPayload(content))
@@ -274,11 +455,17 @@ export default function AndroidOngoingNotificationTestingScreen() {
 
   const handleUpdate = async () => {
     try {
-      const result = await updateAndroidOngoingNotification(notificationId, content, getOngoingNotificationOptions())
+      const result = await updateAndroidOngoingNotification(notificationId, content, {
+        ...getOngoingNotificationOptions(),
+        // With the toggle on, every presentation option is sent as null: the update goes back to the
+        // platform defaults instead of keeping what the start post stored.
+        ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : presentationOptions),
+        alert: alertOnUpdate || undefined,
+      })
       syncActiveState(notificationId)
       setStatusMessage(
         result.ok
-          ? `Updated Android ongoing notification "${notificationId}".`
+          ? `Updated Android ongoing notification "${notificationId}"${formatStyleFallback(result.styleFallback)}.`
           : `Did not update Android ongoing notification "${notificationId}": ${result.reason}.`
       )
       setRenderedPayload(renderAndroidOngoingNotificationPayload(content))
@@ -291,7 +478,11 @@ export default function AndroidOngoingNotificationTestingScreen() {
     try {
       const payloadString = renderedPayload || renderAndroidOngoingNotificationPayload(content)
       const payload = JSON.parse(payloadString) as AndroidOngoingNotificationPayload
-      const result = await upsertAndroidOngoingNotification(payload, getOngoingNotificationOptions())
+      const result = await upsertAndroidOngoingNotification(payload, {
+        ...getOngoingNotificationOptions(),
+        ...(clearOnUpdate ? CLEARED_PRESENTATION_OPTIONS : {}),
+        alert: alertOnUpdate || undefined,
+      })
       syncActiveState(result.notificationId)
       setRenderedPayload(formatJson(payload))
       setStatusMessage(
@@ -376,6 +567,21 @@ export default function AndroidOngoingNotificationTestingScreen() {
       </Card>
 
       <Card>
+        <Card.Title>Picture And Lines</Card.Title>
+        <Card.Text>
+          Picture When Collapsed and Picture Description are read on API 31+; on older devices the picture still posts,
+          without those two options.
+        </Card.Text>
+        <Card.Text>
+          A picture is downscaled to 1024 px on the long edge, and any icon to 256 px, before posting.
+        </Card.Text>
+        <Card.Text>Inbox posts six lines. A seventh is rejected while the payload is rendered.</Card.Text>
+        <Card.Text>
+          Neither layout is promoted to a Live Update on Android 16, even with Request Promoted Ongoing on.
+        </Card.Text>
+      </Card>
+
+      <Card>
         <Card.Title>Runtime Capabilities</Card.Title>
         <Card.Text>{`API ${capabilities.apiLevel} • notifications ${
           capabilities.notificationsEnabled ? 'enabled' : 'disabled'
@@ -435,6 +641,127 @@ export default function AndroidOngoingNotificationTestingScreen() {
       </Card>
 
       <Card>
+        <Card.Title>Presentation Options</Card.Title>
+        <Card.Text>
+          Empty fields are not sent, so the stored value or the platform default is used. Toggles are always sent and
+          are stored until an update changes them.
+        </Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Visibility</Text>
+          <View style={styles.toggleGroup}>
+            {VISIBILITY_CHOICES.map((choice) => (
+              <Button
+                key={choice}
+                title={choice}
+                variant={visibility === choice ? 'primary' : 'secondary'}
+                onPress={() => setVisibility(choice)}
+                style={styles.smButton}
+              />
+            ))}
+          </View>
+        </View>
+        <Card.Text>
+          Choose &quot;private&quot; together with the public version fields to see the lock-screen copy.
+        </Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Color</Text>
+          <TextInput
+            style={styles.input}
+            value={color}
+            onChangeText={setColor}
+            placeholder="#1E88E5 or rgb(30, 136, 229)"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Category</Text>
+          <TextInput
+            style={styles.input}
+            value={category}
+            onChangeText={setCategory}
+            placeholder="navigation or workout"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <Card.Text>A timeout is applied on every post, so each update restarts the countdown.</Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Timeout (seconds)</Text>
+          <TextInput
+            style={styles.input}
+            value={timeoutSeconds}
+            onChangeText={setTimeoutSeconds}
+            placeholder="120"
+            placeholderTextColor="#6B7280"
+            keyboardType="numeric"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Local only</Text>
+          <Button
+            title={localOnly ? 'ON' : 'OFF'}
+            variant={localOnly ? 'primary' : 'secondary'}
+            onPress={() => setLocalOnly((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Group</Text>
+          <TextInput
+            style={styles.input}
+            value={group}
+            onChangeText={setGroup}
+            placeholder="rides"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Sort key</Text>
+          <TextInput
+            style={styles.input}
+            value={sortKey}
+            onChangeText={setSortKey}
+            placeholder="2026-09-22T12:00"
+            placeholderTextColor="#6B7280"
+            autoCapitalize="none"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Contextual actions</Text>
+          <Button
+            title={contextualActions ? 'ON' : 'OFF'}
+            variant={contextualActions ? 'primary' : 'secondary'}
+            onPress={() => setContextualActions((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Alert on update</Text>
+          <Button
+            title={alertOnUpdate ? 'ON' : 'OFF'}
+            variant={alertOnUpdate ? 'primary' : 'secondary'}
+            onPress={() => setAlertOnUpdate((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Clear on update</Text>
+          <Button
+            title={clearOnUpdate ? 'ON' : 'OFF'}
+            variant={clearOnUpdate ? 'primary' : 'secondary'}
+            onPress={() => setClearOnUpdate((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <Card.Text>
+          &quot;Clear on update&quot; sends every presentation option as null, so the next update posts at the platform
+          defaults and nothing is stored.
+        </Card.Text>
+      </Card>
+
+      <Card>
         <Card.Title>Semantic Content</Card.Title>
         <View style={styles.row}>
           <Text style={styles.label}>Style</Text>
@@ -451,8 +778,38 @@ export default function AndroidOngoingNotificationTestingScreen() {
               onPress={() => setStyle('bigText')}
               style={styles.smButton}
             />
+            <Button
+              title="Big Picture"
+              variant={style === 'bigPicture' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('bigPicture')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Inbox"
+              variant={style === 'inbox' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('inbox')}
+              style={styles.smButton}
+            />
+            <Button
+              title="Metric"
+              variant={style === 'metric' ? 'primary' : 'secondary'}
+              onPress={() => setStyle('metric')}
+              style={styles.smButton}
+            />
           </View>
         </View>
+
+        {style === 'metric' ? (
+          <View style={styles.column}>
+            <Text style={styles.label}>Metrics JSON (1-3 entries)</Text>
+            <TextInput
+              style={[styles.input, styles.multilineInput]}
+              value={metricsJson}
+              onChangeText={setMetricsJson}
+              multiline
+            />
+          </View>
+        ) : null}
 
         <View style={styles.row}>
           <Text style={styles.label}>Title</Text>
@@ -483,12 +840,60 @@ export default function AndroidOngoingNotificationTestingScreen() {
         <View style={styles.row}>
           <Text style={styles.label}>Chronometer</Text>
           <Button
-            title={chronometer ? 'ON' : 'OFF'}
-            variant={chronometer ? 'primary' : 'secondary'}
-            onPress={() => setChronometer((current) => !current)}
+            title={chronometer === false ? 'OFF' : chronometer === true ? 'countUp' : chronometer}
+            variant={chronometer === false ? 'secondary' : 'primary'}
+            onPress={() =>
+              setChronometer((current) => (current === false ? 'countUp' : current === 'countUp' ? 'countDown' : false))
+            }
             style={styles.smButton}
           />
         </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Timestamp</Text>
+          <Button
+            title={showTimestamp ? 'ON' : 'OFF'}
+            variant={showTimestamp ? 'primary' : 'secondary'}
+            onPress={() => setShowTimestamp((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Show Timestamp</Text>
+          <Button
+            title={showWhen ? 'Shown' : 'Hidden'}
+            variant={showWhen ? 'primary' : 'secondary'}
+            onPress={() => setShowWhen((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <Card.Text>
+          Hidden keeps the timestamp for sorting and timeouts while the notification stops showing an age that never
+          changes. Needs the timestamp toggle on.
+        </Card.Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Public Title</Text>
+          <TextInput
+            style={styles.input}
+            value={publicTitle}
+            onChangeText={setPublicTitle}
+            placeholder="Ride in progress"
+            placeholderTextColor="#6B7280"
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Public Text</Text>
+          <TextInput
+            style={styles.input}
+            value={publicText}
+            onChangeText={setPublicText}
+            placeholder="Unlock to see driver details"
+            placeholderTextColor="#6B7280"
+          />
+        </View>
+        <Card.Text>
+          The public version is the lock-screen copy for a private notification. It replaces the title and text on the
+          lock screen and carries nothing else.
+        </Card.Text>
 
         {style === 'progress' ? (
           <>
@@ -567,100 +972,126 @@ export default function AndroidOngoingNotificationTestingScreen() {
                 multiline
               />
             </View>
-            <View style={styles.column}>
-              <Text style={styles.label}>Action Buttons</Text>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Title</Text>
-                <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionDeepLinkUrl}
-                  onChangeText={setPrimaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Icon</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionIcon}
-                  onChangeText={setPrimaryActionIcon}
-                  autoCapitalize="none"
-                  placeholder="assetName"
-                  placeholderTextColor="#6B7280"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Title</Text>
-                <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={secondaryActionDeepLinkUrl}
-                  onChangeText={setSecondaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
           </>
-        ) : (
+        ) : null}
+
+        {style === 'bigText' ? (
+          <View style={styles.column}>
+            <Text style={styles.label}>Big Text</Text>
+            <TextInput
+              style={[styles.input, styles.multilineInput]}
+              value={bigText}
+              onChangeText={setBigText}
+              multiline
+            />
+          </View>
+        ) : null}
+
+        {style === 'bigPicture' || style === 'inbox' ? (
+          <View style={styles.row}>
+            <Text style={styles.label}>Summary Text</Text>
+            <TextInput style={styles.input} value={summaryText} onChangeText={setSummaryText} />
+          </View>
+        ) : null}
+
+        {style === 'bigPicture' ? (
           <>
-            <View style={styles.column}>
-              <Text style={styles.label}>Big Text</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>Picture</Text>
               <TextInput
-                style={[styles.input, styles.multilineInput]}
-                value={bigText}
-                onChangeText={setBigText}
-                multiline
+                style={styles.input}
+                value={picture}
+                onChangeText={setPicture}
+                placeholder="assetName"
+                placeholderTextColor="#6B7280"
               />
             </View>
-            <View style={styles.column}>
-              <Text style={styles.label}>Action Buttons</Text>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Title</Text>
-                <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionDeepLinkUrl}
-                  onChangeText={setPrimaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Primary Icon</Text>
-                <TextInput
-                  style={styles.input}
-                  value={primaryActionIcon}
-                  onChangeText={setPrimaryActionIcon}
-                  autoCapitalize="none"
-                  placeholder="assetName"
-                  placeholderTextColor="#6B7280"
-                />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Title</Text>
-                <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.label}>Secondary Deep Link</Text>
-                <TextInput
-                  style={styles.input}
-                  value={secondaryActionDeepLinkUrl}
-                  onChangeText={setSecondaryActionDeepLinkUrl}
-                  autoCapitalize="none"
-                />
-              </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Picture Description</Text>
+              <TextInput
+                style={styles.input}
+                value={pictureContentDescription}
+                onChangeText={setPictureContentDescription}
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Big Large Icon</Text>
+              <TextInput
+                style={styles.input}
+                value={bigLargeIcon}
+                onChangeText={setBigLargeIcon}
+                placeholder="assetName"
+                placeholderTextColor="#6B7280"
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Picture When Collapsed</Text>
+              <Button
+                title={showPictureWhenCollapsed ? 'ON' : 'OFF'}
+                variant={showPictureWhenCollapsed ? 'primary' : 'secondary'}
+                onPress={() => setShowPictureWhenCollapsed((current) => !current)}
+                style={styles.smButton}
+              />
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Hide Thumbnail When Expanded</Text>
+              <Button
+                title={hideLargeIconWhenExpanded ? 'ON' : 'OFF'}
+                variant={hideLargeIconWhenExpanded ? 'primary' : 'secondary'}
+                onPress={() => setHideLargeIconWhenExpanded((current) => !current)}
+                style={styles.smButton}
+              />
             </View>
           </>
-        )}
+        ) : null}
+
+        {style === 'inbox' ? (
+          <View style={styles.column}>
+            <Text style={styles.label}>Lines, one per row</Text>
+            <TextInput style={[styles.input, styles.multilineInput]} value={lines} onChangeText={setLines} multiline />
+          </View>
+        ) : null}
+
+        <View style={styles.column}>
+          <Text style={styles.label}>Action Buttons</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Primary Title</Text>
+            <TextInput style={styles.input} value={primaryActionTitle} onChangeText={setPrimaryActionTitle} />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Primary Deep Link</Text>
+            <TextInput
+              style={styles.input}
+              value={primaryActionDeepLinkUrl}
+              onChangeText={setPrimaryActionDeepLinkUrl}
+              autoCapitalize="none"
+            />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Primary Icon</Text>
+            <TextInput
+              style={styles.input}
+              value={primaryActionIcon}
+              onChangeText={setPrimaryActionIcon}
+              autoCapitalize="none"
+              placeholder="assetName"
+              placeholderTextColor="#6B7280"
+            />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Secondary Title</Text>
+            <TextInput style={styles.input} value={secondaryActionTitle} onChangeText={setSecondaryActionTitle} />
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Secondary Deep Link</Text>
+            <TextInput
+              style={styles.input}
+              value={secondaryActionDeepLinkUrl}
+              onChangeText={setSecondaryActionDeepLinkUrl}
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
       </Card>
 
       <Card>
@@ -714,7 +1145,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     textAlignVertical: 'top',
   },
-  toggleGroup: { flexDirection: 'row', gap: 8 },
+  toggleGroup: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
   buttonRow: { marginTop: 16 },
   smButton: { paddingVertical: 8, paddingHorizontal: 16 },
   badge: {

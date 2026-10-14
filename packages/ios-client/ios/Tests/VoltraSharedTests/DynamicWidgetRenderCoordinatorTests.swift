@@ -8,7 +8,7 @@ final class DynamicWidgetRenderCoordinatorTests: XCTestCase {
     let store = DynamicWidgetPropsStore(storage: storage)
     let dynamicWidgetID = "weather-dynamic-widget"
     let persistedPropsJSON = #"{"location":{"city":"Kraków","coordinates":{"latitude":50.06,"longitude":19.94}},"units":["celsius","metric"]}"#
-    let dynamicWidgetEnvironmentJSON = #"{"widgetFamily":"systemMedium","locale":"pl_PL","configuration":{"station":"central"}}"#
+    let dynamicWidgetEnvironmentJSON = #"{"widgetFamily":"systemMedium","locale":"pl-PL","configuration":{"station":"central"}}"#
     let runtimeOutput = #"{"type":"text","props":{"content":"21°C"}}"#
     let propsProvider = RecordingDynamicWidgetPropsProvider(provider: store.dynamicWidgetProps(for:))
     let runtimeBoundary = RecordingDynamicWidgetRuntimeBoundary(output: runtimeOutput)

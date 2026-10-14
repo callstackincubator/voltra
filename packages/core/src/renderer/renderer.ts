@@ -28,6 +28,7 @@ import { shorten } from '../payload/short-names.js'
 import { VoltraElementRef, VoltraNodeJson, VoltraPropValue } from '../types.js'
 import { ContextRegistry, getContextRegistry } from './context-registry.js'
 import { getHooksDispatcher, getReactCurrentDispatcher } from './dispatcher.js'
+import { encodeNativeModifiers } from './native-modifiers.js'
 import { createElementRegistry, type ElementRegistry, preScanForDuplicates } from './element-registry.js'
 import { flattenStyle } from './flatten-styles.js'
 import { getRenderCache, type RenderCache } from './render-cache.js'
@@ -405,6 +406,13 @@ export function transformProps(
         transformed[shortKey] = index
       } else {
         transformed[shortKey] = compressStyleObject(value)
+      }
+    } else if (key === 'modifiers') {
+      // Native modifiers travel as a JSON-encoded string so that no parsing layer treats the
+      // descriptors as children or rewrites their keys (ADR 0005).
+      const encoded = encodeNativeModifiers(value)
+      if (encoded !== undefined) {
+        transformed[shorten(key)] = encoded
       }
     } else if (isReactNode(value)) {
       const serializedComponent = renderNode(value, {

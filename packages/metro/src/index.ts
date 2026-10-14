@@ -6,6 +6,12 @@ import { createMetroConfigTransformer } from 'metro-config-transformers'
 import { bundleWidgets } from './bundleWidgets'
 import { createVoltraMiddleware } from './createVoltraMiddleware'
 import { createWidgetMetroConfig } from './createWidgetMetroConfig'
+import {
+  assertAndroidIntlPolyfillsInstalled,
+  attachVoltraMetroOptions,
+  validateAndroidIntlPolyfillsOptions,
+  type VoltraMetroOptions,
+} from './intlPolyfills'
 import { createLiveActivityRegistry, MissingVoltraLiveActivitiesManifestError } from './liveActivityRegistry'
 import { requireProjectModule } from './resolveProjectModule'
 import {
@@ -130,19 +136,35 @@ function createLazyWidgetMetro(create: () => Promise<WidgetMetro>): WidgetMetro 
   }
 }
 
-export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) => {
+/**
+ * Wraps the app's Metro config so it serves (dev) and bakes (release) Dynamic Widget and Dynamic
+ * Live Activity bundles.
+ *
+ * @example
+ *   module.exports = withVoltra(config, { androidIntlPolyfills: { locales: ['en', 'pl'] } })
+ */
+export const withVoltra = createMetroConfigTransformer<VoltraMetroOptions>(async (metroConfig: any, options) => {
   const projectRoot = metroConfig.projectRoot ?? process.cwd()
-  const registry = createWidgetRegistry({ projectRoot })
+  const androidIntlPolyfills = validateAndroidIntlPolyfillsOptions(options?.androidIntlPolyfills)
+  if (androidIntlPolyfills) {
+    assertAndroidIntlPolyfillsInstalled(projectRoot)
+  }
+  const voltraOptions: VoltraMetroOptions = { androidIntlPolyfills }
+  const registry = createWidgetRegistry({ projectRoot, androidIntlPolyfills })
   const liveActivityRegistry = createLiveActivityRegistry({ projectRoot })
   const previousResolveRequest = metroConfig.resolver?.resolveRequest
-  const configWithResolver = {
-    ...metroConfig,
-    projectRoot,
-    resolver: {
-      ...metroConfig.resolver,
-      resolveRequest: createResolveRequest(projectRoot, previousResolveRequest),
+  // The release bundler loads this config from disk, so the options travel with it.
+  const configWithResolver = attachVoltraMetroOptions(
+    {
+      ...metroConfig,
+      projectRoot,
+      resolver: {
+        ...metroConfig.resolver,
+        resolveRequest: createResolveRequest(projectRoot, previousResolveRequest),
+      },
     },
-  }
+    voltraOptions
+  )
 
   const configuredWidgets = listConfiguredWidgets(registry)
   let configuredLiveActivities = []
@@ -184,21 +206,24 @@ export const withVoltra = createMetroConfigTransformer(async (metroConfig: any) 
 
   const previousEnhanceMiddleware = metroConfig.server?.enhanceMiddleware || ((middleware: unknown) => middleware)
 
-  return {
-    ...configWithResolver,
-    server: {
-      ...metroConfig.server,
-      enhanceMiddleware(metroMiddleware: unknown, metroServer: unknown) {
-        const enhancedAppMetroMiddleware = previousEnhanceMiddleware(metroMiddleware, metroServer)
+  return attachVoltraMetroOptions(
+    {
+      ...configWithResolver,
+      server: {
+        ...metroConfig.server,
+        enhanceMiddleware(metroMiddleware: unknown, metroServer: unknown) {
+          const enhancedAppMetroMiddleware = previousEnhanceMiddleware(metroMiddleware, metroServer)
 
-        // Metro only enhances middleware when it serves, so this is the earliest point that
-        // is known to be a dev server rather than a one-off build.
-        widgetMetro.start()
+          // Metro only enhances middleware when it serves, so this is the earliest point that
+          // is known to be a dev server rather than a one-off build.
+          widgetMetro.start()
 
-        return connect().use('/voltra', voltraMiddleware).use(enhancedAppMetroMiddleware)
+          return connect().use('/voltra', voltraMiddleware).use(enhancedAppMetroMiddleware)
+        },
       },
     },
-  }
+    voltraOptions
+  )
 })
 
 export {
@@ -209,6 +234,11 @@ export {
   createLiveActivityRegistry,
 }
 export { requireProjectModule, resolveProjectModulePath } from './resolveProjectModule'
+export {
+  ANDROID_INTL_POLYFILL_PACKAGES,
+  type AndroidIntlPolyfillsOptions,
+  type VoltraMetroOptions,
+} from './intlPolyfills'
 export { scanVoltraDirectives, type VoltraDirectiveWidget } from './scanner'
 export { DuplicateVoltraWidgetError, type RegisteredVoltraWidget, type WidgetRegistry } from './widgetRegistry'
 export {
