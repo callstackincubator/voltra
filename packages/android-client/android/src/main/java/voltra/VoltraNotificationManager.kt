@@ -30,6 +30,7 @@ import voltra.ongoingnotification.AndroidOngoingNotificationProgressPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressPointPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationProgressSegmentPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
+import voltra.ongoingnotification.PromotedLargeIconInset
 import voltra.styling.JSColorParser
 import voltra.styling.VoltraColorValue
 
@@ -404,10 +405,15 @@ class VoltraNotificationManager(
 
         payload.title?.let { builder.setContentTitle(it) }
 
-        applyCommonFields(builder, payload)
+        val requestsPromotion =
+            record.requestPromotedOngoing && getOngoingNotificationCapabilities().canRequestPromotedOngoing
+
+        applyCommonFields(builder, payload, requestsPromotion)
         applyPayloadStyle(builder, payload)
         applyActions(builder, record, payload)
-        requestPromotionIfPossible(builder, record)
+        if (requestsPromotion) {
+            requestPromotion(builder)
+        }
 
         notificationManager.notify(record.systemNotificationId, builder.build())
     }
@@ -415,6 +421,7 @@ class VoltraNotificationManager(
     private fun applyCommonFields(
         builder: Builder,
         payload: AndroidOngoingNotificationPayload,
+        requestsPromotion: Boolean,
     ) {
         when (payload) {
             is AndroidOngoingNotificationProgressPayload -> {
@@ -429,7 +436,10 @@ class VoltraNotificationManager(
 
         payload.subText?.let { builder.setSubText(it) }
 
-        resolveNotificationIcon(payload.largeIcon)?.let { builder.setLargeIcon(it) }
+        resolveNotificationIcon(payload.largeIcon)?.let { icon ->
+            val insetRatio = if (requestsPromotion) PromotedLargeIconInset.requiredInsetRatio() else null
+            builder.setLargeIcon(insetRatio?.let { PromotedLargeIconInset.apply(appContext, icon, it) } ?: icon)
+        }
 
         if (Build.VERSION.SDK_INT >= 36) {
             payload.shortCriticalText?.let { builder.setShortCriticalText(it) }
@@ -558,14 +568,7 @@ class VoltraNotificationManager(
         return value.color.toArgb()
     }
 
-    private fun requestPromotionIfPossible(
-        builder: Builder,
-        record: AndroidOngoingNotificationRecord,
-    ) {
-        if (!record.requestPromotedOngoing || !getOngoingNotificationCapabilities().canRequestPromotedOngoing) {
-            return
-        }
-
+    private fun requestPromotion(builder: Builder) {
         val extras = builder.extras ?: android.os.Bundle()
         extras.putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true)
         builder.setExtras(extras)
