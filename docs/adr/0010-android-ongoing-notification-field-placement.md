@@ -1,6 +1,7 @@
 # ADR 0010: Where Android ongoing notification fields live
 
-Status: Accepted
+Status: Accepted. The last consequence, restarting after a timeout, is superseded by
+[ADR 0012](0012-android-ongoing-notification-dismissal-state.md).
 
 Implemented by [#327](https://github.com/callstackincubator/voltra/pull/327).
 
