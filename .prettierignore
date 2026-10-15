@@ -13,8 +13,10 @@
 /plugin/build
 /.eslintrc.js
 /.expo
-/website/doc_build
-/website/docs
+/website/dist
+/website/.astro
+/website/public
+/website/src/content/docs
 /.turbo
 /pnpm-lock.yaml
 **/*.d.ts

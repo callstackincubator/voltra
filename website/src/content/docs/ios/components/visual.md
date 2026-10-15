@@ -1,0 +1,72 @@
+---
+title: "Visual Elements & Typography (iOS)"
+description: "Reference for Voltra iOS visual components such as Text, Image, Symbol, and other elements that display static content."
+---
+
+Static or decorative elements used to display content.
+
+### Text
+
+Displays text content.
+
+**Parameters:**
+
+- `numberOfLines` (number, optional): Maximum number of lines to display
+
+---
+
+### Label
+
+A semantic label that can display both an icon and title text.
+
+**Parameters:**
+
+- `title` (string, optional): Text content for the label
+- `systemImage` (string, optional): SF Symbol name for the label icon
+
+---
+
+### Image
+
+Displays bitmap images from the asset catalog or base64 encoded data.
+
+**Parameters:**
+
+- `source` (object, optional): Image source object (`assetName` or `base64`)
+- `resizeMode` (string, optional): `"cover"`, `"contain"`, `"stretch"`, `"repeat"`, or `"center"`
+- `fallback` (ReactNode, optional): Custom content rendered when the image is missing
+
+**Styling the fallback:**
+
+To add a background color when an image is missing, use `backgroundColor` in the `style` prop:
+
+```jsx
+<Image
+  source={{ assetName: 'photo' }}
+  style={{ backgroundColor: '#E0E0E0', borderRadius: 12 }}
+/>
+```
+
+---
+
+### Symbol
+
+Displays SF Symbols (system icons) with configuration options.
+
+---
+
+### Divider
+
+A visual divider component.
+
+---
+
+### LinearGradient
+
+A linear gradient background that can contain children.
+
+---
+
+### Mask
+
+Masks content using any Voltra element as the mask shape.

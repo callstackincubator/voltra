@@ -1,4 +1,6 @@
-![voltra-banner](https://use-voltra.dev/voltra-baner.jpg)
+<p align="center">
+  <img src="https://use-voltra.dev/banner.jpg" alt="Voltra by Callstack. Live Activities and widgets. No Swift, no Kotlin." width="100%" />
+</p>
 
 ### Build Live Activities and Widgets with JSX in React Native
 

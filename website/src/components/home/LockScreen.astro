@@ -1,0 +1,172 @@
+---
+// An iPhone lock screen drawn in the family's language, with the Dynamic Island and the
+// order-tracker Live Activity from the docs. The activity has three states, set with
+// `data-state` on the root: `off` (no activity), `enroute` (started from the app) and `arrived`
+// (the server's push). Both texts share one grid cell, so swapping them never reflows.
+import PixelIcon from '../site/PixelIcon.astro';
+
+interface Props {
+  state?: 'off' | 'enroute' | 'arrived';
+  class?: string;
+}
+const { state = 'arrived', class: className } = Astro.props;
+---
+
+<div class:list={['lock', className]} data-lock data-state={state}>
+  <div class="island" aria-hidden="true"></div>
+  <div class="lock-clock">
+    <span class="lock-date label">Thursday 15 October</span>
+    <span class="lock-time">9:41</span>
+  </div>
+  <div class="la" data-la>
+    <span class="la-tag label">Live Activity</span>
+    <PixelIcon name="car" size={18} class="accent" />
+    <span class="la-swap">
+      <span class="la-state la-state--enroute">
+        <span class="la-title">Driver en route</span>
+        <span class="la-sub">ETA 12 min</span>
+      </span>
+      <span class="la-state la-state--arrived">
+        <span class="la-title">Driver arrived</span>
+        <span class="la-sub">Ready for pickup</span>
+      </span>
+    </span>
+  </div>
+  <div class="lock-foot" aria-hidden="true">
+    <span class="lock-btn"></span>
+    <span class="lock-btn"></span>
+  </div>
+  <span class="lock-bar" aria-hidden="true"></span>
+</div>
+
+<style>
+  .lock {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75em 0.75em 0.5em;
+    font-family: var(--font-display);
+  }
+  /* The Dynamic Island: a stepped pill, darker than the screen. */
+  .island {
+    --s: 3px;
+    width: 34%;
+    height: 1.375em;
+    background: #000;
+    box-shadow: inset 0 0 0 1px #1c1c1c;
+    clip-path: polygon(
+      0 calc(var(--s) * 2),
+      var(--s) calc(var(--s) * 2),
+      var(--s) var(--s),
+      calc(var(--s) * 2) var(--s),
+      calc(var(--s) * 2) 0,
+      calc(100% - var(--s) * 2) 0,
+      calc(100% - var(--s) * 2) var(--s),
+      calc(100% - var(--s)) var(--s),
+      calc(100% - var(--s)) calc(var(--s) * 2),
+      100% calc(var(--s) * 2),
+      100% calc(100% - var(--s) * 2),
+      calc(100% - var(--s)) calc(100% - var(--s) * 2),
+      calc(100% - var(--s)) calc(100% - var(--s)),
+      calc(100% - var(--s) * 2) calc(100% - var(--s)),
+      calc(100% - var(--s) * 2) 100%,
+      calc(var(--s) * 2) 100%,
+      calc(var(--s) * 2) calc(100% - var(--s)),
+      var(--s) calc(100% - var(--s)),
+      var(--s) calc(100% - var(--s) * 2),
+      0 calc(100% - var(--s) * 2)
+    );
+  }
+  .lock-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125em;
+    margin-top: 1.5em;
+  }
+  .lock-date {
+    color: var(--muted);
+    font-size: 0.5625em;
+  }
+  .lock-time {
+    font-size: 3.25em;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--text);
+  }
+  .la {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5em;
+    width: 100%;
+    /* Where iOS puts it: under the clock, above the notifications. */
+    margin-top: 2.5em;
+    padding: 0.875em;
+    background: var(--field);
+    border: 1px solid var(--line-strong);
+    transition: opacity 300ms;
+  }
+  .la-tag {
+    position: absolute;
+    top: 0.625em;
+    right: 0.75em;
+    color: var(--faint);
+    font-size: 0.5em;
+  }
+  .la-swap {
+    display: grid;
+  }
+  .la-state {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125em;
+    visibility: hidden;
+  }
+  .la-title {
+    font-size: 0.9375em;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .la-sub {
+    font-size: 0.75em;
+    color: var(--muted);
+  }
+  [data-state='enroute'] .la-state--enroute,
+  [data-state='arrived'] .la-state--arrived {
+    visibility: visible;
+  }
+  [data-state='off'] .la {
+    opacity: 0;
+  }
+  /* The flashlight and camera buttons, and the home indicator. */
+  .lock-foot {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: auto;
+    padding-inline: 1em;
+  }
+  .lock-btn {
+    width: 2.5em;
+    aspect-ratio: 1;
+    background: #161616;
+    clip-path: polygon(30% 0, 70% 0, 70% 10%, 90% 10%, 90% 30%, 100% 30%, 100% 70%, 90% 70%, 90% 90%, 70% 90%, 70% 100%, 30% 100%, 30% 90%, 10% 90%, 10% 70%, 0 70%, 0 30%, 10% 30%, 10% 10%, 30% 10%);
+  }
+  .lock-bar {
+    width: 36%;
+    height: 0.25em;
+    margin-top: 0.875em;
+    background: rgb(255 255 255 / 0.6);
+  }
+  /* A landed update: the card's border lights for a moment. */
+  .la.is-hit {
+    border-color: var(--accent);
+  }
+</style>

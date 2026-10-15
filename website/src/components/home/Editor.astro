@@ -1,0 +1,131 @@
+---
+// "Then it's all React": an editor with the order tracker's JSX on a flow backdrop. The JSX is
+// written line by line, and the preview beside it builds the Live Activity as each element
+// lands, the way Fast Refresh shows it while you work. `data-at` is the line that draws a part.
+import CodeBlock from '../site/CodeBlock.astro';
+import Dither from '../site/Dither.astro';
+import PixelIcon from '../site/PixelIcon.astro';
+import Window from '../site/Window.astro';
+import { code } from '../../site/content';
+---
+
+<div
+  class="stage ed-stage"
+  data-editor
+  role="img"
+  aria-label="An editor with the order tracker's JSX: a Voltra VStack with a car symbol, Driver en route and ETA 12 min, started with startLiveActivity. Beside it, the preview builds the same Live Activity as each line is written."
+>
+  <Dither scene="flow" />
+  <Window title="OrderTracker.tsx" class="ed">
+    <div class="ed-body">
+      <div class="ed-code" data-code>
+        <CodeBlock code={code.liveActivity} lang="tsx" minLines={12} />
+      </div>
+      <div class="ed-preview">
+        <p class="label ed-label">Preview</p>
+        <div class="pv" data-at="5">
+          <span class="pv-live label" data-at="12">Live</span>
+          <span data-at="6"><PixelIcon name="car" size={27} class="accent" /></span>
+          <span class="pv-title" data-at="7">Driver en route</span>
+          <span class="pv-sub" data-at="8">ETA 12 min</span>
+        </div>
+      </div>
+    </div>
+    <div class="ed-status label"><span class="ed-dot" data-dot>●</span> Fast Refresh <span class="ed-file">OrderTracker.tsx</span></div>
+  </Window>
+</div>
+
+<script>
+  import { whenNear } from '../site/lazy';
+
+  const root = document.querySelector<HTMLElement>('[data-editor]');
+  if (root) whenNear(root, () => void import('./editor').then((m) => m.default(root)));
+</script>
+
+<style>
+  .ed-stage {
+    display: flex;
+    justify-content: center;
+  }
+  .ed-stage :global(.ed) {
+    width: min(100%, 60rem);
+  }
+  .ed-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+  .ed-code {
+    min-width: 0;
+    border-right: 1px solid var(--line);
+  }
+  .ed-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--surface);
+  }
+  .ed-label {
+    margin: 0;
+    color: var(--faint);
+  }
+  /* The Live Activity as the preview draws it: a slot sized for its full state. */
+  .pv {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-block: auto;
+    padding: 1.25rem;
+    background: var(--field);
+    border: 1px solid var(--line-strong);
+  }
+  .pv-live {
+    position: absolute;
+    top: 0.875rem;
+    right: 1rem;
+    padding: 0.125rem 0.375rem;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.625rem;
+  }
+  .pv-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+  .pv-sub {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .ed-status {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.5rem 0.875rem;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-size: 0.625rem;
+  }
+  .ed-dot {
+    color: var(--faint);
+    transition: color 120ms;
+  }
+  .ed-dot.is-live {
+    color: var(--accent);
+  }
+  .ed-file {
+    margin-left: auto;
+  }
+  /* Code above its result on narrow screens. */
+  @media (max-width: 48rem) {
+    .ed-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .ed-code {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+</style>

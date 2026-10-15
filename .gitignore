@@ -36,7 +36,8 @@ npm-debug.log
 *.tsbuildinfo
 
 ## Website
-/website/doc_build
+/website/dist
+/website/.astro
 
 ## MacOS
 .DS_Store

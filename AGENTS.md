@@ -1,6 +1,7 @@
 - This is a pnpm and Turborepo monorepo. Publishable packages are under
   `packages/`.
 - The user-facing documentation website is maintained in `website/`.
+- For anything visual (the website, social cards, slides, diagrams, videos), follow @./docs/DESIGN.md.
 - Read `CONTRIBUTING.md` and the relevant source, tests, and agent guide before
   making a change.
 - For version plans, see @./docs/agents/version-plans.md.

@@ -1,0 +1,105 @@
+---
+title: "Installation"
+description: "Install the Voltra platform packages for JSX primitives and runtime APIs on iOS and Android, plus the optional server packages."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Voltra v2 ships as platform packages. In most apps, you install one package for JSX primitives and one package for runtime APIs per platform.
+
+## 1. Install packages
+
+### iOS (Live Activities and widgets)
+
+<Tabs syncKey="pkg">
+  <TabItem label="npm">
+
+```sh
+npm install @use-voltra/ios @use-voltra/ios-client
+```
+
+  </TabItem>
+  <TabItem label="yarn">
+
+```sh
+yarn add @use-voltra/ios @use-voltra/ios-client
+```
+
+  </TabItem>
+  <TabItem label="pnpm">
+
+```sh
+pnpm add @use-voltra/ios @use-voltra/ios-client
+```
+
+  </TabItem>
+  <TabItem label="bun">
+
+```sh
+bun add @use-voltra/ios @use-voltra/ios-client
+```
+
+  </TabItem>
+</Tabs>
+
+### Android (Home Screen widgets and ongoing notifications)
+
+<Tabs syncKey="pkg">
+  <TabItem label="npm">
+
+```sh
+npm install @use-voltra/android @use-voltra/android-client
+```
+
+  </TabItem>
+  <TabItem label="yarn">
+
+```sh
+yarn add @use-voltra/android @use-voltra/android-client
+```
+
+  </TabItem>
+  <TabItem label="pnpm">
+
+```sh
+pnpm add @use-voltra/android @use-voltra/android-client
+```
+
+  </TabItem>
+  <TabItem label="bun">
+
+```sh
+bun add @use-voltra/android @use-voltra/android-client
+```
+
+  </TabItem>
+</Tabs>
+
+Use the platform package for JSX primitives:
+
+- `@use-voltra/ios` exports `Voltra`
+- `@use-voltra/android` exports `VoltraAndroid`, `AndroidDynamicColors`, and `AndroidOngoingNotification`
+
+Use the client package for React Native runtime APIs:
+
+- `@use-voltra/ios-client` exports `startLiveActivity`, `updateWidget`, `VoltraView`, `VoltraWidgetPreview`, and other app-side APIs
+- `@use-voltra/android-client` exports `updateAndroidWidget`, `requestPinAndroidWidget`, `reloadAndroidWidgets`, `VoltraView`, `VoltraWidgetPreview`, and other app-side APIs
+
+### Server rendering (optional)
+
+Use these in your backend or SSR service-not in the React Native app bundle:
+
+- **iOS payloads:** `@use-voltra/ios-server`
+- **Android payloads:** `@use-voltra/android-server`
+- **Cross-platform widget HTTP handlers:** `@use-voltra/server`
+
+Note that pre-render files such as `initialStatePath` should import JSX from `@use-voltra/ios` or `@use-voltra/android` directly, not from the client packages.
+
+## 2. Next Steps
+
+After installing packages, configure the Voltra Expo plugin for each platform you support:
+
+- [Configure iOS Setup](/ios/setup)
+- [Configure Android Setup](/android/setup)
+- [Use Voltra in React Native CLI projects](/getting-started/react-native-cli)
+- [Migrate from v1 to v2](/getting-started/migration-v2)

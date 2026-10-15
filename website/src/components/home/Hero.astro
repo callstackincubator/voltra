@@ -1,0 +1,98 @@
+---
+// The home page hero: the motto, a lede, GET STARTED and the docs, the setup in a `zsh` window,
+// then the product's own surfaces on the Cells scene. An iPhone lock screen with the Dynamic
+// Island and the order-tracker Live Activity beside an Android home screen with the same order in
+// a widget, both updating together.
+import AndroidHome from './AndroidHome.astro';
+import LockScreen from './LockScreen.astro';
+import Phone from './Phone.astro';
+import Dither from '../site/Dither.astro';
+import Window from '../site/Window.astro';
+import { docs, home, site } from '../../site/content';
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero-top hero-top--split">
+    <h1 class="h1 hero-title" id="hero-title">{site.headline[0]}<br /> <em>{site.headline[1]}</em></h1>
+    <div class="hero-copy">
+      <p class="lede">{site.lede}</p>
+      <div class="actions">
+        <a class="btn" href={docs.start}>Get started <span aria-hidden="true">→</span></a>
+        <a class="btn btn--dark" href={docs.intro}>Read the docs</a>
+      </div>
+    </div>
+    <Window title="zsh" class="hero-side">
+      <div class="term">
+        {home.setup.map((l) => ('cmd' in l ? <div class="ln"><span class="p">$</span> {l.cmd}</div> : <div class="ln dim"># {l.comment}</div>))}
+      </div>
+    </Window>
+  </div>
+
+  <div
+    class="viz"
+    data-hero
+    role="img"
+    aria-label="Two phones show the same order from React components. On iPhone, a Live Activity on the lock screen under the Dynamic Island; on Android, a home screen widget. Both change from Driver en route to Driver arrived."
+  >
+    <Dither scene="cells" focus={0.5} />
+    <div class="pair">
+      <Phone class="pair-phone" label="iOS · SwiftUI">
+        <LockScreen state="arrived" />
+      </Phone>
+      <Phone class="pair-phone" label="Android · Glance">
+        <AndroidHome state="arrived" />
+      </Phone>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { whenNear } from '../site/lazy';
+
+  const root = document.querySelector<HTMLElement>('[data-hero]');
+  if (root) whenNear(root, () => void import('./hero').then((m) => m.default(root)));
+</script>
+
+<style>
+  .hero-top--split {
+    grid-template-columns: minmax(0, 1fr) 28.5rem;
+    align-items: center;
+    padding-block: clamp(2rem, 4.5vw, 3.75rem);
+  }
+  /* The headline spans the row, one sentence per line; the copy and the setup sit below it. */
+  .hero-title {
+    grid-column: 1 / -1;
+    margin-top: -0.18em;
+  }
+  :global(.hero-side) .term {
+    font-size: 0.6875rem;
+    overflow-wrap: normal;
+  }
+  .pair {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: clamp(1.5rem, 6vw, 5rem);
+    padding: clamp(2rem, 5vw, 3.5rem) var(--pad);
+  }
+  .pair :global(.pair-phone) {
+    --phone-w: 16rem;
+  }
+  @media (max-width: 64rem) {
+    .hero-top--split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    :global(.hero-side) {
+      display: none;
+    }
+  }
+  @media (max-width: 36rem) {
+    .pair {
+      gap: 0.75rem;
+      padding-inline: 1rem;
+    }
+    .pair :global(.pair-phone) {
+      --phone-w: calc(50% - 0.375rem);
+    }
+  }
+</style>
