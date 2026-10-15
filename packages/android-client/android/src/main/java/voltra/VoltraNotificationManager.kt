@@ -150,7 +150,10 @@ class VoltraNotificationManager(
         /** The user swiped the notification away, or the system removed it when its timeout expired. */
         const val ENDED_REASON_DISMISSED = "dismissed"
 
-        /** The app stopped the notification, alone or through `endAll`. */
+        /**
+         * The app stopped the notification, alone or through `endAll`. `endAll` reports every record it
+         * removes, including ones already reported as dismissed; listeners must treat both as idempotent.
+         */
         const val ENDED_REASON_STOPPED = "stopped"
 
         // Process-wide because the dismissal arrives in a BroadcastReceiver that has no reference
@@ -240,7 +243,9 @@ class VoltraNotificationManager(
             val existingRecord = getRecord(notificationId)
             // A dismissed record only remembers that the user (or a timeout) ended it, so that updates
             // and upserts cannot bring it back. An explicit start begins a new lifecycle and replaces
-            // it, without carrying over any of its options (ADR 0012).
+            // it, without carrying over any of its options (ADR 0012). It keeps the system slot, so
+            // if the old notification is somehow still showing, the new one replaces it in place
+            // instead of leaving an orphan that stop and endAll could no longer reach.
             if (existingRecord != null && !existingRecord.dismissed) {
                 return@withContext AndroidOngoingNotificationStartResult(
                     ok = false,
@@ -254,10 +259,13 @@ class VoltraNotificationManager(
                     currentRecord = null,
                     options = options,
                     allowMissingChannel = false,
-                ).copy(
-                    active = true,
-                    dismissed = false,
-                )
+                ).let { fresh ->
+                    fresh.copy(
+                        systemNotificationId = existingRecord?.systemNotificationId ?: fresh.systemNotificationId,
+                        active = true,
+                        dismissed = false,
+                    )
+                }
 
             val promotion = postNotification(record, parsedPayload, onlyAlertOnce = false)
             saveRecord(record)

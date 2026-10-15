@@ -55,8 +55,9 @@ channel today; every value crosses as a Promise result or a synchronous getter.
 
 ### State is the getter plus an internal "ended" event
 
-This follows the model ADR 0011 sets for iOS: the getter returns the current value, and an event
-reports changes. The TurboModule spec gains one codegen event emitter:
+This follows the model ADR 0011 sets for iOS (proposed in
+[#353](https://github.com/callstackincubator/voltra/pull/353)): the getter returns the current value,
+and an event reports changes. The TurboModule spec gains one codegen event emitter:
 
 ```ts
 readonly onOngoingNotificationEnded: CodegenTypes.EventEmitter<{
@@ -100,7 +101,10 @@ for the same reason: it is either slow or wasteful, and it is still wrong betwee
 
 `startOngoingNotification` treats an existing record marked `dismissed` as absent. It overwrites the
 record with a fresh one: options from the dismissed lifecycle are not carried over, and the
-notification is posted again. A record that is not dismissed still produces `already_exists`.
+notification is posted again. Only the system notification id is kept. If a dismissal was recorded
+while the notification was in fact still showing, for example from a stale delete broadcast, the new
+post then replaces it in place, so no copy is left behind that `stop` and `endAll` can no longer
+reach. A record that is not dismissed still produces `already_exists`.
 
 `upsertAndroidOngoingNotification()` and `updateAndroidOngoingNotification()` keep rejecting a
 dismissed record with `reason: 'dismissed'`. The line falls between two intents:
@@ -133,12 +137,23 @@ back on the next mount with `autoStart`, or when the app calls `start()`.
   out, and when any code in the app stops it.
 - `start()`, from the hook or directly, posts again after a dismissal or timeout without calling
   `stop` first. Before this change it returned `already_exists`. This is a behavior change and it
-  ships as a patch.
+  ships as a patch. Code that used `start` for routine updates, such as a push handler that falls
+  back to `update` on `already_exists`, now brings a dismissed notification back. The docs point
+  such code to `upsert`.
+- With `autoStart`, a dismissed notification is posted again the next time the component mounts.
+  Before, a remount hit `already_exists` and the notification stayed gone until something called
+  `stop`.
 - Remote updates and upserts still cannot resurrect a dismissed notification.
 - `end()` with `autoStart` set no longer restarts the notification straight away.
 - Android now has one native-to-JS event, `onOngoingNotificationEnded`, and it is internal. Later
   Android events can follow the same pattern: a codegen emitter on the spec, plus a listener set
   that the module registers in `initialize()`.
+- The event names a notification id, not a lifecycle. If other code stops a notification and
+  starts it again under the same id while the hook is mounted, the hook hears the stop, reports
+  `isActive: false`, and does not learn about the new start. It recovers on its own `start()`,
+  which gets `already_exists` for the live notification and adopts it. A matching "started" event
+  would fix this, but it would also need to settle which caller owns the content, and that is out of
+  scope here.
 - A notification cancelled by other code through the platform API (for example another library's
   "dismiss all notifications") never reaches the delete intent. Voltra cannot observe that case. The
   hook keeps reporting `isActive: true` until its next call, and an update then posts the

@@ -511,7 +511,7 @@ Use `autoStart` to create the notification when the component mounts, and `autoU
 
 `isActive` follows the device, not only the hook's own calls. It turns `false` when the user swipes the notification away, when it times out (`timeoutMs`), and when anything in your app stops it, for example a push handler calling `stopAndroidOngoingNotification()`. This works even when the user swipes it from the notification shade while your app stays in the foreground.
 
-A dismissal is respected: `autoStart` posts once when the component mounts, or when you turn `autoStart` on, and does not post again after the user dismisses the notification. Call `start()` when your flow should show the notification again:
+`autoStart` posts when the component mounts, or when you turn `autoStart` on. It does not post again while the component stays mounted, so a notification the user dismisses stays dismissed. The next time the component mounts with `autoStart`, for example when the user comes back to the screen, it is posted again. Call `start()` when your flow should show the notification again sooner:
 
 ```tsx
 const { start, isActive } = useAndroidOngoingNotification(content, options)
@@ -640,7 +640,7 @@ Start, update, and upsert reject with a code instead of posting something broken
 | `VOLTRA_NOTIFICATION_NOT_PROMOTABLE`     | Promotion was requested with `fallbackBehavior: 'error'` and the notification is not eligible              | Read the reasons in the message (see below)                       |
 | `VOLTRA_NOTIFICATION_INTERNAL_ERROR`     | An unexpected device failure                                                                               | Retry; if it persists, file an issue with the message             |
 
-A dismissed notification is different: updates and upserts return `ok: false, reason: 'dismissed'` and nothing is re-posted, so a remote push cannot bring back a notification the user swiped away. If your flow legitimately restarts after a dismissal, call `startAndroidOngoingNotification()` (or the hook's `start()`). It can reuse the same `notificationId`: the start replaces the dismissed notification with a new one and does not keep any of its options.
+A dismissed notification is different: updates and upserts return `ok: false, reason: 'dismissed'` and nothing is re-posted, so a remote push handled with `upsertAndroidOngoingNotification()` cannot bring back a notification the user swiped away. If your flow legitimately restarts after a dismissal, call `startAndroidOngoingNotification()` (or the hook's `start()`). It can reuse the same `notificationId`: the start replaces the dismissed notification with a new one and does not keep any of its options. Because a start always posts, don't use it to apply routine updates, for example by calling it from a push handler and falling back to an update on `already_exists`, or a dismissed notification will come back.
 
 ## Promoted ongoing notifications
 

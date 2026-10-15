@@ -99,7 +99,6 @@ export const useAndroidOngoingNotification = (
   // timeout expires, or other code stops it. Native code reports each of those, so `isActive` follows
   // the device rather than only this hook's own calls (ADR 0012).
   useEffect(() => {
-    // Shared components can render this hook on other platforms, where there is no module to listen to.
     if (Platform.OS !== 'android') {
       return
     }
@@ -107,9 +106,21 @@ export const useAndroidOngoingNotification = (
     const clearIfCurrent = (notificationId: string) => {
       setTargetId((current) => (current === notificationId ? null : current))
     }
-    const subscription = getNativeVoltraAndroid().onOngoingNotificationEnded(({ notificationId }) => {
-      clearIfCurrent(notificationId)
-    })
+
+    // Mounting the hook never required the native module before; without it (or with a native build
+    // older than this JS), the hook keeps working from its own calls instead of crashing the screen.
+    let subscription: { remove: () => void }
+    try {
+      const nativeModule = getNativeVoltraAndroid()
+      if (typeof nativeModule.onOngoingNotificationEnded !== 'function') {
+        return
+      }
+      subscription = nativeModule.onOngoingNotificationEnded(({ notificationId }) => {
+        clearIfCurrent(notificationId)
+      })
+    } catch {
+      return
+    }
 
     // Subscribe first, then read: a dismissal that landed after the first render but before the
     // subscription existed is only visible through the getter.

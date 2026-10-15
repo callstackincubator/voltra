@@ -407,14 +407,16 @@ abstract class VoltraNotificationManagerTestBase(
     fun startReplacesADismissedRecordWithANewLifecycle() {
         startChannel()
         start(bigTextPayload(), notificationId = "restart-me", requestPromotedOngoing = true)
+        val systemId = notificationManager.activeNotifications.single().id
+        // What a swipe does: the system removes the notification, then the delete intent arrives.
+        notificationManager.cancel(systemId)
         VoltraNotificationManager.markDismissed(context, "restart-me")
-        val postedBeforeRestart = postedNotifications().size
 
         val restart = start(bigTextPayload(text = "Gate 18 to 42"), notificationId = "restart-me")
 
         assertTrue(restart.ok)
         assertEquals("started", restart.action)
-        assertEquals(postedBeforeRestart + 1, postedNotifications().size)
+        assertEquals(listOf(systemId), notificationManager.activeNotifications.map { it.id })
         assertFalse(manager.getOngoingNotificationStatus("restart-me").isDismissed)
         // Nothing from the dismissed lifecycle carries over: promotion was requested only there.
         assertNull(restart.promotion)
@@ -423,6 +425,21 @@ abstract class VoltraNotificationManagerTestBase(
                 manager.updateOngoingNotification("restart-me", bigTextPayload(text = "Boarding"), null)
             }
         assertTrue(update.ok)
+    }
+
+    @Test
+    fun startOverAStillVisibleDismissedRecordReplacesItInPlace() {
+        startChannel()
+        start(bigTextPayload(), notificationId = "restart-me")
+        // A dismissal recorded while the notification is still showing (e.g. a stale delete broadcast).
+        VoltraNotificationManager.markDismissed(context, "restart-me")
+
+        val restart = start(bigTextPayload(text = "Gate 18 to 42"), notificationId = "restart-me")
+
+        assertTrue(restart.ok)
+        assertEquals(1, notificationManager.activeNotifications.size)
+        assertTrue(manager.stopOngoingNotification("restart-me").ok)
+        assertTrue(notificationManager.activeNotifications.isEmpty())
     }
 
     @Test

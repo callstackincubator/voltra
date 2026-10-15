@@ -207,6 +207,52 @@ describe('useAndroidOngoingNotification lifecycle', () => {
     expect(apiRef.current!.isActive).toBe(true)
   })
 
+  it('auto-starts when autoStart turns on after mount', async () => {
+    isActiveOnDevice.mockReturnValue(false)
+    const tree = await mount()
+    expect(nativeStart).not.toHaveBeenCalled()
+
+    probeOptions = { autoStart: true }
+    await ReactTestRenderer.act(async () => {
+      tree.update(React.createElement(LifecycleProbe))
+    })
+
+    expect(nativeStart).toHaveBeenCalledTimes(1)
+    expect(apiRef.current!.isActive).toBe(true)
+  })
+
+  it('follows a generated notification id', async () => {
+    isActiveOnDevice.mockReturnValue(false)
+    nativeStart.mockResolvedValue({ ok: true, notificationId: 'generated-1', action: 'started' })
+
+    function GeneratedIdProbe() {
+      apiRef.current = useAndroidOngoingNotification('Driver is on the way', { channelId: 'rides' })
+      return null
+    }
+    await ReactTestRenderer.act(async () => {
+      ReactTestRenderer.create(React.createElement(GeneratedIdProbe))
+    })
+    await ReactTestRenderer.act(async () => {
+      await apiRef.current!.start()
+    })
+    expect(apiRef.current!.isActive).toBe(true)
+
+    await emitEnded({ notificationId: 'generated-1', reason: 'dismissed' })
+
+    expect(apiRef.current!.isActive).toBe(false)
+  })
+
+  it('keeps working without the native ended event', async () => {
+    mockedGetNativeVoltraAndroid.mockReturnValue({
+      isAndroidOngoingNotificationActive: isActiveOnDevice,
+      startAndroidOngoingNotification: nativeStart,
+    } as unknown as Spec)
+
+    await mount()
+
+    expect(apiRef.current!.isActive).toBe(true)
+  })
+
   it('unsubscribes on unmount', async () => {
     const tree = await mount()
 
