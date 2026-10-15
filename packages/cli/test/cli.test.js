@@ -7,6 +7,23 @@ const test = require('node:test')
 
 const packageRoot = path.resolve(__dirname, '..')
 
+// Git exports these to hooks, so they reach this file when the pre-push hook runs the tests. Left in
+// place, every git command here and in the CLI under test would act on the repository running the hook
+// instead of the temp repository (setting core.bare and a test user.name in its config).
+const GIT_REPOSITORY_ENV_KEYS = [
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_COMMON_DIR',
+  'GIT_PREFIX',
+]
+
+for (const key of GIT_REPOSITORY_ENV_KEYS) {
+  delete process.env[key]
+}
+
 function loadCliModule() {
   return require(path.join(packageRoot, 'build/cjs/index.js'))
 }
@@ -17,6 +34,17 @@ function loadIosMainAppEntitlementsModule() {
 
 function loadAndroidWidgetSizingModule() {
   return require(path.join(packageRoot, 'build/cjs/platforms/android/widgetSizing.js'))
+}
+
+function initGitRepository(repoRoot) {
+  execFileSync('git', ['init'], { cwd: repoRoot, stdio: 'ignore' })
+
+  const gitDir = execFileSync('git', ['rev-parse', '--absolute-git-dir'], { cwd: repoRoot, encoding: 'utf8' }).trim()
+  assert.equal(
+    fs.realpathSync(gitDir),
+    path.join(fs.realpathSync(repoRoot), '.git'),
+    'git resolved a repository outside the test directory'
+  )
 }
 
 function writeFakePackage(projectRoot, packageName, version = '0.0.0') {
@@ -119,7 +147,7 @@ test('dirty worktree warning hides modified file paths', async () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-cli-test-'))
   const trackedFilePath = path.join(tempDir, 'tracked.txt')
 
-  execFileSync('git', ['init'], { cwd: tempDir, stdio: 'ignore' })
+  initGitRepository(tempDir)
   execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: tempDir, stdio: 'ignore' })
   execFileSync('git', ['config', 'user.name', 'Voltra Test'], { cwd: tempDir, stdio: 'ignore' })
 
