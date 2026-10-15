@@ -4,8 +4,17 @@ import Foundation
 /// Cross-process "something changed" signal for the App Group backed queues. Darwin notifications
 /// carry no payload, so consumers always read storage after a signal.
 final class VoltraDarwinNotificationRelay {
-  static let renderFailures = VoltraDarwinNotificationRelay(name: "com.voltra.dynamicLiveActivityRenderFailures")
-  static let interactions = VoltraDarwinNotificationRelay(name: "com.voltra.interactions")
+  static let renderFailures = VoltraDarwinNotificationRelay(name: scoped("com.voltra.dynamicLiveActivityRenderFailures"))
+  static let interactions = VoltraDarwinNotificationRelay(name: scoped("com.voltra.interactions"))
+
+  /// Darwin notification names are system-wide. Scoping them to the App Group, which the app and its
+  /// extension share, keeps one app's signals from waking every other app built with Voltra.
+  static func scoped(_ name: String, groupIdentifier: String? = VoltraConfig.groupIdentifier()) -> String {
+    guard let groupIdentifier, !groupIdentifier.isEmpty else {
+      return "\(name).\(Bundle.main.bundleIdentifier ?? "app")"
+    }
+    return "\(name).\(groupIdentifier)"
+  }
 
   private let lock = NSLock()
   private var handlers: [UUID: () -> Void] = [:]

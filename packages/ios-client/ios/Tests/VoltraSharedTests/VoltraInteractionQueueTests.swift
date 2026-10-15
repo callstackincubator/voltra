@@ -80,8 +80,44 @@ final class VoltraInteractionQueueTests: XCTestCase {
     XCTAssertEqual(reader.pop().map(\.identifier), ["a"])
     XCTAssertEqual(writer.pop(), [])
     XCTAssertTrue(
-      try FileManager.default.contentsOfDirectory(atPath: directory.path).contains { $0.contains(".corrupt-") }
+      try FileManager.default.contentsOfDirectory(atPath: directory.path).contains { $0 == VoltraInteractionFileStorage.quarantineFileName }
     )
+  }
+
+  func testFileStorageLeavesAnUnreadableQueueUntouched() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    let queue = makeQueue(storage: VoltraInteractionFileStorage(directoryURL: directory))
+    XCTAssertTrue(queue.record(tap("a", at: 0)))
+    let queueURL = directory.appendingPathComponent(VoltraInteractionFileStorage.queueFileName)
+    try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: queueURL.path)
+    defer { try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: queueURL.path) }
+
+    XCTAssertFalse(queue.record(tap("b", at: 0)))
+    XCTAssertEqual(queue.pop(), [])
+
+    try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: queueURL.path)
+    XCTAssertEqual(queue.pop().map(\.identifier), ["a"])
+    XCTAssertFalse(FileManager.default.fileExists(
+      atPath: directory.appendingPathComponent(VoltraInteractionFileStorage.quarantineFileName).path
+    ))
+  }
+
+  func testRestorePutsTapsBackInFrontWithoutDuplicates() {
+    let queue = makeQueue()
+    queue.record(tap("a", at: 1))
+    let popped = queue.pop()
+    queue.record(tap("b", at: 2))
+
+    queue.restore(popped)
+    queue.restore(popped)
+
+    XCTAssertEqual(queue.pop().map(\.identifier), ["a", "b"])
+  }
+
+  func testInteractionRoundTripsThroughItsDictionary() {
+    let interaction = tap("a", at: 0)
+    XCTAssertEqual(VoltraInteraction(dictionary: interaction.dictionary), interaction)
+    XCTAssertNil(VoltraInteraction(dictionary: ["id": "missing-fields"]))
   }
 
   func testFileStorageSerializesConcurrentWritersAndReaders() {

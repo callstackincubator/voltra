@@ -34,6 +34,22 @@ public struct VoltraInteraction: Codable, Equatable {
     self.payload = payload ?? ""
   }
 
+  /// Rebuilds a tap JavaScript hands back; nil when a required field is missing.
+  public init?(dictionary: [String: Any]) {
+    guard
+      let id = dictionary["id"] as? String,
+      let source = dictionary["source"] as? String,
+      let timestamp = (dictionary["timestamp"] as? NSNumber)?.doubleValue,
+      let identifier = dictionary["identifier"] as? String
+    else { return nil }
+    type = Self.eventType
+    self.id = id
+    self.source = source
+    self.timestamp = timestamp
+    self.identifier = identifier
+    payload = dictionary["payload"] as? String ?? ""
+  }
+
   public var dictionary: [String: Any] {
     [
       "type": type,
@@ -55,16 +71,24 @@ public protocol VoltraInteractionStorage {
 /// Cross-process-safe file storage, shared by the app and its extensions through the App Group.
 ///
 /// Every read/modify/write holds an advisory `flock` on a lock file next to the data, and the data
-/// file is replaced atomically. Corrupt data is quarantined and treated as an empty queue.
+/// file is replaced atomically. Data that cannot be decoded is moved aside to a single quarantine
+/// file and treated as an empty queue; a file that cannot be read (for example while the device is
+/// locked) aborts the transaction and is left untouched.
 public final class VoltraInteractionFileStorage: VoltraInteractionStorage {
   private let directoryURL: URL
   private let fileManager: FileManager
+  private let lockTimeout: TimeInterval
   static let queueFileName = "interactions-v1.json"
+  static let quarantineFileName = "interactions-v1.json.corrupt"
   private let lockFileName = "interactions-v1.lock"
 
-  public init(directoryURL: URL, fileManager: FileManager = .default) {
+  /// - Parameter lockTimeout: how long to wait for another process's transaction. `popInteractions`
+  ///   runs on the JavaScript thread, so this never blocks indefinitely; on timeout the transaction
+  ///   fails and the entries stay where they are.
+  public init(directoryURL: URL, fileManager: FileManager = .default, lockTimeout: TimeInterval = 0.25) {
     self.directoryURL = directoryURL
     self.fileManager = fileManager
+    self.lockTimeout = lockTimeout
   }
 
   public func update<Result>(_ body: (inout [VoltraInteraction]) throws -> Result) throws -> Result {
@@ -73,28 +97,48 @@ public final class VoltraInteractionFileStorage: VoltraInteractionStorage {
     let descriptor = open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
     guard descriptor >= 0 else { throw POSIXError(.EIO) }
     defer { close(descriptor) }
-    guard flock(descriptor, LOCK_EX) == 0 else { throw POSIXError(.EIO) }
+    try lock(descriptor)
     defer { flock(descriptor, LOCK_UN) }
 
     let queueURL = directoryURL.appendingPathComponent(Self.queueFileName, isDirectory: false)
-    let original = load(from: queueURL)
+    let original = try load(from: queueURL)
     var entries = original
     let result = try body(&entries)
     if entries != original {
-      try JSONEncoder().encode(entries).write(to: queueURL, options: .atomic)
+      try JSONEncoder().encode(entries).write(to: queueURL, options: Self.writingOptions)
     }
     return result
   }
 
-  private func load(from url: URL) -> [VoltraInteraction] {
+  #if os(iOS)
+    /// Readable after the first unlock, so an intent running while the device is locked can record.
+    private static let writingOptions: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+  #else
+    private static let writingOptions: Data.WritingOptions = [.atomic]
+  #endif
+
+  private func lock(_ descriptor: Int32) throws {
+    let deadline = Date().addingTimeInterval(lockTimeout)
+    while true {
+      if flock(descriptor, LOCK_EX | LOCK_NB) == 0 {
+        return
+      }
+      let error = errno
+      guard error == EWOULDBLOCK || error == EINTR, Date() < deadline else {
+        throw POSIXError(POSIXErrorCode(rawValue: error) ?? .EIO)
+      }
+      usleep(2000)
+    }
+  }
+
+  private func load(from url: URL) throws -> [VoltraInteraction] {
     guard fileManager.fileExists(atPath: url.path) else { return [] }
+    let data = try Data(contentsOf: url)
     do {
-      return try JSONDecoder().decode([VoltraInteraction].self, from: Data(contentsOf: url))
+      return try JSONDecoder().decode([VoltraInteraction].self, from: data)
     } catch {
-      let quarantineURL = directoryURL.appendingPathComponent(
-        "\(Self.queueFileName).corrupt-\(UUID().uuidString)",
-        isDirectory: false
-      )
+      let quarantineURL = directoryURL.appendingPathComponent(Self.quarantineFileName, isDirectory: false)
+      try? fileManager.removeItem(at: quarantineURL)
       try? fileManager.moveItem(at: url, to: quarantineURL)
       return []
     }
@@ -141,6 +185,27 @@ public final class VoltraInteractionQueue {
       try storage.update { entries in
         entries.removeAll { $0.timestamp < cutoff }
         entries.append(interaction)
+        if entries.count > Self.capacity {
+          entries.removeFirst(entries.count - Self.capacity)
+        }
+      }
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /// Puts taps JavaScript took but could not hand to any listener back at the front of the queue,
+  /// skipping any already present. Age and capacity limits apply as usual.
+  @discardableResult
+  public func restore(_ interactions: [VoltraInteraction]) -> Bool {
+    guard !interactions.isEmpty else { return true }
+    let cutoff = now().timeIntervalSince1970 - Self.maxAge
+    do {
+      try storage.update { entries in
+        let present = Set(entries.map(\.id))
+        entries.insert(contentsOf: interactions.filter { !present.contains($0.id) }, at: 0)
+        entries.removeAll { $0.timestamp < cutoff }
         if entries.count > Self.capacity {
           entries.removeFirst(entries.count - Self.capacity)
         }

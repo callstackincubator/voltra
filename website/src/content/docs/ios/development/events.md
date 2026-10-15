@@ -150,18 +150,18 @@ Users can turn Live Activities off for your app in Settings. `startLiveActivity(
 ```typescript
 import { addVoltraListener, areLiveActivitiesEnabled } from '@use-voltra/ios-client'
 
-setTrackingAvailable(areLiveActivitiesEnabled())
-
 const subscription = addVoltraListener('activityEnablementChanged', (event) => {
   setTrackingAvailable(event.enabled)
 })
+
+setTrackingAvailable(areLiveActivitiesEnabled())
 ```
 
 `areLiveActivitiesEnabled()` is synchronous and returns `false` below iOS 16.4. Neither the getter nor the event needs `enablePushNotifications`. Users change this setting in the Settings app, so also read `areLiveActivitiesEnabled()` again when your app returns to the foreground.
 
 ## User interactions
 
-When users interact with buttons or toggles in your Live Activity, Voltra emits an `'interaction'` event via `addVoltraListener` — this works even when your app isn't running. Voltra keeps each tap until an `'interaction'` listener is attached and your app is running, then delivers it once. Taps that wait longer than 15 minutes are dropped. Keeping taps across app launches requires a `groupIdentifier` in the plugin config. For the full example, component identifiers, deep linking, and app lifecycle considerations, see the [interactions guide](/ios/development/interactions).
+When users interact with buttons or toggles in your Live Activity, Voltra emits an `'interaction'` event via `addVoltraListener` — this works even when your app isn't running. Voltra keeps each tap until an `'interaction'` listener is attached and your app is running, then delivers it once; a tap is never delivered twice. Taps that wait longer than 15 minutes are dropped. Keeping taps across app launches, and receiving taps handled outside your app's process, requires a `groupIdentifier` in the plugin config. For the full example, component identifiers, deep linking, and app lifecycle considerations, see the [interactions guide](/ios/development/interactions).
 
 ## Best practices
 

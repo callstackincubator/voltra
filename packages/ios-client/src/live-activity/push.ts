@@ -1,5 +1,24 @@
+import type { Spec } from '../native/NativeVoltra.js'
 import { assertRunningOnApple } from '../utils/index.js'
 import { getNativeVoltra } from '../VoltraModule.js'
+
+/**
+ * A JavaScript bundle updated over the air can run on a native build without these methods. Warn
+ * and fall back instead of throwing a TypeError.
+ */
+const nativeMethod = <
+  K extends 'getLiveActivityPushTokens' | 'getLiveActivityPushToStartToken' | 'areLiveActivitiesEnabled'
+>(
+  name: K
+): Spec[K] | null => {
+  const voltraModule = getNativeVoltra()
+  const method = voltraModule[name]
+  if (typeof method !== 'function') {
+    console.warn(`[Voltra] ${name}() needs a newer native build. Rebuild the app to use it.`)
+    return null
+  }
+  return method.bind(voltraModule) as Spec[K]
+}
 
 export type LiveActivityPushToken = {
   /** Same value as `activityName` on `activityTokenReceived`. Covers static and dynamic activities. */
@@ -15,7 +34,9 @@ export type LiveActivityPushToken = {
  */
 export async function getLiveActivityPushTokens(): Promise<LiveActivityPushToken[]> {
   if (!assertRunningOnApple()) return []
-  const tokens = await getNativeVoltra().getLiveActivityPushTokens()
+  const getTokens = nativeMethod('getLiveActivityPushTokens')
+  if (!getTokens) return []
+  const tokens = await getTokens()
   return tokens.map(({ activityName, pushToken }) => ({ activityName, pushToken }))
 }
 
@@ -27,7 +48,9 @@ export async function getLiveActivityPushTokens(): Promise<LiveActivityPushToken
  */
 export async function getLiveActivityPushToStartToken(): Promise<string | null> {
   if (!assertRunningOnApple()) return null
-  return (await getNativeVoltra().getLiveActivityPushToStartToken()) ?? null
+  const getToken = nativeMethod('getLiveActivityPushToStartToken')
+  if (!getToken) return null
+  return (await getToken()) ?? null
 }
 
 /**
@@ -36,5 +59,6 @@ export async function getLiveActivityPushToStartToken(): Promise<string | null> 
  */
 export function areLiveActivitiesEnabled(): boolean {
   if (!assertRunningOnApple()) return false
-  return getNativeVoltra().areLiveActivitiesEnabled()
+  const areEnabled = nativeMethod('areLiveActivitiesEnabled')
+  return areEnabled ? areEnabled() : false
 }

@@ -184,6 +184,10 @@ public enum VoltraErrors: Error, CustomNSError {
     impl.popInteractions(sources: sources?.compactMap { $0 as? String })
   }
 
+  @objc public func restoreInteractions(_ interactions: NSArray) {
+    impl.restoreInteractions(interactions.compactMap { $0 as? [String: Any] })
+  }
+
   // MARK: - Push State
 
   @objc public func getLiveActivityPushTokens() -> [[String: String]] {

@@ -44,7 +44,11 @@ const setup = (queued: VoltraInteractionEvent[] = []) => {
     signal = handler
     return signalSubscription
   })
-  const native = { popInteractions, onInteractionsAvailable, onInteraction: jest.fn() }
+  const restoreInteractions = jest.fn((events: VoltraInteractionEvent[]) => {
+    queue.unshift(...events)
+    return true
+  })
+  const native = { popInteractions, restoreInteractions, onInteractionsAvailable, onInteraction: jest.fn() }
   jest.mocked(getNativeVoltra).mockReturnValue(native as never)
 
   return {
@@ -64,62 +68,101 @@ const setup = (queued: VoltraInteractionEvent[] = []) => {
 
 const ids = (listener: jest.Mock) => listener.mock.calls.map(([event]: [Tap]) => event.id)
 
+// Pumps run on a microtask after the call that scheduled them.
+const flush = () => new Promise((resolve) => setImmediate(resolve))
+
 describe('interaction delivery', () => {
   afterEach(() => {
     jest.restoreAllMocks()
   })
 
-  it('takes queued taps, oldest first, when the first listener attaches', () => {
+  it('takes queued taps, oldest first, after the first listener attaches', async () => {
     const { addVoltraListener, queue } = setup([tap('1'), tap('2')])
     const listener = jest.fn()
 
     addVoltraListener('interaction', listener)
+    expect(listener).not.toHaveBeenCalled()
+    await flush()
 
     expect(ids(listener)).toEqual(['1', '2'])
     expect(queue).toEqual([])
   })
 
-  it('delivers a newly recorded tap once to every listener', () => {
+  it('lets a listener refer to its own subscription when a tap is already queued', async () => {
+    const { addVoltraListener } = setup([tap('1')])
+    const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const received: string[] = []
+
+    const subscription = addVoltraListener('interaction', (event) => {
+      received.push(event.id)
+      subscription.remove()
+    })
+    await flush()
+
+    expect(received).toEqual(['1'])
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('delivers a newly recorded tap once to every listener, in one pop', async () => {
     const { addVoltraListener, record, native } = setup()
     const first = jest.fn()
     const second = jest.fn()
     addVoltraListener('interaction', first)
     addVoltraListener('interaction', second)
+    await flush()
+    native.popInteractions.mockClear()
 
     record(tap('1'))
+    record(tap('2'))
+    await flush()
 
-    expect(ids(first)).toEqual(['1'])
-    expect(ids(second)).toEqual(['1'])
+    expect(ids(first)).toEqual(['1', '2'])
+    expect(ids(second)).toEqual(['1', '2'])
+    expect(native.popInteractions).toHaveBeenCalledTimes(1)
     expect(native.onInteractionsAvailable).toHaveBeenCalledTimes(1)
   })
 
-  it('takes taps recorded while the app was in the background when it becomes active', () => {
+  it('takes taps recorded while the app was in the background when it becomes active', async () => {
     const { addVoltraListener, queue, foreground } = setup()
     const listener = jest.fn()
     addVoltraListener('interaction', listener)
+    await flush()
 
     // Recorded by another process: no signal reached this instance.
     queue.push(tap('1'))
     foreground()
+    await flush()
 
     expect(ids(listener)).toEqual(['1'])
   })
 
-  it('leaves taps queued while nobody listens, and stops listening for signals', () => {
+  it('leaves taps queued while nobody listens, and stops listening for signals', async () => {
     const { addVoltraListener, record, queue, native, signalSubscription, appStateSubscription } = setup()
     const listener = jest.fn()
     addVoltraListener('interaction', listener).remove()
 
     record(tap('1'))
+    await flush()
 
     expect(listener).not.toHaveBeenCalled()
     expect(queue).toHaveLength(1)
     expect(signalSubscription.remove).toHaveBeenCalledTimes(1)
     expect(appStateSubscription.remove).toHaveBeenCalledTimes(1)
-    expect(native.popInteractions).toHaveBeenCalledTimes(1)
+    expect(native.popInteractions).not.toHaveBeenCalled()
   })
 
-  it('lets a source-filtered subscriber (VoltraView) take only its own taps', () => {
+  it('puts back taps whose last listener went away during the dispatch', async () => {
+    const { addVoltraListener, queue, native } = setup([tap('1'), tap('2'), tap('3')])
+    const subscription = addVoltraListener('interaction', (event) => {
+      if (event.id === '1') subscription.remove()
+    })
+    await flush()
+
+    expect(native.restoreInteractions).toHaveBeenCalledTimes(1)
+    expect(queue.map((event) => event.id)).toEqual(['2', '3'])
+  })
+
+  it('lets a source-filtered subscriber (VoltraView) take only its own taps', async () => {
     const { addVoltraListener, subscribeToInteractions, queue } = setup([
       tap('live-activity', 'order-123'),
       tap('view', 'voltra-view-1'),
@@ -127,17 +170,19 @@ describe('interaction delivery', () => {
     const viewListener = jest.fn()
 
     subscribeToInteractions(viewListener, 'voltra-view-1')
+    await flush()
 
     expect(ids(viewListener)).toEqual(['view'])
     expect(queue.map((event) => event.id)).toEqual(['live-activity'])
 
     const appListener = jest.fn()
     addVoltraListener('interaction', appListener)
+    await flush()
     expect(ids(appListener)).toEqual(['live-activity'])
     expect(ids(viewListener)).toEqual(['view'])
   })
 
-  it('keeps dispatching to other listeners when one throws', () => {
+  it('keeps dispatching to other listeners when one throws', async () => {
     const { addVoltraListener, record } = setup()
     const error = jest.spyOn(console, 'error').mockImplementation(() => {})
     const listener = jest.fn()
@@ -147,12 +192,13 @@ describe('interaction delivery', () => {
     addVoltraListener('interaction', listener)
 
     record(tap('1'))
+    await flush()
 
     expect(ids(listener)).toEqual(['1'])
     expect(error).toHaveBeenCalled()
   })
 
-  it('keeps taps in order when a listener subscribes during dispatch', () => {
+  it('keeps taps in order when a listener subscribes during dispatch', async () => {
     const { addVoltraListener, queue } = setup([tap('1'), tap('2', 'voltra-view-1')])
     const late = jest.fn()
     const order: string[] = []
@@ -163,13 +209,14 @@ describe('interaction delivery', () => {
         addVoltraListener('interaction', late)
       }
     })
+    await flush()
 
     expect(order).toEqual(['1', '2', '3'])
     // Subscribed before '2' was dispatched, so it receives the rest of the batch, then '3'.
     expect(ids(late)).toEqual(['2', '3'])
   })
 
-  it('does not throw when reading the queue fails', () => {
+  it('does not throw when reading the queue fails', async () => {
     const { addVoltraListener, native } = setup()
     const error = jest.spyOn(console, 'error').mockImplementation(() => {})
     native.popInteractions.mockImplementation(() => {
@@ -177,6 +224,7 @@ describe('interaction delivery', () => {
     })
 
     expect(() => addVoltraListener('interaction', jest.fn())).not.toThrow()
+    await flush()
     expect(error).toHaveBeenCalled()
   })
 
@@ -212,5 +260,16 @@ describe('activityEnablementChanged', () => {
 
     expect(addVoltraListener('activityEnablementChanged', listener)).toBe(subscription)
     expect(onActivityEnablementChanged).toHaveBeenCalledWith(listener)
+  })
+
+  it('returns a no-op subscription on a native build without the emitter', () => {
+    const { addVoltraListener } = setup()
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const subscription = addVoltraListener('activityEnablementChanged', jest.fn())
+
+    expect(() => subscription.remove()).not.toThrow()
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
   })
 })

@@ -17,7 +17,6 @@ type VoltraActivityPushToStartTokenReceivedEvent = Readonly<{
 }>
 
 type VoltraActivityEnablementChangedEvent = Readonly<{
-  source: string
   timestamp: number
   type: 'activityEnablementChanged'
   enabled: boolean
@@ -132,6 +131,8 @@ export interface Spec extends TurboModule {
   setDynamicLiveActivityRenderFailureListenerActive(active: boolean): void
   /** Internal: remove and return queued taps, oldest first; with `sources`, only taps from those sources. */
   popInteractions(sources?: string[] | null): QueuedVoltraInteraction[]
+  /** Internal: put back taps that were popped but had no listener left when dispatched. Synchronous so a following pop sees them. */
+  restoreInteractions(interactions: QueuedVoltraInteraction[]): boolean
   getLiveActivityPushTokens(): Promise<LiveActivityPushToken[]>
   getLiveActivityPushToStartToken(): Promise<string | null>
   areLiveActivitiesEnabled(): boolean

@@ -60,6 +60,16 @@ describe('Live Activity push state getters', () => {
     expect(areLiveActivitiesEnabled()).toBe(false)
   })
 
+  it('warns and returns empty values on a native build without the getters', async () => {
+    mockedGetNativeVoltra.mockReturnValue({} as unknown as Spec)
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await expect(getLiveActivityPushTokens()).resolves.toEqual([])
+    await expect(getLiveActivityPushToStartToken()).resolves.toBeNull()
+    expect(areLiveActivitiesEnabled()).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(3)
+  })
+
   it('returns empty values without touching the native module off iOS', async () => {
     mockedPlatform.OS = 'android'
     jest.spyOn(console, 'error').mockImplementation(() => {})

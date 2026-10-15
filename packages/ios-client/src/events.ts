@@ -19,8 +19,11 @@ export type VoltraActivityPushToStartTokenReceivedEvent = BasicVoltraEvent & {
   type: 'activityPushToStartTokenReceived'
   pushToStartToken: string
 }
-/** The user allowed or disallowed Live Activities for the app. Read the current value with `areLiveActivitiesEnabled()`. */
-export type VoltraActivityEnablementChangedEvent = BasicVoltraEvent & {
+/**
+ * The user allowed or disallowed Live Activities for the app. Read the current value with
+ * `areLiveActivitiesEnabled()`. App-wide, so it has no `source`.
+ */
+export type VoltraActivityEnablementChangedEvent = Omit<BasicVoltraEvent, 'source'> & {
   type: 'activityEnablementChanged'
   enabled: boolean
 }
@@ -82,6 +85,10 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
         listener as (arg: VoltraActivityPushToStartTokenReceivedEvent) => void
       )
     case 'activityEnablementChanged':
+      if (typeof voltraModule.onActivityEnablementChanged !== 'function') {
+        console.warn(`[Voltra] Event '${event}' needs a newer native build. Returning no-op subscription.`)
+        return noopSubscription
+      }
       return voltraModule.onActivityEnablementChanged(listener as (arg: VoltraActivityEnablementChangedEvent) => void)
     case 'stateChange':
       return voltraModule.onStateChanged(listener as (arg: VoltraActivityUpdateEvent) => void)

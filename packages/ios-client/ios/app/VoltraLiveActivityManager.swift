@@ -213,11 +213,14 @@ public actor VoltraLiveActivityManager {
     guard let onEnablementChanged else { return }
 
     let authorizationInfo = ActivityAuthorizationInfo()
+    // Subscribe before reading the baseline, so a change between the two is still yielded; the
+    // dedup below drops it if the baseline already reflects it.
+    let updates = authorizationInfo.activityEnablementUpdates
     lastEnablement = authorizationInfo.areActivitiesEnabled
     let callback = onEnablementChanged
 
     enablementTask = Task { [weak self] in
-      for await enabled in authorizationInfo.activityEnablementUpdates {
+      for await enabled in updates {
         await self?.deliverEnablement(enabled, via: callback)
       }
     }

@@ -122,6 +122,12 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
   return [self.module popInteractions:sources];
 }
 
+- (NSNumber *)restoreInteractions:(NSArray *)interactions
+{
+  [self.module restoreInteractions:interactions];
+  return @YES;
+}
+
 - (UIView *)reactRootViewInView:(UIView *)view
 {
   if ([view respondsToSelector:NSSelectorFromString(@"appProperties")] &&

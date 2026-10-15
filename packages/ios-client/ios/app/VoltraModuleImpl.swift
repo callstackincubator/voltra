@@ -56,7 +56,15 @@ public final class VoltraHeadlessState: NSObject {
 /// Implementation details for VoltraModule to keep the main module file clean
 public class VoltraModuleImpl {
   private let liveActivityService = VoltraLiveActivityService()
+  /// Written by `startMonitoring`/`stopMonitoring` and read by bridge calls on other threads.
   private var eventSubscription: UUID?
+  private let eventSubscriptionLock = NSLock()
+
+  private var currentEventSubscription: UUID? {
+    eventSubscriptionLock.lock()
+    defer { eventSubscriptionLock.unlock() }
+    return eventSubscription
+  }
 
   public init() {
     // Clean up data for widgets that are no longer installed
@@ -95,11 +103,16 @@ public class VoltraModuleImpl {
   }
 
   func setDynamicLiveActivityRenderFailureListenerActive(_ active: Bool) {
-    VoltraEventBus.shared.setDynamicLiveActivityRenderFailureListenerActive(active)
+    guard let token = currentEventSubscription else { return }
+    VoltraEventBus.shared.setDynamicLiveActivityRenderFailureListenerActive(active, for: token)
   }
 
   func popInteractions(sources: [String]?) -> [[String: Any]] {
     VoltraEventBus.shared.popInteractions(sources: sources.map(Set.init))
+  }
+
+  func restoreInteractions(_ interactions: [[String: Any]]) {
+    VoltraEventBus.shared.restoreInteractions(interactions)
   }
 
   var pushNotificationsEnabled: Bool {
@@ -111,14 +124,24 @@ public class VoltraModuleImpl {
   // MARK: - Lifecycle & Monitoring
 
   func startMonitoring(handler: @escaping (String, [String: Any]) -> Void) {
-    eventSubscription = VoltraEventBus.shared.subscribe(handler: handler)
+    let token = VoltraEventBus.shared.subscribe(handler: handler)
+    eventSubscriptionLock.lock()
+    let previous = eventSubscription
+    eventSubscription = token
+    eventSubscriptionLock.unlock()
+    if let previous {
+      VoltraEventBus.shared.unsubscribe(previous)
+    }
     liveActivityService.startMonitoring(enablePush: pushNotificationsEnabled)
   }
 
   func stopMonitoring() {
-    if let eventSubscription {
-      VoltraEventBus.shared.unsubscribe(eventSubscription)
-      self.eventSubscription = nil
+    eventSubscriptionLock.lock()
+    let token = eventSubscription
+    eventSubscription = nil
+    eventSubscriptionLock.unlock()
+    if let token {
+      VoltraEventBus.shared.unsubscribe(token)
     }
     liveActivityService.stopMonitoring()
   }

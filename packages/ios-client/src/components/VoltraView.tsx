@@ -1,4 +1,4 @@
-import React, { type ReactNode, useEffect, useMemo } from 'react'
+import React, { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import { type StyleProp, type ViewStyle } from 'react-native'
 
 import { renderVoltraVariantToJson } from '@use-voltra/ios'
@@ -28,13 +28,19 @@ export function VoltraView({ id, children, style, onInteraction, testID }: Voltr
   const json = renderVoltraVariantToJson(children)
   const payload = JSON.stringify(json)
 
+  // An inline `onInteraction` is a new function on every render. Keep the subscription stable and
+  // call the latest one, so re-renders do not resubscribe and pull from the queue each time.
+  const onInteractionRef = useRef(onInteraction)
+  onInteractionRef.current = onInteraction
+  const hasInteractionHandler = onInteraction !== undefined
+
   useEffect(() => {
-    if (!onInteraction) return
+    if (!hasInteractionHandler) return
 
     // Filtered by source, so a mounted VoltraView never takes taps meant for a Live Activity or
     // widget out of the queue.
     const subscription = subscribeToInteractions((event) => {
-      onInteraction({
+      onInteractionRef.current?.({
         type: 'interaction',
         id: event.id,
         source: event.source,
@@ -45,7 +51,7 @@ export function VoltraView({ id, children, style, onInteraction, testID }: Voltr
     }, viewId)
 
     return () => subscription.remove()
-  }, [viewId, onInteraction])
+  }, [viewId, hasInteractionHandler])
 
   return <VoltraFabricView payload={payload} style={[voltraViewStyle, style]} testID={testID} viewId={viewId} />
 }
