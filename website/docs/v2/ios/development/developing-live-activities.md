@@ -48,6 +48,8 @@ Use `clear` or `transparent` to make the Live Activity background transparent.
 
 If the string cannot be parsed as one of those formats, iOS ignores the tint.
 
+The tint changes the Lock Screen and banner background. It does not change the background of the Live Activity in CarPlay; see [Background color in CarPlay](#background-color-in-carplay).
+
 ### Dynamic Island
 
 The `island` variant defines how your Live Activity appears in the Dynamic Island (available on iPhone 14 Pro and later). The Dynamic Island has three display states:
@@ -103,6 +105,19 @@ const variants = {
 ```
 
 If `supplementalActivityFamilies.small` is not provided, Voltra will automatically construct it from your Dynamic Island `compact` variant by combining the leading and trailing content in an HStack.
+
+#### Background color in CarPlay
+
+In CarPlay, iOS draws the Live Activity on its own dark grey background, and you cannot change it. `activityBackgroundTint` has no effect there, including `clear` and `transparent`, and developers report that the background stays dark grey when CarPlay switches between light and dark appearance.
+
+This comes from iOS, not from Voltra. Apple documents `activityBackgroundTint` as the background color of the Lock Screen presentation and provides no API for the background in CarPlay. Voltra already applies the tint to the `small` layout, and no other Voltra option changes the CarPlay background.
+
+To keep the `small` layout readable in CarPlay:
+
+- Choose text and symbol colors that have enough contrast on a dark background.
+- Colors inside your layout still apply, such as text colors or a `backgroundColor` on a container. Only the system background behind the layout is fixed.
+
+See [issue #91](https://github.com/callstackincubator/voltra/issues/91) and [this report from other developers](https://www.reddit.com/r/swift/comments/1oc5ojd/carplay_live_activity_colors_set_always_are_dark/) for details. If this limits your design, file a request with Apple through [Feedback Assistant](https://feedbackassistant.apple.com).
 
 ## Limitations
 
