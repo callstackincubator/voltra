@@ -48,6 +48,8 @@ Use `clear` or `transparent` to make the Live Activity background transparent.
 
 If the string cannot be parsed as one of those formats, iOS ignores the tint.
 
+The tint changes the Lock Screen and banner background. It does not change the background of the Live Activity in CarPlay; see [Background color in CarPlay](#background-color-in-carplay).
+
 ### Dynamic Island
 
 The `island` variant defines how your Live Activity appears in the Dynamic Island (available on iPhone 14 Pro and later). The Dynamic Island has three display states:
@@ -103,6 +105,29 @@ const variants = {
 ```
 
 If `supplementalActivityFamilies.small` is not provided, Voltra will automatically construct it from your Dynamic Island `compact` variant by combining the leading and trailing content in an HStack.
+
+#### Background color in CarPlay
+
+In CarPlay, `activityBackgroundTint` has no effect. iOS draws the `small` layout on its own dark grey tile in both light and dark appearance, and `containerBackground` and `preferredColorScheme` don't change it either. This is iOS behavior: Apple documents `activityBackgroundTint` as the background color of the Lock Screen presentation only.
+
+To use a different background in CarPlay, give the root of your `small` layout `flex: 1` and a `backgroundColor`. An opaque fill covers the whole tile:
+
+```typescript
+supplementalActivityFamilies: {
+  small: (
+    <Voltra.VStack style={{ flex: 1, backgroundColor: '#101828' }}>
+      <Voltra.Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF' }}>12 min</Voltra.Text>
+    </Voltra.VStack>
+  ),
+},
+```
+
+Keep in mind:
+
+- Padding on the root without `flex: 1` leaves the grey tile visible around the content.
+- A translucent color blends with the grey tile and doesn't replace it.
+- The same `small` layout is also used on Apple Watch Smart Stack, so check how a filled background looks there.
+- This was verified in Xcode 27's CarPlay Simulator on an iPhone running iOS 27, not on a car head unit.
 
 ## Limitations
 
