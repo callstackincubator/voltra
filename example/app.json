@@ -8,11 +8,6 @@
     "backgroundColor": "#020617",
     "icon": "./assets/voltra-icon.jpg",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/voltra-splash.jpg",
-      "resizeMode": "cover",
-      "backgroundColor": "#020617"
-    },
     "android": {
       "package": "com.callstackincubator.voltraexample",
       "adaptiveIcon": {
@@ -312,10 +307,19 @@
       ],
       "expo-router",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/voltra-splash.jpg",
+          "resizeMode": "cover",
+          "backgroundColor": "#020617"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "17.0"
+            "deploymentTarget": "17.0",
+            "enableSceneSupport": true
           },
           "android": {
             "compileSdkVersion": 37
