@@ -60,7 +60,7 @@
   "homepage": "https://use-voltra.dev",
   "devDependencies": {
     "@babel/runtime": "^7.27.4",
-    "@react-native/babel-preset": "0.83.2",
+    "@react-native/babel-preset": "0.86.3",
     "@types/babel__core": "^7.20.5",
     "tsx": "^4.19.0"
   }
