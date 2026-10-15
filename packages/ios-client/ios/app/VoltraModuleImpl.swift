@@ -56,6 +56,7 @@ public final class VoltraHeadlessState: NSObject {
 /// Implementation details for VoltraModule to keep the main module file clean
 public class VoltraModuleImpl {
   private let liveActivityService = VoltraLiveActivityService()
+  private var eventSubscription: UUID?
 
   public init() {
     // Clean up data for widgets that are no longer installed
@@ -97,12 +98,8 @@ public class VoltraModuleImpl {
     VoltraEventBus.shared.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
-  func setInteractionListenerActive(_ active: Bool) {
-    VoltraEventBus.shared.setInteractionListenerActive(active)
-  }
-
-  func drainInteractions() {
-    VoltraEventBus.shared.drainInteractions()
+  func popInteractions(sources: [String]?) -> [[String: Any]] {
+    VoltraEventBus.shared.popInteractions(sources: sources.map(Set.init))
   }
 
   var pushNotificationsEnabled: Bool {
@@ -114,12 +111,15 @@ public class VoltraModuleImpl {
   // MARK: - Lifecycle & Monitoring
 
   func startMonitoring(handler: @escaping (String, [String: Any]) -> Void) {
-    VoltraEventBus.shared.subscribe(handler: handler)
+    eventSubscription = VoltraEventBus.shared.subscribe(handler: handler)
     liveActivityService.startMonitoring(enablePush: pushNotificationsEnabled)
   }
 
   func stopMonitoring() {
-    VoltraEventBus.shared.unsubscribe()
+    if let eventSubscription {
+      VoltraEventBus.shared.unsubscribe(eventSubscription)
+      self.eventSubscription = nil
+    }
     liveActivityService.stopMonitoring()
   }
 

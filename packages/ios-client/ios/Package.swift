@@ -31,7 +31,8 @@ let package = Package(
         "VoltraImageStore.swift",
         "VoltraInteractionIntent.swift",
         "VoltraLiveActivityPayload.swift",
-        "VoltraPersistentEventQueue.swift",
+        "VoltraInteractionReporter.swift",
+        "VoltraDarwinNotificationRelay.swift",
       ],
       sources: [
         "DynamicWidgetPropsCodec.swift",
@@ -64,6 +65,7 @@ let package = Package(
         "dynamic-live-activity/VoltraDynamicLiveActivityTypes.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityPayloadValidator.swift",
         "dynamic-live-activity/VoltraDynamicLiveActivityRenderFailureQueue.swift",
+        "VoltraInteractionQueue.swift",
         "dynamic-live-activity/VoltraLiveActivityOrder.swift",
         "JSONValue.swift",
         "VoltraConfig.swift",

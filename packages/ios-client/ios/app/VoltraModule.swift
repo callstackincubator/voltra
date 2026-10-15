@@ -180,12 +180,8 @@ public enum VoltraErrors: Error, CustomNSError {
     impl.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
-  @objc public func setInteractionListenerActive(_ active: Bool) {
-    impl.setInteractionListenerActive(active)
-  }
-
-  @objc public func drainInteractions() {
-    impl.drainInteractions()
+  @objc public func popInteractions(_ sources: NSArray?) -> [[String: Any]] {
+    impl.popInteractions(sources: sources?.compactMap { $0 as? String })
   }
 
   // MARK: - Push State

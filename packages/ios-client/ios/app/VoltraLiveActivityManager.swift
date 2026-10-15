@@ -226,7 +226,8 @@ public actor VoltraLiveActivityManager {
   /// Forward `enabled` only when it differs from the last value seen, so a stream that re-yields
   /// the current value does not produce a spurious event.
   private func deliverEnablement(_ enabled: Bool, via callback: @Sendable (Bool) -> Void) {
-    guard enabled != lastEnablement else { return }
+    // A value already in flight when observation stopped must not reach the callback.
+    guard isObserving, enabled != lastEnablement else { return }
     lastEnablement = enabled
     callback(enabled)
   }

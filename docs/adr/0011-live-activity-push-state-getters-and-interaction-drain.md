@@ -17,7 +17,7 @@ wrong time: a tap the app already handled is delivered again on the next launch 
 a tap that launches the app can be replayed before any JavaScript listener exists.
 
 This ADR records how each kind of native data reaches JavaScript: state through getters plus change
-events, interactions through a queue that is drained only while someone is listening.
+events, interactions through a native queue that JavaScript pulls from when it is ready.
 
 ## Context
 
@@ -50,9 +50,8 @@ That produces four defects:
 The website also claims Voltra "handles event queuing automatically when using App Groups", which is
 true only for interactions.
 
-`dynamicLiveActivityRenderFailed` already works the way interactions should: `events.ts` counts its
-JavaScript listeners and calls `setDynamicLiveActivityRenderFailureListenerActive`, and native code
-drains its queue only while that count is above zero.
+`dynamicLiveActivityRenderFailed` already keeps its own App Group queue with a cross-process file
+lock, and native code drains it only while JavaScript reports a listener.
 
 ## Decision
 
@@ -90,11 +89,18 @@ The getters read ActivityKit directly at call time:
   `activityEnablementChanged` is driven by `activityEnablementUpdates` and is emitted only when the
   value differs from the last one seen, starting from the value read when monitoring began. Neither
   depends on the push flag: an app without push still wants to hide its "start tracking" button.
+  Monitoring, and with it the enablement stream, starts regardless of the flag; only the token
+  callbacks are gated. Below iOS 16.4 (the pods' deployment target) the getter returns `false`.
+- The getters report what ActivityKit holds. On the simulator, `pushToStartToken` kept returning the
+  previous token while Live Activities were disabled, and a new one was issued when they were
+  re-enabled; the event reported the new one. Backends should treat the latest report as current.
 
 The usage pattern this supports, and which the docs show, is **subscribe first, then call the
 getter**. A change that lands between the two is then seen at least once. The same token can arrive
-twice — once from the getter, once from the event — so the backend upserts by `activityName` (or by
-device for the push-to-start token) rather than appending.
+twice — once from the getter, once from the event — so the backend upserts by device and
+`activityName` (or by device for the push-to-start token) rather than appending. Starting an
+activity ends any running one with the same name, so a name identifies one running activity per
+device; activities started remotely with a reused name are the app's responsibility.
 
 ### Rejected: replay the last value when a listener subscribes
 
@@ -117,57 +123,109 @@ have ended or the token rotated, and replaying it would send a dead token to the
 ActivityKit always knows the current value, so there is nothing to persist. Token and state-change
 events stay transient.
 
-### Interactions are events: hold them until JavaScript listens, then drain
+### Interactions are events: always queued natively, pulled by JavaScript
 
-`addVoltraListener('interaction')` counts its subscriptions exactly as
-`dynamicLiveActivityRenderFailed` does and calls a new internal spec method,
-`setInteractionListenerActive(active)`, on the transitions 0→1 and 1→0. No public API changes.
+Every tap is recorded in one bounded FIFO in the App Group, in whichever process runs
+`VoltraInteractionIntent`, whether or not anything listens. Native code never pushes tap data to
+JavaScript and keeps no notion of "a listener is attached". Instead:
 
-`VoltraEventBus` applies four rules:
+1. **Record.** `VoltraEventBus.send(.interaction)` appends a `VoltraInteraction` (with a new `id`)
+   to `interactions-v1.json` in the App Group container, under an exclusive `flock` on a sibling
+   lock file, the same transaction model as the render-failure queue. It then posts a Darwin
+   notification so every process, including the app when the tap ran in an extension, learns that
+   taps are available.
+2. **Signal.** The app turns that notification into `onInteractionsAvailable`, an internal emitter
+   with no tap data.
+3. **Pull.** `popInteractions(sources)` is a synchronous TurboModule method: it removes the
+   entries and returns them in the same call, so an entry is either still in the queue or already in
+   JavaScript's hands. There is no window where native has dropped an entry that JavaScript never
+   received.
+4. **Dispatch.** `interactions.ts` owns the subscriber list and pops when the first subscriber
+   attaches, whenever a subscriber is added, on the availability signal, and when `AppState` becomes
+   `active`. It dispatches oldest first; a pop requested during a dispatch runs after it, so order
+   holds. A listener that throws is logged and does not stop the others.
+5. **No replay at module creation.** `subscribe()` installs the emitter handler and the signal
+   observers; it reads nothing from the queue.
 
-1. **Listener active**: deliver the interaction hot and do **not** persist it.
-2. **No listener** (including any process without the app's event handler): persist it only.
-3. **Count goes 0→1**: read and clear the queue, then deliver every entry. The queue is also drained
-   when the app returns to the foreground while a listener is active, which picks up entries written
-   by another process or during a reload.
-4. **Module creation does not replay.** `subscribe()` installs the handler and nothing else.
+`addVoltraListener('interaction')` keeps its signature. Its subscriber is unfiltered and takes every
+tap. `VoltraView` uses an internal subscriber filtered by its `source`; when only filtered
+subscribers exist, `popInteractions` takes only their sources and leaves every other tap queued. A
+mounted `VoltraView` therefore never consumes taps meant for a Live Activity or widget.
 
-An entry leaves the queue only in the same synchronous step that hands it to the emitter, and only
-while a listener is attached. That fixes both the duplicate replay (rule 1) and the replay into
-nothing (rules 3 and 4). If the process dies between clearing the queue and the emit, those entries
-are lost; delivering them twice was judged worse than that window.
+**Delivery semantics.** At most once, and exactly once in the normal case. A tap is handed to
+JavaScript once, by the pop that removes it. If the JavaScript instance dies after a pop returns and
+before its listeners run (a fatal error, or the process being killed mid-dispatch), those taps are
+lost. Duplicates were the defect being fixed, so the queue does not re-deliver.
 
-Without an App Group, persistence fails as it does today: a tap with no listener is logged and
-dropped. Hot delivery does not need the App Group.
+Taps no longer depend on JavaScript running at the moment they are recorded. A tap made while the
+app is suspended with a listener mounted is queued, and is taken when JavaScript next runs a pop —
+on the signal if the process is awake, otherwise when the app becomes active. This was the case the
+earlier "deliver hot, don't persist" design lost.
 
-### Known edge cases
+**Bounds.** Entries older than 15 minutes are dropped, and the queue keeps the newest 100. A tap
+nobody took within 15 minutes is no longer something to act on, and an app that never registers an
+interaction listener does not grow the file without limit. Both bounds are applied on every record
+and pop.
 
-- **`VoltraView` counts as a listener.** A mounted `VoltraView` with `onInteraction` subscribes to
-  `interaction` and filters by `source`. While it is the only listener, the queue drains into it and
-  events meant for a Live Activity or widget are discarded by its filter. This is the same as today's
-  hot path. Apps that care register one app-level `interaction` listener at the root, which the docs
-  already recommend.
-- **Direct emitter subscribers are not counted.** Code that subscribes through
-  `getNativeVoltra().onInteraction` instead of `addVoltraListener` does not activate delivery and
-  receives only what an `addVoltraListener` subscription causes to be delivered.
-- **Listener state does not survive a reload.** Module invalidation resets the active flag, and the
-  new JavaScript instance re-registers it when its listener mounts. Taps in between are persisted.
+**Upgrade.** Earlier releases kept the queue in UserDefaults under `Voltra_EventsQueue`, including
+taps the app had already handled. Migrating it would deliver those once more, so the first
+subscription after the upgrade deletes the key instead. Any tap queued but not yet consumed at the
+moment of the upgrade is lost with it.
+
+**Without an App Group** the queue lives in the app's memory. It still serves taps the system runs
+in the app process — a `VoltraView`, or a Live Activity intent while the app is alive — but not taps
+recorded by another process or before a relaunch. That matches what worked without
+`groupIdentifier` before.
+
+**Older native builds.** A JavaScript bundle updated over the air can run on a binary without
+`popInteractions`. `subscribeToInteractions` detects that and subscribes to the legacy
+`onInteraction` emitter instead, deriving an `id` from the tap's timestamp, source and identifier.
+The new getters and `activityEnablementChanged` need the new binary.
+
+### Rejected: deliver hot and persist only without a listener
+
+The first version of this ADR kept native push delivery: deliver hot without persisting while
+JavaScript reported a listener, persist otherwise, drain on the listener count going from 0 to 1. A
+review found that it moved the problem rather than removing it:
+
+- "Delivered" meant handed to the emitter, not received by JavaScript. The emitter hops to the
+  JavaScript thread asynchronously, so a tap delivered while the app was suspended, or while the
+  last listener was unmounting, was neither persisted nor received.
+- The listener flag was set by an asynchronous `void` TurboModule call and lived in a per-process
+  singleton shared by every React Native instance, so reloads and multiple instances could clear
+  each other's state.
+- Drained and hot taps could reach JavaScript out of order, and a source-filtered `VoltraView`
+  counted as a listener and drained taps it then discarded.
+
+Making JavaScript the side that removes entries, in a synchronous call, removes these: native
+holds no listener state, and the only step that drops an entry is the one that returns it.
+
+### Other edge cases
+
+- **Direct emitter subscribers.** `getNativeVoltra().onInteraction` no longer fires on current
+  builds. Code that subscribed to it directly must use `addVoltraListener('interaction')`.
+- **Several React Native instances.** Each pulls from the same queue; a tap goes to whichever
+  instance pops first.
+- **Reload ordering.** `VoltraEventBus.subscribe` returns a token, and `unsubscribe` ignores a token
+  that has been replaced, so a module instance invalidated after its replacement subscribed cannot
+  remove the replacement's handler. Even without the signal, the next pop picks queued taps up.
 
 ### Android is out of scope
 
 Android sends no native-to-JavaScript events, Voltra owns no push tokens there (remote ongoing
-notification updates arrive through the app's own push delivery), and whether ongoing notifications can be posted
-or promoted is already exposed through `getAndroidOngoingNotificationCapabilities()`. Nothing in this
-ADR has an Android counterpart to add.
+notification updates arrive through the app's own push delivery), and whether ongoing notifications
+can be posted or promoted is already exposed through
+`getAndroidOngoingNotificationCapabilities()`. Nothing in this ADR has an Android counterpart to add.
 
 ## Consequences
 
 - An app can read its tokens and the enablement state at any time, including after sign-in or a
   reload, without starting a new activity.
 - Backends must treat token reports as idempotent upserts. The docs say so.
-- A tap the app handled is never delivered again, and a tap that launched the app is delivered once,
-  to the first listener that attaches.
-- The spec gains four methods and one emitter; `setInteractionListenerActive` is internal and not
-  re-exported.
+- A tap the app handled is never delivered again. A tap that launched the app, or happened while the
+  app was suspended, is delivered once when JavaScript next pulls, if that is within 15 minutes.
+- Interaction events gain an `id`.
+- The spec gains four methods and two emitters. `popInteractions` and `onInteractionsAvailable` are
+  internal and not re-exported; `onInteraction` stays in the spec only for older native builds.
 - The website no longer claims that every event is queued. It says which data is a value to read and
   which is an event that waits for a listener.

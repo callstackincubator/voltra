@@ -5,7 +5,8 @@ import { renderVoltraVariantToJson } from '@use-voltra/ios'
 
 import VoltraFabricView from '../native/VoltraRNNativeComponent'
 
-import { addVoltraListener, type VoltraInteractionEvent } from '../events.js'
+import { type VoltraInteractionEvent } from '../events.js'
+import { subscribeToInteractions } from '../interactions.js'
 
 const generateViewId = () => `voltra-view-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 
@@ -30,17 +31,18 @@ export function VoltraView({ id, children, style, onInteraction, testID }: Voltr
   useEffect(() => {
     if (!onInteraction) return
 
-    const subscription = addVoltraListener('interaction', (event) => {
-      if (event.source === viewId) {
-        onInteraction({
-          type: 'interaction',
-          source: event.source,
-          timestamp: event.timestamp,
-          identifier: event.identifier,
-          payload: event.payload,
-        })
-      }
-    })
+    // Filtered by source, so a mounted VoltraView never takes taps meant for a Live Activity or
+    // widget out of the queue.
+    const subscription = subscribeToInteractions((event) => {
+      onInteraction({
+        type: 'interaction',
+        id: event.id,
+        source: event.source,
+        timestamp: event.timestamp,
+        identifier: event.identifier,
+        payload: event.payload,
+      })
+    }, viewId)
 
     return () => subscription.remove()
   }, [viewId, onInteraction])

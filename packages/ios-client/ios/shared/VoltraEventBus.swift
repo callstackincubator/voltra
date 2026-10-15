@@ -2,68 +2,59 @@ import Foundation
 import os
 
 /// A centralized event bus that manages Voltra events
-/// - Persistent events (interactions): delivered hot while JavaScript listens, otherwise held in
-///   UserDefaults (App Group) until a listener attaches. See ADR 0011.
+/// - Interactions: always recorded in the App Group interaction queue. The bus only signals that
+///   taps are available; JavaScript takes them with `popInteractions` (ADR 0011).
 /// - Transient events (state changes, tokens, enablement): routed through NotificationCenter for
 ///   in-process delivery only. Their current values are readable through getters instead.
 public class VoltraEventBus {
   public static let shared = VoltraEventBus()
 
+  /// Emitted to JavaScript, without data, whenever a tap is recorded in any process.
+  public static let interactionsAvailableEventName = "interactionsAvailable"
+
   private var observer: NSObjectProtocol?
   private var renderFailureObserver: UUID?
+  private var interactionObserver: UUID?
   private var handler: ((String, [String: Any]) -> Void)?
   private var renderFailureListenerCount = 0
-  private var interactionListenerActive = false
+  /// Identifies the current subscription, so a module instance torn down after its replacement
+  /// subscribed (e.g. during a reload) cannot remove the replacement's handler.
+  private var subscription: UUID?
   private let lock = NSLock()
 
   private init() {}
 
   /// Send an event. Routing is automatic based on event type:
-  /// - Persistent events → hot delivery when a JavaScript listener is attached in this process,
-  ///   otherwise UserDefaults only (survives app death, cross-process). Never both, so a delivered
-  ///   event is not replayed later.
+  /// - Interactions → the App Group queue, then an availability signal to every process
   /// - Transient events → NotificationCenter only (in-memory, same process)
   public func send(_ event: VoltraEventType) {
-    // Compute dictionary once to ensure consistent timestamp across all delivery paths
-    let eventData = event.asDictionary
-
-    if event.isPersistent {
-      lock.lock()
-      let deliverHot = interactionListenerActive && handler != nil
-      if !deliverHot {
-        // Written under the lock so a concurrent drain cannot clear the queue between the
-        // listener check and the write.
-        VoltraPersistentEventQueue.write(eventData)
-      }
-      lock.unlock()
-
-      guard deliverHot else { return }
+    if case let .interaction(source, identifier, payload) = event {
+      VoltraInteractionReporter.record(VoltraInteraction(source: source, identifier: identifier, payload: payload))
+      return
     }
 
     NotificationCenter.default.post(
       name: .voltraEvent,
       object: nil,
-      userInfo: eventData
+      userInfo: event.asDictionary
     )
   }
 
-  /// Install the handler that forwards events to JavaScript and start listening for hot delivery.
+  /// Install the handler that forwards events to JavaScript.
   ///
-  /// Persisted interactions are not replayed here: at module creation no JavaScript listener is
-  /// attached yet. They are drained by `setInteractionListenerActive(true)`.
+  /// Nothing is replayed here: queued interactions stay queued until JavaScript pops them.
   ///
   /// - Parameter handler: A closure that receives the event name and event data dictionary
-  public func subscribe(handler: @escaping (String, [String: Any]) -> Void) {
+  /// - Returns: a token to pass to `unsubscribe`
+  @discardableResult
+  public func subscribe(handler: @escaping (String, [String: Any]) -> Void) -> UUID {
+    VoltraInteractionReporter.discardLegacyQueue()
+
+    let token = UUID()
     lock.lock()
-    if let observer {
-      NotificationCenter.default.removeObserver(observer)
-      self.observer = nil
-    }
-    if let renderFailureObserver {
-      VoltraDynamicLiveActivityRenderFailureReporter.removeChangeObserver(renderFailureObserver)
-      self.renderFailureObserver = nil
-    }
+    removeObserversLocked()
     self.handler = handler
+    subscription = token
 
     observer = NotificationCenter.default.addObserver(
       forName: .voltraEvent,
@@ -80,38 +71,21 @@ public class VoltraEventBus {
     renderFailureObserver = VoltraDynamicLiveActivityRenderFailureReporter.observeChanges { [weak self] in
       self?.drainDynamicLiveActivityRenderFailures()
     }
+    interactionObserver = VoltraInteractionReporter.observeChanges {
+      handler(Self.interactionsAvailableEventName, ["type": Self.interactionsAvailableEventName])
+    }
     lock.unlock()
+    return token
   }
 
-  /// JS owns the `interaction` subscription count, because codegen emitters do not tell native
-  /// code when a listener is added or removed. While active, interactions are delivered hot and
-  /// never persisted; while inactive, they are persisted and wait for the next activation.
-  public func setInteractionListenerActive(_ active: Bool) {
-    lock.lock()
-    interactionListenerActive = active
-    lock.unlock()
-    if active {
-      drainInteractions()
+  /// Remove and return queued taps, oldest first, as JavaScript event dictionaries. With
+  /// `sources`, only taps from those sources are taken.
+  public func popInteractions(sources: Set<String>?) -> [[String: Any]] {
+    let interactions = VoltraInteractionReporter.pop(sources: sources)
+    if !interactions.isEmpty {
+      VoltraLogger.event.info("Handed \(interactions.count) interactions to JavaScript")
     }
-  }
-
-  /// Deliver every persisted interaction to JavaScript, but only while a listener is attached.
-  /// Entries leave the queue in the same step that hands them to the handler.
-  public func drainInteractions() {
-    lock.lock()
-    guard interactionListenerActive, let handler else {
-      lock.unlock()
-      return
-    }
-    let persistedEvents = VoltraPersistentEventQueue.popAll()
-    lock.unlock()
-
-    for event in persistedEvents {
-      handler(event.name, event.data)
-    }
-    if !persistedEvents.isEmpty {
-      VoltraLogger.event.info("Delivered \(persistedEvents.count) persisted interactions")
-    }
+    return interactions.map(\.dictionary)
   }
 
   /// JS owns the dedicated emitter subscription count. Persisted failures must
@@ -143,12 +117,23 @@ public class VoltraEventBus {
     }
   }
 
-  /// Unsubscribe from Voltra events
-  public func unsubscribe() {
+  /// Unsubscribe from Voltra events. A token from an earlier `subscribe` that has since been
+  /// replaced is ignored.
+  public func unsubscribe(_ token: UUID? = nil) {
     lock.lock()
     defer { lock.unlock() }
 
-    if let observer = observer {
+    if let token, token != subscription {
+      return
+    }
+    subscription = nil
+    removeObserversLocked()
+    handler = nil
+    renderFailureListenerCount = 0
+  }
+
+  private func removeObserversLocked() {
+    if let observer {
       NotificationCenter.default.removeObserver(observer)
       self.observer = nil
     }
@@ -156,9 +141,10 @@ public class VoltraEventBus {
       VoltraDynamicLiveActivityRenderFailureReporter.removeChangeObserver(renderFailureObserver)
       self.renderFailureObserver = nil
     }
-    handler = nil
-    renderFailureListenerCount = 0
-    interactionListenerActive = false
+    if let interactionObserver {
+      VoltraInteractionReporter.removeChangeObserver(interactionObserver)
+      self.interactionObserver = nil
+    }
   }
 
   deinit {

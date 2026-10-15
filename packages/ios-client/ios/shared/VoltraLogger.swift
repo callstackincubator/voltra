@@ -19,7 +19,7 @@ enum VoltraLogger {
   /// Image preloading and the shared image store
   static let image = Logger(subsystem: subsystem, category: "image")
 
-  /// VoltraEventBus and VoltraPersistentEventQueue
+  /// VoltraEventBus and the interaction queue
   static let event = Logger(subsystem: subsystem, category: "event")
 
   /// Keychain reads and writes

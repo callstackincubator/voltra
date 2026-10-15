@@ -44,6 +44,19 @@ type VoltraInteractionEvent = Readonly<{
   payload: string
 }>
 
+type QueuedVoltraInteraction = Readonly<{
+  type: string
+  id: string
+  source: string
+  timestamp: number
+  identifier: string
+  payload: string
+}>
+
+type VoltraInteractionsAvailableEvent = Readonly<{
+  type: string
+}>
+
 type VoltraDynamicLiveActivityRenderFailedEvent = Readonly<{
   source: string
   timestamp: number
@@ -106,7 +119,10 @@ type WidgetServerCredentials = Readonly<{
 }>
 
 export interface Spec extends TurboModule {
+  /** Native builds before the interaction queue (ADR 0011) emit taps here; current builds never do. */
   readonly onInteraction: CodegenTypes.EventEmitter<VoltraInteractionEvent>
+  /** Internal: a tap was recorded in the interaction queue. Carries no tap data; call `popInteractions`. */
+  readonly onInteractionsAvailable: CodegenTypes.EventEmitter<VoltraInteractionsAvailableEvent>
   readonly onDynamicLiveActivityRenderFailed: CodegenTypes.EventEmitter<VoltraDynamicLiveActivityRenderFailedEvent>
   readonly onStateChanged: CodegenTypes.EventEmitter<VoltraActivityUpdateEvent>
   readonly onActivityTokenReceived: CodegenTypes.EventEmitter<VoltraActivityTokenReceivedEvent>
@@ -114,8 +130,8 @@ export interface Spec extends TurboModule {
   readonly onActivityEnablementChanged: CodegenTypes.EventEmitter<VoltraActivityEnablementChangedEvent>
   drainDynamicLiveActivityRenderFailures(): void
   setDynamicLiveActivityRenderFailureListenerActive(active: boolean): void
-  /** Internal: JS-owned `interaction` listener count crossed 0↔1, so native delivers or holds taps. */
-  setInteractionListenerActive(active: boolean): void
+  /** Internal: remove and return queued taps, oldest first; with `sources`, only taps from those sources. */
+  popInteractions(sources?: string[] | null): QueuedVoltraInteraction[]
   getLiveActivityPushTokens(): Promise<LiveActivityPushToken[]>
   getLiveActivityPushToStartToken(): Promise<string | null>
   areLiveActivitiesEnabled(): boolean

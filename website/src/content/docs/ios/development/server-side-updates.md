@@ -266,7 +266,7 @@ useEffect(() => {
 - `getLiveActivityPushToStartToken()` returns the push-to-start token, or `null` below iOS 17.2 or before APNs has issued one.
 - Both return empty results (`[]` and `null`) when `enablePushNotifications` is not set in the plugin config.
 
-The same token can arrive from both the getter and the event. Store tokens with an upsert keyed by `activityName` (or by device for the push-to-start token) so duplicates don't create extra records.
+The same token can arrive from both the getter and the event, and iOS can issue a new token at any time. Store tokens with an upsert keyed by device and `activityName` (or by device for the push-to-start token), and treat the most recent value as current.
 
 Use only Voltra-provided tokens, which are specialized for Live Activity push notifications and different from regular device tokens. Update tokens are tied to specific Live Activities, while push-to-start tokens are for starting new activities. Update tokens are provided when Live Activities are started and may change during the activity's lifecycle. When sending notifications via APNS, use these push tokens as the target device token to route notifications to the correct Live Activity or device.
 
