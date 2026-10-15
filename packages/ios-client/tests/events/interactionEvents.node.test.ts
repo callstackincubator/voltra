@@ -88,6 +88,33 @@ describe('interaction delivery', () => {
     expect(queue).toEqual([])
   })
 
+  it('gives queued taps to every listener that subscribes in the same tick', async () => {
+    const { addVoltraListener, native } = setup([tap('1')])
+    const appLevel = jest.fn()
+    const nested = jest.fn()
+
+    // As when a root component and a child both subscribe in effects of the same React commit.
+    addVoltraListener('interaction', appLevel)
+    addVoltraListener('interaction', nested)
+    await flush()
+
+    expect(ids(appLevel)).toEqual(['1'])
+    expect(ids(nested)).toEqual(['1'])
+    expect(native.popInteractions).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not give already delivered taps to a listener that subscribes later', async () => {
+    const { addVoltraListener } = setup([tap('1')])
+    addVoltraListener('interaction', jest.fn())
+    await flush()
+
+    const late = jest.fn()
+    addVoltraListener('interaction', late)
+    await flush()
+
+    expect(late).not.toHaveBeenCalled()
+  })
+
   it('lets a listener refer to its own subscription when a tap is already queued', async () => {
     const { addVoltraListener } = setup([tap('1')])
     const error = jest.spyOn(console, 'error').mockImplementation(() => {})

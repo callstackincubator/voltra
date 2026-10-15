@@ -153,6 +153,10 @@ of "a listener is attached". Instead:
    listener that throws is logged and does not stop the others. Taps whose listeners all went away
    during the dispatch are handed back with the synchronous `restoreInteractions`, which puts them at
    the front of the queue unless an entry with the same `id` is already there.
+   Every listener that subscribes before that microtask runs — for example, all `useEffect`
+   subscriptions of one React commit — receives the same pulled taps. A listener that subscribes in
+   a later commit does not: those taps are already out of the queue. The docs therefore recommend
+   one app-level `interaction` listener, mounted at the root, that fans taps out within the app.
 5. **No replay at module creation.** Subscribing to the bus installs the handler and the signal
    observers; it reads nothing from the queue.
 
