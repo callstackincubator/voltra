@@ -99,7 +99,7 @@ private fun resolveDimensionPx(
         DEFAULT_BITMAP_SIZE_PX
     }
 
-private fun capBitmapSize(
+internal fun capBitmapSize(
     width: Int,
     height: Int,
 ): Pair<Int, Int> {

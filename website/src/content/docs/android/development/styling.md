@@ -29,6 +29,7 @@ The following React Native style properties are supported on Android:
 - `backgroundColor` - Background color (hex strings, color names, or `AndroidDynamicColors.*` tokens).
 - `backgroundImage` - CSS gradient background. Supports `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`.
 - `borderRadius` - Corner radius value. **Note:** Requires Android 12+ (API 31). On older versions, this property is ignored.
+- `borderWidth`, `borderColor` - Border drawn inside the component's bounds, following `borderRadius`. Only drawn when `width` and `height` are both fixed numbers. See [Borders](#borders).
 
 ### Text
 
@@ -90,12 +91,39 @@ Gradient stops can use Android dynamic color tokens from `AndroidDynamicColors`,
 
 Use `backgroundImage`, not `background-image`. Gradient bitmaps are generated natively during widget rendering and capped before being passed to Glance, so the bitmap does not control layout size.
 
+## Borders
+
+Set `borderWidth` and `borderColor` to outline a component. The border follows `borderRadius` and works with `backgroundColor` and `backgroundImage`.
+
+```tsx
+<VoltraAndroid.Box
+  style={{
+    width: 50,
+    height: 50,
+    backgroundColor: '#1e293b',
+    borderColor: '#FFD700',
+    borderWidth: 1,
+    borderRadius: 4,
+  }}
+  contentAlignment="center"
+>
+  <VoltraAndroid.Text style={{ fontSize: 12, color: '#fff' }}>100</VoltraAndroid.Text>
+</VoltraAndroid.Box>
+```
+
+Glance has no border modifier, so Android draws the background and the border together into a bitmap that is stretched over the component. That has a few consequences:
+
+- **Fixed size required.** The border is drawn only when `width` and `height` are both numbers. With `"100%"`, `flex`, or content-sized components, Android cannot know the component's size, and a stretched bitmap would distort the border, so it is skipped.
+- **No layout change.** The border is painted inside the component's bounds, behind its children. It does not change the component's size or move its children; add `padding` of at least `borderWidth` so children do not cover it.
+- **Rounded corners.** The background and border are rounded on every Android version. Children are clipped to the rounded outline only on Android 12+ (API 31), as with `borderRadius` alone.
+- **Colors are resolved once.** `AndroidDynamicColors` used for `borderColor` or `backgroundColor` on a bordered component are resolved into the bitmap when the widget renders, like gradient stops.
+
 ## Limitations
 
 The following properties are **NOT supported** on Android due to Glance limitations:
 
 - **Margins:** `margin`, `marginTop`, etc. are not part of Android style types. If you need margin-like outside spacing, use `VoltraAndroid.Spacer` between elements.
-- **Borders:** `borderWidth` and `borderColor` are not yet implemented.
+- **Borders:** `borderWidth` and `borderColor` are drawn only on components with a fixed numeric `width` and `height`; see [Borders](#borders).
 - **Shadows:** `shadowColor`, `shadowOffset`, `shadowOpacity`, and `shadowRadius` are not supported.
 - **Positioning:** Absolute positioning (`top`, `left`, `zIndex`) is not supported. Use stack alignments and spacers.
 - **Transforms:** `transform` (rotate, scale, etc.) is not supported.

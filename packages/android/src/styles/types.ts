@@ -59,9 +59,12 @@ export type VoltraAndroidViewStyle = {
   backgroundImage?: string
   /** Corner radius for the component (requires Android 12+) */
   borderRadius?: number
-  /** Border width (Note: Not yet implemented in Glance) */
+  /**
+   * Border width in dp, drawn inside the component's bounds.
+   * Android draws the border only when `width` and `height` are both fixed numbers.
+   */
   borderWidth?: number
-  /** Border color (Note: Not yet implemented in Glance) */
+  /** Border color. Requires `borderWidth`. */
   borderColor?: AndroidColorValue
 
   /** Opacity of the component (Note: Not supported in Glance - apply alpha to colors instead) */
