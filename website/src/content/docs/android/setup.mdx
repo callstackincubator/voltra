@@ -1,0 +1,81 @@
+---
+title: "Android Setup"
+description: "Configure the Voltra Expo plugin for Android, run prebuild, and run the app to see your widget in the Android widget picker."
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Once you have [installed Voltra](/getting-started/installation) for Android, configure the Expo plugin and use `@use-voltra/android` for widget JSX.
+
+## 1. Configure the Expo Plugin
+
+Add `@use-voltra/android-client` to your `app.json` or `app.config.js`:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      [
+        "@use-voltra/android-client",
+        {
+          "enableNotifications": true,
+          "widgets": [
+            {
+              "id": "my_widget",
+              "displayName": "My First Widget",
+              "description": "A simple Voltra widget",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2
+            }
+          ]
+        }
+      ]
+    ]
+  }
+}
+```
+
+See [Plugin Configuration](/android/api/plugin-configuration) for all options.
+
+## 2. Prebuild for Android
+
+Update your native Android project:
+
+<Tabs syncKey="pkg">
+  <TabItem label="npm">
+
+```sh
+npx expo prebuild --platform android
+```
+
+  </TabItem>
+  <TabItem label="yarn">
+
+```sh
+yarn dlx expo prebuild --platform android
+```
+
+  </TabItem>
+  <TabItem label="pnpm">
+
+```sh
+pnpm dlx expo prebuild --platform android
+```
+
+  </TabItem>
+  <TabItem label="bun">
+
+```sh
+bunx expo prebuild --platform android
+```
+
+  </TabItem>
+</Tabs>
+
+## 3. Run the app
+
+```bash
+npx expo run:android
+```
+
+Your widget should now be available in the Android widget picker!

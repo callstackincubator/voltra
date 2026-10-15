@@ -1,0 +1,97 @@
+---
+// A phone in the family's device language: a dark rectangle with pixel-stepped corners (4px
+// steps, never rounded) and a 1px #313131 outline that follows every step. The screen goes in
+// the slot.
+interface Props {
+  class?: string;
+  /** The platform label under the phone, in mono. */
+  label?: string;
+}
+const { class: className, label } = Astro.props;
+---
+
+<figure class:list={['phone', className]}>
+  <div class="phone-edge">
+    <div class="phone-screen">
+      <slot />
+    </div>
+  </div>
+  {label && <figcaption class="label phone-label">{label}</figcaption>}
+</figure>
+
+<style>
+  .phone {
+    --step: 4px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: var(--phone-w, 15rem);
+    flex: none;
+  }
+  /* The outline is the outer box showing 1px around the inner one; both share the stepped cut. */
+  .phone-edge,
+  .phone-screen {
+    clip-path: polygon(
+      0 calc(var(--step) * 5),
+      var(--step) calc(var(--step) * 5),
+      var(--step) calc(var(--step) * 3),
+      calc(var(--step) * 2) calc(var(--step) * 3),
+      calc(var(--step) * 2) calc(var(--step) * 2),
+      calc(var(--step) * 3) calc(var(--step) * 2),
+      calc(var(--step) * 3) var(--step),
+      calc(var(--step) * 5) var(--step),
+      calc(var(--step) * 5) 0,
+      calc(100% - var(--step) * 5) 0,
+      calc(100% - var(--step) * 5) var(--step),
+      calc(100% - var(--step) * 3) var(--step),
+      calc(100% - var(--step) * 3) calc(var(--step) * 2),
+      calc(100% - var(--step) * 2) calc(var(--step) * 2),
+      calc(100% - var(--step) * 2) calc(var(--step) * 3),
+      calc(100% - var(--step)) calc(var(--step) * 3),
+      calc(100% - var(--step)) calc(var(--step) * 5),
+      100% calc(var(--step) * 5),
+      100% calc(100% - var(--step) * 5),
+      calc(100% - var(--step)) calc(100% - var(--step) * 5),
+      calc(100% - var(--step)) calc(100% - var(--step) * 3),
+      calc(100% - var(--step) * 2) calc(100% - var(--step) * 3),
+      calc(100% - var(--step) * 2) calc(100% - var(--step) * 2),
+      calc(100% - var(--step) * 3) calc(100% - var(--step) * 2),
+      calc(100% - var(--step) * 3) calc(100% - var(--step)),
+      calc(100% - var(--step) * 5) calc(100% - var(--step)),
+      calc(100% - var(--step) * 5) 100%,
+      calc(var(--step) * 5) 100%,
+      calc(var(--step) * 5) calc(100% - var(--step)),
+      calc(var(--step) * 3) calc(100% - var(--step)),
+      calc(var(--step) * 3) calc(100% - var(--step) * 2),
+      calc(var(--step) * 2) calc(100% - var(--step) * 2),
+      calc(var(--step) * 2) calc(100% - var(--step) * 3),
+      var(--step) calc(100% - var(--step) * 3),
+      var(--step) calc(100% - var(--step) * 5),
+      0 calc(100% - var(--step) * 5)
+    );
+  }
+  .phone-edge {
+    width: 100%;
+    aspect-ratio: 9 / 18.5;
+    padding: 1px;
+    background: #313131;
+    container-type: inline-size;
+  }
+  /* Everything on the screen is sized in em, so the picture scales with the phone. */
+  .phone-screen {
+    position: relative;
+    height: 100%;
+    font-size: 6.6cqi;
+    background: #050505;
+    overflow: hidden;
+  }
+  /* Text never sits on dither: the label gets a solid fill. */
+  .phone-label {
+    position: relative;
+    padding: 0.25rem 0.5rem;
+    background: var(--bg);
+    color: var(--faint);
+  }
+</style>

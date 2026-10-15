@@ -1,0 +1,134 @@
+---
+// An Android home screen drawn in the family's language: a status row, the Voltra widget from
+// the docs' `updateAndroidWidget` example on the cell grid, and app icons as dot squares. The
+// widget shares the lock screen's `data-state` values (`enroute`, `arrived`).
+import PixelIcon from '../site/PixelIcon.astro';
+
+interface Props {
+  state?: 'off' | 'enroute' | 'arrived';
+  class?: string;
+}
+const { state = 'arrived', class: className } = Astro.props;
+---
+
+<div class:list={['home', className]} data-home data-state={state}>
+  <div class="home-status label" aria-hidden="true"><span>9:41</span><span>▮▮▮</span></div>
+  <div class="home-grid">
+    <div class="wg" data-wg>
+      <span class="wg-scan" aria-hidden="true"></span>
+      <span class="wg-head">
+        <PixelIcon name="car" size={18} class="accent" />
+        <span class="wg-tag label">Widget · 4×2</span>
+      </span>
+      <span class="wg-swap">
+        <span class="wg-state wg-state--enroute">
+          <span class="wg-title">Driver en route</span>
+          <span class="wg-sub">ETA 12 min</span>
+        </span>
+        <span class="wg-state wg-state--arrived">
+          <span class="wg-title">Driver arrived</span>
+          <span class="wg-sub">Ready for pickup</span>
+        </span>
+      </span>
+    </div>
+    {Array.from({ length: 12 }, () => <span class="app" aria-hidden="true" />)}
+  </div>
+</div>
+
+<style>
+  .home {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0.625em 0.75em 1em;
+    font-family: var(--font-display);
+  }
+  .home-status {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+    font-size: 0.5625em;
+  }
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75em 0.625em;
+    margin-top: 1.5em;
+  }
+  .wg {
+    position: relative;
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625em;
+    min-height: 6.75em;
+    padding: 0.875em;
+    background: var(--field);
+    border: 1px solid var(--line-strong);
+    overflow: hidden;
+  }
+  .wg-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wg-tag {
+    color: var(--faint);
+    font-size: 0.5em;
+  }
+  .wg-swap {
+    display: grid;
+  }
+  .wg-state {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125em;
+    visibility: hidden;
+  }
+  .wg-title {
+    font-size: 0.9375em;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .wg-sub {
+    font-size: 0.75em;
+    color: var(--muted);
+  }
+  [data-state='enroute'] .wg-state--enroute,
+  [data-state='arrived'] .wg-state--arrived {
+    visibility: visible;
+  }
+  [data-state='off'] .wg-swap {
+    visibility: hidden;
+  }
+  /* The refresh: a scan line stepping down the widget, as on the Cells scene. */
+  .wg-scan {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0;
+  }
+  .wg.is-hit .wg-scan {
+    animation: wg-scan 900ms steps(16) forwards;
+  }
+  @keyframes wg-scan {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(6.75em);
+    }
+  }
+  /* App icons: dot squares, no third-party chrome. */
+  .app {
+    aspect-ratio: 1;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.22) 1px, transparent 1.5px) 0 0 / 4px 4px;
+    border: 1px solid var(--line);
+  }
+</style>

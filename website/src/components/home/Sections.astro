@@ -1,0 +1,133 @@
+---
+// The numbered home page sections, laid out from src/site/content.ts. `order` picks and orders
+// them; the numbers [01], [02]… follow the order.
+import CodeBlock from '../site/CodeBlock.astro';
+import Editor from './Editor.astro';
+import Faq from '../site/Faq.astro';
+import PixelIcon from '../site/PixelIcon.astro';
+import Tabs from '../site/Tabs.astro';
+import Window from '../site/Window.astro';
+import { home } from '../../site/content';
+
+export type SectionId = 'how' | 'feature' | 'cells' | 'safe' | 'faq';
+
+interface Props {
+  order?: SectionId[];
+}
+const { order = ['how', 'feature', 'cells', 'safe', 'faq'] } = Astro.props;
+const num = (id: SectionId) => String(order.indexOf(id) + 1).padStart(2, '0');
+
+// Inline `code` in copy.
+const md = (s: string) => s.replace(/`([^`]+)`/g, '<code>$1</code>');
+const { how, feature, cells, safe } = home;
+---
+
+{
+  order.map((id) => {
+    if (id === 'how')
+      return (
+        <section id="how" aria-labelledby="how-title">
+          <p class="section-head label">
+            <b>[{num('how')}]</b> {how.label}
+          </p>
+          <div class="intro">
+            <h2 class="h2" id="how-title">
+              {how.headline[0]} <em>{how.headline[1]}</em>
+            </h2>
+          </div>
+          <Editor />
+          <ol class="cells cells--3">
+            {how.steps.map((s, i) => (
+              <li class="cell">
+                <span class="label cell-num">{String(i + 1).padStart(2, '0')}</span>
+                <h3 class="h3">{s.title}</h3>
+                <p class="body" set:html={md(s.body)} />
+                {s.cmd ? (
+                  <code class="cmdline">
+                    <span class="p">$</span> {s.cmd}
+                  </code>
+                ) : (
+                  <code class="cmdline">{s.file}</code>
+                )}
+              </li>
+            ))}
+          </ol>
+          <Tabs tabs={how.tabs} label="Platform" id="how" />
+        </section>
+      );
+    if (id === 'feature')
+      return (
+        <section id="feature" aria-labelledby="feature-title">
+          <p class="section-head label">
+            <b>[{num('feature')}]</b> {feature.label}
+          </p>
+          <div class="split">
+            <div class="split-copy">
+              <h2 class="h2" id="feature-title">
+                {feature.headline[0]} <em>{feature.headline[1]}</em>
+              </h2>
+              <p class="lede" set:html={md(feature.lede)} />
+              <a class="label more" href={feature.link.href}>
+                {feature.link.text} <span aria-hidden="true">→</span>
+              </a>
+            </div>
+            <Window title={feature.window}>
+              <CodeBlock code={feature.code} lang="tsx" minLines={10} />
+            </Window>
+          </div>
+        </section>
+      );
+    if (id === 'cells')
+      return (
+        <section id="cells" aria-labelledby="cells-title">
+          <p class="section-head label">
+            <b>[{num('cells')}]</b> {cells.label}
+          </p>
+          <div class="intro">
+            <h2 class="h2" id="cells-title">
+              {cells.headline[0]} <em>{cells.headline[1]}</em>
+            </h2>
+          </div>
+          <div class="cells cells--4">
+            {cells.items.map((c) => (
+              <a class="cell cell--link" href={c.href}>
+                <span class="cell-top">
+                  <PixelIcon name={c.icon} size={27} class="accent" />
+                </span>
+                <h3 class="h3">{c.title}</h3>
+                <p class="body" set:html={md(c.body)} />
+                <span class="label more">
+                  Read more <span aria-hidden="true">→</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+    if (id === 'safe')
+      return (
+        <section id="safe" aria-labelledby="safe-title">
+          <p class="section-head label">
+            <b>[{num('safe')}]</b> {safe.label}
+          </p>
+          <div class="intro">
+            <h2 class="h2" id="safe-title">
+              {safe.headline[0]} <em>{safe.headline[1]}</em>
+            </h2>
+          </div>
+          <div class="cells cells--4">
+            {safe.items.map((s) => (
+              <article class="cell">
+                <span class="cell-top">
+                  <PixelIcon name={s.icon} size={27} class="accent" />
+                </span>
+                <h3 class="h3">{s.title}</h3>
+                <p class="body" set:html={md(s.body)} />
+              </article>
+            ))}
+          </div>
+        </section>
+      );
+    return <Faq num={num('faq')} />;
+  })
+}

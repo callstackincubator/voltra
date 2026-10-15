@@ -1,0 +1,40 @@
+---
+// A dithered pixel scene in the accent, drawn on a canvas. It fills its positioned parent. The
+// scenes live in dither.ts: `cells` (Voltra's signature: widget tiles on the home screen cell
+// grid), `hollow` (the same with the widget at the focus missing, for the 404 page) and `flow`
+// (soft bands of light, for quiet backdrops behind code).
+import { site } from '../../site/content';
+import type { SceneName } from './dither';
+
+interface Props {
+  scene?: SceneName;
+  /** Where the scene is brightest, 0..1 across: put it behind the product visual. */
+  focus?: number;
+  /** Size of one dither cell in CSS pixels. */
+  cell?: number;
+  class?: string;
+}
+const { scene = 'cells', focus = 0.72, cell = 2, class: className } = Astro.props;
+---
+
+<canvas
+  class:list={['dither', className]}
+  data-scene={scene}
+  data-focus={focus}
+  data-cell={cell}
+  data-mark={site.mark?.join('/')}
+  aria-hidden="true"></canvas>
+
+<script>
+  // Dithering starts after the page has loaded, and each canvas only when it first comes near
+  // the viewport, so it never competes with the first paint.
+  import { whenNear } from './lazy';
+
+  const start = () => {
+    for (const canvas of document.querySelectorAll<HTMLCanvasElement>('canvas.dither')) {
+      whenNear(canvas, () => void import('./dither-host').then((m) => m.host(canvas)));
+    }
+  };
+  if (document.readyState === 'complete') start();
+  else addEventListener('load', start, { once: true });
+</script>

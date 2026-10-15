@@ -1,34 +1,60 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm run build",
-  "cleanUrls": true,
   "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "git": {
     "deploymentEnabled": false
   },
-  "installCommand": "pnpm install --frozen-lockfile",
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap-index.xml"
+    }
+  ],
   "redirects": [
+    {
+      "source": "/v1/:path*",
+      "destination": "/:path*",
+      "statusCode": 301
+    },
+    {
+      "source": "/v1",
+      "destination": "/",
+      "statusCode": 301
+    },
     {
       "source": "/getting-started",
       "destination": "/getting-started/introduction",
       "statusCode": 301
     },
     {
+      "source": "/ios",
+      "destination": "/ios/introduction",
+      "statusCode": 301
+    },
+    {
+      "source": "/android",
+      "destination": "/android/introduction",
+      "statusCode": 301
+    },
+    {
       "source": "/development",
-      "destination": "/development/developing-live-activities",
+      "destination": "/ios/development/developing-live-activities",
       "statusCode": 301
     },
     {
       "source": "/components",
-      "destination": "/components/overview",
+      "destination": "/ios/components/overview",
       "statusCode": 301
     },
     {
       "source": "/api",
-      "destination": "/api/configuration",
+      "destination": "/ios/api/configuration",
       "statusCode": 301
     }
-  ],
-  "outputDirectory": "doc_build",
-  "trailingSlash": false
+  ]
 }

@@ -1,0 +1,78 @@
+---
+// The home page, in the family's order: nav, hero, marquee, numbered sections, FAQ, closing.
+// The words and code come from src/site/content.ts; this file only lays them out. To add,
+// drop or reorder a section, edit the Sections `order` and the numbers follow.
+import Site from '../layouts/Site.astro';
+import Closing from '../components/site/Closing.astro';
+import Footer from '../components/site/Footer.astro';
+import Marquee from '../components/site/Marquee.astro';
+import Nav from '../components/site/Nav.astro';
+import Sections from '../components/home/Sections.astro';
+import Hero from '../components/home/Hero.astro';
+import { docs, faq, site } from '../site/content';
+
+// Structured data: the site, Callstack, the product as an application and as source code, and
+// the FAQ on this page.
+const homeUrl = new URL('/', Astro.site).href;
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${homeUrl}#website`,
+      url: homeUrl,
+      name: site.name,
+      description: site.description,
+      publisher: { '@id': 'https://callstack.com/#organization' },
+    },
+    {
+      '@type': 'Organization',
+      '@id': 'https://callstack.com/#organization',
+      name: 'Callstack',
+      url: 'https://callstack.com/',
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${homeUrl}#software`,
+      name: site.name,
+      description: site.description,
+      url: homeUrl,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: site.platforms.join(', '),
+      license: site.license.spdx,
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      softwareHelp: new URL(docs.intro, Astro.site).href,
+      sameAs: [site.repo, site.npm],
+      publisher: { '@id': 'https://callstack.com/#organization' },
+    },
+    {
+      '@type': 'SoftwareSourceCode',
+      name: site.name,
+      codeRepository: site.repo,
+      programmingLanguage: site.language,
+      license: site.license.spdx,
+      targetProduct: { '@id': `${homeUrl}#software` },
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: faq.map(({ q, a }) => ({
+        '@type': 'Question',
+        name: q,
+        acceptedAnswer: { '@type': 'Answer', text: a.replace(/`/g, '') },
+      })),
+    },
+  ],
+};
+---
+
+<Site description={site.description} jsonLd={jsonLd}>
+  <Nav />
+  <main class="frame">
+    <Hero />
+    <Marquee />
+    <Sections order={['cells', 'feature', 'how', 'safe', 'faq']} />
+    <Closing />
+  </main>
+  <Footer />
+</Site>
