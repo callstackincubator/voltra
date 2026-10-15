@@ -37,6 +37,7 @@ import voltra.ongoingnotification.AndroidOngoingNotificationPublicVersionPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
 import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
 import voltra.ongoingnotification.PROMOTION_MIN_SDK
+import voltra.ongoingnotification.PromotedLargeIconInset
 import voltra.ongoingnotification.VoltraNotificationException
 import voltra.ongoingnotification.VoltraNotificationImageResolver
 import voltra.ongoingnotification.VoltraNotificationImageResolver.Companion.MAX_ICON_LONG_EDGE_PX
@@ -543,6 +544,24 @@ class VoltraNotificationManager(
             builder.setPublicVersion(buildPublicVersion(record, payload, publicVersion, category))
         }
 
+        return insetPromotedLargeIcon(builder, builder.build(), record, payload)
+    }
+
+    // Some platform builds (Samsung One UI 8) give a promoted notification's large icon no end
+    // margin, so the card's rounded corner clips it. The padding is baked in only when the
+    // notification will actually be promoted: an unpromoted one keeps the platform's own margin.
+    private fun insetPromotedLargeIcon(
+        builder: Builder,
+        notification: Notification,
+        record: AndroidOngoingNotificationRecord,
+        payload: AndroidOngoingNotificationPayload,
+    ): Notification {
+        if (!record.requestPromotedOngoing) return notification
+        val largeIcon = notification.getLargeIcon() ?: return notification
+        val insetRatio = PromotedLargeIconInset.requiredInsetRatio() ?: return notification
+        if (!promotionEvaluator.evaluate(payload, record.channelId, notification).eligible) return notification
+
+        builder.setLargeIcon(PromotedLargeIconInset.apply(appContext, largeIcon, insetRatio))
         return builder.build()
     }
 
