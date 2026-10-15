@@ -97,6 +97,14 @@ public class VoltraModuleImpl {
     VoltraEventBus.shared.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
+  func setInteractionListenerActive(_ active: Bool) {
+    VoltraEventBus.shared.setInteractionListenerActive(active)
+  }
+
+  func drainInteractions() {
+    VoltraEventBus.shared.drainInteractions()
+  }
+
   var pushNotificationsEnabled: Bool {
     // Support both keys for compatibility with older plugin and new Voltra naming
     let main = Bundle.main
@@ -268,6 +276,26 @@ public class VoltraModuleImpl {
   func isLiveActivityActive(name: String) -> Bool {
     guard #available(iOS 16.4, *) else { return false }
     return liveActivityService.isActivityActive(name: name)
+  }
+
+  // MARK: - Push State
+
+  /// Without `enablePushNotifications` activities are requested without a push type, so there is
+  /// no token the app asked for.
+  func getLiveActivityPushTokens() -> [[String: String]] {
+    guard pushNotificationsEnabled else { return [] }
+    return liveActivityService.pushTokens().map {
+      ["activityName": $0.activityName, "pushToken": $0.pushToken]
+    }
+  }
+
+  func getLiveActivityPushToStartToken() -> String? {
+    guard pushNotificationsEnabled else { return nil }
+    return liveActivityService.pushToStartToken()
+  }
+
+  func areLiveActivitiesEnabled() -> Bool {
+    VoltraLiveActivityService.areActivitiesEnabled()
   }
 
   func reloadLiveActivities(activityNames: [String]?) async throws {

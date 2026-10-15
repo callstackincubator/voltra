@@ -11,6 +11,7 @@ public enum VoltraEventType {
   case stateChange(activityName: String, state: String)
   case tokenReceived(activityName: String, pushToken: String)
   case pushToStartTokenReceived(token: String)
+  case activityEnablementChanged(enabled: Bool)
 
   /// Whether this event should be persisted to UserDefaults (survives app death)
   var isPersistent: Bool {
@@ -33,6 +34,8 @@ public enum VoltraEventType {
       return "activityTokenReceived"
     case .pushToStartTokenReceived:
       return "activityPushToStartTokenReceived"
+    case .activityEnablementChanged:
+      return "activityEnablementChanged"
     }
   }
 
@@ -59,6 +62,10 @@ public enum VoltraEventType {
 
     case let .pushToStartTokenReceived(token):
       dict["pushToStartToken"] = token
+
+    case let .activityEnablementChanged(enabled):
+      dict["timestamp"] = Date().timeIntervalSince1970
+      dict["enabled"] = enabled
     }
 
     return dict

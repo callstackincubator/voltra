@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Implemented by [#353](https://github.com/callstackincubator/voltra/pull/353).
+
 ## Introduction
 
 An iOS app that drives Live Activities from a server needs three things from the device: the push

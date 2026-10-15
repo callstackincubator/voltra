@@ -19,6 +19,10 @@ final class VoltraDynamicLiveActivityService {
     VoltraDynamicLiveActivityRegistry.shared.activities()
   }
 
+  func pushTokens() -> [(activityName: String, pushToken: String)] {
+    VoltraDynamicLiveActivityRegistry.shared.pushTokens()
+  }
+
   func definitionIds() -> [String] {
     VoltraDynamicLiveActivityRegistry.shared.definitionIds()
   }

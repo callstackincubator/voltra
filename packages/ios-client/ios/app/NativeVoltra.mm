@@ -86,6 +86,8 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
       [strongSelf emitOnActivityTokenReceived:eventData];
     } else if ([eventName isEqualToString:@"activityPushToStartTokenReceived"]) {
       [strongSelf emitOnActivityPushToStartTokenReceived:eventData];
+    } else if ([eventName isEqualToString:@"activityEnablementChanged"]) {
+      [strongSelf emitOnActivityEnablementChanged:eventData];
     }
   }];
 }
@@ -102,6 +104,9 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
 {
   [self.module clearHeadless];
   [self.module drainDynamicLiveActivityRenderFailures];
+  // Picks up interactions persisted while no listener was attached in this process, e.g. by
+  // another process or during a reload. A no-op without a listener.
+  [self.module drainInteractions];
   [self updateRootAppPropertiesHeadless:NO];
 }
 
@@ -113,6 +118,11 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
 - (void)setDynamicLiveActivityRenderFailureListenerActive:(BOOL)active
 {
   [self.module setDynamicLiveActivityRenderFailureListenerActive:active];
+}
+
+- (void)setInteractionListenerActive:(BOOL)active
+{
+  [self.module setInteractionListenerActive:active];
 }
 
 - (UIView *)reactRootViewInView:(UIView *)view
@@ -310,6 +320,21 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
 - (NSNumber *)isLiveActivityActive:(NSString *)activityName
 {
   return @([self.module isLiveActivityActive:activityName]);
+}
+
+- (void)getLiveActivityPushTokens:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  resolve([self.module getLiveActivityPushTokens]);
+}
+
+- (void)getLiveActivityPushToStartToken:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  resolve([self.module getLiveActivityPushToStartToken]);
+}
+
+- (NSNumber *)areLiveActivitiesEnabled
+{
+  return @([self.module areLiveActivitiesEnabled]);
 }
 
 - (NSNumber *)isHeadless

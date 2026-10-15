@@ -7,12 +7,15 @@ Voltra emits several types of events that allow your app to respond to changes i
 
 ## Overview
 
-Voltra provides four main event types:
+Voltra provides five main event types:
 
 - **Activity state changes**: Notifications when a Live Activity's state changes (e.g., dismissed, ended)
 - **Push tokens**: Tokens needed for server-side updates via push notifications
 - **Push-to-start tokens**: Tokens for starting Live Activities remotely (iOS 17.2+)
+- **Enablement changes**: Notifications when the user allows or disallows Live Activities for your app
 - **User interactions**: Events triggered when users interact with buttons or toggles in your Live Activity
+
+Push tokens and enablement are values that can change, not one-off events. The events only report changes, and only to listeners attached at that moment. Read the current value with `getLiveActivityPushTokens()`, `getLiveActivityPushToStartToken()`, and `areLiveActivitiesEnabled()`.
 
 ## Activity state changes
 
@@ -108,9 +111,52 @@ subscription.remove()
 
 For more information about using push tokens for starting Live Activity remotely, see the [server-side updates guide](/ios/development/server-side-updates).
 
+### Reading the current tokens
+
+A token event fires when iOS issues or rotates a token. If your listener attaches later — for example, after the user signs in — it doesn't receive tokens issued earlier. Subscribe first, then read the current values:
+
+```typescript
+import {
+  addVoltraListener,
+  getLiveActivityPushTokens,
+  getLiveActivityPushToStartToken,
+} from '@use-voltra/ios-client'
+
+const subscription = addVoltraListener('activityTokenReceived', ({ activityName, pushToken }) => {
+  sendTokenToServer({ activityName, pushToken })
+})
+
+for (const { activityName, pushToken } of await getLiveActivityPushTokens()) {
+  sendTokenToServer({ activityName, pushToken })
+}
+
+const pushToStartToken = await getLiveActivityPushToStartToken()
+if (pushToStartToken) {
+  sendTokenToServer({ pushToStartToken })
+}
+```
+
+The same token can arrive from both the getter and the event, so store tokens on your server with an upsert keyed by `activityName`. See [Reading the current tokens](/ios/development/server-side-updates#reading-the-current-tokens) for what each getter returns.
+
+## Live Activity enablement
+
+Users can turn Live Activities off for your app in Settings. `startLiveActivity()` rejects while they're off. Use `areLiveActivitiesEnabled()` to check first, for example to hide a "Track order" button, and listen for `'activityEnablementChanged'` to react when the user changes the setting:
+
+```typescript
+import { addVoltraListener, areLiveActivitiesEnabled } from '@use-voltra/ios-client'
+
+setTrackingAvailable(areLiveActivitiesEnabled())
+
+const subscription = addVoltraListener('activityEnablementChanged', (event) => {
+  setTrackingAvailable(event.enabled)
+})
+```
+
+`areLiveActivitiesEnabled()` is synchronous and returns `false` below iOS 16.4. Neither the getter nor the event needs `enablePushNotifications`.
+
 ## User interactions
 
-When users interact with buttons or toggles in your Live Activity, Voltra emits an `'interaction'` event via `addVoltraListener` — this works even when your app isn't running. For the full example, component identifiers, deep linking, and app lifecycle considerations, see the [interactions guide](/ios/development/interactions).
+When users interact with buttons or toggles in your Live Activity, Voltra emits an `'interaction'` event via `addVoltraListener` — this works even when your app isn't running. If no `'interaction'` listener is attached when the user taps, Voltra holds the event and delivers it once, when the first listener attaches. This requires a `groupIdentifier` in the plugin config. For the full example, component identifiers, deep linking, and app lifecycle considerations, see the [interactions guide](/ios/development/interactions).
 
 ## Best practices
 
@@ -143,4 +189,4 @@ function MyComponent() {
 
 ### Handle app launch scenarios
 
-When your app is launched from a terminated state (e.g., due to a Live Activity interaction), make sure your event listeners are set up before processing any queued events. Voltra handles event queuing automatically when using App Groups.
+When a tap on a Live Activity launches your app, the `'interaction'` event waits until your `'interaction'` listener attaches, then arrives once. Only interactions are held this way, and only when you configure a `groupIdentifier`. State changes and token events are not held: an event that fires before your listener attaches is not delivered later. Read push tokens and enablement with their getters instead.

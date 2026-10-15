@@ -230,6 +230,44 @@ useEffect(() => {
 }, [])
 ```
 
+### Reading the current tokens
+
+Token events fire when iOS issues or rotates a token, and only reach listeners attached at that moment. When your app needs the tokens later — after the user signs in, or after a reload — read them directly. Subscribe to the event first and then call the getter, so a token issued in between isn't missed:
+
+```tsx
+import {
+  addVoltraListener,
+  getLiveActivityPushTokens,
+  getLiveActivityPushToStartToken,
+} from '@use-voltra/ios-client'
+
+useEffect(() => {
+  const subscription = addVoltraListener('activityTokenReceived', ({ activityName, pushToken }) => {
+    sendTokenToServer({ activityName, token: pushToken, type: 'update' })
+  })
+
+  getLiveActivityPushTokens().then((tokens) => {
+    for (const { activityName, pushToken } of tokens) {
+      sendTokenToServer({ activityName, token: pushToken, type: 'update' })
+    }
+  })
+
+  getLiveActivityPushToStartToken().then((token) => {
+    if (token) {
+      sendTokenToServer({ token, type: 'start' })
+    }
+  })
+
+  return () => subscription.remove()
+}, [])
+```
+
+- `getLiveActivityPushTokens()` returns `{ activityName, pushToken }` for every running Live Activity, including Dynamic Live Activities, that already has a token. Activities started with a `channelId` have no token and aren't listed.
+- `getLiveActivityPushToStartToken()` returns the push-to-start token, or `null` below iOS 17.2 or before APNs has issued one.
+- Both return empty results (`[]` and `null`) when `enablePushNotifications` is not set in the plugin config.
+
+The same token can arrive from both the getter and the event. Store tokens with an upsert keyed by `activityName` (or by device for the push-to-start token) so duplicates don't create extra records.
+
 Use only Voltra-provided tokens, which are specialized for Live Activity push notifications and different from regular device tokens. Update tokens are tied to specific Live Activities, while push-to-start tokens are for starting new activities. Update tokens are provided when Live Activities are started and may change during the activity's lifecycle. When sending notifications via APNS, use these push tokens as the target device token to route notifications to the correct Live Activity or device.
 
 ## Broadcast push notifications (iOS 18+)

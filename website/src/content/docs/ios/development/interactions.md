@@ -125,6 +125,8 @@ For styled navigation buttons, wrap a Link with custom children to achieve butto
 
 - **Event delivery timing**: Events are delivered asynchronously. There may be a slight delay between the user's interaction and your event handler being called, especially if the app needs to be launched.
 
+- **Events wait for a listener**: If no `'interaction'` listener is attached when the user taps — for example, because the tap launched your app — Voltra holds the event and delivers it once, when the first listener attaches. Holding events requires a `groupIdentifier` in the plugin config; without one, a tap with no listener is dropped. A mounted `VoltraView` with `onInteraction` counts as a listener and ignores events from other sources, so register an app-level listener at your root component to receive every interaction.
+
 ## Example
 
 Here's a complete example showing how to handle interactions:

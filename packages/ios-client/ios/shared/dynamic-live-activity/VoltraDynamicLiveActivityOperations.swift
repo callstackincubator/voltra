@@ -26,6 +26,19 @@ public struct VoltraDynamicLiveActivityReference: Hashable {
 /// Generic ActivityKit operations called by the generated catalog. The catalog
 /// supplies the concrete generated Attributes type without exposing it to the
 /// legacy service or the React Native bridge.
+extension ActivityState {
+  /// Ended and dismissed activities can linger in `Activity.activities`, but their push tokens no
+  /// longer reach anything.
+  var canReceivePushUpdates: Bool {
+    switch self {
+    case .ended, .dismissed:
+      return false
+    default:
+      return true
+    }
+  }
+}
+
 public enum VoltraDynamicLiveActivityOperations {
   public static func create<Attributes: VoltraDynamicLiveActivityDefinition>(
     _: Attributes.Type,
@@ -88,6 +101,15 @@ public enum VoltraDynamicLiveActivityOperations {
   ) -> [VoltraDynamicLiveActivityReference] {
     Activity<Attributes>.activities.map {
       VoltraDynamicLiveActivityReference(id: $0.id, name: $0.attributes.name, definitionId: Attributes.definitionId)
+    }
+  }
+
+  public static func pushTokens<Attributes: VoltraDynamicLiveActivityDefinition>(
+    _: Attributes.Type
+  ) -> [(activityName: String, pushToken: String)] {
+    Activity<Attributes>.activities.compactMap { activity in
+      guard activity.activityState.canReceivePushUpdates, let token = activity.pushToken else { return nil }
+      return (activity.attributes.name, token.hexString)
     }
   }
 

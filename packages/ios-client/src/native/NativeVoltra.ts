@@ -16,6 +16,18 @@ type VoltraActivityPushToStartTokenReceivedEvent = Readonly<{
   pushToStartToken: string
 }>
 
+type VoltraActivityEnablementChangedEvent = Readonly<{
+  source: string
+  timestamp: number
+  type: 'activityEnablementChanged'
+  enabled: boolean
+}>
+
+type LiveActivityPushToken = Readonly<{
+  activityName: string
+  pushToken: string
+}>
+
 type VoltraActivityUpdateEvent = Readonly<{
   source: string
   timestamp: number
@@ -99,8 +111,14 @@ export interface Spec extends TurboModule {
   readonly onStateChanged: CodegenTypes.EventEmitter<VoltraActivityUpdateEvent>
   readonly onActivityTokenReceived: CodegenTypes.EventEmitter<VoltraActivityTokenReceivedEvent>
   readonly onActivityPushToStartTokenReceived: CodegenTypes.EventEmitter<VoltraActivityPushToStartTokenReceivedEvent>
+  readonly onActivityEnablementChanged: CodegenTypes.EventEmitter<VoltraActivityEnablementChangedEvent>
   drainDynamicLiveActivityRenderFailures(): void
   setDynamicLiveActivityRenderFailureListenerActive(active: boolean): void
+  /** Internal: JS-owned `interaction` listener count crossed 0↔1, so native delivers or holds taps. */
+  setInteractionListenerActive(active: boolean): void
+  getLiveActivityPushTokens(): Promise<LiveActivityPushToken[]>
+  getLiveActivityPushToStartToken(): Promise<string | null>
+  areLiveActivitiesEnabled(): boolean
   startLiveActivity(jsonString: string, options: StartVoltraOptions): Promise<string>
   updateLiveActivity(activityId: string, jsonString: string, options: UpdateVoltraOptions): Promise<void>
   startDynamicLiveActivity(definitionId: string, propsJson: string, options: StartVoltraOptions): Promise<string>

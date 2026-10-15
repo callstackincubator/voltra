@@ -12,6 +12,7 @@ private struct VoltraDynamicLiveActivityDescriptor {
   let end: (String, ActivityUIDismissalPolicy) async -> Bool
   let endAll: (ActivityUIDismissalPolicy) async -> Void
   let activities: () -> [VoltraDynamicLiveActivityReference]
+  let pushTokens: () -> [(activityName: String, pushToken: String)]
   let observe: (VoltraDynamicLiveActivityObserver) async -> Void
   let reload: () async -> Void
 
@@ -22,6 +23,7 @@ private struct VoltraDynamicLiveActivityDescriptor {
     end = { await VoltraDynamicLiveActivityOperations.end(attributes, byName: $0, dismissalPolicy: $1) }
     endAll = { await VoltraDynamicLiveActivityOperations.endAll(attributes, dismissalPolicy: $0) }
     activities = { VoltraDynamicLiveActivityOperations.activities(attributes) }
+    pushTokens = { VoltraDynamicLiveActivityOperations.pushTokens(attributes) }
     observe = { await $0.observe(attributes) }
     reload = { await VoltraDynamicLiveActivityOperations.reload(attributes) }
   }
@@ -94,6 +96,11 @@ public final class VoltraDynamicLiveActivityRegistry {
 
   public func activities() -> [VoltraDynamicLiveActivityReference] {
     descriptorSnapshot().flatMap { $0.activities() }
+  }
+
+  /// (activityName, hexToken) for every running activity of every registered type with a token.
+  public func pushTokens() -> [(activityName: String, pushToken: String)] {
+    descriptorSnapshot().flatMap { $0.pushTokens() }
   }
 
   public func startObserving(with observer: VoltraDynamicLiveActivityObserver) async {

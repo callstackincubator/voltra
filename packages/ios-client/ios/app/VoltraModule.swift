@@ -180,6 +180,28 @@ public enum VoltraErrors: Error, CustomNSError {
     impl.setDynamicLiveActivityRenderFailureListenerActive(active)
   }
 
+  @objc public func setInteractionListenerActive(_ active: Bool) {
+    impl.setInteractionListenerActive(active)
+  }
+
+  @objc public func drainInteractions() {
+    impl.drainInteractions()
+  }
+
+  // MARK: - Push State
+
+  @objc public func getLiveActivityPushTokens() -> [[String: String]] {
+    impl.getLiveActivityPushTokens()
+  }
+
+  @objc public func getLiveActivityPushToStartToken() -> String? {
+    impl.getLiveActivityPushToStartToken()
+  }
+
+  @objc public func areLiveActivitiesEnabled() -> Bool {
+    impl.areLiveActivitiesEnabled()
+  }
+
   // MARK: - Images
 
   @objc public func preloadImages(

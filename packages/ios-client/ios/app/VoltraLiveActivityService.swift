@@ -151,6 +151,26 @@ public class VoltraLiveActivityService {
     dynamicService.definitionIds()
   }
 
+  // MARK: - Push State
+
+  /// Push tokens of every running Voltra activity, static and dynamic, that already has one.
+  /// Pairs are (activityName, hexToken), matching `activityTokenReceived`.
+  public func pushTokens() -> [(activityName: String, pushToken: String)] {
+    guard Self.isSupported() else { return [] }
+    let legacy: [(activityName: String, pushToken: String)] = getAllActivities().compactMap { activity in
+      guard activity.activityState.canReceivePushUpdates, let token = activity.pushToken else { return nil }
+      return (activity.attributes.name, token.hexString)
+    }
+    return legacy + dynamicService.pushTokens()
+  }
+
+  /// The push-to-start token for `VoltraAttributes`, the same one `activityPushToStartTokenReceived`
+  /// carries. Nil below iOS 17.2 or before APNs has issued one.
+  public func pushToStartToken() -> String? {
+    guard #available(iOS 17.2, *) else { return nil }
+    return Activity<VoltraAttributes>.pushToStartToken?.hexString
+  }
+
   // MARK: - Create Operations
 
   /// Create a new Live Activity
@@ -355,6 +375,10 @@ public class VoltraLiveActivityService {
       onPushToStartUpdated: onPushToStartUpdated,
       onStateChanged: { activityName, state in
         VoltraEventBus.shared.send(.stateChange(activityName: activityName, state: state))
+      },
+      // Not gated on push: enablement matters to any app that starts Live Activities.
+      onEnablementChanged: { enabled in
+        VoltraEventBus.shared.send(.activityEnablementChanged(enabled: enabled))
       }
     )
 

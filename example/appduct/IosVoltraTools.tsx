@@ -5,6 +5,7 @@
 import { postEvent, useAppductTool } from '@appduct/react-native'
 import {
   addVoltraListener,
+  areLiveActivitiesEnabled,
   clearAllWidgets,
   clearPreloadedImages,
   clearWidget,
@@ -12,6 +13,8 @@ import {
   endAllLiveActivities,
   getActiveWidgets,
   getDynamicLiveActivityDefinitionIds,
+  getLiveActivityPushTokens,
+  getLiveActivityPushToStartToken,
   getWidgetServerUpdate,
   isLiveActivityActive,
   preloadImages,
@@ -65,6 +68,7 @@ const VOLTRA_EVENT_KINDS = [
   'stateChange',
   'activityTokenReceived',
   'activityPushToStartTokenReceived',
+  'activityEnablementChanged',
   'dynamicLiveActivityRenderFailed',
 ] as const
 
@@ -359,6 +363,25 @@ export function IosVoltraTools() {
       const names = activityName === undefined ? [...startedActivities] : [activityName]
       return { activities: names.map((name) => ({ activityName: name, isActive: isLiveActivityActive(name) })) }
     },
+  })
+
+  useAppductTool({
+    name: 'ios_live_activity_push_state',
+    group: GROUP,
+    description:
+      'Read the current Live Activity push state: whether Live Activities are enabled, the push token of every running activity, and the push-to-start token.',
+    annotations: { readOnlyHint: true },
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      enabled: z.boolean(),
+      pushTokens: z.array(z.object({ activityName: z.string(), pushToken: z.string() })),
+      pushToStartToken: z.string().nullable(),
+    }),
+    handler: async () => ({
+      enabled: areLiveActivitiesEnabled(),
+      pushTokens: await getLiveActivityPushTokens(),
+      pushToStartToken: await getLiveActivityPushToStartToken(),
+    }),
   })
 
   // --- Images ---------------------------------------------------------------------------------
