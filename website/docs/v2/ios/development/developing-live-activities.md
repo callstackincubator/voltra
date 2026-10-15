@@ -108,16 +108,26 @@ If `supplementalActivityFamilies.small` is not provided, Voltra will automatical
 
 #### Background color in CarPlay
 
-In CarPlay, iOS draws the Live Activity on its own dark grey background, and you cannot change it. `activityBackgroundTint` has no effect there, including `clear` and `transparent`, and developers report that the background stays dark grey when CarPlay switches between light and dark appearance.
+In CarPlay, `activityBackgroundTint` has no effect. iOS draws the `small` layout on its own dark grey tile in both light and dark appearance, and `containerBackground` and `preferredColorScheme` don't change it either. This is iOS behavior: Apple documents `activityBackgroundTint` as the background color of the Lock Screen presentation only.
 
-This comes from iOS, not from Voltra. Apple documents `activityBackgroundTint` as the background color of the Lock Screen presentation and provides no API for the background in CarPlay. Voltra already applies the tint to the `small` layout, and no other Voltra option changes the CarPlay background.
+To use a different background in CarPlay, give the root of your `small` layout `flex: 1` and a `backgroundColor`. An opaque fill covers the whole tile:
 
-To keep the `small` layout readable in CarPlay:
+```typescript
+supplementalActivityFamilies: {
+  small: (
+    <Voltra.VStack style={{ flex: 1, backgroundColor: '#101828' }}>
+      <Voltra.Text style={{ fontSize: 18, fontWeight: '700', color: '#FFFFFF' }}>12 min</Voltra.Text>
+    </Voltra.VStack>
+  ),
+},
+```
 
-- Choose text and symbol colors that have enough contrast on a dark background.
-- Colors inside your layout still apply, such as text colors or a `backgroundColor` on a container. Only the system background behind the layout is fixed.
+Keep in mind:
 
-See [issue #91](https://github.com/callstackincubator/voltra/issues/91) and [this report from other developers](https://www.reddit.com/r/swift/comments/1oc5ojd/carplay_live_activity_colors_set_always_are_dark/) for details. If this limits your design, file a request with Apple through [Feedback Assistant](https://feedbackassistant.apple.com).
+- Padding on the root without `flex: 1` leaves the grey tile visible around the content.
+- A translucent color blends with the grey tile and doesn't replace it.
+- The same `small` layout is also used on Apple Watch Smart Stack, so check how a filled background looks there.
+- This was verified in Xcode 27's CarPlay Simulator on an iPhone running iOS 27, not on a car head unit.
 
 ## Limitations
 
