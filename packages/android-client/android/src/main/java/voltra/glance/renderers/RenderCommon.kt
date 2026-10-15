@@ -2,10 +2,14 @@ package voltra.glance.renderers
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.core.content.ContextCompat
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
@@ -56,8 +60,15 @@ fun parseContentScale(value: String?): ContentScale =
         else -> ContentScale.Fit
     }
 
+/**
+ * The Glance image for an image source. [transformBitmap], when given, is applied to the decoded
+ * bitmap; a drawable resource is then drawn into a bitmap first instead of being passed by id.
+ */
 @Composable
-fun extractImageProvider(sourceProp: Any?): ImageProvider? {
+fun extractImageProvider(
+    sourceProp: Any?,
+    transformBitmap: ((Bitmap) -> Bitmap)? = null,
+): ImageProvider? {
     if (sourceProp == null) return null
 
     val context = LocalContext.current
@@ -69,7 +80,15 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
     if (assetName != null) {
         // Try as drawable resource first
         val resId = context.resources.getIdentifier(assetName, "drawable", context.packageName)
-        if (resId != 0) return ImageProvider(resId)
+        if (resId != 0) {
+            if (transformBitmap != null) {
+                drawableToBitmap(
+                    context,
+                    resId,
+                )?.let { return ImageProvider(Icon.createWithBitmap(transformBitmap(it))) }
+            }
+            return ImageProvider(resId)
+        }
 
         // Try as preloaded asset
         val imageManager = VoltraImageManager(context)
@@ -79,7 +98,7 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
                 val uri = Uri.parse(uriString)
                 context.contentResolver.openInputStream(uri)?.use { stream ->
                     val bitmap = BitmapFactory.decodeStream(stream)
-                    return ImageProvider(Icon.createWithBitmap(bitmap))
+                    return ImageProvider(Icon.createWithBitmap(transformBitmap?.invoke(bitmap) ?: bitmap))
                 }
             } catch (e: Exception) {
                 android.util.Log.e("RenderCommon", "Failed to decode preloaded image: $assetName", e)
@@ -92,7 +111,7 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
             val decodedString = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
             val bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
             if (bitmap != null) {
-                return ImageProvider(Icon.createWithBitmap(bitmap))
+                return ImageProvider(Icon.createWithBitmap(transformBitmap?.invoke(bitmap) ?: bitmap))
             }
         } catch (e: Exception) {
             android.util.Log.e("RenderCommon", "Failed to decode base64 image", e)
@@ -100,6 +119,22 @@ fun extractImageProvider(sourceProp: Any?): ImageProvider? {
     }
 
     return null
+}
+
+/** A drawable resource drawn at its intrinsic size, or null when it has none (e.g. a plain color). */
+private fun drawableToBitmap(
+    context: Context,
+    resId: Int,
+): Bitmap? {
+    val drawable = ContextCompat.getDrawable(context, resId) ?: return null
+    if (drawable is BitmapDrawable && drawable.bitmap != null) return drawable.bitmap
+    val width = drawable.intrinsicWidth
+    val height = drawable.intrinsicHeight
+    if (width <= 0 || height <= 0) return null
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    drawable.setBounds(0, 0, width, height)
+    drawable.draw(Canvas(bitmap))
+    return bitmap
 }
 
 /**

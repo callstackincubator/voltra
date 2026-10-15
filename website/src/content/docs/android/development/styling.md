@@ -28,7 +28,7 @@ The following React Native style properties are supported on Android:
 
 - `backgroundColor` - Background color (hex strings, color names, or `AndroidDynamicColors.*` tokens).
 - `backgroundImage` - CSS gradient background. Supports `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`.
-- `borderRadius` - Corner radius value. **Note:** Requires Android 12+ (API 31). On older versions, this property is ignored.
+- `borderRadius` - Corner radius in dp. **Note:** Requires Android 12+ (API 31). On older versions it is ignored, except on an `Image` with a fixed numeric `width` and `height`. On an `Image`, the radius rounds the image's box, not the picture inside it; see [Image](/android/components/visual#image).
 
 ### Text
 
