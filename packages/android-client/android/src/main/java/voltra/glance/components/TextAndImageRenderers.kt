@@ -1,6 +1,7 @@
 package voltra.glance.components
 
 import android.graphics.drawable.Icon
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
@@ -15,6 +16,7 @@ import androidx.glance.text.Text
 import androidx.glance.unit.ColorProvider
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
+import voltra.glance.renderers.LegacyImageCorners
 import voltra.glance.renderers.RenderNode
 import voltra.glance.renderers.extractImageProvider
 import voltra.glance.renderers.loadTypeface
@@ -150,7 +152,22 @@ fun RenderImage(
             null
         }
 
-    val imageProvider = extractImageProvider(element.p?.get("source"))
+    // Glance's cornerRadius needs API 31, so older versions get the corners baked into the bitmap.
+    val legacyCorners =
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            LegacyImageCorners.spec(
+                style = resolveElementStyle(element, renderContext.sharedStyles),
+                nativeSize = element.nativeModifierSize(),
+                hasNativePadding = element.nativeModifiers.any { it.type == "padding" || it.type == "absolutePadding" },
+            )
+        } else {
+            null
+        }
+    val imageProvider =
+        extractImageProvider(
+            element.p?.get("source"),
+            legacyCorners?.let { spec -> { bitmap -> LegacyImageCorners.round(bitmap, spec, contentScale) } },
+        )
 
     if (imageProvider != null) {
         Image(

@@ -80,6 +80,7 @@ function ProfileWidget({ user }) {
     <VoltraAndroid.Row style={{ padding: 16 }}>
       <VoltraAndroid.Image
         source={{ assetName: 'user_avatar_123' }}
+        contentScale="crop"
         style={{ width: 40, height: 40, borderRadius: 20 }}
       />
       <VoltraAndroid.Spacer style={{ width: 8 }} />
