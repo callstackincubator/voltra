@@ -1,5 +1,5 @@
 import { TurboModuleRegistry } from 'react-native'
-import type { TurboModule } from 'react-native'
+import type { CodegenTypes, TurboModule } from 'react-native'
 
 type PreloadImageOptions = Readonly<{
   key: string
@@ -129,12 +129,22 @@ type AndroidOngoingNotificationCapabilitiesSpec = Readonly<{
   canRequestPromotedOngoing: boolean
 }>
 
+/**
+ * A recorded ongoing notification stopped being live: `reason` is 'dismissed' (swiped away or timed
+ * out) or 'stopped' (stop or endAll). Internal to `useAndroidOngoingNotification` (ADR 0012).
+ */
+type AndroidOngoingNotificationEndedEvent = Readonly<{
+  notificationId: string
+  reason: string
+}>
+
 type RequestPinGlanceAppWidgetOptionsSpec = Readonly<{
   previewWidth?: number
   previewHeight?: number
 }>
 
 export interface Spec extends TurboModule {
+  readonly onOngoingNotificationEnded: CodegenTypes.EventEmitter<AndroidOngoingNotificationEndedEvent>
   startAndroidOngoingNotification(
     payload: string,
     options: StartAndroidOngoingNotificationOptionsSpec

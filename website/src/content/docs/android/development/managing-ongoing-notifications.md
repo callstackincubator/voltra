@@ -321,10 +321,10 @@ Notes on individual options:
   call rather than posting without a color.
 - `category` overrides what Voltra derives from your content, and does not change the channel.
 - `timeoutMs` is applied on every post, so each update restarts the countdown and a notification that
-  stops being updated eventually disappears on its own. Once the system removes it,
-  `getAndroidOngoingNotificationStatus()` reports it as no longer active, and starting that
-  `notificationId` again needs `stopAndroidOngoingNotification()` first, the same as after a swipe. On
-  Android 7.x and older the value is kept but not applied.
+  stops being updated eventually disappears on its own. Once the system removes it, Voltra treats it
+  the same as a swipe: `getAndroidOngoingNotificationStatus()` reports it as dismissed, updates are
+  rejected, and starting that `notificationId` again posts a new notification. On Android 7.x and
+  older the value is kept but not applied.
 - `group` puts the notification in the bundle the system builds from notifications sharing the key.
   Voltra does not post a group summary of its own.
 
@@ -509,6 +509,18 @@ The hook returns:
 
 Use `autoStart` to create the notification when the component mounts, and `autoUpdate` to refresh it when the JSX content changes.
 
+`isActive` follows the device, not only the hook's own calls. It turns `false` when the user swipes the notification away, when it times out (`timeoutMs`), and when anything in your app stops it, for example a push handler calling `stopAndroidOngoingNotification()`. This works even when the user swipes it from the notification shade while your app stays in the foreground.
+
+A dismissal is respected: `autoStart` posts once when the component mounts, or when you turn `autoStart` on, and does not post again after the user dismisses the notification. Call `start()` when your flow should show the notification again:
+
+```tsx
+const { start, isActive } = useAndroidOngoingNotification(content, options)
+
+if (!isActive) {
+  // e.g. render a "Show progress in notifications" button that calls start()
+}
+```
+
 ## Action buttons
 
 You can add action buttons as children of any layout.
@@ -628,7 +640,7 @@ Start, update, and upsert reject with a code instead of posting something broken
 | `VOLTRA_NOTIFICATION_NOT_PROMOTABLE`     | Promotion was requested with `fallbackBehavior: 'error'` and the notification is not eligible              | Read the reasons in the message (see below)                       |
 | `VOLTRA_NOTIFICATION_INTERNAL_ERROR`     | An unexpected device failure                                                                               | Retry; if it persists, file an issue with the message             |
 
-A dismissed notification is different: updates return `ok: false, reason: 'dismissed'` and nothing is re-posted. If your flow legitimately restarts after a dismissal, start a new notification instead of updating.
+A dismissed notification is different: updates and upserts return `ok: false, reason: 'dismissed'` and nothing is re-posted, so a remote push cannot bring back a notification the user swiped away. If your flow legitimately restarts after a dismissal, call `startAndroidOngoingNotification()` (or the hook's `start()`). It can reuse the same `notificationId`: the start replaces the dismissed notification with a new one and does not keep any of its options.
 
 ## Promoted ongoing notifications
 

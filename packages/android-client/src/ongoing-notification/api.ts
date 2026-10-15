@@ -76,9 +76,14 @@ export const useAndroidOngoingNotification = (
   })
 
   const isActive = targetId !== null
+  const targetIdRef = useRef(targetId)
   const optionsRef = useRef(options)
   const contentRef = useRef(content)
   const lastUpdateOptionsRef = useRef<UpdateAndroidOngoingNotificationOptions | undefined>(undefined)
+
+  useEffect(() => {
+    targetIdRef.current = targetId
+  }, [targetId])
 
   useEffect(() => {
     optionsRef.current = options
@@ -89,6 +94,32 @@ export const useAndroidOngoingNotification = (
   }, [content])
 
   useUpdateOnHMR()
+
+  // The device ends a notification without any call from this hook: the user swipes it away, its
+  // timeout expires, or other code stops it. Native code reports each of those, so `isActive` follows
+  // the device rather than only this hook's own calls (ADR 0012).
+  useEffect(() => {
+    // Shared components can render this hook on other platforms, where there is no module to listen to.
+    if (Platform.OS !== 'android') {
+      return
+    }
+
+    const clearIfCurrent = (notificationId: string) => {
+      setTargetId((current) => (current === notificationId ? null : current))
+    }
+    const subscription = getNativeVoltraAndroid().onOngoingNotificationEnded(({ notificationId }) => {
+      clearIfCurrent(notificationId)
+    })
+
+    // Subscribe first, then read: a dismissal that landed after the first render but before the
+    // subscription existed is only visible through the getter.
+    const subscribedTargetId = targetIdRef.current
+    if (subscribedTargetId && !isAndroidOngoingNotificationActive(subscribedTargetId)) {
+      clearIfCurrent(subscribedTargetId)
+    }
+
+    return () => subscription.remove()
+  }, [])
 
   const start = useCallback(async (options?: Partial<StartAndroidOngoingNotificationOptions>) => {
     const startOptions = { ...optionsRef.current, ...options }
@@ -137,8 +168,10 @@ export const useAndroidOngoingNotification = (
     return result
   }, [targetId])
 
+  // Runs when the component mounts with autoStart on, or when autoStart turns on, and not whenever the
+  // hook becomes inactive: a notification the user dismissed, or that `end()` stopped, stays ended.
   useEffect(() => {
-    if (!options.autoStart || targetId) {
+    if (!options.autoStart || targetIdRef.current) {
       return
     }
 
@@ -147,7 +180,7 @@ export const useAndroidOngoingNotification = (
     start().catch((error: unknown) => {
       console.error('[voltra] useAndroidOngoingNotification autoStart failed:', error)
     })
-  }, [options.autoStart, start, targetId])
+  }, [options.autoStart, start])
 
   useEffect(() => {
     if (!options.autoUpdate || !targetId) {

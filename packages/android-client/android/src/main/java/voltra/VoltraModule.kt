@@ -165,12 +165,25 @@ class VoltraModule(
             override fun onLowMemory() = Unit
         }
 
+    // Feeds `useAndroidOngoingNotification` the dismissals and stops it cannot observe itself (ADR 0012).
+    private val ongoingNotificationEndedListener =
+        OngoingNotificationEndedListener { notificationId, reason ->
+            emitOnOngoingNotificationEnded(
+                Arguments.createMap().apply {
+                    putString("notificationId", notificationId)
+                    putString("reason", reason)
+                },
+            )
+        }
+
     override fun initialize() {
         super.initialize()
         reactApplicationContext.registerComponentCallbacks(configurationCallbacks)
+        VoltraNotificationManager.addEndedListener(ongoingNotificationEndedListener)
     }
 
     override fun invalidate() {
+        VoltraNotificationManager.removeEndedListener(ongoingNotificationEndedListener)
         try {
             reactApplicationContext.unregisterComponentCallbacks(configurationCallbacks)
         } catch (e: Exception) {

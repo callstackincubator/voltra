@@ -51,6 +51,7 @@ describe('useAndroidOngoingNotification', () => {
     mockedGetNativeVoltraAndroid.mockReturnValue({
       isAndroidOngoingNotificationActive: jest.fn().mockReturnValue(true),
       updateAndroidOngoingNotification: nativeUpdate,
+      onOngoingNotificationEnded: jest.fn().mockReturnValue({ remove: jest.fn() }),
     } as unknown as Spec)
   })
 
@@ -78,5 +79,141 @@ describe('useAndroidOngoingNotification', () => {
     const replayedOptions = nativeUpdate.mock.calls[2][2]
     expect(replayedOptions).not.toHaveProperty('alert')
     expect(replayedOptions).toMatchObject({ color: '#1E88E5' })
+  })
+})
+
+describe('useAndroidOngoingNotification lifecycle', () => {
+  type EndedEvent = { notificationId: string; reason: string }
+
+  let probeOptions: { autoStart?: boolean; autoUpdate?: boolean }
+  let isActiveOnDevice: jest.Mock
+  let nativeStart: jest.Mock
+  let nativeStop: jest.Mock
+  let removeSubscription: jest.Mock
+  let endedListeners: ((event: EndedEvent) => void)[]
+
+  function LifecycleProbe() {
+    apiRef.current = useAndroidOngoingNotification('Driver is on the way', {
+      notificationId: 'ride-44',
+      channelId: 'rides',
+      ...probeOptions,
+    })
+    return null
+  }
+
+  const mount = async () => {
+    let tree!: ReturnType<typeof ReactTestRenderer.create>
+    await ReactTestRenderer.act(async () => {
+      tree = ReactTestRenderer.create(React.createElement(LifecycleProbe))
+    })
+    return tree
+  }
+
+  const emitEnded = async (event: EndedEvent) => {
+    await ReactTestRenderer.act(async () => {
+      endedListeners.forEach((listener) => listener(event))
+    })
+  }
+
+  beforeEach(() => {
+    apiRef = { current: null }
+    probeOptions = {}
+    endedListeners = []
+    isActiveOnDevice = jest.fn().mockReturnValue(true)
+    nativeStart = jest.fn().mockResolvedValue({ ok: true, notificationId: 'ride-44', action: 'started' })
+    nativeStop = jest.fn().mockResolvedValue({ ok: true, notificationId: 'ride-44', action: 'stopped' })
+    removeSubscription = jest.fn()
+    mockedGetNativeVoltraAndroid.mockReturnValue({
+      isAndroidOngoingNotificationActive: isActiveOnDevice,
+      startAndroidOngoingNotification: nativeStart,
+      stopAndroidOngoingNotification: nativeStop,
+      updateAndroidOngoingNotification: jest.fn().mockResolvedValue({ ok: true, notificationId: 'ride-44' }),
+      onOngoingNotificationEnded: jest.fn((listener: (event: EndedEvent) => void) => {
+        endedListeners.push(listener)
+        return { remove: removeSubscription }
+      }),
+    } as unknown as Spec)
+  })
+
+  it('turns inactive when the device reports its notification dismissed', async () => {
+    await mount()
+    expect(apiRef.current!.isActive).toBe(true)
+
+    await emitEnded({ notificationId: 'another-ride', reason: 'dismissed' })
+    expect(apiRef.current!.isActive).toBe(true)
+
+    await emitEnded({ notificationId: 'ride-44', reason: 'dismissed' })
+    expect(apiRef.current!.isActive).toBe(false)
+  })
+
+  it('turns inactive when its notification is stopped by other code', async () => {
+    await mount()
+
+    await emitEnded({ notificationId: 'ride-44', reason: 'stopped' })
+
+    expect(apiRef.current!.isActive).toBe(false)
+  })
+
+  it('reads the device again after subscribing, so a dismissal before the subscription is not lost', async () => {
+    // Active for the first render, dismissed by the time the subscription exists.
+    isActiveOnDevice.mockReturnValueOnce(true).mockReturnValue(false)
+
+    await mount()
+
+    expect(apiRef.current!.isActive).toBe(false)
+  })
+
+  it('starts again after a dismissal', async () => {
+    await mount()
+    await emitEnded({ notificationId: 'ride-44', reason: 'dismissed' })
+
+    await ReactTestRenderer.act(async () => {
+      await apiRef.current!.start()
+    })
+
+    expect(nativeStart).toHaveBeenCalledTimes(1)
+    expect(apiRef.current!.isActive).toBe(true)
+  })
+
+  it('auto-starts once on mount and not again after a dismissal or end()', async () => {
+    isActiveOnDevice.mockReturnValue(false)
+    probeOptions = { autoStart: true }
+
+    await mount()
+    expect(nativeStart).toHaveBeenCalledTimes(1)
+    expect(apiRef.current!.isActive).toBe(true)
+
+    await emitEnded({ notificationId: 'ride-44', reason: 'dismissed' })
+    expect(apiRef.current!.isActive).toBe(false)
+    expect(nativeStart).toHaveBeenCalledTimes(1)
+
+    await ReactTestRenderer.act(async () => {
+      await apiRef.current!.start()
+    })
+    await ReactTestRenderer.act(async () => {
+      await apiRef.current!.end()
+    })
+    expect(nativeStop).toHaveBeenCalledTimes(1)
+    expect(apiRef.current!.isActive).toBe(false)
+    expect(nativeStart).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not auto-start over a notification that is already active', async () => {
+    probeOptions = { autoStart: true }
+
+    await mount()
+
+    expect(nativeStart).not.toHaveBeenCalled()
+    expect(apiRef.current!.isActive).toBe(true)
+  })
+
+  it('unsubscribes on unmount', async () => {
+    const tree = await mount()
+
+    await ReactTestRenderer.act(async () => {
+      tree.unmount()
+    })
+
+    expect(removeSubscription).toHaveBeenCalledTimes(1)
   })
 })
