@@ -163,6 +163,17 @@ const subscription = addVoltraListener('dynamicLiveActivityRenderFailed', (event
 })
 ```
 
+## Known limitation: `colorScheme` on iOS 26
+
+On iOS 26, the `colorScheme` value that reaches a Live Activity is unreliable. In the Dynamic Island it is always `dark`. On the Lock Screen and in banners it can follow the wallpaper or the background behind the activity instead of the system Light or Dark setting. This behavior comes from iOS and ActivityKit, not from Voltra's renderer. Apple staff have acknowledged it in the [Apple Developer Forums thread](https://developer.apple.com/forums/thread/799684).
+
+As a result, a Dynamic Live Activity, or any Live Activity content that branches on `environment.colorScheme`, may not re-render correctly after the system appearance changes on iOS 26. Voltra does not currently detect this condition or provide a workaround for it.
+
+When you build Live Activity content, avoid relying on `colorScheme` alone to choose colors:
+
+- Use explicit colors that stay readable on both light and dark backgrounds, and check them over the Lock Screen wallpaper and on the Dynamic Island.
+- Use the named `primary` and `secondary` colors where you need text or tints that follow the system. Voltra's iOS color parser maps them to SwiftUI's semantic colors, so they are not chosen from `colorScheme`.
+
 ## Rollout and compatibility
 
 - An older app version can only accept a push-to-start for a definition it actually has bundled. Having some other Dynamic Live Activity isn't enough — the specific definition ID needs to exist in that build.
