@@ -32,3 +32,4 @@ Status values:
 | [0009](0009-dynamic-widget-localisation.md)                            | Localisation for Dynamic Widgets and Dynamic Live Activities | Accepted |
 | [0010](0010-android-ongoing-notification-field-placement.md)           | Where Android ongoing notification fields live               | Accepted |
 | [0011](0011-live-activity-push-state-getters-and-interaction-drain.md) | Live Activity push state getters and interaction drain       | Accepted |
+| [0012](0012-android-ongoing-notification-dismissal-state.md)           | Android ongoing notification state after a dismissal         | Accepted |

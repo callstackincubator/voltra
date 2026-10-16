@@ -384,6 +384,114 @@ abstract class VoltraNotificationManagerTestBase(
     }
 
     @Test
+    fun upsertDoesNotRepostADismissedNotification() {
+        startChannel()
+        start(bigTextPayload(), notificationId = "dismiss-me")
+        val postedBeforeDismiss = postedNotifications().size
+        VoltraNotificationManager.markDismissed(context, "dismiss-me")
+
+        val upsertResult =
+            runBlocking {
+                manager.upsertOngoingNotification(
+                    bigTextPayload(text = "Gate 18 to 42"),
+                    AndroidOngoingNotificationOptions(notificationId = "dismiss-me", channelId = CHANNEL_ID),
+                )
+            }
+
+        assertFalse(upsertResult.ok)
+        assertEquals("dismissed", upsertResult.reason)
+        assertEquals(postedBeforeDismiss, postedNotifications().size)
+    }
+
+    @Test
+    fun startReplacesADismissedRecordWithANewLifecycle() {
+        startChannel()
+        start(bigTextPayload(), notificationId = "restart-me", requestPromotedOngoing = true)
+        val systemId = notificationManager.activeNotifications.single().id
+        // What a swipe does: the system removes the notification, then the delete intent arrives.
+        notificationManager.cancel(systemId)
+        VoltraNotificationManager.markDismissed(context, "restart-me")
+
+        val restart = start(bigTextPayload(text = "Gate 18 to 42"), notificationId = "restart-me")
+
+        assertTrue(restart.ok)
+        assertEquals("started", restart.action)
+        assertEquals(listOf(systemId), notificationManager.activeNotifications.map { it.id })
+        assertFalse(manager.getOngoingNotificationStatus("restart-me").isDismissed)
+        // Nothing from the dismissed lifecycle carries over: promotion was requested only there.
+        assertNull(restart.promotion)
+        val update =
+            runBlocking {
+                manager.updateOngoingNotification("restart-me", bigTextPayload(text = "Boarding"), null)
+            }
+        assertTrue(update.ok)
+    }
+
+    @Test
+    fun startOverAStillVisibleDismissedRecordReplacesItInPlace() {
+        startChannel()
+        start(bigTextPayload(), notificationId = "restart-me")
+        // A dismissal recorded while the notification is still showing (e.g. a stale delete broadcast).
+        VoltraNotificationManager.markDismissed(context, "restart-me")
+
+        val restart = start(bigTextPayload(text = "Gate 18 to 42"), notificationId = "restart-me")
+
+        assertTrue(restart.ok)
+        assertEquals(1, notificationManager.activeNotifications.size)
+        assertTrue(manager.stopOngoingNotification("restart-me").ok)
+        assertTrue(notificationManager.activeNotifications.isEmpty())
+    }
+
+    @Test
+    fun startStillRejectsALiveRecord() {
+        startChannel()
+        start(bigTextPayload(), notificationId = "live")
+
+        val second = start(bigTextPayload(), notificationId = "live")
+
+        assertFalse(second.ok)
+        assertEquals("already_exists", second.reason)
+    }
+
+    @Test
+    fun endedListenersHearDismissalsAndStops() {
+        startChannel()
+        val ended = mutableListOf<Pair<String, String>>()
+        val listener = OngoingNotificationEndedListener { id, reason -> ended += id to reason }
+        VoltraNotificationManager.addEndedListener(listener)
+        try {
+            start(bigTextPayload(), notificationId = "swiped")
+            start(bigTextPayload(), notificationId = "stopped")
+            start(bigTextPayload(), notificationId = "all-1")
+            start(bigTextPayload(), notificationId = "all-2")
+
+            VoltraNotificationManager.markDismissed(context, "swiped")
+            VoltraNotificationManager.markDismissed(context, "never-started")
+            manager.stopOngoingNotification("stopped")
+            manager.stopOngoingNotification("never-started")
+            manager.endAllOngoingNotifications()
+
+            assertEquals(
+                listOf(
+                    "swiped" to VoltraNotificationManager.ENDED_REASON_DISMISSED,
+                    "stopped" to VoltraNotificationManager.ENDED_REASON_STOPPED,
+                ),
+                ended.take(2),
+            )
+            assertEquals(
+                setOf(
+                    "swiped" to VoltraNotificationManager.ENDED_REASON_STOPPED,
+                    "all-1" to VoltraNotificationManager.ENDED_REASON_STOPPED,
+                    "all-2" to VoltraNotificationManager.ENDED_REASON_STOPPED,
+                ),
+                ended.drop(2).toSet(),
+            )
+        } finally {
+            VoltraNotificationManager.removeEndedListener(listener)
+        }
+    }
+
+    @Test
     fun promotionPreCheckMatchesPostReasonsWithoutPostingOrRecording() {
         startChannel()
 

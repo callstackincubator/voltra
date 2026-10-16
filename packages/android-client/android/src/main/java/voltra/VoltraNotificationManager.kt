@@ -49,6 +49,7 @@ import voltra.ongoingnotification.buildMetricStyle
 import voltra.ongoingnotification.canUseMetricStyle
 import voltra.ongoingnotification.hasPromotedNotificationsPermission
 import voltra.ongoingnotification.renderMetricFallbackText
+import java.util.concurrent.CopyOnWriteArraySet
 
 private enum class AndroidOngoingNotificationFallbackBehavior {
     STANDARD,
@@ -116,6 +117,14 @@ data class AndroidOngoingNotificationStopResult(
     val reason: String? = null,
 )
 
+/** Told when a recorded ongoing notification stops being live; see [VoltraNotificationManager.addEndedListener]. */
+fun interface OngoingNotificationEndedListener {
+    fun onEnded(
+        notificationId: String,
+        reason: String,
+    )
+}
+
 class VoltraNotificationManager(
     context: Context,
 ) {
@@ -138,6 +147,40 @@ class VoltraNotificationManager(
         private const val MAX_INBOX_LINES = 6
         const val EXTRA_NOTIFICATION_ID = "voltra.extra.NOTIFICATION_ID"
 
+        /** The user swiped the notification away, or the system removed it when its timeout expired. */
+        const val ENDED_REASON_DISMISSED = "dismissed"
+
+        /**
+         * The app stopped the notification, alone or through `endAll`. `endAll` reports every record it
+         * removes, including ones already reported as dismissed; listeners must treat both as idempotent.
+         */
+        const val ENDED_REASON_STOPPED = "stopped"
+
+        // Process-wide because the dismissal arrives in a BroadcastReceiver that has no reference
+        // to the TurboModule; the module registers while it is alive (ADR 0012).
+        private val endedListeners = CopyOnWriteArraySet<OngoingNotificationEndedListener>()
+
+        fun addEndedListener(listener: OngoingNotificationEndedListener) {
+            endedListeners.add(listener)
+        }
+
+        fun removeEndedListener(listener: OngoingNotificationEndedListener) {
+            endedListeners.remove(listener)
+        }
+
+        private fun notifyEnded(
+            notificationId: String,
+            reason: String,
+        ) {
+            endedListeners.forEach { listener ->
+                try {
+                    listener.onEnded(notificationId, reason)
+                } catch (error: Exception) {
+                    Log.e(TAG, "Ongoing notification ended listener failed", error)
+                }
+            }
+        }
+
         private val json =
             Json {
                 ignoreUnknownKeys = true
@@ -159,6 +202,7 @@ class VoltraNotificationManager(
                 )
             writeRecords(prefs, records)
             Log.d(TAG, "Marked ongoing notification as dismissed: $notificationId")
+            notifyEnded(notificationId, ENDED_REASON_DISMISSED)
         }
 
         private fun readRecords(
@@ -197,7 +241,12 @@ class VoltraNotificationManager(
             val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
             val notificationId = options.notificationId ?: createGeneratedNotificationId()
             val existingRecord = getRecord(notificationId)
-            if (existingRecord != null) {
+            // A dismissed record only remembers that the user (or a timeout) ended it, so that updates
+            // and upserts cannot bring it back. An explicit start begins a new lifecycle and replaces
+            // it, without carrying over any of its options (ADR 0012). It keeps the system slot, so
+            // if the old notification is somehow still showing, the new one replaces it in place
+            // instead of leaving an orphan that stop and endAll could no longer reach.
+            if (existingRecord != null && !existingRecord.dismissed) {
                 return@withContext AndroidOngoingNotificationStartResult(
                     ok = false,
                     notificationId = notificationId,
@@ -207,13 +256,16 @@ class VoltraNotificationManager(
             val record =
                 createMergedRecord(
                     notificationId = notificationId,
-                    currentRecord = existingRecord,
+                    currentRecord = null,
                     options = options,
                     allowMissingChannel = false,
-                ).copy(
-                    active = true,
-                    dismissed = false,
-                )
+                ).let { fresh ->
+                    fresh.copy(
+                        systemNotificationId = existingRecord?.systemNotificationId ?: fresh.systemNotificationId,
+                        active = true,
+                        dismissed = false,
+                    )
+                }
 
             val promotion = postNotification(record, parsedPayload, onlyAlertOnce = false)
             saveRecord(record)
@@ -313,6 +365,7 @@ class VoltraNotificationManager(
                 )
         notificationManager.cancel(record.systemNotificationId)
         removeRecord(notificationId)
+        notifyEnded(notificationId, ENDED_REASON_STOPPED)
         return AndroidOngoingNotificationStopResult(
             ok = true,
             notificationId = notificationId,
@@ -362,6 +415,7 @@ class VoltraNotificationManager(
             notificationManager.cancel(record.systemNotificationId)
         }
         clearRecords()
+        records.keys.forEach { notificationId -> notifyEnded(notificationId, ENDED_REASON_STOPPED) }
     }
 
     fun canPostPromotedAndroidNotifications(): Boolean =

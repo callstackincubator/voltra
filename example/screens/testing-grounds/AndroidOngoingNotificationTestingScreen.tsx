@@ -27,6 +27,8 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
+import { AndroidOngoingNotificationHookCard } from './AndroidOngoingNotificationHookCard'
+
 type OngoingNotificationStyle = 'progress' | 'bigText' | 'bigPicture' | 'inbox' | 'metric'
 
 const DEFAULT_NOTIFICATION_ID = 'testing-ground-android-ongoing-notification'
@@ -546,6 +548,8 @@ export default function AndroidOngoingNotificationTestingScreen() {
       title="Android Ongoing Notifications"
       description="Test semantic Android ongoing notification payloads, capability checks, rich progress fields, and action buttons. For remote testing, send a real notification whose data contains the payload shown below."
     >
+      <AndroidOngoingNotificationHookCard channelId={channelId} />
+
       <Card>
         <Card.Title>Rich Progress Fallback</Card.Title>
         <Card.Text>
