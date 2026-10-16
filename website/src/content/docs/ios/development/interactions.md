@@ -127,6 +127,8 @@ For styled navigation buttons, wrap a Link with custom children to achieve butto
 
 - **Events wait for a listener**: Voltra keeps every tap until an `'interaction'` listener is attached and your app is running — for example, when the tap launched your app, or happened while it was in the background — then delivers it once. Each tap has a unique `id`. Taps that wait longer than 15 minutes, or beyond the 100 most recent, are dropped. Keeping taps across app launches, and receiving taps handled outside your app's process (such as by a widget extension), requires a `groupIdentifier` in the plugin config; without one, only taps handled in your running app arrive. If your app is killed while it is handling a batch of taps, the rest of that batch is not delivered. A waiting tap goes to every `'interaction'` listener attached when Voltra delivers it; a listener you add later doesn't receive it. Register one app-level listener in your root component and pass taps on from there, rather than subscribing separately in screens that mount later. A `VoltraView` with `onInteraction` receives only taps from its own content and leaves the rest for your `'interaction'` listeners.
 
+- **Listeners usually run in the background**: A button or toggle runs its action in your app's process, so iOS wakes your app, or launches it in the background if it was killed, and your `'interaction'` listener runs right away while `AppState` is `'background'`. iOS suspends the app again within a few seconds, so keep the handler short. Work that takes longer, such as a slow network request, may pause until your app next runs.
+
 ## Example
 
 Here's a complete example showing how to handle interactions:
