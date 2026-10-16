@@ -28,6 +28,10 @@ public actor VoltraLiveActivityManager {
   /// Parameters: (activityName, stateDescription)
   private let onStateChanged: (@Sendable (String, String) -> Void)?
 
+  /// Called when the user allows or disallows Live Activities for the app.
+  /// Parameter: whether activities are now enabled
+  private let onEnablementChanged: (@Sendable (Bool) -> Void)?
+
   // MARK: - Internal Task State
 
   /// Drives the main `Activity.activityUpdates` loop. When this task is cancelled,
@@ -37,6 +41,13 @@ public actor VoltraLiveActivityManager {
 
   /// Drives the `Activity.pushToStartTokenUpdates` loop (iOS 17.2+ only).
   private var pushToStartTask: Task<Void, Never>?
+
+  /// Drives the `ActivityAuthorizationInfo.activityEnablementUpdates` loop.
+  private var enablementTask: Task<Void, Never>?
+
+  /// The enablement value last seen, starting from the one read when observation began, so only
+  /// genuine changes reach the callback.
+  private var lastEnablement: Bool?
 
   /// One push-token observer task per live activity, keyed by `activity.id`.
   /// Using a dictionary (rather than a flat array) lets us deduplicate and cancel
@@ -64,12 +75,14 @@ public actor VoltraLiveActivityManager {
     onActivityDiscovered: (@Sendable (String) -> Void)? = nil,
     onTokenUpdated: (@Sendable (String, String) -> Void)? = nil,
     onPushToStartUpdated: (@Sendable (String) -> Void)? = nil,
-    onStateChanged: (@Sendable (String, String) -> Void)? = nil
+    onStateChanged: (@Sendable (String, String) -> Void)? = nil,
+    onEnablementChanged: (@Sendable (Bool) -> Void)? = nil
   ) {
     self.onActivityDiscovered = onActivityDiscovered
     self.onTokenUpdated = onTokenUpdated
     self.onPushToStartUpdated = onPushToStartUpdated
     self.onStateChanged = onStateChanged
+    self.onEnablementChanged = onEnablementChanged
     dynamicObserver = VoltraDynamicLiveActivityObserver(
       onActivityDiscovered: onActivityDiscovered,
       onTokenUpdated: onTokenUpdated,
@@ -89,6 +102,7 @@ public actor VoltraLiveActivityManager {
 
     startActivityUpdatesObservation()
     startPushToStartObservation()
+    startEnablementObservation()
     Task { [weak self, dynamicObserver] in
       guard await self?.currentlyObserving() == true else { return }
       await VoltraDynamicLiveActivityRegistry.shared.startObserving(with: dynamicObserver)
@@ -109,6 +123,10 @@ public actor VoltraLiveActivityManager {
 
     lastPushToStartToken = nil
 
+    enablementTask?.cancel()
+    enablementTask = nil
+    lastEnablement = nil
+
     cancelAllPerActivityTasks()
     Task { [dynamicObserver] in
       await dynamicObserver.stopObserving()
@@ -128,6 +146,7 @@ public actor VoltraLiveActivityManager {
   deinit {
     activityUpdatesTask?.cancel()
     pushToStartTask?.cancel()
+    enablementTask?.cancel()
     for task in tokenTasks.values {
       task.cancel()
     }
@@ -186,6 +205,34 @@ public actor VoltraLiveActivityManager {
     guard token != lastPushToStartToken else { return }
     lastPushToStartToken = token
     callback(token)
+  }
+
+  // MARK: - Enablement Loop
+
+  private func startEnablementObservation() {
+    guard let onEnablementChanged else { return }
+
+    let authorizationInfo = ActivityAuthorizationInfo()
+    // Subscribe before reading the baseline, so a change between the two is still yielded; the
+    // dedup below drops it if the baseline already reflects it.
+    let updates = authorizationInfo.activityEnablementUpdates
+    lastEnablement = authorizationInfo.areActivitiesEnabled
+    let callback = onEnablementChanged
+
+    enablementTask = Task { [weak self] in
+      for await enabled in updates {
+        await self?.deliverEnablement(enabled, via: callback)
+      }
+    }
+  }
+
+  /// Forward `enabled` only when it differs from the last value seen, so a stream that re-yields
+  /// the current value does not produce a spurious event.
+  private func deliverEnablement(_ enabled: Bool, via callback: @Sendable (Bool) -> Void) {
+    // A value already in flight when observation stopped must not reach the callback.
+    guard isObserving, enabled != lastEnablement else { return }
+    lastEnablement = enabled
+    callback(enabled)
   }
 
   // MARK: - Per-Activity Observation

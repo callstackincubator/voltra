@@ -1,11 +1,12 @@
-import React, { type ReactNode, useEffect, useMemo } from 'react'
+import React, { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import { type StyleProp, type ViewStyle } from 'react-native'
 
 import { renderVoltraVariantToJson } from '@use-voltra/ios'
 
 import VoltraFabricView from '../native/VoltraRNNativeComponent'
 
-import { addVoltraListener, type VoltraInteractionEvent } from '../events.js'
+import { type VoltraInteractionEvent } from '../events.js'
+import { subscribeToInteractions } from '../interactions.js'
 
 const generateViewId = () => `voltra-view-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 
@@ -27,23 +28,30 @@ export function VoltraView({ id, children, style, onInteraction, testID }: Voltr
   const json = renderVoltraVariantToJson(children)
   const payload = JSON.stringify(json)
 
-  useEffect(() => {
-    if (!onInteraction) return
+  // An inline `onInteraction` is a new function on every render. Keep the subscription stable and
+  // call the latest one, so re-renders do not resubscribe and pull from the queue each time.
+  const onInteractionRef = useRef(onInteraction)
+  onInteractionRef.current = onInteraction
+  const hasInteractionHandler = onInteraction !== undefined
 
-    const subscription = addVoltraListener('interaction', (event) => {
-      if (event.source === viewId) {
-        onInteraction({
-          type: 'interaction',
-          source: event.source,
-          timestamp: event.timestamp,
-          identifier: event.identifier,
-          payload: event.payload,
-        })
-      }
-    })
+  useEffect(() => {
+    if (!hasInteractionHandler) return
+
+    // Filtered by source, so a mounted VoltraView never takes taps meant for a Live Activity or
+    // widget out of the queue.
+    const subscription = subscribeToInteractions((event) => {
+      onInteractionRef.current?.({
+        type: 'interaction',
+        id: event.id,
+        source: event.source,
+        timestamp: event.timestamp,
+        identifier: event.identifier,
+        payload: event.payload,
+      })
+    }, viewId)
 
     return () => subscription.remove()
-  }, [viewId, onInteraction])
+  }, [viewId, hasInteractionHandler])
 
   return <VoltraFabricView payload={payload} style={[voltraViewStyle, style]} testID={testID} viewId={viewId} />
 }

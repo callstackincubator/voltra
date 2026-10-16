@@ -91,6 +91,15 @@ public enum VoltraDynamicLiveActivityOperations {
     }
   }
 
+  public static func pushTokens<Attributes: VoltraDynamicLiveActivityDefinition>(
+    _: Attributes.Type
+  ) -> [(activityName: String, pushToken: String)] {
+    Activity<Attributes>.activities.compactMap { activity in
+      guard activity.activityState.canReceivePushUpdates, let token = activity.pushToken else { return nil }
+      return (activity.attributes.name, token.hexString)
+    }
+  }
+
   public static func reload<Attributes: VoltraDynamicLiveActivityDefinition>(
     _: Attributes.Type
   ) async {
@@ -100,6 +109,19 @@ public enum VoltraDynamicLiveActivityOperations {
         staleDate: activity.content.staleDate,
         relevanceScore: activity.content.relevanceScore
       ))
+    }
+  }
+}
+
+extension ActivityState {
+  /// Ended and dismissed activities can linger in `Activity.activities`, but their push tokens no
+  /// longer reach anything.
+  var canReceivePushUpdates: Bool {
+    switch self {
+    case .ended, .dismissed:
+      return false
+    default:
+      return true
     }
   }
 }

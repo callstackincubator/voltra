@@ -5,6 +5,8 @@ module.exports = {
   testMatch: [
     '<rootDir>/tests/dynamic-widget/**/*.node.test.ts',
     '<rootDir>/tests/dynamic-live-activity/**/*.node.test.ts',
+    '<rootDir>/tests/events/**/*.node.test.ts?(x)',
+    '<rootDir>/tests/live-activity/**/*.node.test.ts',
   ],
   modulePathIgnorePatterns: ['<rootDir>/build'],
   moduleNameMapper: {

@@ -40,6 +40,12 @@ export {
   type DynamicLiveActivityProps,
   type DynamicLiveActivityPropsValue,
 } from './live-activity/dynamic-api.js'
+export {
+  areLiveActivitiesEnabled,
+  getLiveActivityPushTokens,
+  getLiveActivityPushToStartToken,
+  type LiveActivityPushToken,
+} from './live-activity/push.js'
 export type { DismissalPolicy, LiveActivityVariants } from '@use-voltra/ios'
 export {
   clearPreloadedImages,

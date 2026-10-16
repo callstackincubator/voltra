@@ -16,6 +16,17 @@ type VoltraActivityPushToStartTokenReceivedEvent = Readonly<{
   pushToStartToken: string
 }>
 
+type VoltraActivityEnablementChangedEvent = Readonly<{
+  timestamp: number
+  type: 'activityEnablementChanged'
+  enabled: boolean
+}>
+
+type LiveActivityPushToken = Readonly<{
+  activityName: string
+  pushToken: string
+}>
+
 type VoltraActivityUpdateEvent = Readonly<{
   source: string
   timestamp: number
@@ -30,6 +41,19 @@ type VoltraInteractionEvent = Readonly<{
   type: 'interaction'
   identifier: string
   payload: string
+}>
+
+type QueuedVoltraInteraction = Readonly<{
+  type: string
+  id: string
+  source: string
+  timestamp: number
+  identifier: string
+  payload: string
+}>
+
+type VoltraInteractionsAvailableEvent = Readonly<{
+  type: string
 }>
 
 type VoltraDynamicLiveActivityRenderFailedEvent = Readonly<{
@@ -94,13 +118,24 @@ type WidgetServerCredentials = Readonly<{
 }>
 
 export interface Spec extends TurboModule {
+  /** Native builds before the interaction queue (ADR 0011) emit taps here; current builds never do. */
   readonly onInteraction: CodegenTypes.EventEmitter<VoltraInteractionEvent>
+  /** Internal: a tap was recorded in the interaction queue. Carries no tap data; call `popInteractions`. */
+  readonly onInteractionsAvailable: CodegenTypes.EventEmitter<VoltraInteractionsAvailableEvent>
   readonly onDynamicLiveActivityRenderFailed: CodegenTypes.EventEmitter<VoltraDynamicLiveActivityRenderFailedEvent>
   readonly onStateChanged: CodegenTypes.EventEmitter<VoltraActivityUpdateEvent>
   readonly onActivityTokenReceived: CodegenTypes.EventEmitter<VoltraActivityTokenReceivedEvent>
   readonly onActivityPushToStartTokenReceived: CodegenTypes.EventEmitter<VoltraActivityPushToStartTokenReceivedEvent>
+  readonly onActivityEnablementChanged: CodegenTypes.EventEmitter<VoltraActivityEnablementChangedEvent>
   drainDynamicLiveActivityRenderFailures(): void
   setDynamicLiveActivityRenderFailureListenerActive(active: boolean): void
+  /** Internal: remove and return queued taps, oldest first; with `sources`, only taps from those sources. */
+  popInteractions(sources?: string[] | null): QueuedVoltraInteraction[]
+  /** Internal: put back taps that were popped but had no listener left when dispatched. Synchronous so a following pop sees them. */
+  restoreInteractions(interactions: QueuedVoltraInteraction[]): boolean
+  getLiveActivityPushTokens(): Promise<LiveActivityPushToken[]>
+  getLiveActivityPushToStartToken(): Promise<string | null>
+  areLiveActivitiesEnabled(): boolean
   startLiveActivity(jsonString: string, options: StartVoltraOptions): Promise<string>
   updateLiveActivity(activityId: string, jsonString: string, options: UpdateVoltraOptions): Promise<void>
   startDynamicLiveActivity(definitionId: string, propsJson: string, options: StartVoltraOptions): Promise<string>

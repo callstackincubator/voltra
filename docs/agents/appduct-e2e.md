@@ -87,6 +87,7 @@ a simulator or an iPhone, and the `android_*` tools do not exist in that session
 | `ios_update_live_activity`           | Replace its props                                     |
 | `ios_stop_live_activity`             | End one                                               |
 | `ios_live_activity_status`           | Whether an activity is running                        |
+| `ios_live_activity_push_state`       | Enablement, per-activity and push-to-start tokens     |
 | `ios_preload_images`                 | Preload images for widgets and Live Activities        |
 | `ios_clear_preloaded_images`         | Drop them again                                       |
 | `ios_read_events`                    | Voltra events the app received, since the last read   |

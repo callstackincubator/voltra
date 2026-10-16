@@ -76,8 +76,8 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
       return;
     }
 
-    if ([eventName isEqualToString:@"interaction"]) {
-      [strongSelf emitOnInteraction:eventData];
+    if ([eventName isEqualToString:@"interactionsAvailable"]) {
+      [strongSelf emitOnInteractionsAvailable:eventData];
     } else if ([eventName isEqualToString:@"dynamicLiveActivityRenderFailed"]) {
       [strongSelf emitOnDynamicLiveActivityRenderFailed:eventData];
     } else if ([eventName isEqualToString:@"stateChange"]) {
@@ -86,6 +86,8 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
       [strongSelf emitOnActivityTokenReceived:eventData];
     } else if ([eventName isEqualToString:@"activityPushToStartTokenReceived"]) {
       [strongSelf emitOnActivityPushToStartTokenReceived:eventData];
+    } else if ([eventName isEqualToString:@"activityEnablementChanged"]) {
+      [strongSelf emitOnActivityEnablementChanged:eventData];
     }
   }];
 }
@@ -113,6 +115,17 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
 - (void)setDynamicLiveActivityRenderFailureListenerActive:(BOOL)active
 {
   [self.module setDynamicLiveActivityRenderFailureListenerActive:active];
+}
+
+- (NSArray<NSDictionary *> *)popInteractions:(NSArray *)sources
+{
+  return [self.module popInteractions:sources];
+}
+
+- (NSNumber *)restoreInteractions:(NSArray *)interactions
+{
+  [self.module restoreInteractions:interactions];
+  return @YES;
 }
 
 - (UIView *)reactRootViewInView:(UIView *)view
@@ -310,6 +323,21 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
 - (NSNumber *)isLiveActivityActive:(NSString *)activityName
 {
   return @([self.module isLiveActivityActive:activityName]);
+}
+
+- (void)getLiveActivityPushTokens:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  resolve([self.module getLiveActivityPushTokens]);
+}
+
+- (void)getLiveActivityPushToStartToken:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+{
+  resolve([self.module getLiveActivityPushToStartToken]);
+}
+
+- (NSNumber *)areLiveActivitiesEnabled
+{
+  return @([self.module areLiveActivitiesEnabled]);
 }
 
 - (NSNumber *)isHeadless

@@ -4,23 +4,14 @@ import Foundation
 
 /// All Voltra event types with their associated data
 public enum VoltraEventType {
-  /// Persistent events (widget → app, survives app death)
+  /// Persistent events: recorded in the App Group interaction queue, never posted directly
   case interaction(source: String, identifier: String, payload: String?)
 
   // Transient events (main app only, in-memory)
   case stateChange(activityName: String, state: String)
   case tokenReceived(activityName: String, pushToken: String)
   case pushToStartTokenReceived(token: String)
-
-  /// Whether this event should be persisted to UserDefaults (survives app death)
-  var isPersistent: Bool {
-    switch self {
-    case .interaction:
-      return true
-    default:
-      return false
-    }
-  }
+  case activityEnablementChanged(enabled: Bool)
 
   /// The event name used for JS bridge
   var name: String {
@@ -33,6 +24,8 @@ public enum VoltraEventType {
       return "activityTokenReceived"
     case .pushToStartTokenReceived:
       return "activityPushToStartTokenReceived"
+    case .activityEnablementChanged:
+      return "activityEnablementChanged"
     }
   }
 
@@ -59,6 +52,10 @@ public enum VoltraEventType {
 
     case let .pushToStartTokenReceived(token):
       dict["pushToStartToken"] = token
+
+    case let .activityEnablementChanged(enabled):
+      dict["timestamp"] = Date().timeIntervalSince1970
+      dict["enabled"] = enabled
     }
 
     return dict

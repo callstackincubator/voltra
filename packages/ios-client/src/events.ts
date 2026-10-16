@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
 
+import { subscribeToInteractions } from './interactions.js'
 import type { EventSubscription } from './types.js'
 import { getNativeVoltra } from './VoltraModule.js'
 
@@ -18,6 +19,14 @@ export type VoltraActivityPushToStartTokenReceivedEvent = BasicVoltraEvent & {
   type: 'activityPushToStartTokenReceived'
   pushToStartToken: string
 }
+/**
+ * The user allowed or disallowed Live Activities for the app. Read the current value with
+ * `areLiveActivitiesEnabled()`. App-wide, so it has no `source`.
+ */
+export type VoltraActivityEnablementChangedEvent = Omit<BasicVoltraEvent, 'source'> & {
+  type: 'activityEnablementChanged'
+  enabled: boolean
+}
 export type VoltraActivityUpdateEvent = BasicVoltraEvent & {
   type: 'stateChange'
   activityName: string
@@ -26,6 +35,8 @@ export type VoltraActivityUpdateEvent = BasicVoltraEvent & {
 
 export type VoltraInteractionEvent = BasicVoltraEvent & {
   type: 'interaction'
+  /** Unique per tap, so two taps on the same button can be told apart. */
+  id: string
   identifier: string
   payload: string
 }
@@ -49,6 +60,7 @@ let dynamicRenderFailureListenerCount = 0
 export type VoltraEventMap = {
   activityTokenReceived: VoltraActivityTokenReceivedEvent
   activityPushToStartTokenReceived: VoltraActivityPushToStartTokenReceivedEvent
+  activityEnablementChanged: VoltraActivityEnablementChangedEvent
   stateChange: VoltraActivityUpdateEvent
   interaction: VoltraInteractionEvent
   dynamicLiveActivityRenderFailed: VoltraDynamicLiveActivityRenderFailedEvent
@@ -72,10 +84,16 @@ export function addVoltraListener<K extends keyof VoltraEventMap>(
       return voltraModule.onActivityPushToStartTokenReceived(
         listener as (arg: VoltraActivityPushToStartTokenReceivedEvent) => void
       )
+    case 'activityEnablementChanged':
+      if (typeof voltraModule.onActivityEnablementChanged !== 'function') {
+        console.warn(`[Voltra] Event '${event}' needs a newer native build. Returning no-op subscription.`)
+        return noopSubscription
+      }
+      return voltraModule.onActivityEnablementChanged(listener as (arg: VoltraActivityEnablementChangedEvent) => void)
     case 'stateChange':
       return voltraModule.onStateChanged(listener as (arg: VoltraActivityUpdateEvent) => void)
     case 'interaction':
-      return voltraModule.onInteraction(listener as (arg: VoltraInteractionEvent) => void)
+      return subscribeToInteractions(listener as (arg: VoltraInteractionEvent) => void)
     case 'dynamicLiveActivityRenderFailed':
       const subscription = voltraModule.onDynamicLiveActivityRenderFailed(
         listener as (arg: VoltraDynamicLiveActivityRenderFailedEvent) => void
