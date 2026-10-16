@@ -55,9 +55,8 @@ channel today; every value crosses as a Promise result or a synchronous getter.
 
 ### State is the getter plus an internal "ended" event
 
-This follows the model ADR 0011 sets for iOS (proposed in
-[#353](https://github.com/callstackincubator/voltra/pull/353)): the getter returns the current value,
-and an event reports changes. The TurboModule spec gains one codegen event emitter:
+This follows the model [ADR 0011](0011-live-activity-push-state-getters-and-interaction-drain.md)
+sets for iOS: the getter returns the current value, and an event reports changes. The TurboModule spec gains one codegen event emitter:
 
 ```ts
 readonly onOngoingNotificationEnded: CodegenTypes.EventEmitter<{
