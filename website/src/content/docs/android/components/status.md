@@ -12,8 +12,8 @@ A horizontal progress bar.
 **Parameters:**
 
 - `progress` (number, optional): Current progress value (0.0 to 1.0). If omitted, the indicator will be indeterminate.
-- `color` (string, optional): Color for the progress indicator.
-- `backgroundColor` (string, optional): Color for the background track.
+- `color` ([color value](/android/development/styling#day-and-night-colors), optional): Color for the progress indicator.
+- `backgroundColor` ([color value](/android/development/styling#day-and-night-colors), optional): Color for the background track.
 
 ---
 
@@ -23,7 +23,7 @@ A circular progress indicator.
 
 **Parameters:**
 
-- `color` (string, optional): Color for the progress indicator.
+- `color` ([color value](/android/development/styling#day-and-night-colors), optional): Color for the progress indicator.
 
 :::caution[Indeterminate Only]
 Due to Jetpack Compose Glance limitations, the `CircularProgressIndicator` on Android renders in **indeterminate** mode.
@@ -40,13 +40,13 @@ goes in the middle.
 **Parameters:**
 
 - `progress` (number, optional): Fill fraction, clamped to 0.0–1.0. Defaults to `0`.
-- `color` (string, optional): Stroke color of the filled arc. Defaults to the widget theme's progress color.
-- `trackColor` (string, optional): Stroke color of the unfilled arc. Defaults to the widget theme's track color; use `transparent` to hide the track.
+- `color` ([color value](/android/development/styling#day-and-night-colors), optional): Stroke color of the filled arc. Defaults to the widget theme's progress color.
+- `trackColor` ([color value](/android/development/styling#day-and-night-colors), optional): Stroke color of the unfilled arc. Defaults to the widget theme's track color; use `transparent` to hide the track.
 - `strokeWidth` (number, optional): Stroke width in dp of both arcs. Defaults to `8`.
 - `startAngle` (number, optional): Angle in degrees where the arc begins. `0` is 3 o'clock and positive is clockwise. Defaults to `135`.
 - `sweepAngle` (number, optional): Total angular length of the track in degrees. `360` makes a closed ring. Defaults to `270`.
 - `lineCap` (`'round' | 'butt'`, optional): End shape of both arcs. Defaults to `'round'`.
-- `gradientColors` (string[], optional): Sweep gradient spread across the track, starting at `startAngle`. Overrides `color`. Needs at least two colors; a single color is drawn as a solid stroke, and the gradient is ignored if any color fails to parse.
+- `gradientColors` (array of [color values](/android/development/styling#day-and-night-colors), optional): Sweep gradient spread across the track, starting at `startAngle`. Overrides `color`. Needs at least two colors; a single color is drawn as a solid stroke, and the gradient is ignored if any color fails to parse.
 
 ```tsx
 <VoltraAndroid.ArcProgressIndicator

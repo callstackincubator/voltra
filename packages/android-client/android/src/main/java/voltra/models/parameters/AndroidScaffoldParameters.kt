@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -16,7 +17,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidScaffoldParameters(
     /** Background color */
-    val backgroundColor: String? = null,
+    @Contextual
+    val backgroundColor: Any? = null,
     /** Horizontal padding */
     val horizontalPadding: Double? = null,
 )

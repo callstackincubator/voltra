@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -24,9 +25,11 @@ data class AndroidRadioButtonParameters(
     /** Text label */
     val text: String? = null,
     /** Checked color */
-    val checkedColor: String? = null,
+    @Contextual
+    val checkedColor: Any? = null,
     /** Unchecked color */
-    val uncheckedColor: String? = null,
+    @Contextual
+    val uncheckedColor: Any? = null,
     /** Maximum lines for text */
     val maxLines: Double? = null,
 )

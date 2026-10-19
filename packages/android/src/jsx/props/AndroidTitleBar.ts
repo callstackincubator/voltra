@@ -2,6 +2,7 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { AndroidColorValue } from '../../dynamic-colors'
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidTitleBarProps = VoltraBaseProps & {
@@ -10,9 +11,9 @@ export type AndroidTitleBarProps = VoltraBaseProps & {
   /** Leading icon */
   startIcon: Record<string, any>
   /** Leading icon tint color */
-  iconColor?: string
+  iconColor?: AndroidColorValue
   /** Title text color */
-  textColor?: string
+  textColor?: AndroidColorValue
   /** Title font family */
   fontFamily?: 'monospace' | 'serif' | 'sans-serif' | 'cursive'
 }

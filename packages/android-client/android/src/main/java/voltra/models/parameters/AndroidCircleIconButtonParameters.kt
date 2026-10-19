@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -22,7 +23,9 @@ data class AndroidCircleIconButtonParameters(
     /** Whether the button is enabled */
     val enabled: Boolean? = null,
     /** Background color */
-    val backgroundColor: String? = null,
+    @Contextual
+    val backgroundColor: Any? = null,
     /** Icon color */
-    val contentColor: String? = null,
+    @Contextual
+    val contentColor: Any? = null,
 )

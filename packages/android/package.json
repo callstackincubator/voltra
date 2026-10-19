@@ -53,7 +53,7 @@
     "build": "pnpm run clean && bob build",
     "clean": "rm -rf build",
     "lint": "oxlint src",
-    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit && tsc -p type-tests/tsconfig.json --noEmit",
     "test": "node --test"
   },
   "dependencies": {

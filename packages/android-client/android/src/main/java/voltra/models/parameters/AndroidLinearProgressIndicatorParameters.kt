@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -18,7 +19,9 @@ data class AndroidLinearProgressIndicatorParameters(
     /** Progress value from 0 to 1 */
     val progress: Double? = null,
     /** Progress color */
-    val color: String? = null,
+    @Contextual
+    val color: Any? = null,
     /** Track background color */
-    val backgroundColor: String? = null,
+    @Contextual
+    val backgroundColor: Any? = null,
 )

@@ -58,13 +58,13 @@ fun RenderFilledButton(
     val maxLines = (element.p?.get("maxLines") as? Number)?.toInt() ?: Int.MAX_VALUE
     val icon = extractImageProvider(element.p?.get("icon"))
 
-    val backgroundColor = element.p?.get("backgroundColor") as? String
-    val contentColor = element.p?.get("contentColor") as? String
+    val backgroundColor = element.p?.get("backgroundColor")
+    val contentColor = element.p?.get("contentColor")
 
     val colors =
         if (backgroundColor != null && contentColor != null) {
-            val bg = JSColorParser.parse(backgroundColor)
-            val fg = JSColorParser.parse(contentColor)
+            val bg = JSColorParser.parse(backgroundColor, "backgroundColor")
+            val fg = JSColorParser.parse(contentColor, "contentColor")
             if (bg != null && fg != null) {
                 ButtonDefaults.buttonColors(
                     backgroundColor = bg.toColorProvider(),
@@ -102,10 +102,10 @@ fun RenderOutlineButton(
     val maxLines = (element.p?.get("maxLines") as? Number)?.toInt() ?: Int.MAX_VALUE
     val icon = extractImageProvider(element.p?.get("icon"))
 
-    val contentColorProp = element.p?.get("contentColor") as? String
+    val contentColorProp = element.p?.get("contentColor")
     val contentColor =
         if (contentColorProp != null) {
-            JSColorParser.parse(contentColorProp)?.toColorProvider() ?: ColorProvider(Color.Black)
+            JSColorParser.parse(contentColorProp, "contentColor")?.toColorProvider() ?: ColorProvider(Color.Black)
         } else {
             ColorProvider(Color.Black)
         }
@@ -134,19 +134,19 @@ fun RenderCircleIconButton(
     val imageProvider = extractImageProvider(element.p?.get("icon")) ?: ImageProvider(android.R.drawable.ic_menu_add)
     val enabled = (element.p?.get("enabled") as? Boolean) ?: true
 
-    val backgroundColorProp = element.p?.get("backgroundColor") as? String
-    val contentColorProp = element.p?.get("contentColor") as? String
+    val backgroundColorProp = element.p?.get("backgroundColor")
+    val contentColorProp = element.p?.get("contentColor")
 
     val backgroundColor =
         if (backgroundColorProp != null) {
-            JSColorParser.parse(backgroundColorProp)?.toColorProvider()
+            JSColorParser.parse(backgroundColorProp, "backgroundColor")?.toColorProvider()
         } else {
             GlanceTheme.colors.background
         }
 
     val contentColor =
         if (contentColorProp != null) {
-            JSColorParser.parse(contentColorProp)?.toColorProvider()
+            JSColorParser.parse(contentColorProp, "contentColor")?.toColorProvider()
         } else {
             GlanceTheme.colors.onSurface
         }
@@ -175,19 +175,19 @@ fun RenderSquareIconButton(
     val imageProvider = extractImageProvider(element.p?.get("icon")) ?: ImageProvider(android.R.drawable.ic_menu_add)
     val enabled = (element.p?.get("enabled") as? Boolean) ?: true
 
-    val backgroundColorProp = element.p?.get("backgroundColor") as? String
-    val contentColorProp = element.p?.get("contentColor") as? String
+    val backgroundColorProp = element.p?.get("backgroundColor")
+    val contentColorProp = element.p?.get("contentColor")
 
     val backgroundColor =
         if (backgroundColorProp != null) {
-            JSColorParser.parse(backgroundColorProp)?.toColorProvider()
+            JSColorParser.parse(backgroundColorProp, "backgroundColor")?.toColorProvider()
         } else {
             GlanceTheme.colors.primary
         }
 
     val contentColor =
         if (contentColorProp != null) {
-            JSColorParser.parse(contentColorProp)?.toColorProvider()
+            JSColorParser.parse(contentColorProp, "contentColor")?.toColorProvider()
         } else {
             GlanceTheme.colors.onPrimary
         }

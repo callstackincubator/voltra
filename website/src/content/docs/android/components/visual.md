@@ -11,6 +11,7 @@ Displays text content.
 
 **Parameters:**
 
+- `color` ([color value](/android/development/styling#day-and-night-colors), optional): Text color.
 - `maxLines` (number, optional): Maximum number of lines to display.
 - `renderAsBitmap` (boolean, optional): Renders text as a bitmap image to enable [custom fonts](/android/development/custom-fonts). Requires `fontFamily` in the style prop.
 
@@ -29,8 +30,8 @@ Displays bitmap images from the asset catalog, preloaded runtime cache, or base6
 - `contentDescription` (string, optional): Accessibility description for the image.
 - `contentScale` (string, optional): Glance-specific scaling mode: `"crop"`, `"cover"`, `"fit"`, `"contain"`, `"fill-bounds"`, or `"stretch"`.
 - `alpha` (number, optional): Opacity value from 0.0 to 1.0.
-- `colorFilter` (string, optional): Color tint filter for the image.
-- `tintColor` (string, optional): Legacy alias for `colorFilter`.
+- `colorFilter` ([color value](/android/development/styling#day-and-night-colors), optional): Color tint filter for the image.
+- `tintColor` ([color value](/android/development/styling#day-and-night-colors), optional): Legacy alias for `colorFilter`.
 - `fallback` (ReactNode, optional): Custom content rendered when the image is missing.
 
 **Styling the fallback:**

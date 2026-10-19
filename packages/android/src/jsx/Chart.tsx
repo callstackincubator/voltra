@@ -1,5 +1,6 @@
 import React from 'react'
 
+import type { AndroidColorValue } from '../dynamic-colors.js'
 import type { VoltraAndroidBaseProps } from './baseProps.js'
 import type { AreaMarkProps } from './AreaMark.js'
 import type { BarMarkProps } from './BarMark.js'
@@ -19,7 +20,7 @@ export type AndroidChartProps = VoltraAndroidBaseProps & {
   xAxisGridStyle?: { visible?: boolean }
   yAxisGridStyle?: { visible?: boolean }
   legendVisibility?: 'automatic' | 'visible' | 'hidden'
-  foregroundStyleScale?: Record<string, string>
+  foregroundStyleScale?: Record<string, AndroidColorValue>
   chartScrollableAxes?: 'horizontal' | 'vertical'
   yScale?: YScale
 }

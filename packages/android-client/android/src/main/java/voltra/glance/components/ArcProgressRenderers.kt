@@ -95,10 +95,10 @@ fun RenderArcProgressIndicator(
     val geometry = readArcGeometry(props)
 
     val colorArgb =
-        resolveArgb(props?.get("color") as? String, context)
+        resolveArgb(props?.get("color"), context, "color")
             ?: ProgressIndicatorDefaults.IndicatorColorProvider.getColor(context).toArgb()
     val trackColorArgb =
-        resolveArgb(props?.get("trackColor") as? String, context)
+        resolveArgb(props?.get("trackColor"), context, "trackColor")
             ?: ProgressIndicatorDefaults.BackgroundColorProvider.getColor(context).toArgb()
     val gradientColorsArgb = resolveGradientColors(props?.get("gradientColors") as? String, context)
 
@@ -168,16 +168,14 @@ private fun isSized(size: SizeValue?): Boolean = size is SizeValue.Fixed || size
 
 @Composable
 private fun resolveArgb(
-    value: String?,
+    value: Any?,
     context: Context,
-): Int? {
-    if (value.isNullOrEmpty()) return null
-    return JSColorParser.parse(value)?.resolveColor(context)?.toArgb()
-}
+    key: String,
+): Int? = JSColorParser.parse(value, key)?.resolveColor(context)?.toArgb()
 
 /**
- * Resolves the gradient color list. An entry that cannot be parsed drops the whole gradient, so
- * the arc falls back to the solid `color` instead of silently rendering different stops.
+ * An entry that cannot be parsed drops the whole gradient, so the arc falls back to the solid `color`
+ * instead of silently rendering different stops.
  */
 @Composable
 private fun resolveGradientColors(
@@ -185,6 +183,6 @@ private fun resolveGradientColors(
     context: Context,
 ): List<Int> {
     val values = parseColorStringList(json) ?: return emptyList()
-    val resolved = values.map { resolveArgb(it, context) }
+    val resolved = values.map { resolveArgb(it, context, "gradientColors") }
     return if (resolved.any { it == null }) emptyList() else resolved.filterNotNull()
 }

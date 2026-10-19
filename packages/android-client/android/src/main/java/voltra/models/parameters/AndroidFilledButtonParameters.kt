@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -22,9 +23,11 @@ data class AndroidFilledButtonParameters(
     /** Optional icon */
     val icon: String? = null,
     /** Background color */
-    val backgroundColor: String? = null,
+    @Contextual
+    val backgroundColor: Any? = null,
     /** Text/icon color */
-    val contentColor: String? = null,
+    @Contextual
+    val contentColor: Any? = null,
     /** Maximum lines for text */
     val maxLines: Double? = null,
 )

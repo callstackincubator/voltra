@@ -7,6 +7,8 @@ type GeneratedFiles = {
 const toKotlinType = (param: ComponentParameter): string => {
   if (param.type === 'component') {
     return 'Any' // Component props are handled separately
+  } else if (param.type === 'color') {
+    return 'Any' // A color string or a { day, night } map; serialized contextually
   } else if (param.enum && param.enum.length > 0) {
     return 'String'
   } else if (param.jsonEncoded) {
@@ -32,6 +34,7 @@ const generateParameterClass = (component: ComponentDefinition, version: string)
   const allParams = Object.entries(component.parameters)
   // Filter out component type params as they are handled separately
   const params = allParams.filter(([_, param]) => param.type !== 'component')
+  const needsContextual = params.some(([_, param]) => param.type === 'color')
 
   const header = `//
 //  ${component.name}Parameters.kt
@@ -41,7 +44,7 @@ const generateParameterClass = (component: ComponentDefinition, version: string)
 //  Schema version: ${version}
 
 package voltra.models.parameters
-
+${needsContextual ? '\nimport kotlinx.serialization.Contextual' : ''}
 import kotlinx.serialization.Serializable
 
 /**
@@ -58,7 +61,8 @@ data class ${component.name}Parameters(
       const isOptional = param.optional || param.default !== undefined
       const typeDeclaration = isOptional ? `${kotlinType}? = null` : kotlinType
 
-      let line = `    val ${name}: ${typeDeclaration}`
+      const annotation = param.type === 'color' ? '@Contextual\n    ' : ''
+      let line = `    ${annotation}val ${name}: ${typeDeclaration}`
       if (param.description) {
         line = `    /** ${param.description} */\n` + line
       }

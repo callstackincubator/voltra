@@ -2,15 +2,16 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { AndroidColorValue } from '../../dynamic-colors'
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidArcProgressIndicatorProps = VoltraBaseProps & {
   /** Fill fraction from 0 to 1, clamped */
   progress?: number
   /** Stroke color of the filled arc */
-  color?: string
+  color?: AndroidColorValue
   /** Stroke color of the unfilled arc; transparent hides the track */
-  trackColor?: string
+  trackColor?: AndroidColorValue
   /** Stroke width in dp of both arcs */
   strokeWidth?: number
   /** Angle in degrees where the arc begins; 0 is 3 o'clock, positive is clockwise */

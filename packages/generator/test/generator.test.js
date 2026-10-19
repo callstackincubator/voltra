@@ -6,6 +6,7 @@ const test = require('node:test')
 
 const { runGeneration, createGenerationPaths } = require('../generator/generate-types.ts')
 const { validateComponentsData } = require('../generator/validate-components.ts')
+const { validateShortNames } = require('../generator/generators/short-names.ts')
 
 const generatorRoot = path.resolve(__dirname, '..')
 const schema = JSON.parse(fs.readFileSync(path.join(generatorRoot, 'schemas', 'components.schema.json'), 'utf-8'))
@@ -32,6 +33,7 @@ const createFixtureData = () => ({
     destination: 'dest',
     text: 'txt',
     contentAlignment: 'ca',
+    color: 'c',
   },
   styleProperties: ['backgroundColor'],
   components: [
@@ -70,6 +72,11 @@ const createFixtureData = () => ({
           type: 'number',
           optional: true,
           description: 'Maximum lines',
+        },
+        color: {
+          type: 'color',
+          optional: true,
+          description: 'Text color',
         },
       },
     },
@@ -133,6 +140,19 @@ test('validates component fixtures and reports useful schema errors', () => {
   assert.match(invalidParamCapture.entries.map((entry) => entry.text).join('\n'), /Text.not-valid/)
 })
 
+test('rejects short names reserved for day/night color pair keys', () => {
+  assert.doesNotThrow(() => validateShortNames(createFixtureData()))
+
+  for (const reserved of ['day', 'night']) {
+    const data = createFixtureData()
+    data.shortNames.destination = reserved
+    assert.throws(
+      () => validateShortNames(data),
+      new RegExp(`"destination" uses the reserved short name "${reserved}"`)
+    )
+  }
+})
+
 test('generates synchronized artifacts into the intended directories and cleans stale files', () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-generator-'))
   const workspaceRoot = path.join(tempRoot, 'workspace')
@@ -194,8 +214,23 @@ test('generates synchronized artifacts into the intended directories and cleans 
   assert.match(androidTextProps, /maxLines\?: number/)
   assert.doesNotMatch(androidTextProps, /text: string/)
   assert.match(androidBoxProps, /contentAlignment\?: 'center'/)
+  assert.match(androidTextProps, /color\?: AndroidColorValue/)
+  assert.match(androidTextProps, /import type \{ AndroidColorValue \} from '\.\.\/\.\.\/dynamic-colors'/)
+  assert.doesNotMatch(androidBoxProps, /AndroidColorValue/)
   assert.equal(fs.existsSync(path.join(paths.tsIosPropsOutputDir, 'AndroidText.ts')), false)
   assert.equal(fs.existsSync(path.join(paths.tsAndroidPropsOutputDir, 'Text.ts')), false)
+
+  const kotlinTextParameters = fs.readFileSync(
+    path.join(paths.kotlinParametersOutputDir, 'AndroidTextParameters.kt'),
+    'utf-8'
+  )
+  const kotlinBoxParameters = fs.readFileSync(
+    path.join(paths.kotlinParametersOutputDir, 'AndroidBoxParameters.kt'),
+    'utf-8'
+  )
+  assert.match(kotlinTextParameters, /@Contextual\s+val color: Any\? = null/)
+  assert.match(kotlinTextParameters, /import kotlinx\.serialization\.Contextual/)
+  assert.doesNotMatch(kotlinBoxParameters, /Contextual/)
 
   const iosComponentIds = fs.readFileSync(path.join(paths.tsIosPayloadOutputDir, 'component-ids.ts'), 'utf-8')
   const androidComponentIds = fs.readFileSync(path.join(paths.tsAndroidPayloadOutputDir, 'component-ids.ts'), 'utf-8')

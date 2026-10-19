@@ -46,6 +46,7 @@ class VoltraModifierScope(
         when (value) {
             is VoltraColorValue.Static -> ColorProvider(value.color)
             is VoltraColorValue.Dynamic -> resolveThemeColor(value.role)
+            is VoltraColorValue.DayNight -> androidx.glance.color.ColorProvider(day = value.day, night = value.night)
         }
 
     fun mayCarryAppWidgetBackground(): Boolean = mayCarryAppWidgetBackground.invoke()

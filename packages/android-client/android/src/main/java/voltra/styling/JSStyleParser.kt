@@ -59,9 +59,12 @@ object JSStyleParser {
     }
 
     /**
-     * Parse color string (delegates to JSColorParser).
+     * Parse a color value (delegates to JSColorParser).
      */
-    fun color(value: Any?): VoltraColorValue? = JSColorParser.parse(value)
+    fun color(
+        value: Any?,
+        key: String,
+    ): VoltraColorValue? = JSColorParser.parse(value, key)
 
     /**
      * Parse edge insets using short property names from JS payload.

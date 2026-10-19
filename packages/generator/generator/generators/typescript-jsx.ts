@@ -19,6 +19,8 @@ const toTSType = (param: ComponentParameter): string => {
   let baseType: string
   if (param.type === 'component') {
     baseType = 'ReactNode'
+  } else if (param.type === 'color') {
+    baseType = 'AndroidColorValue'
   } else if (param.enum && param.enum.length > 0) {
     baseType = param.enum.map((v) => `'${v}'`).join(' | ')
   } else if (param.jsonEncoded) {
@@ -50,13 +52,16 @@ const generatePropsType = (component: ComponentDefinition): string => {
 const generatePropsTypeFile = (component: ComponentDefinition, version: string): string => {
   // Check if ReactNode import is needed
   const needsReactNode = Object.values(component.parameters).some((param) => param.type === 'component')
+  const needsColorValue = Object.values(component.parameters).some((param) => param.type === 'color')
 
   const header = `// 🤖 AUTO-GENERATED from data/components.json
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: ${version}
 ${needsReactNode ? "\nimport type { ReactNode } from 'react'" : ''}
 
-import type { VoltraBaseProps } from '../baseProps'
+${
+  needsColorValue ? "import type { AndroidColorValue } from '../../dynamic-colors'\n" : ''
+}import type { VoltraBaseProps } from '../baseProps'
 
 `
 

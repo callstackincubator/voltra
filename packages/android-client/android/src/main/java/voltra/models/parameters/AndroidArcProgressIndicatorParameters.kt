@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -18,9 +19,11 @@ data class AndroidArcProgressIndicatorParameters(
     /** Fill fraction from 0 to 1, clamped */
     val progress: Double? = null,
     /** Stroke color of the filled arc */
-    val color: String? = null,
+    @Contextual
+    val color: Any? = null,
     /** Stroke color of the unfilled arc; transparent hides the track */
-    val trackColor: String? = null,
+    @Contextual
+    val trackColor: Any? = null,
     /** Stroke width in dp of both arcs */
     val strokeWidth: Double? = null,
     /** Angle in degrees where the arc begins; 0 is 3 o'clock, positive is clockwise */
