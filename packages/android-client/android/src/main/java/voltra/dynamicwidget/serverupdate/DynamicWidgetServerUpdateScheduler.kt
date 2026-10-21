@@ -12,6 +12,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import voltra.widget.server.VoltraWidgetServer
@@ -56,7 +57,9 @@ object DynamicWidgetServerUpdateScheduler {
             return
         }
 
-        enqueuePeriodic(context, scope, settings.intervalMinutes)
+        // The immediate run below is the placement fetch, so the periodic request waits one interval
+        // instead of also firing the moment its constraints are met.
+        enqueuePeriodic(context, scope, settings.intervalMinutes, delayFirstRun = runImmediately)
 
         if (runImmediately) {
             requestImmediateUpdate(context, scope)
@@ -113,8 +116,30 @@ object DynamicWidgetServerUpdateScheduler {
         context: Context,
         scope: WidgetScope,
         intervalMinutes: Long,
+        delayFirstRun: Boolean = false,
     ) {
-        val request =
+        WorkManager
+            .getInstance(context)
+            .enqueueUniquePeriodicWork(
+                workName(scope),
+                ExistingPeriodicWorkPolicy.UPDATE,
+                buildPeriodicRequest(scope, intervalMinutes, delayFirstRun),
+            )
+
+        Log.d(TAG, "Scheduled server updates for '${scope.widgetId}' every ${intervalMinutes}min")
+    }
+
+    /**
+     * The periodic request [enqueuePeriodic] sends, built separately so a test can read back its
+     * initial delay. A periodic request otherwise first runs as soon as its constraints are met,
+     * which would double the immediate one-time fetch of a freshly placed widget.
+     */
+    internal fun buildPeriodicRequest(
+        scope: WidgetScope,
+        intervalMinutes: Long,
+        delayFirstRun: Boolean,
+    ): PeriodicWorkRequest {
+        val builder =
             PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
                 intervalMinutes,
                 TimeUnit.MINUTES,
@@ -122,13 +147,12 @@ object DynamicWidgetServerUpdateScheduler {
                 .setConstraints(networkConstraints())
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
                 .addTag(WORK_TAG)
-                .build()
 
-        WorkManager
-            .getInstance(context)
-            .enqueueUniquePeriodicWork(workName(scope), ExistingPeriodicWorkPolicy.UPDATE, request)
+        if (delayFirstRun) {
+            builder.setInitialDelay(intervalMinutes, TimeUnit.MINUTES)
+        }
 
-        Log.d(TAG, "Scheduled server updates for '${scope.widgetId}' every ${intervalMinutes}min")
+        return builder.build()
     }
 
     /**
