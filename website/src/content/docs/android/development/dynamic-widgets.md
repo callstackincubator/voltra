@@ -229,6 +229,29 @@ These APIs reject when the `appWidgetId` is not a placement of one of your own D
 
 The Home Screen's own edit gesture does not open a Voltra configuration screen yet, so your app is the only place to change a placement's values on Android. On iOS the system Edit Widget sheet writes them instead, generated from the same `appIntent.parameters`, and the widget reads `env.configuration` exactly as it does here.
 
+## When a render fails
+
+A render can fail at four points: loading the bundle (Metro unreachable or answering an error, or a missing baked asset), evaluating it, running your component, or turning its output into a widget. Voltra follows one rule with nothing to configure: loud in a debuggable build, graceful in release.
+
+| Build   | What the widget shows                                                                                   |
+| ------- | ------------------------------------------------------------------------------------------------------- |
+| Debug   | The error view, even if the widget has rendered before                                                  |
+| Release | The last render of that placement that succeeded, else the `initialStatePath` view, else "Loading…" |
+
+The error view is red and names the widget `id`, the stage (`bundle`, `evaluate`, `render` or `parse`), the error message and up to six stack frames from your code. A bundle Metro could not build shows Metro's own error, and an unreachable Metro names the host Voltra tried. Release builds never show it.
+
+Tap the error view to retry. Voltra reloads the bundle from Metro, evaluates it again and redraws the tapped widget, so fixing your component or restarting Metro and tapping is enough. Retry does not refetch [server props](#fetching-props-from-a-server); the refresh button does that. Other placements of the same widget pick up the reloaded bundle the next time they render.
+
+The last good render is stored per placement on the device, is dropped when the placement is removed or you call `clearAndroidWidget` or `clearAllAndroidWidgets`, and is not backed up. After a resize whose render fails, the widget keeps the previous size's layout until a render succeeds. A release widget can therefore show stale content without saying so.
+
+Each failure is also logged once under the `VoltraDynamicWidget` tag, with the stack in debug builds:
+
+```text
+render failed widgetId=inbox appWidgetId=42 stage=render dev=true: TypeError: Cannot read property 'map' of undefined
+```
+
+A later success for the same placement logs `render recovered widgetId=inbox appWidgetId=42`. Your app is not told about failures yet.
+
 ## Runtime props and configuration are separate
 
 Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, updated in-app with `setWidgetConfiguration` for every placement or `setWidgetInstanceConfiguration` for one, and read from `env.configuration`. Updating one does not replace the other.

@@ -6,12 +6,16 @@ import kotlinx.serialization.json.Json
 import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
 
+/**
+ * Runs `render(props, env)` and returns the node JSON. A failure is a thrown [VoltraJSException]
+ * carrying the JavaScript message and stack (ADR 0013).
+ */
 internal fun interface DynamicWidgetRuntimeBoundary {
     fun renderDynamicWidget(
         dynamicWidgetId: String,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
         dynamicWidgetEnvironmentJson: String,
-    ): String?
+    ): String
 }
 
 internal data class DynamicWidgetRenderInput(
@@ -24,8 +28,8 @@ internal object DynamicWidgetHermesRuntimeBoundary : DynamicWidgetRuntimeBoundar
         dynamicWidgetId: String,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
         dynamicWidgetEnvironmentJson: String,
-    ): String? =
-        VoltraJSRenderer.render(
+    ): String =
+        VoltraJSRenderer.renderOrThrow(
             dynamicWidgetId,
             dynamicWidgetRenderInput.propsJson,
             dynamicWidgetEnvironmentJson,
@@ -39,25 +43,40 @@ internal class DynamicWidgetRenderCoordinator(
         dynamicWidgetId: String,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
         dynamicWidgetEnvironmentJson: String,
-    ): VoltraNode? {
+    ): DynamicWidgetRenderOutcome {
         val dynamicWidgetStandaloneNodeJson =
-            dynamicWidgetRuntimeBoundary.renderDynamicWidget(
-                dynamicWidgetId = dynamicWidgetId,
-                dynamicWidgetRenderInput = dynamicWidgetRenderInput,
-                dynamicWidgetEnvironmentJson = dynamicWidgetEnvironmentJson,
-            ) ?: return null
+            try {
+                dynamicWidgetRuntimeBoundary.renderDynamicWidget(
+                    dynamicWidgetId = dynamicWidgetId,
+                    dynamicWidgetRenderInput = dynamicWidgetRenderInput,
+                    dynamicWidgetEnvironmentJson = dynamicWidgetEnvironmentJson,
+                )
+            } catch (jsException: VoltraJSException) {
+                return DynamicWidgetRenderOutcome.Failure(
+                    stage = DynamicWidgetRenderOutcome.Stage.Render,
+                    message = jsException.message ?: "render() failed",
+                    stack = jsException.jsStack,
+                )
+            }
 
         return try {
             val dynamicWidgetNode =
                 dynamicWidgetJson.decodeFromString<VoltraNode>(dynamicWidgetStandaloneNodeJson)
-            VoltraDecompressor.decompressNode(dynamicWidgetNode)
+            DynamicWidgetRenderOutcome.Success(
+                node = VoltraDecompressor.decompressNode(dynamicWidgetNode),
+                nodeJson = dynamicWidgetStandaloneNodeJson,
+            )
         } catch (dynamicWidgetRenderException: Exception) {
             Log.e(
                 DYNAMIC_WIDGET_RENDER_COORDINATOR_TAG,
                 "Failed to parse Dynamic Widget node for dynamicWidgetId=$dynamicWidgetId: " +
                     dynamicWidgetRenderException.message,
             )
-            null
+            DynamicWidgetRenderOutcome.Failure(
+                stage = DynamicWidgetRenderOutcome.Stage.Parse,
+                message = dynamicWidgetRenderException.message ?: dynamicWidgetRenderException.toString(),
+                stack = null,
+            )
         }
     }
 

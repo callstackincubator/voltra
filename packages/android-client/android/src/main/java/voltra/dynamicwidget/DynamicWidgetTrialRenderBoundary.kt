@@ -45,11 +45,16 @@ internal suspend fun renderDynamicWidgetForTrial(
             configuration = configuration,
         )
 
-    return DynamicWidgetRenderCoordinator().renderDynamicWidget(
-        dynamicWidgetId = dynamicWidgetId,
-        dynamicWidgetRenderInput = DynamicWidgetRenderInput(propsRevision = 0L, propsJson = dynamicWidgetPropsJson),
-        dynamicWidgetEnvironmentJson = environmentJson,
-    )
+    val outcome =
+        DynamicWidgetRenderCoordinator().renderDynamicWidget(
+            dynamicWidgetId = dynamicWidgetId,
+            dynamicWidgetRenderInput = DynamicWidgetRenderInput(propsRevision = 0L, propsJson = dynamicWidgetPropsJson),
+            dynamicWidgetEnvironmentJson = environmentJson,
+        )
+
+    // The trial only answers "does it render"; the reason is logged by the coordinator and the
+    // runtime already, and a trial failure is not a placement failing (ADR 0013 logs those).
+    return (outcome as? DynamicWidgetRenderOutcome.Success)?.node
 }
 
 /**

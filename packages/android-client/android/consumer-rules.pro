@@ -10,3 +10,10 @@
 # (which brings Room >= 2.7.0); both then ship these rules themselves.
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
 -keep class * extends androidx.work.InputMerger { <init>(); }
+
+# --- Dynamic Widget render failures (ADR 0013) ---
+# voltra_js_renderer.cpp throws this class by name through JNI (FindClass + GetMethodID), so R8
+# must neither rename it nor strip its constructor.
+-keep class voltra.dynamicwidget.VoltraJSException {
+    <init>(java.lang.String, java.lang.String);
+}

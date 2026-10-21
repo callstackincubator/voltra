@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -18,11 +19,13 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
+import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
@@ -51,13 +54,14 @@ import java.net.URL
  *
  * Pipeline:
  *  1. provideGlance (suspend, off the composition): fetch the bundle from Metro and evaluate it
- *     via [VoltraJSRenderer.evaluateBundle].
+ *     via [VoltraJSRenderer.evaluateBundleOrThrow].
  *  2. Content (composable): read LocalSize/locale/scheme, build the WidgetEnvironment JSON, call
- *     [VoltraJSRenderer.render], decompress the resulting node, and hand it to [GlanceFactory] —
+ *     [VoltraJSRenderer.renderOrThrow], decompress the resulting node, and hand it to [GlanceFactory] —
  *     the same renderer server-rendered widgets use, so the two look identical.
  *
- * On fetch/eval/render failure the widget shows a minimal fallback; the config plugin supplies
- * a prerendered placeholder for the first paint and the offline case.
+ * On fetch/eval/render failure a debuggable build shows the dev error view and a release build
+ * keeps the placement's last good render, falling back to the config plugin's prerendered
+ * placeholder and then a minimal "Loading…" box (ADR 0013).
  */
 class VoltraClientGlanceWidget(
     private val widgetId: String = "default",
@@ -72,11 +76,28 @@ class VoltraClientGlanceWidget(
                 explicitNulls = false
             }
 
-        /** Fetch the raw widget bundle from Metro (dev). Returns null on any network error. */
+        /** The bundle text, or the reason it could not be loaded (ADR 0013). */
+        private sealed interface BundleSource {
+            data class Loaded(
+                val source: String,
+            ) : BundleSource
+
+            data class Unavailable(
+                val failure: DynamicWidgetRenderOutcome.Failure,
+            ) : BundleSource
+        }
+
+        private fun unavailable(message: String) = BundleSource.Unavailable(bundleFailure(message))
+
+        /**
+         * Fetch the raw widget bundle from Metro (dev). A network error or a non-2xx answer is
+         * reported with its cause: the host for an unreachable Metro, and the `error` field of
+         * Metro's `500 {"error": ...}` body for a bundle that failed to build.
+         */
         private suspend fun fetchDevBundle(
             context: Context,
             widgetId: String,
-        ): String? =
+        ): BundleSource =
             withContext(Dispatchers.IO) {
                 // AndroidInfoHelpers resolves the dev server host for emulator (10.0.2.2),
                 // physical device, or adb-reverse — the RN-native equivalent of iOS's
@@ -93,7 +114,13 @@ class VoltraClientGlanceWidget(
                         val code = connection.responseCode
                         if (code !in 200..299) {
                             Log.e(TAG, "Metro HTTP $code for $urlString")
-                            return@withContext null
+                            val errorBody =
+                                try {
+                                    connection.errorStream?.bufferedReader()?.use { it.readText() }
+                                } catch (e: java.io.IOException) {
+                                    null
+                                }
+                            return@withContext unavailable(metroHttpFailureMessage(code, urlString, errorBody))
                         }
                         val body = connection.inputStream.bufferedReader().use { it.readText() }
                         if (BuildConfig.DEBUG) {
@@ -104,54 +131,93 @@ class VoltraClientGlanceWidget(
                                 )} ms (${body.length} chars)",
                             )
                         }
-                        body
+                        BundleSource.Loaded(body)
                     } finally {
                         connection.disconnect()
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Metro fetch failed ($urlString): ${e.message}")
-                    null
+                    unavailable(metroUnreachableMessage(host, e.message))
                 }
             }
 
         /**
          * Read the release bundle baked into the app's assets by the Gradle bundling task
          * (assets/voltra/voltra-widget-<id>.bundle). The release counterpart of [fetchDevBundle];
-         * returns null (→ prerendered fallback) when the asset is missing.
+         * reports the missing asset path (→ last good render or prerendered fallback).
          */
         private fun loadBakedBundle(
             context: Context,
             widgetId: String,
-        ): String? =
-            try {
-                context.assets
-                    .open("voltra/voltra-widget-$widgetId.bundle")
-                    .bufferedReader()
-                    .use { it.readText() }
+        ): BundleSource {
+            val assetPath = "voltra/voltra-widget-$widgetId.bundle"
+
+            return try {
+                BundleSource.Loaded(
+                    context.assets
+                        .open(assetPath)
+                        .bufferedReader()
+                        .use { it.readText() },
+                )
             } catch (e: java.io.IOException) {
-                Log.w(TAG, "No baked bundle for widgetId=$widgetId (assets/voltra/voltra-widget-$widgetId.bundle)")
-                null
+                Log.w(TAG, "No baked bundle for widgetId=$widgetId (assets/$assetPath)")
+                unavailable(missingBakedBundleMessage("assets/$assetPath"))
             }
+        }
 
         private fun isDev(context: Context): Boolean =
             (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
         /**
+         * Loads the widget's bundle and evaluates it into the shared Hermes runtime — reading Metro
+         * in a debug build and the baked asset otherwise — and says why when it could not.
+         */
+        private suspend fun loadAndEvaluateBundle(
+            context: Context,
+            widgetId: String,
+        ): DynamicWidgetBundleState {
+            val loaded = if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
+
+            return when (loaded) {
+                is BundleSource.Loaded -> evaluateBundleSource(loaded.source, widgetId)
+                is BundleSource.Unavailable -> DynamicWidgetBundleState.Failed(loaded.failure)
+            }
+        }
+
+        /**
+         * [loadAndEvaluateBundle], recording the result where the composition reads it
+         * ([DynamicWidgetBundleRecord]). Used when a Glance session starts and by the dev error
+         * view's retry.
+         */
+        internal suspend fun loadAndRecordBundle(
+            context: Context,
+            widgetId: String,
+        ): DynamicWidgetBundleState =
+            loadAndEvaluateBundle(context, widgetId).also { DynamicWidgetBundleRecord.record(widgetId, it) }
+
+        /**
          * Loads the widget's bundle and evaluates it into the shared Hermes runtime, the same way
-         * an on-screen render does — reading Metro in a debug build and the baked asset otherwise.
+         * an on-screen render does.
          *
          * Exposed for the server-update engine, which has to render fetched props before
          * committing them. It costs what a render already costs, including the Metro round trip in
          * a debug build.
+         *
+         * A successful load is recorded as [DynamicWidgetBundleState.Ready]: the shared runtime now
+         * holds a good bundle, so placements still showing the dev error view for an earlier
+         * failure should stop. A failure is not recorded, because a trial is not a placement and
+         * the placements' own failure is already on screen.
          */
         internal suspend fun ensureBundleEvaluated(
             context: Context,
             widgetId: String,
         ): Boolean {
-            val source =
-                if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
+            val state = loadAndEvaluateBundle(context, widgetId)
+            if (state is DynamicWidgetBundleState.Ready) {
+                DynamicWidgetBundleRecord.record(widgetId, state)
+            }
 
-            return source != null && VoltraJSRenderer.evaluateBundle(source, widgetId)
+            return state is DynamicWidgetBundleState.Ready
         }
 
         /**
@@ -266,10 +332,15 @@ class VoltraClientGlanceWidget(
         context: Context,
         id: GlanceId,
     ) {
-        val source = if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
-        val bundleReady = source != null && VoltraJSRenderer.evaluateBundle(source, widgetId)
-        if (!bundleReady) {
-            Log.w(TAG, "Bundle not ready for widgetId=$widgetId (dev=${isDev(context)})")
+        // The result goes into a process-wide record the composition reads on every pass, not into
+        // a value captured here: Glance does not re-run provideGlance for a live session, so a
+        // captured "bundle not ready" would outlive the Metro outage that caused it (ADR 0013).
+        val bundleState = loadAndRecordBundle(context, widgetId)
+        if (bundleState is DynamicWidgetBundleState.Failed) {
+            Log.w(
+                TAG,
+                "Bundle not ready for widgetId=$widgetId (dev=${isDev(context)}): ${bundleState.failure.message}",
+            )
         }
 
         // Which placement is being rendered, so env.configuration carries this placement's own
@@ -294,13 +365,12 @@ class VoltraClientGlanceWidget(
         val configuration = VoltraConfigurationStore(context).get(widgetId, appWidgetId)
 
         provideContent {
-            Content(bundleReady, configuration, appWidgetId)
+            Content(configuration, appWidgetId)
         }
     }
 
     @Composable
     private fun Content(
-        bundleReady: Boolean,
         initialConfiguration: Map<String, String>,
         appWidgetId: Int?,
     ) {
@@ -320,20 +390,23 @@ class VoltraClientGlanceWidget(
         val scope = placementScope(widgetId, configuration, appWidgetId)
         val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId, scope)
 
-        // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
-        // placeholder node (first paint / offline / Metro down).
-        val node =
-            (
-                if (bundleReady) {
-                    renderNode(context, size, configuration, dynamicWidgetRenderInput)
-                } else {
-                    null
-                }
-            ) ?: placeholderNode(context)
-        if (node != null) {
-            GlanceFactory(widgetId, null, null, size).Render(node)
-        } else {
-            Fallback()
+        val lastGoodStore = remember { DynamicWidgetLastGoodStore(context) }
+        // The prerendered placeholder covers first paint and a release widget that never rendered.
+        val shown =
+            resolveDynamicWidgetContent(
+                widgetId = widgetId,
+                appWidgetId = appWidgetId,
+                isDev = isDev(context),
+                bundleState = currentDynamicWidgetBundleState(widgetId),
+                render = { renderNode(context, size, configuration, dynamicWidgetRenderInput) },
+                lastGoodStore = lastGoodStore,
+                parseNode = ::parseNode,
+                placeholder = { placeholderNode(context) },
+            )
+        when (shown) {
+            is DynamicWidgetShownContent.Node -> GlanceFactory(widgetId, null, null, size).Render(shown.node)
+            is DynamicWidgetShownContent.DevError -> DevErrorView(shown.failure)
+            is DynamicWidgetShownContent.Loading -> Fallback()
         }
 
         // Drawn over the widget's own content, so an entry does not have to leave room for it.
@@ -390,7 +463,7 @@ class VoltraClientGlanceWidget(
         size: DpSize,
         configuration: Map<String, String>,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
-    ): VoltraNode? {
+    ): DynamicWidgetRenderOutcome {
         val envJson = buildEnvJson(context, widgetId, size, configuration, environmentSource)
         val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
         return dynamicWidgetRenderCoordinator.renderDynamicWidget(
@@ -427,6 +500,72 @@ class VoltraClientGlanceWidget(
             Log.e(TAG, "Failed to parse node for widgetId=$widgetId: ${e.message}")
             null
         }
+
+    /**
+     * The dev error view (ADR 0013, section 3): widget id, stage, message, up to
+     * [DEV_ERROR_MAX_STACK_FRAMES] stack frames and "Tap to retry", on a red-tinted surface.
+     *
+     * Built from plain Glance primitives rather than a [VoltraNode], so it cannot fail the way the
+     * content did. The whole surface is the retry target.
+     */
+    @Composable
+    private fun DevErrorView(failure: DynamicWidgetRenderOutcome.Failure) {
+        val textColor =
+            androidx.glance.color.ColorProvider(day = Color(0xFF5F1412), night = Color(0xFFF9DEDC))
+        val frames = devErrorStackFrames(failure.stack)
+
+        Column(
+            modifier =
+                GlanceModifier
+                    .fillMaxSize()
+                    .background(
+                        androidx.glance.color.ColorProvider(day = Color(0xFFFDECEA), night = Color(0xFF3B1A19)),
+                    ).padding(12.dp)
+                    .clickable(
+                        actionRunCallback<DynamicWidgetRetryActionCallback>(
+                            DynamicWidgetRetryActionCallback.parametersFor(widgetId),
+                        ),
+                    ),
+        ) {
+            // End padding keeps the title clear of the server refresh button drawn over the corner.
+            Text(
+                text = "Dynamic Widget \"$widgetId\" failed (${failure.stage.label})",
+                maxLines = 2,
+                modifier = GlanceModifier.padding(end = 36.dp),
+                style =
+                    androidx.glance.text.TextStyle(
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                    ),
+            )
+            // The message and frames take whatever height is left, so the footer always fits.
+            Column(modifier = GlanceModifier.defaultWeight()) {
+                Text(
+                    text = failure.message,
+                    maxLines = 4,
+                    style = androidx.glance.text.TextStyle(fontSize = 11.sp, color = textColor),
+                )
+                frames.forEach { frame ->
+                    Text(
+                        text = "  $frame",
+                        maxLines = 1,
+                        style = androidx.glance.text.TextStyle(fontSize = 9.sp, color = textColor),
+                    )
+                }
+            }
+            Text(
+                text = "Tap to retry",
+                maxLines = 1,
+                style =
+                    androidx.glance.text.TextStyle(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                    ),
+            )
+        }
+    }
 
     @Composable
     private fun Fallback() {

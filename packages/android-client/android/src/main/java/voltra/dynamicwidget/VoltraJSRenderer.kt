@@ -76,6 +76,23 @@ object VoltraJSRenderer {
         source: String,
         widgetId: String,
     ): Boolean =
+        try {
+            evaluateBundleOrThrow(source, widgetId)
+            true
+        } catch (e: VoltraJSException) {
+            false
+        }
+
+    /**
+     * [evaluateBundle] with the reason a failure happened (ADR 0013).
+     *
+     * @throws VoltraJSException with the JavaScript message and stack when evaluation fails, or
+     *   with the native error when the runtime cannot even be reached.
+     */
+    internal fun evaluateBundleOrThrow(
+        source: String,
+        widgetId: String,
+    ) {
         synchronized(lock) {
             val entryModuleId = extractEntryModuleId(source) ?: 0
             val wrapped =
@@ -93,15 +110,18 @@ object VoltraJSRenderer {
                     append(");\n")
                     append("})();\n")
                 }
-            val ok =
-                try {
-                    nativeEvaluateBundle(wrapped, "voltra/$widgetId.bundle", widgetId)
-                } catch (t: Throwable) {
-                    Log.e(TAG, "nativeEvaluateBundle threw for widgetId=$widgetId", t)
-                    false
+            try {
+                if (!nativeEvaluateBundle(wrapped, "voltra/$widgetId.bundle", widgetId)) {
+                    throw VoltraJSException("bundle evaluation failed for widgetId=$widgetId", null)
                 }
-            ok
+            } catch (e: VoltraJSException) {
+                throw e
+            } catch (t: Throwable) {
+                Log.e(TAG, "nativeEvaluateBundle threw for widgetId=$widgetId", t)
+                throw VoltraJSException(t.toString(), null)
+            }
         }
+    }
 
     /**
      * Invoke the previously-evaluated widget's `render(propsJSON, envJSON)` and return its
@@ -113,12 +133,32 @@ object VoltraJSRenderer {
         propsJSON: String,
         envJSON: String,
     ): String? =
+        try {
+            renderOrThrow(widgetId, propsJSON, envJSON)
+        } catch (e: VoltraJSException) {
+            null
+        }
+
+    /**
+     * [render] with the reason a failure happened (ADR 0013).
+     *
+     * @throws VoltraJSException with the JavaScript message and stack when `render()` throws, or a
+     *   message naming the returned type when it does not return a string.
+     */
+    internal fun renderOrThrow(
+        widgetId: String,
+        propsJSON: String,
+        envJSON: String,
+    ): String =
         synchronized(lock) {
             try {
                 nativeRender(widgetId, propsJSON, envJSON)
+                    ?: throw VoltraJSException("render() produced no result for widgetId=$widgetId", null)
+            } catch (e: VoltraJSException) {
+                throw e
             } catch (t: Throwable) {
                 Log.e(TAG, "nativeRender threw for widgetId=$widgetId", t)
-                null
+                throw VoltraJSException(t.toString(), null)
             }
         }
 

@@ -20,6 +20,8 @@ internal interface DynamicWidgetGlanceUpdateBoundary {
 
     suspend fun advanceDynamicWidgetConfigurationRevision(dynamicWidgetGlanceId: GlanceId)
 
+    suspend fun advanceDynamicWidgetRetryRevision(dynamicWidgetGlanceId: GlanceId)
+
     suspend fun updateDynamicWidget(
         dynamicWidgetGlanceAppWidget: VoltraClientGlanceWidget,
         dynamicWidgetGlanceId: GlanceId,
@@ -49,6 +51,13 @@ internal class AndroidDynamicWidgetGlanceUpdateBoundary(
         updateAppWidgetState(context, dynamicWidgetGlanceId) { preferences ->
             val currentRevision = preferences[dynamicWidgetConfigurationRevisionKey] ?: 0L
             preferences[dynamicWidgetConfigurationRevisionKey] = currentRevision + 1L
+        }
+    }
+
+    override suspend fun advanceDynamicWidgetRetryRevision(dynamicWidgetGlanceId: GlanceId) {
+        updateAppWidgetState(context, dynamicWidgetGlanceId) { preferences ->
+            val currentRevision = preferences[dynamicWidgetRetryRevisionKey] ?: 0L
+            preferences[dynamicWidgetRetryRevisionKey] = currentRevision + 1L
         }
     }
 
@@ -108,6 +117,28 @@ internal class DynamicWidgetGlanceUpdateCoordinator(
         val dynamicWidgetGlanceId =
             dynamicWidgetGlanceUpdateBoundary.getDynamicWidgetGlanceId(dynamicWidgetAppWidgetId)
         dynamicWidgetGlanceUpdateBoundary.advanceDynamicWidgetConfigurationRevision(dynamicWidgetGlanceId)
+        dynamicWidgetGlanceUpdateBoundary.updateDynamicWidget(
+            dynamicWidgetGlanceAppWidget = validatedDynamicWidgetGlanceAppWidget,
+            dynamicWidgetGlanceId = dynamicWidgetGlanceId,
+        )
+    }
+
+    /**
+     * The dev error view's retry (ADR 0013): the bundle was just reloaded, so advance the retry
+     * revision of the tapped placement and re-render only it. The caller already holds its
+     * [GlanceId] — Glance hands it to the action callback — so there is no appWidgetId lookup.
+     */
+    suspend fun triggerDynamicWidgetRetryGlanceUpdate(
+        dynamicWidgetGlanceId: GlanceId,
+        dynamicWidgetId: String,
+        dynamicWidgetGlanceAppWidget: GlanceAppWidget?,
+    ) {
+        val validatedDynamicWidgetGlanceAppWidget =
+            requireDynamicWidgetGlanceAppWidget(
+                dynamicWidgetId = dynamicWidgetId,
+                dynamicWidgetGlanceAppWidget = dynamicWidgetGlanceAppWidget,
+            )
+        dynamicWidgetGlanceUpdateBoundary.advanceDynamicWidgetRetryRevision(dynamicWidgetGlanceId)
         dynamicWidgetGlanceUpdateBoundary.updateDynamicWidget(
             dynamicWidgetGlanceAppWidget = validatedDynamicWidgetGlanceAppWidget,
             dynamicWidgetGlanceId = dynamicWidgetGlanceId,
@@ -304,4 +335,24 @@ internal suspend fun triggerDynamicWidgetInstanceConfigurationGlanceUpdate(
     )
 
     Log.d(TAG, "Triggered configuration update for '$dynamicWidgetId' instance $dynamicWidgetAppWidgetId")
+}
+
+/**
+ * Advance the tapped placement's retry revision and re-render just that placement, for the dev
+ * error view's retry (ADR 0013).
+ */
+internal suspend fun triggerDynamicWidgetRetryGlanceUpdate(
+    context: Context,
+    dynamicWidgetId: String,
+    dynamicWidgetGlanceId: GlanceId,
+) {
+    DynamicWidgetGlanceUpdateCoordinator(
+        AndroidDynamicWidgetGlanceUpdateBoundary(context),
+    ).triggerDynamicWidgetRetryGlanceUpdate(
+        dynamicWidgetGlanceId = dynamicWidgetGlanceId,
+        dynamicWidgetId = dynamicWidgetId,
+        dynamicWidgetGlanceAppWidget = VoltraWidgetReceiver.getWidget(context, dynamicWidgetId),
+    )
+
+    Log.d(TAG, "Triggered retry update for '$dynamicWidgetId'")
 }

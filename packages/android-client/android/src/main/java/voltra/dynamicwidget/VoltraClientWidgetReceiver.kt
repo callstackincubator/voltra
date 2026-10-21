@@ -51,6 +51,25 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     ) {
         super.onDeleted(context, appWidgetIds)
         clearInstanceConfiguration(context, appWidgetIds)
+        clearLastGoodRender(context, appWidgetIds)
+    }
+
+    /**
+     * Drop the last good render of every removed placement (ADR 0013, section 5). Split out of
+     * [onDeleted] for the same reason as [clearInstanceConfiguration]. Failures are logged: the
+     * store already swallows I/O errors, and a receiver that throws crashes the app.
+     */
+    @VisibleForTesting
+    internal fun clearLastGoodRender(
+        context: Context,
+        appWidgetIds: IntArray,
+        lastGoodStore: DynamicWidgetLastGoodStore = DynamicWidgetLastGoodStore(context),
+    ) {
+        try {
+            lastGoodStore.delete(widgetId, appWidgetIds.toList())
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not clear the last good render for widget '$widgetId': ${e.message}", e)
+        }
     }
 
     /**
@@ -93,6 +112,24 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     ) {
         super.onRestored(context, oldWidgetIds, newWidgetIds)
         remapInstanceConfiguration(context, oldWidgetIds, newWidgetIds)
+        remapLastGoodRender(context, oldWidgetIds, newWidgetIds)
+    }
+
+    /** Move each placement's last good render to its new id, alongside [remapInstanceConfiguration]. */
+    @VisibleForTesting
+    internal fun remapLastGoodRender(
+        context: Context,
+        oldWidgetIds: IntArray,
+        newWidgetIds: IntArray,
+        lastGoodStore: DynamicWidgetLastGoodStore = DynamicWidgetLastGoodStore(context),
+    ) {
+        if (oldWidgetIds.size != newWidgetIds.size) return
+
+        try {
+            lastGoodStore.remap(widgetId, oldWidgetIds.toList(), newWidgetIds.toList())
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not remap the last good render for widget '$widgetId': ${e.message}", e)
+        }
     }
 
     /** The remap itself, split out of [onRestored] for the same reason as [clearInstanceConfiguration]. */
