@@ -24,7 +24,7 @@ class DynamicWidgetRenderCoordinatorTest {
             DynamicWidgetPropsStore(RuntimeEnvironment.getApplication())
                 .getDynamicWidgetProps("absent-props-dynamic-widget")
 
-        val dynamicWidgetNode =
+        val dynamicWidgetOutcome =
             dynamicWidgetRenderCoordinator.renderDynamicWidget(
                 dynamicWidgetId = "absent-props-dynamic-widget",
                 dynamicWidgetRenderInput =
@@ -39,6 +39,7 @@ class DynamicWidgetRenderCoordinatorTest {
             DynamicWidgetRenderInput(propsRevision = 0L, propsJson = "{}"),
             dynamicWidgetRuntimeBoundary.renderedDynamicWidgetInput,
         )
+        val dynamicWidgetNode = (dynamicWidgetOutcome as DynamicWidgetRenderOutcome.Success).node
         assertTrue(dynamicWidgetNode is VoltraNode.Element)
         val dynamicWidgetTextNode =
             (dynamicWidgetNode as VoltraNode.Element).element.c as VoltraNode.Text
@@ -71,7 +72,7 @@ class DynamicWidgetRenderCoordinatorTest {
         val dynamicWidgetPropsJson =
             dynamicWidgetPropsStore.getDynamicWidgetProps("weather-dynamic-widget")
 
-        val dynamicWidgetNode =
+        val dynamicWidgetOutcome =
             dynamicWidgetRenderCoordinator.renderDynamicWidget(
                 dynamicWidgetId = "weather-dynamic-widget",
                 dynamicWidgetRenderInput =
@@ -92,6 +93,7 @@ class DynamicWidgetRenderCoordinatorTest {
             dynamicWidgetEnvironmentJson,
             dynamicWidgetRuntimeBoundary.renderedDynamicWidgetEnvironmentJson,
         )
+        val dynamicWidgetNode = (dynamicWidgetOutcome as DynamicWidgetRenderOutcome.Success).node
         assertTrue(dynamicWidgetNode is VoltraNode.Element)
         val dynamicWidgetRootElement = (dynamicWidgetNode as VoltraNode.Element).element
 
@@ -101,8 +103,61 @@ class DynamicWidgetRenderCoordinatorTest {
         assertEquals("#000000", dynamicWidgetRootStyle?.get("backgroundColor"))
     }
 
+    @Test
+    fun aSuccessfulRenderCarriesTheNodeJsonItParsed() {
+        val json = """{"t":18,"c":"Hello"}"""
+
+        val outcome = render(RecordingDynamicWidgetRuntimeBoundary(json))
+
+        assertEquals(json, (outcome as DynamicWidgetRenderOutcome.Success).nodeJson)
+    }
+
+    @Test
+    fun aJavaScriptThrowIsARenderFailureWithTheMessageAndStack() {
+        val outcome =
+            render(
+                RecordingDynamicWidgetRuntimeBoundary(
+                    failure = VoltraJSException("TypeError: x is undefined", "at Widget (a.tsx:1:2)"),
+                ),
+            )
+
+        assertEquals(
+            DynamicWidgetRenderOutcome.Failure(
+                DynamicWidgetRenderOutcome.Stage.Render,
+                "TypeError: x is undefined",
+                "at Widget (a.tsx:1:2)",
+            ),
+            outcome,
+        )
+    }
+
+    @Test
+    fun unparseableNodeJsonIsAParseFailure() {
+        val outcome = render(RecordingDynamicWidgetRuntimeBoundary("""{"t":"not a node"""))
+
+        val failure = outcome as DynamicWidgetRenderOutcome.Failure
+        assertEquals(DynamicWidgetRenderOutcome.Stage.Parse, failure.stage)
+        assertTrue(failure.message.isNotBlank())
+    }
+
+    @Test
+    fun theStageLabelsAreTheLowercaseNamesTheLogLineUses() {
+        assertEquals(
+            listOf("bundle", "evaluate", "render", "parse"),
+            DynamicWidgetRenderOutcome.Stage.entries.map { it.label },
+        )
+    }
+
+    private fun render(boundary: DynamicWidgetRuntimeBoundary): DynamicWidgetRenderOutcome =
+        DynamicWidgetRenderCoordinator(boundary).renderDynamicWidget(
+            dynamicWidgetId = "outcome-widget",
+            dynamicWidgetRenderInput = DynamicWidgetRenderInput(propsRevision = 0L, propsJson = "{}"),
+            dynamicWidgetEnvironmentJson = "{}",
+        )
+
     private class RecordingDynamicWidgetRuntimeBoundary(
-        private val dynamicWidgetStandaloneNodeJson: String?,
+        private val dynamicWidgetStandaloneNodeJson: String = "",
+        private val failure: VoltraJSException? = null,
     ) : DynamicWidgetRuntimeBoundary {
         var renderedDynamicWidgetId: String? = null
         var renderedDynamicWidgetInput: DynamicWidgetRenderInput? = null
@@ -112,10 +167,11 @@ class DynamicWidgetRenderCoordinatorTest {
             dynamicWidgetId: String,
             dynamicWidgetRenderInput: DynamicWidgetRenderInput,
             dynamicWidgetEnvironmentJson: String,
-        ): String? {
+        ): String {
             renderedDynamicWidgetId = dynamicWidgetId
             renderedDynamicWidgetInput = dynamicWidgetRenderInput
             renderedDynamicWidgetEnvironmentJson = dynamicWidgetEnvironmentJson
+            failure?.let { throw it }
             return dynamicWidgetStandaloneNodeJson
         }
     }

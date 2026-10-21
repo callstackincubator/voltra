@@ -35,6 +35,39 @@ class VoltraJSRendererJniNamesTest {
     }
 
     /**
+     * The native code throws [VoltraJSException] by name (ADR 0013). Renaming or moving the class
+     * compiles, and then every JS failure becomes a `NoClassDefFoundError` inside the JNI call; R8
+     * stripping its constructor does the same in an app that minifies. This pins all three places
+     * that have to agree: the class, the `FindClass` string, and the consumer keep rule.
+     */
+    @Test
+    fun theJsExceptionClassIsFoundByNativeCodeAndKeptByTheConsumerRules() {
+        val cppSource = voltraJsRendererCppSource().readText()
+        val internalName = VoltraJSException::class.java.name.replace('.', '/')
+
+        assertTrue(
+            "voltra_js_renderer.cpp must FindClass(\"$internalName\")",
+            cppSource.contains("FindClass(\"$internalName\")"),
+        )
+        assertTrue(
+            "voltra_js_renderer.cpp must construct it with (String, String)",
+            cppSource.contains("\"(Ljava/lang/String;Ljava/lang/String;)V\""),
+        )
+        VoltraJSException::class.java.getConstructor(String::class.java, String::class.java)
+
+        val rules =
+            File(
+                voltraJsRendererCppSource()
+                    .parentFile.parentFile.parentFile.parentFile,
+                "consumer-rules.pro",
+            )
+        assertTrue("consumer-rules.pro must exist at ${rules.path}", rules.isFile)
+        val rulesText = rules.readText()
+        assertTrue(rulesText.contains("-keep class ${VoltraJSException::class.java.name}"))
+        assertTrue(rulesText.contains("<init>(java.lang.String, java.lang.String)"))
+    }
+
+    /**
      * Locates `src/main/cpp/voltra_js_renderer.cpp` relative to the module directory. Prefers the
      * `voltra.moduleDir` system property set by this module's `build.gradle` (`testOptions`) so
      * this doesn't depend on the test runner's working directory; falls back to walking up from

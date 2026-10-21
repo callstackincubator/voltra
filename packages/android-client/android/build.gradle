@@ -92,6 +92,8 @@ android {
     versionCode 1
     versionName "0.1.0"
     buildConfigField "String", "VOLTRA_VERSION", "\"${voltraVersion}\""
+    // Keeps the exception class native code throws by name (ADR 0013).
+    consumerProguardFiles "consumer-rules.pro"
 
     // Standalone Hermes runtime for Dynamic Widgets, via custom JNI.
     // See CMakeLists.txt / src/main/cpp/voltra_js_renderer.cpp.

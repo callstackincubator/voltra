@@ -29,6 +29,14 @@ internal val dynamicWidgetConfigurationRevisionKey =
     longPreferencesKey("voltra.dynamic_widget.configuration_revision")
 
 /**
+ * Bumped when the dev error view's retry reloads the bundle, so the tapped placement recomposes and
+ * reads the refreshed bundle record (ADR 0013). The record itself is process-wide and not
+ * observable by the composition; this key is what makes Glance run it again.
+ */
+internal val dynamicWidgetRetryRevisionKey =
+    longPreferencesKey("voltra.dynamic_widget.retry_revision")
+
+/**
  * Connects Glance's observable per-instance state to the authoritative SharedPreferences props.
  * The revision causes recomposition; the props store supplies the latest value when updates coalesce.
  */
@@ -75,4 +83,17 @@ internal fun currentDynamicWidgetConfiguration(
             }
         }
     }
+}
+
+/**
+ * This widget id's bundle state, re-read on every composition (ADR 0013, section 2).
+ *
+ * Reading the retry revision is what subscribes the composition to a retry: the record is a plain
+ * map and Compose cannot observe it, but a bump of the tapped placement's revision recomposes it.
+ */
+@Composable
+internal fun currentDynamicWidgetBundleState(dynamicWidgetId: String): DynamicWidgetBundleState {
+    currentState(dynamicWidgetRetryRevisionKey)
+
+    return DynamicWidgetBundleRecord.get(dynamicWidgetId)
 }
