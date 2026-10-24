@@ -5,6 +5,8 @@ import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.ReadableType
 import com.facebook.react.bridge.WritableNativeMap
+import voltra.ongoingnotification.AndroidOngoingNotificationForegroundServiceOptions
+import voltra.ongoingnotification.AndroidOngoingNotificationForegroundServiceResult
 import voltra.ongoingnotification.AndroidOngoingNotificationOption
 import voltra.ongoingnotification.AndroidOngoingNotificationPresentationUpdate
 import voltra.ongoingnotification.AndroidOngoingNotificationPromotionInfo
@@ -36,7 +38,31 @@ fun AndroidOngoingNotificationOptions(map: ReadableMap) =
                 allowSystemGeneratedContextualActions = map.booleanOption("allowSystemGeneratedContextualActions"),
             ),
         alert = map.booleanValueOrNull("alert"),
+        revision = map.revisionOrNull(),
+        foregroundService =
+            map
+                .takeIf { it.hasKey("foregroundService") && !it.isNull("foregroundService") }
+                ?.getMap("foregroundService")
+                ?.let { service ->
+                    service.takeIf { it.hasKey("type") }?.getString("type")?.let { type ->
+                        AndroidOngoingNotificationForegroundServiceOptions(
+                            type = type,
+                            onDismiss = service.takeIf { it.hasKey("onDismiss") }?.getString("onDismiss"),
+                            fallbackBehavior =
+                                service
+                                    .takeIf {
+                                        it.hasKey(
+                                            "fallbackBehavior",
+                                        )
+                                    }?.getString("fallbackBehavior"),
+                        )
+                    }
+                },
     )
+
+/** JavaScript validates `revision` as a non-negative integer; it crosses the bridge as a double. */
+fun ReadableMap.revisionOrNull(): Long? =
+    takeIf { it.hasKey("revision") && it.getType("revision") == ReadableType.Number }?.getDouble("revision")?.toLong()
 
 /**
  * Reads an option that describes this one post rather than the notification's lifetime. `alert` is
@@ -97,6 +123,7 @@ fun AndroidOngoingNotificationStartResult.toWritableMap() =
         reason?.let { putString("reason", it) }
         promotion?.let { putMap("promotion", it.toWritableMap()) }
         styleFallback?.let { putString("styleFallback", it) }
+        foregroundService?.let { putMap("foregroundService", it.toWritableMap()) }
     }
 
 fun AndroidOngoingNotificationUpdateResult.toWritableMap() =
@@ -117,6 +144,7 @@ fun AndroidOngoingNotificationUpsertResult.toWritableMap() =
         reason?.let { putString("reason", it) }
         promotion?.let { putMap("promotion", it.toWritableMap()) }
         styleFallback?.let { putString("styleFallback", it) }
+        foregroundService?.let { putMap("foregroundService", it.toWritableMap()) }
     }
 
 fun AndroidOngoingNotificationStopResult.toWritableMap() =
@@ -142,4 +170,11 @@ fun AndroidOngoingNotificationPromotionInfo.toCheckResultWritableMap() =
         putBoolean("eligible", eligible)
         putArray("reasons", Arguments.fromList(reasons))
         hasPromotableCharacteristics?.let { putBoolean("hasPromotableCharacteristics", it) }
+    }
+
+fun AndroidOngoingNotificationForegroundServiceResult.toWritableMap() =
+    WritableNativeMap().apply {
+        putBoolean("attached", attached)
+        type?.let { putString("type", it) }
+        reason?.let { putString("reason", it) }
     }

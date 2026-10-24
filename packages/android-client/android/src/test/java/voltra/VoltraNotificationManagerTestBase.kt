@@ -438,7 +438,7 @@ abstract class VoltraNotificationManagerTestBase(
 
         assertTrue(restart.ok)
         assertEquals(1, notificationManager.activeNotifications.size)
-        assertTrue(manager.stopOngoingNotification("restart-me").ok)
+        assertTrue(runBlocking { manager.stopOngoingNotification("restart-me") }.ok)
         assertTrue(notificationManager.activeNotifications.isEmpty())
     }
 
@@ -467,9 +467,11 @@ abstract class VoltraNotificationManagerTestBase(
 
             VoltraNotificationManager.markDismissed(context, "swiped")
             VoltraNotificationManager.markDismissed(context, "never-started")
-            manager.stopOngoingNotification("stopped")
-            manager.stopOngoingNotification("never-started")
-            manager.endAllOngoingNotifications()
+            runBlocking {
+                manager.stopOngoingNotification("stopped")
+                manager.stopOngoingNotification("never-started")
+                manager.endAllOngoingNotifications()
+            }
 
             assertEquals(
                 listOf(
@@ -503,7 +505,7 @@ abstract class VoltraNotificationManagerTestBase(
                 )
             }
         assertTrue(postedNotifications().isEmpty())
-        assertFalse(manager.stopOngoingNotification("promotion-check").ok)
+        assertFalse(runBlocking { manager.stopOngoingNotification("promotion-check") }.ok)
 
         val post =
             start(

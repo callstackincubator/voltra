@@ -264,3 +264,59 @@ test('Node and Express adapters delegate through the same conversion path', asyn
     },
   ])
 })
+
+test('builds push envelopes that the client parser accepts', () => {
+  const {
+    createAndroidOngoingNotificationPushEnvelope,
+    parseAndroidOngoingNotificationPush,
+  } = require('../build/cjs/index.js')
+  const { Progress } = AndroidOngoingNotification
+
+  const upsert = createAndroidOngoingNotificationPushEnvelope({
+    notificationId: 'order-123',
+    operation: 'upsert',
+    revision: 42,
+    options: { channelId: 'delivery_updates', foregroundService: { type: 'dataSync' } },
+    content: React.createElement(Progress, {
+      title: 'Driver is approaching',
+      text: '2 stops away',
+      value: 80,
+      max: 100,
+    }),
+  })
+
+  assert.equal(upsert.object.v, 1)
+  assert.deepEqual(
+    upsert.object.payload,
+    renderAndroidOngoingNotificationPayloadToJson(
+      React.createElement(Progress, { title: 'Driver is approaching', text: '2 stops away', value: 80, max: 100 })
+    )
+  )
+  // The JSON string drops the renderer's undefined keys, so compare with what a device decodes.
+  assert.deepEqual(parseAndroidOngoingNotificationPush({ voltraOngoingNotification: upsert.string }), {
+    ok: true,
+    envelope: JSON.parse(upsert.string),
+  })
+
+  const stop = createAndroidOngoingNotificationPushEnvelope({
+    notificationId: 'order-123',
+    operation: 'stop',
+    revision: 43,
+  })
+  assert.deepEqual(stop.object, { v: 1, notificationId: 'order-123', operation: 'stop', revision: 43 })
+  assert.equal('payload' in stop.object, false)
+  assert.deepEqual(parseAndroidOngoingNotificationPush({ data: { voltraOngoingNotification: stop.string } }), {
+    ok: true,
+    envelope: stop.object,
+  })
+
+  assert.throws(
+    () => createAndroidOngoingNotificationPushEnvelope({ notificationId: 'order-123', operation: 'upsert' }),
+    /content is required for upsert/
+  )
+  assert.throws(
+    () =>
+      createAndroidOngoingNotificationPushEnvelope({ notificationId: 'order-123', operation: 'stop', revision: -1 }),
+    /revision must be a non-negative integer/
+  )
+})

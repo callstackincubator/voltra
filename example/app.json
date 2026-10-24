@@ -114,6 +114,9 @@
         "@use-voltra/android-client",
         {
           "enableNotifications": true,
+          "ongoingNotificationForegroundService": {
+            "types": ["dataSync", "shortService"]
+          },
           "widgets": [
             {
               "id": "voltra",

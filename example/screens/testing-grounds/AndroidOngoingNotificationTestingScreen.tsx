@@ -120,6 +120,8 @@ export default function AndroidOngoingNotificationTestingScreen() {
   const [channelId, setChannelId] = useState('voltra_live_updates')
   const [smallIcon, setSmallIcon] = useState('')
   const [requestPromotedOngoing, setRequestPromotedOngoing] = useState(true)
+  // Backs the notification with Voltra's foreground service (declared for dataSync in app.json).
+  const [useForegroundService, setUseForegroundService] = useState(false)
   const [visibility, setVisibility] = useState<AndroidOngoingNotificationVisibility | 'unset'>('unset')
   const [color, setColor] = useState('')
   const [category, setCategory] = useState('')
@@ -382,21 +384,27 @@ export default function AndroidOngoingNotificationTestingScreen() {
     channelId,
     smallIcon: smallIcon || undefined,
     requestPromotedOngoing,
+    ...(useForegroundService ? { foregroundService: { type: 'dataSync' as const } } : {}),
     ...presentationOptions,
   })
 
   const buildVoltraPushEnvelope = (operation: 'upsert' | 'stop' = 'upsert') => {
     const data: {
       voltraOngoingNotification: {
+        v: 1
         notificationId: string
         operation: 'upsert' | 'stop'
+        revision: number
         options: UpsertAndroidOngoingNotificationOptions
         payload?: AndroidOngoingNotificationPayload
       }
     } = {
       voltraOngoingNotification: {
+        v: 1,
         notificationId,
         operation,
+        // Any value that grows between pushes works; a backend would send its own version number.
+        revision: Date.now(),
         options: {
           channelId,
           smallIcon: smallIcon || undefined,
@@ -446,7 +454,13 @@ export default function AndroidOngoingNotificationTestingScreen() {
         result.ok
           ? `Started Android ongoing notification "${result.notificationId}"${formatStyleFallback(
               result.styleFallback
-            )}.`
+            )}${
+              result.foregroundService
+                ? result.foregroundService.attached
+                  ? ', backed by the foreground service'
+                  : `, without the foreground service (${result.foregroundService.reason})`
+                : ''
+            }.`
           : `Did not start Android ongoing notification "${result.notificationId}": ${result.reason}.`
       )
       setRenderedPayload(renderAndroidOngoingNotificationPayload(content))
@@ -597,6 +611,14 @@ export default function AndroidOngoingNotificationTestingScreen() {
         <Card.Text>{`Can request promoted ongoing: ${
           capabilities.canRequestPromotedOngoing ? 'yes' : 'no'
         }`}</Card.Text>
+        <Card.Text>{`User can swipe ongoing notifications away: ${
+          capabilities.isUserDismissible ? 'yes' : 'no'
+        }`}</Card.Text>
+        <Card.Text>{`Foreground service: ${
+          capabilities.supportsForegroundService
+            ? `declared (${capabilities.foregroundServiceTypes.join(', ') || 'no types below Android 10'})`
+            : 'not declared'
+        }`}</Card.Text>
         <View style={styles.buttonRow}>
           <Button
             title="Ask Notification Permission"
@@ -632,6 +654,15 @@ export default function AndroidOngoingNotificationTestingScreen() {
             title={requestPromotedOngoing ? 'ON' : 'OFF'}
             variant={requestPromotedOngoing ? 'primary' : 'secondary'}
             onPress={() => setRequestPromotedOngoing((current) => !current)}
+            style={styles.smButton}
+          />
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Foreground Service (dataSync)</Text>
+          <Button
+            title={useForegroundService ? 'ON' : 'OFF'}
+            variant={useForegroundService ? 'primary' : 'secondary'}
+            onPress={() => setUseForegroundService((current) => !current)}
             style={styles.smButton}
           />
         </View>

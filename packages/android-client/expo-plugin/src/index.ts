@@ -25,6 +25,7 @@ const withVoltraAndroid: VoltraAndroidConfigPlugin = (config, props = {}) => {
 
   return withAndroid(config, {
     enableNotifications: props.enableNotifications,
+    ongoingNotificationForegroundService: props.ongoingNotificationForegroundService,
     widgets,
     ...(props.fonts ? { fonts: props.fonts } : {}),
   })
@@ -34,6 +35,8 @@ export default withVoltraAndroid
 
 export type {
   AndroidConfigPluginProps,
+  AndroidOngoingNotificationForegroundServiceConfig,
+  AndroidOngoingNotificationForegroundServiceType,
   AndroidPluginProps,
   AndroidWidgetConfig,
   AndroidWidgetServerUpdateConfig,

@@ -176,3 +176,51 @@ describe('validateAndroidConfigPluginProps serverUpdate', () => {
     }
   })
 })
+
+describe('validateAndroidConfigPluginProps ongoingNotificationForegroundService', () => {
+  const validate =
+    (ongoingNotificationForegroundService: unknown, enableNotifications = true) =>
+    () =>
+      validateAndroidConfigPluginProps({
+        enableNotifications,
+        ongoingNotificationForegroundService: ongoingNotificationForegroundService as any,
+      })
+
+  it('accepts supported types', () => {
+    expect(validate({ types: ['location', 'dataSync'] })).not.toThrow()
+    expect(validate({ types: ['specialUse'], specialUseSubtype: 'Live delivery progress' })).not.toThrow()
+  })
+
+  it.each(['camera', 'microphone', 'mediaProjection', 'phoneCall', 'mediaProcessing', 'systemExempted', 'bogus'])(
+    'rejects the %s type',
+    (type) => {
+      expect(validate({ types: ['location', type] })).toThrow(
+        new RegExp(`ongoingNotificationForegroundService\\.types contains unsupported type '${type}'`)
+      )
+    }
+  )
+
+  it('rejects empty or non-array types', () => {
+    expect(validate({ types: [] })).toThrow(/ongoingNotificationForegroundService\.types must be a non-empty array/)
+    expect(validate({ types: 'location' })).toThrow(
+      /ongoingNotificationForegroundService\.types must be a non-empty array/
+    )
+    expect(validate({})).toThrow(/ongoingNotificationForegroundService\.types must be a non-empty array/)
+  })
+
+  it('rejects specialUse without a subtype', () => {
+    expect(validate({ types: ['specialUse'] })).toThrow(/ongoingNotificationForegroundService\.specialUseSubtype/)
+    expect(validate({ types: ['specialUse'], specialUseSubtype: '  ' })).toThrow(
+      /ongoingNotificationForegroundService\.specialUseSubtype/
+    )
+  })
+
+  it('requires enableNotifications', () => {
+    expect(() =>
+      validateAndroidConfigPluginProps({ ongoingNotificationForegroundService: { types: ['location'] } })
+    ).toThrow(/ongoingNotificationForegroundService requires enableNotifications: true/)
+    expect(validate({ types: ['location'] }, false)).toThrow(
+      /ongoingNotificationForegroundService requires enableNotifications: true/
+    )
+  })
+})

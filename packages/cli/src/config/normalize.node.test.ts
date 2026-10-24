@@ -3,7 +3,7 @@ import { describe, test } from 'node:test'
 
 import { normalizeVoltraConfig, VoltraConfigNormalizationError } from './normalize.ts'
 
-import type { AndroidWidgetConfig, IOSWidgetConfig } from './types.ts'
+import type { AndroidWidgetConfig, IOSWidgetConfig, VoltraAndroidConfig } from './types.ts'
 
 function normalizeWidgets(widgets: IOSWidgetConfig[]) {
   return normalizeVoltraConfig({
@@ -101,5 +101,82 @@ describe('appIntent without an entry', () => {
     const config = normalizeWidgets([{ ...weather, appIntent: { parameters: [] } }])
 
     assert.deepEqual(config.warnings, [])
+  })
+})
+
+describe('android ongoingNotificationForegroundService', () => {
+  function normalizeForegroundService(ongoingNotificationForegroundService: unknown, enableNotifications = true) {
+    return normalizeVoltraConfig({
+      config: {
+        android: {
+          enableNotifications,
+          ongoingNotificationForegroundService:
+            ongoingNotificationForegroundService as VoltraAndroidConfig['ongoingNotificationForegroundService'],
+        },
+      },
+      configDir: process.cwd(),
+    })
+  }
+
+  function assertRejects(fn: () => unknown, pattern: RegExp) {
+    assert.throws(
+      fn,
+      (error: unknown) => error instanceof VoltraConfigNormalizationError && pattern.test(error.message)
+    )
+  }
+
+  test('keeps the configured types', () => {
+    const config = normalizeForegroundService({ types: ['location', 'dataSync'] })
+
+    assert.deepEqual(config.android?.ongoingNotificationForegroundService, { types: ['location', 'dataSync'] })
+  })
+
+  test('keeps the special use subtype', () => {
+    const config = normalizeForegroundService({ types: ['specialUse'], specialUseSubtype: 'Live delivery progress' })
+
+    assert.deepEqual(config.android?.ongoingNotificationForegroundService, {
+      types: ['specialUse'],
+      specialUseSubtype: 'Live delivery progress',
+    })
+  })
+
+  test('is undefined without the key', () => {
+    const config = normalizeVoltraConfig({
+      config: { android: { enableNotifications: true } },
+      configDir: process.cwd(),
+    })
+
+    assert.equal(config.android?.ongoingNotificationForegroundService, undefined)
+  })
+
+  for (const type of ['camera', 'microphone', 'mediaProjection', 'phoneCall', 'mediaProcessing', 'systemExempted']) {
+    test(`rejects the ${type} type`, () => {
+      assertRejects(
+        () => normalizeForegroundService({ types: ['location', type] }),
+        new RegExp(`android\\.ongoingNotificationForegroundService\\.types contains unsupported type '${type}'`)
+      )
+    })
+  }
+
+  test('rejects empty or non-array types', () => {
+    const pattern = /android\.ongoingNotificationForegroundService\.types must be a non-empty array/
+
+    assertRejects(() => normalizeForegroundService({ types: [] }), pattern)
+    assertRejects(() => normalizeForegroundService({ types: 'location' }), pattern)
+    assertRejects(() => normalizeForegroundService({}), pattern)
+  })
+
+  test('rejects specialUse without a subtype', () => {
+    const pattern = /android\.ongoingNotificationForegroundService\.specialUseSubtype/
+
+    assertRejects(() => normalizeForegroundService({ types: ['specialUse'] }), pattern)
+    assertRejects(() => normalizeForegroundService({ types: ['specialUse'], specialUseSubtype: '' }), pattern)
+  })
+
+  test('requires enableNotifications', () => {
+    assertRejects(
+      () => normalizeForegroundService({ types: ['location'] }, false),
+      /android\.ongoingNotificationForegroundService requires android\.enableNotifications/
+    )
   })
 })

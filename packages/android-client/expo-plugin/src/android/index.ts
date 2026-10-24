@@ -10,7 +10,7 @@ import { configureAndroidManifest } from './manifest'
  * Orchestrates Android widget file generation and AndroidManifest configuration.
  */
 export const withAndroid: ConfigPlugin<AndroidPluginProps> = (config, props) => {
-  const { enableNotifications, widgets, userImagesPath, fonts } = props
+  const { enableNotifications, ongoingNotificationForegroundService, widgets, userImagesPath, fonts } = props
 
   if (!config.android?.package) {
     throw new Error(
@@ -24,7 +24,7 @@ export const withAndroid: ConfigPlugin<AndroidPluginProps> = (config, props) => 
 
   return withPlugins(config, [
     [generateAndroidWidgetFiles, { widgets, userImagesPath, fonts }],
-    [configureAndroidManifest, { enableNotifications, widgets }],
+    [configureAndroidManifest, { enableNotifications, ongoingNotificationForegroundService, widgets }],
     [withWidgetBundleGradle, { widgets }],
   ])
 }

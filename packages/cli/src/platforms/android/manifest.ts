@@ -1,5 +1,6 @@
 import { Builder, parseStringPromise } from 'xml2js'
 
+import { reconcileOngoingNotificationForegroundService } from '../../config/foregroundService'
 import { readTextFile, writeTextFile } from '../../fs/readWrite'
 import { toRelativePath } from '../../fs/path'
 import { VoltraCliError } from '../../reporting/summary'
@@ -54,6 +55,16 @@ interface AndroidManifestPermission {
 interface AndroidManifestApplication {
   $?: Record<string, string>
   receiver?: AndroidManifestReceiver[]
+  service?: AndroidManifestService[]
+}
+
+interface AndroidManifestService {
+  $?: Record<string, string>
+  property?: AndroidManifestProperty[]
+}
+
+interface AndroidManifestProperty {
+  $?: Record<string, string>
 }
 
 interface AndroidManifestReceiver {
@@ -116,6 +127,8 @@ export async function ensureAndroidManifest(
   for (const widget of android.widgets) {
     ensureWidgetReceiver(receivers, widget.id)
   }
+
+  reconcileForegroundService(manifest, application, android)
 
   const nextContent = `${XML_BUILDER.buildObject(manifestDocument)}\n`
 
@@ -182,6 +195,22 @@ function reconcileNotificationPermissions(permissions: AndroidManifestPermission
   if (enabled) {
     ensurePermission(permissions, POST_NOTIFICATIONS_PERMISSION)
     ensurePermission(permissions, POST_PROMOTED_NOTIFICATIONS_PERMISSION)
+  }
+}
+
+function reconcileForegroundService(
+  manifest: AndroidManifestRoot,
+  application: AndroidManifestApplication,
+  android: NormalizedVoltraAndroidConfig
+): void {
+  reconcileOngoingNotificationForegroundService(
+    manifest,
+    application,
+    android.enableNotifications ? android.ongoingNotificationForegroundService : undefined
+  )
+
+  if (application.service?.length === 0) {
+    delete application.service
   }
 }
 

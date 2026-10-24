@@ -40,6 +40,7 @@ Other important Apple-side keys:
 Use `@use-voltra/android-client` for Android config.
 
 - `enableNotifications`
+- `ongoingNotificationForegroundService`: `{ types, specialUseSubtype? }`, declares Voltra's foreground service and its `FOREGROUND_SERVICE_*` permissions; requires `enableNotifications: true`. `types` allows `location`, `health`, `mediaPlayback`, `remoteMessaging`, `connectedDevice`, `dataSync`, `shortService`, `specialUse`; `specialUseSubtype` is required with `specialUse`. Runtime permissions such as location are not added
 - `widgets`
 - `fonts`
 

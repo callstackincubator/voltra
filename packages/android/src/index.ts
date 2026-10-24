@@ -75,6 +75,12 @@ export type {
   AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationFallbackBehavior,
+  AndroidOngoingNotificationForegroundServiceAttachFailure,
+  AndroidOngoingNotificationForegroundServiceOptions,
+  AndroidOngoingNotificationForegroundServiceResult,
+  AndroidOngoingNotificationForegroundServiceState,
+  AndroidOngoingNotificationForegroundServiceType,
+  AndroidOngoingNotificationHandle,
   AndroidOngoingNotificationInboxPayload,
   AndroidOngoingNotificationInboxProps,
   AndroidOngoingNotificationInput,
@@ -104,6 +110,7 @@ export type {
   AndroidOngoingNotificationVisibility,
   CheckAndroidOngoingNotificationPromotionOptions,
   StartAndroidOngoingNotificationOptions,
+  StopAndroidOngoingNotificationOptions,
   UpdateAndroidOngoingNotificationOptions,
   UpsertAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationOptions,
@@ -111,8 +118,20 @@ export type {
 } from './ongoing-notification/types.js'
 export {
   ANDROID_ONGOING_NOTIFICATION_CATEGORIES,
+  ANDROID_ONGOING_NOTIFICATION_FOREGROUND_SERVICE_TYPES,
   ANDROID_ONGOING_NOTIFICATION_VISIBILITIES,
 } from './ongoing-notification/types.js'
+export type {
+  AndroidOngoingNotificationPushEnvelope,
+  AndroidOngoingNotificationPushOptions,
+  AndroidOngoingNotificationPushParseFailure,
+  AndroidOngoingNotificationPushParseResult,
+  CreateAndroidOngoingNotificationPushEnvelopeInput,
+} from './ongoing-notification/push.js'
+export {
+  createAndroidOngoingNotificationPushEnvelope,
+  parseAndroidOngoingNotificationPush,
+} from './ongoing-notification/push.js'
 
 // Component prop types
 export type { BoxProps } from './jsx/Box.js'

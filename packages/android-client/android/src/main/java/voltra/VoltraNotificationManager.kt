@@ -21,6 +21,10 @@ import kotlinx.serialization.json.Json
 import voltra.ongoingnotification.AndroidOngoingNotificationActionPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationBigPicturePayload
 import voltra.ongoingnotification.AndroidOngoingNotificationBigTextPayload
+import voltra.ongoingnotification.AndroidOngoingNotificationForegroundServiceController
+import voltra.ongoingnotification.AndroidOngoingNotificationForegroundServiceOptions
+import voltra.ongoingnotification.AndroidOngoingNotificationForegroundServiceResult
+import voltra.ongoingnotification.AndroidOngoingNotificationForegroundServiceTypes
 import voltra.ongoingnotification.AndroidOngoingNotificationImageSource
 import voltra.ongoingnotification.AndroidOngoingNotificationInboxPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationMetricPayload
@@ -36,12 +40,18 @@ import voltra.ongoingnotification.AndroidOngoingNotificationPromotionInfo
 import voltra.ongoingnotification.AndroidOngoingNotificationPublicVersionPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
 import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
+import voltra.ongoingnotification.FOREGROUND_SERVICE_ON_DISMISS_STOP
+import voltra.ongoingnotification.FOREGROUND_SERVICE_STATE_ATTACHED
+import voltra.ongoingnotification.FOREGROUND_SERVICE_STATE_DETACHED
+import voltra.ongoingnotification.FOREGROUND_SERVICE_STATE_FAILED
 import voltra.ongoingnotification.PROMOTION_MIN_SDK
 import voltra.ongoingnotification.PromotedLargeIconInset
+import voltra.ongoingnotification.SystemForegroundServiceController
 import voltra.ongoingnotification.VoltraNotificationException
 import voltra.ongoingnotification.VoltraNotificationImageResolver
 import voltra.ongoingnotification.VoltraNotificationImageResolver.Companion.MAX_ICON_LONG_EDGE_PX
 import voltra.ongoingnotification.VoltraNotificationImageResolver.Companion.MAX_PICTURE_LONG_EDGE_PX
+import voltra.ongoingnotification.VoltraOngoingNotificationForegroundServiceRegistry
 import voltra.ongoingnotification.androidOngoingNotificationCategory
 import voltra.ongoingnotification.androidOngoingNotificationColor
 import voltra.ongoingnotification.applyAndroidOngoingNotificationPresentation
@@ -66,6 +76,10 @@ data class AndroidOngoingNotificationOptions(
     val presentation: AndroidOngoingNotificationPresentationUpdate = AndroidOngoingNotificationPresentationUpdate(),
     /** Per post, never stored: re-alert for this update instead of posting it silently. */
     val alert: Boolean? = null,
+    /** Monotonic per notification; a call whose revision is not above the last applied one is dropped. */
+    val revision: Long? = null,
+    /** Start and upsert only: back the notification with Voltra's foreground service. */
+    val foregroundService: AndroidOngoingNotificationForegroundServiceOptions? = null,
 )
 
 data class AndroidOngoingNotificationCapabilities(
@@ -74,6 +88,14 @@ data class AndroidOngoingNotificationCapabilities(
     val supportsPromotedNotifications: Boolean,
     val canPostPromotedNotifications: Boolean,
     val canRequestPromotedOngoing: Boolean,
+    val isUserDismissible: Boolean,
+    val supportsForegroundService: Boolean,
+    val foregroundServiceTypes: List<String>,
+)
+
+data class AndroidOngoingNotificationForegroundServiceStatus(
+    val type: String,
+    val state: String,
 )
 
 data class AndroidOngoingNotificationStatus(
@@ -81,6 +103,18 @@ data class AndroidOngoingNotificationStatus(
     val isDismissed: Boolean,
     val isPromoted: Boolean? = null,
     val hasPromotableCharacteristics: Boolean? = null,
+    val foregroundService: AndroidOngoingNotificationForegroundServiceStatus? = null,
+)
+
+data class AndroidOngoingNotificationHandle(
+    val notificationId: String,
+    val systemNotificationId: Int,
+)
+
+/** A notification rebuilt from its record, for the foreground service and the public builder. */
+data class AndroidOngoingNotificationBuilt(
+    val systemNotificationId: Int,
+    val notification: Notification,
 )
 
 data class AndroidOngoingNotificationStartResult(
@@ -90,6 +124,7 @@ data class AndroidOngoingNotificationStartResult(
     val reason: String? = null,
     val promotion: AndroidOngoingNotificationPromotionInfo? = null,
     val styleFallback: String? = null,
+    val foregroundService: AndroidOngoingNotificationForegroundServiceResult? = null,
 )
 
 data class AndroidOngoingNotificationUpdateResult(
@@ -108,6 +143,7 @@ data class AndroidOngoingNotificationUpsertResult(
     val reason: String? = null,
     val promotion: AndroidOngoingNotificationPromotionInfo? = null,
     val styleFallback: String? = null,
+    val foregroundService: AndroidOngoingNotificationForegroundServiceResult? = null,
 )
 
 data class AndroidOngoingNotificationStopResult(
@@ -125,16 +161,29 @@ fun interface OngoingNotificationEndedListener {
     )
 }
 
-class VoltraNotificationManager(
+class VoltraNotificationManager internal constructor(
     context: Context,
+    foregroundServiceController: AndroidOngoingNotificationForegroundServiceController?,
 ) {
+    constructor(context: Context) : this(context, null)
+
     companion object {
         private const val TAG = "VoltraNotificationMgr"
         private const val PREFS_NAME = "voltra_ongoing_notifications"
         private const val KEY_RECORDS = "records"
         private const val KEY_NEXT_NOTIFICATION_ID = "next_notification_id"
+
+        // Last revisions of stopped notifications, so a late older push cannot bring one back.
+        private const val KEY_REVISION_TOMBSTONES = "revision_tombstones"
+        private const val KEY_PAYLOAD_PREFIX = "payload."
+        private const val MAX_REVISION_TOMBSTONES = 100
         private const val DEFAULT_NOTIFICATION_ID = 10000
         private const val PROMOTION_CHECK_NOTIFICATION_ID = "promotion-check"
+        private const val REASON_STALE_REVISION = "stale_revision"
+
+        // Shared by every manager instance and by the receiver and service helpers below, which
+        // write records without an instance.
+        private val recordsLock = Any()
 
         // Never allocated to a real notification (the allocator starts at 10000), so the
         // throwaway notification built by the promotion pre-flight cannot share its
@@ -192,17 +241,48 @@ class VoltraNotificationManager(
             notificationId: String,
         ) {
             val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val records = readRecords(prefs).toMutableMap()
-            val record = records[notificationId] ?: return
+            synchronized(recordsLock) {
+                val records = readRecords(prefs).toMutableMap()
+                val record = records[notificationId] ?: return
 
-            records[notificationId] =
-                record.copy(
-                    active = false,
-                    dismissed = true,
-                )
-            writeRecords(prefs, records)
+                records[notificationId] =
+                    record.copy(
+                        active = false,
+                        dismissed = true,
+                    )
+                writeRecords(prefs, records)
+            }
             Log.d(TAG, "Marked ongoing notification as dismissed: $notificationId")
             notifyEnded(notificationId, ENDED_REASON_DISMISSED)
+        }
+
+        internal fun readRecord(
+            context: Context,
+            notificationId: String,
+        ): AndroidOngoingNotificationRecord? {
+            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return synchronized(recordsLock) { readRecords(prefs)[notificationId] }
+        }
+
+        /**
+         * Records what the foreground service did. With [onlyFrom], the write happens only when the
+         * stored state still equals it, so a late `onDestroy` cannot overwrite `failed` or `timed_out`.
+         */
+        internal fun updateForegroundServiceState(
+            context: Context,
+            notificationId: String,
+            state: String,
+            onlyFrom: String? = null,
+        ) {
+            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            synchronized(recordsLock) {
+                val records = readRecords(prefs).toMutableMap()
+                val record = records[notificationId] ?: return
+                if (record.foregroundServiceType == null) return
+                if (onlyFrom != null && record.foregroundServiceState != onlyFrom) return
+                records[notificationId] = record.copy(foregroundServiceState = state)
+                writeRecords(prefs, records)
+            }
         }
 
         private fun readRecords(
@@ -230,8 +310,13 @@ class VoltraNotificationManager(
         appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val promotionEvaluator = AndroidOngoingNotificationPromotionEvaluator(appContext, notificationManager)
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val lock = Any()
+    private val lock = recordsLock
     private val imageResolver by lazy { VoltraNotificationImageResolver(appContext) }
+    private val foregroundService = foregroundServiceController ?: SystemForegroundServiceController(appContext)
+
+    init {
+        reconcileForegroundServiceStates()
+    }
 
     suspend fun startOngoingNotification(
         payload: String,
@@ -241,6 +326,13 @@ class VoltraNotificationManager(
             val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
             val notificationId = options.notificationId ?: createGeneratedNotificationId()
             val existingRecord = getRecord(notificationId)
+            if (isStaleRevision(notificationId, existingRecord, options.revision)) {
+                return@withContext AndroidOngoingNotificationStartResult(
+                    ok = false,
+                    notificationId = notificationId,
+                    reason = REASON_STALE_REVISION,
+                )
+            }
             // A dismissed record only remembers that the user (or a timeout) ended it, so that updates
             // and upserts cannot bring it back. An explicit start begins a new lifecycle and replaces
             // it, without carrying over any of its options (ADR 0012). It keeps the system slot, so
@@ -253,6 +345,17 @@ class VoltraNotificationManager(
                     reason = "already_exists",
                 )
             }
+
+            val foregroundServiceOptions = options.foregroundService
+            val foregroundServiceBlocker =
+                foregroundServiceOptions?.let { checkForegroundServiceAvailability(it.type, notificationId) }
+            rejectBeforePostingIfRequired(notificationId, foregroundServiceOptions, foregroundServiceBlocker)
+
+            // A dismissal with `onDismiss: 'keep'` leaves the service running for the old lifecycle.
+            if (foregroundService.attachedNotificationId() == notificationId) {
+                foregroundService.stop(notificationId, removeNotification = false)
+            }
+
             val record =
                 createMergedRecord(
                     notificationId = notificationId,
@@ -260,21 +363,36 @@ class VoltraNotificationManager(
                     options = options,
                     allowMissingChannel = false,
                 ).let { fresh ->
-                    fresh.copy(
-                        systemNotificationId = existingRecord?.systemNotificationId ?: fresh.systemNotificationId,
-                        active = true,
-                        dismissed = false,
-                    )
+                    fresh
+                        .copy(
+                            systemNotificationId = existingRecord?.systemNotificationId ?: fresh.systemNotificationId,
+                            active = true,
+                            dismissed = false,
+                            lastRevision =
+                                maxRevision(
+                                    existingRecord?.lastRevision ?: readTombstone(notificationId),
+                                    options.revision,
+                                ),
+                        ).withForegroundService(foregroundServiceOptions)
                 }
 
-            val promotion = postNotification(record, parsedPayload, onlyAlertOnce = false)
+            val posted = postNotification(record, parsedPayload, onlyAlertOnce = false)
             saveRecord(record)
+            writePayload(notificationId, payload)
+            removeTombstone(notificationId)
+
+            val foregroundServiceResult =
+                foregroundServiceOptions?.let {
+                    attachForegroundService(record, posted.notification, it, foregroundServiceBlocker)
+                }
+
             AndroidOngoingNotificationStartResult(
                 ok = true,
                 notificationId = notificationId,
                 action = "started",
-                promotion = promotion,
+                promotion = posted.promotion,
                 styleFallback = resolveStyleFallback(parsedPayload),
+                foregroundService = foregroundServiceResult,
             )
         }
 
@@ -284,45 +402,87 @@ class VoltraNotificationManager(
         options: AndroidOngoingNotificationOptions?,
     ): AndroidOngoingNotificationUpdateResult =
         withContext(Dispatchers.Default) {
-            val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
-            val currentRecord =
-                getRecord(notificationId)
-                    ?: return@withContext AndroidOngoingNotificationUpdateResult(
-                        ok = false,
-                        notificationId = notificationId,
-                        reason = "not_found",
-                    )
-            if (currentRecord.dismissed) {
-                Log.d(TAG, "Rejected dismissed ongoing notification $notificationId")
-                return@withContext AndroidOngoingNotificationUpdateResult(
+            applyUpdate(notificationId, payload, options, attachingForegroundService = null).result
+        }
+
+    private class AppliedUpdate(
+        val result: AndroidOngoingNotificationUpdateResult,
+        val record: AndroidOngoingNotificationRecord? = null,
+        val notification: Notification? = null,
+    )
+
+    /**
+     * The update itself. With [attachingForegroundService], the record takes that service's fields
+     * before posting, so the posted notification is the one the service goes foreground with.
+     */
+    private fun applyUpdate(
+        notificationId: String,
+        payload: String,
+        options: AndroidOngoingNotificationOptions?,
+        attachingForegroundService: AndroidOngoingNotificationForegroundServiceOptions?,
+    ): AppliedUpdate {
+        val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
+        val currentRecord = getRecord(notificationId)
+        if (isStaleRevision(notificationId, currentRecord, options?.revision)) {
+            return AppliedUpdate(
+                AndroidOngoingNotificationUpdateResult(
+                    ok = false,
+                    notificationId = notificationId,
+                    reason = REASON_STALE_REVISION,
+                ),
+            )
+        }
+        if (currentRecord == null) {
+            return AppliedUpdate(
+                AndroidOngoingNotificationUpdateResult(
+                    ok = false,
+                    notificationId = notificationId,
+                    reason = "not_found",
+                ),
+            )
+        }
+        if (currentRecord.dismissed) {
+            Log.d(TAG, "Rejected dismissed ongoing notification $notificationId")
+            return AppliedUpdate(
+                AndroidOngoingNotificationUpdateResult(
                     ok = false,
                     notificationId = notificationId,
                     reason = "dismissed",
-                )
+                ),
+            )
+        }
+
+        val record =
+            createMergedRecord(
+                notificationId = notificationId,
+                currentRecord = currentRecord,
+                options = options ?: AndroidOngoingNotificationOptions(),
+                allowMissingChannel = true,
+            ).copy(
+                active = true,
+                dismissed = false,
+                lastRevision = maxRevision(currentRecord.lastRevision, options?.revision),
+            ).let { merged ->
+                attachingForegroundService?.let { merged.withForegroundService(it) } ?: merged
             }
 
-            val record =
-                createMergedRecord(
-                    notificationId = notificationId,
-                    currentRecord = currentRecord,
-                    options = options ?: AndroidOngoingNotificationOptions(),
-                    allowMissingChannel = currentRecord != null,
-                ).copy(
-                    active = true,
-                    dismissed = false,
-                )
-
-            // Updates are silent by default; `alert` re-alerts for this one post only.
-            val promotion = postNotification(record, parsedPayload, onlyAlertOnce = options?.alert != true)
-            saveRecord(record)
+        // Updates are silent by default; `alert` re-alerts for this one post only. The same
+        // system id keeps an attached foreground service bound to the new content.
+        val posted = postNotification(record, parsedPayload, onlyAlertOnce = options?.alert != true)
+        saveRecord(record)
+        writePayload(notificationId, payload)
+        return AppliedUpdate(
             AndroidOngoingNotificationUpdateResult(
                 ok = true,
                 notificationId = notificationId,
                 action = "updated",
-                promotion = promotion,
+                promotion = posted.promotion,
                 styleFallback = resolveStyleFallback(parsedPayload),
-            )
-        }
+            ),
+            record,
+            posted.notification,
+        )
+    }
 
     suspend fun upsertOngoingNotification(
         payload: String,
@@ -341,21 +501,60 @@ class VoltraNotificationManager(
                     reason = startResult.reason,
                     promotion = startResult.promotion,
                     styleFallback = startResult.styleFallback,
+                    foregroundService = startResult.foregroundService,
                 )
             }
 
-            val updateResult = updateOngoingNotification(notificationId, payload, options.copy(notificationId = null))
+            // The update branch attaches the service when the notification is not backed by it yet:
+            // a push that started the notification from the background may have been refused, and a
+            // later high-priority push should still be able to attach.
+            val foregroundServiceOptions = options.foregroundService
+            val alreadyAttached =
+                foregroundServiceOptions != null && foregroundService.attachedNotificationId() == notificationId
+            val attachOptions = foregroundServiceOptions.takeUnless { alreadyAttached }
+            val blocker = attachOptions?.let { checkForegroundServiceAvailability(it.type, notificationId) }
+            if (!currentRecord.dismissed && !isStaleRevision(notificationId, currentRecord, options.revision)) {
+                rejectBeforePostingIfRequired(notificationId, attachOptions, blocker)
+            }
+
+            val applied =
+                applyUpdate(
+                    notificationId,
+                    payload,
+                    options.copy(notificationId = null, foregroundService = null),
+                    attachOptions,
+                )
+            val foregroundServiceResult =
+                when {
+                    !applied.result.ok || foregroundServiceOptions == null -> {
+                        null
+                    }
+
+                    alreadyAttached -> {
+                        AndroidOngoingNotificationForegroundServiceResult.attached(
+                            currentRecord.foregroundServiceType ?: foregroundServiceOptions.type,
+                        )
+                    }
+
+                    else -> {
+                        attachForegroundService(applied.record!!, applied.notification!!, attachOptions!!, blocker)
+                    }
+                }
             AndroidOngoingNotificationUpsertResult(
-                ok = updateResult.ok,
+                ok = applied.result.ok,
                 notificationId = notificationId,
-                action = if (updateResult.ok) "updated" else null,
-                reason = updateResult.reason,
-                promotion = updateResult.promotion,
-                styleFallback = updateResult.styleFallback,
+                action = if (applied.result.ok) "updated" else null,
+                reason = applied.result.reason,
+                promotion = applied.result.promotion,
+                styleFallback = applied.result.styleFallback,
+                foregroundService = foregroundServiceResult,
             )
         }
 
-    fun stopOngoingNotification(notificationId: String): AndroidOngoingNotificationStopResult {
+    suspend fun stopOngoingNotification(
+        notificationId: String,
+        revision: Long? = null,
+    ): AndroidOngoingNotificationStopResult {
         val record =
             getRecord(notificationId)
                 ?: return AndroidOngoingNotificationStopResult(
@@ -363,8 +562,22 @@ class VoltraNotificationManager(
                     notificationId = notificationId,
                     reason = "not_found",
                 )
+        if (isStaleRevision(notificationId, record, revision)) {
+            return AndroidOngoingNotificationStopResult(
+                ok = false,
+                notificationId = notificationId,
+                reason = REASON_STALE_REVISION,
+            )
+        }
+        // cancel() is ignored for a notification that backs a foreground service, so the service
+        // has to release it first.
+        if (foregroundService.attachedNotificationId() == notificationId) {
+            foregroundService.stop(notificationId, removeNotification = true)
+        }
         notificationManager.cancel(record.systemNotificationId)
         removeRecord(notificationId)
+        removePayload(notificationId)
+        maxRevision(record.lastRevision, revision)?.let { writeTombstone(notificationId, it) }
         notifyEnded(notificationId, ENDED_REASON_STOPPED)
         return AndroidOngoingNotificationStopResult(
             ok = true,
@@ -406,15 +619,51 @@ class VoltraNotificationManager(
             isDismissed = record.dismissed,
             isPromoted = isPromoted,
             hasPromotableCharacteristics = hasPromotableCharacteristics,
+            foregroundService =
+                record.foregroundServiceType?.let { type ->
+                    AndroidOngoingNotificationForegroundServiceStatus(
+                        type = type,
+                        state = record.foregroundServiceState ?: FOREGROUND_SERVICE_STATE_DETACHED,
+                    )
+                },
         )
     }
 
-    fun endAllOngoingNotifications() {
+    fun getOngoingNotificationHandle(notificationId: String): AndroidOngoingNotificationHandle? =
+        getRecord(notificationId)?.let { AndroidOngoingNotificationHandle(it.notificationId, it.systemNotificationId) }
+
+    /**
+     * Rebuilds the notification last posted for [notificationId] from its record and stored payload,
+     * or null when either is gone. Never posts.
+     */
+    internal fun buildNotificationFromRecord(notificationId: String): AndroidOngoingNotificationBuilt? {
+        val record = getRecord(notificationId) ?: return null
+        val payload = readPayload(notificationId) ?: return null
+        return try {
+            val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(payload)
+            AndroidOngoingNotificationBuilt(
+                systemNotificationId = record.systemNotificationId,
+                notification = buildNotification(record, parsedPayload, onlyAlertOnce = true),
+            )
+        } catch (error: Exception) {
+            Log.e(TAG, "Could not rebuild ongoing notification $notificationId", error)
+            null
+        }
+    }
+
+    suspend fun endAllOngoingNotifications() {
         val records = getRecords()
+        // Not limited to recorded notifications: a service holding a notification Voltra no longer
+        // tracks must be released too, or every later attach would report `busy`.
+        foregroundService.attachedNotificationId()?.let { attachedId ->
+            foregroundService.stop(attachedId, removeNotification = true)
+        }
         records.values.forEach { record ->
             notificationManager.cancel(record.systemNotificationId)
         }
         clearRecords()
+        records.keys.forEach { removePayload(it) }
+        records.values.forEach { record -> record.lastRevision?.let { writeTombstone(record.notificationId, it) } }
         records.keys.forEach { notificationId -> notifyEnded(notificationId, ENDED_REASON_STOPPED) }
     }
 
@@ -429,6 +678,7 @@ class VoltraNotificationManager(
                 notificationsEnabled &&
                 notificationManager.canPostPromotedNotifications() &&
                 hasPromotedNotificationsPermission(appContext)
+        val declaredForegroundServiceTypes = foregroundService.declaredTypes()
 
         return AndroidOngoingNotificationCapabilities(
             apiLevel = Build.VERSION.SDK_INT,
@@ -436,7 +686,208 @@ class VoltraNotificationManager(
             supportsPromotedNotifications = supportsPromoted,
             canPostPromotedNotifications = canPostPromoted,
             canRequestPromotedOngoing = canPostPromoted,
+            // Android 14 made FLAG_ONGOING_EVENT dismissible; a foreground service does not change that.
+            isUserDismissible = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
+            supportsForegroundService = declaredForegroundServiceTypes != null,
+            foregroundServiceTypes =
+                AndroidOngoingNotificationForegroundServiceTypes.all
+                    .map { it.name }
+                    .filter { declaredForegroundServiceTypes?.contains(it) == true },
         )
+    }
+
+    private fun AndroidOngoingNotificationRecord.withForegroundService(
+        options: AndroidOngoingNotificationForegroundServiceOptions?,
+    ): AndroidOngoingNotificationRecord =
+        copy(
+            foregroundServiceType = options?.type,
+            foregroundServiceOnDismiss = options?.onDismiss ?: FOREGROUND_SERVICE_ON_DISMISS_STOP,
+            foregroundServiceState = null,
+        )
+
+    /** The reason the service cannot be attached, checked before anything is posted or started. */
+    private fun checkForegroundServiceAvailability(
+        type: String,
+        notificationId: String,
+    ): AndroidOngoingNotificationForegroundServiceResult? {
+        val declaredTypes =
+            foregroundService.declaredTypes()
+                ?: return AndroidOngoingNotificationForegroundServiceResult.failed("not_declared")
+        val serviceType =
+            AndroidOngoingNotificationForegroundServiceTypes.byName(type)
+                ?: return AndroidOngoingNotificationForegroundServiceResult.failed("type_not_declared")
+        // Below API 29 startForeground takes no type, so there is nothing to check against.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < serviceType.minSdk) {
+                return AndroidOngoingNotificationForegroundServiceResult.failed("unsupported_api")
+            }
+            if (type !in declaredTypes) {
+                return AndroidOngoingNotificationForegroundServiceResult.failed("type_not_declared")
+            }
+        }
+        val attachedId = foregroundService.attachedNotificationId()
+        if (attachedId != null && attachedId != notificationId) {
+            return AndroidOngoingNotificationForegroundServiceResult.failed("busy")
+        }
+        foregroundService.missingPrerequisite(type)?.let {
+            return AndroidOngoingNotificationForegroundServiceResult.failed(it)
+        }
+        return null
+    }
+
+    /**
+     * With `fallbackBehavior: 'error'`, a failure known before posting rejects before anything is
+     * posted, so the user never sees (or hears) a notification that is taken down again.
+     */
+    private fun rejectBeforePostingIfRequired(
+        notificationId: String,
+        options: AndroidOngoingNotificationForegroundServiceOptions?,
+        blocker: AndroidOngoingNotificationForegroundServiceResult?,
+    ) {
+        if (options == null || blocker == null) return
+        if (resolveFallbackBehavior(options.fallbackBehavior) !=
+            AndroidOngoingNotificationFallbackBehavior.ERROR
+        ) {
+            return
+        }
+        throw foregroundServiceUnavailable(notificationId, blocker.reason)
+    }
+
+    private fun foregroundServiceUnavailable(
+        notificationId: String,
+        reason: String?,
+    ) = VoltraNotificationException(
+        VoltraNotificationException.FOREGROUND_SERVICE_UNAVAILABLE,
+        "Foreground service could not be attached to ongoing notification '$notificationId': $reason",
+    )
+
+    /**
+     * Runs after the notification is posted and its record saved. The service goes foreground with
+     * [notification] as posted. With `fallbackBehavior: 'error'` a failure takes the notification
+     * down again and rejects; the revision it carried is kept so an older push cannot restart it.
+     */
+    private suspend fun attachForegroundService(
+        record: AndroidOngoingNotificationRecord,
+        notification: Notification,
+        options: AndroidOngoingNotificationForegroundServiceOptions,
+        blocker: AndroidOngoingNotificationForegroundServiceResult?,
+    ): AndroidOngoingNotificationForegroundServiceResult {
+        val result =
+            blocker ?: run {
+                VoltraOngoingNotificationForegroundServiceRegistry.offerPostedNotification(
+                    record.notificationId,
+                    notification,
+                )
+                try {
+                    foregroundService.attach(
+                        record.notificationId,
+                        options.type,
+                        record.systemNotificationId,
+                        record.channelId,
+                    )
+                } finally {
+                    VoltraOngoingNotificationForegroundServiceRegistry.takePostedNotification(record.notificationId)
+                }
+            }
+        if (result.attached) {
+            return result
+        }
+
+        updateForegroundServiceState(appContext, record.notificationId, FOREGROUND_SERVICE_STATE_FAILED)
+        if (resolveFallbackBehavior(options.fallbackBehavior) == AndroidOngoingNotificationFallbackBehavior.ERROR) {
+            notificationManager.cancel(record.systemNotificationId)
+            removeRecord(record.notificationId)
+            removePayload(record.notificationId)
+            record.lastRevision?.let { writeTombstone(record.notificationId, it) }
+            throw foregroundServiceUnavailable(record.notificationId, result.reason)
+        }
+        return result
+    }
+
+    /** After process death the service is gone, so no record may still claim it is attached. */
+    private fun reconcileForegroundServiceStates() {
+        synchronized(lock) {
+            val records = readRecords(prefs)
+            val attachedId = foregroundService.attachedNotificationId()
+            val stale =
+                records.values.filter {
+                    it.foregroundServiceState == FOREGROUND_SERVICE_STATE_ATTACHED && it.notificationId != attachedId
+                }
+            if (stale.isEmpty()) return
+            val updated = records.toMutableMap()
+            stale.forEach {
+                updated[it.notificationId] =
+                    it.copy(foregroundServiceState = FOREGROUND_SERVICE_STATE_DETACHED)
+            }
+            writeRecords(prefs, updated)
+        }
+    }
+
+    // Payloads can carry inline images, so each one lives under its own key: an update rewrites
+    // only its own payload, not every record's.
+    private fun writePayload(
+        notificationId: String,
+        payload: String,
+    ) {
+        prefs.edit().putString(KEY_PAYLOAD_PREFIX + notificationId, payload).apply()
+    }
+
+    private fun readPayload(notificationId: String): String? =
+        prefs.getString(KEY_PAYLOAD_PREFIX + notificationId, null)
+
+    private fun removePayload(notificationId: String) {
+        prefs.edit().remove(KEY_PAYLOAD_PREFIX + notificationId).apply()
+    }
+
+    private fun isStaleRevision(
+        notificationId: String,
+        record: AndroidOngoingNotificationRecord?,
+        revision: Long?,
+    ): Boolean {
+        if (revision == null) return false
+        val lastRevision = record?.lastRevision ?: readTombstone(notificationId) ?: return false
+        return revision <= lastRevision
+    }
+
+    private fun maxRevision(
+        current: Long?,
+        incoming: Long?,
+    ): Long? = listOfNotNull(current, incoming).maxOrNull()
+
+    private fun readTombstones(): Map<String, Long> {
+        val raw = prefs.getString(KEY_REVISION_TOMBSTONES, null) ?: return emptyMap()
+        return try {
+            json.decodeFromString<Map<String, Long>>(raw)
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to decode ongoing notification revision tombstones", error)
+            emptyMap()
+        }
+    }
+
+    private fun readTombstone(notificationId: String): Long? = synchronized(lock) { readTombstones()[notificationId] }
+
+    private fun writeTombstone(
+        notificationId: String,
+        revision: Long,
+    ) {
+        synchronized(lock) {
+            // Re-inserting moves the entry to the end, so the oldest stop is the first one dropped.
+            val tombstones = LinkedHashMap(readTombstones())
+            tombstones.remove(notificationId)
+            tombstones[notificationId] = revision
+            while (tombstones.size > MAX_REVISION_TOMBSTONES) {
+                tombstones.remove(tombstones.keys.first())
+            }
+            prefs.edit().putString(KEY_REVISION_TOMBSTONES, json.encodeToString<Map<String, Long>>(tombstones)).commit()
+        }
+    }
+
+    private fun removeTombstone(notificationId: String) {
+        synchronized(lock) {
+            val tombstones = readTombstones()
+            if (notificationId !in tombstones) return
+            prefs.edit().putString(KEY_REVISION_TOMBSTONES, json.encodeToString(tombstones - notificationId)).commit()
+        }
     }
 
     // Settings.ACTION_APP_NOTIFICATION_SETTINGS only resolves to an activity on API 26+.
@@ -554,11 +1005,16 @@ class VoltraNotificationManager(
             promotionEvaluator.evaluate(parsedPayload, channelId, notification)
         }
 
+    private class PostedNotification(
+        val notification: Notification,
+        val promotion: AndroidOngoingNotificationPromotionInfo?,
+    )
+
     private fun postNotification(
         record: AndroidOngoingNotificationRecord,
         payload: AndroidOngoingNotificationPayload,
         onlyAlertOnce: Boolean,
-    ): AndroidOngoingNotificationPromotionInfo? {
+    ): PostedNotification {
         ensureChannelExists(record.channelId)
 
         val notification = buildNotification(record, payload, onlyAlertOnce)
@@ -567,7 +1023,7 @@ class VoltraNotificationManager(
         val promotion = evaluatePromotion(record, payload, notification)
 
         notificationManager.notify(record.systemNotificationId, notification)
-        return promotion
+        return PostedNotification(notification, promotion)
     }
 
     private fun buildNotification(
@@ -593,6 +1049,10 @@ class VoltraNotificationManager(
         applyPayloadStyle(builder, payload)
         applyActions(builder, record, payload)
         requestPromotionIfPossible(builder, record)
+        // Android 12 may hold back a foreground service notification for up to ten seconds.
+        if (record.foregroundServiceType != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+        }
 
         payload.publicVersion?.let { publicVersion ->
             builder.setPublicVersion(buildPublicVersion(record, payload, publicVersion, category))
@@ -1103,6 +1563,11 @@ class VoltraNotificationManager(
                     .mergedWith(options.presentation),
             active = currentRecord?.active ?: true,
             dismissed = currentRecord?.dismissed ?: false,
+            lastRevision = currentRecord?.lastRevision,
+            foregroundServiceType = currentRecord?.foregroundServiceType,
+            foregroundServiceOnDismiss =
+                currentRecord?.foregroundServiceOnDismiss ?: FOREGROUND_SERVICE_ON_DISMISS_STOP,
+            foregroundServiceState = currentRecord?.foregroundServiceState,
         )
     }
 

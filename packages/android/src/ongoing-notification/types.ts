@@ -324,6 +324,32 @@ export type AndroidOngoingNotificationInput =
   | AndroidOngoingNotificationPayload
   | string
 
+/**
+ * Types Voltra's foreground service can run as. Each one must be listed in the config plugin's
+ * `ongoingNotificationForegroundService.types` and declared in Play Console.
+ */
+export const ANDROID_ONGOING_NOTIFICATION_FOREGROUND_SERVICE_TYPES = [
+  'location',
+  'health',
+  'mediaPlayback',
+  'remoteMessaging',
+  'connectedDevice',
+  'dataSync',
+  'shortService',
+  'specialUse',
+] as const
+
+export type AndroidOngoingNotificationForegroundServiceType =
+  (typeof ANDROID_ONGOING_NOTIFICATION_FOREGROUND_SERVICE_TYPES)[number]
+
+export type AndroidOngoingNotificationForegroundServiceOptions = {
+  type: AndroidOngoingNotificationForegroundServiceType
+  /** What Voltra does with the service when the user swipes the notification away (API 34+). Default 'stop'. */
+  onDismiss?: 'stop' | 'keep'
+  /** 'standard' (default): keep the notification posted if the service cannot attach. 'error': remove it and reject. */
+  fallbackBehavior?: AndroidOngoingNotificationFallbackBehavior
+}
+
 export type StartAndroidOngoingNotificationOptions = {
   notificationId?: string
   channelId: string
@@ -331,6 +357,14 @@ export type StartAndroidOngoingNotificationOptions = {
   deepLinkUrl?: string
   requestPromotedOngoing?: boolean
   fallbackBehavior?: AndroidOngoingNotificationFallbackBehavior
+  /** Back the notification with Voltra's foreground service so the app process stays alive. Start and upsert only. */
+  foregroundService?: AndroidOngoingNotificationForegroundServiceOptions
+  /**
+   * A non-negative integer that grows with every change you send. A call whose revision is not above
+   * the last one applied to this notification is dropped with `reason: 'stale_revision'`, so pushes
+   * that arrive out of order cannot show older content.
+   */
+  revision?: number
 } & AndroidOngoingNotificationPresentationOptions
 
 /** An update can send `null` for a presentation option to clear the value stored at start. */
@@ -345,7 +379,7 @@ type Clearable<T> = { [K in keyof T]?: T[K] | null }
  */
 export type UpdateAndroidOngoingNotificationOptions = Omit<
   Partial<StartAndroidOngoingNotificationOptions>,
-  'notificationId' | keyof AndroidOngoingNotificationPresentationOptions
+  'notificationId' | 'foregroundService' | keyof AndroidOngoingNotificationPresentationOptions
 > &
   Clearable<AndroidOngoingNotificationPresentationOptions> & {
     /**
@@ -373,9 +407,18 @@ export type UpsertAndroidOngoingNotificationOptions = Omit<
     alert?: boolean
   }
 
-export type UseAndroidOngoingNotificationOptions = StartAndroidOngoingNotificationOptions & {
+/**
+ * `revision` is left out: the hook replays its options on every update, so a stored revision would
+ * make every update after the first one stale. Pass it to a single `start()` or `update()` instead.
+ */
+export type UseAndroidOngoingNotificationOptions = Omit<StartAndroidOngoingNotificationOptions, 'revision'> & {
   autoStart?: boolean
   autoUpdate?: boolean
+}
+
+export type StopAndroidOngoingNotificationOptions = {
+  /** Dropped as stale unless above the last revision applied to this notification. */
+  revision?: number
 }
 
 export type AndroidOngoingNotificationCapabilities = {
@@ -384,14 +427,47 @@ export type AndroidOngoingNotificationCapabilities = {
   supportsPromotedNotifications: boolean
   canPostPromotedNotifications: boolean
   canRequestPromotedOngoing: boolean
+  /** True on Android 14 and later, where the user can swipe any ongoing notification away. */
+  isUserDismissible: boolean
+  /** True when the config plugin declared Voltra's foreground service. */
+  supportsForegroundService: boolean
+  /** Types declared on the service. Empty when it is not declared, and below Android 10. */
+  foregroundServiceTypes: AndroidOngoingNotificationForegroundServiceType[]
 }
+
+export type AndroidOngoingNotificationForegroundServiceState = 'attached' | 'detached' | 'timed_out' | 'failed'
 
 export type AndroidOngoingNotificationStatus = {
   isActive: boolean
   isDismissed: boolean
   isPromoted?: boolean
   hasPromotableCharacteristics?: boolean
+  /** Set when the notification was started with `foregroundService`. */
+  foregroundService?: {
+    type: AndroidOngoingNotificationForegroundServiceType
+    state: AndroidOngoingNotificationForegroundServiceState
+  }
 }
+
+export type AndroidOngoingNotificationHandle = {
+  notificationId: string
+  /** The id the notification is posted under; pass it to your own service's `startForeground`. */
+  systemNotificationId: number
+}
+
+export type AndroidOngoingNotificationForegroundServiceAttachFailure =
+  | 'not_declared'
+  | 'type_not_declared'
+  | 'unsupported_api'
+  | 'background_start_not_allowed'
+  | 'missing_permission'
+  | 'timeout_exhausted'
+  | 'busy'
+  | 'attach_timeout'
+
+export type AndroidOngoingNotificationForegroundServiceResult =
+  | { attached: true; type: AndroidOngoingNotificationForegroundServiceType; reason?: undefined }
+  | { attached: false; type?: undefined; reason: AndroidOngoingNotificationForegroundServiceAttachFailure }
 
 export type AndroidOngoingNotificationPromotionIssue =
   | 'unsupported_api_level'
@@ -431,12 +507,13 @@ export type AndroidOngoingNotificationStartResult =
       reason?: undefined
       promotion?: AndroidOngoingNotificationPromotionInfo
       styleFallback?: AndroidOngoingNotificationStyleFallback
+      foregroundService?: AndroidOngoingNotificationForegroundServiceResult
     }
   | {
       ok: false
       notificationId: string
       action?: undefined
-      reason: 'already_exists'
+      reason: 'already_exists' | 'stale_revision'
     }
 
 export type AndroidOngoingNotificationUpdateResult =
@@ -452,7 +529,7 @@ export type AndroidOngoingNotificationUpdateResult =
       ok: false
       notificationId: string
       action?: undefined
-      reason: 'not_found' | 'dismissed'
+      reason: 'not_found' | 'dismissed' | 'stale_revision'
     }
 
 export type AndroidOngoingNotificationUpsertResult =
@@ -463,12 +540,13 @@ export type AndroidOngoingNotificationUpsertResult =
       reason?: undefined
       promotion?: AndroidOngoingNotificationPromotionInfo
       styleFallback?: AndroidOngoingNotificationStyleFallback
+      foregroundService?: AndroidOngoingNotificationForegroundServiceResult
     }
   | {
       ok: false
       notificationId: string
       action?: undefined
-      reason: 'already_exists' | 'dismissed'
+      reason: 'already_exists' | 'dismissed' | 'stale_revision'
     }
 
 export type AndroidOngoingNotificationStopResult =
@@ -482,7 +560,7 @@ export type AndroidOngoingNotificationStopResult =
       ok: false
       notificationId: string
       action?: undefined
-      reason: 'not_found'
+      reason: 'not_found' | 'stale_revision'
     }
 
 export type UseAndroidOngoingNotificationResult = {

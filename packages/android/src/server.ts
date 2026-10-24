@@ -30,5 +30,24 @@ export type {
   AndroidOngoingNotificationProgressSegment,
   AndroidOngoingNotificationPublicVersion,
 } from './ongoing-notification/types.js'
+export type {
+  AndroidOngoingNotificationFallbackBehavior,
+  AndroidOngoingNotificationForegroundServiceOptions,
+  AndroidOngoingNotificationForegroundServiceType,
+  AndroidOngoingNotificationPresentationOptions,
+  StartAndroidOngoingNotificationOptions,
+  UpsertAndroidOngoingNotificationOptions,
+} from './ongoing-notification/types.js'
+export {
+  createAndroidOngoingNotificationPushEnvelope,
+  parseAndroidOngoingNotificationPush,
+} from './ongoing-notification/push.js'
+export type {
+  AndroidOngoingNotificationPushEnvelope,
+  AndroidOngoingNotificationPushOptions,
+  AndroidOngoingNotificationPushParseFailure,
+  AndroidOngoingNotificationPushParseResult,
+  CreateAndroidOngoingNotificationPushEnvelopeInput,
+} from './ongoing-notification/push.js'
 export { renderAndroidWidgetToString } from './widgets/renderer.js'
 export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'

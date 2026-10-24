@@ -1,6 +1,7 @@
 import {
   getFilteredAndroidOngoingNotificationUpdateOptions,
   getStartAndroidOngoingNotificationOptions,
+  getStopAndroidOngoingNotificationOptions,
   getUpsertAndroidOngoingNotificationOptions,
 } from '../options.js'
 
@@ -178,5 +179,69 @@ describe('getUpsertAndroidOngoingNotificationOptions', () => {
 
     expect('alert' in options).toBe(false)
     expect('color' in options).toBe(false)
+  })
+})
+
+describe('revision and foregroundService', () => {
+  it('forwards both on start and upsert', () => {
+    const options = {
+      ...startOptions,
+      revision: 42,
+      foregroundService: { type: 'dataSync', onDismiss: 'keep', fallbackBehavior: 'error' },
+    } as const
+
+    expect(getStartAndroidOngoingNotificationOptions(options)).toEqual(options)
+    expect(getUpsertAndroidOngoingNotificationOptions(options)).toEqual(options)
+  })
+
+  it('forwards revision on update and drops foregroundService', () => {
+    expect(
+      getFilteredAndroidOngoingNotificationUpdateOptions(
+        invalid({ revision: 7, foregroundService: { type: 'dataSync' } })
+      )
+    ).toEqual({ revision: 7 })
+  })
+
+  it('leaves both out when the caller did not set them', () => {
+    const options = getStartAndroidOngoingNotificationOptions(startOptions)
+
+    expect('revision' in options).toBe(false)
+    expect('foregroundService' in options).toBe(false)
+  })
+
+  it('rejects a revision that is not a non-negative integer', () => {
+    for (const revision of [-1, 1.5, '3', Number.MAX_SAFE_INTEGER + 1]) {
+      expect(() => getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, revision }))).toThrow(
+        /option "revision" must be a non-negative integer/
+      )
+    }
+  })
+
+  it('rejects a foreground service type, onDismiss or fallback Voltra does not support', () => {
+    expect(() =>
+      getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, foregroundService: { type: 'camera' } }))
+    ).toThrow(/option "foregroundService.type" must be one of/)
+    expect(() =>
+      getStartAndroidOngoingNotificationOptions(
+        invalid({ ...startOptions, foregroundService: { type: 'dataSync', onDismiss: 'restart' } })
+      )
+    ).toThrow(/option "foregroundService.onDismiss" must be one of "stop", "keep"/)
+    expect(() =>
+      getUpsertAndroidOngoingNotificationOptions(
+        invalid({ ...startOptions, foregroundService: { type: 'dataSync', fallbackBehavior: 'retry' } })
+      )
+    ).toThrow(/option "foregroundService.fallbackBehavior" must be one of/)
+    expect(() =>
+      getStartAndroidOngoingNotificationOptions(invalid({ ...startOptions, foregroundService: 'dataSync' }))
+    ).toThrow(/option "foregroundService" must be an object/)
+  })
+
+  it('builds stop options only when a revision is set', () => {
+    expect(getStopAndroidOngoingNotificationOptions()).toBeUndefined()
+    expect(getStopAndroidOngoingNotificationOptions({})).toBeUndefined()
+    expect(getStopAndroidOngoingNotificationOptions({ revision: 3 })).toEqual({ revision: 3 })
+    expect(() => getStopAndroidOngoingNotificationOptions({ revision: -3 })).toThrow(
+      /"revision" must be a non-negative integer/
+    )
   })
 })

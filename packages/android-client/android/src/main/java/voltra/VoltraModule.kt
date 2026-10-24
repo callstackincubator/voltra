@@ -270,11 +270,13 @@ class VoltraModule(
 
     override fun stopAndroidOngoingNotification(
         notificationId: String,
+        options: ReadableMap?,
         promise: Promise,
     ) {
         Log.d(TAG, "stopAndroidOngoingNotification called with notificationId=$notificationId")
+        val revision = options?.revisionOrNull()
         settleAndroidOngoingNotificationCall(promise, "stopAndroidOngoingNotification") {
-            notificationManager.stopOngoingNotification(notificationId).toWritableMap()
+            notificationManager.stopOngoingNotification(notificationId, revision).toWritableMap()
         }
     }
 
@@ -290,8 +292,25 @@ class VoltraModule(
             // different answers, and the JS type models unknown as undefined.
             status.isPromoted?.let { putBoolean("isPromoted", it) }
             status.hasPromotableCharacteristics?.let { putBoolean("hasPromotableCharacteristics", it) }
+            status.foregroundService?.let { service ->
+                putMap(
+                    "foregroundService",
+                    WritableNativeMap().apply {
+                        putString("type", service.type)
+                        putString("state", service.state)
+                    },
+                )
+            }
         }
     }
+
+    override fun getAndroidOngoingNotificationHandle(notificationId: String): WritableNativeMap? =
+        notificationManager.getOngoingNotificationHandle(notificationId)?.let { handle ->
+            WritableNativeMap().apply {
+                putString("notificationId", handle.notificationId)
+                putInt("systemNotificationId", handle.systemNotificationId)
+            }
+        }
 
     override fun endAllAndroidOngoingNotifications(promise: Promise) {
         settleAndroidOngoingNotificationCall(promise, "endAllAndroidOngoingNotifications") {
@@ -311,6 +330,9 @@ class VoltraModule(
             putBoolean("supportsPromotedNotifications", capabilities.supportsPromotedNotifications)
             putBoolean("canPostPromotedNotifications", capabilities.canPostPromotedNotifications)
             putBoolean("canRequestPromotedOngoing", capabilities.canRequestPromotedOngoing)
+            putBoolean("isUserDismissible", capabilities.isUserDismissible)
+            putBoolean("supportsForegroundService", capabilities.supportsForegroundService)
+            putArray("foregroundServiceTypes", Arguments.fromList(capabilities.foregroundServiceTypes))
         }
     }
 

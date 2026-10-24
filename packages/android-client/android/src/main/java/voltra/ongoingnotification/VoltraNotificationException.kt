@@ -15,6 +15,7 @@ class VoltraNotificationException(
         const val INVALID_PAYLOAD = "VOLTRA_NOTIFICATION_INVALID_PAYLOAD"
         const val INVALID_OPTIONS = "VOLTRA_NOTIFICATION_INVALID_OPTIONS"
         const val NOT_PROMOTABLE = "VOLTRA_NOTIFICATION_NOT_PROMOTABLE"
+        const val FOREGROUND_SERVICE_UNAVAILABLE = "VOLTRA_FOREGROUND_SERVICE_UNAVAILABLE"
 
         /** Catch-all for failures that are not the caller's input, so a promise is never left unsettled. */
         const val INTERNAL_ERROR = "VOLTRA_NOTIFICATION_INTERNAL_ERROR"

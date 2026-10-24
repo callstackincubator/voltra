@@ -10,6 +10,8 @@ Use this reference for Android ongoing notifications and their remote update flo
 - Create the target notification channel before starting a notification.
 - Request notification permission on Android 13+.
 - Remote updates depend on your push provider plus a background task in the app.
+- On Android 14+ the user can swipe any ongoing notification away; no foreground service type prevents it.
+- To keep the process alive, declare `ongoingNotificationForegroundService.types` in the plugin config and pass `foregroundService: { type }` to start or upsert. One notification per app can hold the service.
 - Do not claim APNS support here.
 
 ## Runtime APIs
@@ -23,6 +25,9 @@ Use this reference for Android ongoing notifications and their remote update flo
 - `AndroidOngoingNotification`
 - `getAndroidOngoingNotificationStatus`
 - `getAndroidOngoingNotificationCapabilities`
+- `getAndroidOngoingNotificationHandle`
+- `handleAndroidOngoingNotificationPush`
+- `parseAndroidOngoingNotificationPush`
 - `openAndroidNotificationSettings`
 
 ## Server Rendering
@@ -31,13 +36,13 @@ Use `@use-voltra/android-server` in backend code.
 
 - `renderAndroidOngoingNotificationPayloadToJson`
 - `renderAndroidOngoingNotificationPayload`
+- `createAndroidOngoingNotificationPushEnvelope`
 
 ## Remote Updates
 
-1. Render the payload on the server.
-2. Send it through your push provider.
-3. Parse the push in a background task.
-4. Call `upsertAndroidOngoingNotification()` or `stopAndroidOngoingNotification()`.
+1. Build the message on the server with `createAndroidOngoingNotificationPushEnvelope()`, with a growing `revision`.
+2. Send it as `data.voltraOngoingNotification` through your push provider.
+3. Call `handleAndroidOngoingNotificationPush(data, { ensureChannel })` in the background task. It never throws, and drops out-of-order messages as `stale_revision`.
 
 ## Sources
 

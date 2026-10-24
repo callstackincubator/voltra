@@ -197,6 +197,24 @@ export interface IOSProjectOverrides {
   podfilePath?: string
 }
 
+export type AndroidOngoingNotificationForegroundServiceType =
+  | 'location'
+  | 'health'
+  | 'mediaPlayback'
+  | 'remoteMessaging'
+  | 'connectedDevice'
+  | 'dataSync'
+  | 'shortService'
+  | 'specialUse'
+
+/** Declares Voltra's foreground service for ongoing notifications in AndroidManifest.xml. */
+export interface AndroidOngoingNotificationForegroundServiceConfig {
+  /** Foreground service types the service runs with. Each adds its `FOREGROUND_SERVICE_*` permission. */
+  types: AndroidOngoingNotificationForegroundServiceType[]
+  /** Required when `types` includes `specialUse`. Written to `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`. */
+  specialUseSubtype?: string
+}
+
 /**
  * Public CLI config for Android. This stays close to the current Expo plugin props,
  * with explicit project discovery overrides added for native projects.
@@ -204,6 +222,8 @@ export interface IOSProjectOverrides {
 export interface VoltraAndroidConfig {
   /** Whether to add the Android notification permission and related setup. */
   enableNotifications?: boolean
+  /** Voltra's foreground service for ongoing notifications. Requires `enableNotifications: true`. */
+  ongoingNotificationForegroundService?: AndroidOngoingNotificationForegroundServiceConfig
   /** Android widgets to generate and register. */
   widgets?: AndroidWidgetConfig[]
   /** Font files that should be bundled for Android widget rendering. */
@@ -321,6 +341,11 @@ export interface NormalizedIOSProjectConfig {
 export interface NormalizedVoltraAndroidConfig {
   /** Whether Android notification setup should be applied. */
   enableNotifications: boolean
+  /** Foreground service to declare, or undefined to remove a previously declared one. */
+  ongoingNotificationForegroundService?: {
+    types: string[]
+    specialUseSubtype?: string
+  }
   /** Android widgets after validation and normalization. */
   widgets: NormalizedAndroidWidgetConfig[]
   /** Absolute font file paths for Android widgets. */

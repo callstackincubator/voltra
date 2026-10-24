@@ -1,11 +1,13 @@
 import { ConfigPlugin, withAndroidManifest } from '@expo/config-plugins'
 import { AndroidConfig } from 'expo/config-plugins'
 
-import type { AndroidWidgetConfig } from '../types'
+import type { AndroidOngoingNotificationForegroundServiceConfig, AndroidWidgetConfig } from '../types'
+import { reconcileOngoingNotificationForegroundService } from './foregroundService'
 import { androidWidgetResourceId } from './resourceName'
 
 export interface ConfigureAndroidManifestProps {
   enableNotifications?: boolean
+  ongoingNotificationForegroundService?: AndroidOngoingNotificationForegroundServiceConfig
   widgets: AndroidWidgetConfig[]
 }
 
@@ -18,7 +20,7 @@ export interface ConfigureAndroidManifestProps {
  * - Widget provider metadata reference
  */
 export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProps> = (config, props) => {
-  const { enableNotifications, widgets } = props
+  const { enableNotifications, ongoingNotificationForegroundService, widgets } = props
 
   return withAndroidManifest(config, (config) => {
     const mainApplication = AndroidConfig.Manifest.getMainApplicationOrThrow(config.modResults) as any
@@ -41,6 +43,12 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
     }
 
     config.modResults.manifest['uses-permission'] = usesPermissions
+
+    reconcileOngoingNotificationForegroundService(
+      config.modResults.manifest,
+      mainApplication,
+      enableNotifications ? ongoingNotificationForegroundService : undefined
+    )
 
     const existingReceivers = (mainApplication.receiver || []) as any[]
     const ongoingNotificationReceiverName = 'voltra.VoltraOngoingNotificationDismissedReceiver'

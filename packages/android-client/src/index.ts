@@ -1,6 +1,7 @@
 export {
   AndroidDynamicColors,
   AndroidOngoingNotification,
+  parseAndroidOngoingNotificationPush,
   renderAndroidOngoingNotificationPayload,
   VoltraAndroid,
 } from '@use-voltra/android'
@@ -9,6 +10,7 @@ export {
   checkAndroidOngoingNotificationPromotion,
   endAllAndroidOngoingNotifications,
   getAndroidOngoingNotificationCapabilities,
+  getAndroidOngoingNotificationHandle,
   getAndroidOngoingNotificationStatus,
   hasAndroidNotificationPermission,
   isAndroidOngoingNotificationActive,
@@ -21,6 +23,11 @@ export {
   updateAndroidOngoingNotification,
   useAndroidOngoingNotification,
 } from './ongoing-notification/api.js'
+export { handleAndroidOngoingNotificationPush } from './ongoing-notification/push.js'
+export type {
+  AndroidOngoingNotificationPushResult,
+  HandleAndroidOngoingNotificationPushOptions,
+} from './ongoing-notification/push.js'
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
@@ -33,6 +40,12 @@ export type {
   AndroidOngoingNotificationCommonDisplayProps,
   AndroidOngoingNotificationContent,
   AndroidOngoingNotificationFallbackBehavior,
+  AndroidOngoingNotificationForegroundServiceAttachFailure,
+  AndroidOngoingNotificationForegroundServiceOptions,
+  AndroidOngoingNotificationForegroundServiceResult,
+  AndroidOngoingNotificationForegroundServiceState,
+  AndroidOngoingNotificationForegroundServiceType,
+  AndroidOngoingNotificationHandle,
   AndroidOngoingNotificationInput,
   AndroidOngoingNotificationMetricDescriptor,
   AndroidOngoingNotificationMetricEntryPayload,
@@ -51,6 +64,10 @@ export type {
   AndroidOngoingNotificationPromotionInfo,
   AndroidOngoingNotificationPromotionIssue,
   AndroidOngoingNotificationPublicVersion,
+  AndroidOngoingNotificationPushEnvelope,
+  AndroidOngoingNotificationPushOptions,
+  AndroidOngoingNotificationPushParseFailure,
+  AndroidOngoingNotificationPushParseResult,
   AndroidOngoingNotificationStartResult,
   AndroidOngoingNotificationStatus,
   AndroidOngoingNotificationStopResult,
@@ -60,6 +77,7 @@ export type {
   AndroidOngoingNotificationVisibility,
   CheckAndroidOngoingNotificationPromotionOptions,
   StartAndroidOngoingNotificationOptions,
+  StopAndroidOngoingNotificationOptions,
   UpdateAndroidOngoingNotificationOptions,
   UpsertAndroidOngoingNotificationOptions,
   UseAndroidOngoingNotificationOptions,

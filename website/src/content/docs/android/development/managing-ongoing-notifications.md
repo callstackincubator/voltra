@@ -509,6 +509,8 @@ The hook returns:
 
 Use `autoStart` to create the notification when the component mounts, and `autoUpdate` to refresh it when the JSX content changes.
 
+The hook's options take no `revision`, because they are reused for every update and a stored revision would make each update after the first one stale. Pass `revision` to a single `start()` or `update()` call instead; it is not remembered for `autoUpdate`.
+
 `isActive` follows the device, not only the hook's own calls. It turns `false` when the user swipes the notification away, when it times out (`timeoutMs`), and when anything in your app stops it, for example a push handler calling `stopAndroidOngoingNotification()`. This works even when the user swipes it from the notification shade while your app stays in the foreground.
 
 `autoStart` posts when the component mounts, or when you turn `autoStart` on. It does not post again while the component stays mounted, so a notification the user dismisses stays dismissed. The next time the component mounts with `autoStart`, for example when the user comes back to the screen, it is posted again. Call `start()` when your flow should show the notification again sooner:
@@ -624,8 +626,83 @@ Useful values include:
 - `capabilities.supportsPromotedNotifications`
 - `capabilities.canPostPromotedNotifications`
 - `capabilities.canRequestPromotedOngoing`
+- `capabilities.isUserDismissible` — `true` on Android 14 and above, where the user can swipe any ongoing notification away (see [Dismissibility by Android version](#dismissibility-by-android-version))
+- `capabilities.supportsForegroundService` and `capabilities.foregroundServiceTypes` — whether the config plugin declared Voltra's foreground service, and with which types (empty below Android 10)
+- `status.foregroundService` — `{ type, state }` for a notification started with `foregroundService`, where `state` is `'attached'`, `'detached'`, `'timed_out'` or `'failed'`
 
 `openAndroidNotificationSettings()` opens your app's channel list. When the user has turned Live Updates off for your app (`canPostPromotedNotifications === false`), use `openAndroidPromotedNotificationSettings()` to open the page where they turn them back on. It resolves `true` when the Live Updates page opened and `false` when the regular notification settings opened instead, because the device has no such page.
+
+## Dismissibility by Android version
+
+Every Voltra notification is posted as ongoing. What that means to the user depends on the Android version:
+
+| Android | Can the user swipe it away?                              | Note                                                                         |
+| ------- | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 7 to 12 | No                                                       | `setOngoing(true)` is honoured                                               |
+| 13      | No                                                       | Foreground service notifications became dismissible, but ongoing ones stay   |
+| 14+     | Yes, except on the lock screen and under "Clear all"     | Only call, media and device-policy notifications are exempt                  |
+
+No foreground service type makes a notification non-dismissible again on Android 14 and above, and Voltra never reposts a notification the user dismissed. Read `capabilities.isUserDismissible` to adapt your copy, and `status.isDismissed` or the hook's `isActive` to notice a dismissal.
+
+## Keeping the app alive with a foreground service
+
+Android may kill your app process a few minutes after the user leaves it. The notification stays in the shade, but nothing updates it any more. If the notification stands for work your app is doing right now, such as a workout, a delivery or a navigation session, back it with Voltra's foreground service:
+
+1. Declare the service and the types you need with [`ongoingNotificationForegroundService`](/android/api/plugin-configuration#ongoingnotificationforegroundservice-optional), then rebuild the app.
+2. Pass `foregroundService` when you start or upsert the notification:
+
+```tsx
+const result = await startAndroidOngoingNotification(<AndroidOngoingNotification.Progress title="Run" value={2} max={10} />, {
+  notificationId: 'workout-1',
+  channelId: 'workout',
+  foregroundService: { type: 'dataSync' },
+})
+
+if (result.ok && result.foregroundService?.attached === false) {
+  console.warn('Posted without a foreground service:', result.foregroundService.reason)
+}
+```
+
+Updates keep the service: an update reposts the same notification, and `foregroundService` is not an update option. An upsert with `foregroundService` that lands on a running notification attaches the service if the notification is not backed by it yet, so a later push can attach after an earlier one was refused. `stopAndroidOngoingNotification()` and `endAllAndroidOngoingNotifications()` release the service and remove the notification.
+
+`foregroundService` takes:
+
+- `type` — one of the types declared in the config plugin. You pick the type, so pick one you can justify: Google Play asks you to declare every type in Play Console with a use case and a video.
+- `onDismiss` — `'stop'` (default) stops the service when the user swipes the notification away on Android 14+. `'keep'` keeps it running without a visible notification.
+- `fallbackBehavior` — `'standard'` (default) keeps the notification posted when the service cannot attach, and reports why. `'error'` removes the notification and rejects with `VOLTRA_FOREGROUND_SERVICE_UNAVAILABLE`.
+
+When the service cannot attach, `result.foregroundService` is `{ attached: false, reason }`:
+
+| Reason                         | Meaning                                                                                                  |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `not_declared`                 | The config plugin did not declare the service                                                            |
+| `type_not_declared`            | The type is not in `ongoingNotificationForegroundService.types`                                          |
+| `unsupported_api`              | The type needs a newer Android version (for example `health`, `shortService` and `specialUse` need 14)   |
+| `background_start_not_allowed` | Android 12+ refused to start a foreground service while the app is in the background                    |
+| `missing_permission`           | A runtime permission the type needs is not granted, such as location for `location`. Checked before the service starts on Android 14+ |
+| `timeout_exhausted`            | The daily `dataSync` budget is spent (Android 15+)                                                       |
+| `busy`                         | Another Voltra notification already holds the service; one notification per app can be backed at a time |
+| `attach_timeout`               | The service did not report back within five seconds                                                      |
+
+Things to know:
+
+- On Android 15, `dataSync` may run six hours per day. When that runs out, Voltra detaches the service, the notification stays posted, and `status.foregroundService.state` becomes `'timed_out'`. `shortService` times out after about three minutes the same way.
+- The service is never restarted by the system. After the process dies, the notification and service are gone together.
+- On Android 13+ the user can stop your app from the Task Manager. The whole app is killed and no callback runs; read `ApplicationExitInfo.REASON_USER_REQUESTED` on the next launch if you need to know.
+- For `location`, `health` and `connectedDevice`, Voltra checks before starting the service that at least one of the runtime permissions Android 14 requires is granted (for `connectedDevice`: Bluetooth, Wi-Fi, network, NFC, IR or UWB permissions). A `connectedDevice` service that only talks to a USB device has no such permission and is reported as `missing_permission`.
+- From a background push, Android starts a foreground service only for a high-priority FCM message that was not downgraded, and never a `location` service on Android 14+. Otherwise the notification is posted and the result reports `background_start_not_allowed` or `missing_permission`.
+
+### Using your own foreground service
+
+If your app already runs a foreground service, for example for location updates or media playback, let it carry Voltra's notification instead of posting a second one. `getAndroidOngoingNotificationHandle(notificationId)` returns `{ notificationId, systemNotificationId }`, and Kotlin code can rebuild the notification with `voltra.ongoingnotification.VoltraOngoingNotifications.buildNotification(context, notificationId)`:
+
+```kotlin
+val notification = VoltraOngoingNotifications.buildNotification(context, "workout-1") ?: return
+val id = VoltraOngoingNotifications.systemNotificationId(context, "workout-1") ?: return
+startForeground(id, notification)
+```
+
+Android ignores `cancel()` for a foreground service notification, so `stopAndroidOngoingNotification()` drops Voltra's record but the notification stays until your service calls `stopForeground(STOP_FOREGROUND_REMOVE)`.
 
 ## When posting fails
 
@@ -638,7 +715,10 @@ Start, update, and upsert reject with a code instead of posting something broken
 | `VOLTRA_NOTIFICATION_INVALID_PAYLOAD`    | The payload is malformed or breaks a rule (e.g. a remote payload with `chronometerCountDown` but no `when`) | Fix the payload                                                   |
 | `VOLTRA_NOTIFICATION_INVALID_OPTIONS` | An option cannot be applied on this device (e.g. a `color` that is a theme token rather than a static color) | Pass a static color such as `'#1E88E5'` |
 | `VOLTRA_NOTIFICATION_NOT_PROMOTABLE`     | Promotion was requested with `fallbackBehavior: 'error'` and the notification is not eligible              | Read the reasons in the message (see below)                       |
+| `VOLTRA_FOREGROUND_SERVICE_UNAVAILABLE`  | `foregroundService.fallbackBehavior` is `'error'` and the service could not attach; nothing stays posted | Read the reason in the message (see [the reason table](#keeping-the-app-alive-with-a-foreground-service)) |
 | `VOLTRA_NOTIFICATION_INTERNAL_ERROR`     | An unexpected device failure                                                                               | Retry; if it persists, file an issue with the message             |
+
+A call with a `revision` that is not above the last one applied to that notification returns `ok: false, reason: 'stale_revision'` and changes nothing. See [Ordering](/android/development/remote-ongoing-notifications#ordering).
 
 A dismissed notification is different: updates and upserts return `ok: false, reason: 'dismissed'` and nothing is re-posted, so a remote push handled with `upsertAndroidOngoingNotification()` cannot bring back a notification the user swiped away. If your flow legitimately restarts after a dismissal, call `startAndroidOngoingNotification()` (or the hook's `start()`). It can reuse the same `notificationId`: the start replaces the dismissed notification with a new one and does not keep any of its options. Because a start always posts, don't use it to apply routine updates, for example by calling it from a push handler and falling back to an update on `already_exists`, or a dismissed notification will come back.
 
@@ -719,10 +799,12 @@ A common combination is a Voltra ongoing notification for the status plus one of
 - Your app must create the Android notification channel before starting a notification.
 - Notification permission still needs to be requested by your app on Android 13+.
 - Action buttons open deep links. They are not a JavaScript event system.
+- On Android 14 and above the user can swipe any ongoing notification away. See [Dismissibility by Android version](#dismissibility-by-android-version).
+- Only one notification per app can be backed by the foreground service at a time.
 - Some Android notification fields stay out of the API on purpose:
   - Badge count and badge icon. The launcher dot belongs to the channel your app creates, and a count makes no sense for a single ongoing item.
   - Group summary. Voltra posts no summary, and requesting one disqualifies the notification from promoted presentation.
-  - A color background on every notification (`colorized`). It does nothing for these styles outside a foreground service, which Voltra does not run, and it also disqualifies promoted presentation.
+  - A color background on every notification (`colorized`). It does nothing for these styles outside a foreground service, and it disqualifies promoted presentation, so it stays out even for service-backed notifications.
   - Tapping to auto-dismiss. The ongoing lifecycle belongs to `stopAndroidOngoingNotification()`, and a tap-dismiss would leave the notification recorded as active while it is already gone.
   - Sound, vibration, lights and their defaults, and importance. All of them are channel settings since Android 8.0.
   - Priority below Android 8.0. Deprecated, and a second API level to document for the same result.

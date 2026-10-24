@@ -41,6 +41,12 @@ type StartAndroidOngoingNotificationOptionsSpec = Readonly<{
   group?: string
   sortKey?: string
   allowSystemGeneratedContextualActions?: boolean
+  revision?: number
+  foregroundService?: Readonly<{
+    type: string
+    onDismiss?: string
+    fallbackBehavior?: string
+  }>
 }>
 
 /**
@@ -62,6 +68,7 @@ type UpdateAndroidOngoingNotificationOptionsSpec = Readonly<{
   group?: string | null
   sortKey?: string | null
   allowSystemGeneratedContextualActions?: boolean | null
+  revision?: number
 }>
 
 /**
@@ -85,6 +92,16 @@ type UpsertAndroidOngoingNotificationOptionsSpec = Readonly<{
   group?: string | null
   sortKey?: string | null
   allowSystemGeneratedContextualActions?: boolean | null
+  revision?: number
+  foregroundService?: Readonly<{
+    type: string
+    onDismiss?: string
+    fallbackBehavior?: string
+  }>
+}>
+
+type StopAndroidOngoingNotificationOptionsSpec = Readonly<{
+  revision?: number
 }>
 
 type AndroidOngoingNotificationPromotionSpec = Readonly<{
@@ -101,6 +118,11 @@ type AndroidOngoingNotificationResultSpec = Readonly<{
   reason?: string
   promotion?: AndroidOngoingNotificationPromotionSpec
   styleFallback?: string
+  foregroundService?: Readonly<{
+    attached: boolean
+    type?: string
+    reason?: string
+  }>
 }>
 
 type CheckAndroidOngoingNotificationPromotionOptionsSpec = Readonly<{
@@ -119,6 +141,10 @@ type AndroidOngoingNotificationStatusSpec = Readonly<{
   isDismissed: boolean
   isPromoted?: boolean
   hasPromotableCharacteristics?: boolean
+  foregroundService?: Readonly<{
+    type: string
+    state: string
+  }>
 }>
 
 type AndroidOngoingNotificationCapabilitiesSpec = Readonly<{
@@ -127,6 +153,14 @@ type AndroidOngoingNotificationCapabilitiesSpec = Readonly<{
   supportsPromotedNotifications: boolean
   canPostPromotedNotifications: boolean
   canRequestPromotedOngoing: boolean
+  isUserDismissible: boolean
+  supportsForegroundService: boolean
+  foregroundServiceTypes: string[]
+}>
+
+type AndroidOngoingNotificationHandleSpec = Readonly<{
+  notificationId: string
+  systemNotificationId: number
 }>
 
 /**
@@ -158,7 +192,10 @@ export interface Spec extends TurboModule {
     payload: string,
     options?: UpdateAndroidOngoingNotificationOptionsSpec
   ): Promise<AndroidOngoingNotificationResultSpec>
-  stopAndroidOngoingNotification(notificationId: string): Promise<AndroidOngoingNotificationResultSpec>
+  stopAndroidOngoingNotification(
+    notificationId: string,
+    options?: StopAndroidOngoingNotificationOptionsSpec
+  ): Promise<AndroidOngoingNotificationResultSpec>
   /** Runs the post-time promotion checks without posting and without writing a record. */
   checkAndroidOngoingNotificationPromotion(
     payload: string,
@@ -166,6 +203,7 @@ export interface Spec extends TurboModule {
   ): Promise<AndroidOngoingNotificationPromotionCheckResultSpec>
   isAndroidOngoingNotificationActive(notificationId: string): boolean
   getAndroidOngoingNotificationStatus(notificationId: string): AndroidOngoingNotificationStatusSpec
+  getAndroidOngoingNotificationHandle(notificationId: string): AndroidOngoingNotificationHandleSpec | null
   endAllAndroidOngoingNotifications(): Promise<void>
   canPostPromotedAndroidNotifications(): boolean
   getAndroidOngoingNotificationCapabilities(): AndroidOngoingNotificationCapabilitiesSpec

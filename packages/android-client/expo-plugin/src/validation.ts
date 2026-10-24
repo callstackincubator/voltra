@@ -10,6 +10,7 @@ import {
   validateWidgetServerUpdate,
 } from '@use-voltra/expo-plugin'
 
+import { ongoingNotificationForegroundServiceError } from './android/foregroundService'
 import { androidServerUpdateRules } from './android/serverUpdate'
 
 import type { AndroidConfigPluginProps, AndroidWidgetConfig } from './types'
@@ -121,6 +122,19 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
 export function validateAndroidConfigPluginProps(props: AndroidConfigPluginProps, projectRoot?: string): void {
   if (props.enableNotifications !== undefined && typeof props.enableNotifications !== 'boolean') {
     throw new Error('enableNotifications must be a boolean')
+  }
+
+  if (props.ongoingNotificationForegroundService !== undefined) {
+    const error = ongoingNotificationForegroundServiceError(
+      props.ongoingNotificationForegroundService,
+      'ongoingNotificationForegroundService'
+    )
+    if (error) {
+      throw new Error(error)
+    }
+    if (props.enableNotifications !== true) {
+      throw new Error('ongoingNotificationForegroundService requires enableNotifications: true')
+    }
   }
 
   if (props.widgets !== undefined) {

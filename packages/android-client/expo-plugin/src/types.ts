@@ -93,11 +93,33 @@ export interface AndroidWidgetServerUpdateConfig {
   refresh?: boolean
 }
 
+export type AndroidOngoingNotificationForegroundServiceType =
+  | 'location'
+  | 'health'
+  | 'mediaPlayback'
+  | 'remoteMessaging'
+  | 'connectedDevice'
+  | 'dataSync'
+  | 'shortService'
+  | 'specialUse'
+
+/**
+ * Declares Voltra's foreground service for ongoing notifications in AndroidManifest.xml.
+ */
+export interface AndroidOngoingNotificationForegroundServiceConfig {
+  /** Foreground service types the service runs with. Each adds its `FOREGROUND_SERVICE_*` permission. */
+  types: AndroidOngoingNotificationForegroundServiceType[]
+  /** Required when `types` includes `specialUse`. Written to `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`. */
+  specialUseSubtype?: string
+}
+
 /**
  * Options for `@use-voltra/android-client` Expo config plugin.
  */
 export interface AndroidConfigPluginProps {
   enableNotifications?: boolean
+  /** Requires `enableNotifications: true`. */
+  ongoingNotificationForegroundService?: AndroidOngoingNotificationForegroundServiceConfig
   widgets?: AndroidWidgetConfig[]
   fonts?: string[]
 }
@@ -106,6 +128,7 @@ export type VoltraAndroidConfigPlugin = ConfigPlugin<AndroidConfigPluginProps | 
 
 export interface AndroidPluginProps {
   enableNotifications?: boolean
+  ongoingNotificationForegroundService?: AndroidOngoingNotificationForegroundServiceConfig
   widgets: AndroidWidgetConfig[]
   userImagesPath?: string
   fonts?: string[]

@@ -237,4 +237,9 @@ data class AndroidOngoingNotificationRecord(
     val presentation: AndroidOngoingNotificationPresentation = AndroidOngoingNotificationPresentation(),
     val active: Boolean = true,
     val dismissed: Boolean = false,
+    /** Highest `revision` applied so far; a call carrying a lower or equal one is dropped as stale. */
+    val lastRevision: Long? = null,
+    val foregroundServiceType: String? = null,
+    val foregroundServiceOnDismiss: String = FOREGROUND_SERVICE_ON_DISMISS_STOP,
+    val foregroundServiceState: String? = null,
 )

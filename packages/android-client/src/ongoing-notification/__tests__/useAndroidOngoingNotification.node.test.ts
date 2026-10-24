@@ -80,6 +80,35 @@ describe('useAndroidOngoingNotification', () => {
     expect(replayedOptions).not.toHaveProperty('alert')
     expect(replayedOptions).toMatchObject({ color: '#1E88E5' })
   })
+
+  it('never replays a revision, so autoUpdate is not dropped as stale', async () => {
+    function RevisionProbe() {
+      // The type leaves `revision` out; a plain JS caller can still pass it.
+      apiRef.current = useAndroidOngoingNotification(content, {
+        notificationId: 'ride-44',
+        channelId: 'rides',
+        autoUpdate: true,
+        revision: 7,
+      } as never)
+      return null
+    }
+    let tree!: ReturnType<typeof ReactTestRenderer.create>
+    await ReactTestRenderer.act(async () => {
+      tree = ReactTestRenderer.create(React.createElement(RevisionProbe))
+    })
+    expect(nativeUpdate.mock.calls[0][2]).not.toHaveProperty('revision')
+
+    await ReactTestRenderer.act(async () => {
+      await apiRef.current!.update({ revision: 8 })
+    })
+    expect(nativeUpdate.mock.calls[1][2]).toMatchObject({ revision: 8 })
+
+    content = 'Driver is outside'
+    await ReactTestRenderer.act(async () => {
+      tree.update(React.createElement(RevisionProbe))
+    })
+    expect(nativeUpdate.mock.calls[2][2]).not.toHaveProperty('revision')
+  })
 })
 
 describe('useAndroidOngoingNotification lifecycle', () => {

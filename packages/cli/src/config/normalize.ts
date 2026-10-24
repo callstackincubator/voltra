@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import { resolveFromRoot } from '../fs/path'
 import { CLI_DEFAULTS } from './defaults'
+import { ongoingNotificationForegroundServiceError } from './foregroundService'
 import { isPerConfigurationMap } from './perConfiguration'
 import { resolveServerUpdateInterval, resolveServerUpdateUrl, validateServerUpdateRefresh } from './serverUpdate'
 import { iosWidgetKind } from './widgetKind'
@@ -661,8 +662,14 @@ function normalizeAndroidConfig(
     'android'
   )
 
+  const enableNotifications = config.enableNotifications ?? CLI_DEFAULTS.android.enableNotifications
+
   return {
-    enableNotifications: config.enableNotifications ?? CLI_DEFAULTS.android.enableNotifications,
+    enableNotifications,
+    ongoingNotificationForegroundService: normalizeOngoingNotificationForegroundService(
+      config.ongoingNotificationForegroundService,
+      enableNotifications
+    ),
     widgets,
     fonts: (config.fonts ?? []).map((fontPath) => resolvePathFromProjectRoot(projectRoot, fontPath)),
     userImagesPath: resolvePathFromProjectRoot(
@@ -675,6 +682,33 @@ function normalizeAndroidConfig(
       manifestPath: resolveOptionalPathFromProjectRoot(projectRoot, config.project?.manifestPath),
       packageName: config.project?.packageName,
     },
+  }
+}
+
+function normalizeOngoingNotificationForegroundService(
+  value: unknown,
+  enableNotifications: boolean
+): NormalizedVoltraAndroidConfig['ongoingNotificationForegroundService'] {
+  if (value === undefined) {
+    return undefined
+  }
+
+  const error = ongoingNotificationForegroundServiceError(value, 'android.ongoingNotificationForegroundService')
+  if (error) {
+    throw new VoltraConfigNormalizationError(error)
+  }
+
+  if (!enableNotifications) {
+    throw new VoltraConfigNormalizationError(
+      'android.ongoingNotificationForegroundService requires android.enableNotifications to be true'
+    )
+  }
+
+  const { types, specialUseSubtype } = value as { types: string[]; specialUseSubtype?: string }
+
+  return {
+    types: [...types],
+    ...(types.includes('specialUse') ? { specialUseSubtype } : {}),
   }
 }
 

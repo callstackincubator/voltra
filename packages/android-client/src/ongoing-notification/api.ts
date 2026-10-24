@@ -6,6 +6,7 @@ import {
   type AndroidOngoingNotificationCapabilities,
   type AndroidOngoingNotificationCheckPromotionResult,
   type AndroidOngoingNotificationContent,
+  type AndroidOngoingNotificationHandle,
   type AndroidOngoingNotificationInput,
   type AndroidOngoingNotificationPayload,
   type AndroidOngoingNotificationStartResult,
@@ -15,6 +16,7 @@ import {
   type AndroidOngoingNotificationUpsertResult,
   type CheckAndroidOngoingNotificationPromotionOptions,
   type StartAndroidOngoingNotificationOptions,
+  type StopAndroidOngoingNotificationOptions,
   type UpdateAndroidOngoingNotificationOptions,
   type UpsertAndroidOngoingNotificationOptions,
   type UseAndroidOngoingNotificationOptions,
@@ -26,6 +28,7 @@ import { getNativeVoltraAndroid } from '../native/NativeVoltraAndroid.js'
 import {
   getFilteredAndroidOngoingNotificationUpdateOptions,
   getStartAndroidOngoingNotificationOptions,
+  getStopAndroidOngoingNotificationOptions,
   getUpsertAndroidOngoingNotificationOptions,
 } from './options.js'
 
@@ -157,10 +160,14 @@ export const useAndroidOngoingNotification = (
         return createNotFoundUpdateResult(optionsRef.current?.notificationId ?? 'unknown')
       }
 
-      const updateOptions = { ...optionsRef.current, ...options }
-      // `alert` describes exactly the one post it arrived with, so it must never live in the object
-      // the autoUpdate effect replays: caching it would alert again on every content change.
-      lastUpdateOptionsRef.current = { ...updateOptions, alert: undefined }
+      // A `revision` on the hook's own options (from a plain JS caller) would be replayed by every
+      // update and make all but the first stale, so only a revision passed to this call is sent.
+      const { revision: _hookRevision, ...hookOptions } = (optionsRef.current ?? {}) as { revision?: number }
+      const updateOptions = { ...hookOptions, ...options }
+      // `alert` and `revision` describe exactly the one post they arrived with, so they must never live
+      // in the object the autoUpdate effect replays: caching `alert` would alert again on every content
+      // change, and a cached `revision` would make every later update stale.
+      lastUpdateOptionsRef.current = { ...updateOptions, alert: undefined, revision: undefined }
       return updateAndroidOngoingNotification(targetId, contentRef.current, updateOptions)
     },
     [targetId]
@@ -307,10 +314,12 @@ export const checkAndroidOngoingNotificationPromotion = async (
 }
 
 export const stopAndroidOngoingNotification = async (
-  notificationId: string
+  notificationId: string,
+  options?: StopAndroidOngoingNotificationOptions
 ): Promise<AndroidOngoingNotificationStopResult> => {
   return (await getNativeVoltraAndroid().stopAndroidOngoingNotification(
-    notificationId
+    notificationId,
+    getStopAndroidOngoingNotificationOptions(options)
   )) as AndroidOngoingNotificationStopResult
 }
 
@@ -319,7 +328,19 @@ export const isAndroidOngoingNotificationActive = (notificationId: string): bool
 }
 
 export const getAndroidOngoingNotificationStatus = (notificationId: string): AndroidOngoingNotificationStatus => {
-  return getNativeVoltraAndroid().getAndroidOngoingNotificationStatus(notificationId)
+  return getNativeVoltraAndroid().getAndroidOngoingNotificationStatus(
+    notificationId
+  ) as AndroidOngoingNotificationStatus
+}
+
+/**
+ * The system notification id of a running ongoing notification, for an app whose own foreground
+ * service should carry it. Null when Voltra has no such notification.
+ */
+export const getAndroidOngoingNotificationHandle = (
+  notificationId: string
+): AndroidOngoingNotificationHandle | null => {
+  return getNativeVoltraAndroid().getAndroidOngoingNotificationHandle(notificationId) ?? null
 }
 
 export async function endAllAndroidOngoingNotifications(): Promise<void> {
@@ -331,5 +352,5 @@ export const canPostPromotedAndroidNotifications = (): boolean => {
 }
 
 export const getAndroidOngoingNotificationCapabilities = (): AndroidOngoingNotificationCapabilities => {
-  return getNativeVoltraAndroid().getAndroidOngoingNotificationCapabilities()
+  return getNativeVoltraAndroid().getAndroidOngoingNotificationCapabilities() as AndroidOngoingNotificationCapabilities
 }

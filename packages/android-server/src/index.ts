@@ -3,6 +3,8 @@
 import { createVoltraRenderer } from '@use-voltra/core'
 export {
   AndroidOngoingNotification,
+  createAndroidOngoingNotificationPushEnvelope,
+  parseAndroidOngoingNotificationPush,
   renderAndroidOngoingNotificationPayload,
   renderAndroidOngoingNotificationPayloadToJson,
 } from '@use-voltra/android/server'
@@ -46,6 +48,17 @@ export type {
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
   AndroidOngoingNotificationPublicVersion,
+  AndroidOngoingNotificationFallbackBehavior,
+  AndroidOngoingNotificationForegroundServiceOptions,
+  AndroidOngoingNotificationForegroundServiceType,
+  AndroidOngoingNotificationPresentationOptions,
+  AndroidOngoingNotificationPushEnvelope,
+  AndroidOngoingNotificationPushOptions,
+  AndroidOngoingNotificationPushParseFailure,
+  AndroidOngoingNotificationPushParseResult,
+  CreateAndroidOngoingNotificationPushEnvelopeInput,
+  StartAndroidOngoingNotificationOptions,
+  UpsertAndroidOngoingNotificationOptions,
 } from '@use-voltra/android/server'
 export type {
   WidgetRenderRequest,

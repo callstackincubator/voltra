@@ -1,8 +1,11 @@
 import {
   ANDROID_ONGOING_NOTIFICATION_CATEGORIES,
+  ANDROID_ONGOING_NOTIFICATION_FOREGROUND_SERVICE_TYPES,
   ANDROID_ONGOING_NOTIFICATION_VISIBILITIES,
+  type AndroidOngoingNotificationForegroundServiceOptions,
   type AndroidOngoingNotificationPresentationOptions,
   type StartAndroidOngoingNotificationOptions,
+  type StopAndroidOngoingNotificationOptions,
   type UpdateAndroidOngoingNotificationOptions,
   type UpsertAndroidOngoingNotificationOptions,
 } from '@use-voltra/android'
@@ -41,6 +44,50 @@ const checkBoolean: OptionsValidator = (value, optionName) => {
 const checkPositiveInteger: OptionsValidator = (value, optionName) => {
   if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
     invalidOption(optionName, 'must be a positive integer number of milliseconds')
+  }
+}
+
+const checkRevision: OptionsValidator = (value, optionName) => {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    invalidOption(optionName, 'must be a non-negative integer')
+  }
+}
+
+/** `revision`, when the caller sent one, ready to spread into the options that cross the bridge. */
+const getRevisionToForward = (revision: unknown): { revision?: number } => {
+  if (revision === undefined) {
+    return {}
+  }
+  checkRevision(revision, 'revision')
+  return { revision: revision as number }
+}
+
+/** `foregroundService`, validated and copied key by key so nothing unknown reaches native code. */
+const getForegroundServiceToForward = (
+  foregroundService: unknown
+): { foregroundService?: AndroidOngoingNotificationForegroundServiceOptions } => {
+  if (foregroundService === undefined) {
+    return {}
+  }
+  if (typeof foregroundService !== 'object' || foregroundService === null) {
+    invalidOption('foregroundService', 'must be an object')
+  }
+
+  const { type, onDismiss, fallbackBehavior } = foregroundService as Record<string, unknown>
+  checkOneOf(ANDROID_ONGOING_NOTIFICATION_FOREGROUND_SERVICE_TYPES)(type, 'foregroundService.type')
+  if (onDismiss !== undefined) {
+    checkOneOf(['stop', 'keep'])(onDismiss, 'foregroundService.onDismiss')
+  }
+  if (fallbackBehavior !== undefined) {
+    checkOneOf(['standard', 'error'])(fallbackBehavior, 'foregroundService.fallbackBehavior')
+  }
+
+  return {
+    foregroundService: {
+      type: type as AndroidOngoingNotificationForegroundServiceOptions['type'],
+      ...(onDismiss === undefined ? {} : { onDismiss: onDismiss as 'stop' | 'keep' }),
+      ...(fallbackBehavior === undefined ? {} : { fallbackBehavior: fallbackBehavior as 'standard' | 'error' }),
+    },
   }
 }
 
@@ -126,6 +173,8 @@ export const getStartAndroidOngoingNotificationOptions = (
     deepLinkUrl: options.deepLinkUrl,
     requestPromotedOngoing: options.requestPromotedOngoing,
     fallbackBehavior: options.fallbackBehavior,
+    ...getRevisionToForward(options.revision),
+    ...getForegroundServiceToForward(options.foregroundService),
     ...getPresentationOptionsToForward(options),
   }
 }
@@ -157,6 +206,8 @@ export const getUpsertAndroidOngoingNotificationOptions = (
     requestPromotedOngoing: options.requestPromotedOngoing,
     fallbackBehavior: options.fallbackBehavior,
     ...(options.alert === undefined ? {} : { alert: options.alert }),
+    ...getRevisionToForward(options.revision),
+    ...getForegroundServiceToForward(options.foregroundService),
     ...getPresentationOptionsToForward(options),
   }
 }
@@ -204,8 +255,19 @@ export const getFilteredAndroidOngoingNotificationUpdateOptions = (
     filteredOptions.alert = options.alert
   }
 
+  // `foregroundService` is not an update option: an update keeps whatever service the notification has.
+  Object.assign(filteredOptions, getRevisionToForward(options.revision))
+
   validatePresentationOptions(options, true)
   Object.assign(filteredOptions, getPresentationOptionsToForward(options))
 
   return Object.keys(filteredOptions).length > 0 ? filteredOptions : undefined
+}
+
+/** Validates stop options, or returns `undefined` when there is nothing to send. */
+export const getStopAndroidOngoingNotificationOptions = (
+  options?: StopAndroidOngoingNotificationOptions
+): StopAndroidOngoingNotificationOptions | undefined => {
+  const forwarded = getRevisionToForward(options?.revision)
+  return forwarded.revision === undefined ? undefined : forwarded
 }

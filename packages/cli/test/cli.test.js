@@ -476,6 +476,19 @@ test('the CLI copy of the serverUpdate rules matches the one shared by the Expo 
   assert.equal(body(cliCopy), body(pluginCopy))
 })
 
+test('the CLI copy of the foreground service rules matches the Android Expo plugin copy', () => {
+  const cliCopy = fs.readFileSync(path.join(packageRoot, 'src/config/foregroundService.ts'), 'utf8')
+  const pluginCopy = fs.readFileSync(
+    path.join(packageRoot, '..', 'android-client/expo-plugin/src/android/foregroundService.ts'),
+    'utf8'
+  )
+
+  // Only the pointer at the other copy differs; everything below the header must be identical.
+  const body = (source) => source.slice(source.indexOf('*/'))
+
+  assert.equal(body(cliCopy), body(pluginCopy))
+})
+
 test('serverUpdate without a url marks the widget server-driven and leaves the url unset', () => {
   const normalized = normalizeWidgetConfig(androidWidgetConfig({ serverUpdate: {} }))
 
