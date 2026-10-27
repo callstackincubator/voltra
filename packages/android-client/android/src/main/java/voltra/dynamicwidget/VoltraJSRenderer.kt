@@ -15,6 +15,10 @@ import android.util.Log
  * dev-mode hot reload (always-refetch).
  *
  * Thread safety: a single lock guards both evaluate and render, matching iOS's NSLock.
+ *
+ * Theme: right after each successful evaluation, under the same lock, the widget's optional
+ * `theme` export is read once as an opaque JSON string and kept until the next evaluation, so
+ * [themeJSON] always describes the bundle [render] runs.
  */
 object VoltraJSRenderer {
     private const val TAG = "VoltraJSRenderer"
@@ -24,6 +28,7 @@ object VoltraJSRenderer {
     }
 
     private val lock = Any()
+    private val themes = HashMap<String, String>()
 
     private external fun nativeEvaluateBundle(
         wrappedSource: String,
@@ -36,6 +41,8 @@ object VoltraJSRenderer {
         propsJSON: String,
         envJSON: String,
     ): String?
+
+    private external fun nativeThemeJSON(widgetId: String): String?
 
     /**
      * Minimal global shims. The widget Metro bundle runs in a *bare* Hermes runtime (no RN
@@ -65,8 +72,8 @@ object VoltraJSRenderer {
         """.trimIndent()
 
     /**
-     * Evaluate a widget bundle (raw Metro `/voltra/widgets/<id>.bundle` output) and capture
-     * its `render(props, env)` export. Idempotent: re-evaluating overwrites the capture.
+     * Evaluate a widget bundle (raw Metro `/voltra/widgets/<id>.bundle` output), capture its
+     * `render(props, env)` export and read its theme. Idempotent: re-evaluating overwrites both.
      *
      * The raw bundle ends with Metro's entry invocation `__r(<entryId>);`. We re-invoke that
      * entry and stash its exports in `globalThis.__voltraWidgets[<id>]` (Metro's `__r` caches
@@ -100,6 +107,7 @@ object VoltraJSRenderer {
                     Log.e(TAG, "nativeEvaluateBundle threw for widgetId=$widgetId", t)
                     false
                 }
+            if (ok) readTheme(widgetId)
             ok
         }
 
@@ -121,6 +129,25 @@ object VoltraJSRenderer {
                 null
             }
         }
+
+    /**
+     * The widget's `theme` export as JSON, as read by its last successful evaluation, or null when
+     * it has none. A map lookup: it never calls into JavaScript and never inspects the JSON.
+     */
+    fun themeJSON(widgetId: String): String? = synchronized(lock) { themes[widgetId] }
+
+    /** Replaces the widget's theme with the just-evaluated bundle's. Never throws. */
+    private fun readTheme(widgetId: String) {
+        themes.remove(widgetId)
+        val theme =
+            try {
+                nativeThemeJSON(widgetId)
+            } catch (t: Throwable) {
+                Log.e(TAG, "nativeThemeJSON threw for widgetId=$widgetId", t)
+                null
+            }
+        if (theme != null) themes[widgetId] = theme
+    }
 
     /**
      * Find the entry module id Metro emitted in the bundle's trailing `__r(<id>);`. Every

@@ -1,6 +1,21 @@
 import { Platform, StyleSheet } from 'react-native'
 
-import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
+import {
+  AndroidDynamicColors,
+  VoltraAndroid,
+  type AndroidWidgetTheme,
+  type WidgetEnvironment,
+} from '@use-voltra/android'
+
+// The colors the role tokens below resolve to. Roles left out keep the default palette.
+// `dynamicColors: false` lets the theme win over the system's dynamic palette on Android 12+ too,
+// so the theme is visible on the API 35 emulator; leave it out to keep Material You there and use
+// the theme only below Android 12.
+export const theme: AndroidWidgetTheme = {
+  day: { primary: '#E65100', surface: '#FFF3E0' },
+  night: { primary: '#FFB74D', surface: '#3E2723' },
+  dynamicColors: false,
+}
 
 // Static styles live outside the element tree; the Material You colors below are resolved
 // per render and merged in with StyleSheet.flatten.
