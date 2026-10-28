@@ -1,6 +1,6 @@
 ---
-title: "Remote Ongoing Notifications (Android)"
-description: "Update Android ongoing notifications from push messages handled in a background task, with server-side rendering support."
+title: 'Remote Ongoing Notifications (Android)'
+description: 'Update Android ongoing notifications from push messages handled in a background task, with server-side rendering support.'
 ---
 
 Voltra can apply remote updates to an ongoing notification when your app receives a push notification and handles it in a background task. This builds on the local lifecycle API — see [Managing Ongoing Notifications](/android/development/managing-ongoing-notifications) first for creating the notification channel, requesting permission, and the start/update/stop APIs.
@@ -58,27 +58,42 @@ The end-to-end flow is:
 Use `renderAndroidOngoingNotificationPayloadToJson()` when preparing a payload on your server or in app tooling:
 
 ```tsx
-import {
-  AndroidOngoingNotification,
-  renderAndroidOngoingNotificationPayloadToJson,
-} from '@use-voltra/android-server'
+import { AndroidOngoingNotification, renderAndroidOngoingNotificationPayloadToJson } from '@use-voltra/android-server'
 
 const payload = renderAndroidOngoingNotificationPayloadToJson(
-  <AndroidOngoingNotification.Progress
-    title="Driver is approaching"
-    text="2 stops away"
-    value={80}
-    max={100}
-  >
+  <AndroidOngoingNotification.Progress title="Driver is approaching" text="2 stops away" value={80} max={100}>
+    <AndroidOngoingNotification.Action title="Open order" deepLinkUrl="myapp://orders/123" />
     <AndroidOngoingNotification.Action
-      title="Open order"
-      deepLinkUrl="myapp://orders/123"
+      title="Add tip"
+      actionId="tip"
+      payload="order-123"
+      remoteInput={{ key: 'tip', label: 'Tip amount', choices: ['10%', '15%', '20%'] }}
     />
   </AndroidOngoingNotification.Progress>
 )
 ```
 
-Then send that payload inside a push message.
+```json
+{
+  "v": 1,
+  "kind": "progress",
+  "title": "Driver is approaching",
+  "text": "2 stops away",
+  "value": 80,
+  "max": 100,
+  "actions": [
+    { "title": "Open order", "deepLinkUrl": "myapp://orders/123" },
+    {
+      "title": "Add tip",
+      "actionId": "tip",
+      "payload": "order-123",
+      "remoteInput": { "key": "tip", "label": "Tip amount", "choices": ["10%", "15%", "20%"] }
+    }
+  ]
+}
+```
+
+Then send that payload inside a push message. A press on the `actionId` action reaches the app's `interaction` handler, even when the app is not running; see [Responding to actions](/android/development/managing-ongoing-notifications#responding-to-actions).
 
 A picture works the same way:
 
@@ -167,10 +182,7 @@ To stop the notification remotely, send the same `notificationId` with `operatio
 ```tsx
 import * as Notifications from 'expo-notifications'
 import * as TaskManager from 'expo-task-manager'
-import {
-  stopAndroidOngoingNotification,
-  upsertAndroidOngoingNotification,
-} from '@use-voltra/android-client'
+import { stopAndroidOngoingNotification, upsertAndroidOngoingNotification } from '@use-voltra/android-client'
 
 const TASK_NAME = 'voltra-ongoing-notification-task'
 
@@ -230,3 +242,5 @@ Your background task should ensure that the target notification channel exists b
 ## Compatibility
 
 The client chooses its parser by the `kind` field, so your server and the installed app have to agree on the available kinds. A build that does not know `bigPicture` or `inbox` fails to parse that payload rather than falling back to a layout it does know, and the update is reported as a failure. Serve `progress` or `bigText` to older installs, which means a server that picks a layout per device needs the app version that device reports.
+
+Actions follow the same rule. An app build from before event actions requires `deepLinkUrl` on every action, so it fails to parse a payload with an `actionId` action and reports the update as a failure. Until every install you push to has updated, send those installs actions with `deepLinkUrl` only. The payload version stays `v: 1`: the other new action fields (`authenticationRequired`, `semanticAction`) are ignored by older builds.

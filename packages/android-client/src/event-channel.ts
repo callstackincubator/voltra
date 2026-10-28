@@ -12,7 +12,7 @@ type ChannelEvent = { type: string }
 
 type Subscriber = {
   type: string
-  listener: (event: ChannelEvent) => void
+  listener: (event: ChannelEvent) => unknown
 }
 
 const subscribers = new Set<Subscriber>()
@@ -21,6 +21,17 @@ let appStateSubscription: NativeEventSubscription | null = null
 let isPumping = false
 let pumpRequested = false
 let pumpScheduled = false
+// Promises returned by listeners, so a background run can wait for them (ADR 0015).
+const pendingHandlers = new Set<Promise<unknown>>()
+
+const trackPending = (type: string, result: unknown) => {
+  if (!result || typeof (result as Promise<unknown>).then !== 'function') return
+  const pending = Promise.resolve(result).catch((error: unknown) => {
+    console.error(`[Voltra] A '${type}' listener rejected:`, error)
+  })
+  pendingHandlers.add(pending)
+  void pending.finally(() => pendingHandlers.delete(pending))
+}
 
 const dispatch = (event: ChannelEvent): boolean => {
   let delivered = false
@@ -29,7 +40,7 @@ const dispatch = (event: ChannelEvent): boolean => {
     if (!subscribers.has(subscriber) || subscriber.type !== event.type) continue
     delivered = true
     try {
-      subscriber.listener(event)
+      trackPending(event.type, subscriber.listener(event))
     } catch (error) {
       console.error(`[Voltra] A '${event.type}' listener threw:`, error)
     }
@@ -120,7 +131,7 @@ export function subscribeToChannelEvents<E extends ChannelEvent>(
     return noopSubscription
   }
 
-  const subscriber: Subscriber = { type, listener: listener as (event: ChannelEvent) => void }
+  const subscriber: Subscriber = { type, listener: listener as (event: ChannelEvent) => unknown }
   subscribers.add(subscriber)
   if (subscribers.size === 1) {
     attachTriggers()
@@ -138,4 +149,23 @@ export function subscribeToChannelEvents<E extends ChannelEvent>(
       }
     },
   }
+}
+
+/**
+ * Pull and dispatch every queued event that has a listener now, then resolve once every promise a
+ * listener returned has settled, including ones started meanwhile. Used by the headless task that
+ * keeps a background run alive (ADR 0015).
+ */
+export async function drainChannelEvents(): Promise<void> {
+  pump()
+  // Let a pump scheduled by a listener added during module evaluation run first.
+  await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  while (pendingHandlers.size > 0) {
+    await Promise.allSettled([...pendingHandlers])
+  }
+}
+
+/** Whether a listener is registered for an event type. */
+export function hasChannelSubscriber(type: string): boolean {
+  return [...subscribers].some((subscriber) => subscriber.type === type)
 }

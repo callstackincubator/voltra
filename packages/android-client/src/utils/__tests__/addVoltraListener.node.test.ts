@@ -59,6 +59,26 @@ const removed = (appWidgetId: number) => ({
   appWidgetId,
 })
 
+const interaction = {
+  type: 'interaction',
+  source: 'order-123',
+  timestamp: 1_790_000_000_000,
+  identifier: 'tip',
+  payload: '',
+  notificationId: 'order-123',
+  revision: 3,
+  reply: { key: 'tip', text: '15%', source: 'choice' },
+}
+
+const dismissed = {
+  type: 'notificationDismissed',
+  source: 'order-123',
+  timestamp: 1_790_000_000_001,
+  notificationId: 'order-123',
+}
+
+const tapped = { ...dismissed, type: 'notificationTapped', timestamp: 1_790_000_000_002 }
+
 // Each test gets a fresh JavaScript runtime so the event channel's module state doesn't leak between tests.
 const loadAddVoltraListener = (): typeof AddVoltraListener => {
   let loaded!: typeof AddVoltraListener
@@ -81,11 +101,11 @@ describe('addVoltraListener (Android client)', () => {
       const addVoltraListener = loadAddVoltraListener()
       const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
 
-      const subscription = addVoltraListener('interaction', () => {})
+      const subscription = addVoltraListener('stateChange', () => {})
 
       expect(warn).toHaveBeenCalledTimes(1)
       expect(warn).toHaveBeenCalledWith(
-        "[Voltra] Event 'interaction' is only supported on iOS. Returning no-op subscription."
+        "[Voltra] Event 'stateChange' is only supported on iOS. Returning no-op subscription."
       )
       expect(() => subscription.remove()).not.toThrow()
       warn.mockRestore()
@@ -108,6 +128,51 @@ describe('addVoltraListener (Android client)', () => {
     ])
     expect(mockedGetNativeVoltraAndroid).not.toHaveBeenCalled()
     expect(() => subscription.remove()).not.toThrow()
+  })
+
+  it('warns for ongoing notification events off Android and returns a no-op subscription', () => {
+    ;(Platform as { OS: string }).OS = 'ios'
+    const addVoltraListener = loadAddVoltraListener()
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    for (const type of ['interaction', 'notificationDismissed', 'notificationTapped'] as const) {
+      expect(() => addVoltraListener(type, () => {}).remove()).not.toThrow()
+    }
+
+    expect(warn.mock.calls).toEqual([
+      ["[Voltra] Event 'interaction' is only supported on Android. Returning no-op subscription."],
+      ["[Voltra] Event 'notificationDismissed' is only supported on Android. Returning no-op subscription."],
+      ["[Voltra] Event 'notificationTapped' is only supported on Android. Returning no-op subscription."],
+    ])
+    expect(mockedGetNativeVoltraAndroid).not.toHaveBeenCalled()
+  })
+
+  it('delivers ongoing notification events through the channel on Android (ADR 0015)', async () => {
+    const channel = createNativeQueue()
+    mockedGetNativeVoltraAndroid.mockReturnValue(channel.native as unknown as Spec)
+    const addVoltraListener = loadAddVoltraListener()
+    channel.record(interaction)
+    channel.record(dismissed)
+    channel.record(tapped)
+    const interactions: unknown[] = []
+    const dismissals: unknown[] = []
+    const taps: unknown[] = []
+
+    addVoltraListener('interaction', (event) => interactions.push(event))
+    addVoltraListener('notificationDismissed', (event) => dismissals.push(event))
+    const tapSubscription = addVoltraListener('notificationTapped', (event) => taps.push(event))
+    await flushMicrotasks()
+
+    expect(interactions).toEqual([interaction])
+    expect(dismissals).toEqual([dismissed])
+    expect(taps).toEqual([tapped])
+    expect(channel.queued()).toEqual([])
+
+    tapSubscription.remove()
+    channel.record(tapped)
+    await flushMicrotasks()
+    expect(taps).toEqual([tapped])
+    expect(channel.queued()).toEqual([tapped])
   })
 
   it('delivers queued events oldest first and stops after remove()', async () => {

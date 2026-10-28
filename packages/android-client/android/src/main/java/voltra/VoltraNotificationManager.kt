@@ -5,6 +5,7 @@ import android.app.Notification.BigTextStyle
 import android.app.Notification.Builder
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.RemoteInput
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -35,6 +36,7 @@ import voltra.ongoingnotification.AndroidOngoingNotificationPromotionEvaluator
 import voltra.ongoingnotification.AndroidOngoingNotificationPromotionInfo
 import voltra.ongoingnotification.AndroidOngoingNotificationPublicVersionPayload
 import voltra.ongoingnotification.AndroidOngoingNotificationRecord
+import voltra.ongoingnotification.AndroidOngoingNotificationRemoteInputPayload
 import voltra.ongoingnotification.EXTRA_REQUEST_PROMOTED_ONGOING
 import voltra.ongoingnotification.PROMOTION_MIN_SDK
 import voltra.ongoingnotification.PromotedLargeIconInset
@@ -74,6 +76,8 @@ data class AndroidOngoingNotificationCapabilities(
     val supportsPromotedNotifications: Boolean,
     val canPostPromotedNotifications: Boolean,
     val canRequestPromotedOngoing: Boolean,
+    val supportsAuthenticationRequiredActions: Boolean,
+    val supportsSemanticActions: Boolean,
 )
 
 data class AndroidOngoingNotificationStatus(
@@ -147,6 +151,35 @@ class VoltraNotificationManager(
         private const val MAX_INBOX_LINES = 6
         const val EXTRA_NOTIFICATION_ID = "voltra.extra.NOTIFICATION_ID"
 
+        /** Set on the content intent so the app can report `notificationTapped` (ADR 0015). */
+        const val EXTRA_TAPPED = "voltra.extra.TAPPED"
+
+        /** Broadcast action of an event action's PendingIntent; see [VoltraOngoingNotificationActionReceiver]. */
+        const val ACTION_ONGOING_NOTIFICATION_ACTION = "voltra.action.ONGOING_NOTIFICATION_ACTION"
+        const val EXTRA_ACTION_ID = "voltra.extra.ACTION_ID"
+        const val EXTRA_ACTION_INDEX = "voltra.extra.ACTION_INDEX"
+        const val EXTRA_ACTION_PAYLOAD = "voltra.extra.ACTION_PAYLOAD"
+        const val EXTRA_REMOTE_INPUT_KEY = "voltra.extra.REMOTE_INPUT_KEY"
+        const val EXTRA_REVISION = "voltra.extra.REVISION"
+
+        // Android shows at most three actions; stop and endAll cancel the PendingIntents of those slots.
+        private const val CANCELLED_ACTION_SLOTS = 3
+
+        /** Request code of the PendingIntent behind action [index] of notification [notificationId]. */
+        fun createActionRequestCode(
+            notificationId: Int,
+            index: Int,
+        ): Int = (notificationId * 100) + index + 1
+
+        /** The stored record of [notificationId], or null when it was never started or has been stopped. */
+        fun getRecordSnapshot(
+            context: Context,
+            notificationId: String,
+        ): AndroidOngoingNotificationRecord? {
+            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return readRecords(prefs)[notificationId]
+        }
+
         /** The user swiped the notification away, or the system removed it when its timeout expired. */
         const val ENDED_REASON_DISMISSED = "dismissed"
 
@@ -187,13 +220,14 @@ class VoltraNotificationManager(
                 encodeDefaults = true
             }
 
+        /** Marks [notificationId] dismissed; returns false when no such record exists. */
         fun markDismissed(
             context: Context,
             notificationId: String,
-        ) {
+        ): Boolean {
             val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val records = readRecords(prefs).toMutableMap()
-            val record = records[notificationId] ?: return
+            val record = records[notificationId] ?: return false
 
             records[notificationId] =
                 record.copy(
@@ -203,6 +237,7 @@ class VoltraNotificationManager(
             writeRecords(prefs, records)
             Log.d(TAG, "Marked ongoing notification as dismissed: $notificationId")
             notifyEnded(notificationId, ENDED_REASON_DISMISSED)
+            return true
         }
 
         private fun readRecords(
@@ -264,6 +299,8 @@ class VoltraNotificationManager(
                         systemNotificationId = existingRecord?.systemNotificationId ?: fresh.systemNotificationId,
                         active = true,
                         dismissed = false,
+                        lastPayload = payload,
+                        revision = 1,
                     )
                 }
 
@@ -310,6 +347,8 @@ class VoltraNotificationManager(
                 ).copy(
                     active = true,
                     dismissed = false,
+                    lastPayload = payload,
+                    revision = currentRecord.revision + 1,
                 )
 
             // Updates are silent by default; `alert` re-alerts for this one post only.
@@ -364,6 +403,7 @@ class VoltraNotificationManager(
                     reason = "not_found",
                 )
         notificationManager.cancel(record.systemNotificationId)
+        cancelActionIntents(record)
         removeRecord(notificationId)
         notifyEnded(notificationId, ENDED_REASON_STOPPED)
         return AndroidOngoingNotificationStopResult(
@@ -413,9 +453,33 @@ class VoltraNotificationManager(
         val records = getRecords()
         records.values.forEach { record ->
             notificationManager.cancel(record.systemNotificationId)
+            cancelActionIntents(record)
         }
         clearRecords()
         records.keys.forEach { notificationId -> notifyEnded(notificationId, ENDED_REASON_STOPPED) }
+    }
+
+    /**
+     * Posts [notificationId] again with its last payload and revision, silently. Used after a direct
+     * reply to clear the reply spinner before JavaScript runs (ADR 0015). Does nothing, and returns
+     * false, for a missing or dismissed record: a Live Update the user dismissed is never reposted.
+     */
+    fun repostLastPayload(notificationId: String): Boolean {
+        val record = getRecord(notificationId) ?: return false
+        if (record.dismissed) return false
+        val lastPayload = record.lastPayload ?: return false
+        return try {
+            val parsedPayload = AndroidOngoingNotificationPayloadParser.parseValidated(lastPayload)
+            ensureChannelExists(record.channelId)
+            notificationManager.notify(
+                record.systemNotificationId,
+                buildNotification(record, parsedPayload, onlyAlertOnce = true),
+            )
+            true
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to repost ongoing notification $notificationId", error)
+            false
+        }
     }
 
     fun canPostPromotedAndroidNotifications(): Boolean =
@@ -436,6 +500,8 @@ class VoltraNotificationManager(
             supportsPromotedNotifications = supportsPromoted,
             canPostPromotedNotifications = canPostPromoted,
             canRequestPromotedOngoing = canPostPromoted,
+            supportsAuthenticationRequiredActions = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+            supportsSemanticActions = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P,
         )
     }
 
@@ -975,9 +1041,43 @@ class VoltraNotificationManager(
                     action.title,
                     pendingIntent,
                 )
+            if (action.isEventAction) {
+                action.remoteInput?.let { actionBuilder.addRemoteInput(buildRemoteInput(it)) }
+            }
+            if (action.authenticationRequired != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                actionBuilder.setAuthenticationRequired(action.authenticationRequired)
+            }
+            if (action.semanticAction != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                actionBuilder.setSemanticAction(semanticActionConstant(action.semanticAction))
+            }
             builder.addAction(actionBuilder.build())
         }
     }
+
+    private fun buildRemoteInput(remoteInput: AndroidOngoingNotificationRemoteInputPayload): RemoteInput =
+        RemoteInput
+            .Builder(remoteInput.key)
+            .setLabel(remoteInput.label)
+            .setAllowFreeFormInput(remoteInput.allowFreeFormInput ?: true)
+            .setChoices(remoteInput.choices?.toTypedArray())
+            .build()
+
+    // The renderer rejects unknown names; a value from a newer renderer reaching an older app degrades to NONE.
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun semanticActionConstant(name: String): Int =
+        when (name) {
+            "reply" -> Notification.Action.SEMANTIC_ACTION_REPLY
+            "markAsRead" -> Notification.Action.SEMANTIC_ACTION_MARK_AS_READ
+            "markAsUnread" -> Notification.Action.SEMANTIC_ACTION_MARK_AS_UNREAD
+            "delete" -> Notification.Action.SEMANTIC_ACTION_DELETE
+            "archive" -> Notification.Action.SEMANTIC_ACTION_ARCHIVE
+            "mute" -> Notification.Action.SEMANTIC_ACTION_MUTE
+            "unmute" -> Notification.Action.SEMANTIC_ACTION_UNMUTE
+            "thumbsUp" -> Notification.Action.SEMANTIC_ACTION_THUMBS_UP
+            "thumbsDown" -> Notification.Action.SEMANTIC_ACTION_THUMBS_DOWN
+            "call" -> Notification.Action.SEMANTIC_ACTION_CALL
+            else -> Notification.Action.SEMANTIC_ACTION_NONE
+        }
 
     private fun createContentIntent(record: AndroidOngoingNotificationRecord): PendingIntent? {
         val intent =
@@ -987,6 +1087,10 @@ class VoltraNotificationManager(
                 }
 
         return intent?.let {
+            // Read by the app's Activity to report `notificationTapped` (ADR 0015). The content tap
+            // must target the Activity directly: Android 12 forbids a receiver trampoline here.
+            it.putExtra(EXTRA_NOTIFICATION_ID, record.notificationId)
+            it.putExtra(EXTRA_TAPPED, true)
             PendingIntent.getActivity(
                 appContext,
                 record.systemNotificationId,
@@ -1001,14 +1105,101 @@ class VoltraNotificationManager(
         action: AndroidOngoingNotificationActionPayload,
         index: Int,
     ): PendingIntent? {
-        val intent = createLaunchIntent(action.deepLinkUrl) ?: return null
+        val requestCode = createActionRequestCode(record.systemNotificationId, index)
+        if (!action.isEventAction) {
+            val intent = createLaunchIntent(action.deepLinkUrl) ?: return null
+            return PendingIntent.getActivity(
+                appContext,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
 
-        return PendingIntent.getActivity(
+        // An event action targets a receiver, never an Activity: a receiver used as a notification
+        // trampoline may not start one on Android 12+ (ADR 0015).
+        val intent =
+            createEventActionIntent(record.notificationId, index).apply {
+                putExtra(EXTRA_NOTIFICATION_ID, record.notificationId)
+                putExtra(EXTRA_ACTION_ID, action.actionId)
+                putExtra(EXTRA_ACTION_INDEX, index)
+                putExtra(EXTRA_REVISION, record.revision)
+                action.payload?.let { putExtra(EXTRA_ACTION_PAYLOAD, it) }
+                action.remoteInput?.let { putExtra(EXTRA_REMOTE_INPUT_KEY, it.key) }
+            }
+        return PendingIntent.getBroadcast(
             appContext,
-            createActionRequestCode(record.systemNotificationId, index),
+            requestCode,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            PendingIntent.FLAG_UPDATE_CURRENT or eventActionMutabilityFlag(action),
         )
+    }
+
+    // The data URI makes every notification and slot its own PendingIntent even if a request code
+    // were ever reused.
+    private fun createEventActionIntent(
+        notificationId: String,
+        index: Int,
+    ): Intent =
+        Intent(appContext, VoltraOngoingNotificationActionReceiver::class.java).apply {
+            action = ACTION_ONGOING_NOTIFICATION_ACTION
+            data =
+                Uri
+                    .Builder()
+                    .scheme("voltra")
+                    .authority("ongoing-notification")
+                    .appendPath(notificationId)
+                    .appendPath("actions")
+                    .appendPath(index.toString())
+                    .build()
+        }
+
+    // A direct reply writes its text into the PendingIntent, so it must be mutable. FLAG_MUTABLE
+    // exists from API 31; below that a PendingIntent without FLAG_IMMUTABLE is mutable.
+    private fun eventActionMutabilityFlag(action: AndroidOngoingNotificationActionPayload): Int =
+        when {
+            action.remoteInput == null -> PendingIntent.FLAG_IMMUTABLE
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> PendingIntent.FLAG_MUTABLE
+            else -> 0
+        }
+
+    /**
+     * Cancels the action PendingIntents of [record], so a button still drawn in a shade that has not
+     * refreshed yet cannot fire after stop. Covers the broadcast variant of every slot and the
+     * Activity variant of the deep links in the last payload; a lookup that finds nothing is a no-op.
+     */
+    private fun cancelActionIntents(record: AndroidOngoingNotificationRecord) {
+        val actions =
+            record.lastPayload
+                ?.let { lastPayload ->
+                    try {
+                        AndroidOngoingNotificationPayloadParser.parseValidated(lastPayload).actions
+                    } catch (error: Exception) {
+                        null
+                    }
+                }.orEmpty()
+        val slots = maxOf(CANCELLED_ACTION_SLOTS, actions.size)
+        for (index in 0 until slots) {
+            val requestCode = createActionRequestCode(record.systemNotificationId, index)
+            val action = actions.getOrNull(index)
+            val mutability = action?.let { eventActionMutabilityFlag(it) } ?: PendingIntent.FLAG_IMMUTABLE
+            PendingIntent
+                .getBroadcast(
+                    appContext,
+                    requestCode,
+                    createEventActionIntent(record.notificationId, index),
+                    PendingIntent.FLAG_NO_CREATE or mutability,
+                )?.cancel()
+            createLaunchIntent(action?.deepLinkUrl)?.let { intent ->
+                PendingIntent
+                    .getActivity(
+                        appContext,
+                        requestCode,
+                        intent,
+                        PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+                    )?.cancel()
+            }
+        }
     }
 
     private fun createLaunchIntent(deepLinkUrl: String?): Intent? {
@@ -1021,11 +1212,6 @@ class VoltraNotificationManager(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
     }
-
-    private fun createActionRequestCode(
-        notificationId: Int,
-        index: Int,
-    ): Int = (notificationId * 100) + index + 1
 
     private fun createDeleteIntent(record: AndroidOngoingNotificationRecord): PendingIntent {
         val intent =

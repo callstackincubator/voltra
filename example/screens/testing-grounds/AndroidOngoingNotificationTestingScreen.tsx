@@ -27,6 +27,7 @@ import { Button } from '~/components/Button'
 import { Card } from '~/components/Card'
 import { ScreenLayout } from '~/components/ScreenLayout'
 
+import { AndroidOngoingNotificationEventsCard } from './AndroidOngoingNotificationEventsCard'
 import { AndroidOngoingNotificationHookCard } from './AndroidOngoingNotificationHookCard'
 
 type OngoingNotificationStyle = 'progress' | 'bigText' | 'bigPicture' | 'inbox' | 'metric'
@@ -550,6 +551,8 @@ export default function AndroidOngoingNotificationTestingScreen() {
     >
       <AndroidOngoingNotificationHookCard channelId={channelId} />
 
+      <AndroidOngoingNotificationEventsCard channelId={channelId} />
+
       <Card>
         <Card.Title>Rich Progress Fallback</Card.Title>
         <Card.Text>
@@ -561,7 +564,9 @@ export default function AndroidOngoingNotificationTestingScreen() {
 
       <Card>
         <Card.Title>Action Buttons</Card.Title>
-        <Card.Text>Action children launch their own deep links.</Card.Text>
+        <Card.Text>
+          These action children launch their own deep links. See Event Actions for actions that send events.
+        </Card.Text>
         <Card.Text>
           Action icons are still wired into the payload, but standard Android notification UI usually does not render
           them.

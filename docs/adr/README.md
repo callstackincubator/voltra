@@ -34,3 +34,4 @@ Status values:
 | [0011](0011-live-activity-push-state-getters-and-interaction-drain.md) | Live Activity push state getters and interaction drain       | Accepted |
 | [0012](0012-android-ongoing-notification-dismissal-state.md)           | Android ongoing notification state after a dismissal         | Accepted |
 | [0014](0014-android-event-channel-and-widget-lifecycle-events.md)      | Android event channel and Dynamic Widget lifecycle events    | Accepted |
+| [0015](0015-android-ongoing-notification-event-actions.md)             | Android ongoing notification event actions                   | Accepted |

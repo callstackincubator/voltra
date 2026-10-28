@@ -2,6 +2,7 @@ package voltra
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentCallbacks
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.LocaleList
 import android.util.Log
@@ -10,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.BaseActivityEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
@@ -182,6 +184,14 @@ class VoltraModule(
 
     private var eventBusToken: String? = null
 
+    // Reports a content tap on an ongoing notification as `notificationTapped` (ADR 0015).
+    private val notificationTapListener =
+        object : BaseActivityEventListener() {
+            override fun onNewIntent(intent: Intent) {
+                VoltraNotificationTapHandler.consume(reactApplicationContext, intent)
+            }
+        }
+
     override fun initialize() {
         super.initialize()
         reactApplicationContext.registerComponentCallbacks(configurationCallbacks)
@@ -195,9 +205,13 @@ class VoltraModule(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to seed the Dynamic Widget placement registry", e)
         }
+        reactApplicationContext.addActivityEventListener(notificationTapListener)
+        // Cold start: the tap launched the Activity before this module existed.
+        VoltraNotificationTapHandler.consume(reactApplicationContext, reactApplicationContext.currentActivity?.intent)
     }
 
     override fun invalidate() {
+        reactApplicationContext.removeActivityEventListener(notificationTapListener)
         eventBusToken?.let(VoltraEventBus::unsubscribe)
         eventBusToken = null
         VoltraNotificationManager.removeEndedListener(ongoingNotificationEndedListener)
@@ -346,6 +360,8 @@ class VoltraModule(
             putBoolean("supportsPromotedNotifications", capabilities.supportsPromotedNotifications)
             putBoolean("canPostPromotedNotifications", capabilities.canPostPromotedNotifications)
             putBoolean("canRequestPromotedOngoing", capabilities.canRequestPromotedOngoing)
+            putBoolean("supportsAuthenticationRequiredActions", capabilities.supportsAuthenticationRequiredActions)
+            putBoolean("supportsSemanticActions", capabilities.supportsSemanticActions)
         }
     }
 

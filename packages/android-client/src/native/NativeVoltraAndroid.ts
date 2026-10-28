@@ -127,6 +127,8 @@ type AndroidOngoingNotificationCapabilitiesSpec = Readonly<{
   supportsPromotedNotifications: boolean
   canPostPromotedNotifications: boolean
   canRequestPromotedOngoing: boolean
+  supportsAuthenticationRequiredActions: boolean
+  supportsSemanticActions: boolean
 }>
 
 /**

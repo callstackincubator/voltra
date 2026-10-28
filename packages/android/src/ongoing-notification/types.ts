@@ -94,16 +94,77 @@ export type AndroidOngoingNotificationProgressPoint = {
   color?: string
 }
 
-export type AndroidOngoingNotificationActionProps = {
-  title: string
-  deepLinkUrl: string
-  icon?: ImageSource
+export const ANDROID_ONGOING_NOTIFICATION_SEMANTIC_ACTIONS = [
+  'none',
+  'reply',
+  'markAsRead',
+  'markAsUnread',
+  'delete',
+  'archive',
+  'mute',
+  'unmute',
+  'thumbsUp',
+  'thumbsDown',
+  'call',
+] as const
+
+/** What an action does, for the system and assistive services. Applied on Android 9 (API 28) and later. */
+export type AndroidOngoingNotificationSemanticAction = (typeof ANDROID_ONGOING_NOTIFICATION_SEMANTIC_ACTIONS)[number]
+
+/** A direct-reply field on an event action. The reply arrives in the `interaction` event as `reply`. */
+export type AndroidOngoingNotificationRemoteInput = {
+  /** Identifies the reply in the event (`reply.key`). */
+  key: string
+  /** Hint shown in the reply field. */
+  label?: string
+  /** Whether the user can type a reply. Defaults to `true`; set `false` with `choices` for a choice-only reply. */
+  allowFreeFormInput?: boolean
+  /** Suggested replies the user can pick with one tap. */
+  choices?: string[]
 }
 
+type AndroidOngoingNotificationActionCommonProps = {
+  title: string
+  icon?: ImageSource
+  /** Requires the device to be unlocked before the action runs. Applied on Android 12 (API 31) and later. */
+  authenticationRequired?: boolean
+  /** Applied on Android 9 (API 28) and later. */
+  semanticAction?: AndroidOngoingNotificationSemanticAction
+}
+
+/** An action that opens a deep link in the app. */
+export type AndroidOngoingNotificationDeepLinkActionProps = AndroidOngoingNotificationActionCommonProps & {
+  deepLinkUrl: string
+  actionId?: never
+  payload?: never
+  remoteInput?: never
+}
+
+/**
+ * An action that sends an `interaction` event to JavaScript without opening the app. The event's
+ * `identifier` is `actionId` and its `payload` is `payload`.
+ */
+export type AndroidOngoingNotificationEventActionProps = AndroidOngoingNotificationActionCommonProps & {
+  actionId: string
+  payload?: string
+  remoteInput?: AndroidOngoingNotificationRemoteInput
+  deepLinkUrl?: never
+}
+
+export type AndroidOngoingNotificationActionProps =
+  | AndroidOngoingNotificationDeepLinkActionProps
+  | AndroidOngoingNotificationEventActionProps
+
+/** Serialised form. Flat and JSON-safe; exactly one of `deepLinkUrl` / `actionId` is present. */
 export type AndroidOngoingNotificationActionPayload = {
   title: string
-  deepLinkUrl: string
   icon?: ImageSource
+  deepLinkUrl?: string
+  actionId?: string
+  payload?: string
+  remoteInput?: AndroidOngoingNotificationRemoteInput
+  authenticationRequired?: boolean
+  semanticAction?: AndroidOngoingNotificationSemanticAction
 }
 
 export type AndroidOngoingNotificationProgressProps = AndroidOngoingNotificationCommonDisplayProps & {
@@ -384,6 +445,10 @@ export type AndroidOngoingNotificationCapabilities = {
   supportsPromotedNotifications: boolean
   canPostPromotedNotifications: boolean
   canRequestPromotedOngoing: boolean
+  /** Whether `authenticationRequired` on an action takes effect (Android 12, API 31, and later). */
+  supportsAuthenticationRequiredActions: boolean
+  /** Whether `semanticAction` on an action takes effect (Android 9, API 28, and later). */
+  supportsSemanticActions: boolean
 }
 
 export type AndroidOngoingNotificationStatus = {

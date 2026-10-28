@@ -1,3 +1,5 @@
+import { registerVoltraHeadlessTask } from './headless-task.js'
+
 export {
   AndroidDynamicColors,
   AndroidOngoingNotification,
@@ -24,6 +26,10 @@ export {
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationDeepLinkActionProps,
+  AndroidOngoingNotificationEventActionProps,
+  AndroidOngoingNotificationRemoteInput,
+  AndroidOngoingNotificationSemanticAction,
   AndroidOngoingNotificationBigTextPayload,
   AndroidOngoingNotificationBigTextProps,
   AndroidOngoingNotificationCapabilities,
@@ -107,7 +113,11 @@ export {
 } from './widgets/server-credentials.js'
 export { clearPreloadedImages, preloadImages, reloadWidgets } from './preload.js'
 export * from './events.js'
-export { VoltraView, type VoltraViewProps } from './components/VoltraView.js'
+
+// A notification action pressed while the app is in the background starts this task (ADR 0015); it
+// has to be registered before the app's own entry point finishes.
+registerVoltraHeadlessTask()
+export { VoltraView, type VoltraViewInteractionEvent, type VoltraViewProps } from './components/VoltraView.js'
 export {
   type AndroidWidgetFamily,
   VoltraWidgetPreview,
