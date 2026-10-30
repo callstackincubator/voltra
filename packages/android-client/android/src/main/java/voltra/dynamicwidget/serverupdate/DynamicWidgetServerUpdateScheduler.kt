@@ -43,18 +43,20 @@ object DynamicWidgetServerUpdateScheduler {
      * Cancels instead when the widget has nothing to fetch, which is what makes
      * `setWidgetServerUpdate({ enabled: false })` actually stop the work rather than just ignore
      * its results.
+     *
+     * @return whether periodic fetches are now scheduled for [scope]; false when it was cancelled.
      */
     suspend fun schedule(
         context: Context,
         scope: WidgetScope,
         runImmediately: Boolean = true,
-    ) {
+    ): Boolean {
         val settings = VoltraWidgetServer.resolver(context).resolve(scope)
 
         if (!settings.shouldFetch) {
             cancel(context, scope)
             Log.d(TAG, "Not scheduling '${scope.widgetId}': no url, or fetching is disabled")
-            return
+            return false
         }
 
         // Every periodic request waits one interval before its first run, so the immediate run below
@@ -65,13 +67,17 @@ object DynamicWidgetServerUpdateScheduler {
         if (runImmediately) {
             requestImmediateUpdate(context, scope)
         }
+
+        return true
     }
 
     /**
      * Recomputes the set of scopes to schedule for [widgetId] from its current placements (ADR
      * 0007): one scope per distinct merged configuration. New keys are scheduled (and run
      * immediately, since their placement has never fetched); keys with no placement left are
-     * cancelled. Called on `onUpdate`, `onDeleted`, an instance configuration write or clear, a
+     * cancelled. A scope with nothing to fetch is cancelled and kept out of the schedule index, so
+     * when fetching comes back it counts as new and runs immediately, next to its delayed periodic
+     * request. Called on `onUpdate`, `onDeleted`, an instance configuration write or clear, a
      * type-level configuration write, and a settings change — every event that can move a
      * placement between configurations.
      *
@@ -93,11 +99,14 @@ object DynamicWidgetServerUpdateScheduler {
         val orphaned = (previousStorageKeys + legacyStorageKey) - currentStorageKeys
         orphaned.forEach { storageKey -> cancelStorageKey(context, storageKey) }
 
-        currentScopes.forEach { scope ->
-            schedule(context, scope, runImmediately = scope.storageKey !in previousStorageKeys)
-        }
+        val scheduledStorageKeys =
+            currentScopes
+                .filter { scope ->
+                    schedule(context, scope, runImmediately = scope.storageKey !in previousStorageKeys)
+                }.map { it.storageKey }
+                .toSet()
 
-        DynamicWidgetScheduleIndex.put(context, widgetId, currentStorageKeys)
+        DynamicWidgetScheduleIndex.put(context, widgetId, scheduledStorageKeys)
     }
 
     /**
@@ -223,10 +232,14 @@ object DynamicWidgetServerUpdateScheduler {
         return builder.build()
     }
 
+    /** Cancels [scope]'s work and forgets it in the schedule index, so a later schedule runs at once. */
     fun cancel(
         context: Context,
         scope: WidgetScope,
-    ) = cancelStorageKey(context, scope.storageKey)
+    ) {
+        cancelStorageKey(context, scope.storageKey)
+        DynamicWidgetScheduleIndex.remove(context, scope.widgetId, scope.storageKey)
+    }
 
     /** Cancels by raw storage key, for a scope [recompute] found no placement for any more. */
     private fun cancelStorageKey(
@@ -295,7 +308,8 @@ object DynamicWidgetServerUpdateScheduler {
  * Remembers which [WidgetScope.storageKey]s are currently scheduled for each widget id, so
  * [DynamicWidgetServerUpdateScheduler.recompute] can tell which keys are new (schedule + run now)
  * and which have no placement left (cancel) without asking WorkManager to enumerate its own unique
- * work names, which it has no API for.
+ * work names, which it has no API for. Holds only keys whose periodic work is scheduled: a
+ * cancelled scope is removed, so scheduling it again counts as new.
  */
 private object DynamicWidgetScheduleIndex {
     private const val PREFERENCES_NAME = "voltra_dynamic_widget_server_schedule"
@@ -323,6 +337,14 @@ private object DynamicWidgetScheduleIndex {
                     putStringSet(KEY_PREFIX + widgetId, storageKeys)
                 }
             }.apply()
+    }
+
+    fun remove(
+        context: Context,
+        widgetId: String,
+        storageKey: String,
+    ) {
+        put(context, widgetId, storageKeys(context, widgetId) - storageKey)
     }
 
     private fun preferences(context: Context) =
