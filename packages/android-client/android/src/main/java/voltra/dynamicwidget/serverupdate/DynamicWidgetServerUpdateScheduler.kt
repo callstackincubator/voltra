@@ -2,6 +2,7 @@ package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import androidx.concurrent.futures.await
 import androidx.work.BackoffPolicy
@@ -52,7 +53,8 @@ object DynamicWidgetServerUpdateScheduler {
     private val lock = Mutex()
 
     /**
-     * When (in [System.nanoTime]) the last one-time fetch of each scope, by storage key, finished.
+     * When (in [SystemClock.elapsedRealtimeNanos], which the `SystemClock` docs say includes deep
+     * sleep) the last one-time fetch of each scope, by storage key, finished.
      * Written by [restartPeriodicAfterFetch] before the fetching run returns, so a periodic run
      * that sees that fetch as finished also sees this. See [waitsForPendingFetch].
      */
@@ -179,7 +181,7 @@ object DynamicWidgetServerUpdateScheduler {
         intervalMinutes: Long?,
     ) {
         lock.withLock {
-            lastFetchFinishedAt[scope.storageKey] = System.nanoTime()
+            lastFetchFinishedAt[scope.storageKey] = SystemClock.elapsedRealtimeNanos()
             val waiting =
                 WorkManager
                     .getInstance(context)
@@ -226,7 +228,7 @@ object DynamicWidgetServerUpdateScheduler {
         if (infos.any { it.id == runId }) return false
         if (infos.any { !it.state.isFinished }) return true
         val finishedAt = lastFetchFinishedAt[scope.storageKey] ?: return false
-        return System.nanoTime() - finishedAt < duplicateRunWindowNanos
+        return SystemClock.elapsedRealtimeNanos() - finishedAt < duplicateRunWindowNanos
     }
 
     private fun enqueuePeriodic(

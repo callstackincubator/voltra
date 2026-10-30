@@ -203,8 +203,12 @@ dependencies {
   // WorkManager (for periodic server-driven widget updates)
   api "androidx.work:work-runtime-ktx:2.9.1"
 
-  // Public ListenableFuture.await() for WorkManager's futures; work-runtime's own is
-  // @RestrictTo(LIBRARY_GROUP), which Lint's RestrictedApi check rejects.
+  // Public ListenableFuture.await() for WorkManager's futures. work-runtime's own await() is
+  // @RestrictTo(LIBRARY_GROUP) (androidx/work/ListenableFuture.kt:37-38 in the work-runtime 2.9.1
+  // sources); this one carries no restriction (androidx/concurrent/futures/ListenableFuture.kt:41
+  // in the concurrent-futures-ktx 1.1.0 sources). Lint's RestrictedApi check flags uses of
+  // restricted APIs:
+  // https://googlesamples.github.io/android-custom-lint-rules/checks/RestrictedApi.md.html
   implementation "androidx.concurrent:concurrent-futures-ktx:1.1.0"
 
   // DataStore (credential storage for widget server updates)
