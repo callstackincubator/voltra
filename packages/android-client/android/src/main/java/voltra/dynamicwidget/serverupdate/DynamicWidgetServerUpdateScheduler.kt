@@ -57,9 +57,10 @@ object DynamicWidgetServerUpdateScheduler {
             return
         }
 
-        // The immediate run below is the placement fetch, so the periodic request waits one interval
-        // instead of also firing the moment its constraints are met.
-        enqueuePeriodic(context, scope, settings.intervalMinutes, delayFirstRun = runImmediately)
+        // Every periodic request waits one interval before its first run, so the immediate run below
+        // is not followed by a second fetch at once. Initial delay:
+        // https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder
+        enqueuePeriodic(context, scope, settings.intervalMinutes)
 
         if (runImmediately) {
             requestImmediateUpdate(context, scope)
@@ -116,14 +117,13 @@ object DynamicWidgetServerUpdateScheduler {
         context: Context,
         scope: WidgetScope,
         intervalMinutes: Long,
-        delayFirstRun: Boolean = false,
     ) {
         WorkManager
             .getInstance(context)
             .enqueueUniquePeriodicWork(
                 workName(scope),
                 ExistingPeriodicWorkPolicy.UPDATE,
-                buildPeriodicRequest(scope, intervalMinutes, delayFirstRun),
+                buildPeriodicRequest(scope, intervalMinutes),
             )
 
         Log.d(TAG, "Scheduled server updates for '${scope.widgetId}' every ${intervalMinutes}min")
@@ -131,29 +131,29 @@ object DynamicWidgetServerUpdateScheduler {
 
     /**
      * The periodic request [enqueuePeriodic] sends, built separately so a test can read back its
-     * initial delay. A periodic request otherwise first runs as soon as its constraints are met,
-     * which would double the immediate one-time fetch of a freshly placed widget.
+     * initial delay.
+     *
+     * The first run waits one interval, whichever path enqueues the request. While `periodCount` is
+     * 0, WorkManager's next run is `lastEnqueueTime + initialDelay` (work-runtime 2.9.1,
+     * `androidx/work/impl/model/WorkSpec.kt:512-516`), and an UPDATE keeps the old
+     * `lastEnqueueTime` and `periodCount` (`androidx/work/impl/WorkerUpdater.kt:64-67`). A zero
+     * delay on a request that has not run yet would therefore be due at once. Sources:
+     * https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.9.1/work-runtime-2.9.1-sources.jar
+     * and https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder
      */
     internal fun buildPeriodicRequest(
         scope: WidgetScope,
         intervalMinutes: Long,
-        delayFirstRun: Boolean,
-    ): PeriodicWorkRequest {
-        val builder =
-            PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
-                intervalMinutes,
-                TimeUnit.MINUTES,
-            ).setInputData(inputData(scope))
-                .setConstraints(networkConstraints())
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
-                .addTag(WORK_TAG)
-
-        if (delayFirstRun) {
-            builder.setInitialDelay(intervalMinutes, TimeUnit.MINUTES)
-        }
-
-        return builder.build()
-    }
+    ): PeriodicWorkRequest =
+        PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
+            intervalMinutes,
+            TimeUnit.MINUTES,
+        ).setInitialDelay(intervalMinutes, TimeUnit.MINUTES)
+            .setInputData(inputData(scope))
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+            .addTag(WORK_TAG)
+            .build()
 
     /**
      * Runs a fetch as soon as the device allows. Used by the refresh button, by

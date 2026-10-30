@@ -71,13 +71,13 @@ class DynamicWidgetServerUpdateSchedulerExpeditedTest {
 
     @Test
     @Config(sdk = [34])
-    fun `a first placement delays the periodic request so the immediate run is its only fetch`() {
-        // The periodic request would otherwise run the moment its constraints are met, next to the
-        // expedited one-time request that schedule() sends for the same placement.
+    fun `the periodic request waits one interval before its first run, so the immediate run is not doubled`() {
+        // Without the delay the periodic request would run as soon as its constraints are met, next
+        // to the expedited one-time request. Doc: https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder
         assertEquals(
             TimeUnit.MINUTES.toMillis(15),
             DynamicWidgetServerUpdateScheduler
-                .buildPeriodicRequest(scope, intervalMinutes = 15L, delayFirstRun = true)
+                .buildPeriodicRequest(scope, intervalMinutes = 15L)
                 .workSpec
                 .initialDelay,
         )
@@ -85,11 +85,11 @@ class DynamicWidgetServerUpdateSchedulerExpeditedTest {
 
     @Test
     @Config(sdk = [34])
-    fun `an existing schedule keeps its timing, with no delay on the periodic request`() {
+    fun `a server-requested interval sets the first-run delay to that interval`() {
         assertEquals(
-            0L,
+            TimeUnit.MINUTES.toMillis(30),
             DynamicWidgetServerUpdateScheduler
-                .buildPeriodicRequest(scope, intervalMinutes = 15L, delayFirstRun = false)
+                .buildPeriodicRequest(scope, intervalMinutes = 30L)
                 .workSpec
                 .initialDelay,
         )
