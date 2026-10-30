@@ -192,7 +192,9 @@ internal class WidgetServerUpdateCoordinator(
                 // Recomputed rather than scheduled for the bare widget scope (ADR 0007): a settings
                 // change (a new interval, url, or enabled: false) applies to every instance of the
                 // widget, and the set of instance scopes has to be (re)derived from its placements.
-                DynamicWidgetServerUpdateScheduler.recompute(context, widgetId)
+                // fetchNow: a changed url or token (or interval) fetches now, as the Payload branch
+                // below already does, rather than waiting out the periodic delay.
+                DynamicWidgetServerUpdateScheduler.recompute(context, widgetId, fetchNow = true)
             }
 
             VoltraWidgetKind.Payload -> {

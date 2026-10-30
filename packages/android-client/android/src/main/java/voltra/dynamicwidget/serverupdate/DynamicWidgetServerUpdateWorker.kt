@@ -48,6 +48,14 @@ class DynamicWidgetServerUpdateWorker(
             DynamicWidgetServerUpdateScheduler.cancel(applicationContext, scope)
             return Result.success()
         }
+        // A periodic run waits while this widget's one-time fetch is unfinished, retries included.
+        // The offline-placement case: both requests become due at reconnect, and a second fetch
+        // would follow the first at once.
+        if (DynamicWidgetServerUpdateScheduler.waitsForPendingFetch(applicationContext, scope, id)) {
+            Log.d(TAG, "Holding the periodic update for '$widgetId': its one-time fetch has not finished")
+            return Result.success()
+        }
+
         val result = runner(applicationContext, configuration).run(scope)
 
         return when (result.outcome) {
@@ -57,10 +65,16 @@ class DynamicWidgetServerUpdateWorker(
                 result.nextIntervalMinutes?.let { minutes ->
                     DynamicWidgetServerUpdateScheduler.reschedule(applicationContext, scope, minutes)
                 }
+                DynamicWidgetServerUpdateScheduler.restartPeriodicAfterFetch(
+                    applicationContext,
+                    scope,
+                    result.nextIntervalMinutes,
+                )
                 Result.success()
             }
 
             DynamicWidgetServerUpdateOutcome.Dropped -> {
+                DynamicWidgetServerUpdateScheduler.restartPeriodicAfterFetch(applicationContext, scope, null)
                 Result.success()
             }
 
@@ -68,6 +82,7 @@ class DynamicWidgetServerUpdateWorker(
             // an oversized one, or a 4xx. The periodic run continues at the normal interval, so
             // this run reports success rather than spending the chain's retry budget.
             DynamicWidgetServerUpdateOutcome.Failed -> {
+                DynamicWidgetServerUpdateScheduler.restartPeriodicAfterFetch(applicationContext, scope, null)
                 Result.success()
             }
 

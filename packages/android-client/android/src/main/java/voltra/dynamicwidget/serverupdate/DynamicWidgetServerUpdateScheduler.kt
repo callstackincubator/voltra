@@ -14,9 +14,14 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.await
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 /**
@@ -37,6 +42,14 @@ object DynamicWidgetServerUpdateScheduler {
     private const val BACKOFF_SECONDS = 30L
 
     /**
+     * Serializes every change to a scope's work and to the schedule index. Without it, a
+     * [recompute] that read the index before a worker's [cancel] could write the cancelled scope
+     * back, and a later re-enable would then skip its immediate fetch. Not reentrant: functions
+     * called while it is held use the `Locked` variants.
+     */
+    private val lock = Mutex()
+
+    /**
      * Schedules — or reschedules — periodic fetches from the widget's resolved interval, and runs
      * one now so a freshly placed widget does not sit on its placeholder for 15 minutes.
      *
@@ -46,15 +59,15 @@ object DynamicWidgetServerUpdateScheduler {
      *
      * @return whether periodic fetches are now scheduled for [scope]; false when it was cancelled.
      */
-    suspend fun schedule(
+    private suspend fun scheduleLocked(
         context: Context,
         scope: WidgetScope,
-        runImmediately: Boolean = true,
+        runImmediately: Boolean,
     ): Boolean {
         val settings = VoltraWidgetServer.resolver(context).resolve(scope)
 
         if (!settings.shouldFetch) {
-            cancel(context, scope)
+            cancelLocked(context, scope)
             Log.d(TAG, "Not scheduling '${scope.widgetId}': no url, or fetching is disabled")
             return false
         }
@@ -81,13 +94,19 @@ object DynamicWidgetServerUpdateScheduler {
      * type-level configuration write, and a settings change — every event that can move a
      * placement between configurations.
      *
+     * [fetchNow] also runs an immediate fetch for every scope that stays scheduled. A settings
+     * change passes it, because a new url, token or interval must not wait out the old periodic
+     * delay: a fetch that was in flight with the old settings is dropped by the runner and
+     * replaced here.
+     *
      * A widget with no configuration parameters always resolves to the single [WidgetScope.Widget]
      * scope, so this reduces to today's one-scope-per-widget behaviour for it.
      */
     suspend fun recompute(
         context: Context,
         widgetId: String,
-    ) {
+        fetchNow: Boolean = false,
+    ) = lock.withLock {
         val currentScopes = DynamicWidgetInstanceScopes.scopes(context, widgetId)
         val currentStorageKeys = currentScopes.map { it.storageKey }.toSet()
         val previousStorageKeys = DynamicWidgetScheduleIndex.storageKeys(context, widgetId)
@@ -102,7 +121,11 @@ object DynamicWidgetServerUpdateScheduler {
         val scheduledStorageKeys =
             currentScopes
                 .filter { scope ->
-                    schedule(context, scope, runImmediately = scope.storageKey !in previousStorageKeys)
+                    scheduleLocked(
+                        context,
+                        scope,
+                        runImmediately = fetchNow || scope.storageKey !in previousStorageKeys,
+                    )
                 }.map { it.storageKey }
                 .toSet()
 
@@ -113,13 +136,72 @@ object DynamicWidgetServerUpdateScheduler {
      * Moves the periodic schedule to what the server asked for with `Cache-Control: max-age`,
      * without re-resolving settings or running a fetch.
      */
-    fun reschedule(
+    suspend fun reschedule(
         context: Context,
         scope: WidgetScope,
         intervalMinutes: Long,
     ) {
-        enqueuePeriodic(context, scope, intervalMinutes)
+        lock.withLock {
+            enqueuePeriodic(context, scope, intervalMinutes)
+        }
         Log.d(TAG, "Server asked '${scope.widgetId}' to come back in ${intervalMinutes}min")
+    }
+
+    /**
+     * Called when a one-time fetch for [scope] has finished (committed, dropped or failed). If the
+     * periodic request is still waiting, it is re-enqueued so its first run falls one interval
+     * after this fetch, not after the placement that was offline. A periodic request that is
+     * already running is left alone, so an in-flight fetch is never cancelled.
+     *
+     * @param intervalMinutes the `max-age` the server returned, or null to use the resolved interval.
+     */
+    suspend fun restartPeriodicAfterFetch(
+        context: Context,
+        scope: WidgetScope,
+        intervalMinutes: Long?,
+    ) {
+        lock.withLock {
+            val waiting =
+                WorkManager
+                    .getInstance(context)
+                    .getWorkInfosForUniqueWork(workName(scope))
+                    .await()
+                    .any { it.state == WorkInfo.State.ENQUEUED }
+            if (waiting) {
+                val settings = VoltraWidgetServer.resolver(context).resolve(scope)
+                if (settings.shouldFetch) {
+                    WorkManager
+                        .getInstance(context)
+                        .enqueueUniquePeriodicWork(
+                            workName(scope),
+                            ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
+                            buildPeriodicRequest(scope, intervalMinutes ?: settings.intervalMinutes),
+                        )
+                } else {
+                    cancelLocked(context, scope)
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether a periodic run for [scope] should stop without fetching because this widget's
+     * one-time fetch (placement, refresh or settings change, retries included) has not finished.
+     * The run that is that one-time fetch is never held back. Both requests have the same network
+     * constraint, so an offline placement can make them due together after reconnecting.
+     */
+    suspend fun waitsForPendingFetch(
+        context: Context,
+        scope: WidgetScope,
+        runId: UUID,
+    ): Boolean {
+        val infos =
+            WorkManager
+                .getInstance(context)
+                .getWorkInfosForUniqueWork(oneTimeWorkName(scope))
+                .await()
+        if (infos.any { it.id == runId }) return false
+        return infos.any { !it.state.isFinished }
     }
 
     private fun enqueuePeriodic(
@@ -233,7 +315,16 @@ object DynamicWidgetServerUpdateScheduler {
     }
 
     /** Cancels [scope]'s work and forgets it in the schedule index, so a later schedule runs at once. */
-    fun cancel(
+    suspend fun cancel(
+        context: Context,
+        scope: WidgetScope,
+    ) {
+        lock.withLock {
+            cancelLocked(context, scope)
+        }
+    }
+
+    private fun cancelLocked(
         context: Context,
         scope: WidgetScope,
     ) {
@@ -259,10 +350,12 @@ object DynamicWidgetServerUpdateScheduler {
         context: Context,
         widgetId: String,
     ) {
-        DynamicWidgetScheduleIndex.storageKeys(context, widgetId).forEach { storageKey ->
-            cancelStorageKey(context, storageKey)
+        lock.withLock {
+            DynamicWidgetScheduleIndex.storageKeys(context, widgetId).forEach { storageKey ->
+                cancelStorageKey(context, storageKey)
+            }
+            DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
         }
-        DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
     }
 
     /**
@@ -307,9 +400,9 @@ object DynamicWidgetServerUpdateScheduler {
 /**
  * Remembers which [WidgetScope.storageKey]s are currently scheduled for each widget id, so
  * [DynamicWidgetServerUpdateScheduler.recompute] can tell which keys are new (schedule + run now)
- * and which have no placement left (cancel) without asking WorkManager to enumerate its own unique
- * work names, which it has no API for. Holds only keys whose periodic work is scheduled: a
- * cancelled scope is removed, so scheduling it again counts as new.
+ * and which have no placement left (cancel) by comparing against this record. Holds only keys
+ * whose periodic work is scheduled: a cancelled scope is removed, so scheduling it again counts as
+ * new.
  */
 private object DynamicWidgetScheduleIndex {
     private const val PREFERENCES_NAME = "voltra_dynamic_widget_server_schedule"
