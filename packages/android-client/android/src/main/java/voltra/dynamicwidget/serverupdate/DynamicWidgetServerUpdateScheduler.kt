@@ -3,6 +3,7 @@ package voltra.dynamicwidget.serverupdate
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.concurrent.futures.await
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.Data
@@ -16,12 +17,13 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import androidx.work.await
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
+import voltra.widget.server.WidgetServerUpdateDefaults
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -48,6 +50,21 @@ object DynamicWidgetServerUpdateScheduler {
      * called while it is held use the `Locked` variants.
      */
     private val lock = Mutex()
+
+    /**
+     * When (in [System.nanoTime]) the last one-time fetch of each scope, by storage key, finished.
+     * Written by [restartPeriodicAfterFetch] before the fetching run returns, so a periodic run
+     * that sees that fetch as finished also sees this. See [waitsForPendingFetch].
+     */
+    private val lastFetchFinishedAt = ConcurrentHashMap<String, Long>()
+
+    /**
+     * A periodic run that starts this soon after a fetch finished is a duplicate of it. A periodic
+     * request re-enqueued by [restartPeriodicAfterFetch] first runs one interval later, and
+     * intervals are at least [WidgetServerUpdateDefaults.MIN_INTERVAL_MINUTES] (15), so a minute
+     * only covers a run that was dispatched before the fetch finished and reaches its check after.
+     */
+    private val duplicateRunWindowNanos = TimeUnit.MINUTES.toNanos(1)
 
     /**
      * Schedules — or reschedules — periodic fetches from the widget's resolved interval, and runs
@@ -148,10 +165,11 @@ object DynamicWidgetServerUpdateScheduler {
     }
 
     /**
-     * Called when a one-time fetch for [scope] has finished (committed, dropped or failed). If the
-     * periodic request is still waiting, it is re-enqueued so its first run falls one interval
-     * after this fetch, not after the placement that was offline. A periodic request that is
-     * already running is left alone, so an in-flight fetch is never cancelled.
+     * Called when a one-time fetch for [scope] has finished (committed, dropped or failed). Notes
+     * the finish time for [waitsForPendingFetch], then, if the periodic request is still waiting,
+     * re-enqueues it so its first run falls one interval after this fetch, not after the placement
+     * that was offline. A periodic request that is already running is left alone, so an in-flight
+     * fetch is never cancelled; [waitsForPendingFetch] stops it if it has not fetched yet.
      *
      * @param intervalMinutes the `max-age` the server returned, or null to use the resolved interval.
      */
@@ -161,6 +179,7 @@ object DynamicWidgetServerUpdateScheduler {
         intervalMinutes: Long?,
     ) {
         lock.withLock {
+            lastFetchFinishedAt[scope.storageKey] = System.nanoTime()
             val waiting =
                 WorkManager
                     .getInstance(context)
@@ -185,10 +204,14 @@ object DynamicWidgetServerUpdateScheduler {
     }
 
     /**
-     * Whether a periodic run for [scope] should stop without fetching because this widget's
-     * one-time fetch (placement, refresh or settings change, retries included) has not finished.
-     * The run that is that one-time fetch is never held back. Both requests have the same network
-     * constraint, so an offline placement can make them due together after reconnecting.
+     * Whether a periodic run for [scope] should stop without fetching, because this widget's
+     * one-time fetch (placement, refresh or settings change, retries included) either has not
+     * finished or has just finished. The run that is that one-time fetch is never held back.
+     *
+     * Both requests have the same network constraint, so an offline placement can make them due
+     * together after reconnecting. The "just finished" half is for the periodic run that
+     * [restartPeriodicAfterFetch] found already running and so could not re-enqueue: it reaches
+     * this check after the one-time fetch is done, and would otherwise fetch again.
      */
     suspend fun waitsForPendingFetch(
         context: Context,
@@ -201,7 +224,9 @@ object DynamicWidgetServerUpdateScheduler {
                 .getWorkInfosForUniqueWork(oneTimeWorkName(scope))
                 .await()
         if (infos.any { it.id == runId }) return false
-        return infos.any { !it.state.isFinished }
+        if (infos.any { !it.state.isFinished }) return true
+        val finishedAt = lastFetchFinishedAt[scope.storageKey] ?: return false
+        return System.nanoTime() - finishedAt < duplicateRunWindowNanos
     }
 
     private fun enqueuePeriodic(
@@ -337,6 +362,7 @@ object DynamicWidgetServerUpdateScheduler {
         context: Context,
         storageKey: String,
     ) {
+        lastFetchFinishedAt.remove(storageKey)
         WorkManager.getInstance(context).cancelUniqueWork(workNameForStorageKey(storageKey))
         WorkManager.getInstance(context).cancelUniqueWork(oneTimeWorkNameForStorageKey(storageKey))
     }
