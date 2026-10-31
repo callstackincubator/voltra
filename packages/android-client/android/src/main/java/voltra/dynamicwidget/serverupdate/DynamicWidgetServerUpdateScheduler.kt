@@ -47,14 +47,16 @@ object DynamicWidgetServerUpdateScheduler {
     /**
      * Serializes every change to a scope's work and to the schedule index. Without it, a
      * [recompute] that read the index before a worker's [cancel] could write the cancelled scope
-     * back, and a later re-enable would then skip its immediate fetch. Not reentrant: functions
-     * called while it is held use the `Locked` variants.
+     * back, and a later re-enable would then skip its immediate fetch. Functions called while it
+     * is held use the `Locked` variants, and must not take the lock again.
      */
     private val lock = Mutex()
 
     /**
-     * When (in [SystemClock.elapsedRealtimeNanos], which the `SystemClock` docs say includes deep
-     * sleep) the last one-time fetch of each scope, by storage key, finished.
+     * When (in [SystemClock.elapsedRealtimeNanos], which the
+     * [`SystemClock` docs](https://developer.android.com/reference/android/os/SystemClock) say
+     * includes deep sleep) the last fetch of each scope, by storage key, finished. Kept in memory
+     * only, so a process death loses it.
      * Written by [restartPeriodicAfterFetch] before the fetching run returns, so a periodic run
      * that sees that fetch as finished also sees this. See [waitsForPendingFetch].
      */
@@ -62,8 +64,9 @@ object DynamicWidgetServerUpdateScheduler {
 
     /**
      * A periodic run that starts this soon after a fetch finished is a duplicate of it. A periodic
-     * request re-enqueued by [restartPeriodicAfterFetch] first runs one interval later, and
-     * intervals are at least [WidgetServerUpdateDefaults.MIN_INTERVAL_MINUTES] (15), so a minute
+     * request re-enqueued by [restartPeriodicAfterFetch] first runs one interval later
+     * ([PeriodicWorkRequest.Builder](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder)),
+     * and intervals are at least [WidgetServerUpdateDefaults.MIN_INTERVAL_MINUTES] (15), so a minute
      * only covers a run that was dispatched before the fetch finished and reaches its check after.
      */
     private val duplicateRunWindowNanos = TimeUnit.MINUTES.toNanos(1)
@@ -113,18 +116,12 @@ object DynamicWidgetServerUpdateScheduler {
      * type-level configuration write, and a settings change — every event that can move a
      * placement between configurations.
      *
-     * [fetchNow] also runs an immediate fetch for every scope that stays scheduled. A settings
-     * change passes it, because a new url, token or interval must not wait out the old periodic
-     * delay: a fetch that was in flight with the old settings is dropped by the runner and
-     * replaced here.
-     *
      * A widget with no configuration parameters always resolves to the single [WidgetScope.Widget]
      * scope, so this reduces to today's one-scope-per-widget behaviour for it.
      */
     suspend fun recompute(
         context: Context,
         widgetId: String,
-        fetchNow: Boolean = false,
     ) = lock.withLock {
         val currentScopes = DynamicWidgetInstanceScopes.scopes(context, widgetId)
         val currentStorageKeys = currentScopes.map { it.storageKey }.toSet()
@@ -143,7 +140,7 @@ object DynamicWidgetServerUpdateScheduler {
                     scheduleLocked(
                         context,
                         scope,
-                        runImmediately = fetchNow || scope.storageKey !in previousStorageKeys,
+                        runImmediately = scope.storageKey !in previousStorageKeys,
                     )
                 }.map { it.storageKey }
                 .toSet()
@@ -167,13 +164,17 @@ object DynamicWidgetServerUpdateScheduler {
     }
 
     /**
-     * Called when a one-time fetch for [scope] has finished (committed, dropped or failed). Notes
-     * the finish time for [waitsForPendingFetch], then, if the periodic request is still waiting,
-     * re-enqueues it so its first run falls one interval after this fetch, not after the placement
-     * that was offline. A periodic request that is already running is left alone, so an in-flight
-     * fetch is never cancelled; [waitsForPendingFetch] stops it if it has not fetched yet.
+     * Called when a fetch for [scope] has finished (committed, dropped or failed). Notes the finish
+     * time for [waitsForPendingFetch], then, if the periodic request is still waiting, re-enqueues
+     * it so its first run falls one interval after this fetch, not after the placement that was
+     * offline ([PeriodicWorkRequest.Builder](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder)).
+     * A periodic request that is already running is left alone; [waitsForPendingFetch] stops it
+     * from fetching if it has not fetched yet. A run that starts between the check and the
+     * re-enqueue can be cancelled by it, and [waitsForPendingFetch] would have held that run anyway.
      *
-     * @param intervalMinutes the `max-age` the server returned, or null to use the resolved interval.
+     * @param intervalMinutes the `max-age` the server returned, or null to keep the interval the
+     *   waiting request already has (`WorkInfo.PeriodicityInfo`, added in work-runtime 2.9.0:
+     *   https://developer.android.com/reference/androidx/work/WorkInfo#getPeriodicityInfo()).
      */
     suspend fun restartPeriodicAfterFetch(
         context: Context,
@@ -187,16 +188,20 @@ object DynamicWidgetServerUpdateScheduler {
                     .getInstance(context)
                     .getWorkInfosForUniqueWork(workName(scope))
                     .await()
-                    .any { it.state == WorkInfo.State.ENQUEUED }
-            if (waiting) {
+                    .firstOrNull { it.state == WorkInfo.State.ENQUEUED }
+            if (waiting != null) {
                 val settings = VoltraWidgetServer.resolver(context).resolve(scope)
                 if (settings.shouldFetch) {
+                    // Without a server max-age, keep the interval already in effect rather than the
+                    // resolved one, so a run that got no max-age back does not undo the server's.
+                    val inEffectMinutes =
+                        waiting.periodicityInfo?.repeatIntervalMillis?.let { TimeUnit.MILLISECONDS.toMinutes(it) }
                     WorkManager
                         .getInstance(context)
                         .enqueueUniquePeriodicWork(
                             workName(scope),
                             ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
-                            buildPeriodicRequest(scope, intervalMinutes ?: settings.intervalMinutes),
+                            buildPeriodicRequest(scope, intervalMinutes ?: inEffectMinutes ?: settings.intervalMinutes),
                         )
                 } else {
                     cancelLocked(context, scope)
@@ -211,7 +216,9 @@ object DynamicWidgetServerUpdateScheduler {
      * finished or has just finished. The run that is that one-time fetch is never held back.
      *
      * Both requests have the same network constraint, so an offline placement can make them due
-     * together after reconnecting. The "just finished" half is for the periodic run that
+     * together after reconnecting
+     * ([PeriodicWorkRequest.Builder](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder)).
+     * The "just finished" half is for the periodic run that
      * [restartPeriodicAfterFetch] found already running and so could not re-enqueue: it reaches
      * this check after the one-time fetch is done, and would otherwise fetch again.
      */

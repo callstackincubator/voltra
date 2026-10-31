@@ -50,7 +50,7 @@ class DynamicWidgetServerUpdateWorker(
         }
         // A periodic run waits while this widget's one-time fetch is unfinished, retries included.
         // The offline-placement case: both requests become due at reconnect, and a second fetch
-        // would follow the first at once.
+        // would follow the first at once (due times: https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder).
         if (DynamicWidgetServerUpdateScheduler.waitsForPendingFetch(applicationContext, scope, id)) {
             Log.d(TAG, "Holding the periodic update for '$widgetId': its one-time fetch has not finished")
             return Result.success()
