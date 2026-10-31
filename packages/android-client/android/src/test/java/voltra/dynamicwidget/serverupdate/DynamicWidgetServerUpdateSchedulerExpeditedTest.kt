@@ -1,5 +1,6 @@
 package voltra.dynamicwidget.serverupdate
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -7,6 +8,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import voltra.widget.server.WidgetScope
+import java.util.concurrent.TimeUnit
 
 /**
  * Below API 31, WorkManager runs expedited work as a foreground service and calls
@@ -64,6 +66,32 @@ class DynamicWidgetServerUpdateSchedulerExpeditedTest {
                 .buildOneTimeRequest(scope, delayMinutes = 5L, expedited = false)
                 .workSpec
                 .expedited,
+        )
+    }
+
+    @Test
+    @Config(sdk = [34])
+    fun `the periodic request waits one interval before its first run, so the immediate run is not doubled`() {
+        // Without the delay the periodic request would run as soon as its constraints are met, next
+        // to the expedited one-time request. Doc: https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder
+        assertEquals(
+            TimeUnit.MINUTES.toMillis(15),
+            DynamicWidgetServerUpdateScheduler
+                .buildPeriodicRequest(scope, intervalMinutes = 15L)
+                .workSpec
+                .initialDelay,
+        )
+    }
+
+    @Test
+    @Config(sdk = [34])
+    fun `a server-requested interval sets the first-run delay to that interval`() {
+        assertEquals(
+            TimeUnit.MINUTES.toMillis(30),
+            DynamicWidgetServerUpdateScheduler
+                .buildPeriodicRequest(scope, intervalMinutes = 30L)
+                .workSpec
+                .initialDelay,
         )
     }
 }

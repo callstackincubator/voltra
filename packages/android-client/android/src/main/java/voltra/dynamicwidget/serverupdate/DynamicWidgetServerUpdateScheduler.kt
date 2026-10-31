@@ -2,7 +2,9 @@ package voltra.dynamicwidget.serverupdate
 
 import android.content.Context
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
+import androidx.concurrent.futures.await
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.Data
@@ -12,10 +14,17 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
+import voltra.widget.server.WidgetServerUpdateDefaults
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -36,38 +45,74 @@ object DynamicWidgetServerUpdateScheduler {
     private const val BACKOFF_SECONDS = 30L
 
     /**
+     * Serializes every change to a scope's work and to the schedule index. Without it, a
+     * [recompute] that read the index before a worker's [cancel] could write the cancelled scope
+     * back, and a later re-enable would then skip its immediate fetch. Functions called while it
+     * is held use the `Locked` variants, and must not take the lock again.
+     */
+    private val lock = Mutex()
+
+    /**
+     * When (in [SystemClock.elapsedRealtimeNanos], which the
+     * [`SystemClock` docs](https://developer.android.com/reference/android/os/SystemClock) say
+     * includes deep sleep) the last fetch of each scope, by storage key, finished. Kept in memory
+     * only, so a process death loses it.
+     * Written by [restartPeriodicAfterFetch] before the fetching run returns, so a periodic run
+     * that sees that fetch as finished also sees this. See [waitsForPendingFetch].
+     */
+    private val lastFetchFinishedAt = ConcurrentHashMap<String, Long>()
+
+    /**
+     * A periodic run that starts this soon after a fetch finished is a duplicate of it. A periodic
+     * request re-enqueued by [restartPeriodicAfterFetch] first runs one interval later
+     * ([PeriodicWorkRequest.Builder](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder)),
+     * and intervals are at least [WidgetServerUpdateDefaults.MIN_INTERVAL_MINUTES] (15), so a minute
+     * only covers a run that was dispatched before the fetch finished and reaches its check after.
+     */
+    private val duplicateRunWindowNanos = TimeUnit.MINUTES.toNanos(1)
+
+    /**
      * Schedules — or reschedules — periodic fetches from the widget's resolved interval, and runs
      * one now so a freshly placed widget does not sit on its placeholder for 15 minutes.
      *
      * Cancels instead when the widget has nothing to fetch, which is what makes
      * `setWidgetServerUpdate({ enabled: false })` actually stop the work rather than just ignore
      * its results.
+     *
+     * @return whether periodic fetches are now scheduled for [scope]; false when it was cancelled.
      */
-    suspend fun schedule(
+    private suspend fun scheduleLocked(
         context: Context,
         scope: WidgetScope,
-        runImmediately: Boolean = true,
-    ) {
+        runImmediately: Boolean,
+    ): Boolean {
         val settings = VoltraWidgetServer.resolver(context).resolve(scope)
 
         if (!settings.shouldFetch) {
-            cancel(context, scope)
+            cancelLocked(context, scope)
             Log.d(TAG, "Not scheduling '${scope.widgetId}': no url, or fetching is disabled")
-            return
+            return false
         }
 
+        // Every periodic request waits one interval before its first run, so the immediate run below
+        // is not followed by a second fetch at once. Initial delay:
+        // https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder
         enqueuePeriodic(context, scope, settings.intervalMinutes)
 
         if (runImmediately) {
             requestImmediateUpdate(context, scope)
         }
+
+        return true
     }
 
     /**
      * Recomputes the set of scopes to schedule for [widgetId] from its current placements (ADR
      * 0007): one scope per distinct merged configuration. New keys are scheduled (and run
      * immediately, since their placement has never fetched); keys with no placement left are
-     * cancelled. Called on `onUpdate`, `onDeleted`, an instance configuration write or clear, a
+     * cancelled. A scope with nothing to fetch is cancelled and kept out of the schedule index, so
+     * when fetching comes back it counts as new and runs immediately, next to its delayed periodic
+     * request. Called on `onUpdate`, `onDeleted`, an instance configuration write or clear, a
      * type-level configuration write, and a settings change — every event that can move a
      * placement between configurations.
      *
@@ -77,7 +122,7 @@ object DynamicWidgetServerUpdateScheduler {
     suspend fun recompute(
         context: Context,
         widgetId: String,
-    ) {
+    ) = lock.withLock {
         val currentScopes = DynamicWidgetInstanceScopes.scopes(context, widgetId)
         val currentStorageKeys = currentScopes.map { it.storageKey }.toSet()
         val previousStorageKeys = DynamicWidgetScheduleIndex.storageKeys(context, widgetId)
@@ -89,24 +134,108 @@ object DynamicWidgetServerUpdateScheduler {
         val orphaned = (previousStorageKeys + legacyStorageKey) - currentStorageKeys
         orphaned.forEach { storageKey -> cancelStorageKey(context, storageKey) }
 
-        currentScopes.forEach { scope ->
-            schedule(context, scope, runImmediately = scope.storageKey !in previousStorageKeys)
-        }
+        val scheduledStorageKeys =
+            currentScopes
+                .filter { scope ->
+                    scheduleLocked(
+                        context,
+                        scope,
+                        runImmediately = scope.storageKey !in previousStorageKeys,
+                    )
+                }.map { it.storageKey }
+                .toSet()
 
-        DynamicWidgetScheduleIndex.put(context, widgetId, currentStorageKeys)
+        DynamicWidgetScheduleIndex.put(context, widgetId, scheduledStorageKeys)
     }
 
     /**
      * Moves the periodic schedule to what the server asked for with `Cache-Control: max-age`,
      * without re-resolving settings or running a fetch.
      */
-    fun reschedule(
+    suspend fun reschedule(
         context: Context,
         scope: WidgetScope,
         intervalMinutes: Long,
     ) {
-        enqueuePeriodic(context, scope, intervalMinutes)
+        lock.withLock {
+            enqueuePeriodic(context, scope, intervalMinutes)
+        }
         Log.d(TAG, "Server asked '${scope.widgetId}' to come back in ${intervalMinutes}min")
+    }
+
+    /**
+     * Called when a fetch for [scope] has finished (committed, dropped or failed). Notes the finish
+     * time for [waitsForPendingFetch], then, if the periodic request is still waiting, re-enqueues
+     * it so its first run falls one interval after this fetch, not after the placement that was
+     * offline ([PeriodicWorkRequest.Builder](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder)).
+     * A periodic request that is already running is left alone; [waitsForPendingFetch] stops it
+     * from fetching if it has not fetched yet. A run that starts between the check and the
+     * re-enqueue can be cancelled by it, and [waitsForPendingFetch] would have held that run anyway.
+     *
+     * @param intervalMinutes the `max-age` the server returned, or null to keep the interval the
+     *   waiting request already has (`WorkInfo.PeriodicityInfo`, added in work-runtime 2.9.0:
+     *   https://developer.android.com/reference/androidx/work/WorkInfo#getPeriodicityInfo()).
+     */
+    suspend fun restartPeriodicAfterFetch(
+        context: Context,
+        scope: WidgetScope,
+        intervalMinutes: Long?,
+    ) {
+        lock.withLock {
+            lastFetchFinishedAt[scope.storageKey] = SystemClock.elapsedRealtimeNanos()
+            val waiting =
+                WorkManager
+                    .getInstance(context)
+                    .getWorkInfosForUniqueWork(workName(scope))
+                    .await()
+                    .firstOrNull { it.state == WorkInfo.State.ENQUEUED }
+            if (waiting != null) {
+                val settings = VoltraWidgetServer.resolver(context).resolve(scope)
+                if (settings.shouldFetch) {
+                    // Without a server max-age, keep the interval already in effect rather than the
+                    // resolved one, so a run that got no max-age back does not undo the server's.
+                    val inEffectMinutes =
+                        waiting.periodicityInfo?.repeatIntervalMillis?.let { TimeUnit.MILLISECONDS.toMinutes(it) }
+                    WorkManager
+                        .getInstance(context)
+                        .enqueueUniquePeriodicWork(
+                            workName(scope),
+                            ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
+                            buildPeriodicRequest(scope, intervalMinutes ?: inEffectMinutes ?: settings.intervalMinutes),
+                        )
+                } else {
+                    cancelLocked(context, scope)
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether a periodic run for [scope] should stop without fetching, because this widget's
+     * one-time fetch (placement, refresh or settings change, retries included) either has not
+     * finished or has just finished. The run that is that one-time fetch is never held back.
+     *
+     * Both requests have the same network constraint, so an offline placement can make them due
+     * together after reconnecting
+     * ([PeriodicWorkRequest.Builder](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder)).
+     * The "just finished" half is for the periodic run that
+     * [restartPeriodicAfterFetch] found already running and so could not re-enqueue: it reaches
+     * this check after the one-time fetch is done, and would otherwise fetch again.
+     */
+    suspend fun waitsForPendingFetch(
+        context: Context,
+        scope: WidgetScope,
+        runId: UUID,
+    ): Boolean {
+        val infos =
+            WorkManager
+                .getInstance(context)
+                .getWorkInfosForUniqueWork(oneTimeWorkName(scope))
+                .await()
+        if (infos.any { it.id == runId }) return false
+        if (infos.any { !it.state.isFinished }) return true
+        val finishedAt = lastFetchFinishedAt[scope.storageKey] ?: return false
+        return SystemClock.elapsedRealtimeNanos() - finishedAt < duplicateRunWindowNanos
     }
 
     private fun enqueuePeriodic(
@@ -114,22 +243,42 @@ object DynamicWidgetServerUpdateScheduler {
         scope: WidgetScope,
         intervalMinutes: Long,
     ) {
-        val request =
-            PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
-                intervalMinutes,
-                TimeUnit.MINUTES,
-            ).setInputData(inputData(scope))
-                .setConstraints(networkConstraints())
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
-                .addTag(WORK_TAG)
-                .build()
-
         WorkManager
             .getInstance(context)
-            .enqueueUniquePeriodicWork(workName(scope), ExistingPeriodicWorkPolicy.UPDATE, request)
+            .enqueueUniquePeriodicWork(
+                workName(scope),
+                ExistingPeriodicWorkPolicy.UPDATE,
+                buildPeriodicRequest(scope, intervalMinutes),
+            )
 
         Log.d(TAG, "Scheduled server updates for '${scope.widgetId}' every ${intervalMinutes}min")
     }
+
+    /**
+     * The periodic request [enqueuePeriodic] sends, built separately so a test can read back its
+     * initial delay.
+     *
+     * The first run waits one interval, whichever path enqueues the request. While `periodCount` is
+     * 0, WorkManager's next run is `lastEnqueueTime + initialDelay` (work-runtime 2.9.1,
+     * `androidx/work/impl/model/WorkSpec.kt:512-516`), and an UPDATE keeps the old
+     * `lastEnqueueTime` and `periodCount` (`androidx/work/impl/WorkerUpdater.kt:64-67`). A zero
+     * delay on a request that has not run yet would therefore be due at once. Sources:
+     * https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.9.1/work-runtime-2.9.1-sources.jar
+     * and https://developer.android.com/reference/androidx/work/PeriodicWorkRequest.Builder
+     */
+    internal fun buildPeriodicRequest(
+        scope: WidgetScope,
+        intervalMinutes: Long,
+    ): PeriodicWorkRequest =
+        PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
+            intervalMinutes,
+            TimeUnit.MINUTES,
+        ).setInitialDelay(intervalMinutes, TimeUnit.MINUTES)
+            .setInputData(inputData(scope))
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+            .addTag(WORK_TAG)
+            .build()
 
     /**
      * Runs a fetch as soon as the device allows. Used by the refresh button, by
@@ -199,16 +348,30 @@ object DynamicWidgetServerUpdateScheduler {
         return builder.build()
     }
 
-    fun cancel(
+    /** Cancels [scope]'s work and forgets it in the schedule index, so a later schedule runs at once. */
+    suspend fun cancel(
         context: Context,
         scope: WidgetScope,
-    ) = cancelStorageKey(context, scope.storageKey)
+    ) {
+        lock.withLock {
+            cancelLocked(context, scope)
+        }
+    }
+
+    private fun cancelLocked(
+        context: Context,
+        scope: WidgetScope,
+    ) {
+        cancelStorageKey(context, scope.storageKey)
+        DynamicWidgetScheduleIndex.remove(context, scope.widgetId, scope.storageKey)
+    }
 
     /** Cancels by raw storage key, for a scope [recompute] found no placement for any more. */
     private fun cancelStorageKey(
         context: Context,
         storageKey: String,
     ) {
+        lastFetchFinishedAt.remove(storageKey)
         WorkManager.getInstance(context).cancelUniqueWork(workNameForStorageKey(storageKey))
         WorkManager.getInstance(context).cancelUniqueWork(oneTimeWorkNameForStorageKey(storageKey))
     }
@@ -222,10 +385,12 @@ object DynamicWidgetServerUpdateScheduler {
         context: Context,
         widgetId: String,
     ) {
-        DynamicWidgetScheduleIndex.storageKeys(context, widgetId).forEach { storageKey ->
-            cancelStorageKey(context, storageKey)
+        lock.withLock {
+            DynamicWidgetScheduleIndex.storageKeys(context, widgetId).forEach { storageKey ->
+                cancelStorageKey(context, storageKey)
+            }
+            DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
         }
-        DynamicWidgetScheduleIndex.put(context, widgetId, emptySet())
     }
 
     /**
@@ -270,8 +435,9 @@ object DynamicWidgetServerUpdateScheduler {
 /**
  * Remembers which [WidgetScope.storageKey]s are currently scheduled for each widget id, so
  * [DynamicWidgetServerUpdateScheduler.recompute] can tell which keys are new (schedule + run now)
- * and which have no placement left (cancel) without asking WorkManager to enumerate its own unique
- * work names, which it has no API for.
+ * and which have no placement left (cancel) by comparing against this record. Holds only keys
+ * whose periodic work is scheduled: a cancelled scope is removed, so scheduling it again counts as
+ * new.
  */
 private object DynamicWidgetScheduleIndex {
     private const val PREFERENCES_NAME = "voltra_dynamic_widget_server_schedule"
@@ -299,6 +465,14 @@ private object DynamicWidgetScheduleIndex {
                     putStringSet(KEY_PREFIX + widgetId, storageKeys)
                 }
             }.apply()
+    }
+
+    fun remove(
+        context: Context,
+        widgetId: String,
+        storageKey: String,
+    ) {
+        put(context, widgetId, storageKeys(context, widgetId) - storageKey)
     }
 
     private fun preferences(context: Context) =
