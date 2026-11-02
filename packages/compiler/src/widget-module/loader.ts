@@ -209,7 +209,7 @@ function createReactNativeShimExports(platform: WidgetModulePlatform): unknown {
 }
 
 function isRelativeModule(specifier: string): boolean {
-    return specifier.startsWith('.') || specifier.startsWith('/') || node_path_1.default.isAbsolute(specifier);
+  return specifier.startsWith('.') || specifier.startsWith('/') || path.isAbsolute(specifier)
 }
 
 function resolveModulePath(specifier: string, fromDir: string): string | null {
