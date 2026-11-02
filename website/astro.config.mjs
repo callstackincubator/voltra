@@ -156,6 +156,7 @@ export default defineConfig({
                 { label: 'Managing Ongoing Notifications', slug: 'android/development/managing-ongoing-notifications' },
                 { label: 'Remote Ongoing Notifications', slug: 'android/development/remote-ongoing-notifications' },
                 { label: 'Querying Active Widgets', slug: 'android/development/querying-active-widgets' },
+                { label: 'Widget Lifecycle Events', slug: 'android/development/widget-lifecycle-events' },
                 { label: 'Testing and Previews', slug: 'android/development/testing-and-previews' },
                 { label: 'Styling', slug: 'android/development/styling' },
                 { label: 'Native modifiers', slug: 'android/development/native-modifiers' },

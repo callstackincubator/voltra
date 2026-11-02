@@ -22,11 +22,38 @@ data class AndroidOngoingNotificationProgressPointPayload(
 )
 
 @Serializable
+data class AndroidOngoingNotificationRemoteInputPayload(
+    val key: String,
+    val label: String? = null,
+    val allowFreeFormInput: Boolean? = null,
+    val choices: List<String>? = null,
+)
+
+/**
+ * One notification action. Exactly one of [deepLinkUrl] (opens the app) and [actionId] (sends an
+ * `interaction` event, ADR 0015) is set; [payload] and [remoteInput] only apply to an event action.
+ */
+@Serializable
 data class AndroidOngoingNotificationActionPayload(
     val title: String,
-    val deepLinkUrl: String,
+    val deepLinkUrl: String? = null,
     val icon: AndroidOngoingNotificationImageSource? = null,
-)
+    val actionId: String? = null,
+    val payload: String? = null,
+    val remoteInput: AndroidOngoingNotificationRemoteInputPayload? = null,
+    val authenticationRequired: Boolean? = null,
+    val semanticAction: String? = null,
+) {
+    init {
+        // Thrown while decoding, so a payload with such an action fails before anything is posted.
+        require((deepLinkUrl != null) != (actionId != null)) {
+            "Ongoing notification action \"$title\" must set exactly one of deepLinkUrl and actionId."
+        }
+    }
+
+    val isEventAction: Boolean
+        get() = actionId != null
+}
 
 @Serializable
 data class AndroidOngoingNotificationPublicVersionPayload(
@@ -237,4 +264,8 @@ data class AndroidOngoingNotificationRecord(
     val presentation: AndroidOngoingNotificationPresentation = AndroidOngoingNotificationPresentation(),
     val active: Boolean = true,
     val dismissed: Boolean = false,
+    /** The payload JSON of the last start or update, re-posted after a direct reply. */
+    val lastPayload: String? = null,
+    /** Incremented by every start and update; 1 after a start. Event actions carry it (ADR 0015). */
+    val revision: Int = 0,
 )

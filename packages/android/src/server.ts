@@ -6,6 +6,10 @@ export {
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationDeepLinkActionProps,
+  AndroidOngoingNotificationEventActionProps,
+  AndroidOngoingNotificationRemoteInput,
+  AndroidOngoingNotificationSemanticAction,
   AndroidOngoingNotificationBigPicturePayload,
   AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextPayload,

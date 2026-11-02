@@ -331,5 +331,12 @@ export const canPostPromotedAndroidNotifications = (): boolean => {
 }
 
 export const getAndroidOngoingNotificationCapabilities = (): AndroidOngoingNotificationCapabilities => {
-  return getNativeVoltraAndroid().getAndroidOngoingNotificationCapabilities()
+  // A native build older than this JS does not report the action flags; it applies neither.
+  const capabilities: Partial<AndroidOngoingNotificationCapabilities> =
+    getNativeVoltraAndroid().getAndroidOngoingNotificationCapabilities()
+  return {
+    ...capabilities,
+    supportsAuthenticationRequiredActions: capabilities.supportsAuthenticationRequiredActions ?? false,
+    supportsSemanticActions: capabilities.supportsSemanticActions ?? false,
+  } as AndroidOngoingNotificationCapabilities
 }

@@ -264,3 +264,34 @@ test('Node and Express adapters delegate through the same conversion path', asyn
     },
   ])
 })
+
+test('renders event and reply actions through renderAndroidOngoingNotificationPayloadToJson', () => {
+  const payload = renderAndroidOngoingNotificationPayloadToJson(
+    React.createElement(
+      AndroidOngoingNotification.Progress,
+      { title: 'Delivery', value: 3, max: 5 },
+      React.createElement(AndroidOngoingNotification.Action, {
+        title: 'Pause',
+        actionId: 'pause',
+        payload: 'order-123',
+        semanticAction: 'none',
+      }),
+      React.createElement(AndroidOngoingNotification.Action, {
+        title: 'Add tip',
+        actionId: 'tip',
+        remoteInput: { key: 'tip', label: 'Tip amount', choices: ['10%', '15%', '20%'] },
+        authenticationRequired: true,
+      })
+    )
+  )
+
+  assert.deepEqual(payload.actions, [
+    { title: 'Pause', actionId: 'pause', payload: 'order-123', semanticAction: 'none' },
+    {
+      title: 'Add tip',
+      actionId: 'tip',
+      remoteInput: { key: 'tip', label: 'Tip amount', choices: ['10%', '15%', '20%'] },
+      authenticationRequired: true,
+    },
+  ])
+})

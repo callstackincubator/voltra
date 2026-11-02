@@ -3,6 +3,7 @@ import { ExpoRoot } from 'expo-router'
 
 import { registerVoltraBackgroundNotifications } from './notifications/registerBackgroundNotifications'
 import { registerPushLogging } from './notifications/registerPushLogging'
+import { registerVoltraNotificationEvents } from './notifications/voltraNotificationEvents'
 
 // Appduct's deep-link bootstrap, so `appduct link` can claim a session against this app. Required
 // here rather than imported so it only installs in development builds; release builds ship no
@@ -12,6 +13,9 @@ if (__DEV__) {
 }
 
 registerVoltraBackgroundNotifications().catch(() => {})
+// At module scope, before the root component: a notification action pressed while the app is not
+// running is delivered to these listeners in a headless task.
+registerVoltraNotificationEvents()
 registerPushLogging().catch((error) => {
   console.log('[expo-notifications] Startup registration failed:', error)
 })

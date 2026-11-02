@@ -4,9 +4,16 @@ import { View, type StyleProp, type ViewStyle } from 'react-native'
 import { renderAndroidViewToJson } from '@use-voltra/android'
 import VoltraRN from '../native/VoltraRNNativeComponent'
 
-import { addVoltraListener, type VoltraInteractionEvent } from '../events.js'
+import type { BasicVoltraEvent } from '../events.js'
 
 const generateViewId = () => `voltra-view-android-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+/** An interaction inside a {@link VoltraView}: `identifier` is the component id, `source` the view id. */
+export type VoltraViewInteractionEvent = BasicVoltraEvent & {
+  type: 'interaction'
+  identifier: string
+  payload: string
+}
 
 const voltraViewStyle: ViewStyle = {
   flex: 1,
@@ -31,7 +38,7 @@ export type VoltraViewProps = {
    * Callback when user interacts with components in the view.
    * Events are filtered by this view's id (source).
    */
-  onInteraction?: (event: VoltraInteractionEvent) => void
+  onInteraction?: (event: VoltraViewInteractionEvent) => void
   /**
    * Test ID for the view
    */
@@ -58,21 +65,10 @@ export function VoltraView({ id, testID, style, children, onInteraction }: Voltr
 
   useEffect(() => {
     if (!onInteraction) return
-
-    const subscription = addVoltraListener('interaction', (event) => {
-      if (event.source === viewId) {
-        onInteraction({
-          type: 'interaction',
-          source: event.source,
-          timestamp: event.timestamp,
-          identifier: event.identifier,
-          payload: event.payload,
-        })
-      }
-    })
-
-    return () => subscription.remove()
-  }, [viewId, onInteraction])
+    // Android views emit no interaction events. Subscribing to the Android event queue here would
+    // drain notification actions meant for the app's own listener, so this only warns (ADR 0015).
+    console.warn('[Voltra] VoltraView onInteraction is only supported on iOS.')
+  }, [onInteraction])
 
   return (
     <View testID={testID} style={style}>

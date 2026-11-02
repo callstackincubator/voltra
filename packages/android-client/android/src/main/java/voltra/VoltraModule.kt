@@ -2,6 +2,7 @@ package voltra
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentCallbacks
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.LocaleList
 import android.util.Log
@@ -10,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.BaseActivityEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
@@ -21,6 +23,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.json.JSONArray
 import org.json.JSONObject
 import voltra.dynamicwidget.AndroidDynamicWidgetInstanceBoundary
 import voltra.dynamicwidget.DynamicWidgetInstanceRejection
@@ -31,10 +34,13 @@ import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.dynamicwidget.VoltraConfigurationStore
+import voltra.dynamicwidget.WidgetPlacementSize
+import voltra.dynamicwidget.lifecycle.DynamicWidgetPlacementRegistry
 import voltra.dynamicwidget.serverupdate.DynamicWidgetServerUpdateScheduler
 import voltra.dynamicwidget.triggerDynamicWidgetConfigurationGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetInstanceConfigurationGlanceUpdate
+import voltra.events.VoltraEventBus
 import voltra.glance.renderers.arc.ArcBitmapCache
 import voltra.images.VoltraImageManager
 import voltra.ongoingnotification.VoltraNotificationException
@@ -176,13 +182,38 @@ class VoltraModule(
             )
         }
 
+    private var eventBusToken: String? = null
+
+    // Reports a content tap on an ongoing notification as `notificationTapped` (ADR 0015).
+    private val notificationTapListener =
+        object : BaseActivityEventListener() {
+            override fun onNewIntent(intent: Intent) {
+                VoltraNotificationTapHandler.consume(reactApplicationContext, intent)
+            }
+        }
+
     override fun initialize() {
         super.initialize()
         reactApplicationContext.registerComponentCallbacks(configurationCallbacks)
         VoltraNotificationManager.addEndedListener(ongoingNotificationEndedListener)
+        eventBusToken =
+            VoltraEventBus.subscribe {
+                emitOnEventsAvailable(Arguments.createMap().apply { putString("type", "eventsAvailable") })
+            }
+        try {
+            DynamicWidgetPlacementRegistry(reactApplicationContext).seedIfNeeded()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to seed the Dynamic Widget placement registry", e)
+        }
+        reactApplicationContext.addActivityEventListener(notificationTapListener)
+        // Cold start: the tap launched the Activity before this module existed.
+        VoltraNotificationTapHandler.consume(reactApplicationContext, reactApplicationContext.currentActivity?.intent)
     }
 
     override fun invalidate() {
+        reactApplicationContext.removeActivityEventListener(notificationTapListener)
+        eventBusToken?.let(VoltraEventBus::unsubscribe)
+        eventBusToken = null
         VoltraNotificationManager.removeEndedListener(ongoingNotificationEndedListener)
         try {
             reactApplicationContext.unregisterComponentCallbacks(configurationCallbacks)
@@ -191,6 +222,24 @@ class VoltraModule(
         }
         super.invalidate()
     }
+
+    override fun popEvents(types: ReadableArray): String =
+        try {
+            val wanted = (0 until types.size()).mapNotNull { types.getString(it) }.toSet()
+            VoltraEventBus.pop(reactApplicationContext, wanted).toString()
+        } catch (e: Exception) {
+            Log.e(TAG, "popEvents failed", e)
+            "[]"
+        }
+
+    override fun restoreEvents(eventsJson: String): Boolean =
+        try {
+            VoltraEventBus.restore(reactApplicationContext, JSONArray(eventsJson))
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "restoreEvents failed", e)
+            false
+        }
 
     /**
      * Settles [promise] with the block's result, or rejects it with a code: a
@@ -311,6 +360,8 @@ class VoltraModule(
             putBoolean("supportsPromotedNotifications", capabilities.supportsPromotedNotifications)
             putBoolean("canPostPromotedNotifications", capabilities.canPostPromotedNotifications)
             putBoolean("canRequestPromotedOngoing", capabilities.canRequestPromotedOngoing)
+            putBoolean("supportsAuthenticationRequiredActions", capabilities.supportsAuthenticationRequiredActions)
+            putBoolean("supportsSemanticActions", capabilities.supportsSemanticActions)
         }
     }
 
@@ -1087,9 +1138,7 @@ class VoltraModule(
         for (providerInfo in installedProviders) {
             val ids = manager.getAppWidgetIds(providerInfo.provider)
             for (id in ids) {
-                val opts = manager.getAppWidgetOptions(id)
-                val minWidth = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
-                val minHeight = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+                val size = WidgetPlacementSize.fromOptions(manager.getAppWidgetOptions(id))
                 val shortClassName = providerInfo.provider.shortClassName
                 val widgetType =
                     widgetIdsByComponent[providerInfo.provider]
@@ -1109,8 +1158,7 @@ class VoltraModule(
                         putInt("widgetId", id)
                         putString("providerClassName", shortClassName)
                         putString("label", providerInfo.loadLabel(reactApplicationContext.packageManager).toString())
-                        putInt("width", minWidth)
-                        putInt("height", minHeight)
+                        size.writeTo(this)
                     },
                 )
             }
