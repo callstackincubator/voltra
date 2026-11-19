@@ -12,8 +12,10 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import kotlinx.coroutines.flow.first
 import voltra.widget.server.VoltraWidgetServer
 import voltra.widget.server.WidgetScope
 import java.util.concurrent.TimeUnit
@@ -36,8 +38,10 @@ object DynamicWidgetServerUpdateScheduler {
     private const val BACKOFF_SECONDS = 30L
 
     /**
-     * Schedules — or reschedules — periodic fetches from the widget's resolved interval, and runs
-     * one now so a freshly placed widget does not sit on its placeholder for 15 minutes.
+     * Schedules — or reschedules — periodic fetches from the widget's resolved interval, with the
+     * first periodic run one interval out, and requests an immediate fetch when the scope has no
+     * unfinished periodic work, so a freshly placed widget does not sit on its placeholder for 15
+     * minutes.
      *
      * Cancels instead when the widget has nothing to fetch, which is what makes
      * `setWidgetServerUpdate({ enabled: false })` actually stop the work rather than just ignore
@@ -46,7 +50,6 @@ object DynamicWidgetServerUpdateScheduler {
     suspend fun schedule(
         context: Context,
         scope: WidgetScope,
-        runImmediately: Boolean = true,
     ) {
         val settings = VoltraWidgetServer.resolver(context).resolve(scope)
 
@@ -56,19 +59,26 @@ object DynamicWidgetServerUpdateScheduler {
             return
         }
 
+        val hasUnfinishedPeriodicWork =
+            WorkManager
+                .getInstance(context)
+                .getWorkInfosForUniqueWorkFlow(workName(scope))
+                .first()
+                .any { !it.state.isFinished }
+
         enqueuePeriodic(context, scope, settings.intervalMinutes)
 
-        if (runImmediately) {
+        if (!hasUnfinishedPeriodicWork) {
             requestImmediateUpdate(context, scope)
         }
     }
 
     /**
      * Recomputes the set of scopes to schedule for [widgetId] from its current placements (ADR
-     * 0007): one scope per distinct merged configuration. New keys are scheduled (and run
-     * immediately, since their placement has never fetched); keys with no placement left are
-     * cancelled. Called on `onUpdate`, `onDeleted`, an instance configuration write or clear, a
-     * type-level configuration write, and a settings change — every event that can move a
+     * 0007): one scope per distinct merged configuration. The index identifies orphaned scopes,
+     * whose work is cancelled here; [schedule] decides for each current scope whether it needs an
+     * immediate fetch. Called on `onUpdate`, `onDeleted`, an instance configuration write or
+     * clear, a type-level configuration write, and a settings change — every event that can move a
      * placement between configurations.
      *
      * A widget with no configuration parameters always resolves to the single [WidgetScope.Widget]
@@ -90,7 +100,7 @@ object DynamicWidgetServerUpdateScheduler {
         orphaned.forEach { storageKey -> cancelStorageKey(context, storageKey) }
 
         currentScopes.forEach { scope ->
-            schedule(context, scope, runImmediately = scope.storageKey !in previousStorageKeys)
+            schedule(context, scope)
         }
 
         DynamicWidgetScheduleIndex.put(context, widgetId, currentStorageKeys)
@@ -114,27 +124,36 @@ object DynamicWidgetServerUpdateScheduler {
         scope: WidgetScope,
         intervalMinutes: Long,
     ) {
-        val request =
-            PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
-                intervalMinutes,
-                TimeUnit.MINUTES,
-            ).setInputData(inputData(scope))
-                .setConstraints(networkConstraints())
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
-                .addTag(WORK_TAG)
-                .build()
-
         WorkManager
             .getInstance(context)
-            .enqueueUniquePeriodicWork(workName(scope), ExistingPeriodicWorkPolicy.UPDATE, request)
+            .enqueueUniquePeriodicWork(
+                workName(scope),
+                ExistingPeriodicWorkPolicy.UPDATE,
+                buildPeriodicRequest(scope, intervalMinutes),
+            )
 
         Log.d(TAG, "Scheduled server updates for '${scope.widgetId}' every ${intervalMinutes}min")
     }
 
+    /** Builds the periodic request with one interval before its first run. */
+    internal fun buildPeriodicRequest(
+        scope: WidgetScope,
+        intervalMinutes: Long,
+    ): PeriodicWorkRequest =
+        PeriodicWorkRequestBuilder<DynamicWidgetServerUpdateWorker>(
+            intervalMinutes,
+            TimeUnit.MINUTES,
+        ).setInitialDelay(intervalMinutes, TimeUnit.MINUTES)
+            .setInputData(inputData(scope))
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_SECONDS, TimeUnit.SECONDS)
+            .addTag(WORK_TAG)
+            .build()
+
     /**
      * Runs a fetch as soon as the device allows. Used by the refresh button, by
-     * `reloadAndroidWidgets`, and by every settings change, none of which should wait out the
-     * remainder of a 15 minute period.
+     * `reloadAndroidWidgets`, and when a scope's periodic schedule starts or resumes, none of
+     * which should wait out the remainder of a 15 minute period.
      */
     fun requestImmediateUpdate(
         context: Context,
