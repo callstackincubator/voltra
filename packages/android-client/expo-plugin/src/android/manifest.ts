@@ -38,26 +38,55 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
     if (enableNotifications) {
       ensurePermission('android.permission.POST_NOTIFICATIONS')
       ensurePermission('android.permission.POST_PROMOTED_NOTIFICATIONS')
+      // The headless event service (ADR 0015): a `shortService` foreground service, which needs no
+      // type-specific permission, and the wake lock React Native's headless start takes.
+      ensurePermission('android.permission.FOREGROUND_SERVICE')
+      ensurePermission('android.permission.WAKE_LOCK')
     }
 
     config.modResults.manifest['uses-permission'] = usesPermissions
 
     const existingReceivers = (mainApplication.receiver || []) as any[]
-    const ongoingNotificationReceiverName = 'voltra.VoltraOngoingNotificationDismissedReceiver'
+    // The dismissed receiver records swipes and timeouts; the action receiver turns a press on an
+    // event action into an `interaction` event (ADR 0015). Neither is reachable from other apps.
+    const ongoingNotificationReceiverNames = [
+      'voltra.VoltraOngoingNotificationDismissedReceiver',
+      'voltra.VoltraOngoingNotificationActionReceiver',
+    ]
 
     if (enableNotifications) {
-      const hasOngoingNotificationReceiver = existingReceivers.some(
-        (receiver: any) => receiver.$?.['android:name'] === ongoingNotificationReceiverName
-      )
+      for (const receiverName of ongoingNotificationReceiverNames) {
+        const hasReceiver = existingReceivers.some((receiver: any) => receiver.$?.['android:name'] === receiverName)
 
-      if (!hasOngoingNotificationReceiver) {
-        existingReceivers.push({
+        if (!hasReceiver) {
+          existingReceivers.push({
+            $: {
+              'android:name': receiverName,
+              'android:exported': 'false',
+            },
+          })
+        }
+      }
+      mainApplication.receiver = existingReceivers
+    }
+
+    // Starts the app's JavaScript in the background when a notification action is pressed while the
+    // app is in the background or not running (ADR 0015).
+    const headlessEventServiceName = 'voltra.events.VoltraHeadlessEventService'
+    if (enableNotifications) {
+      const existingServices = (mainApplication.service || []) as any[]
+      const hasHeadlessEventService = existingServices.some(
+        (service: any) => service.$?.['android:name'] === headlessEventServiceName
+      )
+      if (!hasHeadlessEventService) {
+        existingServices.push({
           $: {
-            'android:name': ongoingNotificationReceiverName,
+            'android:name': headlessEventServiceName,
             'android:exported': 'false',
+            'android:foregroundServiceType': 'shortService',
           },
         })
-        mainApplication.receiver = existingReceivers
+        mainApplication.service = existingServices
       }
     }
 

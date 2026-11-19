@@ -6,6 +6,7 @@ module.exports = {
     '<rootDir>/src/utils/**/*.node.test.ts',
     '<rootDir>/src/widgets/**/*.node.test.ts',
     '<rootDir>/src/ongoing-notification/**/*.node.test.ts',
+    '<rootDir>/src/__tests__/**/*.node.test.ts',
   ],
   modulePathIgnorePatterns: ['<rootDir>/build'],
   moduleNameMapper: {

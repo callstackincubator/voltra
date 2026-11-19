@@ -1,6 +1,6 @@
 ---
-title: "Plugin Configuration (Android)"
-description: "Reference for the Android Voltra Expo plugin options, including enableNotifications and widgets, plus widget pre-rendering."
+title: 'Plugin Configuration (Android)'
+description: 'Reference for the Android Voltra Expo plugin options, including enableNotifications and widgets, plus widget pre-rendering.'
 ---
 
 The Voltra Expo config plugin accepts Android-specific configuration options in your `app.json` or `app.config.js`:
@@ -41,7 +41,11 @@ When enabled, the config plugin adds:
 
 - `android.permission.POST_NOTIFICATIONS`
 - `android.permission.POST_PROMOTED_NOTIFICATIONS`
-- `voltra.VoltraOngoingNotificationDismissedReceiver`
+- `android.permission.FOREGROUND_SERVICE` and `android.permission.WAKE_LOCK`, used to run your JavaScript in the background when a notification action is pressed while the app is in the background or not running
+- two receivers, neither reachable from other apps:
+  - `voltra.VoltraOngoingNotificationDismissedReceiver`, which records when the user dismisses a notification and sends `notificationDismissed`
+  - `voltra.VoltraOngoingNotificationActionReceiver`, which turns a press on an `actionId` action into an `interaction` event
+- the `voltra.events.VoltraHeadlessEventService` service (`foregroundServiceType="shortService"`), which starts that background run
 
 This does not grant runtime notification permission automatically. Your app still needs to request notification permission on Android 13 and above.
 
@@ -131,24 +135,24 @@ Use `initialStatePath` to bundle pre-rendered widget state for the first time a 
           "widgets": [
             {
               "id": "voltra",
-                "displayName": "Voltra Widget",
-                "description": "Voltra logo widget",
-                "minCellWidth": 2,
-                "minCellHeight": 2,
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "resizeMode": "horizontal|vertical",
-                "widgetCategory": "home_screen",
-                "initialStatePath": "./widgets/android-voltra-widget-initial.tsx",
-                "previewImage": "./assets/voltra-icon.jpg"
-              },
-              {
-                "id": "interactive_todos",
-                "displayName": "Interactive Todos",
-                "description": "Quick todo list widget",
-                "targetCellWidth": 2,
-                "targetCellHeight": 2,
-                "previewLayout": "./assets/widgets/todos-preview.xml"
+              "displayName": "Voltra Widget",
+              "description": "Voltra logo widget",
+              "minCellWidth": 2,
+              "minCellHeight": 2,
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "initialStatePath": "./widgets/android-voltra-widget-initial.tsx",
+              "previewImage": "./assets/voltra-icon.jpg"
+            },
+            {
+              "id": "interactive_todos",
+              "displayName": "Interactive Todos",
+              "description": "Quick todo list widget",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "previewLayout": "./assets/widgets/todos-preview.xml"
             }
           ]
         }

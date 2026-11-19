@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Channel and foreground notification shown briefly while JavaScript handles a notification action in the background (ADR 0015). -->
+    <string name="voltra_background_events_channel_name">Background actions</string>
+    <string name="voltra_background_events_notification_title">Handling notification action</string>
+</resources>

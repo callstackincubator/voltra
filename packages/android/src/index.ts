@@ -58,12 +58,19 @@ export type {
   AndroidWidgetSizeVariant,
   AndroidWidgetVariants,
   UpdateAndroidWidgetOptions,
+  VoltraWidgetPlacement,
+  VoltraWidgetPlacementSize,
+  VoltraWidgetPlacementWithSize,
   WidgetInfo,
 } from './widgets/types.js'
 
 export type {
   AndroidOngoingNotificationActionPayload,
   AndroidOngoingNotificationActionProps,
+  AndroidOngoingNotificationDeepLinkActionProps,
+  AndroidOngoingNotificationEventActionProps,
+  AndroidOngoingNotificationRemoteInput,
+  AndroidOngoingNotificationSemanticAction,
   AndroidOngoingNotificationBigPicturePayload,
   AndroidOngoingNotificationBigPictureProps,
   AndroidOngoingNotificationBigTextPayload,

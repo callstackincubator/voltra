@@ -71,6 +71,9 @@ const widgetInfoSchema = z.object({
   label: z.string(),
   width: z.number().describe('Reported width in dp.'),
   height: z.number().describe('Reported height in dp.'),
+  sizes: z
+    .array(z.object({ width: z.number(), height: z.number() }))
+    .describe('Sizes in dp the launcher may show this placement at.'),
 })
 
 /**
@@ -143,13 +146,14 @@ export function AndroidVoltraTools() {
     handler: async () => {
       const widgets = await getActiveWidgets()
       return {
-        widgets: widgets.map(({ widgetType, appWidgetId, providerClassName, label, width, height }) => ({
+        widgets: widgets.map(({ widgetType, appWidgetId, providerClassName, label, width, height, sizes }) => ({
           widgetType,
           appWidgetId,
           providerClassName,
           label,
           width,
           height,
+          sizes,
         })),
       }
     },

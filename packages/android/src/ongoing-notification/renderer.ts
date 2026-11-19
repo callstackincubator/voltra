@@ -24,7 +24,10 @@ import type {
   AndroidOngoingNotificationProgressProps,
   AndroidOngoingNotificationProgressSegment,
   AndroidOngoingNotificationPublicVersion,
+  AndroidOngoingNotificationRemoteInput,
+  AndroidOngoingNotificationSemanticAction,
 } from './types.js'
+import { ANDROID_ONGOING_NOTIFICATION_SEMANTIC_ACTIONS } from './types.js'
 
 void getAndroidComponentId
 
@@ -46,6 +49,28 @@ const MAX_INBOX_LINES = 6
 const MAX_INLINE_PICTURE_BYTES = 256 * 1024
 
 /** Bytes a base64 string holds once decoded. Padding leaves this at most two bytes high. */
+/** "A notification in its expanded form can display up to 3 actions" (`Notification.Builder.addAction`). */
+const MAX_VISIBLE_ACTIONS = 3
+let warnedAboutActionCount = false
+
+// `__DEV__` is provided by Metro/React Native bundles as a global boolean; on a server the
+// renderer falls back to NODE_ENV, as `@use-voltra/core` does.
+declare const __DEV__: boolean | undefined
+
+const isDevEnvironment = (): boolean => {
+  if (typeof __DEV__ !== 'undefined') {
+    return Boolean(__DEV__)
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.NODE_ENV !== 'production'
+  }
+  return false
+}
+
+/** Drops keys whose value is undefined, so a serialised object contains only what was set. */
+const omitUndefined = <T extends Record<string, unknown>>(value: T): T =>
+  Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T
+
 const decodedBase64Bytes = (base64: string): number => Math.ceil((base64.length * 3) / 4)
 
 const flattenChildren = (node: ReactNode): ReactNode[] => {
@@ -367,14 +392,88 @@ const getElementKind = (element: ReactElement<Record<string, unknown>>) => {
     : undefined
 }
 
+const assertOptionalSemanticAction = (value: unknown): AndroidOngoingNotificationSemanticAction | undefined => {
+  if (value === undefined) {
+    return undefined
+  }
+
+  if (!(ANDROID_ONGOING_NOTIFICATION_SEMANTIC_ACTIONS as readonly unknown[]).includes(value)) {
+    throw new Error(
+      `[Voltra] [Android] Ongoing notification prop "semanticAction" must be one of ${ANDROID_ONGOING_NOTIFICATION_SEMANTIC_ACTIONS.join(
+        ', '
+      )}.`
+    )
+  }
+
+  return value as AndroidOngoingNotificationSemanticAction
+}
+
+const normalizeRemoteInput = (value: unknown): AndroidOngoingNotificationRemoteInput => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('[Voltra] [Android] Ongoing notification prop "remoteInput" must be an object.')
+  }
+
+  const remoteInput = value as Record<string, unknown>
+  const choices = remoteInput.choices
+  if (
+    choices !== undefined &&
+    (!Array.isArray(choices) ||
+      choices.length === 0 ||
+      choices.some((choice) => typeof choice !== 'string' || choice.length === 0))
+  ) {
+    throw new Error(
+      '[Voltra] [Android] Ongoing notification prop "remoteInput.choices" must be a non-empty array of non-empty strings.'
+    )
+  }
+
+  const allowFreeFormInput = assertBoolean(remoteInput.allowFreeFormInput, 'remoteInput.allowFreeFormInput')
+  if (allowFreeFormInput === false && choices === undefined) {
+    // Android rejects a reply that allows neither typing nor picking.
+    throw new Error(
+      '[Voltra] [Android] Ongoing notification prop "remoteInput.allowFreeFormInput" can only be false when "remoteInput.choices" is set.'
+    )
+  }
+
+  return omitUndefined({
+    key: assertString(remoteInput.key, 'remoteInput.key'),
+    label: assertOptionalString(remoteInput.label, 'remoteInput.label'),
+    allowFreeFormInput,
+    choices: choices === undefined ? undefined : [...(choices as string[])],
+  })
+}
+
 const normalizeActionPayload = (
   props: AndroidOngoingNotificationActionProps
 ): AndroidOngoingNotificationActionPayload => {
-  return {
-    title: assertString(props.title, 'title'),
-    deepLinkUrl: assertString(props.deepLinkUrl, 'deepLinkUrl'),
-    icon: assertOptionalImageSource(props.icon, 'icon'),
+  const { deepLinkUrl, actionId, payload, remoteInput } = props as Record<string, unknown>
+
+  if (deepLinkUrl !== undefined && actionId !== undefined) {
+    throw new Error(
+      '[Voltra] [Android] Ongoing notification action must set either "deepLinkUrl" or "actionId", not both.'
+    )
   }
+
+  if (deepLinkUrl === undefined && actionId === undefined) {
+    throw new Error('[Voltra] [Android] Ongoing notification action must set "deepLinkUrl" or "actionId".')
+  }
+
+  if (deepLinkUrl !== undefined && (payload !== undefined || remoteInput !== undefined)) {
+    throw new Error(
+      '[Voltra] [Android] Ongoing notification props "payload" and "remoteInput" are only allowed on an action with "actionId".'
+    )
+  }
+
+  // Key order keeps an existing `{ title, deepLinkUrl, icon }` action byte-for-byte identical.
+  return omitUndefined({
+    title: assertString(props.title, 'title'),
+    deepLinkUrl: deepLinkUrl === undefined ? undefined : assertString(deepLinkUrl, 'deepLinkUrl'),
+    icon: assertOptionalImageSource(props.icon, 'icon'),
+    actionId: actionId === undefined ? undefined : assertString(actionId, 'actionId'),
+    payload: assertOptionalString(payload, 'payload'),
+    remoteInput: remoteInput === undefined ? undefined : normalizeRemoteInput(remoteInput),
+    authenticationRequired: assertBoolean(props.authenticationRequired, 'authenticationRequired'),
+    semanticAction: assertOptionalSemanticAction(props.semanticAction),
+  })
 }
 
 const normalizeCommonDisplayFields = (
@@ -430,6 +529,17 @@ const normalizeActions = (value: ReactNode): AndroidOngoingNotificationActionPay
   return actions.length > 0 ? actions : undefined
 }
 
+const normalizeTopLevelActions = (value: ReactNode): AndroidOngoingNotificationActionPayload[] | undefined => {
+  const actions = normalizeActions(value)
+  if (actions && actions.length > MAX_VISIBLE_ACTIONS && isDevEnvironment() && !warnedAboutActionCount) {
+    warnedAboutActionCount = true
+    console.warn(
+      `[Voltra] [Android] Ongoing notification has ${actions.length} actions. Android shows at most ${MAX_VISIBLE_ACTIONS}; the rest are kept in the payload but may not appear.`
+    )
+  }
+  return actions
+}
+
 const normalizeProgressPayload = (
   props: AndroidOngoingNotificationProgressProps
 ): AndroidOngoingNotificationProgressPayload => {
@@ -457,7 +567,7 @@ const normalizeProgressPayload = (
     progressEndIcon: assertOptionalImageSource(props.progressEndIcon, 'progressEndIcon'),
     segments: normalizeProgressSegments(props.segments),
     points: normalizeProgressPoints(props.points),
-    actions: normalizeActions(props.children),
+    actions: normalizeTopLevelActions(props.children),
   }
 }
 
@@ -472,7 +582,7 @@ const normalizeBigTextPayload = (
     ...normalizeCommonDisplayFields(props),
     text,
     bigText: assertOptionalString(props.bigText, 'bigText') ?? text,
-    actions: normalizeActions(props.children),
+    actions: normalizeTopLevelActions(props.children),
   }
 }
 
@@ -711,7 +821,7 @@ const normalizeMetricPayload = (
     metrics,
     criticalMetric,
     semanticStyle,
-    actions: normalizeActions(props.children),
+    actions: normalizeTopLevelActions(props.children),
   }
 }
 
@@ -735,7 +845,7 @@ const normalizeBigPicturePayload = (
     showPictureWhenCollapsed: assertBoolean(props.showPictureWhenCollapsed, 'showPictureWhenCollapsed'),
     bigLargeIcon: assertOptionalImageSource(props.bigLargeIcon, 'bigLargeIcon'),
     hideLargeIconWhenExpanded: assertBoolean(props.hideLargeIconWhenExpanded, 'hideLargeIconWhenExpanded'),
-    actions: normalizeActions(props.children),
+    actions: normalizeTopLevelActions(props.children),
   }
 }
 
@@ -749,7 +859,7 @@ const normalizeInboxPayload = (props: AndroidOngoingNotificationInboxProps): And
     text: props.text === undefined ? lines[0] : assertString(props.text, 'text'),
     lines,
     summaryText: assertOptionalNonEmptyString(props.summaryText, 'summaryText'),
-    actions: normalizeActions(props.children),
+    actions: normalizeTopLevelActions(props.children),
   }
 }
 
