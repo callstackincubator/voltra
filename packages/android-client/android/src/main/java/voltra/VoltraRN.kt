@@ -1,6 +1,8 @@
 package voltra
 
 import android.appwidget.AppWidgetHostView
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
 import android.os.Build
 import android.view.View
@@ -30,10 +32,50 @@ import kotlin.math.abs
  */
 internal fun usesAppWidgetHostView(sdkInt: Int): Boolean = sdkInt >= Build.VERSION_CODES.S_V2
 
-/** An [AppWidgetHostView] that records whether it fell back to its error view. */
+private var ownProviderInfo: AppWidgetProviderInfo? = null
+private var ownProviderInfoResolved = false
+
+/**
+ * One of this app's own AppWidget providers, or null when it has none or the lookup fails. The
+ * result is cached because providers only change when the app is updated, which restarts it.
+ */
+private fun ownProviderInfo(context: Context): AppWidgetProviderInfo? {
+    if (!ownProviderInfoResolved) {
+        ownProviderInfo =
+            try {
+                AppWidgetManager
+                    .getInstance(context)
+                    .getInstalledProvidersForPackage(context.packageName, null)
+                    .firstOrNull()
+            } catch (e: Exception) {
+                null
+            }
+        ownProviderInfoResolved = true
+    }
+    return ownProviderInfo
+}
+
+/**
+ * An [AppWidgetHostView] that records whether it fell back to its error view.
+ *
+ * It is given one of this app's own AppWidget providers when there is one. Without a provider
+ * info, every updateAppWidget logs "Error trying to create the remote context" with an NPE,
+ * because the host view reads its provider info to build the context the views are inflated
+ * with, and falls back to its own context afterwards. With one, that context is a clone for
+ * this app's package, which is the package the RemoteViews come from anyway. An app with no
+ * provider of its own keeps the logged fallback. setAppWidget also adds the system's default
+ * widget padding, which the preview has never had, so it is reset to zero.
+ */
 private class PreviewAppWidgetHostView(
     context: Context,
 ) : AppWidgetHostView(context) {
+    init {
+        ownProviderInfo(context)?.let { info ->
+            setAppWidget(AppWidgetManager.INVALID_APPWIDGET_ID, info)
+            setPadding(0, 0, 0, 0)
+        }
+    }
+
     var showedErrorView = false
         private set
 
