@@ -193,6 +193,9 @@ jobs:
   swiftformat:
     name: '[Swift] Format & Lint'
     runs-on: macos-latest
+    env:
+      SWIFTFORMAT_VERSION: 0.64.7
+      SWIFTFORMAT_SHA256: e82e224325cbd3403fc7b68caf6c917926dc106de3af875fca4b87e3c4634038
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -208,6 +211,20 @@ jobs:
         with:
           node-version: '24.14.0'
           cache: 'pnpm'
+
+      # The runner image's preinstalled SwiftFormat changes between image releases and adds rules, so pin the release.
+      - name: Install SwiftFormat
+        run: |
+          curl -fsSL \
+            "https://github.com/nicklockwood/SwiftFormat/releases/download/${SWIFTFORMAT_VERSION}/swiftformat.zip" \
+            -o "$RUNNER_TEMP/swiftformat.zip"
+          echo "${SWIFTFORMAT_SHA256}  $RUNNER_TEMP/swiftformat.zip" | shasum -a 256 --check -
+          unzip -q "$RUNNER_TEMP/swiftformat.zip" -d "$RUNNER_TEMP/swiftformat"
+          echo "$RUNNER_TEMP/swiftformat" >> "$GITHUB_PATH"
+
+      - name: Check SwiftFormat version
+        run: |
+          test "$(swiftformat --version)" = "${SWIFTFORMAT_VERSION}"
 
       - name: Check Swift formatting
         run: pnpm run format:swift:check

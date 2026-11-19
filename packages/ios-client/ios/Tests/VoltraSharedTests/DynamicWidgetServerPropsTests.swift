@@ -54,11 +54,11 @@ final class DynamicWidgetServerPropsTests: XCTestCase {
 
   func testDoesNotMistakePropsThatHappenToHaveAVKeyForAPayload() {
     guard case .props = parse(#"{"v":1,"label":"hi"}"#) else {
-      return XCTFail("expected props")
+      return XCTFail("expected props for numeric v")
     }
 
     guard case .props = parse(#"{"v":"1.2.3","variants":{"a":1}}"#) else {
-      return XCTFail("expected props")
+      return XCTFail("expected props for string v with variants")
     }
   }
 }
