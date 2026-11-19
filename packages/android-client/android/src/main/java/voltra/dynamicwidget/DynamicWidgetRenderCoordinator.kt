@@ -29,7 +29,7 @@ internal object DynamicWidgetHermesRuntimeBoundary : DynamicWidgetRuntimeBoundar
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
         dynamicWidgetEnvironmentJson: String,
     ): String =
-        VoltraJSRenderer.renderOrThrow(
+        VoltraJSRenderer.render(
             dynamicWidgetId,
             dynamicWidgetRenderInput.propsJson,
             dynamicWidgetEnvironmentJson,

@@ -71,25 +71,11 @@ object VoltraJSRenderer {
      * The raw bundle ends with Metro's entry invocation `__r(<entryId>);`. We re-invoke that
      * entry and stash its exports in `globalThis.__voltraWidgets[<id>]` (Metro's `__r` caches
      * module exports, so the second invocation returns the already-evaluated module).
-     */
-    fun evaluateBundle(
-        source: String,
-        widgetId: String,
-    ): Boolean =
-        try {
-            evaluateBundleOrThrow(source, widgetId)
-            true
-        } catch (e: VoltraJSException) {
-            false
-        }
-
-    /**
-     * [evaluateBundle] with the reason a failure happened (ADR 0013).
      *
      * @throws VoltraJSException with the JavaScript message and stack when evaluation fails, or
-     *   with the native error when the runtime cannot even be reached.
+     *   with the native error when the runtime cannot even be reached (ADR 0013).
      */
-    internal fun evaluateBundleOrThrow(
+    fun evaluateBundle(
         source: String,
         widgetId: String,
     ) {
@@ -111,6 +97,8 @@ object VoltraJSRenderer {
                     append("})();\n")
                 }
             try {
+                // The native side throws VoltraJSException itself; this is only a guard for a
+                // `false` that arrives without one.
                 if (!nativeEvaluateBundle(wrapped, "voltra/$widgetId.bundle", widgetId)) {
                     throw VoltraJSException("bundle evaluation failed for widgetId=$widgetId", null)
                 }
@@ -125,33 +113,19 @@ object VoltraJSRenderer {
 
     /**
      * Invoke the previously-evaluated widget's `render(propsJSON, envJSON)` and return its
-     * resolved JSON string. Returns null if the widget was not evaluated, the function throws,
-     * or it did not return a string.
+     * resolved JSON string.
+     *
+     * @throws VoltraJSException with the JavaScript message and stack when `render()` throws, when
+     *   the widget was not evaluated, or when it does not return a string (ADR 0013).
      */
     fun render(
-        widgetId: String,
-        propsJSON: String,
-        envJSON: String,
-    ): String? =
-        try {
-            renderOrThrow(widgetId, propsJSON, envJSON)
-        } catch (e: VoltraJSException) {
-            null
-        }
-
-    /**
-     * [render] with the reason a failure happened (ADR 0013).
-     *
-     * @throws VoltraJSException with the JavaScript message and stack when `render()` throws, or a
-     *   message naming the returned type when it does not return a string.
-     */
-    internal fun renderOrThrow(
         widgetId: String,
         propsJSON: String,
         envJSON: String,
     ): String =
         synchronized(lock) {
             try {
+                // The native side throws VoltraJSException itself; the null case is only a guard.
                 nativeRender(widgetId, propsJSON, envJSON)
                     ?: throw VoltraJSException("render() produced no result for widgetId=$widgetId", null)
             } catch (e: VoltraJSException) {

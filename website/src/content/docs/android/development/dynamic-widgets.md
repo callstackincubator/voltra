@@ -236,21 +236,21 @@ A render can fail at four points: loading the bundle (Metro unreachable or answe
 | Build   | What the widget shows                                                                                   |
 | ------- | ------------------------------------------------------------------------------------------------------- |
 | Debug   | The error view, even if the widget has rendered before                                                  |
-| Release | The last render of that placement that succeeded, else the `initialStatePath` view, else "Loading…" |
+| Release | The last render of that placement at that size that succeeded, else the `initialStatePath` view, else "Loading…" |
 
 The error view is red and names the widget `id`, the stage (`bundle`, `evaluate`, `render` or `parse`), the error message and up to six stack frames from your code. A bundle Metro could not build shows Metro's own error, and an unreachable Metro names the host Voltra tried. Release builds never show it.
 
 Tap the error view to retry. Voltra reloads the bundle from Metro, evaluates it again and redraws the tapped widget, so fixing your component or restarting Metro and tapping is enough. Retry does not refetch [server props](#fetching-props-from-a-server); the refresh button does that. Other placements of the same widget pick up the reloaded bundle the next time they render.
 
-The last good render is stored per placement on the device, is dropped when the placement is removed or you call `clearAndroidWidget` or `clearAllAndroidWidgets`, and is not backed up. After a resize whose render fails, the widget keeps the previous size's layout until a render succeeds. A release widget can therefore show stale content without saying so.
+The last good render is stored per placement and size on the device, is dropped when the placement is removed or you call `clearAndroidWidget` or `clearAllAndroidWidgets`, and is not backed up. A size that has not rendered successfully yet shows the `initialStatePath` view, not another size's layout. A release widget can therefore show stale content without saying so.
 
-Each failure is also logged once under the `VoltraDynamicWidget` tag, with the stack in debug builds:
+Each failed render is also logged under the `VoltraDynamicWidget` tag, with the stack in debug builds:
 
 ```text
-render failed widgetId=inbox appWidgetId=42 stage=render dev=true: TypeError: Cannot read property 'map' of undefined
+render failed widgetId=inbox appWidgetId=42 family=180x110 stage=render dev=true: TypeError: Cannot read property 'map' of undefined
 ```
 
-A later success for the same placement logs `render recovered widgetId=inbox appWidgetId=42`. Your app is not told about failures yet.
+A later success for the same placement and size logs `render recovered widgetId=inbox appWidgetId=42 family=180x110`. Your app is not told about failures yet.
 
 ## Runtime props and configuration are separate
 

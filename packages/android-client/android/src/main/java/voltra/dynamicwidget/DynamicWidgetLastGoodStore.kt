@@ -14,12 +14,18 @@ import java.util.concurrent.ConcurrentHashMap
  * The last render of each placement that succeeded, kept so a release widget whose `render()` later
  * throws keeps showing real content instead of the build-time placeholder (ADR 0013, section 5).
  *
- * One file per placement, keyed by `(widgetId, appWidgetId)`, under `noBackupFilesDir`: the content
- * belongs to a placement on this device, so it must not be restored from a cloud backup onto
- * another one. The value is the resolved node JSON `render()` returned, exactly what the next
- * render would have parsed.
+ * One file per placement and size, keyed by `(widgetId, appWidgetId, widgetFamily)`, under
+ * `noBackupFilesDir`: the content belongs to a placement on this device, so it must not be
+ * restored from a cloud backup onto another one. The value is the resolved node JSON `render()`
+ * returned, exactly what the next render would have parsed.
  *
- * Writes go through [AtomicFile], and are skipped when a placement's output equals its last write
+ * The family (`env.widgetFamily`, e.g. `180x110`) is part of the key because Glance composes a
+ * placement's content once per size it reports (`SizeMode.Exact`), and a widget may draw a
+ * different tree for each. Keyed by placement alone, those compositions would overwrite each other,
+ * defeat the unchanged-output skip below, and make a failing size draw another size's tree. A size
+ * the placement no longer reports leaves its file behind until the placement is deleted.
+ *
+ * Writes go through [AtomicFile], and are skipped when a file's output equals its last write
  * (compared by an in-memory hash), because recompositions mostly produce the same tree. A node over
  * [MAX_NODE_BYTES] is not stored and leaves the older one in place.
  *
@@ -39,21 +45,23 @@ internal class DynamicWidgetLastGoodStore(
     fun write(
         widgetId: String,
         appWidgetId: Int,
+        family: String,
         nodeJson: String,
-    ): Boolean = synchronized(lock) { writeLocked(widgetId, appWidgetId, nodeJson) }
+    ): Boolean = synchronized(lock) { writeLocked(widgetId, appWidgetId, family, nodeJson) }
 
     private fun writeLocked(
         widgetId: String,
         appWidgetId: Int,
+        family: String,
         nodeJson: String,
     ): Boolean {
         val bytes = nodeJson.toByteArray(Charsets.UTF_8)
         if (bytes.size > MAX_NODE_BYTES) {
-            Log.w(TAG, "Not storing the last good render of '$widgetId' ($appWidgetId): ${bytes.size} bytes")
+            Log.w(TAG, "Not storing the last good render of '$widgetId' ($appWidgetId, $family): ${bytes.size} bytes")
             return false
         }
 
-        val file = fileFor(widgetId, appWidgetId)
+        val file = fileFor(widgetId, appWidgetId, family)
         val hash = sha256(bytes)
         if (lastWrittenHashes[file.path] == hash) return false
 
@@ -71,7 +79,7 @@ internal class DynamicWidgetLastGoodStore(
             lastWrittenHashes[file.path] = hash
             true
         } catch (e: IOException) {
-            Log.w(TAG, "Could not store the last good render of '$widgetId' ($appWidgetId): ${e.message}")
+            Log.w(TAG, "Could not store the last good render of '$widgetId' ($appWidgetId, $family): ${e.message}")
             false
         }
     }
@@ -79,14 +87,15 @@ internal class DynamicWidgetLastGoodStore(
     fun read(
         widgetId: String,
         appWidgetId: Int,
+        family: String,
     ): String? {
-        val file = fileFor(widgetId, appWidgetId)
+        val file = fileFor(widgetId, appWidgetId, family)
         if (!file.exists()) return null
 
         return try {
             String(AtomicFile(file).readFully(), Charsets.UTF_8)
         } catch (e: IOException) {
-            Log.w(TAG, "Could not read the last good render of '$widgetId' ($appWidgetId): ${e.message}")
+            Log.w(TAG, "Could not read the last good render of '$widgetId' ($appWidgetId, $family): ${e.message}")
             null
         }
     }
@@ -97,16 +106,18 @@ internal class DynamicWidgetLastGoodStore(
         appWidgetIds: Collection<Int>,
     ) {
         synchronized(lock) {
-            appWidgetIds.forEach { delete(fileFor(widgetId, it)) }
+            appWidgetIds.forEach { appWidgetId ->
+                filesOf(widgetId, appWidgetId).forEach { delete(it) }
+            }
         }
     }
 
     /**
      * The launcher restored its layout and gave each placement a new id: carry the file over.
      *
-     * Old and new ids can overlap (1 to 2 while 2 goes to 3), so every file is first moved aside and
-     * only then to its final name; moving them one at a time would overwrite a file that has not
-     * been moved yet.
+     * Every size of a placement moves with it. Old and new ids can overlap (1 to 2 while 2 goes to
+     * 3), so every file is first moved aside and only then to its final name; moving them one at a
+     * time would overwrite a file that has not been moved yet.
      */
     fun remap(
         widgetId: String,
@@ -115,18 +126,20 @@ internal class DynamicWidgetLastGoodStore(
     ) {
         synchronized(lock) {
             val moving =
-                oldAppWidgetIds.zip(newAppWidgetIds).mapNotNull { (old, new) ->
-                    val source = fileFor(widgetId, old)
-                    if (!source.exists()) return@mapNotNull null
+                oldAppWidgetIds.zip(newAppWidgetIds).flatMap { (old, new) ->
+                    val oldPrefix = placementPrefix(widgetId, old)
+                    val newPrefix = placementPrefix(widgetId, new)
 
-                    val aside = File(directory, "${source.name}$MOVING_SUFFIX")
-                    if (!source.renameTo(aside)) {
-                        Log.w(TAG, "Could not move the last good render of '$widgetId' ($old -> $new)")
-                        return@mapNotNull null
+                    filesOf(widgetId, old).mapNotNull { source ->
+                        val aside = File(directory, "${source.name}$MOVING_SUFFIX")
+                        if (!source.renameTo(aside)) {
+                            Log.w(TAG, "Could not move the last good render of '$widgetId' ($old -> $new)")
+                            return@mapNotNull null
+                        }
+                        // The bytes are no longer under the old name, and will be under another one.
+                        lastWrittenHashes.remove(source.path)
+                        Pair(aside, File(directory, newPrefix + source.name.removePrefix(oldPrefix)))
                     }
-                    // The bytes are no longer under the old name, and will be under another one.
-                    lastWrittenHashes.remove(source.path)
-                    Pair(aside, fileFor(widgetId, new))
                 }
 
             moving.forEach { (aside, target) ->
@@ -165,7 +178,7 @@ internal class DynamicWidgetLastGoodStore(
             ?.mapNotNull {
                 it.name
                     .removePrefix(prefix)
-                    .removeSuffix(SUFFIX)
+                    .substringBefore('@')
                     .toIntOrNull()
             }?.toSet()
             .orEmpty()
@@ -180,11 +193,31 @@ internal class DynamicWidgetLastGoodStore(
     private fun fileFor(
         widgetId: String,
         appWidgetId: Int,
-    ): File = File(directory, "${widgetPrefix(widgetId)}$appWidgetId$SUFFIX")
+        family: String,
+    ): File = File(directory, "${placementPrefix(widgetId, appWidgetId)}${URLEncoder.encode(family, "UTF-8")}$SUFFIX")
 
-    // `@` is percent-encoded by URLEncoder, so it cannot occur inside an encoded widget id and the
-    // prefix of one widget id is never the prefix of another's.
+    /** Every stored size of one placement. */
+    private fun filesOf(
+        widgetId: String,
+        appWidgetId: Int,
+    ): List<File> {
+        val prefix = placementPrefix(widgetId, appWidgetId)
+
+        return directory
+            .listFiles { file -> file.name.startsWith(prefix) && file.name.endsWith(SUFFIX) }
+            ?.toList()
+            .orEmpty()
+    }
+
+    // `@` is percent-encoded by URLEncoder, so it cannot occur inside an encoded widget id or
+    // family: the prefix of one widget id is never the prefix of another's, nor one placement's of
+    // another's (`1@` against `11@`).
     private fun widgetPrefix(widgetId: String): String = URLEncoder.encode(widgetId, "UTF-8") + "@"
+
+    private fun placementPrefix(
+        widgetId: String,
+        appWidgetId: Int,
+    ): String = "${widgetPrefix(widgetId)}$appWidgetId@"
 
     companion object {
         const val MAX_NODE_BYTES = 256 * 1024

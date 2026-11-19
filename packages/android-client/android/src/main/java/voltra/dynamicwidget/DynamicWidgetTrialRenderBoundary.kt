@@ -30,7 +30,7 @@ internal suspend fun renderDynamicWidgetForTrial(
 ): VoltraNode? {
     val dynamicWidgetId = scope.widgetId
 
-    if (!VoltraClientGlanceWidget.ensureBundleEvaluated(context, dynamicWidgetId)) {
+    if (DynamicWidgetBundleLoader.load(context, dynamicWidgetId) !is DynamicWidgetBundleState.Ready) {
         // No bundle means every render fails, including the one already on screen. Rejecting the
         // props here would be blaming them for something they did not cause, and the widget falls
         // back to its prerendered initial state either way.

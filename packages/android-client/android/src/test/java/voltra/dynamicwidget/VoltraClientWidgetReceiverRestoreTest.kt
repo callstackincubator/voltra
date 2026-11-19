@@ -21,8 +21,8 @@ import java.io.File
  * A launcher restore hands every placement a new `appWidgetId`; the instance configuration follows
  * it, so a configured placement survives a device restore.
  *
- * These call [VoltraClientWidgetReceiver.remapInstanceConfiguration], the half of `onRestored` that
- * follows `super.onRestored`, for the same reason [VoltraClientWidgetReceiverDeletionTest] calls
+ * These call [DynamicWidgetPlacementData.onRestored], the half of `onRestored` that follows
+ * `super.onRestored`, for the same reason [VoltraClientWidgetReceiverDeletionTest] calls
  * the cleanup half of `onDeleted` rather than the override itself.
  *
  * As in [VoltraConfigurationStoreTest], the store is backed by a DataStore this class owns and
@@ -36,6 +36,7 @@ class VoltraClientWidgetReceiverRestoreTest {
     private val application = RuntimeEnvironment.getApplication()
     private lateinit var dataStoreScope: CoroutineScope
     private lateinit var store: VoltraConfigurationStore
+    private val lastGoodStore get() = DynamicWidgetLastGoodStore(File(temporaryFolder.root, "last-good"))
 
     @Before
     fun createStore() {
@@ -55,10 +56,6 @@ class VoltraClientWidgetReceiverRestoreTest {
         dataStoreScope.cancel()
     }
 
-    private class TestClientWidgetReceiver(
-        override val widgetId: String,
-    ) : VoltraClientWidgetReceiver()
-
     @Test
     fun movesEachPlacementsValuesToItsNewId() =
         runBlocking {
@@ -66,9 +63,14 @@ class VoltraClientWidgetReceiverRestoreTest {
             store.setInstanceValues("restore", 1, mapOf("city" to "London"))
             store.setInstanceValues("restore", 2, mapOf("city" to "New York"))
 
-            TestClientWidgetReceiver(
+            DynamicWidgetPlacementData.onRestored(
+                application,
                 "restore",
-            ).remapInstanceConfiguration(application, intArrayOf(1, 2), intArrayOf(11, 12), store)
+                intArrayOf(1, 2),
+                intArrayOf(11, 12),
+                store,
+                lastGoodStore,
+            )
 
             assertEquals("London", store.get("restore", appWidgetId = 11)["city"])
             assertEquals("New York", store.get("restore", appWidgetId = 12)["city"])
@@ -82,9 +84,14 @@ class VoltraClientWidgetReceiverRestoreTest {
             store.setInstanceValues("restoreChain", 1, mapOf("city" to "one"))
             store.setInstanceValues("restoreChain", 2, mapOf("city" to "two"))
 
-            TestClientWidgetReceiver(
+            DynamicWidgetPlacementData.onRestored(
+                application,
                 "restoreChain",
-            ).remapInstanceConfiguration(application, intArrayOf(1, 2), intArrayOf(2, 3), store)
+                intArrayOf(1, 2),
+                intArrayOf(2, 3),
+                store,
+                lastGoodStore,
+            )
 
             assertEquals("one", store.get("restoreChain", appWidgetId = 2)["city"])
             assertEquals("two", store.get("restoreChain", appWidgetId = 3)["city"])
@@ -96,9 +103,14 @@ class VoltraClientWidgetReceiverRestoreTest {
         runBlocking {
             store.setInstanceValues("restoreMismatch", 1, mapOf("city" to "London"))
 
-            TestClientWidgetReceiver(
+            DynamicWidgetPlacementData.onRestored(
+                application,
                 "restoreMismatch",
-            ).remapInstanceConfiguration(application, intArrayOf(1, 2), intArrayOf(9), store)
+                intArrayOf(1, 2),
+                intArrayOf(9),
+                store,
+                lastGoodStore,
+            )
 
             assertEquals("London", store.get("restoreMismatch", appWidgetId = 1)["city"])
             assertEquals(null, store.get("restoreMismatch", appWidgetId = 9)["city"])
@@ -110,9 +122,14 @@ class VoltraClientWidgetReceiverRestoreTest {
             store.setInstanceValues("restoreSelf", 1, mapOf("city" to "mine"))
             store.setInstanceValues("restoreOther", 1, mapOf("city" to "theirs"))
 
-            TestClientWidgetReceiver(
+            DynamicWidgetPlacementData.onRestored(
+                application,
                 "restoreSelf",
-            ).remapInstanceConfiguration(application, intArrayOf(1), intArrayOf(5), store)
+                intArrayOf(1),
+                intArrayOf(5),
+                store,
+                lastGoodStore,
+            )
 
             assertEquals("mine", store.get("restoreSelf", appWidgetId = 5)["city"])
             assertEquals("theirs", store.get("restoreOther", appWidgetId = 1)["city"])

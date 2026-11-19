@@ -100,16 +100,20 @@ internal sealed interface DynamicWidgetRenderOutcome {
 ### 2. Bundle state the composition can see
 
 The captured `bundleReady` boolean is replaced by a process-wide, in-memory
-record per widget id: `Ready` or `Failed(failure)`. `provideGlance` writes it
-when it loads the bundle, and `Content` reads it on every composition. Nothing
-about it is persisted: a new process loads the bundle again anyway.
+record per widget id: `Ready` or `Failed(failure)`. One loader owns the whole
+step (fetch from Metro or read the baked asset, evaluate, build the failure
+message) and always records its result, so the three callers (`provideGlance`,
+retry and the server-update trial render) follow one rule. The record is keyed
+by widget id, not by placement, so a load from any of them is the right state
+for every placement. `Content` reads it on every composition. Nothing about it
+is persisted: a new process loads the bundle again anyway.
 
 ### 3. What is shown
 
-| Build   | Render succeeds | Render fails                                                                              |
-| ------- | --------------- | ----------------------------------------------------------------------------------------- |
-| Dev     | the node        | the **dev error view**, always, even when a last good render or placeholder exists        |
-| Release | the node        | the **last good render** of this placement, else the placeholder, else today's "Loading…" |
+| Build   | Render succeeds | Render fails                                                                                       |
+| ------- | --------------- | -------------------------------------------------------------------------------------------------- |
+| Dev     | the node        | the **dev error view**, always, even when a last good render or placeholder exists                 |
+| Release | the node        | the **last good render** of this placement and size, else the placeholder, else today's "Loading…" |
 
 Dev error view, composed with plain Glance primitives (not through a
 `VoltraNode`, so it cannot fail the way the content did):
@@ -135,8 +139,10 @@ from the first release that ships it. It:
 
 1. reloads the bundle from Metro and re-evaluates it,
 2. updates the bundle record from section 2,
-3. advances a Glance state revision for the tapped placement that `Content`
-   observes, and calls `update()` for that `GlanceId`.
+3. re-renders the tapped placement through the same props-revision update a
+   server fetch uses. `Content` already reads the props revision and re-reads
+   the bundle record on every composition, so no revision of its own is needed.
+   The tapped placement is resolved with `GlanceAppWidgetManager.getAppWidgetId`.
 
 The bundle lives in one process-wide runtime, so a retry refreshes it for every
 placement of that widget id. Only the tapped placement re-renders right away;
@@ -150,34 +156,48 @@ traffic to a local Metro.
 
 ### 5. Last good render (release)
 
+- Glance composes `Content` once for every distinct size a placement reports
+  (`SizeMode.Exact`: `OPTION_APPWIDGET_SIZES` on API 31 and later, the portrait
+  and landscape sizes below that), and a widget can draw a different tree for
+  each (`env.widgetFamily`). So the last good render is keyed by
+  `(widgetId, appWidgetId, widgetFamily)`, not by placement. Keyed by placement
+  alone, the compositions of one placement would overwrite each other's file,
+  defeat the skip-unchanged check below with two fsynced writes per round, and
+  make a size that fails draw whichever size was composed last.
 - After every successful render and parse, the resolved node JSON is stored
-  per placement, keyed by `(widgetId, appWidgetId)`. It is written in every
-  build, so dev runs exercise the write path, but it is read only in release.
-- Storage: one file per placement under `noBackupFilesDir`, written with
-  `AtomicFile`. A write is skipped when the output equals the last write for
-  that placement (an in-memory hash), because recompositions mostly produce
-  the same tree. A node over 256 KB is not stored and does not evict the older
-  one.
-- Cleanup: `onDeleted` removes the placement's file; `onRestored` moves it to
-  the new id, alongside `remapInstanceConfiguration`; `clearAndroidWidget` and
+  under that key. It is written in every build, so dev runs exercise the write
+  path, but it is read only in release.
+- Storage: one file per placement and size under `noBackupFilesDir`, named by
+  widget id, `appWidgetId` and family, written with `AtomicFile`. A write is
+  skipped when the output equals the last write for that file (an in-memory
+  hash), because recompositions mostly produce the same tree. A node over
+  256 KB is not stored and does not evict the older one. A size a placement
+  stops reporting leaves its file until the placement is deleted.
+- Cleanup, one call per lifecycle callback through a single per-placement
+  helper (`DynamicWidgetPlacementData`) that also cleans the instance
+  configuration: `onDeleted` removes every size of the placement's files;
+  `onRestored` moves them to the new id; `clearAndroidWidget` and
   `clearAllAndroidWidgets` remove the files for the widget id(s) they clear, so
   content the app cleared is not resurrected by a later failure.
 - A placement whose `appWidgetId` cannot be resolved has no last good render.
-- Accepted limitation: the stored node is the one rendered for the size at
-  the time. After a resize whose render fails, the widget shows the previous
-  size's layout until a render succeeds.
+- A size with no stored render of its own falls back to the placeholder. It
+  never shows another size's layout.
 
 ### 6. Logging
 
-Each failure logs one `Log.e` under the tag `VoltraDynamicWidget`:
+Each failed render logs one `Log.e` under the tag `VoltraDynamicWidget`:
 
 ```
-render failed widgetId=inbox appWidgetId=42 stage=render dev=true: TypeError: Cannot read property 'map' of undefined
+render failed widgetId=inbox appWidgetId=42 family=180x110 stage=render dev=true: TypeError: Cannot read property 'map' of undefined
 ```
 
 In dev the JS stack follows in the same log call. Existing tags keep their
-current lines. A successful render after a failure of the same placement logs
-one `Log.i`: `render recovered widgetId=<id> appWidgetId=<n>`.
+current lines. A successful render after a failure of the same placement and
+size logs one `Log.i`:
+`render recovered widgetId=<id> appWidgetId=<n> family=<family>`. Failure
+tracking is per `(widgetId, appWidgetId, family)` for the same reason as the
+last good render: a widget that fails at one size only would otherwise log a
+failure and a recovery on every round of compositions.
 
 ## Scope
 
@@ -188,11 +208,11 @@ one `Log.i`: `render recovered widgetId=<id> appWidgetId=<n>`.
   `packages/android-client/android/src/test/java/voltra/dynamicwidget/`.
   - Coordinator: each stage maps to its outcome.
   - Bundle record.
-  - Last-good store: write, skip-unchanged, size cap, delete, remap, clear.
+  - Last-good store: write, skip-unchanged, size cap, delete, remap, clear,
+    and two sizes of one placement.
   - Shown-content policy: dev vs release × last good / placeholder /
     nothing.
-  - Retry: revision advanced for the tapped placement only, concurrent tap
-    is a no-op.
+  - Retry: concurrent tap is a no-op.
   - JNI names.
 - Device check on the example app:
   - Dev build: break the widget entry, stop Metro, see the error view; fix it

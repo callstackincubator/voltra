@@ -171,8 +171,6 @@ class DynamicWidgetConfigurationUpdateTest {
                 ConfigurationUpdateEvent.ConfigurationRevisionAdvanced(dynamicWidgetGlanceId, nextRevision)
         }
 
-        override suspend fun advanceDynamicWidgetRetryRevision(dynamicWidgetGlanceId: GlanceId) = Unit
-
         override suspend fun updateDynamicWidget(
             dynamicWidgetGlanceAppWidget: VoltraClientGlanceWidget,
             dynamicWidgetGlanceId: GlanceId,
