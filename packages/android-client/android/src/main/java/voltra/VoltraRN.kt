@@ -64,7 +64,9 @@ private fun ownProviderInfo(context: Context): AppWidgetProviderInfo? {
  * with, and falls back to its own context afterwards. With one, that context is a clone for
  * this app's package, which is the package the RemoteViews come from anyway. An app with no
  * provider of its own keeps the logged fallback. setAppWidget also adds the system's default
- * widget padding, which the preview has never had, so it is reset to zero.
+ * widget padding and sets the provider's label as the content description. The preview has
+ * never had either, and the label would name the wrong widget for accessibility services, so
+ * both are reset.
  */
 private class PreviewAppWidgetHostView(
     context: Context,
@@ -73,6 +75,7 @@ private class PreviewAppWidgetHostView(
         ownProviderInfo(context)?.let { info ->
             setAppWidget(AppWidgetManager.INVALID_APPWIDGET_ID, info)
             setPadding(0, 0, 0, 0)
+            contentDescription = null
         }
     }
 
