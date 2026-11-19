@@ -86,7 +86,7 @@ A scrollable vertical list that only renders visible items.
 
 `LazyColumn` renders in `VoltraWidgetPreview`. On Android 12 (API 31) and older it falls back
 to a non-scrolling approximation that renders every item eagerly, because Glance's collection
-adapters need a real AppWidget host on those versions.
+adapters need a real AppWidget host on those versions. Inside a scrolling screen, the preview shows the list's items, but dragging scrolls the page, not the list.
 
 **Parameters:**
 
@@ -100,7 +100,7 @@ A scrollable grid of items.
 
 `LazyVerticalGrid` renders in `VoltraWidgetPreview`. On Android 12 (API 31) and older it falls
 back to a non-scrolling approximation that renders every item eagerly, because Glance's
-collection adapters need a real AppWidget host on those versions.
+collection adapters need a real AppWidget host on those versions. Inside a scrolling screen, the preview shows the grid's items, but dragging scrolls the page, not the grid.
 
 **Parameters:**
 
