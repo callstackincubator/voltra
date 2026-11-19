@@ -81,9 +81,9 @@ public enum VoltraWidgetServer {
   /// time.
   public static var isDebugBuild: Bool {
     #if DEBUG
-      return true
+      true
     #else
-      return false
+      false
     #endif
   }
 
