@@ -29,6 +29,8 @@ class VoltraPayloadParserTest {
                   },
                   "collapsed": {"also": "unknown key"},
                   "expanded": {"also": "unknown key"},
+                  "smallIcon": "ic_legacy",
+                  "channelId": "legacy-channel",
                   "s": [{"bg": "#fff", "nullable": null}],
                   "e": [{"t": 18, "p": {"txt": "Shared"}}],
                   "unknown": true

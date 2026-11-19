@@ -37,6 +37,7 @@ object RemoteViewsGenerator {
 
     private suspend fun generate(
         context: Context,
+        widgetId: String,
         node: VoltraNode,
         sharedElements: List<VoltraNode>?,
         sharedStyles: List<Map<String, Any?>>?,
@@ -44,8 +45,7 @@ object RemoteViewsGenerator {
     ): RemoteViews {
         // Create a new GlanceRemoteViews instance each time to avoid caching issues
         val glanceRemoteViews = GlanceRemoteViews()
-        // Compose without widget-specific context.
-        val factory = GlanceFactory("notification", sharedElements, sharedStyles, size)
+        val factory = GlanceFactory(widgetId, sharedElements, sharedStyles, size)
 
         Log.d(TAG, "Composing Glance content with size: $size, sharedStyles count: ${sharedStyles?.size ?: 0}")
 
@@ -66,6 +66,7 @@ object RemoteViewsGenerator {
     suspend fun generateWidgetRemoteViews(
         context: Context,
         payload: VoltraPayload,
+        widgetId: String,
     ): Map<SizeF, RemoteViews> {
         val variants = payload.variants ?: return emptyMap()
         val sharedElements = payload.e
@@ -103,7 +104,7 @@ object RemoteViewsGenerator {
             val size = DpSize(width.dp, height.dp)
 
             try {
-                val remoteViews = generate(context, node, sharedElements, sharedStyles, size)
+                val remoteViews = generate(context, widgetId, node, sharedElements, sharedStyles, size)
                 result[SizeF(width, height)] = remoteViews
                 Log.d(TAG, "Generated RemoteViews for variant $variantKey (${width}x$height)")
             } catch (e: Exception) {

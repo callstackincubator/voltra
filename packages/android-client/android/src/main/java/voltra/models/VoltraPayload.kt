@@ -19,8 +19,6 @@ data class VoltraPayload(
     @Serializable(with = DynamicObjectListSerializer::class)
     val s: List<Map<String, Any?>>? = null, // Shared styles
     val e: List<VoltraNode>? = null, // Shared elements
-    val smallIcon: String? = null,
-    val channelId: String? = null,
 )
 
 /**
