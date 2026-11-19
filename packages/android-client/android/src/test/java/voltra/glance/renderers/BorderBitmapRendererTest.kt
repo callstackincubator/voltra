@@ -13,6 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.GraphicsMode
+import voltra.modifiers.NativeModifierSize
 import voltra.styling.LayoutStyle
 import voltra.styling.SizeValue
 import android.graphics.Color as AndroidColor
@@ -30,6 +31,25 @@ class BorderBitmapRendererTest {
         assertNull(resolveBorderSize(layout(SizeValue.Fixed(40.dp), SizeValue.Wrap)))
         assertNull(resolveBorderSize(layout(SizeValue.Fixed(40.dp), null)))
         assertNull(resolveBorderSize(layout(SizeValue.Fixed(0.dp), SizeValue.Fixed(20.dp))))
+        // A flex weight replaces the fixed size at layout time.
+        assertNull(resolveBorderSize(layout(SizeValue.Fixed(40.dp), SizeValue.Fixed(20.dp), weight = 1f)))
+    }
+
+    @Test
+    fun nativeSizeModifiersDecideTheSizeWhereTheySetOne() {
+        val style = layout(SizeValue.Fixed(40.dp), SizeValue.Fixed(20.dp))
+        // A native size wins over the style, per axis.
+        assertEquals(
+            DpSize(64.dp, 20.dp),
+            resolveBorderSize(style, NativeModifierSize(SizeValue.Fixed(64.dp), null)),
+        )
+        // fillMaxWidth stretches the element, so the style's width no longer fixes it.
+        assertNull(resolveBorderSize(style, NativeModifierSize(SizeValue.Fill, null)))
+        // A native size can supply the size when the style has none.
+        assertEquals(
+            DpSize(64.dp, 64.dp),
+            resolveBorderSize(layout(null, null), NativeModifierSize(SizeValue.Fixed(64.dp), SizeValue.Fixed(64.dp))),
+        )
     }
 
     @Test
@@ -72,10 +92,8 @@ class BorderBitmapRendererTest {
         val bitmap =
             renderBorderBitmap(
                 context = context,
-                size = DpSize(20.dp, 20.dp),
+                border = ResolvedBorder(DpSize(20.dp, 20.dp), 2.dp, AndroidColor.RED),
                 cornerRadius = null,
-                borderWidth = 2.dp,
-                borderArgb = AndroidColor.RED,
                 backgroundArgb = AndroidColor.BLUE,
                 backgroundFill = fill,
             )
@@ -105,10 +123,8 @@ class BorderBitmapRendererTest {
     ): Bitmap =
         renderBorderBitmap(
             context = context,
-            size = DpSize(width.dp, height.dp),
+            border = ResolvedBorder(DpSize(width.dp, height.dp), borderWidth.dp, AndroidColor.RED),
             cornerRadius = cornerRadius?.dp,
-            borderWidth = borderWidth.dp,
-            borderArgb = AndroidColor.RED,
             backgroundArgb = background,
         ).also { assertNotNull(it) }
 
@@ -120,5 +136,6 @@ class BorderBitmapRendererTest {
     private fun layout(
         width: SizeValue?,
         height: SizeValue?,
-    ) = LayoutStyle(width = width, height = height)
+        weight: Float? = null,
+    ) = LayoutStyle(width = width, height = height, weight = weight)
 }

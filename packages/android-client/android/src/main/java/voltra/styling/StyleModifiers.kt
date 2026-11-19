@@ -16,7 +16,8 @@ import androidx.glance.unit.ColorProvider
 import androidx.glance.visibility
 import voltra.glance.renderers.renderBorderBitmap
 import voltra.glance.renderers.renderGradientBitmap
-import voltra.glance.renderers.resolveBorderSize
+import voltra.glance.renderers.resolveBorder
+import voltra.modifiers.NativeModifierSize
 import androidx.glance.text.TextDecoration as GlanceTextDecoration
 import androidx.glance.text.TextStyle as GlanceTextStyle
 
@@ -39,6 +40,7 @@ import androidx.glance.text.TextStyle as GlanceTextStyle
 fun GlanceModifier.applyStyle(
     style: CompositeStyle,
     widgetSize: DpSize? = null,
+    nativeSize: NativeModifierSize = NativeModifierSize(null, null),
 ): GlanceModifier {
     var modifier = this
 
@@ -46,7 +48,7 @@ fun GlanceModifier.applyStyle(
     modifier = modifier.applyLayout(style.layout)
 
     // 2. Apply Decoration (background, border)
-    modifier = modifier.applyDecoration(style.decoration, style.layout, widgetSize)
+    modifier = modifier.applyDecoration(style.decoration, style.layout, widgetSize, nativeSize)
 
     // 3. Apply Rendering (opacity - limited in Glance)
     modifier = modifier.applyRendering(style.rendering)
@@ -172,71 +174,47 @@ private fun GlanceModifier.applyDecoration(
     decoration: DecorationStyle,
     layout: LayoutStyle,
     widgetSize: DpSize?,
+    nativeSize: NativeModifierSize,
 ): GlanceModifier {
     var modifier = this
 
     // A. Border, background image or color.
     // Glance has no border modifier, so a border is drawn into one bitmap together with the
     // background; see BorderBitmapRenderer for why that needs a fixed width and height.
-    val border = decoration.border
-    val borderSize = border?.let { resolveBorderSize(layout) }
-    if (border != null && borderSize == null) {
-        Log.w("StyleModifier", "borderWidth is drawn only when width and height are fixed numbers")
-    }
-    val borderArgb =
-        if (border != null && borderSize != null) {
-            border.color.resolveColor(LocalContext.current).toArgb()
-        } else {
-            null
-        }
-    val drawsBorder = borderArgb != null && (borderArgb ushr 24) != 0
+    val context = LocalContext.current
+    val border =
+        decoration.border?.let { resolveBorder(it.width, it.color.resolveColor(context).toArgb(), layout, nativeSize) }
 
-    if (decoration.backgroundImage != null || drawsBorder) {
-        val context = LocalContext.current
+    if (decoration.backgroundImage != null || border != null) {
         val backgroundArgb = decoration.backgroundColor?.resolveColor(context)?.toArgb() ?: 0x00000000
-        val gradient = decoration.backgroundImage
-        val colors =
-            gradient
+        // Resolved outside the try block: composable calls cannot sit inside one.
+        val stopColors =
+            decoration.backgroundImage
                 ?.stops
-                ?.map { it.color.resolveColor(context).toArgb() }
-                ?.toIntArray()
-        val positions =
-            gradient
-                ?.stops
-                ?.map { it.location.coerceIn(0f, 1f) }
-                ?.toFloatArray()
+                .orEmpty()
+                .map {
+                    it.color.resolveColor(context).toArgb()
+                }.toIntArray()
         try {
-            val gradientBitmap =
-                if (gradient != null && colors != null && positions != null) {
+            val fill =
+                decoration.backgroundImage?.let { gradient ->
                     renderGradientBitmap(
                         context = context,
                         gradient = gradient,
                         layout = layout,
                         widgetSize = widgetSize,
                         backgroundArgb = backgroundArgb,
-                        colors = colors,
-                        positions = positions,
+                        colors = stopColors,
+                        positions = gradient.stops.map { it.location.coerceIn(0f, 1f) }.toFloatArray(),
                     )
-                } else {
-                    null
                 }
             val bitmap =
-                if (drawsBorder && border != null && borderSize != null && borderArgb != null) {
-                    renderBorderBitmap(
-                        context = context,
-                        size = borderSize,
-                        cornerRadius = decoration.cornerRadius,
-                        borderWidth = border.width,
-                        borderArgb = borderArgb,
-                        backgroundArgb = backgroundArgb,
-                        backgroundFill = gradientBitmap,
-                    )
+                if (border != null) {
+                    renderBorderBitmap(context, border, decoration.cornerRadius, backgroundArgb, fill)
                 } else {
-                    gradientBitmap
+                    checkNotNull(fill)
                 }
-            if (bitmap != null) {
-                modifier = modifier.background(ImageProvider(bitmap), ContentScale.FillBounds)
-            }
+            modifier = modifier.background(ImageProvider(bitmap), ContentScale.FillBounds)
         } catch (e: Exception) {
             Log.w("StyleModifier", "Failed to render background bitmap", e)
             if (decoration.backgroundColor != null) {

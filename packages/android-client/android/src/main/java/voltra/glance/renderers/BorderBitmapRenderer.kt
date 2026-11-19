@@ -8,9 +8,11 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
+import android.util.Log
 import android.util.LruCache
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import voltra.modifiers.NativeModifierSize
 import voltra.styling.LayoutStyle
 import voltra.styling.SizeValue
 import kotlin.math.roundToInt
@@ -21,8 +23,8 @@ import kotlin.math.roundToInt
 //
 // Stretching is only harmless when the bitmap already has the element's size: otherwise the
 // border gets thicker on one axis than the other and round corners turn into ellipses. Glance
-// never reports a child's measured size, so the border is drawn only when the style fixes both
-// width and height.
+// never reports a child's measured size, so the border is drawn only when the style or a native
+// size modifier fixes both width and height, and no `flex` weight replaces them.
 
 private val borderBitmapCache =
     object : LruCache<String, Bitmap>(2 * 1024 * 1024) {
@@ -32,30 +34,64 @@ private val borderBitmapCache =
         ): Int = value.allocationByteCount
     }
 
-/** The size a border bitmap is drawn at, or null when the style does not fix both dimensions. */
-internal fun resolveBorderSize(layout: LayoutStyle): DpSize? {
-    val width = (layout.width as? SizeValue.Fixed)?.value ?: return null
-    val height = (layout.height as? SizeValue.Fixed)?.value ?: return null
-    if (width.value <= 0f || height.value <= 0f) return null
-    return DpSize(width, height)
+/** A border that is drawn: its bitmap size, stroke width and non-transparent color. */
+internal data class ResolvedBorder(
+    val size: DpSize,
+    val width: Dp,
+    val argb: Int,
+)
+
+/**
+ * The border to draw, or null when there is none to draw. The size comes from [nativeSize] where a
+ * native size modifier sets one, because native modifiers are applied after style, and from
+ * [layout] otherwise. A warning is logged when the size is the reason nothing is drawn.
+ */
+internal fun resolveBorder(
+    width: Dp,
+    argb: Int,
+    layout: LayoutStyle,
+    nativeSize: NativeModifierSize,
+): ResolvedBorder? {
+    val size = resolveBorderSize(layout, nativeSize)
+    if (size == null) {
+        Log.w("StyleModifier", "borderWidth is drawn only when width and height are fixed numbers")
+        return null
+    }
+    return if ((argb ushr 24) != 0) ResolvedBorder(size, width, argb) else null
 }
 
 /**
- * Draws a background and a border inside [size].
+ * The size a border bitmap is drawn at, or null when the element's size is not fixed. A `flex`
+ * weight replaces the width or height at layout time, so a weighted element has no fixed size.
+ */
+internal fun resolveBorderSize(
+    layout: LayoutStyle,
+    nativeSize: NativeModifierSize = NativeModifierSize(null, null),
+): DpSize? {
+    if ((layout.weight ?: 0f) > 0f) return null
+    val width = (nativeSize.width ?: layout.width) as? SizeValue.Fixed ?: return null
+    val height = (nativeSize.height ?: layout.height) as? SizeValue.Fixed ?: return null
+    if (width.value.value <= 0f || height.value.value <= 0f) return null
+    return DpSize(width.value, height.value)
+}
+
+/**
+ * Draws a background and a border inside [border]'s size.
  *
  * The background is [backgroundFill] (a gradient bitmap) when given, otherwise [backgroundArgb].
  * Both are clipped to the rounded outline. The border is drawn inside the bounds, so it never
  * changes the element's size or the position of its children.
  */
-fun renderBorderBitmap(
+internal fun renderBorderBitmap(
     context: Context,
-    size: DpSize,
+    border: ResolvedBorder,
     cornerRadius: Dp?,
-    borderWidth: Dp,
-    borderArgb: Int,
     backgroundArgb: Int,
     backgroundFill: Bitmap? = null,
 ): Bitmap {
+    val size = border.size
+    val borderWidth = border.width
+    val borderArgb = border.argb
     val density =
         context.resources.displayMetrics.density
             .coerceAtLeast(1f)
