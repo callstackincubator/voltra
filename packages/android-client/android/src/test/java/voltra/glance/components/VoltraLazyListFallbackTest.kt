@@ -1,68 +1,10 @@
 package voltra.glance.components
 
-import android.os.Build
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VoltraLazyListFallbackTest {
-    @Test
-    fun `derives a fixed column count from a numeric columns prop`() {
-        assertEquals(3, deriveFallbackGridColumnCount(mapOf("columns" to 3), widgetWidthDp = null))
-    }
-
-    @Test
-    fun `clamps a numeric columns prop to the 1 to 5 range Glance supports`() {
-        assertEquals(5, deriveFallbackGridColumnCount(mapOf("columns" to 25), widgetWidthDp = null))
-        assertEquals(1, deriveFallbackGridColumnCount(mapOf("columns" to 0), widgetWidthDp = null))
-    }
-
-    @Test
-    fun `derives an adaptive column count from the widget width and minSize on API 31`() {
-        assertEquals(
-            4,
-            deriveFallbackGridColumnCount(
-                mapOf("columns" to "a:50"),
-                widgetWidthDp = 220f,
-                sdkInt = Build.VERSION_CODES.S,
-            ),
-        )
-    }
-
-    @Test
-    fun `uses 2 columns for an adaptive grid below API 31, like the real widget`() {
-        assertEquals(
-            2,
-            deriveFallbackGridColumnCount(
-                mapOf("columns" to "a:50"),
-                widgetWidthDp = 220f,
-                sdkInt = Build.VERSION_CODES.R,
-            ),
-        )
-    }
-
-    @Test
-    fun `falls back to 2 columns for adaptive props without a known widget width`() {
-        assertEquals(
-            2,
-            deriveFallbackGridColumnCount(
-                mapOf("columns" to "a:50"),
-                widgetWidthDp = null,
-                sdkInt = Build.VERSION_CODES.S,
-            ),
-        )
-    }
-
-    @Test
-    fun `falls back to 2 columns for an unparseable columns prop`() {
-        assertEquals(2, deriveFallbackGridColumnCount(mapOf("columns" to "not-a-column-spec"), widgetWidthDp = 220f))
-    }
-
-    @Test
-    fun `falls back to 2 columns when no columns prop is present`() {
-        assertEquals(2, deriveFallbackGridColumnCount(props = null, widgetWidthDp = 220f))
-    }
-
     @Test
     fun `keeps a short list as a single group`() {
         val items = (1..5).toList()

@@ -1,6 +1,5 @@
 package voltra.glance.components
 
-import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -30,12 +29,11 @@ fun VoltraLazyColumn(
     val horizontalAlignment = extractHorizontalAlignment(element.p)
     val items = resolveLazyListItems(element.c, context.sharedElements)
 
-    // On API 31 and below, Glance delivers LazyColumn's items through GlanceRemoteViewsService,
+    // On API 31 and below (see VoltraRN.usesAppWidgetHostView), Glance delivers LazyColumn's items through GlanceRemoteViewsService,
     // which the framework binds via AppWidgetManager.bindRemoteViewsService — that requires a
     // real widget id bound to the caller's AppWidgetHost, which no in-app preview can provide
     // (see VoltraRN.kt). Render the items eagerly there instead so the preview shows content.
-    if (context.isPreview && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
-        logPreviewApproximation("LazyColumn")
+    if (context.eagerLazyLists) {
         Column(
             modifier = finalModifier,
             horizontalAlignment = horizontalAlignment,

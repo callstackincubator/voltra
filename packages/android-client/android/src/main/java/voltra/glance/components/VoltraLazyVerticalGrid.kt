@@ -34,16 +34,15 @@ fun VoltraLazyVerticalGrid(
     val horizontalAlignment = extractHorizontalAlignment(element.p)
     val items = resolveLazyListItems(element.c, context.sharedElements)
 
-    // On API 31 and below, Glance delivers LazyVerticalGrid's items through
+    // On API 31 and below (see VoltraRN.usesAppWidgetHostView), Glance delivers LazyVerticalGrid's items through
     // GlanceRemoteViewsService, which the framework binds via
     // AppWidgetManager.bindRemoteViewsService — that requires a real widget id bound to the
     // caller's AppWidgetHost, which no in-app preview can provide (see VoltraRN.kt).
     // Approximate the grid with eager Rows of equal-width cells instead so the preview shows
     // content. Like the real grid, every cell is as wide as a column (the last row keeps empty
     // cells rather than stretching its items), and an item is aligned inside its cell.
-    if (context.isPreview && Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
-        logPreviewApproximation("LazyVerticalGrid")
-        val columnCount = deriveFallbackGridColumnCount(element.p, context.widgetSize?.width?.value)
+    if (context.eagerLazyLists) {
+        val columnCount = fallbackGridColumnCount(extractGridCells(element.p), context.widgetSize?.width?.value)
         val rows = items.chunked(columnCount)
         Column(
             modifier = finalModifier,
@@ -74,7 +73,7 @@ fun VoltraLazyVerticalGrid(
     }
 }
 
-private fun extractGridCells(props: Map<String, Any?>?): GridCells =
+internal fun extractGridCells(props: Map<String, Any?>?): GridCells =
     when (val columns = props?.get("columns")) {
         is Number -> {
             GridCells.Fixed(columns.toInt().coerceAtLeast(1))

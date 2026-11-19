@@ -1,9 +1,9 @@
 package voltra.glance.components
 
 import android.os.Build
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.glance.GlanceModifier
+import androidx.glance.appwidget.lazy.GridCells
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -13,7 +13,7 @@ import kotlin.math.ceil
 
 // Shared helpers for VoltraLazyColumn and VoltraLazyVerticalGrid.
 //
-// Both the real lazy-list path and the eager preview fallback (see `context.isPreview` in
+// Both the real lazy-list path and the eager preview fallback (see `context.eagerLazyLists` in
 // those files) need the same "resolve an element's `c` children into a flat list" logic and
 // the same "don't exceed Glance's 10 direct-children limit" chunking, so it lives here once.
 
@@ -146,34 +146,24 @@ internal fun LazyItemBox(
     }
 }
 
-/** Glance's LazyVerticalGrid only supports fixed column counts from 1 to 5. */
-internal const val VOLTRA_GLANCE_MAX_FIXED_GRID_COLUMNS = 5
-
 /**
- * Derives a grid column count for the eager fallback, mirroring what the real grid uses on
- * [sdkInt] (see extractGridCells): a fixed count, clamped to the 1..5 range Glance supports; an
- * adaptive count from the widget width from API 31 on, since below that the real grid uses 2
- * columns; and 2 columns otherwise.
+ * Column count for the eager grid fallback, derived from the same [GridCells] the real grid
+ * uses: the fixed count, or for an adaptive grid how many `minSize` cells fit in
+ * [widgetWidthDp] (at most Glance's 10-child container limit). Without a known width an
+ * adaptive grid gets 2 columns.
  */
-internal fun deriveFallbackGridColumnCount(
-    props: Map<String, Any?>?,
+internal fun fallbackGridColumnCount(
+    gridCells: GridCells,
     widgetWidthDp: Float?,
-    sdkInt: Int = Build.VERSION.SDK_INT,
 ): Int =
-    when (val columns = props?.get("columns")) {
-        is Number -> {
-            columns.toInt().coerceIn(1, VOLTRA_GLANCE_MAX_FIXED_GRID_COLUMNS)
+    when {
+        gridCells is GridCells.Fixed -> {
+            gridCells.count
         }
 
-        is String -> {
-            val adaptiveMinSize = if (columns.startsWith("a:")) columns.substringAfter("a:").toIntOrNull() else null
-            if (adaptiveMinSize != null &&
-                adaptiveMinSize > 0 &&
-                sdkInt >= Build.VERSION_CODES.S &&
-                widgetWidthDp != null &&
-                widgetWidthDp > 0f
-            ) {
-                (widgetWidthDp / adaptiveMinSize).toInt().coerceIn(1, VOLTRA_GLANCE_MAX_DIRECT_CHILDREN)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && gridCells is GridCells.Adaptive -> {
+            if (widgetWidthDp != null && widgetWidthDp > 0f) {
+                (widgetWidthDp / gridCells.minSize.value).toInt().coerceIn(1, VOLTRA_GLANCE_MAX_DIRECT_CHILDREN)
             } else {
                 2
             }
@@ -183,12 +173,3 @@ internal fun deriveFallbackGridColumnCount(
             2
         }
     }
-
-internal fun logPreviewApproximation(componentName: String) {
-    Log.w(
-        "Voltra",
-        "$componentName is rendered as a non-scrolling approximation in VoltraWidgetPreview " +
-            "on Android 12 (API 31) and older, because Glance's collection adapters require a " +
-            "real AppWidget host on those versions.",
-    )
-}

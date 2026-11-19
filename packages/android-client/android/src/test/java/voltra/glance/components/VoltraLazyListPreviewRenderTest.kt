@@ -27,7 +27,7 @@ import voltra.payload.ComponentTypeID
 
 /**
  * Composes LazyColumn / LazyVerticalGrid the way VoltraWidgetPreview does (GlanceRemoteViews
- * with `isPreview = true`) and inflates the result, to check the preview actually shows the
+ * with `eagerLazyLists = true`) and inflates the result, to check the preview actually shows the
  * list's items.
  */
 @OptIn(ExperimentalGlanceRemoteViewsApi::class)
@@ -73,12 +73,18 @@ class VoltraLazyListPreviewRenderTest {
     fun `renders LazyColumn as a real list only when inflated into an AppWidgetHostView from API 32`() {
         // AppWidgetHostView.updateAppWidget inflates with `this` as the parent, but Robolectric
         // shadows updateAppWidget, so inflate into the host view the same way directly.
-        val hostedList = findAll<AdapterView<*>>(inflate(lazyColumn(), AppWidgetHostView(context))).singleOrNull()
+        val hostedList =
+            findAll<AdapterView<*>>(
+                inflate(lazyColumn(), AppWidgetHostView(context), eagerLazyLists = false),
+            ).singleOrNull()
         assertNotNull("expected the lazy list to inflate as an AdapterView", hostedList)
         assertEquals(itemTexts.size, hostedList!!.adapter?.count)
 
         // Outside an AppWidgetHostView, as the preview used to inflate, the list stays empty.
-        val unhostedList = findAll<AdapterView<*>>(inflate(lazyColumn(), FrameLayout(context))).single()
+        val unhostedList =
+            findAll<AdapterView<*>>(
+                inflate(lazyColumn(), FrameLayout(context), eagerLazyLists = false),
+            ).single()
         assertNull(unhostedList.adapter)
     }
 
@@ -102,16 +108,19 @@ class VoltraLazyListPreviewRenderTest {
             ),
         )
 
-    private fun compose(node: VoltraNode) =
-        runBlocking {
-            val factory = GlanceFactory("preview-test", widgetSize = size, isPreview = true)
-            GlanceRemoteViews().compose(context, size) { factory.Render(node) }.remoteViews
-        }
+    private fun compose(
+        node: VoltraNode,
+        eagerLazyLists: Boolean = true,
+    ) = runBlocking {
+        val factory = GlanceFactory("preview-test", widgetSize = size, eagerLazyLists = eagerLazyLists)
+        GlanceRemoteViews().compose(context, size) { factory.Render(node) }.remoteViews
+    }
 
     private fun inflate(
         node: VoltraNode,
         parent: ViewGroup,
-    ): View = compose(node).apply(context, parent)
+        eagerLazyLists: Boolean = true,
+    ): View = compose(node, eagerLazyLists).apply(context, parent)
 
     private fun layout(view: View) {
         val density = context.resources.displayMetrics.density

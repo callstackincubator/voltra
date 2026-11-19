@@ -121,7 +121,14 @@ class VoltraRN(
                     val remoteViewsContext = context.applicationContext
 
                     val glanceRemoteViews = GlanceRemoteViews()
-                    val factory = GlanceFactory(id, voltraPayload.e, voltraPayload.s, composeSize, isPreview = true)
+                    val factory =
+                        GlanceFactory(
+                            id,
+                            voltraPayload.e,
+                            voltraPayload.s,
+                            composeSize,
+                            eagerLazyLists = !usesAppWidgetHostView(Build.VERSION.SDK_INT),
+                        )
 
                     val result =
                         withContext(Dispatchers.Default) {

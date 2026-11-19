@@ -9,12 +9,10 @@ data class VoltraRenderContext(
     val sharedElements: List<VoltraNode>? = null,
     val sharedStyles: List<Map<String, Any?>>? = null,
     val widgetSize: DpSize? = null,
-    // True when this tree is being composed for VoltraWidgetPreview rather than a real
-    // AppWidget. On API 31 and below, Glance's lazy lists need a widget id bound through
-    // AppWidgetHost to fetch their items, which a preview can't provide, so LazyColumn and
-    // LazyVerticalGrid switch to an eager rendering fallback there (see
-    // VoltraLazyListFallback.kt).
-    val isPreview: Boolean = false,
+    // True when LazyColumn and LazyVerticalGrid must render their items eagerly as a Column,
+    // because Glance's lazy lists can't fetch items in this host (see VoltraRN.kt and
+    // VoltraLazyListFallback.kt). VoltraRN decides this once for VoltraWidgetPreview.
+    val eagerLazyLists: Boolean = false,
 )
 
 val LocalVoltraRenderContext =
