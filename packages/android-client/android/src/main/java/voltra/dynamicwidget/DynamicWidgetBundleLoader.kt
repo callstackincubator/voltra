@@ -16,9 +16,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Whether a Dynamic Widget's bundle is evaluated and ready to render (ADR 0013, section 2).
- *
- * [Ready] is an object today; whatever else a loaded bundle later has to tell the render (a theme,
- * say) belongs on it.
  */
 internal sealed interface DynamicWidgetBundleState {
     data object Ready : DynamicWidgetBundleState

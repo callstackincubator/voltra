@@ -16,7 +16,7 @@ import android.util.Log
  *
  * Thread safety: a single lock guards both evaluate and render, matching iOS's NSLock.
  */
-object VoltraJSRenderer {
+internal object VoltraJSRenderer {
     private const val TAG = "VoltraJSRenderer"
 
     init {
