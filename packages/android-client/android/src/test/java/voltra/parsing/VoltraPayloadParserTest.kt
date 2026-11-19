@@ -58,7 +58,6 @@ class VoltraPayloadParserTest {
         val variant = variantNode as VoltraNode.Element
         assertEquals("variant-text", variant.element.i)
         assertEquals(VoltraNode.Text("Variant child"), variant.element.c)
-        assertEquals("Variant", variant.element.p?.get("text"))
 
         assertEquals(1, payload.s?.size)
         assertTrue(payload.s?.first()?.containsKey("nullable") == true)

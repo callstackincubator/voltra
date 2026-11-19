@@ -2,4 +2,4 @@
 '@use-voltra/android-client': patch
 ---
 
-Tapping a button without a deep link in an Android payload widget now passes the real widget id to the app instead of `"notification"`.
+Tapping a button or toggle without a deep link in a payload widget without a refresh button now opens the app with the widget's real id instead of `"notification"`.
