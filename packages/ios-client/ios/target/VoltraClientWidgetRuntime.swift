@@ -197,9 +197,9 @@ public enum VoltraClientWidgetBundleSource {
 
   public static func load(widgetId: String) async throws -> String {
     #if DEBUG
-      return try await loadFromMetro(widgetId: widgetId)
+      try await loadFromMetro(widgetId: widgetId)
     #else
-      return try loadFromBakedAsset(widgetId: widgetId)
+      try loadFromBakedAsset(widgetId: widgetId)
     #endif
   }
 

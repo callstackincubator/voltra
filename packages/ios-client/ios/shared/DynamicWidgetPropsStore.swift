@@ -63,8 +63,7 @@ struct DynamicWidgetPropsStore {
   }
 
   private func read(storageKey: String) -> String? {
-    guard case let .success(resolvedStorage) = storage else { return nil }
-    guard let storageEntryJSON = (try? resolvedStorage.string(forKey: storageKey)) ?? nil else {
+    guard case let .success(resolvedStorage) = storage, let storageEntryJSON = (try? resolvedStorage.string(forKey: storageKey)) ?? nil else {
       return nil
     }
 
