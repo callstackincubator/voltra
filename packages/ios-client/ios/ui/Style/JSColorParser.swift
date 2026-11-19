@@ -312,12 +312,10 @@ enum JSColorParser {
   private static func parseRGBCommaSyntax(arguments: String, expectsAlpha: Bool) -> (r: Double, g: Double, b: Double, a: Double)? {
     let parts = splitCommaSeparated(arguments)
     let expected = expectsAlpha ? 4 : 3
-    guard parts.count == expected else { return nil }
-
-    guard
-      let r = parseRGBChannel(parts[0]),
-      let g = parseRGBChannel(parts[1]),
-      let b = parseRGBChannel(parts[2])
+    guard parts.count == expected,
+          let r = parseRGBChannel(parts[0]),
+          let g = parseRGBChannel(parts[1]),
+          let b = parseRGBChannel(parts[2])
     else { return nil }
 
     let alpha: Double
@@ -335,12 +333,10 @@ enum JSColorParser {
     let split = splitLeftAndOptionalAlpha(arguments)
     guard let split else { return nil }
     let channels = splitWhitespaceSeparated(split.left)
-    guard channels.count == 3 else { return nil }
-
-    guard
-      let r = parseRGBChannel(channels[0]),
-      let g = parseRGBChannel(channels[1]),
-      let b = parseRGBChannel(channels[2])
+    guard channels.count == 3,
+          let r = parseRGBChannel(channels[0]),
+          let g = parseRGBChannel(channels[1]),
+          let b = parseRGBChannel(channels[2])
     else { return nil }
 
     let alpha: Double
@@ -358,12 +354,10 @@ enum JSColorParser {
   private static func parseHSLCommaSyntax(arguments: String, expectsAlpha: Bool) -> (h: Double, s: Double, l: Double, a: Double)? {
     let parts = splitCommaSeparated(arguments)
     let expected = expectsAlpha ? 4 : 3
-    guard parts.count == expected else { return nil }
-
-    guard
-      let h = parseHue(parts[0]),
-      let s = parsePercentage(parts[1]),
-      let l = parsePercentage(parts[2])
+    guard parts.count == expected,
+          let h = parseHue(parts[0]),
+          let s = parsePercentage(parts[1]),
+          let l = parsePercentage(parts[2])
     else { return nil }
 
     let alpha: Double
@@ -381,12 +375,10 @@ enum JSColorParser {
     let split = splitLeftAndOptionalAlpha(arguments)
     guard let split else { return nil }
     let channels = splitWhitespaceSeparated(split.left)
-    guard channels.count == 3 else { return nil }
-
-    guard
-      let h = parseHue(channels[0]),
-      let s = parsePercentage(channels[1]),
-      let l = parsePercentage(channels[2])
+    guard channels.count == 3,
+          let h = parseHue(channels[0]),
+          let s = parsePercentage(channels[1]),
+          let l = parsePercentage(channels[2])
     else { return nil }
 
     let alpha: Double
@@ -424,8 +416,7 @@ enum JSColorParser {
       $0.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    guard (1 ... 2).contains(parts.count) else { return nil }
-    guard let left = parts.first, !left.isEmpty else { return nil }
+    guard (1 ... 2).contains(parts.count), let left = parts.first, !left.isEmpty else { return nil }
 
     if parts.count == 1 {
       return (left, nil)
