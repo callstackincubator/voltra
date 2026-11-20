@@ -83,6 +83,8 @@ struct VoltraDynamicWidgetErrorView: View {
           .font(.system(size: 9, design: .monospaced))
           .foregroundStyle(.secondary)
           .lineLimit(1)
+          // Keep the end of a frame: its `file:line:column` is what a developer looks for.
+          .truncationMode(.middle)
       }
       Spacer(minLength: 0)
       retryLabel
