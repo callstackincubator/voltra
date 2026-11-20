@@ -370,6 +370,8 @@ public enum VoltraClientWidgetEnvBuilder {
 public struct VoltraClientWidgetContentView: View {
   public let entry: VoltraClientWidgetEntry
   public let initialState: Data?
+  /// The dev error view's retry button, supplied by the extension (see `VoltraDynamicWidgetErrorView`).
+  public let retryButton: VoltraDynamicWidgetRetryButton?
 
   @Environment(\.widgetFamily) private var widgetFamily
   @Environment(\.colorScheme) private var colorScheme
@@ -378,15 +380,16 @@ public struct VoltraClientWidgetContentView: View {
   @Environment(\.locale) private var locale
   @Environment(\.layoutDirection) private var layoutDirection
 
-  public init(entry: VoltraClientWidgetEntry, initialState: Data?) {
+  public init(entry: VoltraClientWidgetEntry, initialState: Data?, retryButton: VoltraDynamicWidgetRetryButton? = nil) {
     self.entry = entry
     self.initialState = initialState
+    self.retryButton = retryButton
   }
 
   public var body: some View {
     switch shownContent() {
     case let .devError(failure):
-      VoltraDynamicWidgetErrorView(widgetId: entry.widgetId, failure: failure, family: widgetFamily)
+      VoltraDynamicWidgetErrorView(widgetId: entry.widgetId, failure: failure, family: widgetFamily, retryButton: retryButton)
     case let .node(node), let .lastGood(node), let .placeholder(node):
       VoltraHomeWidgetView(entry: VoltraHomeWidgetEntry(date: entry.date, rootNode: node, widgetId: entry.widgetId))
     case .loading:

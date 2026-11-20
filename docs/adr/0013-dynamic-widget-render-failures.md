@@ -256,7 +256,11 @@ differs:
 - **Retry** is an App Intent button, so it needs iOS 17. The extension's default
   deployment target is 17.0; below it the error view has no button. It reloads
   the widget's timeline, which re-fetches and re-evaluates the bundle in dev.
-  Lock Screen (accessory) families get a reduced error view without it.
+  The intent is generated into the extension target by the config plugin and
+  handed to the content view as a closure: an intent defined in a CocoaPods
+  library is not in the extension's App Intents metadata, and a button made from
+  one does nothing when tapped. Lock Screen (accessory) families get a reduced
+  error view without it.
 - **Log.** `[DynamicWidget] render failed widgetId=<id> family=<family> stage=<stage> dev=<bool>: <message>`
   on the `widget` category, with no `appWidgetId`; recovery is tracked per
   `(widgetId, family)`.

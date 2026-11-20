@@ -57,6 +57,19 @@ describe('generateWidgetBundleSwift — Dynamic Widget dispatch', () => {
     expect(swift).not.toContain('VoltraHomeWidgetProvider(')
   })
 
+  it('generates the Dynamic Widget retry intent into the extension and passes it to the content view', () => {
+    const swift = __test__.generateWidgetBundleSwift([clientWidget])
+    // The intent has to be defined in the extension target to be in its App Intents metadata.
+    expect(swift).toContain('struct VoltraDynamicWidgetRetryIntent: AppIntent')
+    expect(swift).toContain('WidgetCenter.shared.reloadTimelines(ofKind: VoltraWidgetKind.kind(for: widgetId))')
+    expect(swift).toContain('retryButton: voltraDynamicWidgetRetryButton')
+  })
+
+  it('does not generate the retry intent when there is no Dynamic Widget', () => {
+    const swift = __test__.generateWidgetBundleSwift([serverWidget])
+    expect(swift).not.toContain('VoltraDynamicWidgetRetryIntent')
+  })
+
   it('handles mixed server + client widgets in one bundle', () => {
     const swift = __test__.generateWidgetBundleSwift([serverWidget, clientWidget])
     expect(swift).toContain('VoltraWidget_weather()')
@@ -274,6 +287,5 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     expect(swift).toContain('VoltraClientWidgetProvider(')
     expect(swift).not.toContain('AppIntentConfiguration(')
     expect(swift).not.toContain('WidgetConfigurationIntent')
-    expect(swift).not.toContain('import AppIntents')
   })
 })

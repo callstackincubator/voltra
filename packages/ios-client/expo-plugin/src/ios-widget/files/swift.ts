@@ -343,7 +343,8 @@ function generateWidgetStruct(widget: DetectedIOSWidget): string {
       ) { entry in
         VoltraClientWidgetContentView(
           entry: entry,
-          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+          initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId),
+          retryButton: voltraDynamicWidgetRetryButton
         )
       }`
     : dedent`
@@ -543,7 +544,8 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
         ) { entry in
           VoltraClientWidgetContentView(
             entry: entry,
-            initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId)
+            initialState: VoltraWidgetInitialStates.getInitialState(for: widgetId),
+            retryButton: voltraDynamicWidgetRetryButton
           )
         }
         .configurationDisplayName(${displayNameExpr})
@@ -554,6 +556,50 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
     }
   `
 }
+
+/**
+ * The retry button of the Dynamic Widget dev error view (ADR 0013 §4). It is generated into the
+ * extension rather than shipped in VoltraWidgetRuntime because the extension's App Intents metadata
+ * only lists intents defined in the extension target; a button built from a library's intent draws
+ * but does nothing when tapped.
+ *
+ * A timeline reload is the whole retry: the dev provider fetches the bundle from Metro and evaluates
+ * it on every `getTimeline`. Below iOS 17 there is no button, and the view says to reload instead.
+ */
+const DYNAMIC_WIDGET_RETRY_SWIFT = dedent`
+  // MARK: - Dynamic Widget retry (dev error view)
+
+  import AppIntents
+
+  @available(iOS 17.0, *)
+  struct VoltraDynamicWidgetRetryIntent: AppIntent {
+    static var title: LocalizedStringResource = "Retry Dynamic Widget"
+    static var isDiscoverable: Bool = false
+
+    @Parameter(title: "Widget ID")
+    var widgetId: String
+
+    init() {}
+
+    init(widgetId: String) {
+      self.widgetId = widgetId
+    }
+
+    func perform() async throws -> some IntentResult {
+      WidgetCenter.shared.reloadTimelines(ofKind: VoltraWidgetKind.kind(for: widgetId))
+      return .result()
+    }
+  }
+
+  let voltraDynamicWidgetRetryButton: VoltraDynamicWidgetRetryButton? = {
+    if #available(iOS 17.0, *) {
+      return { widgetId, label in
+        AnyView(Button(intent: VoltraDynamicWidgetRetryIntent(widgetId: widgetId)) { label }.buttonStyle(.plain))
+      }
+    }
+    return nil
+  }()
+`
 
 /**
  * Generates the VoltraWidgetBundle.swift file content with configured widgets
@@ -584,7 +630,9 @@ function generateWidgetBundleSwift(
 
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
   const foundationImport = needsFoundation ? 'import Foundation\n' : ''
+  const hasDynamicWidgets = widgets.some((w) => w.clientRendered)
   const appIntentsImport = appIntentWidgets.length > 0 ? 'import AppIntents\n' : ''
+  const retryHelper = hasDynamicWidgets ? `\n${DYNAMIC_WIDGET_RETRY_SWIFT}\n` : ''
 
   return dedent`
     //
@@ -612,6 +660,7 @@ function generateWidgetBundleSwift(
     // MARK: - Home Screen Widget Definitions
 
     ${widgetStructs}
+    ${retryHelper}
   `
 }
 

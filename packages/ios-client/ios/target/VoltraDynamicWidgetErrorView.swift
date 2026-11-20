@@ -6,10 +6,18 @@ import WidgetKit
 /// tapped. Plain SwiftUI, not a `VoltraNode`, so it cannot fail the way the content did.
 ///
 /// Never shown in a release build.
+///
+/// The retry button is built by the widget extension (`retryButton`), not here: an App Intent
+/// defined in this library is not in the extension's App Intents metadata, so a button made from
+/// one would draw and then do nothing when tapped.
+/// Wraps `label` in a button that reloads the widget. `nil` where the platform has no such button.
+public typealias VoltraDynamicWidgetRetryButton = (_ widgetId: String, _ label: AnyView) -> AnyView
+
 struct VoltraDynamicWidgetErrorView: View {
   let widgetId: String
   let failure: DynamicWidgetRenderFailure
   let family: WidgetFamily
+  let retryButton: VoltraDynamicWidgetRetryButton?
 
   private static let maxStackFrames = 6
 
@@ -81,9 +89,8 @@ struct VoltraDynamicWidgetErrorView: View {
     }
     .padding(8)
 
-    if #available(iOSApplicationExtension 17.0, *) {
-      Button(intent: VoltraDynamicWidgetRetryIntent(widgetId: widgetId)) { body }
-        .buttonStyle(.plain)
+    if let retryButton {
+      retryButton(widgetId, AnyView(body))
     } else {
       body
     }
@@ -91,7 +98,7 @@ struct VoltraDynamicWidgetErrorView: View {
 
   @ViewBuilder
   private var retryLabel: some View {
-    if #available(iOSApplicationExtension 17.0, *) {
+    if retryButton != nil {
       Text("Tap to retry").font(.system(size: 11, weight: .semibold))
     } else {
       Text("Reload the widget or restart Metro").font(.system(size: 10))
