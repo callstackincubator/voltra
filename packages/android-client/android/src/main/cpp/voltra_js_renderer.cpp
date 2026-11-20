@@ -63,11 +63,48 @@ std::string jstringToStd(JNIEnv *env, jstring jstr) {
   return out;
 }
 
+// Throws voltra.dynamicwidget.VoltraJSException(message, stack) so Kotlin gets the reason a
+// widget failed (ADR 0013). The class name and constructor are part of this file's JNI contract;
+// consumer-rules.pro keeps them from being renamed or removed by R8.
+void throwJsFailure(JNIEnv *env, const std::string &message,
+                    const std::string *stack) {
+  jclass cls = env->FindClass("voltra/dynamicwidget/VoltraJSException");
+  if (cls == nullptr) {
+    // FindClass left a NoClassDefFoundError pending, which is the best we can report.
+    return;
+  }
+  jmethodID ctor = env->GetMethodID(cls, "<init>",
+                                    "(Ljava/lang/String;Ljava/lang/String;)V");
+  if (ctor == nullptr) {
+    return;
+  }
+  jstring jMessage = env->NewStringUTF(message.c_str());
+  jstring jStack =
+      (stack != nullptr && !stack->empty()) ? env->NewStringUTF(stack->c_str()) : nullptr;
+  jobject exception = env->NewObject(cls, ctor, jMessage, jStack);
+  if (exception != nullptr) {
+    env->Throw(static_cast<jthrowable>(exception));
+  }
+}
+
+const char *jsTypeName(jsi::Runtime &rt, const jsi::Value &value) {
+  if (value.isUndefined()) return "undefined";
+  if (value.isNull()) return "null";
+  if (value.isBool()) return "boolean";
+  if (value.isNumber()) return "number";
+  if (value.isString()) return "string";
+  if (value.isSymbol()) return "symbol";
+  if (value.isObject()) {
+    return value.asObject(rt).isFunction(rt) ? "function" : "object";
+  }
+  return "unknown";
+}
+
 } // namespace
 
 // Evaluate a (Kotlin-wrapped) widget bundle and verify the capture bootstrap
-// registered `globalThis.__voltraWidgets[<widgetId>].render`. Returns false on
-// any JS error or if the render function was not captured.
+// registered `globalThis.__voltraWidgets[<widgetId>].render`. On any JS error or
+// if the render function was not captured it throws VoltraJSException.
 extern "C" JNIEXPORT jboolean JNICALL
 Java_voltra_dynamicwidget_VoltraJSRenderer_nativeEvaluateBundle(
     JNIEnv *env, jobject /* this */, jstring jWrappedSource, jstring jSourceURL,
@@ -93,11 +130,13 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeEvaluateBundle(
     auto registry = rt.global().getProperty(rt, "__voltraWidgets");
     if (!registry.isObject()) {
       LOGE("evaluateBundle: globalThis.__voltraWidgets missing after eval");
+      throwJsFailure(env, "The bundle did not register any Voltra widget (globalThis.__voltraWidgets is missing after evaluation)", nullptr);
       return JNI_FALSE;
     }
     auto widget = registry.asObject(rt).getProperty(rt, widgetId.c_str());
     if (!widget.isObject()) {
       LOGE("evaluateBundle: no entry for widgetId=%s", widgetId.c_str());
+      throwJsFailure(env, "The bundle did not export a widget entry for widgetId=" + widgetId, nullptr);
       return JNI_FALSE;
     }
     auto renderFn = widget.asObject(rt).getProperty(rt, "render");
@@ -105,6 +144,7 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeEvaluateBundle(
         !renderFn.asObject(rt).isFunction(rt)) {
       LOGE("evaluateBundle: __voltraWidgets[%s].render is not a function",
            widgetId.c_str());
+      throwJsFailure(env, "The widget entry for widgetId=" + widgetId + " does not export a render function", nullptr);
       return JNI_FALSE;
     }
 
@@ -113,12 +153,16 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeEvaluateBundle(
     return JNI_TRUE;
   } catch (const jsi::JSError &e) {
     LOGE("evaluateBundle JSError: %s", e.getMessage().c_str());
+    const std::string stack = e.getStack();
+    throwJsFailure(env, e.getMessage(), &stack);
     return JNI_FALSE;
   } catch (const std::exception &e) {
     LOGE("evaluateBundle threw: %s", e.what());
+    throwJsFailure(env, e.what(), nullptr);
     return JNI_FALSE;
   } catch (...) {
     LOGE("evaluateBundle threw: unknown");
+    throwJsFailure(env, "Unknown native exception while evaluating the bundle", nullptr);
     return JNI_FALSE;
   }
 }
@@ -126,7 +170,7 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeEvaluateBundle(
 // Invoke the previously-captured `render(propsJSON, envJSON)` for a widget.
 // Props/env cross the boundary as JSON strings (the JS entry parses them); the
 // entry returns a JSON string (the resolved Voltra node tree), so no JSON
-// marshaling is needed here. Returns null on any error.
+// marshaling is needed here. Any failure throws VoltraJSException (message + JS stack).
 extern "C" JNIEXPORT jstring JNICALL
 Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
     JNIEnv *env, jobject /* this */, jstring jWidgetId, jstring jPropsJSON,
@@ -134,6 +178,7 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
   std::lock_guard<std::mutex> lock(g_mutex);
   if (!g_runtime) {
     LOGE("render called before evaluateBundle");
+    throwJsFailure(env, "render() was called before any bundle was evaluated", nullptr);
     return nullptr;
   }
   try {
@@ -145,11 +190,13 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
     auto registry = rt.global().getProperty(rt, "__voltraWidgets");
     if (!registry.isObject()) {
       LOGE("render: __voltraWidgets missing (bundle not evaluated?)");
+      throwJsFailure(env, "render() was called before the bundle was evaluated (globalThis.__voltraWidgets is missing)", nullptr);
       return nullptr;
     }
     auto widget = registry.asObject(rt).getProperty(rt, widgetId.c_str());
     if (!widget.isObject()) {
       LOGE("render: no captured widget for widgetId=%s", widgetId.c_str());
+      throwJsFailure(env, "No evaluated widget entry for widgetId=" + widgetId, nullptr);
       return nullptr;
     }
     auto renderProp = widget.asObject(rt).getProperty(rt, "render");
@@ -157,6 +204,7 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
         !renderProp.asObject(rt).isFunction(rt)) {
       LOGE("render: render is not a function for widgetId=%s",
            widgetId.c_str());
+      throwJsFailure(env, "The widget entry for widgetId=" + widgetId + " does not export a render function", nullptr);
       return nullptr;
     }
     auto renderFn = renderProp.asObject(rt).asFunction(rt);
@@ -169,18 +217,25 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
 
     if (!result.isString()) {
       LOGE("render: did not return a string for widgetId=%s", widgetId.c_str());
+      throwJsFailure(env, std::string("render() returned ") + jsTypeName(rt, result) +
+                              ", expected a JSON string",
+                     nullptr);
       return nullptr;
     }
     std::string resultStr = result.asString(rt).utf8(rt);
     return env->NewStringUTF(resultStr.c_str());
   } catch (const jsi::JSError &e) {
     LOGE("render JSError: %s", e.getMessage().c_str());
+    const std::string stack = e.getStack();
+    throwJsFailure(env, e.getMessage(), &stack);
     return nullptr;
   } catch (const std::exception &e) {
     LOGE("render threw: %s", e.what());
+    throwJsFailure(env, e.what(), nullptr);
     return nullptr;
   } catch (...) {
     LOGE("render threw: unknown");
+    throwJsFailure(env, "Unknown native exception while rendering", nullptr);
     return nullptr;
   }
 }

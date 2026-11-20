@@ -30,7 +30,7 @@ internal suspend fun renderDynamicWidgetForTrial(
 ): VoltraNode? {
     val dynamicWidgetId = scope.widgetId
 
-    if (!VoltraClientGlanceWidget.ensureBundleEvaluated(context, dynamicWidgetId)) {
+    if (DynamicWidgetBundleLoader.load(context, dynamicWidgetId) !is DynamicWidgetBundleState.Ready) {
         // No bundle means every render fails, including the one already on screen. Rejecting the
         // props here would be blaming them for something they did not cause, and the widget falls
         // back to its prerendered initial state either way.
@@ -45,11 +45,16 @@ internal suspend fun renderDynamicWidgetForTrial(
             configuration = configuration,
         )
 
-    return DynamicWidgetRenderCoordinator().renderDynamicWidget(
-        dynamicWidgetId = dynamicWidgetId,
-        dynamicWidgetRenderInput = DynamicWidgetRenderInput(propsRevision = 0L, propsJson = dynamicWidgetPropsJson),
-        dynamicWidgetEnvironmentJson = environmentJson,
-    )
+    val outcome =
+        DynamicWidgetRenderCoordinator().renderDynamicWidget(
+            dynamicWidgetId = dynamicWidgetId,
+            dynamicWidgetRenderInput = DynamicWidgetRenderInput(propsRevision = 0L, propsJson = dynamicWidgetPropsJson),
+            dynamicWidgetEnvironmentJson = environmentJson,
+        )
+
+    // The trial only answers "does it render"; the reason is logged by the coordinator and the
+    // runtime already, and a trial failure is not a placement failing (ADR 0013 logs those).
+    return (outcome as? DynamicWidgetRenderOutcome.Success)?.node
 }
 
 /**

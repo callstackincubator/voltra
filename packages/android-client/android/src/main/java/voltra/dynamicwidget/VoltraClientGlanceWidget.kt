@@ -1,10 +1,10 @@
 package voltra.dynamicwidget
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -31,8 +31,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
 import com.facebook.react.modules.systeminfo.AndroidInfoHelpers
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import voltra.BuildConfig
@@ -41,8 +39,6 @@ import voltra.models.VoltraNode
 import voltra.parsing.VoltraDecompressor
 import voltra.widget.server.WidgetCanonicalConfiguration
 import voltra.widget.server.WidgetScope
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * Client-rendered Voltra widget: downloads a per-widget JS bundle (Metro in dev), evaluates it
@@ -51,13 +47,14 @@ import java.net.URL
  *
  * Pipeline:
  *  1. provideGlance (suspend, off the composition): fetch the bundle from Metro and evaluate it
- *     via [VoltraJSRenderer.evaluateBundle].
+ *     via [DynamicWidgetBundleLoader.load].
  *  2. Content (composable): read LocalSize/locale/scheme, build the WidgetEnvironment JSON, call
  *     [VoltraJSRenderer.render], decompress the resulting node, and hand it to [GlanceFactory] —
  *     the same renderer server-rendered widgets use, so the two look identical.
  *
- * On fetch/eval/render failure the widget shows a minimal fallback; the config plugin supplies
- * a prerendered placeholder for the first paint and the offline case.
+ * On fetch/eval/render failure a debuggable build shows the dev error view and a release build
+ * keeps the placement's last good render, falling back to the config plugin's prerendered
+ * placeholder and then a minimal "Loading…" box (ADR 0013).
  */
 class VoltraClientGlanceWidget(
     private val widgetId: String = "default",
@@ -71,88 +68,6 @@ class VoltraClientGlanceWidget(
                 ignoreUnknownKeys = true
                 explicitNulls = false
             }
-
-        /** Fetch the raw widget bundle from Metro (dev). Returns null on any network error. */
-        private suspend fun fetchDevBundle(
-            context: Context,
-            widgetId: String,
-        ): String? =
-            withContext(Dispatchers.IO) {
-                // AndroidInfoHelpers resolves the dev server host for emulator (10.0.2.2),
-                // physical device, or adb-reverse — the RN-native equivalent of iOS's
-                // RCTBundleURLProvider.
-                val host = AndroidInfoHelpers.getServerHost(context)
-                val urlString = "http://$host/voltra/widgets/$widgetId.bundle?platform=android&dev=true"
-                val t0 = System.nanoTime()
-                try {
-                    val connection = URL(urlString).openConnection() as HttpURLConnection
-                    connection.connectTimeout = 5_000
-                    connection.readTimeout = 5_000
-                    connection.requestMethod = "GET"
-                    try {
-                        val code = connection.responseCode
-                        if (code !in 200..299) {
-                            Log.e(TAG, "Metro HTTP $code for $urlString")
-                            return@withContext null
-                        }
-                        val body = connection.inputStream.bufferedReader().use { it.readText() }
-                        if (BuildConfig.DEBUG) {
-                            Log.i(
-                                TAG,
-                                "[perf] metro fetch: ${"%.2f".format(
-                                    (System.nanoTime() - t0) / 1_000_000.0,
-                                )} ms (${body.length} chars)",
-                            )
-                        }
-                        body
-                    } finally {
-                        connection.disconnect()
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Metro fetch failed ($urlString): ${e.message}")
-                    null
-                }
-            }
-
-        /**
-         * Read the release bundle baked into the app's assets by the Gradle bundling task
-         * (assets/voltra/voltra-widget-<id>.bundle). The release counterpart of [fetchDevBundle];
-         * returns null (→ prerendered fallback) when the asset is missing.
-         */
-        private fun loadBakedBundle(
-            context: Context,
-            widgetId: String,
-        ): String? =
-            try {
-                context.assets
-                    .open("voltra/voltra-widget-$widgetId.bundle")
-                    .bufferedReader()
-                    .use { it.readText() }
-            } catch (e: java.io.IOException) {
-                Log.w(TAG, "No baked bundle for widgetId=$widgetId (assets/voltra/voltra-widget-$widgetId.bundle)")
-                null
-            }
-
-        private fun isDev(context: Context): Boolean =
-            (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-
-        /**
-         * Loads the widget's bundle and evaluates it into the shared Hermes runtime, the same way
-         * an on-screen render does — reading Metro in a debug build and the baked asset otherwise.
-         *
-         * Exposed for the server-update engine, which has to render fetched props before
-         * committing them. It costs what a render already costs, including the Metro round trip in
-         * a debug build.
-         */
-        internal suspend fun ensureBundleEvaluated(
-            context: Context,
-            widgetId: String,
-        ): Boolean {
-            val source =
-                if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
-
-            return source != null && VoltraJSRenderer.evaluateBundle(source, widgetId)
-        }
 
         /**
          * The scope a placement renders, fetches and reads its status at.
@@ -190,6 +105,9 @@ class VoltraClientGlanceWidget(
             configuration: Map<String, String>,
         ): String = buildEnvJson(context, widgetId, size, configuration, environmentSource = null)
 
+        /** `env.widgetFamily` for a size, and the key the last good render is kept under. */
+        internal fun widgetFamily(size: DpSize): String = "${size.width.value.toInt()}x${size.height.value.toInt()}"
+
         /**
          * Build the WidgetEnvironment JSON (see packages/core/src/widget-environment.ts) for the
          * current render.
@@ -201,11 +119,11 @@ class VoltraClientGlanceWidget(
             configuration: Map<String, String>,
             environmentSource: DynamicWidgetEnvironmentSource?,
         ): String {
-            val family = "${size.width.value.toInt()}x${size.height.value.toInt()}"
+            val family = widgetFamily(size)
             val nightMode =
                 context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
             val colorScheme = if (nightMode == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
-            val dev = isDev(context)
+            val dev = isDynamicWidgetDev(context)
             val appVersion =
                 try {
                     context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown"
@@ -266,10 +184,17 @@ class VoltraClientGlanceWidget(
         context: Context,
         id: GlanceId,
     ) {
-        val source = if (isDev(context)) fetchDevBundle(context, widgetId) else loadBakedBundle(context, widgetId)
-        val bundleReady = source != null && VoltraJSRenderer.evaluateBundle(source, widgetId)
-        if (!bundleReady) {
-            Log.w(TAG, "Bundle not ready for widgetId=$widgetId (dev=${isDev(context)})")
+        // The result goes into a process-wide record the composition reads on every pass, not into
+        // a value captured here: Glance does not re-run provideGlance for a live session, so a
+        // captured "bundle not ready" would outlive the Metro outage that caused it (ADR 0013).
+        val bundleState = DynamicWidgetBundleLoader.load(context, widgetId)
+        if (bundleState is DynamicWidgetBundleState.Failed) {
+            Log.w(
+                TAG,
+                "Bundle not ready for widgetId=$widgetId (dev=${isDynamicWidgetDev(
+                    context,
+                )}): ${bundleState.failure.message}",
+            )
         }
 
         // Which placement is being rendered, so env.configuration carries this placement's own
@@ -294,13 +219,12 @@ class VoltraClientGlanceWidget(
         val configuration = VoltraConfigurationStore(context).get(widgetId, appWidgetId)
 
         provideContent {
-            Content(bundleReady, configuration, appWidgetId)
+            Content(configuration, appWidgetId)
         }
     }
 
     @Composable
     private fun Content(
-        bundleReady: Boolean,
         initialConfiguration: Map<String, String>,
         appWidgetId: Int?,
     ) {
@@ -320,20 +244,24 @@ class VoltraClientGlanceWidget(
         val scope = placementScope(widgetId, configuration, appWidgetId)
         val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId, scope)
 
-        // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
-        // placeholder node (first paint / offline / Metro down).
-        val node =
-            (
-                if (bundleReady) {
-                    renderNode(context, size, configuration, dynamicWidgetRenderInput)
-                } else {
-                    null
-                }
-            ) ?: placeholderNode(context)
-        if (node != null) {
-            GlanceFactory(widgetId, null, null, size).Render(node)
-        } else {
-            Fallback()
+        val lastGoodStore = remember { DynamicWidgetLastGoodStore(context) }
+        // The prerendered placeholder covers first paint and a release widget that never rendered.
+        val shown =
+            resolveDynamicWidgetContent(
+                widgetId = widgetId,
+                appWidgetId = appWidgetId,
+                family = widgetFamily(size),
+                isDev = isDynamicWidgetDev(context),
+                bundleState = DynamicWidgetBundleRecord.get(widgetId),
+                render = { renderNode(context, size, configuration, dynamicWidgetRenderInput) },
+                lastGoodStore = lastGoodStore,
+                parseNode = ::parseNode,
+                placeholder = { placeholderNode(context) },
+            )
+        when (shown) {
+            is DynamicWidgetShownContent.Node -> GlanceFactory(widgetId, null, null, size).Render(shown.node)
+            is DynamicWidgetShownContent.DevError -> DynamicWidgetDevErrorView(widgetId, shown.failure)
+            is DynamicWidgetShownContent.Loading -> Fallback()
         }
 
         // Drawn over the widget's own content, so an entry does not have to leave room for it.
@@ -390,7 +318,7 @@ class VoltraClientGlanceWidget(
         size: DpSize,
         configuration: Map<String, String>,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
-    ): VoltraNode? {
+    ): DynamicWidgetRenderOutcome {
         val envJson = buildEnvJson(context, widgetId, size, configuration, environmentSource)
         val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
         return dynamicWidgetRenderCoordinator.renderDynamicWidget(
