@@ -85,6 +85,11 @@ fun renderArcBitmap(spec: ArcSpec): Bitmap {
  *
  * A negative sweep runs counter-clockwise, so the colors are reversed and the rotation moved to
  * the far end, keeping the first color at [startAngle] either way.
+ *
+ * Round and square caps spill past each end into the unused gap. Without more stops the gap would
+ * hold the last color all the way around, so the cap at the first color's end would be drawn in
+ * the last color. A hard stop in the middle of the gap gives each cap its own end's color,
+ * whatever the stroke width.
  */
 private fun sweepGradient(
     colors: List<Int>,
@@ -97,10 +102,22 @@ private fun sweepGradient(
     val clockwise = sweepAngle >= 0f
 
     val ordered = if (clockwise) colors else colors.asReversed()
-    val positions = FloatArray(ordered.size) { index -> extent * index / (ordered.size - 1) }
+    val stops = FloatArray(ordered.size) { index -> extent * index / (ordered.size - 1) }
     val rotation = if (clockwise) startAngle else startAngle - extentDegrees
 
-    return SweepGradient(center, center, ordered.toIntArray(), positions).apply {
+    // A full circle has no gap, so there is nothing to split.
+    val gradientColors: IntArray
+    val positions: FloatArray
+    if (extent >= 1f) {
+        gradientColors = ordered.toIntArray()
+        positions = stops
+    } else {
+        val mid = (extent + 1f) / 2f
+        gradientColors = (ordered + listOf(ordered.last(), ordered.first(), ordered.first())).toIntArray()
+        positions = stops + floatArrayOf(mid, mid, 1f)
+    }
+
+    return SweepGradient(center, center, gradientColors, positions).apply {
         setLocalMatrix(Matrix().apply { setRotate(rotation, center, center) })
     }
 }

@@ -228,6 +228,134 @@ class ArcBitmapRendererTest {
     }
 
     @Test
+    fun drawsTheStartCapOfAGradientArcInTheFirstColor() {
+        val orange = AndroidColor.rgb(0xc5, 0x5b, 0x22)
+        val spec =
+            spec(
+                sizePx = 200,
+                progress = 0.75f,
+                startAngle = 135f,
+                sweepAngle = 270f,
+                strokePx = 30f,
+                cap = Paint.Cap.ROUND,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(orange, AndroidColor.WHITE),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        // The cap spans about (15 / 85) rad = 10 degrees before the start angle; sample its middle.
+        assertMostly(orange, pixelAt(bitmap, spec, 130f), "start cap")
+    }
+
+    @Test
+    fun drawsTheEndCapOfAGradientArcInTheLastColor() {
+        val orange = AndroidColor.rgb(0xc5, 0x5b, 0x22)
+        val spec =
+            spec(
+                sizePx = 200,
+                progress = 1f,
+                startAngle = 135f,
+                sweepAngle = 270f,
+                strokePx = 30f,
+                cap = Paint.Cap.ROUND,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(orange, AndroidColor.WHITE),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        // 135 + 270 = 405, i.e. 45 degrees; the cap runs to about 55 degrees.
+        assertMostly(AndroidColor.WHITE, pixelAt(bitmap, spec, 50f), "end cap")
+    }
+
+    @Test
+    fun drawsEachCapOfACounterClockwiseGradientArcInTheColorOfItsOwnEnd() {
+        val spec =
+            spec(
+                sizePx = 200,
+                progress = 1f,
+                startAngle = 45f,
+                sweepAngle = -270f,
+                strokePx = 30f,
+                cap = Paint.Cap.ROUND,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(red, blue),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        assertMostly(red, pixelAt(bitmap, spec, 50f), "start cap")
+        assertMostly(blue, pixelAt(bitmap, spec, 130f), "end cap")
+    }
+
+    @Test
+    fun keepsTheGradientOfAButtCapArcOnTheSweep() {
+        val spec =
+            spec(
+                sizePx = 200,
+                progress = 1f,
+                startAngle = 135f,
+                sweepAngle = 270f,
+                strokePx = 30f,
+                cap = Paint.Cap.BUTT,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(red, blue),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        // A quarter of the way along the sweep (135 + 67.5 = 202.5 degrees) the mix is 75% red and
+        // 25% blue; a gradient shifted or stretched by even a few degrees would miss this.
+        val quarter = pixelAt(bitmap, spec, 202.5f)
+        assertTrue(describe(quarter), abs(AndroidColor.red(quarter) - 191) < 12)
+        assertTrue(describe(quarter), abs(AndroidColor.blue(quarter) - 64) < 12)
+    }
+
+    @Test
+    fun drawsTheStartCapOfAThickGradientArcInTheFirstColor() {
+        val orange = AndroidColor.rgb(0xc5, 0x5b, 0x22)
+        val spec =
+            spec(
+                sizePx = 132,
+                progress = 0.75f,
+                startAngle = 135f,
+                sweepAngle = 270f,
+                strokePx = 40f,
+                cap = Paint.Cap.ROUND,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(orange, AndroidColor.WHITE),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        // The cap spans about (20 / 46) rad = 25 degrees before the start angle.
+        assertMostly(orange, pixelAt(bitmap, spec, 125f), "start cap, near its middle")
+        assertMostly(orange, pixelAt(bitmap, spec, 112f), "start cap, near its tip")
+    }
+
+    @Test
+    fun drawsEachCapOfANearlyClosedGradientRingInTheColorOfItsOwnEnd() {
+        val spec =
+            spec(
+                sizePx = 200,
+                progress = 1f,
+                startAngle = 135f,
+                sweepAngle = 350f,
+                strokePx = 30f,
+                cap = Paint.Cap.ROUND,
+                colorArgb = green,
+                trackColorArgb = AndroidColor.TRANSPARENT,
+                gradientColorsArgb = listOf(red, blue),
+            )
+        val bitmap = renderArcBitmap(spec)
+
+        // The 10 degree gap runs from 125 to 135 degrees, and the caps fill it from both sides.
+        assertMostly(red, pixelAt(bitmap, spec, 133f), "start cap")
+        assertMostly(blue, pixelAt(bitmap, spec, 127f), "end cap")
+    }
+
+    @Test
     fun reversesTheGradientForACounterClockwiseSweep() {
         val spec =
             spec(
