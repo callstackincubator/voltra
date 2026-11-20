@@ -8,6 +8,8 @@ import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
@@ -30,6 +32,7 @@ import kotlin.math.abs
  * this level we fall back to the previous apply()/reapply() path; lazy lists get their own
  * eager-rendering fallback there instead (see VoltraLazyColumn/VoltraLazyVerticalGrid).
  */
+@ChecksSdkIntAtLeast(api = Build.VERSION_CODES.S_V2)
 internal fun usesAppWidgetHostView(sdkInt: Int): Boolean = sdkInt >= Build.VERSION_CODES.S_V2
 
 private var ownProviderInfo: AppWidgetProviderInfo? = null
@@ -39,6 +42,7 @@ private var ownProviderInfoResolved = false
  * One of this app's own AppWidget providers, or null when it has none or the lookup fails. The
  * result is cached because providers only change when the app is updated, which restarts it.
  */
+@RequiresApi(Build.VERSION_CODES.S_V2)
 private fun ownProviderInfo(context: Context): AppWidgetProviderInfo? {
     if (!ownProviderInfoResolved) {
         ownProviderInfo =
@@ -68,6 +72,7 @@ private fun ownProviderInfo(context: Context): AppWidgetProviderInfo? {
  * never had either, and the label would name the wrong widget for accessibility services, so
  * both are reset.
  */
+@RequiresApi(Build.VERSION_CODES.S_V2)
 private class PreviewAppWidgetHostView(
     context: Context,
 ) : AppWidgetHostView(context) {
