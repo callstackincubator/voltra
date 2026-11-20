@@ -74,9 +74,7 @@ class VoltraRN(
                         } ?: return@launch
 
                     val node =
-                        voltraPayload.collapsed
-                            ?: voltraPayload.expanded
-                            ?: voltraPayload.variants?.get("content")
+                        voltraPayload.variants?.get("content")
                             ?: voltraPayload.variants?.values?.firstOrNull()
 
                     if (node == null) {

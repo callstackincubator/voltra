@@ -35,32 +35,9 @@ import voltra.widget.VoltraRefreshActionCallback
 object RemoteViewsGenerator {
     private const val TAG = "RemoteViewsGenerator"
 
-    /**
-     * Generate RemoteViews for collapsed notification content
-     */
-    suspend fun generateCollapsed(
-        context: Context,
-        payload: VoltraPayload,
-    ): RemoteViews? {
-        val node = payload.collapsed ?: return null
-        Log.d(TAG, "Generating collapsed view")
-        return generate(context, node, payload.e, payload.s, DpSize(360.dp, 64.dp))
-    }
-
-    /**
-     * Generate RemoteViews for expanded notification content
-     */
-    suspend fun generateExpanded(
-        context: Context,
-        payload: VoltraPayload,
-    ): RemoteViews? {
-        val node = payload.expanded ?: return null
-        Log.d(TAG, "Generating expanded view")
-        return generate(context, node, payload.e, payload.s, DpSize(360.dp, 256.dp))
-    }
-
     private suspend fun generate(
         context: Context,
+        widgetId: String,
         node: VoltraNode,
         sharedElements: List<VoltraNode>?,
         sharedStyles: List<Map<String, Any?>>?,
@@ -68,8 +45,7 @@ object RemoteViewsGenerator {
     ): RemoteViews {
         // Create a new GlanceRemoteViews instance each time to avoid caching issues
         val glanceRemoteViews = GlanceRemoteViews()
-        // Use empty widgetId for notification RemoteViews (not widget-specific)
-        val factory = GlanceFactory("notification", sharedElements, sharedStyles, size)
+        val factory = GlanceFactory(widgetId, sharedElements, sharedStyles, size)
 
         Log.d(TAG, "Composing Glance content with size: $size, sharedStyles count: ${sharedStyles?.size ?: 0}")
 
@@ -90,6 +66,7 @@ object RemoteViewsGenerator {
     suspend fun generateWidgetRemoteViews(
         context: Context,
         payload: VoltraPayload,
+        widgetId: String,
     ): Map<SizeF, RemoteViews> {
         val variants = payload.variants ?: return emptyMap()
         val sharedElements = payload.e
@@ -127,7 +104,7 @@ object RemoteViewsGenerator {
             val size = DpSize(width.dp, height.dp)
 
             try {
-                val remoteViews = generate(context, node, sharedElements, sharedStyles, size)
+                val remoteViews = generate(context, widgetId, node, sharedElements, sharedStyles, size)
                 result[SizeF(width, height)] = remoteViews
                 Log.d(TAG, "Generated RemoteViews for variant $variantKey (${width}x$height)")
             } catch (e: Exception) {

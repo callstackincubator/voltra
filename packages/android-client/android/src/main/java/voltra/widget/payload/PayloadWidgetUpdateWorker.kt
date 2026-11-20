@@ -168,7 +168,7 @@ internal object PayloadWidgetUpdateWorker {
             if (VoltraWidgetUpdateScheduler.isRefreshEnabled(applicationContext, widgetId)) {
                 RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(applicationContext, payload, widgetId)
             } else {
-                RemoteViewsGenerator.generateWidgetRemoteViews(applicationContext, payload)
+                RemoteViewsGenerator.generateWidgetRemoteViews(applicationContext, payload, widgetId)
             }
 
         val componentName = VoltraWidgetReceivers.componentName(applicationContext, widgetId)
