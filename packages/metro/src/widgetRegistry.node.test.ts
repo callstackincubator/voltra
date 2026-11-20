@@ -46,6 +46,48 @@ function toPosix(value: string): string {
   return value.split(path.sep).join('/')
 }
 
+type GeneratedAdapterExports = {
+  render: (propsJSON: string, envJSON: string) => string
+  getThemeJSON?: () => string | null
+}
+
+/**
+ * Runs a generated widget entry without Metro: `react` and the render shim are passed in, and the
+ * user's widget module is supplied as `widgetModule` whether the entry imports its default export or
+ * the whole namespace.
+ */
+function loadGeneratedAdapter(
+  generatedEntryPath: string,
+  {
+    createElement,
+    renderVariantToJson,
+    widgetModule,
+  }: {
+    createElement: unknown
+    renderVariantToJson: unknown
+    widgetModule: Record<string, unknown>
+  }
+): GeneratedAdapterExports {
+  const body = fs
+    .readFileSync(generatedEntryPath, 'utf8')
+    .split('\n')
+    .map((line) => {
+      if (/^import Widget from /.test(line)) return 'const Widget = WidgetModule.default'
+      if (line.startsWith('import ')) return ''
+      if (line === 'export default render') return ''
+      return line.replace(/^export function /, 'function ')
+    })
+    .join('\n')
+  const exportedNames = ['render', 'getThemeJSON'].filter((name) => body.includes(`function ${name}(`))
+
+  return new Function(
+    'createElement',
+    'renderVariantToJson',
+    'WidgetModule',
+    `${body}\nreturn { ${exportedNames.join(', ')} }`
+  )(createElement, renderVariantToJson, widgetModule) as GeneratedAdapterExports
+}
+
 describe('@use-voltra/metro manifest registry', () => {
   const cleanups: Array<() => void> = []
 
@@ -148,35 +190,18 @@ describe('@use-voltra/metro manifest registry', () => {
         const dynamicWidget = registry.getWidget(platform, 'inbox')
         assert.ok(dynamicWidget)
 
-        const generatedAdapter = fs.readFileSync(dynamicWidget.generatedEntryPath, 'utf8')
-        const executableAdapter = generatedAdapter
-          .split('\n')
-          .filter((line) => !line.startsWith('import '))
-          .join('\n')
-          .replace('export function render(propsJSON, envJSON)', 'function render(propsJSON, envJSON)')
-          .replace('export default render', 'return render')
-
-        type DynamicWidgetRender = (propsJSON: string, envJSON: string) => string
         type DynamicWidgetElement = {
           type: (props: Record<string, unknown>) => unknown
           props: Record<string, unknown>
         }
-        type CreateDynamicWidgetElement = (
-          type: DynamicWidgetElement['type'],
-          props: Record<string, unknown>
-        ) => DynamicWidgetElement
 
-        const createAdapter = new Function('createElement', 'renderVariantToJson', 'Widget', executableAdapter) as (
-          createElement: CreateDynamicWidgetElement,
-          renderVariantToJson: (element: DynamicWidgetElement) => unknown,
-          Widget: (props: Record<string, unknown>, env: Record<string, unknown>) => unknown
-        ) => DynamicWidgetRender
-
-        const render = createAdapter(
-          createElement as unknown as CreateDynamicWidgetElement,
-          (element) => element.type(element.props),
-          (props, env) => ({ props, env })
-        )
+        const { render } = loadGeneratedAdapter(dynamicWidget.generatedEntryPath, {
+          createElement,
+          renderVariantToJson: (element: DynamicWidgetElement) => element.type(element.props),
+          widgetModule: {
+            default: (props: Record<string, unknown>, env: Record<string, unknown>) => ({ props, env }),
+          },
+        })
         const dynamicWidgetProps = {
           key: 'primary-inbox',
           unreadCount: 7,
@@ -197,6 +222,57 @@ describe('@use-voltra/metro manifest registry', () => {
       }
     })
   }
+
+  test('exposes the Android widget theme through getThemeJSON and leaves iOS entries without it', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.json': JSON.stringify({
+        version: 1,
+        platform: 'ios',
+        widgets: [{ id: 'home', entry: 'widgets/home.js' }],
+      }),
+      '.voltra/manifest.android.json': JSON.stringify({
+        version: 1,
+        platform: 'android',
+        widgets: [{ id: 'home', entry: 'widgets/home.js' }],
+      }),
+      'widgets/home.js': 'export default function HomeWidget() { return null }\n',
+    })
+    cleanups.push(cleanup)
+
+    const registry = createWidgetRegistry({ projectRoot })
+
+    try {
+      const iosEntry = registry.getWidget('ios', 'home')!.generatedEntryPath
+      const androidEntry = registry.getWidget('android', 'home')!.generatedEntryPath
+      assert.ok(!fs.readFileSync(iosEntry, 'utf8').includes('getThemeJSON'))
+
+      const load = (widgetModule: Record<string, unknown>) =>
+        loadGeneratedAdapter(androidEntry, {
+          createElement,
+          renderVariantToJson: () => null,
+          widgetModule: { default: () => null, ...widgetModule },
+        })
+
+      assert.equal(load({}).getThemeJSON?.(), null)
+
+      const theme = { day: { primary: '#6750A4' }, night: { primary: '#D0BCFF' }, dynamicColors: false }
+      assert.deepEqual(JSON.parse(load({ theme }).getThemeJSON?.() ?? 'null'), theme)
+
+      // A theme JSON cannot carry becomes a JSON string, which the native validator rejects with a warning.
+      const themeJSONOf = (value: unknown) => JSON.parse(load({ theme: value }).getThemeJSON?.() ?? 'null')
+      assert.equal(
+        themeJSONOf(() => ({})),
+        'function'
+      )
+      assert.equal(themeJSONOf(Symbol('theme')), 'symbol')
+      const cyclic: Record<string, unknown> = { day: {} }
+      cyclic.night = cyclic
+      assert.match(themeJSONOf(cyclic), /circular/i)
+      assert.match(themeJSONOf({ day: { primary: 1n }, night: {} }), /BigInt/i)
+    } finally {
+      registry.close()
+    }
+  })
 
   test('surfaces a missing platform manifest when a widget is requested', () => {
     const { projectRoot, cleanup } = makeTempProject({

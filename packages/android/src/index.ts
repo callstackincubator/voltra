@@ -27,6 +27,7 @@ export type {
   VoltraAndroidViewStyle,
 } from './styles/types.js'
 export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
+export type { AndroidThemeColorRole, AndroidWidgetTheme } from './widget-theme.js'
 export type {
   AndroidLiveUpdateJson,
   AndroidLiveUpdateVariants,

@@ -32,6 +32,12 @@ class VoltraJSRendererJniNamesTest {
                 "updating the JNI symbol names?",
             cppSource.contains("${expectedPrefix}nativeRender"),
         )
+        assertTrue(
+            "Expected to find JNI export '${expectedPrefix}nativeThemeJSON' in " +
+                "voltra_js_renderer.cpp — did VoltraJSRenderer move or get renamed without " +
+                "updating the JNI symbol names?",
+            cppSource.contains("${expectedPrefix}nativeThemeJSON"),
+        )
     }
 
     /**

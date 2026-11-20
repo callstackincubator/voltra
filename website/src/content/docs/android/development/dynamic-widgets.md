@@ -11,7 +11,7 @@ Your Dynamic Widget can react to:
 - `env.colorScheme`
 - `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](/android/development/localization)
 - `env.configuration`
-- `AndroidDynamicColors` tokens, which resolve to the current Material You palette natively
+- `AndroidDynamicColors` tokens, which resolve natively through the widget's theme: the Material You palette by default, or [a `theme` the module exports](/android/development/dynamic-colors#theming-a-dynamic-widget)
 
 When you change `app.json`, run Expo Prebuild or Voltra Apply so the updated Dynamic Widget configuration is available on device. If you change only the Dynamic Widget JS, reopen the app in development and the Dynamic Widget updates automatically.
 
@@ -38,9 +38,10 @@ module.exports = withVoltra(config)
 
 1. Add an Android Dynamic Widget declaration to `app.json` with an `id`, an `entry`, and any Dynamic Widget metadata you need.
 2. Default-export the Dynamic Widget function or component from the module named by `entry`.
-3. Use `initialStatePath` if you want a pre-rendered first view.
-4. Re-run Expo Prebuild or Voltra Apply after updating `app.json`.
-5. Keep Android and iOS Dynamic Widget declarations separate; the same `id` can exist on both platforms because each platform is configured separately.
+3. Optionally export a named `theme` from the same module to choose the colors `AndroidDynamicColors` tokens resolve to. See [Theming a Dynamic Widget](/android/development/dynamic-colors#theming-a-dynamic-widget).
+4. Use `initialStatePath` if you want a pre-rendered first view.
+5. Re-run Expo Prebuild or Voltra Apply after updating `app.json`.
+6. Keep Android and iOS Dynamic Widget declarations separate; the same `id` can exist on both platforms because each platform is configured separately.
 
 ```tsx
 // widgets/android/inbox-widget.tsx
@@ -232,6 +233,12 @@ The Home Screen's own edit gesture does not open a Voltra configuration screen y
 ## Runtime props and configuration are separate
 
 Dynamic Widget props are app-owned state passed as the entry component's first argument. Configuration values are declared through `appIntent.parameters`, updated in-app with `setWidgetConfiguration` for every placement or `setWidgetInstanceConfiguration` for one, and read from `env.configuration`. Updating one does not replace the other.
+
+## Colors in light and dark
+
+Give colors as `AndroidDynamicColors` tokens or [`{ day, night }` pairs](/android/development/styling#day-and-night-colors) rather than branching on `env.colorScheme`. They follow the system's light or dark setting without running your JavaScript again, and on Android 12 and later the launcher switches them even while your app is not running.
+
+Use `env.colorScheme` only when the layout itself changes with the scheme, such as showing a different image. It is only as current as the widget's last render.
 
 ## Localization
 

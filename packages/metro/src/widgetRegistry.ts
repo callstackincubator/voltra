@@ -350,10 +350,38 @@ function createGeneratedEntry(
     path.relative(generatedEntryRoot, path.join(generatedRoot, RENDER_SHIM_BASENAME))
   )
 
+  // Android also reads the module's optional `theme` export, so it imports the namespace: a missing
+  // named export is then `undefined` rather than a link error under real ESM.
+  const isAndroid = widget.platform === 'android'
+  const widgetImport = isAndroid
+    ? [`import * as WidgetModule from ${JSON.stringify(entryImportPath)}`, '', 'const Widget = WidgetModule.default']
+    : [`import Widget from ${JSON.stringify(entryImportPath)}`]
+  // A theme JSON cannot carry is sent as a JSON string instead (its `typeof`, or the serialisation
+  // error), which the native side rejects with a warning: `console` is a no-op in the widget runtime.
+  const themeExport = isAndroid
+    ? [
+        '',
+        'export function getThemeJSON() {',
+        '  const theme = WidgetModule.theme',
+        "  if (typeof theme === 'undefined') {",
+        '    return null',
+        '  }',
+        "  if (typeof theme === 'function' || typeof theme === 'symbol') {",
+        '    return JSON.stringify(typeof theme)',
+        '  }',
+        '  try {',
+        '    return JSON.stringify(theme)',
+        '  } catch (error) {',
+        '    return JSON.stringify(error instanceof Error ? error.message : String(error))',
+        '  }',
+        '}',
+      ]
+    : []
+
   const content = [
     "import { createElement } from 'react'",
     `import { renderVariantToJson } from ${JSON.stringify(renderShimImportPath)}`,
-    `import Widget from ${JSON.stringify(entryImportPath)}`,
+    ...widgetImport,
     '',
     `if (typeof Widget === 'undefined') {`,
     `  throw new Error(${JSON.stringify(
@@ -382,6 +410,7 @@ function createGeneratedEntry(
     '  const resolved = renderVariantToJson(createElement(WidgetWithEnv, { __voltraProps: props }))',
     '  return JSON.stringify(resolved)',
     '}',
+    ...themeExport,
     '',
     'export default render',
     '',

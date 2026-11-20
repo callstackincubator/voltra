@@ -54,7 +54,8 @@ import java.net.URL
  *     via [VoltraJSRenderer.evaluateBundle].
  *  2. Content (composable): read LocalSize/locale/scheme, build the WidgetEnvironment JSON, call
  *     [VoltraJSRenderer.render], decompress the resulting node, and hand it to [GlanceFactory] —
- *     the same renderer server-rendered widgets use, so the two look identical.
+ *     the same renderer server-rendered widgets use, so the two look identical — inside the
+ *     bundle's exported theme, if any ([DynamicWidgetThemedContent]).
  *
  * On fetch/eval/render failure the widget shows a minimal fallback; the config plugin supplies
  * a prerendered placeholder for the first paint and the offline case.
@@ -322,16 +323,22 @@ class VoltraClientGlanceWidget(
 
         // Live render when the bundle is ready; otherwise fall back to the plugin-prerendered
         // placeholder node (first paint / offline / Metro down).
-        val node =
-            (
-                if (bundleReady) {
-                    renderNode(context, size, configuration, dynamicWidgetRenderInput)
-                } else {
-                    null
-                }
-            ) ?: placeholderNode(context)
+        val liveNode =
+            if (bundleReady) {
+                renderNode(context, size, configuration, dynamicWidgetRenderInput)
+            } else {
+                null
+            }
+        val node = liveNode ?: placeholderNode(context)
         if (node != null) {
-            GlanceFactory(widgetId, null, null, size).Render(node)
+            // The bundle's theme, read on every composition rather than handed down from
+            // provideGlance: a live session outlives a re-evaluation, and the renderer swaps the
+            // theme in step with the bundle. The placeholder never sees it.
+            DynamicWidgetThemedContent(
+                themeJSON = if (liveNode != null) VoltraJSRenderer.themeJSON(widgetId) else null,
+                node = node,
+                factory = GlanceFactory(widgetId, null, null, size),
+            )
         } else {
             Fallback()
         }
