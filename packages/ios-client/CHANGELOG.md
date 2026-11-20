@@ -1,5 +1,21 @@
 # @use-voltra/ios-client
 
+## 2.7.0
+
+### Minor Changes
+
+- e3b9cc3: iOS now supports `style.backgroundImage` with CSS gradients (`linear-gradient`, `radial-gradient`, `conic-gradient`), so the same style renders its gradient on both iOS and Android. The gradient is painted over `backgroundColor`. Gradient strings in `backgroundColor` keep working.
+- 98ffad6: iOS Dynamic Widgets no longer hide render failures. A debug build now shows an error view on the Home Screen with the widget id, the failing stage, the error message and the stack, and on iOS 17 and later tapping it reloads the bundle from Metro and retries. A release build keeps the last render of each widget, configuration, size and appearance that succeeded instead of falling back to the placeholder after a bad props update or locale change. Each failed render is logged under the `widget` category. A Dynamic Live Activity bundle that throws while evaluating now fails the evaluation even after an earlier good evaluation in the same JavaScript context, where it used to keep silently using the previous `render`.
+
+### Patch Changes
+
+- 4e83ee2: iOS gradients whose color stops have no explicit positions, such as `linear-gradient(to right, red, blue)`, now render. Before, they rendered nothing unless the first and last stops had positions, so `radial-gradient(circle, red, blue)`, `conic-gradient(red, blue)` and `linear-gradient(to right, red 0%, blue)` were all affected.
+- 3205508: The in-app `VoltraView` now starts from its own default props. It used to read its first props from the base view's default props, which aborted Debug builds (seen on React Native 0.88 / Expo SDK 58) and was undefined behaviour in Release builds.
+- Updated dependencies [e3b9cc3]
+  - @use-voltra/ios@2.7.0
+  - @use-voltra/compiler@2.7.0
+  - @use-voltra/expo-plugin@2.7.0
+
 ## 2.6.1
 
 ### Patch Changes

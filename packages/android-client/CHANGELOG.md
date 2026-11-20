@@ -1,5 +1,14 @@
 # @use-voltra/android-client
 
+## 2.7.0
+
+### Patch Changes
+
+- b4b6e74: Server-driven Dynamic Widgets fetch once when placed and refresh immediately when server updates are re-enabled.
+  - @use-voltra/android@2.7.0
+  - @use-voltra/compiler@2.7.0
+  - @use-voltra/expo-plugin@2.7.0
+
 ## 2.6.1
 
 ### Patch Changes
