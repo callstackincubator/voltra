@@ -226,12 +226,51 @@ failure and a recovery on every round of compositions.
   an error view in dev, and the last good render instead of the placeholder in
   release.
 
-### Next PR (iOS)
+### iOS
 
-The same policy on iOS: carry the JSC error message and stack, a dev error
-view, the last good render per widget kind and family in the App Group, and a
-retry intent where the platform allows one. Same log shape through
-`VoltraLogger`.
+The same policy on iOS: carry the JavaScriptCore error message and stack, a
+dev error view, the last good render in the App Group, and a retry intent where
+the platform allows one. Same log shape through `VoltraLogger`. Where iOS
+differs:
+
+- **Failure model.** The bundle load and evaluate stages fail in the timeline
+  provider and are carried on the `TimelineEntry`; the render and parse stages
+  fail in the View body, which WidgetKit may run in a fresh extension process.
+  The renderer returns a typed result, and the JSC exception's `stack` is read
+  from the thrown value.
+- **Dev is `#if DEBUG`** in the widget extension, the same test the bundle
+  loader already uses. Release bundles are the ones baked in by the
+  "Bundle Voltra Dynamic Content" build phase.
+- **Last good key.** iOS gives a placement no id of its own, so the key is
+  `(widgetId, instance key, family, appearance)`. The instance key is the hash
+  of the placement's merged configuration (ADR 0007), absent for a widget with
+  none. The appearance is the color scheme, rendering mode and whether the
+  container background shows: WidgetKit runs the View body once per family,
+  scheme and rendering mode, `render()` is given all three, and a widget can
+  draw a different tree for each, so without them those renders would overwrite
+  one file and a failure could show another appearance's snapshot. That is the
+  nearest thing to Android's `(widgetId, appWidgetId, widgetFamily)`: without
+  the instance key two differently configured placements would show each
+  other's content. One file per key under a `VoltraDynamicWidgetLastGood`
+  directory in the App Group, 256 KB cap, skipped when unchanged.
+- **Cleanup.** `clearWidget`, `clearAllWidgets` and the app's orphan cleanup
+  (which compares against the installed kinds at launch) remove every
+  instance's and family's files for the widget ids they cover. A file for an
+  instance whose configuration changed stays until then, as a size a placement
+  stops reporting does on Android; the cap bounds it.
+- **Retry** is an App Intent button, so it needs iOS 17. The extension's default
+  deployment target is 17.0; below it the error view has no button. It reloads
+  the widget's timeline, which re-fetches and re-evaluates the bundle in dev.
+  The intent is generated into the extension target by the config plugin and
+  handed to the content view as a closure: an intent defined in a CocoaPods
+  library is not in the extension's App Intents metadata, and a button made from
+  one does nothing when tapped. Lock Screen (accessory) families get a reduced
+  error view without it.
+- **Log.** `[DynamicWidget] render failed widgetId=<id> family=<family> stage=<stage> dev=<bool>: <message>`
+  on the `widget` category, with no `appWidgetId`; recovery is tracked per the
+  same key as the last good render, so placements and appearances of one family
+  that differ in failing and succeeding do not flap failed and recovered every
+  round.
 
 ### Later
 
