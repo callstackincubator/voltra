@@ -51,7 +51,7 @@
     "react-native-web": "~0.21.4",
     "react-native-webview": "14.0.1",
     "react-native-worklets": "0.13.0",
-    "zod": "^4.4.3",
+    "zod": "^4.6.7",
     "@use-voltra/metro": "workspace:*",
     "@use-voltra/ios": "workspace:*",
     "@use-voltra/ios-client": "workspace:*",
