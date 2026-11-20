@@ -1,5 +1,15 @@
 # @use-voltra/android
 
+## 2.6.0
+
+### Minor Changes
+
+- 775cd68: **Breaking:** removed the unused `renderAndroidLiveUpdateToJson()` and `renderAndroidLiveUpdateToString()` functions and the `AndroidLiveUpdate*` types from `@use-voltra/android`, and their re-exports from `@use-voltra/android-client`. They were left over from an abandoned renderer, and nothing on the device could ever display their output. Android 16 Live Updates through `requestPromotedOngoing` are unaffected.
+
+### Patch Changes
+
+- @use-voltra/core@2.6.0
+
 ## 2.5.0
 
 ### Patch Changes

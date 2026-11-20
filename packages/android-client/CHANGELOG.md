@@ -1,5 +1,25 @@
 # @use-voltra/android-client
 
+## 2.6.0
+
+### Minor Changes
+
+- 856ac2b: Android widgets now draw `borderWidth` and `borderColor`, following `borderRadius` and combining with `backgroundColor` or `backgroundImage`. The border is drawn inside the component's bounds without changing its layout, and only on components whose `width` and `height` are both fixed numbers.
+- 40b73c4: Android Dynamic Widgets no longer hide render failures. A debug build now shows an error view on the Home Screen with the widget id, the failing stage, the error message and the stack, and tapping it reloads the bundle from Metro and retries, so a Metro outage that began before the widget was placed no longer sticks for the rest of the widget's session. A release build keeps the last render of each placement and size that succeeded instead of falling back to the placeholder after a bad props update or locale change. Each failed render is logged under the `VoltraDynamicWidget` tag.
+- 775cd68: **Breaking:** removed the unused `renderAndroidLiveUpdateToJson()` and `renderAndroidLiveUpdateToString()` functions and the `AndroidLiveUpdate*` types from `@use-voltra/android`, and their re-exports from `@use-voltra/android-client`. They were left over from an abandoned renderer, and nothing on the device could ever display their output. Android 16 Live Updates through `requestPromotedOngoing` are unaffected.
+
+### Patch Changes
+
+- 258b2f8: `gap` on Android `Column`, `Row`, `LazyColumn`, and `LazyVerticalGrid` now spaces children apart, as it does on iOS. Before, Android ignored it. On a `LazyVerticalGrid` with adaptive columns, the grid's outer edge also gets half the gap.
+- dfe97cf: `LazyColumn` and `LazyVerticalGrid` now render in `VoltraWidgetPreview` instead of showing
+  nothing. On Android 12 (API 31) and older they render as a non-scrolling approximation, since
+  Glance's collection adapters require a real AppWidget host on those versions.
+- 775cd68: Tapping a button or toggle without a deep link in a payload widget without a refresh button now opens the app with the widget's real id instead of `"notification"`.
+- Updated dependencies [775cd68]
+  - @use-voltra/android@2.6.0
+  - @use-voltra/compiler@2.6.0
+  - @use-voltra/expo-plugin@2.6.0
+
 ## 2.5.0
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @use-voltra/ios-client
 
+## 2.6.0
+
+### Patch Changes
+
+- @use-voltra/compiler@2.6.0
+- @use-voltra/expo-plugin@2.6.0
+- @use-voltra/ios@2.6.0
+
 ## 2.5.0
 
 ### Minor Changes
