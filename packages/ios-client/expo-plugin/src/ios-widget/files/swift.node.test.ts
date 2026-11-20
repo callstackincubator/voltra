@@ -288,4 +288,17 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     expect(swift).not.toContain('AppIntentConfiguration(')
     expect(swift).not.toContain('WidgetConfigurationIntent')
   })
+
+  it('imports AppIntents exactly once, in the header, whether or not a widget has an appIntent', () => {
+    const count = (swift: string) => swift.split('import AppIntents').length - 1
+    // The retry intent of a Dynamic Widget needs it too, so a plain Dynamic Widget gets the header import.
+    expect(count(__test__.generateWidgetBundleSwift([plainClientWidget]))).toBe(1)
+    expect(count(__test__.generateWidgetBundleSwift([configurableWidget]))).toBe(1)
+    expect(count(__test__.generateWidgetBundleSwift([plainClientWidget, configurableWidget]))).toBe(1)
+    // No Dynamic Widget, no retry intent, no import.
+    expect(count(__test__.generateWidgetBundleSwift([{ ...plainClientWidget, clientRendered: false }]))).toBe(0)
+    // The import sits in the header, before the first declaration.
+    const swift = __test__.generateWidgetBundleSwift([plainClientWidget])
+    expect(swift.indexOf('import AppIntents')).toBeLessThan(swift.indexOf('struct VoltraWidgetBundle'))
+  })
 })

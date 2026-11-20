@@ -405,18 +405,19 @@ public struct VoltraClientWidgetContentView: View {
     #endif
   }
 
-  private var lastGoodKey: DynamicWidgetLastGoodKey {
-    DynamicWidgetLastGoodKey(
+  private var renderKey: DynamicWidgetRenderKey {
+    DynamicWidgetRenderKey(
       widgetId: entry.widgetId,
       instance: WidgetCanonicalConfiguration.key(entry.configuration),
-      family: String(describing: widgetFamily)
+      family: String(describing: widgetFamily),
+      appearance: "\(String(describing: colorScheme))-\(String(describing: widgetRenderingMode))-\(showsWidgetContainerBackground)"
     )
   }
 
   /// Renders this placement and decides what to draw (ADR 0013 §3). An entry that is not ready and
   /// carries no failure is WidgetKit's placeholder, which has always drawn the prerendered state.
   private func shownContent() -> DynamicWidgetShownContent<VoltraNode> {
-    let family = String(describing: widgetFamily)
+    let key = renderKey
     let outcome: Result<VoltraNode, DynamicWidgetRenderFailure>
     if let failure = entry.failure {
       outcome = .failure(failure)
@@ -428,16 +429,16 @@ public struct VoltraClientWidgetContentView: View {
 
     switch outcome {
     case let .failure(failure):
-      DynamicWidgetFailureLog.shared.failed(widgetId: entry.widgetId, family: family, failure: failure, isDev: isDev)
+      DynamicWidgetFailureLog.shared.failed(key: key, failure: failure, isDev: isDev)
     case .success:
-      DynamicWidgetFailureLog.shared.succeeded(widgetId: entry.widgetId, family: family)
+      DynamicWidgetFailureLog.shared.succeeded(key: key)
     }
 
     return DynamicWidgetShownContent.resolve(
       isDev: isDev,
       result: outcome,
       lastGood: {
-        DynamicWidgetLastGoodStore.shared?.read(lastGoodKey).flatMap { parseResolvedNode(jsonString: $0) }
+        DynamicWidgetLastGoodStore.shared?.read(key).flatMap { parseResolvedNode(jsonString: $0) }
       },
       placeholder: { initialState.flatMap(parseResolvedNode(jsonData:)) }
     )
@@ -493,7 +494,7 @@ public struct VoltraClientWidgetContentView: View {
       return .failure(DynamicWidgetRenderFailure(stage: .parse, message: "render() returned JSON that did not parse into a node"))
     }
     // Written in every build so dev runs exercise the path; only release reads it back.
-    DynamicWidgetLastGoodStore.shared?.write(resolved, for: lastGoodKey)
+    DynamicWidgetLastGoodStore.shared?.write(resolved, for: renderKey)
     return .success(node)
   }
 

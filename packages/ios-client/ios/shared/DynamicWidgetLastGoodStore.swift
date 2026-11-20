@@ -1,21 +1,30 @@
 import Foundation
 
-/// Identifies one last good render: a widget, one placement's configuration (the instance key of
-/// ADR 0007; nil when the widget has none) and one family. iOS gives a placement no id of its own,
-/// so the instance key is the nearest thing to one.
-public struct DynamicWidgetLastGoodKey: Equatable {
+/// Identifies one rendered placement: a widget, one placement's configuration (the instance key of
+/// ADR 0007; nil when the widget has none), one family and one appearance. iOS gives a placement no
+/// id of its own, so the instance key is the nearest thing to one.
+///
+/// WidgetKit runs the View body once per family, color scheme and rendering mode, and the widget
+/// can draw a different tree for each, so `appearance` is part of the key: without it those
+/// renders would overwrite one file and a failure could show another appearance's snapshot. Both
+/// the last good render and the failure log's recovery tracking use this key.
+public struct DynamicWidgetRenderKey: Hashable {
   public let widgetId: String
   public let instance: String?
   public let family: String
+  /// Color scheme, rendering mode and whether the container background shows: the three
+  /// appearance values `render()` is given, joined into one component.
+  public let appearance: String
 
-  public init(widgetId: String, instance: String?, family: String) {
+  public init(widgetId: String, instance: String?, family: String, appearance: String) {
     self.widgetId = widgetId
     self.instance = instance
     self.family = family
+    self.appearance = appearance
   }
 }
 
-/// The resolved node JSON of the last render that succeeded, per `DynamicWidgetLastGoodKey`, kept
+/// The resolved node JSON of the last render that succeeded, per `DynamicWidgetRenderKey`, kept
 /// in the App Group so a release widget does not fall back to the build-time placeholder after one
 /// bad props update, locale change or resize (ADR 0013 §5).
 ///
@@ -49,7 +58,7 @@ public final class DynamicWidgetLastGoodStore {
   }
 
   @discardableResult
-  public func write(_ nodeJSON: String, for key: DynamicWidgetLastGoodKey) -> Bool {
+  public func write(_ nodeJSON: String, for key: DynamicWidgetRenderKey) -> Bool {
     let data = Data(nodeJSON.utf8)
     guard data.count <= Self.maxBytes else { return false }
 
@@ -74,7 +83,7 @@ public final class DynamicWidgetLastGoodStore {
     }
   }
 
-  public func read(_ key: DynamicWidgetLastGoodKey) -> String? {
+  public func read(_ key: DynamicWidgetRenderKey) -> String? {
     guard let data = try? Data(contentsOf: fileURL(for: key)) else { return nil }
     return String(data: data, encoding: .utf8)
   }
@@ -95,8 +104,8 @@ public final class DynamicWidgetLastGoodStore {
     }
   }
 
-  private func fileURL(for key: DynamicWidgetLastGoodKey) -> URL {
-    let name = [Self.encode(key.widgetId), Self.encode(key.instance ?? "-"), Self.encode(key.family)]
+  private func fileURL(for key: DynamicWidgetRenderKey) -> URL {
+    let name = [Self.encode(key.widgetId), Self.encode(key.instance ?? "-"), Self.encode(key.family), Self.encode(key.appearance)]
       .joined(separator: "__")
     return directoryURL.appendingPathComponent(name + ".json")
   }

@@ -569,8 +569,6 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
 const DYNAMIC_WIDGET_RETRY_SWIFT = dedent`
   // MARK: - Dynamic Widget retry (dev error view)
 
-  import AppIntents
-
   @available(iOS 17.0, *)
   struct VoltraDynamicWidgetRetryIntent: AppIntent {
     static var title: LocalizedStringResource = "Retry Dynamic Widget"
@@ -631,7 +629,7 @@ function generateWidgetBundleSwift(
   const needsFoundation = widgets.some(widgetUsesGalleryLocalization)
   const foundationImport = needsFoundation ? 'import Foundation\n' : ''
   const hasDynamicWidgets = widgets.some((w) => w.clientRendered)
-  const appIntentsImport = appIntentWidgets.length > 0 ? 'import AppIntents\n' : ''
+  const appIntentsImport = appIntentWidgets.length > 0 || hasDynamicWidgets ? 'import AppIntents\n' : ''
   const retryHelper = hasDynamicWidgets ? `\n${DYNAMIC_WIDGET_RETRY_SWIFT}\n` : ''
 
   return dedent`

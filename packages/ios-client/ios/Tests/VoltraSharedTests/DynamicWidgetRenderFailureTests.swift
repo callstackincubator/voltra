@@ -65,15 +65,24 @@ final class DynamicWidgetRenderFailureTests: XCTestCase {
 
   // MARK: - Failure log
 
-  func testLogsEachFailureAndOnlyOneRecoveryPerWidgetAndFamily() {
+  private func key(
+    _ id: String = "inbox",
+    instance: String? = nil,
+    family: String = "systemMedium",
+    appearance: String = "light-fullColor-true"
+  ) -> DynamicWidgetRenderKey {
+    DynamicWidgetRenderKey(widgetId: id, instance: instance, family: family, appearance: appearance)
+  }
+
+  func testLogsEachFailureAndOnlyOneRecoveryPerRenderKey() {
     var lines: [(DynamicWidgetFailureLog.Level, String)] = []
     let log = DynamicWidgetFailureLog { lines.append(($0, $1)) }
     let failure = DynamicWidgetRenderFailure(stage: .render, message: "TypeError: x", stack: "at f (a.js:1:1)")
 
-    log.succeeded(widgetId: "inbox", family: "systemMedium")
+    log.succeeded(key: key())
     XCTAssertTrue(lines.isEmpty, "a success that follows no failure logs nothing")
 
-    log.failed(widgetId: "inbox", family: "systemMedium", failure: failure, isDev: true)
+    log.failed(key: key(), failure: failure, isDev: true)
     XCTAssertEqual(lines.count, 1)
     XCTAssertEqual(lines[0].0, .error)
     XCTAssertEqual(
@@ -81,21 +90,43 @@ final class DynamicWidgetRenderFailureTests: XCTestCase {
       "[DynamicWidget] render failed widgetId=inbox family=systemMedium stage=render dev=true: TypeError: x\nat f (a.js:1:1)"
     )
 
-    log.succeeded(widgetId: "inbox", family: "systemSmall")
+    log.succeeded(key: key(family: "systemSmall"))
     XCTAssertEqual(lines.count, 1, "another family has not failed, so it has nothing to recover from")
 
-    log.succeeded(widgetId: "inbox", family: "systemMedium")
-    log.succeeded(widgetId: "inbox", family: "systemMedium")
+    log.succeeded(key: key())
+    log.succeeded(key: key())
     XCTAssertEqual(lines.count, 2)
     XCTAssertEqual(lines[1].0, .info)
     XCTAssertEqual(lines[1].1, "[DynamicWidget] render recovered widgetId=inbox family=systemMedium")
+  }
+
+  func testPlacementsAndAppearancesOfOneFamilyDoNotFlapEachOthersRecovery() {
+    var lines: [String] = []
+    let log = DynamicWidgetFailureLog { lines.append($1) }
+    let failure = DynamicWidgetRenderFailure(stage: .render, message: "boom")
+    let a = key(instance: "aaa")
+    let b = key(instance: "bbb")
+    let dark = key(instance: "aaa", appearance: "dark-fullColor-true")
+
+    // One round: placement A fails, placement B (same family) and A's dark appearance succeed.
+    for _ in 0 ..< 3 {
+      log.failed(key: a, failure: failure, isDev: false)
+      log.succeeded(key: b)
+      log.succeeded(key: dark)
+    }
+
+    XCTAssertEqual(lines.filter { $0.contains("recovered") }.count, 0, "no recovery was logged for something that never failed")
+    XCTAssertEqual(lines.filter { $0.contains("failed") }.count, 3)
+
+    log.succeeded(key: a)
+    XCTAssertEqual(lines.filter { $0.contains("recovered") }.count, 1)
   }
 
   func testReleaseFailureLogOmitsTheStack() {
     var lines: [String] = []
     let log = DynamicWidgetFailureLog { lines.append($1) }
     log.failed(
-      widgetId: "w", family: "systemSmall",
+      key: key("w", family: "systemSmall"),
       failure: DynamicWidgetRenderFailure(stage: .bundle, message: "gone", stack: "frame"),
       isDev: false
     )

@@ -166,11 +166,11 @@ A render can fail at four points: loading the bundle (Metro unreachable or answe
 | Debug   | The error view, even if the widget has rendered before                                                                 |
 | Release | The last render of that widget, configuration and size that succeeded, else the `initialStatePath` view, else a spinner |
 
-The error view is red and names the widget `id`, the stage (`bundle`, `evaluate`, `render` or `parse`), the error message and the first stack frames from your code (2 on a small widget, 3 on a medium one, 6 on a large one). A bundle Metro could not build shows Metro's own error, and an unreachable Metro names the host Voltra tried. Lock Screen widgets get a reduced view: the `id` and stage, plus the message on a rectangular one. Release builds never show it.
+The error view is red and names the widget `id`, the stage (`bundle`, `evaluate`, `render` or `parse`), the error message and the first stack frames from your code (2 on a small widget, 3 on a medium one, 6 on a large one). A bundle Metro could not build shows Metro's own error, and an unreachable Metro names the host Voltra tried. Lock Screen widgets get a reduced view: an inline widget shows the `id` and stage, a rectangular one adds the message, and a circular one shows only the stage. Release builds never show it.
 
 On iOS 17 and later, tap the error view to retry. Voltra reloads the widget's timeline, which fetches the bundle from Metro and evaluates it again, so fixing your component or restarting Metro and tapping is enough. Lock Screen widgets have no retry. Below iOS 17 the error view has no button; reload the widget instead. Retry does not refetch [server props](#fetching-props-from-a-server).
 
-The last good render is stored in the App Group per widget, configuration and size, so two placements configured differently do not show each other's content. It is dropped when you call `clearWidget` or `clearAllWidgets`, or when the app finds on launch that the widget is no longer installed. A size that has not rendered successfully yet shows the `initialStatePath` view, not another size's layout. A placement whose configuration changed leaves its old file behind until then; each file is capped at 256 KB. A release widget can therefore show stale content without saying so.
+The last good render is stored in the App Group per widget, configuration, size and appearance (color scheme, rendering mode and whether the container background shows), so two placements configured differently, or the same one drawn light and dark, do not show each other's content. It is dropped when you call `clearWidget` or `clearAllWidgets`, or when the app finds on launch that the widget is no longer installed. A size or appearance that has not rendered successfully yet shows the `initialStatePath` view, not another one's layout. A placement whose configuration changed leaves its old file behind until then; each file is capped at 256 KB. A release widget can therefore show stale content without saying so.
 
 Each failed render is also logged under the `widget` category of the `com.voltra` subsystem, with the stack in debug builds:
 
@@ -178,7 +178,7 @@ Each failed render is also logged under the `widget` category of the `com.voltra
 [DynamicWidget] render failed widgetId=inbox family=systemMedium stage=render dev=true: TypeError: Cannot read property 'map' of undefined
 ```
 
-A later success for the same widget and size logs `[DynamicWidget] render recovered widgetId=inbox family=systemMedium`. Your app is not told about failures yet.
+A later success for the same widget, configuration, size and appearance logs `[DynamicWidget] render recovered widgetId=inbox family=systemMedium`. Your app is not told about failures yet.
 
 ## Runtime props and configuration are separate
 

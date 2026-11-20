@@ -242,12 +242,17 @@ differs:
   loader already uses. Release bundles are the ones baked in by the
   "Bundle Voltra Dynamic Content" build phase.
 - **Last good key.** iOS gives a placement no id of its own, so the key is
-  `(widgetId, instance key, family)`, where the instance key is the hash of the
-  placement's merged configuration (ADR 0007), absent for a widget with none.
-  That is the nearest thing to Android's `(widgetId, appWidgetId, widgetFamily)`:
-  without it two differently configured placements would show each other's
-  content. One file per key under a `VoltraDynamicWidgetLastGood` directory in
-  the App Group, 256 KB cap, skipped when unchanged.
+  `(widgetId, instance key, family, appearance)`. The instance key is the hash
+  of the placement's merged configuration (ADR 0007), absent for a widget with
+  none. The appearance is the color scheme, rendering mode and whether the
+  container background shows: WidgetKit runs the View body once per family,
+  scheme and rendering mode, `render()` is given all three, and a widget can
+  draw a different tree for each, so without them those renders would overwrite
+  one file and a failure could show another appearance's snapshot. That is the
+  nearest thing to Android's `(widgetId, appWidgetId, widgetFamily)`: without
+  the instance key two differently configured placements would show each
+  other's content. One file per key under a `VoltraDynamicWidgetLastGood`
+  directory in the App Group, 256 KB cap, skipped when unchanged.
 - **Cleanup.** `clearWidget`, `clearAllWidgets` and the app's orphan cleanup
   (which compares against the installed kinds at launch) remove every
   instance's and family's files for the widget ids they cover. A file for an
@@ -262,8 +267,10 @@ differs:
   one does nothing when tapped. Lock Screen (accessory) families get a reduced
   error view without it.
 - **Log.** `[DynamicWidget] render failed widgetId=<id> family=<family> stage=<stage> dev=<bool>: <message>`
-  on the `widget` category, with no `appWidgetId`; recovery is tracked per
-  `(widgetId, family)`.
+  on the `widget` category, with no `appWidgetId`; recovery is tracked per the
+  same key as the last good render, so placements and appearances of one family
+  that differ in failing and succeeding do not flap failed and recovered every
+  round.
 
 ### Later
 

@@ -26,6 +26,8 @@ final class VoltraJSRendererFailureTests: XCTestCase {
     XCTAssertEqual(failure.stage, .render)
     XCTAssertEqual(failure.message, "TypeError: Cannot read property map of undefined")
     XCTAssertTrue(failure.stack?.contains("renderInbox") ?? false, "stack: \(failure.stack ?? "nil")")
+    // Frames carry a location, which the dev error view shows: `renderInbox@voltra/<id>.bundle:<line>:<col>`.
+    XCTAssertTrue(failure.stack?.contains("voltra/\(id).bundle:") ?? false, "stack: \(failure.stack ?? "nil")")
   }
 
   func testANonStringReturnNamesTheReturnedType() throws {
@@ -62,5 +64,18 @@ final class VoltraJSRendererFailureTests: XCTestCase {
       return XCTFail("nothing was evaluated")
     }
     XCTAssertEqual(failure.stage, .render)
+  }
+
+  func testALiveActivityBundleThatThrowsWhileEvaluatingFailsEvenAfterAGoodEvaluation() {
+    let id = "la-\(UUID().uuidString)"
+    XCTAssertTrue(VoltraJSRenderer.evaluateLiveActivityBundle(
+      source: bundle(render: "function () { return '{\"type\":\"empty\"}'; }"),
+      definitionId: id
+    ))
+
+    // Before the exception handler stored the exception on the context, this throw went unnoticed
+    // and the previous render() stayed in place. It is a failure now, and the message is unchanged.
+    let throwing = "var __r = function () { throw new Error('module blew up'); };\n__r(0);"
+    XCTAssertFalse(VoltraJSRenderer.evaluateLiveActivityBundle(source: throwing, definitionId: id))
   }
 }

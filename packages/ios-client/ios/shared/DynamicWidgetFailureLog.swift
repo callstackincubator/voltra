@@ -7,8 +7,9 @@ import Foundation
 /// [DynamicWidget] render recovered widgetId=inbox family=systemMedium
 /// ```
 ///
-/// Recovery is tracked per `(widgetId, family)`: a View body runs once per scheme and rendering
-/// mode, so a per-render tracker would log a failure and a recovery on every round.
+/// Recovery is tracked per `DynamicWidgetRenderKey`, the same key as the last good render: a View
+/// body runs once per family, scheme and rendering mode, and two placements or appearances that
+/// differ in failing and succeeding would otherwise log a failure and a recovery on every round.
 public final class DynamicWidgetFailureLog {
   public enum Level { case error, info }
 
@@ -21,35 +22,31 @@ public final class DynamicWidgetFailureLog {
 
   private let sink: (Level, String) -> Void
   private let lock = NSLock()
-  private var failing: Set<String> = []
+  private var failing: Set<DynamicWidgetRenderKey> = []
 
   public init(sink: @escaping (Level, String) -> Void) {
     self.sink = sink
   }
 
-  public func failed(widgetId: String, family: String, failure: DynamicWidgetRenderFailure, isDev: Bool) {
+  public func failed(key: DynamicWidgetRenderKey, failure: DynamicWidgetRenderFailure, isDev: Bool) {
     lock.lock()
-    failing.insert(trackingKey(widgetId, family))
+    failing.insert(key)
     lock.unlock()
 
-    var line = "[DynamicWidget] render failed widgetId=\(widgetId) family=\(family) stage=\(failure.stage.rawValue) dev=\(isDev): \(failure.message)"
+    var line = "[DynamicWidget] render failed widgetId=\(key.widgetId) family=\(key.family) stage=\(failure.stage.rawValue) dev=\(isDev): \(failure.message)"
     if isDev, let stack = failure.stack, !stack.isEmpty {
       line += "\n\(stack)"
     }
     sink(.error, line)
   }
 
-  public func succeeded(widgetId: String, family: String) {
+  public func succeeded(key: DynamicWidgetRenderKey) {
     lock.lock()
-    let recovered = failing.remove(trackingKey(widgetId, family)) != nil
+    let recovered = failing.remove(key) != nil
     lock.unlock()
 
     if recovered {
-      sink(.info, "[DynamicWidget] render recovered widgetId=\(widgetId) family=\(family)")
+      sink(.info, "[DynamicWidget] render recovered widgetId=\(key.widgetId) family=\(key.family)")
     }
-  }
-
-  private func trackingKey(_ widgetId: String, _ family: String) -> String {
-    "\(widgetId)|\(family)"
   }
 }

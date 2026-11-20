@@ -84,7 +84,8 @@ public enum VoltraJSRenderer {
     """
 
     ctx.exception = nil
-    ctx.evaluateScript(wrapped)
+    // A source URL makes the stack frames of a throw carry a location (`render@voltra/inbox.bundle:31:22`).
+    ctx.evaluateScript(wrapped, withSourceURL: URL(string: "voltra/\(id).bundle"))
     if let thrown = takeException(ctx) {
       VoltraLogger.widget.error("[\(TAG)] Bundle eval failed for \(kind) id=\(id): \(thrown.message)")
       return .failure(DynamicWidgetRenderFailure(stage: .evaluate, message: thrown.message, stack: thrown.stack))

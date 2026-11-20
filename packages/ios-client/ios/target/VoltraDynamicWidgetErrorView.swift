@@ -1,6 +1,9 @@
 import SwiftUI
 import WidgetKit
 
+/// Wraps `label` in a button that reloads the widget. `nil` where the platform has no such button.
+public typealias VoltraDynamicWidgetRetryButton = (_ widgetId: String, _ label: AnyView) -> AnyView
+
 /// What a Dynamic Widget shows in a dev build when a render fails (ADR 0013 §3): the widget id, the
 /// failing stage, the message and the first stack frames, with a retry button where one can be
 /// tapped. Plain SwiftUI, not a `VoltraNode`, so it cannot fail the way the content did.
@@ -10,9 +13,6 @@ import WidgetKit
 /// The retry button is built by the widget extension (`retryButton`), not here: an App Intent
 /// defined in this library is not in the extension's App Intents metadata, so a button made from
 /// one would draw and then do nothing when tapped.
-/// Wraps `label` in a button that reloads the widget. `nil` where the platform has no such button.
-public typealias VoltraDynamicWidgetRetryButton = (_ widgetId: String, _ label: AnyView) -> AnyView
-
 struct VoltraDynamicWidgetErrorView: View {
   let widgetId: String
   let failure: DynamicWidgetRenderFailure

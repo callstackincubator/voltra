@@ -17,8 +17,13 @@ final class DynamicWidgetLastGoodStoreTests: XCTestCase {
     super.tearDown()
   }
 
-  private func key(_ id: String = "inbox", instance: String? = nil, family: String = "systemMedium") -> DynamicWidgetLastGoodKey {
-    DynamicWidgetLastGoodKey(widgetId: id, instance: instance, family: family)
+  private func key(
+    _ id: String = "inbox",
+    instance: String? = nil,
+    family: String = "systemMedium",
+    appearance: String = "light-fullColor-true"
+  ) -> DynamicWidgetRenderKey {
+    DynamicWidgetRenderKey(widgetId: id, instance: instance, family: family, appearance: appearance)
   }
 
   func testWritesAndReadsBack() {
@@ -57,6 +62,21 @@ final class DynamicWidgetLastGoodStoreTests: XCTestCase {
     XCTAssertEqual(store.read(key(instance: "aaa")), "a")
     XCTAssertEqual(store.read(key(instance: "bbb")), "b")
     XCTAssertNil(store.read(key(family: "systemLarge")), "a family with no render of its own has none")
+  }
+
+  func testAppearancesOfOneFamilyDoNotShareAFile() {
+    store.write("light", for: key(appearance: "light-fullColor-true"))
+    store.write("dark", for: key(appearance: "dark-fullColor-true"))
+    store.write("accented", for: key(appearance: "light-accented-true"))
+    store.write("no-background", for: key(appearance: "light-fullColor-false"))
+    XCTAssertEqual(store.read(key(appearance: "light-fullColor-true")), "light")
+    XCTAssertEqual(store.read(key(appearance: "dark-fullColor-true")), "dark")
+    XCTAssertEqual(store.read(key(appearance: "light-accented-true")), "accented")
+    XCTAssertEqual(store.read(key(appearance: "light-fullColor-false")), "no-background")
+    XCTAssertNil(store.read(key(appearance: "dark-accented-true")), "an appearance with no render of its own has none")
+
+    store.remove(widgetId: "inbox")
+    XCTAssertNil(store.read(key(appearance: "dark-fullColor-true")), "remove clears every appearance")
   }
 
   func testRemoveClearsEveryInstanceAndFamilyOfOneWidgetOnly() {
