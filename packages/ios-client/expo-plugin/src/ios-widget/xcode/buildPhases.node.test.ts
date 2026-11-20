@@ -7,6 +7,7 @@ import { ensureWidgetBundleScriptPhase } from './buildPhases'
 const xcode = require('xcode')
 
 const TARGET_UUID = 'A'.repeat(24)
+const MAIN_TARGET_UUID = 'D'.repeat(24)
 
 function makeProject() {
   const project = xcode.project('/noop.pbxproj')
@@ -20,6 +21,17 @@ function makeProject() {
     },
   }
   return project
+}
+
+function makeTwoTargetProject() {
+  const project = makeProject()
+  project.hash.project.objects.PBXNativeTarget[MAIN_TARGET_UUID] = { buildPhases: [] }
+  return project
+}
+
+function targetPhases(project: any, targetUuid: string): any[] {
+  const section = project.hash.project.objects.PBXShellScriptBuildPhase || {}
+  return project.hash.project.objects.PBXNativeTarget[targetUuid].buildPhases.map((entry: any) => section[entry.value])
 }
 
 function shellPhaseObjects(project: any): any[] {
@@ -80,5 +92,42 @@ describe('ensureWidgetBundleScriptPhase', () => {
     const project = makeProject()
     ensureWidgetBundleScriptPhase(project, 'B'.repeat(24))
     expect(shellPhaseObjects(project)).toHaveLength(0)
+  })
+
+  describe('with an extension and a main app target', () => {
+    function expectOwnContent(project: any) {
+      const extensionPhases = targetPhases(project, TARGET_UUID)
+      const mainPhases = targetPhases(project, MAIN_TARGET_UUID)
+      expect(extensionPhases).toHaveLength(1)
+      expect(mainPhases).toHaveLength(1)
+      expect(extensionPhases[0].shellScript).toContain('--content all')
+      expect(extensionPhases[0].shellScript).not.toContain('--content live-activities')
+      expect(mainPhases[0].shellScript).toContain('--content live-activities')
+      expect(mainPhases[0].shellScript).not.toContain('--content all')
+      expect(shellPhaseObjects(project)).toHaveLength(2)
+    }
+
+    it('keeps each target on its own content (extension first)', () => {
+      const project = makeTwoTargetProject()
+      ensureWidgetBundleScriptPhase(project, TARGET_UUID, 'all')
+      ensureWidgetBundleScriptPhase(project, MAIN_TARGET_UUID, 'live-activities')
+      expectOwnContent(project)
+    })
+
+    it('keeps each target on its own content (main app first)', () => {
+      const project = makeTwoTargetProject()
+      ensureWidgetBundleScriptPhase(project, MAIN_TARGET_UUID, 'live-activities')
+      ensureWidgetBundleScriptPhase(project, TARGET_UUID, 'all')
+      expectOwnContent(project)
+    })
+
+    it('is idempotent across repeated runs', () => {
+      const project = makeTwoTargetProject()
+      for (let i = 0; i < 2; i++) {
+        ensureWidgetBundleScriptPhase(project, TARGET_UUID, 'all')
+        ensureWidgetBundleScriptPhase(project, MAIN_TARGET_UUID, 'live-activities')
+      }
+      expectOwnContent(project)
+    })
   })
 })
