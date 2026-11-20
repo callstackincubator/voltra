@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -20,9 +21,11 @@ data class AndroidTitleBarParameters(
     /** Leading icon */
     val startIcon: String,
     /** Leading icon tint color */
-    val iconColor: String? = null,
+    @Contextual
+    val iconColor: Any? = null,
     /** Title text color */
-    val textColor: String? = null,
+    @Contextual
+    val textColor: Any? = null,
     /** Title font family */
     val fontFamily: String? = null,
 )

@@ -11,6 +11,7 @@ import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
 import voltra.styling.StyleConverter
 import voltra.styling.applyStyle
+import voltra.styling.isNightMode
 
 data class ResolvedStyle(
     val modifier: GlanceModifier,
@@ -38,11 +39,14 @@ fun resolveAndApplyStyle(
     return ResolvedStyle(styledModifier.applyNativeModifiers(element), compositeStyle)
 }
 
-/** The element's style values alone, without building modifiers. */
+@Composable
 fun resolveElementStyle(
     element: VoltraElement,
     sharedStyles: List<Map<String, Any?>>?,
-): CompositeStyle? = resolveStyle(element.p, sharedStyles)?.let(StyleConverter::convert)
+): CompositeStyle? {
+    val isNightMode = LocalContext.current.isNightMode()
+    return resolveStyle(element.p, sharedStyles)?.let { StyleConverter.convert(it, isNightMode) }
+}
 
 /**
  * Resolve style reference to actual style map.

@@ -166,15 +166,14 @@ fun RenderChart(
 
 @Composable
 private fun parseForegroundStyleScale(json: String?): Map<String, Int>? {
-    val pairs = parseForegroundStyleScaleEntries(json) ?: return null
+    val entries = parseForegroundStyleScaleEntries(json) ?: return null
 
     val map = mutableMapOf<String, Int>()
-    for (pair in pairs) {
-        if (pair.size >= 2) {
-            val color = JSColorParser.parse(pair[1])?.resolveColor()
-            if (color != null) {
-                map[pair[0]] = color.toArgb()
-            }
+    for (entry in entries) {
+        val series = entry.getOrNull(0) as? String ?: continue
+        val color = JSColorParser.parse(entry.getOrNull(1), "foregroundStyleScale")?.resolveColor()
+        if (color != null) {
+            map[series] = color.toArgb()
         }
     }
 
@@ -184,8 +183,10 @@ private fun parseForegroundStyleScale(json: String?): Map<String, Int>? {
 @Composable
 private fun resolveChartMarksColors(marks: List<WireMark>): List<WireMark> =
     marks.map { mark ->
-        val colorString = mark.props["c"] as? String ?: return@map mark
-        val color = JSColorParser.parse(colorString)?.resolveColor() ?: return@map mark
+        // A string, role token or `{ day, night }` pair; an unusable value is left for the bitmap
+        // renderer, which only reads hex and so falls back to the default palette.
+        val rawColor = mark.props["c"] ?: return@map mark
+        val color = JSColorParser.parse(rawColor, "color")?.resolveColor() ?: return@map mark
         mark.copy(props = mark.props + ("c" to toRgbaHexString(color.toArgb())))
     }
 

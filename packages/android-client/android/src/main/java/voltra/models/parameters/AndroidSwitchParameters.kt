@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -22,13 +23,17 @@ data class AndroidSwitchParameters(
     /** Text label */
     val text: String? = null,
     /** Checked thumb color */
-    val thumbCheckedColor: String? = null,
+    @Contextual
+    val thumbCheckedColor: Any? = null,
     /** Unchecked thumb color */
-    val thumbUncheckedColor: String? = null,
+    @Contextual
+    val thumbUncheckedColor: Any? = null,
     /** Checked track color */
-    val trackCheckedColor: String? = null,
+    @Contextual
+    val trackCheckedColor: Any? = null,
     /** Unchecked track color */
-    val trackUncheckedColor: String? = null,
+    @Contextual
+    val trackUncheckedColor: Any? = null,
     /** Maximum lines for text */
     val maxLines: Double? = null,
 )

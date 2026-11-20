@@ -233,6 +233,7 @@ private fun RowScope.RenderChildWithWeight(child: VoltraNode?) {
     }
 }
 
+@Composable
 private fun extractWeightFromChild(
     child: VoltraNode?,
     context: voltra.glance.VoltraRenderContext,

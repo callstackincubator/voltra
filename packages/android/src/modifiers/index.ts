@@ -1,7 +1,9 @@
-import type { AndroidColorValue, AndroidDynamicColorToken } from '../dynamic-colors.js'
+import type { AndroidColorValue } from '../dynamic-colors.js'
 import { createAndroidModifier } from './createAndroidModifier.js'
 
 export type { AndroidModifier } from './createAndroidModifier.js'
+// `DayNightColors` is the 2.4.0 name for `AndroidColorPair`, kept as an alias so existing imports still compile.
+export type { AndroidColorPair as DayNightColors, StaticColor } from '../dynamic-colors.js'
 
 export type PaddingValues = {
   all?: number
@@ -21,19 +23,6 @@ export type AbsolutePaddingValues = {
   top?: number
   right?: number
   bottom?: number
-}
-
-/**
- * A static color string. Resolves to `never` for an `AndroidDynamicColors` token, so passing one
- * where Glance needs a concrete color is a compile-time error.
- */
-export type StaticColor<Color extends string> = Color extends AndroidDynamicColorToken ? never : Color
-
-export type DayNightColors<Day extends string = string, Night extends string = string> = {
-  /** Static color used in light mode. `AndroidDynamicColors` tokens are not accepted. */
-  day: StaticColor<Day>
-  /** Static color used in dark mode. `AndroidDynamicColors` tokens are not accepted. */
-  night: StaticColor<Night>
 }
 
 /** At least one of the two keys is required. */
@@ -129,9 +118,8 @@ export const wrapContentSize = () => createAndroidModifier('wrapContentSize')
  *
  * @since Android 7.0
  */
-export const background = <Day extends string, Night extends string>(
-  color: AndroidColorValue | DayNightColors<Day, Night>
-) => createAndroidModifier('background', typeof color === 'string' ? { color } : { day: color.day, night: color.night })
+export const background = <Day extends string, Night extends string>(color: AndroidColorValue<Day, Night>) =>
+  createAndroidModifier('background', typeof color === 'string' ? { color } : { day: color.day, night: color.night })
 
 /**
  * Rounds the corners in dp. Glance ignores it below Android 12 (API 31).

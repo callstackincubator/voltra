@@ -2,6 +2,7 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { AndroidColorValue } from '../../dynamic-colors'
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidSquareIconButtonProps = VoltraBaseProps & {
@@ -12,7 +13,7 @@ export type AndroidSquareIconButtonProps = VoltraBaseProps & {
   /** Whether the button is enabled */
   enabled?: boolean
   /** Background color */
-  backgroundColor?: string
+  backgroundColor?: AndroidColorValue
   /** Icon color */
-  contentColor?: string
+  contentColor?: AndroidColorValue
 }

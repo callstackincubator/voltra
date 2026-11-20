@@ -7,6 +7,17 @@ import type { AndroidColorValue } from '../dynamic-colors.js'
 
 export type StyleProp<T> = T | T[] | null | undefined | false
 
+/**
+ * A pair of CSS gradient strings for light and dark mode. Not `AndroidColorPair`: each side is a whole
+ * gradient, and its stops may use `AndroidDynamicColors` tokens.
+ */
+type GradientPair = {
+  /** Gradient used in light mode. */
+  day: string
+  /** Gradient used in dark mode. */
+  night: string
+}
+
 export type VoltraAndroidViewStyle = {
   /** Width of the component. Supports fixed numbers (dp) or "100%" to fill. */
   width?: number | string
@@ -55,8 +66,11 @@ export type VoltraAndroidViewStyle = {
 
   /** Background color of the component */
   backgroundColor?: AndroidColorValue
-  /** CSS gradient background image, e.g. linear-gradient(to right, red, blue) */
-  backgroundImage?: string
+  /**
+   * CSS gradient background image, e.g. linear-gradient(to right, red, blue). Stops accept
+   * `AndroidDynamicColors` tokens. Pass `{ day, night }` to use a different gradient in each scheme.
+   */
+  backgroundImage?: string | GradientPair
   /** Corner radius for the component (requires Android 12+) */
   borderRadius?: number
   /** Border width (Note: Not yet implemented in Glance) */

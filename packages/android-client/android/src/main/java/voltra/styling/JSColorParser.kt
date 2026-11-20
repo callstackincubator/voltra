@@ -12,13 +12,71 @@ object JSColorParser {
 
     /**
      * Parse color value from any format.
-     * Supports: hex (#RGB, #RRGGBB, #RRGGBBAA), rgb/rgba, hsl/hsla, named colors.
+     * Supports: hex (#RGB, #RRGGBB, #RRGGBBAA), rgb/rgba, hsl/hsla, named colors, theme role
+     * tokens, and `{ day, night }` pairs of literal colors.
+     *
+     * @param logKey the style key or prop the value came from, named in the warning for an invalid pair.
      */
-    fun parse(value: Any?): VoltraColorValue? {
+    fun parse(
+        value: Any?,
+        logKey: String? = null,
+    ): VoltraColorValue? {
+        if (value is Map<*, *>) return parsePair(value, logKey)
+
         val string = value?.toString()?.trim()?.lowercase() ?: return null
 
         if (string.isEmpty()) return null
 
+        return parseString(string)
+    }
+
+    /**
+     * Both sides must be literal colors in the string grammar; anything else drops the whole pair
+     * with one warning, so the property falls back to its default as for an unparsable string.
+     */
+    private fun parsePair(
+        pair: Map<*, *>,
+        logKey: String?,
+    ): VoltraColorValue.DayNight? {
+        val missing = listOf("day", "night").firstOrNull { it !in pair }
+        if (missing != null) {
+            val forKey = logKey?.let { " for $it" } ?: ""
+            Log.w(TAG, "Ignoring invalid color pair$forKey: $missing must be a literal color string, got nothing")
+            return null
+        }
+
+        val day = parsePairSide(pair, "day", logKey) ?: return null
+        val night = parsePairSide(pair, "night", logKey) ?: return null
+        return VoltraColorValue.DayNight(day, night)
+    }
+
+    private fun parsePairSide(
+        pair: Map<*, *>,
+        side: String,
+        logKey: String?,
+    ): Color? {
+        val forKey = logKey?.let { " for $it" } ?: ""
+        val value = pair[side]
+        if (value !is String) {
+            Log.w(TAG, "Ignoring invalid color pair$forKey: $side must be a literal color string, got $value")
+            return null
+        }
+
+        val string = value.trim().lowercase()
+        if (string.isEmpty()) {
+            Log.w(TAG, "Ignoring invalid color pair$forKey: $side must be a literal color string, got \"$value\"")
+            return null
+        }
+
+        val color = parseString(string) as? VoltraColorValue.Static
+        if (color == null) {
+            Log.w(TAG, "Ignoring invalid color pair$forKey: $side must be a literal color string, got \"$value\"")
+            return null
+        }
+        return color.color
+    }
+
+    private fun parseString(string: String): VoltraColorValue? {
         VoltraThemeColorRole.fromToken(string)?.let { role ->
             return VoltraColorValue.Dynamic(role)
         }

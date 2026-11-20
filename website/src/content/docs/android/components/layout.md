@@ -51,7 +51,7 @@ A top-level container that provides a standard layout structure for widgets.
 
 **Parameters:**
 
-- `backgroundColor` (string, optional): Background color for the scaffold.
+- `backgroundColor` ([color value](/android/development/styling#day-and-night-colors), optional): Background color for the scaffold.
 - `horizontalPadding` (number, optional): Horizontal padding in dp.
 
 ---
@@ -64,8 +64,8 @@ A component that displays a title bar with a required leading icon.
 
 - `title` (string): Title text to display.
 - `startIcon` (object, required): `{ assetName: string }` or `{ base64: string }`.
-- `textColor` (string, optional).
-- `iconColor` (string, optional).
+- `textColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `iconColor` ([color value](/android/development/styling#day-and-night-colors), optional).
 - `fontFamily` (string, optional): `"monospace"`, `"serif"`, `"sans-serif"`, or `"cursive"`.
 
 ---

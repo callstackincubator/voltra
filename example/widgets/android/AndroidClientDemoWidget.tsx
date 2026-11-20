@@ -1,6 +1,12 @@
 import { Platform, StyleSheet } from 'react-native'
 
-import { AndroidDynamicColors, VoltraAndroid, type WidgetEnvironment } from '@use-voltra/android'
+import {
+  AndroidDynamicColors,
+  VoltraAndroid,
+  type VoltraAndroidTextStyle,
+  type VoltraAndroidViewStyle,
+  type WidgetEnvironment,
+} from '@use-voltra/android'
 
 // Static styles live outside the element tree; the Material You colors below are resolved
 // per render and merged in with StyleSheet.flatten.
@@ -10,6 +16,24 @@ const styles = StyleSheet.create({
   marker: { fontSize: 14 },
   swatch: { width: 16, height: 16, borderRadius: 4 },
 })
+
+// `{ day, night }` color pairs: the JS output is the same in both themes and Android picks the
+// side. React Native's StyleSheet types don't know pairs, so these are plain Voltra style objects.
+const pairCard: VoltraAndroidViewStyle = {
+  backgroundColor: { day: '#fff3c4', night: '#1a237e' },
+  padding: 4,
+  borderRadius: 4,
+}
+const pairCardText: VoltraAndroidTextStyle = { fontSize: 10, color: { day: '#5d4037', night: '#ffe082' } }
+const gradientSwatch: VoltraAndroidViewStyle = {
+  width: 32,
+  height: 16,
+  borderRadius: 4,
+  backgroundImage: {
+    day: 'linear-gradient(to right, #ff8f00, #ffee58)',
+    night: 'linear-gradient(to right, #311b92, #00bfa5)',
+  },
+}
 
 export type AndroidClientDemoWidgetProps = {
   headline?: string
@@ -89,6 +113,32 @@ export default function AndroidClientDemoWidget(
       {row('server city:', serverCity)}
       {row('server temp:', serverTemp)}
       {row('time:', renderedAt)}
+      {/* Color-pair demos share this one Row so the Column stays under Glance's 10-child limit. */}
+      <VoltraAndroid.Row>
+        <VoltraAndroid.Box style={pairCard}>
+          <VoltraAndroid.Text style={pairCardText}>day/night pair</VoltraAndroid.Text>
+        </VoltraAndroid.Box>
+        {/* Component color props take pairs too: this color comes from Text's `color` prop. */}
+        <VoltraAndroid.Text
+          color={{ day: '#c62828', night: '#80cbc4' }}
+          style={{ fontSize: 10 }}
+          modifiers={[VoltraAndroid.modifiers.padding({ horizontal: 6 })]}
+        >
+          prop pair
+        </VoltraAndroid.Text>
+        <VoltraAndroid.Box style={gradientSwatch} />
+        <VoltraAndroid.Spacer style={{ width: 4 }} />
+        {/* `gradientColors` entries can be pairs: Android draws the current theme's side into the arc. */}
+        <VoltraAndroid.ArcProgressIndicator
+          progress={0.75}
+          strokeWidth={3}
+          gradientColors={[
+            { day: '#ef6c00', night: '#80deea' },
+            { day: '#6a1b9a', night: '#f48fb1' },
+          ]}
+          style={{ width: 16, height: 16 }}
+        />
+      </VoltraAndroid.Row>
     </VoltraAndroid.Column>
   )
 }

@@ -26,8 +26,8 @@ The following React Native style properties are supported on Android:
 
 ### Visual Style
 
-- `backgroundColor` - Background color (hex strings, color names, or `AndroidDynamicColors.*` tokens).
-- `backgroundImage` - CSS gradient background. Supports `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`.
+- `backgroundColor` - Background color (hex strings, color names, `AndroidDynamicColors.*` tokens, or a [`{ day, night }` pair](#day-and-night-colors)).
+- `backgroundImage` - CSS gradient background. Supports `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`, or a [`{ day, night }` pair of gradients](#gradients-in-light-and-dark).
 - `borderRadius` - Corner radius in dp. **Note:** Requires Android 12+ (API 31). On older versions it is ignored, except on an `Image` with a fixed numeric `width` and `height`. On an `Image`, the radius rounds the image's box, not the picture inside it; see [Image](/android/components/visual#image).
 
 ### Text
@@ -35,10 +35,32 @@ The following React Native style properties are supported on Android:
 - `fontSize` - Font size in sp.
 - `fontWeight` - Supports `"normal"` and `"bold"`.
 - `fontFamily` - Font family name. Built-in values: `"monospace"`, `"serif"`, `"sans-serif"`, `"cursive"`. For custom fonts, see [Custom Fonts](/android/development/custom-fonts).
-- `color` - Text color (literal colors or `AndroidDynamicColors.*`).
+- `color` - Text color (literal colors, `AndroidDynamicColors.*`, or a [`{ day, night }` pair](#day-and-night-colors)).
 - `textDecorationLine` - Supports `"underline"` and `"line-through"`.
 - `textAlign` - Alignment of text within the component (`"left"`, `"center"`, `"right"`).
 - `numberOfLines` - Limits the number of lines displayed.
+
+### Day and night colors
+
+`backgroundColor` and text `color` also take a `{ day, night }` pair: one color for the light system theme and one for the dark. The type is `AndroidColorPair`, exported from `@use-voltra/android`:
+
+```tsx
+import type { AndroidColorPair } from '@use-voltra/android'
+
+const cardBackground: AndroidColorPair = { day: '#ffffff', night: 'rgba(32, 33, 36, 0.9)' }
+
+<Column style={{ backgroundColor: cardBackground }}>
+  <Text style={{ color: { day: '#202124', night: 'white' } }}>Hello</Text>
+</Column>
+```
+
+On Android 12+ the launcher switches between the two colors itself when the theme changes. On older versions the color is picked when the widget is drawn.
+
+- Each side takes any literal color the string form accepts, including alpha (`#ffffff80`, `rgba()`, `hsla()`), color names and `transparent`. Alpha is kept per side.
+- `AndroidDynamicColors.*` tokens are not allowed inside a pair.
+- A pair with a missing, empty or invalid side is dropped as a whole, and the property falls back to its default. Other keys are ignored.
+- Component color props, `borderColor` and `shadowColor` take pairs too. Borders and shadows are not drawn yet.
+- Gradients and charts can follow the theme too. See [Gradients in light and dark](#gradients-in-light-and-dark) and [Charts](/android/charts#colors-in-light-and-dark).
 
 ### Image Specific
 
@@ -86,9 +108,37 @@ const element = (
 
 Supported gradient functions are `linear-gradient(...)`, `radial-gradient(...)`, and `conic-gradient(...)`. Repeating gradients, malformed gradients, unsupported color tokens, and invalid stop positions are ignored. If `backgroundColor` is also provided, Android paints it behind transparent gradient pixels and uses it as a fallback when a gradient cannot be rendered.
 
-Gradient stops can use Android dynamic color tokens from `AndroidDynamicColors`, but those colors are resolved into the generated bitmap when the widget renders or updates. Existing gradient bitmaps do not recolor until the widget is rendered again.
-
 Use `backgroundImage`, not `background-image`. Gradient bitmaps are generated natively during widget rendering and capped before being passed to Glance, so the bitmap does not control layout size.
+
+### Gradients in light and dark
+
+A gradient can follow the system theme in two ways:
+
+- **Tokens in the stops.** Stops accept `AndroidDynamicColors.*` tokens. They don't take `{ day, night }` pairs.
+- **A pair of whole gradients.** `backgroundImage` takes `{ day: '<css gradient>', night: '<css gradient>' }`, and Android draws the side for the current theme.
+
+```tsx
+import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
+
+// Theme colors in the stops
+<VoltraAndroid.Box
+  style={{
+    backgroundImage: `linear-gradient(to right, ${AndroidDynamicColors.primary}, ${AndroidDynamicColors.tertiary})`,
+  }}
+/>
+
+// A different gradient per theme
+<VoltraAndroid.Box
+  style={{
+    backgroundImage: {
+      day: 'linear-gradient(to right, #e3f2fd, #90caf9)',
+      night: 'radial-gradient(circle at center, #1a237e, #000000)',
+    },
+  }}
+/>
+```
+
+If either side is missing or empty, the pair is dropped and `backgroundColor` shows instead. A gradient is drawn into a bitmap in the current theme's colors on every Android version, so it changes on the widget's next redraw.
 
 ## Limitations
 

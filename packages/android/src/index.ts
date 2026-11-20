@@ -26,7 +26,12 @@ export type {
   VoltraAndroidTextStyleProp,
   VoltraAndroidViewStyle,
 } from './styles/types.js'
-export type { AndroidColorValue, AndroidDynamicColorRole, AndroidDynamicColorToken } from './dynamic-colors.js'
+export type {
+  AndroidColorPair,
+  AndroidColorValue,
+  AndroidDynamicColorRole,
+  AndroidDynamicColorToken,
+} from './dynamic-colors.js'
 export type {
   AndroidLiveUpdateJson,
   AndroidLiveUpdateVariants,

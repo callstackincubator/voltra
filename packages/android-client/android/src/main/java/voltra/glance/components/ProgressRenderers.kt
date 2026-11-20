@@ -30,10 +30,7 @@ fun RenderLinearProgress(
 
     val progress = (element.p?.get("progress") as? Number)?.toFloat()
 
-    val colorProp = element.p?.get("color") as? String
-    val backgroundColorProp = element.p?.get("backgroundColor") as? String
-
-    val parsedColor = colorProp?.let { JSColorParser.parse(it) }
+    val parsedColor = JSColorParser.parse(element.p?.get("color"), "color")
     val color =
         if (parsedColor !=
             null
@@ -43,7 +40,7 @@ fun RenderLinearProgress(
             ProgressIndicatorDefaults.IndicatorColorProvider
         }
 
-    val parsedBgColor = backgroundColorProp?.let { JSColorParser.parse(it) }
+    val parsedBgColor = JSColorParser.parse(element.p?.get("backgroundColor"), "backgroundColor")
     val backgroundColor =
         if (parsedBgColor !=
             null
@@ -87,8 +84,7 @@ fun RenderCircularProgress(
             element.hashCode(),
         )
 
-    val circularColorProp = element.p?.get("color") as? String
-    val parsedCircularColor = circularColorProp?.let { JSColorParser.parse(it) }
+    val parsedCircularColor = JSColorParser.parse(element.p?.get("color"), "color")
     val circularColor =
         if (parsedCircularColor !=
             null

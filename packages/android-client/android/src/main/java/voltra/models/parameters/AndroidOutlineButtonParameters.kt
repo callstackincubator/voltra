@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -22,7 +23,8 @@ data class AndroidOutlineButtonParameters(
     /** Optional icon */
     val icon: String? = null,
     /** Text/icon color */
-    val contentColor: String? = null,
+    @Contextual
+    val contentColor: Any? = null,
     /** Maximum lines for text */
     val maxLines: Double? = null,
 )

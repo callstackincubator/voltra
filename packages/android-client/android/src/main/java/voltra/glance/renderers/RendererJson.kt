@@ -4,12 +4,12 @@ import android.util.Log
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import voltra.parsing.toDynamicObject
 import voltra.parsing.toDynamicValue
 
@@ -77,26 +77,47 @@ internal fun parseEncodedImageSource(sourceProp: Any?): EncodedImageSource? {
     }
 }
 
-internal fun parseForegroundStyleScaleEntries(json: String?): List<List<String>>? {
+internal fun parseForegroundStyleScaleEntries(json: String?): List<List<Any>>? {
     if (json.isNullOrEmpty()) return null
     return try {
-        rendererJson.decodeFromString(ListSerializer(ListSerializer(String.serializer())), json)
+        val entries =
+            rendererJson.parseToJsonElement(json) as? JsonArray
+                ?: throw SerializationException("Expected a JSON array of [series, color] entries")
+        entries.map { entry ->
+            val elements =
+                entry as? JsonArray ?: throw SerializationException("Expected a [series, color] entry, got $entry")
+            elements.map(::decodeStringOrPair)
+        }
     } catch (error: Exception) {
         warn("Failed to parse foregroundStyleScale", error)
         null
     }
 }
 
-/** Parses a JSON-encoded array of color strings, such as the arc indicator's `gradientColors`. */
-internal fun parseColorStringList(json: String?): List<String>? {
+/**
+ * Parses a JSON-encoded array of colors, such as the arc indicator's `gradientColors`. Each color is
+ * a string or a `{ day, night }` pair, returned as a `String` or a `Map`. Any other element fails
+ * the whole list.
+ */
+internal fun parseColorStringList(json: String?): List<Any>? {
     if (json.isNullOrEmpty()) return null
     return try {
-        rendererJson.decodeFromString(ListSerializer(String.serializer()), json)
+        val array =
+            rendererJson.parseToJsonElement(json) as? JsonArray
+                ?: throw SerializationException("Expected a JSON array of colors")
+        array.map(::decodeStringOrPair)
     } catch (error: Exception) {
         warn("Failed to parse color list", error)
         null
     }
 }
+
+private fun decodeStringOrPair(element: JsonElement): Any =
+    when {
+        element is JsonObject -> element.toDynamicObject()
+        element is JsonPrimitive && element.isString -> element.content
+        else -> throw SerializationException("Expected a string or a { day, night } object, got $element")
+    }
 
 internal fun parseMarksTuples(marksJson: String): List<List<Any?>> {
     return try {

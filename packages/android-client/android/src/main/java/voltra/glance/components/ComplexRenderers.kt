@@ -41,14 +41,10 @@ fun RenderTitleBar(
     val startIcon = extractImageProvider(element.p?.get("startIcon")) ?: ImageProvider(android.R.drawable.ic_menu_add)
 
     val textColor =
-        element.p?.get("textColor")?.let {
-            JSColorParser.parse(it as String)?.toColorProvider()
-        } ?: GlanceTheme.colors.onSurface
+        JSColorParser.parse(element.p?.get("textColor"), "textColor")?.toColorProvider() ?: GlanceTheme.colors.onSurface
 
     val iconColor =
-        element.p?.get("iconColor")?.let {
-            JSColorParser.parse(it as String)?.toColorProvider()
-        } ?: GlanceTheme.colors.onSurface
+        JSColorParser.parse(element.p?.get("iconColor"), "iconColor")?.toColorProvider() ?: GlanceTheme.colors.onSurface
 
     val fontFamilyString = element.p?.get("fontFamily") as? String
     val fontFamily =
@@ -93,9 +89,8 @@ fun RenderScaffold(
         )
 
     val backgroundColor =
-        element.p?.get("backgroundColor")?.let {
-            JSColorParser.parse(it as String)?.toColorProvider()
-        } ?: GlanceTheme.colors.widgetBackground
+        JSColorParser.parse(element.p?.get("backgroundColor"), "backgroundColor")?.toColorProvider()
+            ?: GlanceTheme.colors.widgetBackground
 
     val horizontalPadding = (element.p?.get("horizontalPadding") as? Number)?.toFloat()?.dp ?: 12.dp
 

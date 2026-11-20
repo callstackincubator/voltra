@@ -14,11 +14,16 @@ object StyleConverter {
      * Returns CompositeStyle with all style categories parsed.
      *
      * Mirrors iOS: StyleConverter.convert(_ js: [String: Any])
+     *
+     * @param isNightMode which side of a `{ day, night }` `backgroundImage` pair to convert.
      */
-    fun convert(js: Map<String, Any?>): CompositeStyle =
+    fun convert(
+        js: Map<String, Any?>,
+        isNightMode: Boolean = false,
+    ): CompositeStyle =
         CompositeStyle(
             layout = parseLayout(js),
-            decoration = parseDecoration(js),
+            decoration = parseDecoration(js, isNightMode),
             rendering = parseRendering(js),
             text = parseText(js),
         )
@@ -128,13 +133,16 @@ object StyleConverter {
      * Parse decoration-related styles (background, border, shadow).
      * Uses expanded property names after decompression.
      */
-    private fun parseDecoration(js: Map<String, Any?>): DecorationStyle {
+    private fun parseDecoration(
+        js: Map<String, Any?>,
+        isNightMode: Boolean,
+    ): DecorationStyle {
         // Border Logic (borderWidth, borderColor)
         var border: BorderStyle? = null
         val borderWidth = JSStyleParser.dp(js["borderWidth"])
         if (borderWidth != null && borderWidth.value > 0) {
             val borderColor =
-                JSStyleParser.color(js["borderColor"])
+                JSStyleParser.color(js["borderColor"], "borderColor")
                     ?: VoltraColorValue.Static(androidx.compose.ui.graphics.Color.Transparent)
             border = BorderStyle(borderWidth, borderColor)
         }
@@ -145,7 +153,7 @@ object StyleConverter {
         val shadowRadius = JSStyleParser.dp(js["shadowRadius"])
         val shadowOpacity = JSStyleParser.number(js["shadowOpacity"])
         val shadowOffset = JSStyleParser.size(js["shadowOffset"])
-        val shadowColor = JSStyleParser.color(js["shadowColor"])
+        val shadowColor = JSStyleParser.color(js["shadowColor"], "shadowColor")
 
         if (shadowRadius != null || shadowOpacity != null || shadowOffset != null || shadowColor != null) {
             val finalRadius = shadowRadius ?: 0.dp
@@ -163,9 +171,15 @@ object StyleConverter {
         val overflow = JSStyleParser.overflow(js["overflow"])
         val clipToOutline = overflow == Overflow.HIDDEN
 
+        val backgroundImageCss =
+            when (val value = js["backgroundImage"]) {
+                is Map<*, *> -> JSGradientParser.selectPairSide(value, "backgroundImage", isNightMode)
+                else -> value as? String
+            }
+
         return DecorationStyle(
-            backgroundColor = JSStyleParser.color(js["backgroundColor"]),
-            backgroundImage = (js["backgroundImage"] as? String)?.let { JSGradientParser.parse(it) },
+            backgroundColor = JSStyleParser.color(js["backgroundColor"], "backgroundColor"),
+            backgroundImage = backgroundImageCss?.let { JSGradientParser.parse(it) },
             cornerRadius = JSStyleParser.dp(js["borderRadius"]),
             clipToOutline = clipToOutline,
             border = border,
@@ -195,7 +209,7 @@ object StyleConverter {
         var style = TextStyle.Default
 
         // Color
-        val color = JSStyleParser.color(js["color"])
+        val color = JSStyleParser.color(js["color"], "color")
         if (color != null) {
             style = style.copy(color = color)
         }

@@ -355,3 +355,68 @@ test('omits chart bounds the caller left open', () => {
   assert.equal(renderAndroidViewToJson(lowerOnly).variants.content.p.ysc, '{"mn":0}')
   assert.equal(renderAndroidViewToJson(empty).variants.content.p.ysc, undefined)
 })
+
+test('passes a style color pair through to the payload unchanged', () => {
+  const pair = { day: '#ffffff', night: '#000000' }
+  const tree = React.createElement(
+    VoltraAndroid.Column,
+    { style: { backgroundColor: pair, borderColor: pair, shadowColor: pair } },
+    React.createElement(VoltraAndroid.Text, { style: { color: { day: '#000000', night: '#ffffff' } } }, 'Hi')
+  )
+
+  assert.deepEqual(android.renderAndroidVariantToJson(tree), {
+    t: getAndroidComponentId('AndroidColumn'),
+    c: {
+      t: getAndroidComponentId('AndroidText'),
+      c: 'Hi',
+      p: { s: { c: { day: '#000000', night: '#ffffff' } } },
+    },
+    p: { s: { bg: pair, bc: pair, shc: pair } },
+  })
+})
+
+test('registers one style object holding a color pair once when it is referenced twice', () => {
+  const card = { backgroundColor: { day: '#ffffff', night: '#000000' } }
+  const rendered = renderAndroidViewToJson(
+    React.createElement(
+      VoltraAndroid.Column,
+      null,
+      React.createElement(VoltraAndroid.Box, { style: card }),
+      React.createElement(VoltraAndroid.Box, { style: card })
+    )
+  )
+
+  assert.deepEqual(rendered.s, [{ bg: { day: '#ffffff', night: '#000000' } }])
+  assert.deepEqual(
+    rendered.variants.content.c.map((child) => child.p.s),
+    [0, 0]
+  )
+})
+
+test('passes a component color prop pair through to the payload as a { day, night } object', () => {
+  const pair = { day: '#000000', night: '#ffffff' }
+  const tree = React.createElement(
+    VoltraAndroid.Column,
+    null,
+    React.createElement(VoltraAndroid.Text, { color: pair }, 'Hi'),
+    React.createElement(VoltraAndroid.FilledButton, { text: 'Go', backgroundColor: pair, contentColor: pair }),
+    React.createElement(VoltraAndroid.ArcProgressIndicator, { progress: 0.5, color: pair, trackColor: pair })
+  )
+
+  const [text, button, arc] = android.renderAndroidVariantToJson(tree).c
+
+  assert.deepEqual(text.p, { c: pair })
+  assert.deepEqual(button.p.bg, pair)
+  assert.deepEqual(button.p.cc, pair)
+  assert.deepEqual(arc.p.c, pair)
+  assert.deepEqual(arc.p.trc, pair)
+})
+
+test('keeps gradientColors a JSON string when an element is a color pair', () => {
+  const pair = { day: '#ffffff', night: '#000000' }
+  const arc = android.renderAndroidVariantToJson(
+    React.createElement(VoltraAndroid.ArcProgressIndicator, { progress: 0.5, gradientColors: [pair, '#3B82F6', '~p'] })
+  )
+
+  assert.equal(arc.p.gc, '[{"day":"#ffffff","night":"#000000"},"#3B82F6","~p"]')
+})
