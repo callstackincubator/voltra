@@ -135,7 +135,7 @@ enum StyleConverter {
 
     return DecorationStyle(
       backgroundColor: JSStyleParser.background(js["backgroundColor"]),
-      backgroundImage: JSStyleParser.background(js["backgroundImage"]),
+      backgroundImage: (js["backgroundImage"] as? String).flatMap(JSGradientParser.parse),
       cornerRadius: JSStyleParser.number(js["borderRadius"]),
       border: border,
       shadow: shadow,
