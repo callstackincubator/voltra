@@ -6,15 +6,19 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.lazy.GridCells
 import androidx.glance.appwidget.lazy.LazyVerticalGrid
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.padding
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderNode
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
+import voltra.models.VoltraNode
 
 @Composable
 fun VoltraLazyVerticalGrid(
@@ -32,7 +36,17 @@ fun VoltraLazyVerticalGrid(
             element.hashCode(),
         )
     val horizontalAlignment = extractHorizontalAlignment(element.p)
-    val items = resolveLazyListItems(element.c, context.sharedElements)
+    val gap = resolveElementStyle(element, context.sharedStyles)?.layout?.gap
+    val items =
+        LayoutGaps.visibleItems(
+            resolveLazyListItems(element.c, context.sharedElements),
+            gap,
+            context.sharedStyles,
+            context.sharedElements,
+        )
+    val gridCells = extractGridCells(element.p)
+    // Adaptive grids have no column count we can see here; see LayoutGaps.gridCellPadding.
+    val columns = (gridCells as? GridCells.Fixed)?.count
 
     // On API 31 and below (see VoltraRN.usesAppWidgetHostView), Glance delivers LazyVerticalGrid's items through
     // GlanceRemoteViewsService, which the framework binds via
@@ -42,16 +56,18 @@ fun VoltraLazyVerticalGrid(
     // content. Like the real grid, every cell is as wide as a column (the last row keeps empty
     // cells rather than stretching its items), and an item is aligned inside its cell.
     if (context.eagerLazyLists) {
-        val columnCount = fallbackGridColumnCount(extractGridCells(element.p), context.widgetSize?.width?.value)
-        val rows = items.chunked(columnCount)
+        val columnCount = fallbackGridColumnCount(gridCells, context.widgetSize?.width?.value)
+        val rows = items.withIndex().toList().chunked(columnCount)
         Column(
             modifier = finalModifier,
             horizontalAlignment = horizontalAlignment,
         ) {
             RenderNestedGroups(rows, horizontalAlignment) { row ->
                 Row(modifier = GlanceModifier.fillMaxWidth()) {
-                    row.forEach { child ->
-                        LazyItemBox(horizontalAlignment, GlanceModifier.defaultWeight()) { RenderNode(child) }
+                    row.forEach { (index, child) ->
+                        LazyItemBox(horizontalAlignment, GlanceModifier.defaultWeight()) {
+                            RenderGridCell(child, LayoutGaps.gridCellPadding(index, columns, gap))
+                        }
                     }
                     repeat(columnCount - row.size) {
                         Spacer(modifier = GlanceModifier.defaultWeight())
@@ -63,13 +79,35 @@ fun VoltraLazyVerticalGrid(
     }
 
     LazyVerticalGrid(
-        gridCells = extractGridCells(element.p),
+        gridCells = gridCells,
         modifier = finalModifier,
         horizontalAlignment = horizontalAlignment,
     ) {
         items(items.size) { index ->
-            RenderNode(items[index])
+            RenderGridCell(items[index], LayoutGaps.gridCellPadding(index, columns, gap))
         }
+    }
+}
+
+@Composable
+private fun RenderGridCell(
+    node: VoltraNode?,
+    cellPadding: LayoutGaps.CellPadding?,
+) {
+    if (cellPadding != null) {
+        Box(
+            modifier =
+                GlanceModifier.padding(
+                    start = cellPadding.start,
+                    top = cellPadding.top,
+                    end = cellPadding.end,
+                    bottom = cellPadding.bottom,
+                ),
+        ) {
+            RenderNode(node)
+        }
+    } else {
+        RenderNode(node)
     }
 }
 
