@@ -1,15 +1,20 @@
 package voltra.glance.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.padding
 import voltra.glance.LocalVoltraRenderContext
 import voltra.glance.applyClickableIfNeeded
 import voltra.glance.renderers.RenderNode
 import voltra.glance.resolveAndApplyStyle
+import voltra.glance.resolveElementStyle
 import voltra.models.VoltraElement
+import voltra.models.VoltraNode
 
 @Composable
 fun VoltraLazyColumn(
@@ -27,7 +32,14 @@ fun VoltraLazyColumn(
             element.hashCode(),
         )
     val horizontalAlignment = extractHorizontalAlignment(element.p)
-    val items = resolveLazyListItems(element.c, context.sharedElements)
+    val gap = resolveElementStyle(element, context.sharedStyles)?.layout?.gap
+    val items =
+        LayoutGaps.visibleItems(
+            resolveLazyListItems(element.c, context.sharedElements),
+            gap,
+            context.sharedStyles,
+            context.sharedElements,
+        )
 
     // On API 31 and below (see VoltraRN.usesAppWidgetHostView), Glance delivers LazyColumn's items through GlanceRemoteViewsService,
     // which the framework binds via AppWidgetManager.bindRemoteViewsService — that requires a
@@ -38,8 +50,8 @@ fun VoltraLazyColumn(
             modifier = finalModifier,
             horizontalAlignment = horizontalAlignment,
         ) {
-            RenderNestedGroups(items, horizontalAlignment) { child ->
-                LazyItemBox(horizontalAlignment) { RenderNode(child) }
+            RenderNestedGroups(items.withIndex().toList(), horizontalAlignment) { (index, child) ->
+                LazyItemBox(horizontalAlignment) { RenderLazyItem(child, index, items.size, gap) }
             }
         }
         return
@@ -50,8 +62,28 @@ fun VoltraLazyColumn(
         horizontalAlignment = horizontalAlignment,
     ) {
         items(items.size) { index ->
-            RenderNode(items[index])
+            RenderLazyItem(items[index], index, items.size, gap)
         }
+    }
+}
+
+/**
+ * Renders one lazy-list item, padding its bottom edge to simulate the `gap` style
+ * between items without changing the item count or its implicit id.
+ */
+@Composable
+internal fun RenderLazyItem(
+    node: VoltraNode?,
+    index: Int,
+    itemCount: Int,
+    gap: Dp?,
+) {
+    if (LayoutGaps.shouldPadTrailing(index, itemCount, gap)) {
+        Box(modifier = GlanceModifier.padding(bottom = gap!!)) {
+            RenderNode(node)
+        }
+    } else {
+        RenderNode(node)
     }
 }
 

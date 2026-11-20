@@ -75,6 +75,17 @@ fun VoltraElement.nativeContentDescription(): String? =
         ?.params
         ?.get("contentDescription") as? String
 
+/**
+ * The visibility a `visibility` modifier sets (`visible`, `invisible` or `gone`), or null when none
+ * applies. Like Glance, only the last `visibility` modifier counts. Layout code reads it to decide
+ * whether a child takes part in the layout, because the modifier overrides the style.
+ */
+fun VoltraElement.nativeVisibility(): String? =
+    appliedNativeModifiers()
+        .lastOrNull { it.type == "visibility" }
+        ?.params
+        ?.get("visibility") as? String
+
 private val READ_TYPES =
     setOf(
         "width",
@@ -87,6 +98,7 @@ private val READ_TYPES =
         "wrapContentHeight",
         "wrapContentSize",
         "semantics",
+        "visibility",
     )
 
 /** Descriptors read here that decode, so the values match what the modifier chain applies. */
