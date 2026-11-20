@@ -1,5 +1,11 @@
 # @use-voltra/android
 
+## 2.6.1
+
+### Patch Changes
+
+- @use-voltra/core@2.6.1
+
 ## 2.6.0
 
 ### Minor Changes

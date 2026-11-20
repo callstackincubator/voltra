@@ -1,5 +1,13 @@
 # @use-voltra/android-client
 
+## 2.6.1
+
+### Patch Changes
+
+- @use-voltra/android@2.6.1
+- @use-voltra/compiler@2.6.1
+- @use-voltra/expo-plugin@2.6.1
+
 ## 2.6.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @use-voltra/android-server
 
+## 2.6.1
+
+### Patch Changes
+
+- @use-voltra/android@2.6.1
+- @use-voltra/core@2.6.1
+- @use-voltra/server@2.6.1
+
 ## 2.6.0
 
 ### Patch Changes

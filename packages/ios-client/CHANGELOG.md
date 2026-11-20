@@ -1,5 +1,14 @@
 # @use-voltra/ios-client
 
+## 2.6.1
+
+### Patch Changes
+
+- ac7ad2d: Release builds of iOS Dynamic Widgets now include each widget's JS bundle after a fresh `expo prebuild` (including EAS and other CNG builds). Before, the widget extension's bundling step was overwritten to bundle only Live Activities, so widgets couldn't load their bundle in release.
+  - @use-voltra/compiler@2.6.1
+  - @use-voltra/expo-plugin@2.6.1
+  - @use-voltra/ios@2.6.1
+
 ## 2.6.0
 
 ### Patch Changes
