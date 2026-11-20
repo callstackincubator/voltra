@@ -215,6 +215,18 @@ if (weather.length > 1) {
 
 Values are strings, and only that placement re-renders.
 
+To give each new placement its values as soon as the user places it, listen for `widgetAdded`. It carries the new placement's `widgetType` and `appWidgetId`, and arrives on the next launch when the widget was placed while your app was closed. See [Widget lifecycle events](/android/development/widget-lifecycle-events).
+
+```typescript
+import { addVoltraListener, setWidgetInstanceConfiguration } from '@use-voltra/android-client'
+
+addVoltraListener('widgetAdded', (event) => {
+  if (event.widgetType === 'weather') {
+    setWidgetInstanceConfiguration(event.appWidgetId, 'city', 'London')
+  }
+})
+```
+
 ### How the layers interact
 
 `setWidgetConfiguration(widgetId, key, value)` still writes the widget-type value, which is what every placement without its own value for that key renders. A placement that has its own value keeps showing it, so a later type-level write does not visibly change it. `clearWidgetInstanceConfiguration` drops the placement's values and it follows the type-level ones again. `getWidgetConfiguration(widgetId)` reads the type-level layer — the defaults plus any type-level values — without any placement's own values.
