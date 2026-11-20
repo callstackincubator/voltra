@@ -7,7 +7,7 @@ Dynamic Widgets run their entry component on-device and can react to both app-su
 
 Your Dynamic Widget can react to:
 
-- `env.widgetFamily`
+- `env.widgetFamily`, the widget's current size in dp, such as `"180x110"` (see [Adapting to the widget's size](#adapting-to-the-widgets-size))
 - `env.colorScheme`
 - `env.locale`, `env.preferredLanguages`, `env.hourCycle`, `env.timeZone` and the other [locale fields](/android/development/localization)
 - `env.configuration`
@@ -130,6 +130,25 @@ Example plugin config:
 ```
 
 After changing the plugin configuration, rebuild the native Android app. You also need a native rebuild after upgrading to a version of `@use-voltra/android-client` that introduces a new native API.
+
+## Adapting to the widget's size
+
+`env.widgetFamily` is the real size of the placed widget, and the widget renders again with the new size whenever the user resizes it, so you can derive the layout from it. For example, set the number of `LazyVerticalGrid` columns from the width:
+
+```tsx
+const [width] = env.widgetFamily.split('x').map(Number)
+const columns = Math.min(5, Math.max(1, Math.floor(width / 90)))
+
+return <VoltraAndroid.LazyVerticalGrid columns={columns}>{/* items */}</VoltraAndroid.LazyVerticalGrid>
+```
+
+A fixed grid supports 1 to 5 columns, so clamp the count. On Android 12 and newer, `columns={{ type: 'adaptive', minSize: 90 }}` fits as many columns as the width allows, without parsing `env.widgetFamily`. On Android 11 and older, an adaptive grid always gets 2 columns, so compute the count from the width as shown if you support those versions.
+
+Launchers report widget sizes in dp, not grid cells, and cell size differs between launchers, so lay out by dp. See [Widget Sizing](/android/api/widget-sizing-and-previews#grid-cells-vs-density-independent-pixels-dp).
+
+When the launcher reports more than one size for a placement (for example portrait and landscape), the widget renders once per size and the launcher picks which to show, so don't assume one render per placement.
+
+The placeholder shown before the first on-device render is rendered at build time with `env.widgetFamily` set to `"200x200"`.
 
 ## Update Dynamic Widget props
 
