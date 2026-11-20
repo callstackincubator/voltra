@@ -164,7 +164,7 @@ A render can fail at four points: loading the bundle (Metro unreachable or answe
 | Build   | What the widget shows                                                                                                  |
 | ------- | ---------------------------------------------------------------------------------------------------------------------- |
 | Debug   | The error view, even if the widget has rendered before                                                                 |
-| Release | The last render of that widget, configuration and size that succeeded, else the `initialStatePath` view, else a spinner |
+| Release | The last render of that widget, configuration, size and appearance that succeeded, else the `initialStatePath` view, else a spinner |
 
 The error view is red and names the widget `id`, the stage (`bundle`, `evaluate`, `render` or `parse`), the error message and the first stack frames from your code (2 on a small widget, 3 on a medium one, 6 on a large one). A bundle Metro could not build shows Metro's own error, and an unreachable Metro names the host Voltra tried. Lock Screen widgets get a reduced view: an inline widget shows the `id` and stage, a rectangular one adds the message, and a circular one shows only the stage. Release builds never show it.
 
