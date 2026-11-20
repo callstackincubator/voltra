@@ -30,7 +30,7 @@ public enum VoltraJSRenderer {
   ///
   /// Idempotent: re-evaluating the same widget overwrites the captured exports — used
   /// by dev-mode hot-reload (always-refetch policy).
-  public static func evaluateBundle(source: String, widgetId: String) -> Bool {
+  public static func evaluateBundle(source: String, widgetId: String) -> Result<Void, DynamicWidgetRenderFailure> {
     evaluateBundle(source: source, id: widgetId, registryName: "__voltraWidgets", kind: "widget")
   }
 
@@ -43,7 +43,7 @@ public enum VoltraJSRenderer {
       id: definitionId,
       registryName: "__voltraDynamicLiveActivities",
       kind: "live activity"
-    )
+    ).isSuccess
     if evaluated {
       lock.lock()
       liveActivitySources[definitionId] = source
@@ -52,13 +52,18 @@ public enum VoltraJSRenderer {
     return evaluated
   }
 
-  private static func evaluateBundle(source: String, id: String, registryName: String, kind: String) -> Bool {
+  private static func evaluateBundle(
+    source: String,
+    id: String,
+    registryName: String,
+    kind: String
+  ) -> Result<Void, DynamicWidgetRenderFailure> {
     lock.lock()
     defer { lock.unlock() }
 
     guard let ctx = context() else {
       VoltraLogger.widget.error("[\(TAG)] No JSContext available")
-      return false
+      return .failure(DynamicWidgetRenderFailure(stage: .evaluate, message: "No JSContext available"))
     }
 
     let escapedId = jsStringLiteral(id)
@@ -80,9 +85,9 @@ public enum VoltraJSRenderer {
 
     ctx.exception = nil
     ctx.evaluateScript(wrapped)
-    if let message = exceptionMessage(ctx) {
-      VoltraLogger.widget.error("[\(TAG)] Bundle eval failed for \(kind) id=\(id): \(message)")
-      return false
+    if let thrown = takeException(ctx) {
+      VoltraLogger.widget.error("[\(TAG)] Bundle eval failed for \(kind) id=\(id): \(thrown.message)")
+      return .failure(DynamicWidgetRenderFailure(stage: .evaluate, message: thrown.message, stack: thrown.stack))
     }
 
     // Verify the bootstrap captured the exports correctly
@@ -96,12 +101,12 @@ public enum VoltraJSRenderer {
       renderFn.objectForKeyedSubscript("call") != nil
     else {
       VoltraLogger.widget.error("[\(TAG)] Bundle evaluated but did not expose render() for \(kind) id=\(id)")
-      return false
+      return .failure(DynamicWidgetRenderFailure(stage: .evaluate, message: "Bundle evaluated but did not export render() for \(kind) \"\(id)\""))
     }
     _ = renderFn
 
     VoltraLogger.widget.info("[\(TAG)] Bundle evaluated for \(kind) id=\(id) (\(source.count) chars)")
-    return true
+    return .success(())
   }
 
   /// Ensure the widget's bundle is evaluated in *this process's* JSContext, returning true if its
@@ -112,7 +117,7 @@ public enum VoltraJSRenderer {
   /// when WidgetKit re-renders an archived entry in a new extension process, where the provider's
   /// evaluation never ran. The View calls this before `render()` so rendering never depends on
   /// which process evaluated the bundle.
-  public static func ensureEvaluated(widgetId: String, source: String) -> Bool {
+  public static func ensureEvaluated(widgetId: String, source: String) -> Result<Void, DynamicWidgetRenderFailure> {
     ensureEvaluated(source: source, id: widgetId, registryName: "__voltraWidgets", kind: "widget")
   }
 
@@ -132,7 +137,12 @@ public enum VoltraJSRenderer {
     return evaluateLiveActivityBundle(source: source, definitionId: definitionId)
   }
 
-  private static func ensureEvaluated(source: String, id: String, registryName: String, kind: String) -> Bool {
+  private static func ensureEvaluated(
+    source: String,
+    id: String,
+    registryName: String,
+    kind: String
+  ) -> Result<Void, DynamicWidgetRenderFailure> {
     lock.lock()
     let alreadyEvaluated =
       _context?
@@ -143,7 +153,7 @@ public enum VoltraJSRenderer {
     lock.unlock()
 
     if alreadyEvaluated {
-      return true
+      return .success(())
     }
     return evaluateBundle(source: source, id: id, registryName: registryName, kind: kind)
   }
@@ -151,13 +161,13 @@ public enum VoltraJSRenderer {
   /// Invoke the previously-evaluated widget's `render(propsJSON, envJSON)` function and
   /// return its resolved JSON string output.
   ///
-  /// Returns `nil` if the widget hasn't been evaluated, the function throws, or the
-  /// result is not a string.
+  /// Fails if the widget hasn't been evaluated, the function throws (the JS message and stack
+  /// are carried), or the result is not a string.
   public static func render(
     widgetId: String,
     propsJSON: String,
     envJSON: String
-  ) -> String? {
+  ) -> DynamicWidgetRenderOutcome {
     render(id: widgetId, propsJSON: propsJSON, envJSON: envJSON, registryName: "__voltraWidgets", kind: "widget")
   }
 
@@ -167,13 +177,13 @@ public enum VoltraJSRenderer {
     propsJSON: String,
     envJSON: String
   ) -> String? {
-    render(
+    try? render(
       id: definitionId,
       propsJSON: propsJSON,
       envJSON: envJSON,
       registryName: "__voltraDynamicLiveActivities",
       kind: "live activity"
-    )
+    ).get()
   }
 
   private static func render(
@@ -182,13 +192,17 @@ public enum VoltraJSRenderer {
     envJSON: String,
     registryName: String,
     kind: String
-  ) -> String? {
+  ) -> DynamicWidgetRenderOutcome {
     lock.lock()
     defer { lock.unlock() }
 
+    func fail(_ message: String, stack: String? = nil) -> DynamicWidgetRenderOutcome {
+      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id): \(message)")
+      return .failure(DynamicWidgetRenderFailure(stage: .render, message: message, stack: stack))
+    }
+
     guard let ctx = _context else {
-      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id): no JSContext (call evaluateBundle first)")
-      return nil
+      return fail("no JSContext (call evaluateBundle first)")
     }
 
     guard
@@ -199,25 +213,22 @@ public enum VoltraJSRenderer {
       let renderFn = entry.objectForKeyedSubscript("render"),
       renderFn.isObject
     else {
-      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id): no captured render() — bundle not evaluated?")
-      return nil
+      return fail("no captured render() — bundle not evaluated?")
     }
 
     ctx.exception = nil
-    guard let result = renderFn.call(withArguments: [propsJSON, envJSON]) else {
-      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id): call returned nil")
-      return nil
-    }
-    if let message = exceptionMessage(ctx) {
-      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id) threw: \(message)")
-      return nil
+    let result = renderFn.call(withArguments: [propsJSON, envJSON])
+    if let thrown = takeException(ctx) {
+      return fail(thrown.message, stack: thrown.stack)
     }
 
-    guard result.isString else {
-      VoltraLogger.widget.error("[\(TAG)] render \(kind) id=\(id) did not return a string")
-      return nil
+    guard let result else {
+      return fail("call returned nil")
     }
-    return result.toString()
+    guard result.isString, let text = result.toString() else {
+      return fail("render() returned \(describeType(result)), expected a string")
+    }
+    return .success(text)
   }
 
   // MARK: - Lifecycle
@@ -230,7 +241,10 @@ public enum VoltraJSRenderer {
       VoltraLogger.widget.error("[\(TAG)] Failed to create JSContext")
       return nil
     }
-    ctx.exceptionHandler = { _, exception in
+    ctx.exceptionHandler = { context, exception in
+      // Installing a handler replaces the default one, which is what stores the exception on the
+      // context. Keep that, so callers can read the message and stack of what was thrown.
+      context?.exception = exception
       VoltraLogger.widget.error("[\(TAG)] JS exception: \(exception?.toString() ?? "unknown")")
     }
     _context = ctx
@@ -239,10 +253,38 @@ public enum VoltraJSRenderer {
 
   // MARK: - Helpers
 
-  private static func exceptionMessage(_ ctx: JSContext) -> String? {
+  /// The pending JS exception, if any: its message (`TypeError: ...`) and its `stack`.
+  private static func takeException(_ ctx: JSContext) -> (message: String, stack: String?)? {
     guard let exc = ctx.exception, !exc.isUndefined, !exc.isNull else { return nil }
     ctx.exception = nil
-    return exc.toString()
+    let message = exc.toString() ?? "unknown JS exception"
+    var stack: String?
+    if exc.isObject, let value = exc.objectForKeyedSubscript("stack"), value.isString {
+      stack = value.toString()
+    }
+    return (message, stack)
+  }
+
+  private static func describeType(_ value: JSValue) -> String {
+    if value.isUndefined {
+      return "undefined"
+    }
+    if value.isNull {
+      return "null"
+    }
+    if value.isBoolean {
+      return "a boolean"
+    }
+    if value.isNumber {
+      return "a number"
+    }
+    if value.isArray {
+      return "an array"
+    }
+    if value.isObject {
+      return "an object"
+    }
+    return "a non-string value"
   }
 
   private static func jsStringLiteral(_ value: String) -> String {
@@ -267,5 +309,14 @@ public enum VoltraJSRenderer {
           let id = Int(source[range])
     else { return nil }
     return id
+  }
+}
+
+private extension Result where Success == Void {
+  var isSuccess: Bool {
+    if case .success = self {
+      return true
+    }
+    return false
   }
 }

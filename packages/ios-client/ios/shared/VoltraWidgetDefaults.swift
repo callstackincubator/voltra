@@ -121,6 +121,8 @@ public enum VoltraWidgetDefaults {
       storage: DynamicWidgetPropsUserDefaultsStorage(userDefaults: defaults)
     )
     try? dynamicWidgetPropsStore.clearDynamicWidgetProps(for: widgetId)
+    // Content the app cleared must not come back as a "last good render" after a later failure.
+    DynamicWidgetLastGoodStore.shared?.remove(widgetId: widgetId)
     defaults.synchronize()
   }
 
@@ -142,6 +144,7 @@ public enum VoltraWidgetDefaults {
       defaults.removeObject(forKey: VoltraStorageKeys.widgetDeepLinkUrl(widgetId))
       defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
       try? dynamicWidgetPropsStore.clearDynamicWidgetProps(for: widgetId)
+      DynamicWidgetLastGoodStore.shared?.remove(widgetId: widgetId)
     }
     defaults.synchronize()
   }

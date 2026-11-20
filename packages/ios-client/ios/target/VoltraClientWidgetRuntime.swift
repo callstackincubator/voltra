@@ -11,7 +11,7 @@ import WidgetKit
 // Pipeline:
 //
 //   1. Provider runs on a WidgetKit timeline tick.
-//      - Fetches the JS bundle (dev = Metro HTTP, prod = baked asset stub).
+//      - Fetches the JS bundle (dev = Metro HTTP, release = baked asset).
 //      - Evaluates it once in the shared JSContext via VoltraJSRenderer.
 //      - Emits a VoltraClientWidgetEntry with `bundleReady = true` (or errorMessage on failure).
 //
@@ -23,7 +23,9 @@ import WidgetKit
 //        the existing VoltraHomeWidgetView so Dynamic Widgets reach the same UI
 //        renderer as server-rendered ones.
 //
-// On bundle-load failure the View falls back to the prerendered initial state.
+// When a stage fails (ADR 0013), a dev build shows an error view with the reason and a retry
+// button; a release build keeps the last good render of this widget, instance and family, else the
+// prerendered initial state.
 
 // MARK: - Entry
 
@@ -31,7 +33,8 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
   public let date: Date
   public let widgetId: String
   public let bundleReady: Bool
-  public let errorMessage: String?
+  /// Why the bundle could not be loaded or evaluated (ADR 0013). `nil` when it could.
+  public let failure: DynamicWidgetRenderFailure?
   /// User-configured AppIntent parameters → `env.configuration`. Empty for widgets without an
   /// AppIntent configuration; populated by the generated AppIntentTimelineProvider from the
   /// configured intent.
@@ -52,7 +55,7 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     date: Date,
     widgetId: String,
     bundleReady: Bool,
-    errorMessage: String? = nil,
+    failure: DynamicWidgetRenderFailure? = nil,
     configuration: [String: String] = [:],
     bundleSource: String? = nil,
     serverUpdateJSON: String? = nil
@@ -60,7 +63,7 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     self.date = date
     self.widgetId = widgetId
     self.bundleReady = bundleReady
-    self.errorMessage = errorMessage
+    self.failure = failure
     self.configuration = configuration
     self.bundleSource = bundleSource
     self.serverUpdateJSON = serverUpdateJSON
@@ -72,7 +75,7 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
       date: date,
       widgetId: widgetId,
       bundleReady: bundleReady,
-      errorMessage: errorMessage,
+      failure: failure,
       configuration: configuration,
       bundleSource: bundleSource,
       serverUpdateJSON: serverUpdateJSON
@@ -90,8 +93,9 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
 //        `bundleReady = true`. The ContentView then runs the freshly evaluated
 //        `render(props, env)` and feeds the result to `VoltraHomeWidgetView`.
 //
-//   - Release builds: Provider attempts to load a baked-in bundle (release-path loader is
-//        a future addition); on failure the ContentView renders the prerendered initial state.
+//   - Release builds: Provider loads the bundle baked into the extension by the "Bundle Voltra
+//        Dynamic Content" build phase; on failure the ContentView renders the last good render,
+//        else the prerendered initial state.
 //
 //   - Timeline policy is ALWAYS `.never`. The widget refreshes only when something
 //        explicitly calls `WidgetCenter.shared.reloadAllTimelines()` or when WidgetKit
@@ -145,18 +149,17 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
         date: date,
         widgetId: widgetId,
         bundleReady: false,
-        errorMessage: error.localizedDescription,
+        failure: DynamicWidgetRenderFailure(stage: .bundle, message: error.localizedDescription),
         configuration: configuration
       )
     }
 
-    let okEval = VoltraJSRenderer.evaluateBundle(source: source, widgetId: widgetId)
-    if !okEval {
+    if case let .failure(failure) = VoltraJSRenderer.evaluateBundle(source: source, widgetId: widgetId) {
       return VoltraClientWidgetEntry(
         date: date,
         widgetId: widgetId,
         bundleReady: false,
-        errorMessage: "Bundle eval failed (see logs)",
+        failure: failure,
         configuration: configuration
       )
     }
@@ -174,23 +177,26 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
 
 //
 // Dual-path bundle loader. Dev reads from Metro localhost; prod reads from a baked asset
-// in the .app bundle. The build-time bundle writer that produces the baked asset is a
-// future addition; until then prod throws a clear error.
+// in the extension's bundle, written there by the release-only "Bundle Voltra Dynamic Content"
+// build phase.
 
 public enum VoltraClientWidgetBundleSource {
   public enum LoadError: LocalizedError {
-    case metroHTTP(Int)
+    case metroUnreachable(host: String, cause: String)
+    case metroHTTP(code: Int, url: String, body: Data?)
     case nonUTF8
-    case bakedBundleNotFound(widgetId: String)
+    case bakedBundleNotFound(path: String)
 
     public var errorDescription: String? {
       switch self {
-      case let .metroHTTP(code):
-        return "Metro HTTP \(code) — is the dev server running?"
+      case let .metroUnreachable(host, cause):
+        return DynamicWidgetBundleFailureMessage.metroUnreachable(host: host, cause: cause)
+      case let .metroHTTP(code, url, body):
+        return DynamicWidgetBundleFailureMessage.metroHTTP(code: code, url: url, body: body)
       case .nonUTF8:
         return "Bundle response was not UTF-8 text"
-      case let .bakedBundleNotFound(id):
-        return "Production bundle missing for widgetId=\(id) (release path not yet implemented)"
+      case let .bakedBundleNotFound(path):
+        return DynamicWidgetBundleFailureMessage.missingBakedAsset(path: path)
       }
     }
   }
@@ -213,11 +219,17 @@ public enum VoltraClientWidgetBundleSource {
     let base = VoltraWidgetDefaults.devServerURL() ?? "http://localhost:8081"
     let urlString = "\(base)/voltra/widgets/\(widgetId).bundle?platform=ios&dev=true"
     guard let url = URL(string: urlString) else {
-      throw LoadError.metroHTTP(-1)
+      throw LoadError.metroUnreachable(host: base, cause: "invalid URL")
     }
-    let (data, response) = try await URLSession.shared.data(from: url)
+    let data: Data
+    let response: URLResponse
+    do {
+      (data, response) = try await URLSession.shared.data(from: url)
+    } catch {
+      throw LoadError.metroUnreachable(host: url.host.map { host in url.port.map { "\(host):\($0)" } ?? host } ?? base, cause: error.localizedDescription)
+    }
     if let httpResponse = response as? HTTPURLResponse, !(200 ... 299).contains(httpResponse.statusCode) {
-      throw LoadError.metroHTTP(httpResponse.statusCode)
+      throw LoadError.metroHTTP(code: httpResponse.statusCode, url: urlString, body: data)
     }
     guard let text = String(data: data, encoding: .utf8) else {
       throw LoadError.nonUTF8
@@ -225,16 +237,16 @@ public enum VoltraClientWidgetBundleSource {
     return text
   }
 
-  /// Release-path stub — currently always throws. The plan is to emit the baked bundle
-  /// at `expo prebuild` (config plugin step) into the extension target's resources, then
-  /// read it here with Bundle.main.url(forResource:withExtension:).
+  /// Release path: the "Bundle Voltra Dynamic Content" build phase writes
+  /// `voltra-widget-<id>.bundle` into the extension's resources.
   private static func loadFromBakedAsset(widgetId: String) throws -> String {
+    let name = "voltra-widget-\(widgetId).bundle"
     if let url = Bundle.main.url(forResource: "voltra-widget-\(widgetId)", withExtension: "bundle"),
        let text = try? String(contentsOf: url, encoding: .utf8)
     {
       return text
     }
-    throw LoadError.bakedBundleNotFound(widgetId: widgetId)
+    throw LoadError.bakedBundleNotFound(path: name)
   }
 }
 
@@ -372,56 +384,114 @@ public struct VoltraClientWidgetContentView: View {
   }
 
   public var body: some View {
-    let homeEntry = makeHomeEntry()
-    return VoltraHomeWidgetView(entry: homeEntry)
+    switch shownContent() {
+    case let .devError(failure):
+      VoltraDynamicWidgetErrorView(widgetId: entry.widgetId, failure: failure, family: widgetFamily)
+    case let .node(node), let .lastGood(node), let .placeholder(node):
+      VoltraHomeWidgetView(entry: VoltraHomeWidgetEntry(date: entry.date, rootNode: node, widgetId: entry.widgetId))
+    case .loading:
+      VoltraHomeWidgetView(entry: VoltraHomeWidgetEntry(date: entry.date, rootNode: nil, widgetId: entry.widgetId))
+    }
   }
 
-  private func makeHomeEntry() -> VoltraHomeWidgetEntry {
-    if entry.bundleReady {
-      // WidgetKit may render this archived entry in a fresh extension process where the provider's
-      // bundle evaluation didn't happen. Re-evaluate from the entry's carried source (no-op if this
-      // process already has it) so render() finds the widget's function.
-      if let source = entry.bundleSource {
-        _ = VoltraJSRenderer.ensureEvaluated(widgetId: entry.widgetId, source: source)
-      }
-      let envJSON = VoltraClientWidgetEnvBuilder.build(
-        date: entry.date,
-        widgetFamily: widgetFamily,
-        colorScheme: colorScheme,
-        widgetRenderingMode: widgetRenderingMode,
-        showsWidgetContainerBackground: showsWidgetContainerBackground,
-        locale: locale,
-        layoutDirection: layoutDirection,
-        configuration: entry.configuration,
-        serverUpdateJSON: entry.serverUpdateJSON
-      )
-      // This placement's scope (ADR 0007): an instance of its merged configuration, or the plain
-      // widget scope when it has none — which is also every widget's scope before this ADR.
-      let scope = WidgetScope.of(entry.widgetId, configuration: entry.configuration)
-      let dynamicWidgetPropsStore = DynamicWidgetPropsStore()
-      let dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator(
-        // Reads the instance slot for `scope`'s key, falling back to the widget slot when the
-        // placement has not fetched yet or has no configuration.
-        dynamicWidgetPropsProvider: { _ in dynamicWidgetPropsStore.dynamicWidgetProps(for: scope) },
-        dynamicWidgetRuntimeBoundary: { dynamicWidgetID, dynamicWidgetPropsJSON, dynamicWidgetEnvironmentJSON in
-          VoltraJSRenderer.render(
-            widgetId: dynamicWidgetID,
-            propsJSON: dynamicWidgetPropsJSON,
-            envJSON: dynamicWidgetEnvironmentJSON
-          )
-        }
-      )
-      if let resolved = dynamicWidgetRenderCoordinator.renderDynamicWidget(
-        dynamicWidgetID: entry.widgetId,
-        dynamicWidgetEnvironmentJSON: envJSON
-      ), let node = parseResolvedNode(jsonString: resolved) {
-        return VoltraHomeWidgetEntry(date: entry.date, rootNode: node, widgetId: entry.widgetId)
-      }
-      // render() or VoltraNode.parse failed — fall through to the prerendered initial state
-      // so the widget still shows real UI instead of a blank tile.
+  private var isDev: Bool {
+    #if DEBUG
+      true
+    #else
+      false
+    #endif
+  }
+
+  private var lastGoodKey: DynamicWidgetLastGoodKey {
+    DynamicWidgetLastGoodKey(
+      widgetId: entry.widgetId,
+      instance: WidgetCanonicalConfiguration.key(entry.configuration),
+      family: String(describing: widgetFamily)
+    )
+  }
+
+  /// Renders this placement and decides what to draw (ADR 0013 §3). An entry that is not ready and
+  /// carries no failure is WidgetKit's placeholder, which has always drawn the prerendered state.
+  private func shownContent() -> DynamicWidgetShownContent<VoltraNode> {
+    let family = String(describing: widgetFamily)
+    let outcome: Result<VoltraNode, DynamicWidgetRenderFailure>
+    if let failure = entry.failure {
+      outcome = .failure(failure)
+    } else if entry.bundleReady {
+      outcome = renderNode()
+    } else {
+      return initialState.flatMap(parseResolvedNode(jsonData:)).map { .placeholder($0) } ?? .loading
     }
-    let fallbackNode = initialState.flatMap(parseResolvedNode(jsonData:))
-    return VoltraHomeWidgetEntry(date: entry.date, rootNode: fallbackNode, widgetId: entry.widgetId)
+
+    switch outcome {
+    case let .failure(failure):
+      DynamicWidgetFailureLog.shared.failed(widgetId: entry.widgetId, family: family, failure: failure, isDev: isDev)
+    case .success:
+      DynamicWidgetFailureLog.shared.succeeded(widgetId: entry.widgetId, family: family)
+    }
+
+    return DynamicWidgetShownContent.resolve(
+      isDev: isDev,
+      result: outcome,
+      lastGood: {
+        DynamicWidgetLastGoodStore.shared?.read(lastGoodKey).flatMap { parseResolvedNode(jsonString: $0) }
+      },
+      placeholder: { initialState.flatMap(parseResolvedNode(jsonData:)) }
+    )
+  }
+
+  private func renderNode() -> Result<VoltraNode, DynamicWidgetRenderFailure> {
+    // WidgetKit may render this archived entry in a fresh extension process where the provider's
+    // bundle evaluation didn't happen. Re-evaluate from the entry's carried source (no-op if this
+    // process already has it) so render() finds the widget's function.
+    if let source = entry.bundleSource,
+       case let .failure(failure) = VoltraJSRenderer.ensureEvaluated(widgetId: entry.widgetId, source: source)
+    {
+      return .failure(failure)
+    }
+    let envJSON = VoltraClientWidgetEnvBuilder.build(
+      date: entry.date,
+      widgetFamily: widgetFamily,
+      colorScheme: colorScheme,
+      widgetRenderingMode: widgetRenderingMode,
+      showsWidgetContainerBackground: showsWidgetContainerBackground,
+      locale: locale,
+      layoutDirection: layoutDirection,
+      configuration: entry.configuration,
+      serverUpdateJSON: entry.serverUpdateJSON
+    )
+    // This placement's scope (ADR 0007): an instance of its merged configuration, or the plain
+    // widget scope when it has none — which is also every widget's scope before this ADR.
+    let scope = WidgetScope.of(entry.widgetId, configuration: entry.configuration)
+    let dynamicWidgetPropsStore = DynamicWidgetPropsStore()
+    let dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator(
+      // Reads the instance slot for `scope`'s key, falling back to the widget slot when the
+      // placement has not fetched yet or has no configuration.
+      dynamicWidgetPropsProvider: { _ in dynamicWidgetPropsStore.dynamicWidgetProps(for: scope) },
+      dynamicWidgetRuntimeBoundary: { dynamicWidgetID, dynamicWidgetPropsJSON, dynamicWidgetEnvironmentJSON in
+        VoltraJSRenderer.render(
+          widgetId: dynamicWidgetID,
+          propsJSON: dynamicWidgetPropsJSON,
+          envJSON: dynamicWidgetEnvironmentJSON
+        )
+      }
+    )
+    let resolved: String
+    switch dynamicWidgetRenderCoordinator.renderDynamicWidget(
+      dynamicWidgetID: entry.widgetId,
+      dynamicWidgetEnvironmentJSON: envJSON
+    ) {
+    case let .failure(failure):
+      return .failure(failure)
+    case let .success(json):
+      resolved = json
+    }
+    guard let node = parseResolvedNode(jsonString: resolved) else {
+      return .failure(DynamicWidgetRenderFailure(stage: .parse, message: "render() returned JSON that did not parse into a node"))
+    }
+    // Written in every build so dev runs exercise the path; only release reads it back.
+    DynamicWidgetLastGoodStore.shared?.write(resolved, for: lastGoodKey)
+    return .success(node)
   }
 
   private func parseResolvedNode(jsonString: String) -> VoltraNode? {
