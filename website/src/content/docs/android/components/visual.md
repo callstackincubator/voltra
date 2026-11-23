@@ -11,7 +11,6 @@ Displays text content.
 
 **Parameters:**
 
-- `color` ([color value](/android/development/styling#day-and-night-colors), optional): Text color.
 - `maxLines` (number, optional): Maximum number of lines to display.
 - `renderAsBitmap` (boolean, optional): Renders text as a bitmap image to enable [custom fonts](/android/development/custom-fonts). Requires `fontFamily` in the style prop.
 

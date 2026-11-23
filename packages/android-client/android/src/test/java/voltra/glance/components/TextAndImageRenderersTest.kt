@@ -9,7 +9,6 @@ import org.robolectric.annotation.GraphicsMode
 import voltra.glance.GlanceRenderHelper
 import voltra.glance.GlanceRenderHelper.Scheme
 import voltra.glance.imageBitmaps
-import voltra.glance.textColors
 
 /**
  * Custom-font text is a bitmap baked at composition on every API level, so each scheme is composed on
@@ -23,13 +22,6 @@ class TextAndImageRenderersTest {
 
     private fun hex(color: Int) = Integer.toHexString(color)
 
-    @Test
-    fun theTextColorPropWinsOverTheStyleColor() {
-        val json = """{"t":18,"c":"Hi","p":{"s":{"c":"#00ff00"},"c":$pair}}"""
-
-        assertEquals(blue, GlanceRenderHelper.render(json, composeUnder = Scheme.NIGHT).textColors()["Hi"])
-    }
-
     /** Colors of the fully opaque pixels, which antialiasing leaves untouched inside the glyphs. */
     private fun Bitmap.opaqueColors(): Set<String> {
         val pixels = IntArray(width * height).also { getPixels(it, 0, width, 0, 0, width, height) }
@@ -41,18 +33,12 @@ class TextAndImageRenderersTest {
     fun customFontTextIsDrawnInEachSidesColor() {
         // A font family plus `renderAsBitmap` sends Text down the custom-font bitmap path.
         val font = """"ff":"serif","fs":48"""
-        val cases =
-            mapOf(
-                "style color" to """{"t":18,"c":"HH","p":{"renderAsBitmap":true,"s":{$font,"c":$pair}}}""",
-                "color prop" to """{"t":18,"c":"HH","p":{"renderAsBitmap":true,"c":$pair,"s":{$font}}}""",
-            )
+        val json = """{"t":18,"c":"HH","p":{"renderAsBitmap":true,"s":{$font,"c":$pair}}}"""
 
-        for ((name, json) in cases) {
-            val day = GlanceRenderHelper.render(json, composeUnder = Scheme.DAY).imageBitmaps().single()
-            val night = GlanceRenderHelper.render(json, composeUnder = Scheme.NIGHT).imageBitmaps().single()
+        val day = GlanceRenderHelper.render(json, composeUnder = Scheme.DAY).imageBitmaps().single()
+        val night = GlanceRenderHelper.render(json, composeUnder = Scheme.NIGHT).imageBitmaps().single()
 
-            assertEquals("$name by day", setOf(hex(red)), day.opaqueColors())
-            assertEquals("$name by night", setOf(hex(blue)), night.opaqueColors())
-        }
+        assertEquals("by day", setOf(hex(red)), day.opaqueColors())
+        assertEquals("by night", setOf(hex(blue)), night.opaqueColors())
     }
 }
