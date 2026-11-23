@@ -15,6 +15,9 @@ internal object DynamicWidgetLifecycleEvents {
     private const val TAG = "DynamicWidgetLifecycle"
     private const val SOURCE = "widget"
 
+    // Apps reconcile placements on their next launch, which may be days later.
+    private const val RETENTION_MS = 7 * 24 * 60 * 60 * 1000L
+
     /**
      * `widgetAdded` for each id the registry does not hold for [widgetType], which is then recorded
      * with its size. Seeds an unseeded registry first, so pre-existing placements stay silent.
@@ -77,7 +80,13 @@ internal object DynamicWidgetLifecycleEvents {
             Log.e(TAG, "Could not record the size of placement '$widgetType' ($appWidgetId)", e)
             return
         }
-        record("widgetResized", widgetType, appWidgetId, recordEvent) { size.writeTo(this) }
+        record(
+            "widgetResized",
+            widgetType,
+            appWidgetId,
+            recordEvent,
+            coalescingKey = "widgetResized:$widgetType:$appWidgetId",
+        ) { size.writeTo(this) }
     }
 
     /**
@@ -159,8 +168,9 @@ internal object DynamicWidgetLifecycleEvents {
         widgetType: String,
         appWidgetId: Int,
         recordEvent: (VoltraEvent) -> Unit,
+        coalescingKey: String? = null,
         fields: JSONObject.() -> Unit = {},
-    ) = record(type, widgetType, recordEvent) {
+    ) = record(type, widgetType, recordEvent, coalescingKey) {
         put("appWidgetId", appWidgetId)
         fields()
     }
@@ -169,6 +179,7 @@ internal object DynamicWidgetLifecycleEvents {
         type: String,
         widgetType: String,
         recordEvent: (VoltraEvent) -> Unit,
+        coalescingKey: String? = null,
         fields: JSONObject.() -> Unit = {},
     ) {
         try {
@@ -177,6 +188,8 @@ internal object DynamicWidgetLifecycleEvents {
                     type = type,
                     source = SOURCE,
                     fields = JSONObject().put("widgetType", widgetType).apply(fields),
+                    retentionMs = RETENTION_MS,
+                    coalescingKey = coalescingKey,
                 ),
             )
         } catch (e: Exception) {

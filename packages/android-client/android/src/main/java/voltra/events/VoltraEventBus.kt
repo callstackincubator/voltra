@@ -11,11 +11,16 @@ import java.util.concurrent.ConcurrentHashMap
  * An event a producer hands to [VoltraEventBus.send]. [fields] are the type-specific keys, merged
  * into the top level of the event JavaScript receives; the queue adds `type`, `source` and
  * `timestamp`.
+ *
+ * The producer also sets the queue policy: the event is dropped [retentionMs] after it was recorded,
+ * and recording an event with a [coalescingKey] drops any queued event with the same key.
  */
 internal class VoltraEvent(
     val type: String,
     val source: String,
     val fields: JSONObject = JSONObject(),
+    val retentionMs: Long,
+    val coalescingKey: String? = null,
 )
 
 /** Told that an event was recorded. Carries no event data; the subscriber pops. */

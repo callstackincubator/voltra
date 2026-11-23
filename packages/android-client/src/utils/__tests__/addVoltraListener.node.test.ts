@@ -172,6 +172,25 @@ describe('addVoltraListener (Android client)', () => {
     expect(next).toEqual([removed(2)])
   })
 
+  it('hides the native queue policy from listeners and hands it back on restore', async () => {
+    const channel = createNativeQueue()
+    mockedGetNativeVoltraAndroid.mockReturnValue(channel.native as unknown as Spec)
+    const addVoltraListener = loadAddVoltraListener()
+    const policy = { retentionMs: 604_800_000, coalescingKey: 'widgetResized:weather:1' }
+    channel.record({ ...removed(1), __queue: policy })
+    channel.record({ ...removed(2), __queue: policy })
+    const received: unknown[] = []
+
+    const subscription = addVoltraListener('widgetRemoved', (event) => {
+      received.push(event)
+      subscription.remove()
+    })
+    await flushMicrotasks()
+
+    expect(received).toEqual([removed(1)])
+    expect(channel.queued()).toEqual([{ ...removed(2), __queue: policy }])
+  })
+
   it('runs the other listeners when one throws (ADR 0014)', async () => {
     const channel = createNativeQueue()
     mockedGetNativeVoltraAndroid.mockReturnValue(channel.native as unknown as Spec)

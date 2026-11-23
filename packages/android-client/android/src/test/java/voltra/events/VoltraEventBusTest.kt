@@ -21,6 +21,7 @@ class VoltraEventBusTest {
             type = "widgetRemoved",
             source = "widget",
             fields = JSONObject().put("widgetType", "weather").put("appWidgetId", appWidgetId),
+            retentionMs = 60 * 60 * 1000L,
         )
 
     private fun JSONArray.summary(): List<String> =
@@ -34,7 +35,7 @@ class VoltraEventBusTest {
         VoltraEventBus.send(application, removed(1))
         VoltraEventBus.send(
             application,
-            VoltraEvent("widgetDisabled", "widget", JSONObject().put("widgetType", "weather")),
+            VoltraEvent("widgetDisabled", "widget", JSONObject().put("widgetType", "weather"), 60 * 60 * 1000L),
         )
         VoltraEventBus.send(application, removed(2))
 
@@ -55,7 +56,7 @@ class VoltraEventBusTest {
         val event = VoltraEventBus.pop(application, setOf("widgetRemoved")).getJSONObject(0)
 
         assertEquals(
-            setOf("type", "source", "timestamp", "widgetType", "appWidgetId"),
+            setOf("type", "source", "timestamp", "widgetType", "appWidgetId", "__queue"),
             event.keys().asSequence().toSet(),
         )
         assertEquals("widget", event.getString("source"))

@@ -10,6 +10,15 @@ import type { EventSubscription } from './types.js'
 
 type ChannelEvent = { type: string }
 
+// The native queue's per-event retention and coalescing key. Listeners never see it; an undelivered
+// event is handed back with it untouched, so native keeps the policy the event was recorded with.
+const QUEUE_POLICY_KEY = '__queue'
+
+const withoutQueuePolicy = (event: ChannelEvent): ChannelEvent => {
+  const { [QUEUE_POLICY_KEY]: _policy, ...rest } = event as ChannelEvent & { [QUEUE_POLICY_KEY]?: unknown }
+  return rest
+}
+
 type Subscriber = {
   type: string
   listener: (event: ChannelEvent) => void
@@ -22,7 +31,8 @@ let isPumping = false
 let pumpRequested = false
 let pumpScheduled = false
 
-const dispatch = (event: ChannelEvent): boolean => {
+const dispatch = (queued: ChannelEvent): boolean => {
+  const event = withoutQueuePolicy(queued)
   let delivered = false
   for (const subscriber of [...subscribers]) {
     // Checked per call: an earlier listener may have removed this one.

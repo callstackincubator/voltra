@@ -86,24 +86,31 @@ An event never starts the JavaScript runtime.
 `popEvents`/`restoreEvents` warns and returns a no-op subscription. An older bundle on a new binary
 never pulls; its events expire with the queue's retention.
 
-### Retention, cap and coalescing live with the queue
+### Producers set retention and coalescing; the queue applies them
 
-Per-type rules sit in `VoltraEventRules`, next to the queue:
+The queue knows no event types. Each `VoltraEvent` states its own policy, so a new producer adds
+events without editing the queue:
 
-- **Retention.** The six lifecycle types are kept 7 days: they describe placements an app reconciles
-  on its next launch, which may be days later. Any other type is kept 15 minutes, as iOS keeps
-  interactions.
+- **Retention.** `retentionMs` is required; there is no default for other types. The lifecycle
+  producer keeps all six lifecycle events 7 days: they describe placements an app reconciles on its
+  next launch, which may be days later.
+- **Coalescing.** `coalescingKey` is optional. Recording an event with a key drops any queued event
+  with the same key, so the newest sits at its own position. On restore, a restored event is dropped
+  when an event with the same key is already queued, because the queued one is newer. The lifecycle
+  producer keys `widgetResized` by type, `widgetType` and `appWidgetId`, so only the latest size of a
+  placement is kept; the other five have no key.
 - **Cap.** The queue holds at most 200 events across all types. The oldest are dropped with a
   warning. An app that never subscribes cannot grow the file without limit.
 - Retention and the cap are applied on every record, pop and restore. An entry without a non-empty
-  `type` and a numeric `timestamp` is skipped and the rest are kept; a queue that does not parse at
-  all is treated as empty.
-- **Coalescing.** The queue derives a coalescing key from the event's own fields. Only
-  `widgetResized` has a rule, keyed by type, `widgetType` and `appWidgetId`: recording one drops any
-  queued event with the same key, so the newest resize sits at its own position. On restore, a
-  restored event is dropped when an event with the same key is already queued, because the queued
-  one is newer. No coalescing data is stored outside the event, and JavaScript receives nothing
-  internal.
+  `type`, a numeric `timestamp` and a numeric retention is skipped and the rest are kept; a queue
+  that does not parse at all is treated as empty.
+- **The policy travels with the event.** The queue stores it on the entry under a reserved
+  `__queue` key (`{ retentionMs, coalescingKey? }`), and `popEvents` returns it. The JavaScript
+  dispatcher removes `__queue` before calling listeners and hands undelivered events back to
+  `restoreEvents` untouched, so a restored event keeps the policy it was recorded with. Keeping the
+  policy only in the queue entry was rejected: `pop` removes the entry, so `restore` would get events
+  without a policy and would have to guess one. `__queue` is not in the public event types, and
+  listeners never receive it.
 
 **Envelope.** Every event carries `type`, `source` and `timestamp` (epoch milliseconds), plus its
 type-specific fields at the top level. Array order is the delivery order.

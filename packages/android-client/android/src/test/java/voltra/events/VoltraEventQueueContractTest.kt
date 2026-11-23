@@ -9,18 +9,22 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
-/** The queue's bounds (ADR 0014): the cap, per-type retention and corrupt entries. */
+/** The queue's bounds (ADR 0014): the cap, producer-set retention and coalescing, and corrupt entries. */
 @RunWith(RobolectricTestRunner::class)
 class VoltraEventQueueContractTest {
     private val application = RuntimeEnvironment.getApplication()
     private val now = 1_700_000_000_000L
+    private val hour = 60 * 60 * 1000L
 
-    private fun removed(appWidgetId: Int) =
-        VoltraEvent(
-            "widgetRemoved",
-            "widget",
-            JSONObject().put("widgetType", "weather").put("appWidgetId", appWidgetId),
-        )
+    private fun removed(
+        appWidgetId: Int,
+        retentionMs: Long = hour,
+    ) = VoltraEvent(
+        "widgetRemoved",
+        "widget",
+        JSONObject().put("widgetType", "weather").put("appWidgetId", appWidgetId),
+        retentionMs = retentionMs,
+    )
 
     private fun JSONArray.summary(): List<String> =
         (0 until length()).map { index ->
@@ -31,10 +35,13 @@ class VoltraEventQueueContractTest {
     private fun resized(
         appWidgetId: Int,
         width: Int,
+        retentionMs: Long = hour,
     ) = VoltraEvent(
         "widgetResized",
         "widget",
         JSONObject().put("widgetType", "weather").put("appWidgetId", appWidgetId).put("width", width),
+        retentionMs = retentionMs,
+        coalescingKey = "resize:$appWidgetId",
     )
 
     private fun JSONArray.resizes(): List<String> =
@@ -83,14 +90,34 @@ class VoltraEventQueueContractTest {
     }
 
     @Test
-    fun aLifecycleEventOutlivesADefaultTypeEventOfTheSameAge() {
-        VoltraEventQueue.record(application, removed(1), now)
-        VoltraEventQueue.record(application, VoltraEvent("interaction", "widget"), now)
-        val sixteenMinutesLater = now + 16 * 60 * 1000L
+    fun eachEventIsKeptForTheRetentionItsProducerSet() {
+        VoltraEventQueue.record(application, removed(1, retentionMs = hour), now)
+        VoltraEventQueue.record(application, removed(2, retentionMs = 2 * hour), now)
 
         assertEquals(
-            listOf("widgetRemoved:1"),
-            VoltraEventQueue.pop(application, setOf("widgetRemoved", "interaction"), sixteenMinutesLater).summary(),
+            listOf("widgetRemoved:2"),
+            VoltraEventQueue.pop(application, setOf("widgetRemoved"), now + 90 * 60 * 1000L).summary(),
+        )
+    }
+
+    @Test
+    fun anEventRestoredFromJavaScriptKeepsItsRetentionAndCoalescingKey() {
+        val later = now + 2 * hour
+        val roundTrip = { popped: JSONArray, at: Long ->
+            VoltraEventQueue.restore(application, JSONArray(popped.toString()), at)
+        }
+        VoltraEventQueue.record(application, resized(1, 100, retentionMs = 3 * hour), now)
+        VoltraEventQueue.record(application, removed(5, retentionMs = hour), now)
+        roundTrip(VoltraEventQueue.pop(application, setOf("widgetResized", "widgetRemoved"), now), now)
+
+        val stillQueued = VoltraEventQueue.pop(application, setOf("widgetResized", "widgetRemoved"), later)
+        assertEquals(listOf("widgetResized:1:100"), stillQueued.resizes())
+
+        roundTrip(stillQueued, later)
+        VoltraEventQueue.record(application, resized(1, 200), later)
+        assertEquals(
+            listOf("widgetResized:1:200"),
+            VoltraEventQueue.pop(application, setOf("widgetResized"), later).resizes(),
         )
     }
 
@@ -103,6 +130,7 @@ class VoltraEventQueueContractTest {
                 .put("timestamp", now)
                 .put("widgetType", "weather")
                 .put("appWidgetId", id)
+                .put("__queue", JSONObject().put("retentionMs", hour))
         }
         val stored =
             JSONArray()
@@ -110,6 +138,7 @@ class VoltraEventQueueContractTest {
                     valid(1),
                 ).put("not an event")
                 .put(JSONObject().put("type", "widgetRemoved"))
+                .put(valid(3).apply { remove("__queue") })
                 .put(valid(2))
         application
             .getSharedPreferences("voltra_event_queue_v1", Context.MODE_PRIVATE)

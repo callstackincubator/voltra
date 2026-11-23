@@ -52,4 +52,36 @@ class DynamicWidgetLifecycleEventsTest {
 
         assertEquals(listOf("widgetRemoved:1", "widgetDisabled:-1"), recorded)
     }
+
+    @Test
+    fun lifecycleEventsAreKept7DaysAndAResizeCoalescesPerPlacement() {
+        val events = mutableListOf<VoltraEvent>()
+        val keep = { event: VoltraEvent -> events += event }
+        val registry = DynamicWidgetPlacementRegistry(application) { emptyList() }
+        val larger =
+            Bundle().apply {
+                putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 220)
+                putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 40)
+            }
+
+        DynamicWidgetLifecycleEvents.onEnabled("weather", registry, keep)
+        DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(1), { size }, registry, keep)
+        DynamicWidgetLifecycleEvents.onOptionsChanged("weather", 1, larger, registry, keep)
+        DynamicWidgetLifecycleEvents.onRestored("weather", intArrayOf(1), intArrayOf(2), registry, keep)
+        DynamicWidgetLifecycleEvents.onDeleted("weather", intArrayOf(2), registry, keep)
+        DynamicWidgetLifecycleEvents.onDisabled("weather", registry, keep)
+
+        val sevenDays = 7 * 24 * 60 * 60 * 1000L
+        assertEquals(
+            listOf(
+                "widgetEnabled:$sevenDays:null",
+                "widgetAdded:$sevenDays:null",
+                "widgetResized:$sevenDays:widgetResized:weather:1",
+                "widgetRestored:$sevenDays:null",
+                "widgetRemoved:$sevenDays:null",
+                "widgetDisabled:$sevenDays:null",
+            ),
+            events.map { "${it.type}:${it.retentionMs}:${it.coalescingKey}" },
+        )
+    }
 }
