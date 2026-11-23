@@ -31,11 +31,12 @@ internal data class DynamicWidgetPlacement(
  * [dropUnbound] retires the entries whose id the system no longer has bound for an installed widget
  * type, such as entries restored from another device's backup. A retired entry no longer counts as
  * a known placement, but [move] still finds it, so a launcher restore whose old ids were retired
- * before its remap is still reported as restored.
+ * before its remap is still reported as restored. [dropUnbound] deletes retired entries once they
+ * are older than [RETIRED_TTL_MS], the same window lifecycle events are kept.
  *
  * [boundPlacements] (every installed Dynamic widget type with its bound placements) is what seeding
  * records and pruning keeps, and [packageInfo] tells a fresh install from an upgrade; both are
- * injectable because Robolectric has no widget host or real install times.
+ * injectable because Robolectric has no widget host or real install times. [now] dates retirements.
  */
 internal class DynamicWidgetPlacementRegistry(
     context: Context,
@@ -45,6 +46,7 @@ internal class DynamicWidgetPlacementRegistry(
     private val packageInfo: () -> PackageInfo = {
         context.packageManager.getPackageInfo(context.packageName, 0)
     },
+    private val now: () -> Long = System::currentTimeMillis,
 ) {
     // Lazy so that building a registry never throws: receivers build one before their cleanup,
     // and a storage or seeding failure must surface inside the callers' failure guards.
@@ -83,18 +85,28 @@ internal class DynamicWidgetPlacementRegistry(
     fun dropUnbound() {
         seeded {
             val bound = boundPlacements()
+            val retiredAt = now()
+            val entries = preferences.all
             val unbound =
-                preferences.all.mapNotNull { (key, value) ->
+                entries.mapNotNull { (key, value) ->
                     if (key.startsWith(RESERVED_PREFIX) || value !is String) return@mapNotNull null
                     val boundIds = bound[key.substringBeforeLast(':')] ?: return@mapNotNull null
                     val appWidgetId = key.substringAfterLast(':').toIntOrNull()
                     (key to value).takeIf { boundIds.none { it.appWidgetId == appWidgetId } }
                 }
-            if (unbound.isEmpty()) return@seeded
+            val expired =
+                entries.keys.filter { key ->
+                    key.startsWith(RETIRED_PREFIX) &&
+                        retiredTime(entries[key]).let { it == null || retiredAt - it > RETIRED_TTL_MS }
+                }
+            if (unbound.isEmpty() && expired.isEmpty()) return@seeded
             val editor = preferences.edit()
-            unbound.forEach { (key, value) -> editor.remove(key).putString(RETIRED_PREFIX + key, value) }
+            unbound.forEach { (key, value) ->
+                editor.remove(key).putString(RETIRED_PREFIX + key, encodeRetired(value, retiredAt))
+            }
+            expired.forEach(editor::remove)
             editor.commit()
-            Log.d(TAG, "Dropped ${unbound.size} placements that are no longer bound")
+            Log.d(TAG, "Retired ${unbound.size} unbound placements, deleted ${expired.size} expired ones")
         }
     }
 
@@ -137,7 +149,10 @@ internal class DynamicWidgetPlacementRegistry(
     ) {
         seeded {
             val editor = preferences.edit()
-            appWidgetIds.forEach { editor.remove(key(widgetType, it)) }
+            appWidgetIds.forEach {
+                val key = key(widgetType, it)
+                editor.remove(key).remove(RETIRED_PREFIX + key)
+            }
             editor.commit()
         }
     }
@@ -154,7 +169,9 @@ internal class DynamicWidgetPlacementRegistry(
             val known =
                 pairs.mapNotNull { pair ->
                     val from = key(widgetType, pair.first)
-                    val value = preferences.getString(from, null) ?: preferences.getString(RETIRED_PREFIX + from, null)
+                    val value =
+                        preferences.getString(from, null)
+                            ?: preferences.getString(RETIRED_PREFIX + from, null)?.let(::retiredSize)
                     value?.let { pair to it }
                 }
             val editor = preferences.edit()
@@ -176,7 +193,7 @@ internal class DynamicWidgetPlacementRegistry(
         seeded {
             val editor = preferences.edit()
             preferences.all.keys
-                .filter { it.startsWith("$widgetType:") }
+                .filter { it.startsWith("$widgetType:") || it.startsWith("$RETIRED_PREFIX$widgetType:") }
                 .forEach(editor::remove)
             editor.commit()
         }
@@ -188,6 +205,9 @@ internal class DynamicWidgetPlacementRegistry(
         private const val RESERVED_PREFIX = "__"
         private const val KEY_SEEDED = "${RESERVED_PREFIX}seeded"
         private const val RETIRED_PREFIX = "${RESERVED_PREFIX}retired:"
+        private const val RETIRED_TTL_MS = 7 * 24 * 60 * 60 * 1000L
+        private const val KEY_RETIRED_AT = "retiredAt"
+        private const val KEY_RETIRED_SIZE = "size"
 
         private val lock = Any()
 
@@ -215,6 +235,27 @@ internal class DynamicWidgetPlacementRegistry(
         }
 
         private fun encode(size: WidgetPlacementSize): String = size.writeTo(JSONObject()).toString()
+
+        private fun encodeRetired(
+            size: String,
+            retiredAt: Long,
+        ): String = JSONObject().put(KEY_RETIRED_AT, retiredAt).put(KEY_RETIRED_SIZE, size).toString()
+
+        // An unreadable retired entry has no age, so the next prune deletes it.
+        private fun retiredTime(raw: Any?): Long? =
+            try {
+                JSONObject(raw as String).getLong(KEY_RETIRED_AT)
+            } catch (e: Exception) {
+                null
+            }
+
+        // Still restorable: [decode] turns an unreadable size into an unknown one.
+        private fun retiredSize(raw: String): String =
+            try {
+                JSONObject(raw).getString(KEY_RETIRED_SIZE)
+            } catch (e: Exception) {
+                raw
+            }
 
         private fun decode(raw: String): WidgetPlacementSize =
             try {

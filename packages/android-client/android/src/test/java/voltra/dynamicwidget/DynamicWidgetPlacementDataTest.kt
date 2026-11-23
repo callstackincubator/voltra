@@ -201,6 +201,26 @@ class DynamicWidgetPlacementDataTest {
     }
 
     @Test
+    fun deletingAPlacementForgetsItsRetiredRegistryEntry() {
+        var bound = listOf(DynamicWidgetPlacement("pd-retired", 1, size))
+        val registry = DynamicWidgetPlacementRegistry(application, { mapOf("pd-retired" to bound) }, { upgraded })
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+        bound = emptyList()
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+
+        DynamicWidgetPlacementData.onDeleted(
+            application,
+            "pd-retired",
+            intArrayOf(1),
+            configurationStore,
+            lastGoodStore,
+            registry,
+        )
+
+        assertEquals(emptyList<Pair<Int, Int>>(), registry.move("pd-retired", listOf(1 to 11)))
+    }
+
+    @Test
     fun aFailingRegistryDoesNotSkipTheOtherStoresCleanupOnDelete() =
         runBlocking {
             lastGoodStore.write("pd-delete-failing", 1, family, "gone")

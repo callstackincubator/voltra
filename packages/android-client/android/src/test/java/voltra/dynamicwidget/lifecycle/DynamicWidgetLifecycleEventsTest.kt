@@ -116,6 +116,44 @@ class DynamicWidgetLifecycleEventsTest {
     }
 
     @Test
+    fun disablingAWidgetTypeForgetsItsRetiredPlacements() {
+        var installed = bound(1)
+        val registry = DynamicWidgetPlacementRegistry(application, { installed }, { upgraded })
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+        installed = bound()
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+
+        DynamicWidgetLifecycleEvents.onDisabled("weather", registry, record)
+
+        assertEquals(emptyList<Pair<Int, Int>>(), registry.move("weather", listOf(1 to 11)))
+    }
+
+    @Test
+    fun aPlacementRetiredOver7DaysAgoIsForgottenWhileAYoungerOneIsStillRestored() {
+        val day = 24 * 60 * 60 * 1000L
+        var now = 1_700_000_000_000L
+        val retiredFirst = now
+        var installed = bound(1, 2)
+        val registry = DynamicWidgetPlacementRegistry(application, { installed }, { upgraded }, { now })
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+
+        installed = bound(2)
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+        now = retiredFirst + 2 * day
+        installed = bound()
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+        now = retiredFirst + 7 * day + 1
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+        DynamicWidgetLifecycleEvents.reportRestored(
+            "weather",
+            registry.move("weather", listOf(1 to 11, 2 to 12)),
+            record,
+        )
+
+        assertEquals(listOf("widgetRestored:12"), recorded)
+    }
+
+    @Test
     fun aFailingRegistryIsNotThrownAndARemovalIsStillReported() {
         val failing =
             DynamicWidgetPlacementRegistry(application, { throw IllegalStateException("no widget host") }, { upgraded })

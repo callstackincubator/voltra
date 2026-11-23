@@ -139,11 +139,6 @@ entries are made safe by dropping unbound ones (below).
   placed there, so the queue is a plain file. The cache directory was rejected because the system
   can clear it and silently lose events; device-protected storage was rejected because it has its
   own backup domains.
-- **Migration.** On its first access the queue moves the events from the old
-  `voltra_event_queue_v1` SharedPreferences to the front of the file, then deletes the preferences.
-  The preferences are only deleted once the file write succeeds. A backup taken by an older version
-  can still bring the old preferences back; their events are then migrated, and retention bounds how
-  long they can live.
 - Host apps need no change.
 - Sources: [Auto Backup](https://developer.android.com/identity/data/autobackup),
   [Android 12 backup changes](https://developer.android.com/about/versions/12/behavior-changes-12#backup-restore),
@@ -198,10 +193,12 @@ payload widget package (ADR 0000), and payload-driven widgets emit nothing.
     definition no longer bound, and an app start or `onEnabled` can run between the data restore and
     the launcher's `onRestored`. A retired entry (`__retired:<widgetType>:<appWidgetId>`) no longer
     counts as a known placement, but the restore move still finds it, so every old id the registry
-    knew is still reported as `widgetRestored`. Retired entries are bounded by the old device's
-    placements and are dropped when a restore moves them. Pruning in `onPlacementsSeen` or
-    `onRestored` was rejected: it would not help a reused id, which is bound, and in `onRestored` it
-    would run exactly between the restore and its remap.
+    knew is still reported as `widgetRestored`. A retired entry records when it was retired. It is
+    deleted when a restore moves it, when `onDeleted` removes its id or `onDisabled` clears its
+    widget type, and otherwise by the first prune after it is 7 days old, the window lifecycle
+    events are kept, which leaves the launcher time to remap after an app start. Pruning in
+    `onPlacementsSeen` or `onRestored` was rejected: it would not help a reused id, which is bound,
+    and in `onRestored` it would run exactly between the restore and its remap.
   - **Limit.** A new placement that reuses an old id before the app starts is bound when `onEnabled`
     prunes, so it is still taken as known: its `widgetAdded` is lost, and so is `widgetEnabled`.
     Apps that reconcile with `getActiveWidgets()` cover it.

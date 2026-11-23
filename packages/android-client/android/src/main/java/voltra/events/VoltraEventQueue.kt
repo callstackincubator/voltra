@@ -15,8 +15,6 @@ import java.io.IOException
  * through [AtomicFile] because a receiver's process can be reclaimed as soon as `onReceive` returns.
  *
  * The file lives in `noBackupFilesDir` so queued events never follow a backup to another device.
- * Earlier versions kept the queue in the `voltra_event_queue_v1` SharedPreferences; its events are
- * moved to the front of the file on first access and the preferences are deleted.
  *
  * Each entry carries the producer's policy under [KEY_POLICY]. It travels with the event to
  * JavaScript, which strips it before dispatch and hands it back untouched with `restoreEvents`, so a
@@ -25,8 +23,6 @@ import java.io.IOException
 internal object VoltraEventQueue {
     private const val TAG = "VoltraEventQueue"
     private const val FILE_NAME = "voltra_event_queue_v1.json"
-    private const val LEGACY_PREFERENCES_NAME = "voltra_event_queue_v1"
-    private const val LEGACY_KEY_EVENTS = "events"
     private const val MAX_EVENTS = 200
 
     private const val KEY_POLICY = "__queue"
@@ -97,15 +93,7 @@ internal object VoltraEventQueue {
         return fresh.takeLast(MAX_EVENTS)
     }
 
-    private fun read(context: Context): List<JSONObject> {
-        val app = context.applicationContext
-        val stored = parse(readFile(app))
-        val legacy = app.getSharedPreferences(LEGACY_PREFERENCES_NAME, Context.MODE_PRIVATE)
-        if (!legacy.contains(LEGACY_KEY_EVENTS)) return stored
-        val merged = parse(legacy.getString(LEGACY_KEY_EVENTS, null)) + stored
-        if (write(app, merged)) app.deleteSharedPreferences(LEGACY_PREFERENCES_NAME)
-        return merged
-    }
+    private fun read(context: Context): List<JSONObject> = parse(readFile(context))
 
     private fun parse(raw: String?): List<JSONObject> {
         if (raw == null) return emptyList()
@@ -142,23 +130,21 @@ internal object VoltraEventQueue {
     private fun write(
         context: Context,
         events: List<JSONObject>,
-    ): Boolean {
+    ) {
         val file = file(context)
         val stream =
             try {
                 file.startWrite()
             } catch (e: IOException) {
                 Log.w(TAG, "Failed to persist the event queue: ${e.message}")
-                return false
+                return
             }
-        return try {
+        try {
             stream.write(JSONArray(events).toString().toByteArray(Charsets.UTF_8))
             file.finishWrite(stream)
-            true
         } catch (e: IOException) {
             file.failWrite(stream)
             Log.w(TAG, "Failed to persist the event queue: ${e.message}")
-            false
         }
     }
 
