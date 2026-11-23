@@ -50,9 +50,9 @@ internal object LayoutGaps {
 
     /**
      * The items of a lazy list or grid that should be rendered. Like [visibleChildren], Gone
-     * items are dropped only when [gap] is positive, so they do not become an empty row (or
-     * a trailing gap). Refs are resolved through [sharedElements] only to check visibility;
-     * the item itself is kept as is.
+     * items are always dropped so they do not occupy space, become an empty row, or
+     * consume a gap when [gap] is positive. Refs are resolved through [sharedElements]
+     * only to check visibility; the item itself is kept as is.
      */
     fun visibleItems(
         items: List<VoltraNode?>,
@@ -60,7 +60,6 @@ internal object LayoutGaps {
         sharedStyles: List<Map<String, Any?>>?,
         sharedElements: List<VoltraNode>?,
     ): List<VoltraNode?> {
-        if (!hasPositiveGap(gap)) return items
         return items.filterNot { item ->
             val resolved = if (item is VoltraNode.Ref) sharedElements?.getOrNull(item.ref) else item
             resolved != null && isGone(resolved, sharedStyles)
@@ -70,18 +69,15 @@ internal object LayoutGaps {
     /**
      * The children a Column/Row should actually render, in order.
      *
-     * When [gap] is not a positive value, [children] is returned unchanged: no per-child
-     * style resolution happens, and Gone children stay in the list so they keep being
-     * rendered as Glance `Visibility.Gone` views exactly as before the `gap` style
-     * existed. When [gap] is positive, Gone children are excluded so they do not get a gap
-     * of their own and do not consume one of Glance's 10 direct-child slots.
+     * Gone children are always excluded: a Glance `Visibility.Gone` view still occupies
+     * space in the layout, and when [gap] is positive a Gone child would also get a gap
+     * of its own and consume one of Glance's 10 direct-child slots.
      */
     fun visibleChildren(
         children: List<VoltraNode>,
         gap: Dp?,
         sharedStyles: List<Map<String, Any?>>?,
     ): List<VoltraNode> {
-        if (!hasPositiveGap(gap)) return children
         return children.filterNot { isGone(it, sharedStyles) }
     }
 

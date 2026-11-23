@@ -126,13 +126,14 @@ class LayoutGapsTest {
     // --- visibleChildren ---
 
     @Test
-    fun visibleChildren_retainsGoneChildWhenGapIsNullOrZero() {
+    fun visibleChildren_dropsGoneChildWhenGapIsNullOrZero() {
         val visible = element()
-        val gone = element(mapOf("style" to mapOf("display" to "none")))
-        val children = listOf(visible, gone)
+        val goneStyle = element(mapOf("style" to mapOf("display" to "none")))
+        val goneNative = elementWithVisibility("gone")
+        val children = listOf(visible, goneStyle, goneNative)
 
-        assertEquals(children, LayoutGaps.visibleChildren(children, gap = null, sharedStyles = null))
-        assertEquals(children, LayoutGaps.visibleChildren(children, gap = 0.dp, sharedStyles = null))
+        assertEquals(listOf(visible), LayoutGaps.visibleChildren(children, gap = null, sharedStyles = null))
+        assertEquals(listOf(visible), LayoutGaps.visibleChildren(children, gap = 0.dp, sharedStyles = null))
     }
 
     @Test
@@ -161,11 +162,20 @@ class LayoutGapsTest {
     }
 
     @Test
-    fun visibleItems_keepsEverythingWithoutAPositiveGap() {
-        val items = listOf(element(), element(mapOf("style" to mapOf("display" to "none"))))
+    fun visibleItems_dropsGoneItemsWithoutAPositiveGap() {
+        val shown = element()
+        val goneStyle = element(mapOf("style" to mapOf("display" to "none")))
+        val goneNative = elementWithVisibility("gone")
+        val items = listOf(shown, goneStyle, goneNative, text("t"))
 
-        assertEquals(items, LayoutGaps.visibleItems(items, gap = null, sharedStyles = null, sharedElements = null))
-        assertEquals(items, LayoutGaps.visibleItems(items, gap = 0.dp, sharedStyles = null, sharedElements = null))
+        assertEquals(
+            listOf(shown, text("t")),
+            LayoutGaps.visibleItems(items, gap = null, sharedStyles = null, sharedElements = null),
+        )
+        assertEquals(
+            listOf(shown, text("t")),
+            LayoutGaps.visibleItems(items, gap = 0.dp, sharedStyles = null, sharedElements = null),
+        )
     }
 
     // --- gapInsets ---

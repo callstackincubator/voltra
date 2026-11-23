@@ -19,10 +19,9 @@ import voltra.styling.applyFlex
 /**
  * Computes the leaf children a Column/Row should render.
  *
- * When [gap] is null or non-positive, this is a no-op beyond flattening: no per-child
- * style resolution happens and Gone children are left in place, so rendering stays
- * identical to before the `gap` style existed. Only when [gap] is positive are Gone
- * children filtered out (see [LayoutGaps.visibleChildren]) so they don't get a gap.
+ * Gone children are always filtered out (see [LayoutGaps.visibleChildren]) so they
+ * don't occupy space, and when [gap] is positive they also don't get a gap of their
+ * own.
  */
 private fun resolveGapChildren(
     element: VoltraElement,
