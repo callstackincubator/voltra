@@ -174,6 +174,17 @@ class VoltraModifierRegistryTest {
         assertSame(GlanceModifier, result)
     }
 
+    @Test
+    fun rejectsAThemeTokenOnOneSideOfADayNightPair() {
+        val result =
+            GlanceModifier.applyNativeModifiers(
+                listOf(VoltraModifierDescriptor("background", mapOf("day" to "#FFFFFF", "night" to "~p"))),
+                themeScope,
+            )
+        assertSame(GlanceModifier, result)
+        assertTrue(resolvedRoles.isEmpty())
+    }
+
     private val backgroundModifiers = """[{"${'$'}type":"appWidgetBackground"}]"""
 
     private fun element(

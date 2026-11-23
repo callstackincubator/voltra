@@ -33,10 +33,11 @@ object JSColorParser {
     /**
      * Both sides must be literal colors in the string grammar; anything else drops the whole pair
      * with one warning, so the property falls back to its default as for an unparsable string.
+     * Theme tokens are rejected because Glance's day/night provider takes two concrete colors.
      */
-    private fun parsePair(
+    fun parsePair(
         pair: Map<*, *>,
-        logKey: String?,
+        logKey: String? = null,
     ): VoltraColorValue.DayNight? {
         val missing = listOf("day", "night").firstOrNull { it !in pair }
         if (missing != null) {
