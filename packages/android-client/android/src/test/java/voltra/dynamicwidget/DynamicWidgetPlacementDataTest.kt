@@ -51,7 +51,11 @@ class DynamicWidgetPlacementDataTest {
     private fun registryHolding(vararg placements: Pair<String, Int>) =
         DynamicWidgetPlacementRegistry(
             application,
-            { placements.map { (widgetType, appWidgetId) -> DynamicWidgetPlacement(widgetType, appWidgetId, size) } },
+            {
+                placements
+                    .map { (widgetType, appWidgetId) -> DynamicWidgetPlacement(widgetType, appWidgetId, size) }
+                    .groupBy { it.widgetType }
+            },
             { upgraded },
         )
 

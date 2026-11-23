@@ -186,6 +186,7 @@ class VoltraModule(
         super.initialize()
         reactApplicationContext.registerComponentCallbacks(configurationCallbacks)
         VoltraNotificationManager.addEndedListener(ongoingNotificationEndedListener)
+        DynamicWidgetPlacementData.onAppStarted(reactApplicationContext)
         eventBusToken =
             VoltraEventBus.subscribe {
                 emitOnEventsAvailable(Arguments.createMap().apply { putString("type", "eventsAvailable") })

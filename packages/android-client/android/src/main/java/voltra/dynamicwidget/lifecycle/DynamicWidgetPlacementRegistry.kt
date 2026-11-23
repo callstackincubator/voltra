@@ -28,12 +28,20 @@ internal data class DynamicWidgetPlacement(
  * is never reported as added. On a fresh install it starts empty, so a widget placed before the app
  * first runs is still reported. A seeding failure is thrown from that method, like a storage failure.
  *
- * [currentPlacements] is what seeding records and [packageInfo] tells a fresh install from an
- * upgrade; both are injectable because Robolectric has no widget host or real install times.
+ * [dropUnbound] retires the entries whose id the system no longer has bound for an installed widget
+ * type, such as entries restored from another device's backup. A retired entry no longer counts as
+ * a known placement, but [move] still finds it, so a launcher restore whose old ids were retired
+ * before its remap is still reported as restored.
+ *
+ * [boundPlacements] (every installed Dynamic widget type with its bound placements) is what seeding
+ * records and pruning keeps, and [packageInfo] tells a fresh install from an upgrade; both are
+ * injectable because Robolectric has no widget host or real install times.
  */
 internal class DynamicWidgetPlacementRegistry(
     context: Context,
-    private val currentPlacements: () -> List<DynamicWidgetPlacement> = { installedDynamicPlacements(context) },
+    private val boundPlacements: () -> Map<String, List<DynamicWidgetPlacement>> = {
+        installedDynamicPlacements(context)
+    },
     private val packageInfo: () -> PackageInfo = {
         context.packageManager.getPackageInfo(context.packageName, 0)
     },
@@ -57,7 +65,7 @@ internal class DynamicWidgetPlacementRegistry(
             Log.d(TAG, "Fresh install; placement registry starts empty")
             return
         }
-        val placements = currentPlacements()
+        val placements = boundPlacements().values.flatten()
         val editor = preferences.edit()
         placements.forEach { editor.putString(key(it.widgetType, it.appWidgetId), encode(it.size)) }
         editor.putBoolean(KEY_SEEDED, true).commit()
@@ -71,6 +79,24 @@ internal class DynamicWidgetPlacementRegistry(
             Log.w(TAG, "Could not read the package's install times; seeding the placement registry", e)
             false
         }
+
+    fun dropUnbound() {
+        seeded {
+            val bound = boundPlacements()
+            val unbound =
+                preferences.all.mapNotNull { (key, value) ->
+                    if (key.startsWith(RESERVED_PREFIX) || value !is String) return@mapNotNull null
+                    val boundIds = bound[key.substringBeforeLast(':')] ?: return@mapNotNull null
+                    val appWidgetId = key.substringAfterLast(':').toIntOrNull()
+                    (key to value).takeIf { boundIds.none { it.appWidgetId == appWidgetId } }
+                }
+            if (unbound.isEmpty()) return@seeded
+            val editor = preferences.edit()
+            unbound.forEach { (key, value) -> editor.remove(key).putString(RETIRED_PREFIX + key, value) }
+            editor.commit()
+            Log.d(TAG, "Dropped ${unbound.size} placements that are no longer bound")
+        }
+    }
 
     fun sizeOf(
         widgetType: String,
@@ -118,7 +144,7 @@ internal class DynamicWidgetPlacementRegistry(
 
     /**
      * Moves each (from, to) entry in one write, so ids that chain into each other (1 -> 2, 2 -> 3)
-     * keep their own entries. Returns the pairs whose `from` was known.
+     * keep their own entries. Returns the pairs whose `from` was known or retired.
      */
     fun move(
         widgetType: String,
@@ -127,11 +153,15 @@ internal class DynamicWidgetPlacementRegistry(
         seeded {
             val known =
                 pairs.mapNotNull { pair ->
-                    val value = preferences.getString(key(widgetType, pair.first), null)
+                    val from = key(widgetType, pair.first)
+                    val value = preferences.getString(from, null) ?: preferences.getString(RETIRED_PREFIX + from, null)
                     value?.let { pair to it }
                 }
             val editor = preferences.edit()
-            known.forEach { (pair, _) -> editor.remove(key(widgetType, pair.first)) }
+            known.forEach { (pair, _) ->
+                val from = key(widgetType, pair.first)
+                editor.remove(from).remove(RETIRED_PREFIX + from)
+            }
             known.forEach { (pair, value) -> editor.putString(key(widgetType, pair.second), value) }
             editor.commit()
             known.map { it.first }
@@ -155,7 +185,9 @@ internal class DynamicWidgetPlacementRegistry(
     companion object {
         private const val TAG = "VoltraPlacementRegistry"
         private const val PREFERENCES_NAME = "voltra_dynamic_widget_placements_v1"
-        private const val KEY_SEEDED = "__seeded"
+        private const val RESERVED_PREFIX = "__"
+        private const val KEY_SEEDED = "${RESERVED_PREFIX}seeded"
+        private const val RETIRED_PREFIX = "${RESERVED_PREFIX}retired:"
 
         private val lock = Any()
 
@@ -164,14 +196,14 @@ internal class DynamicWidgetPlacementRegistry(
             appWidgetId: Int,
         ) = "$widgetType:$appWidgetId"
 
-        private fun installedDynamicPlacements(context: Context): List<DynamicWidgetPlacement> {
+        private fun installedDynamicPlacements(context: Context): Map<String, List<DynamicWidgetPlacement>> {
             val manager = AppWidgetManager.getInstance(context)
             return VoltraWidgetReceivers
                 .installedReceivers(context)
-                .filter { (widgetType, _) ->
+                .filterKeys { widgetType ->
                     VoltraWidgetKindResolver.resolve(context, widgetType) ==
                         VoltraWidgetKindResolution.Resolved(VoltraWidgetKind.Dynamic)
-                }.flatMap { (widgetType, component) ->
+                }.mapValues { (widgetType, component) ->
                     manager.getAppWidgetIds(component).map { appWidgetId ->
                         DynamicWidgetPlacement(
                             widgetType,

@@ -8,6 +8,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import voltra.dynamicwidget.DynamicWidgetPlacementData
 import voltra.dynamicwidget.WidgetPlacementSize
 import voltra.events.VoltraEvent
 
@@ -39,14 +40,17 @@ class DynamicWidgetLifecycleEventsTest {
     private val freshInstall = installedAt(1_000, 1_000)
     private val upgraded = installedAt(1_000, 2_000)
 
+    private fun bound(vararg appWidgetIds: Int) =
+        mapOf("weather" to appWidgetIds.map { DynamicWidgetPlacement("weather", it, size) })
+
     @Test
     fun afterAnUpgradeOnlyPlacementsMadeAfterSeedingAreReported() {
-        var installed = listOf(DynamicWidgetPlacement("weather", 1, size))
+        var installed = bound(1)
         val registry = DynamicWidgetPlacementRegistry(application, { installed }, { upgraded })
 
         DynamicWidgetLifecycleEvents.onEnabled("weather", registry, record)
         DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(1), { size }, registry, record)
-        installed = installed + DynamicWidgetPlacement("weather", 2, size)
+        installed = bound(1, 2)
         DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(1, 2), { size }, registry, record)
 
         assertEquals(listOf("widgetAdded:2"), recorded)
@@ -54,7 +58,7 @@ class DynamicWidgetLifecycleEventsTest {
 
     @Test
     fun onAFreshInstallTheFirstPlacementIsReportedAsEnabledThenAdded() {
-        val installed = listOf(DynamicWidgetPlacement("weather", 1, size))
+        val installed = bound(1)
         val registry = DynamicWidgetPlacementRegistry(application, { installed }, { freshInstall })
 
         DynamicWidgetLifecycleEvents.onEnabled("weather", registry, record)
@@ -63,11 +67,60 @@ class DynamicWidgetLifecycleEventsTest {
         assertEquals(listOf("widgetEnabled:-1", "widgetAdded:1"), recorded)
     }
 
+    // Seeding with ids 1 and 2 stands in for a registry restored from another device's backup.
+    @Test
+    fun idsNoLongerBoundAreDroppedOnStartSoAReusedIdIsReportedAsAdded() {
+        var installed = bound(1, 2)
+        val registry = DynamicWidgetPlacementRegistry(application, { installed }, { upgraded })
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+
+        installed = bound()
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+        installed = bound(1)
+        DynamicWidgetLifecycleEvents.onEnabled("weather", registry, record)
+        DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(1), { size }, registry, record)
+
+        assertEquals(listOf("widgetEnabled:-1", "widgetAdded:1"), recorded)
+    }
+
+    @Test
+    fun enablingAWidgetTypeWithOnlyUnboundEntriesReportsEnabled() {
+        var installed = bound(1, 2)
+        val registry = DynamicWidgetPlacementRegistry(application, { installed }, { upgraded })
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+
+        installed = bound(7)
+        DynamicWidgetLifecycleEvents.onEnabled("weather", registry, record)
+
+        assertEquals(listOf("widgetEnabled:-1"), recorded)
+    }
+
+    // The old ids of a launcher restore are no longer bound once the new ones are.
+    @Test
+    fun aLauncherRestoreAfterPruningStillReportsEveryKnownOldId() {
+        var installed = bound(1, 2)
+        val registry = DynamicWidgetPlacementRegistry(application, { installed }, { upgraded })
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+
+        installed = bound(11, 12)
+        DynamicWidgetPlacementData.onAppStarted(application, registry)
+        DynamicWidgetLifecycleEvents.onEnabled("weather", registry, record)
+        DynamicWidgetLifecycleEvents.reportRestored(
+            "weather",
+            registry.move("weather", listOf(1 to 11, 2 to 12)),
+            record,
+        )
+        DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(11, 12), { size }, registry, record)
+
+        assertEquals(listOf("widgetEnabled:-1", "widgetRestored:11", "widgetRestored:12"), recorded)
+    }
+
     @Test
     fun aFailingRegistryIsNotThrownAndARemovalIsStillReported() {
         val failing =
             DynamicWidgetPlacementRegistry(application, { throw IllegalStateException("no widget host") }, { upgraded })
 
+        DynamicWidgetPlacementData.onAppStarted(application, failing)
         DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(1), { size }, failing, record)
         DynamicWidgetLifecycleEvents.onOptionsChanged("weather", 1, options, failing, record)
         DynamicWidgetLifecycleEvents.onEnabled("weather", failing, record)
@@ -81,7 +134,7 @@ class DynamicWidgetLifecycleEventsTest {
     fun lifecycleEventsAreKept7DaysAndAResizeCoalescesPerPlacement() {
         val events = mutableListOf<VoltraEvent>()
         val keep = { event: VoltraEvent -> events += event }
-        val registry = DynamicWidgetPlacementRegistry(application, { emptyList() }, { freshInstall })
+        val registry = DynamicWidgetPlacementRegistry(application, { emptyMap() }, { freshInstall })
         val larger =
             Bundle().apply {
                 putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 220)

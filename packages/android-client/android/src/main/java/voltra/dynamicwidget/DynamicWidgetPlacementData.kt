@@ -27,6 +27,17 @@ import voltra.dynamicwidget.lifecycle.DynamicWidgetPlacementRegistry
 internal object DynamicWidgetPlacementData {
     private const val TAG = "DynamicWidgetPlacementData"
 
+    /**
+     * The app started: drop the registry's placements the system no longer has bound, such as ones
+     * restored from another device's backup. Never throws.
+     */
+    fun onAppStarted(
+        context: Context,
+        registry: DynamicWidgetPlacementRegistry = DynamicWidgetPlacementRegistry(context),
+    ) {
+        guarded("drop unbound placements from the registry", widgetId = null) { registry.dropUnbound() }
+    }
+
     /** Placements were removed from the home screen. */
     fun onDeleted(
         context: Context,

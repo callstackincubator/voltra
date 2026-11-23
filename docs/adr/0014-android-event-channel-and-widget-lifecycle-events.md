@@ -142,10 +142,33 @@ payload widget package (ADR 0000), and payload-driven widgets emit nothing.
   re-sends `onEnabled` at boot and after a package update for a type that already has placements;
   those placements are in the registry, so nothing is emitted. The re-sent `onUpdate` calls find
   every id known and emit nothing either.
-- **No reconciliation at startup.** The registry is not compared with
-  `AppWidgetManager.getAppWidgetIds` when the module starts. It could only repair a missed delete
-  followed by a recycled id of the same widget type, which does not happen in practice, and silently
-  adding ids would swallow a `widgetAdded` whose `onUpdate` is still on its way.
+- **Unbound entries are dropped, bound ones are never added.** The registry file is in Auto Backup,
+  so after a restore onto a new device whose launcher did not restore the widgets, it holds the old
+  device's ids: they would suppress `widgetEnabled` and swallow `widgetAdded` for a new placement
+  that reuses one of them. So the registry drops every entry whose `appWidgetId` is not in
+  `AppWidgetManager.getAppWidgetIds` for its widget type's receiver, silently (no `widgetRemoved`
+  for placements that only existed on another device):
+  - **On app start**, from `VoltraModule.initialize()` through `DynamicWidgetPlacementData.onAppStarted`,
+    which logs a failure and never throws.
+  - **In `onEnabled`, before the `widgetEnabled` gate**, so a type whose only entries are stale is
+    reported as enabled by the same callback that meets them. A failure there is logged and the gate
+    runs on the registry as it is.
+  - **Seeding** records exactly the bound placements, and a restored registry is already seeded, so
+    a seed has nothing to drop.
+  - Only installed Dynamic widget types are pruned; entries of a type whose receiver is gone are
+    left alone. A bound id that is not recorded is never added here: that would swallow a
+    `widgetAdded` whose `onUpdate` is still on its way. It is left for the normal update path.
+  - **Dropped entries are retired, not deleted.** During a launcher restore the old ids are by
+    definition no longer bound, and an app start or `onEnabled` can run between the data restore and
+    the launcher's `onRestored`. A retired entry (`__retired:<widgetType>:<appWidgetId>`) no longer
+    counts as a known placement, but the restore move still finds it, so every old id the registry
+    knew is still reported as `widgetRestored`. Retired entries are bounded by the old device's
+    placements and are dropped when a restore moves them. Pruning in `onPlacementsSeen` or
+    `onRestored` was rejected: it would not help a reused id, which is bound, and in `onRestored` it
+    would run exactly between the restore and its remap.
+  - **Limit.** A new placement that reuses an old id before the app starts is bound when `onEnabled`
+    prunes, so it is still taken as known: its `widgetAdded` is lost, and so is `widgetEnabled`.
+    Apps that reconcile with `getActiveWidgets()` cover it.
 - **The registry is one per-placement store.** `DynamicWidgetPlacementData` removes and moves its
   entries next to the instance configuration and the last good render, each in its own guard. Its
   `onRestored` returns the pairs the registry moved, and the receiver reports those. The stores know
@@ -154,7 +177,7 @@ payload widget package (ADR 0000), and payload-driven widgets emit nothing.
   and `onDisabled` clears every entry of the widget type. If the launcher later reuses an id for the
   same widget type, that placement is reported as `widgetAdded` again.
 - **Restore moves all pairs in one write.** `onRestored` moves every (old, new) pair whose old id is
-  known in a single SharedPreferences commit. Moving pairs one by one would let a chain such as
+  known or retired in a single SharedPreferences commit. Moving pairs one by one would let a chain such as
   1 → 2, 2 → 3 overwrite entry 2 before it moved.
 - An entry whose stored size cannot be decoded still counts as a known placement, so it cannot
   produce a second `widgetAdded`.
@@ -165,14 +188,14 @@ payload widget package (ADR 0000), and payload-driven widgets emit nothing.
 Dynamic base receiver, so `VoltraServerDrivenClientWidgetReceiver` inherits them. All six use
 `source: "widget"`.
 
-| Event            | Native trigger                                                         | Emitted when                                                                                                       |
-| ---------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `widgetAdded`    | `onUpdate` or `onAppWidgetOptionsChanged`, whichever sees the id first | the id is absent from the registry for this widget type; it is then recorded with its size                         |
-| `widgetResized`  | `onAppWidgetOptionsChanged`                                            | the id is known, the options carry a size key, and the size differs from the recorded one; the registry is updated |
-| `widgetRemoved`  | `onDeleted`                                                            | always, one per id in array order, even for an id the registry didn't know                                         |
-| `widgetRestored` | `onRestored`                                                           | per (old, new) pair whose old id is known; the entry moves to the new id. Mismatched array lengths emit nothing    |
-| `widgetEnabled`  | `onEnabled`                                                            | the registry holds no placement of this widget type                                                                |
-| `widgetDisabled` | `onDisabled`                                                           | always; clears the registry for this widget type                                                                   |
+| Event            | Native trigger                                                         | Emitted when                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `widgetAdded`    | `onUpdate` or `onAppWidgetOptionsChanged`, whichever sees the id first | the id is absent from the registry for this widget type; it is then recorded with its size                                 |
+| `widgetResized`  | `onAppWidgetOptionsChanged`                                            | the id is known, the options carry a size key, and the size differs from the recorded one; the registry is updated         |
+| `widgetRemoved`  | `onDeleted`                                                            | always, one per id in array order, even for an id the registry didn't know                                                 |
+| `widgetRestored` | `onRestored`                                                           | per (old, new) pair whose old id is known or retired; the entry moves to the new id. Mismatched array lengths emit nothing |
+| `widgetEnabled`  | `onEnabled`                                                            | the registry holds no placement of this widget type once unbound entries are dropped                                       |
+| `widgetDisabled` | `onDisabled`                                                           | always; clears the registry for this widget type                                                                           |
 
 - An old id unknown at restore is left alone. The `onUpdate` that follows the restore reports the new
   id as `widgetAdded`.
@@ -224,6 +247,9 @@ Dynamic base receiver, so `VoltraServerDrivenClientWidgetReceiver` inherits them
 - Android now has two native-to-JavaScript paths: the internal, unqueued `onOngoingNotificationEnded`
   for state (ADR 0012), and this queued channel for events. New public Android events go through the
   channel.
+- After a device restore, a widget type whose placements the launcher restores can report
+  `widgetEnabled` before its `widgetRestored` events, if the system sends `onEnabled` after the old
+  ids stopped being bound: the type has no bound placement Voltra knows yet.
 - Launcher re-creation (switching launchers, or clearing launcher data) arrives as `widgetRemoved`
   for the old ids, `widgetDisabled` if none remain, then `widgetEnabled` and `widgetAdded` for the new
   ids. Per-instance configuration does not follow, as before (ADR 0006).

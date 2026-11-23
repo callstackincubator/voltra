@@ -105,11 +105,20 @@ internal object DynamicWidgetLifecycleEvents {
         }
     }
 
+    /**
+     * `widgetEnabled` when the registry holds no placement of [widgetType] once the entries the
+     * system no longer has bound are dropped, so entries restored from another device don't hide it.
+     */
     fun onEnabled(
         widgetType: String,
         registry: DynamicWidgetPlacementRegistry,
         recordEvent: (VoltraEvent) -> Unit,
     ) {
+        try {
+            registry.dropUnbound()
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not drop unbound placements from the registry", e)
+        }
         val hasPlacements =
             try {
                 registry.hasPlacements(widgetType)
