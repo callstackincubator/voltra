@@ -122,10 +122,22 @@ type-specific fields at the top level. Array order is the delivery order.
 `<widgetType>:<appWidgetId>` because ids can be recycled across widget types. It does not import the
 payload widget package (ADR 0000), and payload-driven widgets emit nothing.
 
-- **Seeding.** The first time the registry is used (an upgrade to this version, or cleared app data),
-  it records every current placement of every installed Dynamic receiver with its current size, and
-  emits nothing. A persisted `__seeded` flag marks it done. The registry seeds itself inside whichever
-  of its methods runs first, so no caller seeds it explicitly.
+- **Seeding.** The registry seeds itself inside whichever of its methods runs first, so no caller
+  seeds it explicitly, and a persisted `__seeded` flag marks it done. What it seeds depends on the
+  package's install times:
+  - **Upgrade** (`firstInstallTime` differs from `lastUpdateTime`, so the app has been updated at
+    least once): it records every current placement of every installed Dynamic receiver with its
+    current size, and emits nothing, so placements made before the upgrade to this version are not
+    reported as new.
+  - **Fresh install** (the two times are equal): it starts empty. A widget placed from the launcher
+    before the app is first opened is then reported as `widgetEnabled` and `widgetAdded`, instead of
+    being absorbed by a seed that already sees its id.
+  - If the package info cannot be read, it seeds as for an upgrade and logs a warning.
+  - **Cleared app data** changes neither time. On an app that was updated at least once it seeds
+    silently. On an app that was never updated it looks like a fresh install: placements already on
+    the home screen are reported as `widgetAdded`, and `widgetEnabled` fires too. Nothing survives a
+    data clear, so this cannot be told apart; apps that reconcile with `getActiveWidgets()` end up
+    correct anyway.
 - **`widgetEnabled` is gated** on the registry holding no placement of that widget type. The system
   re-sends `onEnabled` at boot and after a package update for a type that already has placements;
   those placements are in the registry, so nothing is emitted. The re-sent `onUpdate` calls find
@@ -187,9 +199,10 @@ Dynamic base receiver, so `VoltraServerDrivenClientWidgetReceiver` inherits them
   that subscribes later can receive its events after events of another type that happened later,
   because the earlier pull already took those. The docs recommend subscribing to every lifecycle
   event the app needs in one place at the root of the app.
-- **Seeding caveat.** A placement made between the upgrade to this version and the registry's first
-  use (the next Dynamic Widget callback) is absorbed by the seed and never reported. #315
-  accepts this; the docs say so and tell apps to reconcile with `getActiveWidgets()`.
+- **Seeding caveat.** After an upgrade, a placement made between the upgrade to this version and the
+  registry's first use (the next Dynamic Widget callback) is absorbed by the seed and never reported.
+  #315 accepts this; the docs say so and tell apps to reconcile with `getActiveWidgets()`. A fresh
+  install has no such gap, because it starts empty.
 - **The placement types live in `@use-voltra/android`.** The spec put `VoltraWidgetPlacement`,
   `VoltraWidgetPlacementSize` and `VoltraWidgetPlacementWithSize` in `@use-voltra/android-client`,
   re-exported by `@use-voltra/android`. `@use-voltra/android-client` depends on

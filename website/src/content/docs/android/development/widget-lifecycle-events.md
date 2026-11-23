@@ -95,9 +95,13 @@ const placements = await getActiveWidgets()
 syncStreams(placements.filter((widget) => widget.widgetType === 'weather'))
 ```
 
-### Placements made before the first launch are not reported
+### Placements made before an upgrade are not reported
 
-After an upgrade to a version with lifecycle events, or after app data is cleared, Voltra records existing placements silently the first time the app or one of its widgets runs, including a placement made at that moment. Reconciling with `getActiveWidgets()` at startup covers these.
+- **Fresh install.** Voltra starts with no known placements. A widget the user places before opening your app for the first time is reported as `widgetEnabled` and `widgetAdded` on the first launch.
+- **Upgrade.** After your app is updated from a version without lifecycle events, Voltra records the existing placements silently the first time the app or one of its widgets runs, including a placement made at that moment.
+- **Cleared app data.** If your app was updated at least once, existing placements are recorded silently, as after an upgrade. If it was never updated, Android can't tell a data clear from a fresh install: the placements already on the home screen are reported as `widgetAdded`, and `widgetEnabled` fires too.
+
+Reconciling with `getActiveWidgets()` at startup covers all three cases.
 
 ## Cleanup you don't need to do
 

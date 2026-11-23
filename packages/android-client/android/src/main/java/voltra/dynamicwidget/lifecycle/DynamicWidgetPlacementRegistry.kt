@@ -2,6 +2,7 @@ package voltra.dynamicwidget.lifecycle
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
@@ -22,15 +23,20 @@ internal data class DynamicWidgetPlacement(
  * `appWidgetId` (a launcher can recycle an id across widget types). Glance has no "added"
  * callback, so an id missing here is what makes a placement new.
  *
- * The first use of any method seeds the registry: it records every current placement, silently (an
- * upgrade to a version with lifecycle events, or cleared app data), so a placement made before then
- * is never reported as added. A seeding failure is thrown from that method, like a storage failure.
+ * The first use of any method seeds the registry. After an upgrade (the package's install and update
+ * times differ) it records every current placement silently, so a placement made before the upgrade
+ * is never reported as added. On a fresh install it starts empty, so a widget placed before the app
+ * first runs is still reported. A seeding failure is thrown from that method, like a storage failure.
  *
- * [currentPlacements] is what seeding records; injectable because Robolectric has no widget host.
+ * [currentPlacements] is what seeding records and [packageInfo] tells a fresh install from an
+ * upgrade; both are injectable because Robolectric has no widget host or real install times.
  */
 internal class DynamicWidgetPlacementRegistry(
     context: Context,
     private val currentPlacements: () -> List<DynamicWidgetPlacement> = { installedDynamicPlacements(context) },
+    private val packageInfo: () -> PackageInfo = {
+        context.packageManager.getPackageInfo(context.packageName, 0)
+    },
 ) {
     // Lazy so that building a registry never throws: receivers build one before their cleanup,
     // and a storage or seeding failure must surface inside the callers' failure guards.
@@ -46,12 +52,25 @@ internal class DynamicWidgetPlacementRegistry(
 
     private fun seedIfNeeded() {
         if (preferences.getBoolean(KEY_SEEDED, false)) return
+        if (isFreshInstall()) {
+            preferences.edit().putBoolean(KEY_SEEDED, true).commit()
+            Log.d(TAG, "Fresh install; placement registry starts empty")
+            return
+        }
         val placements = currentPlacements()
         val editor = preferences.edit()
         placements.forEach { editor.putString(key(it.widgetType, it.appWidgetId), encode(it.size)) }
         editor.putBoolean(KEY_SEEDED, true).commit()
         Log.d(TAG, "Seeded placement registry with ${placements.size} placements")
     }
+
+    private fun isFreshInstall(): Boolean =
+        try {
+            packageInfo().let { it.firstInstallTime == it.lastUpdateTime }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not read the package's install times; seeding the placement registry", e)
+            false
+        }
 
     fun sizeOf(
         widgetType: String,

@@ -1,5 +1,6 @@
 package voltra.dynamicwidget
 
+import android.content.pm.PackageInfo
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,15 +37,23 @@ class DynamicWidgetPlacementDataTest {
     private val lastGoodStore get() = DynamicWidgetLastGoodStore(File(temporaryFolder.root, "last-good"))
     private val family = "180x110"
     private val size = WidgetPlacementSize(110, 40, emptyList())
+    private val upgraded =
+        PackageInfo().apply {
+            firstInstallTime = 1_000
+            lastUpdateTime = 2_000
+        }
     private val failingRegistry
-        get() = DynamicWidgetPlacementRegistry(application) { throw IllegalStateException("no widget host") }
+        get() =
+            DynamicWidgetPlacementRegistry(application, { throw IllegalStateException("no widget host") }, { upgraded })
     private lateinit var dataStoreScope: CoroutineScope
     private lateinit var configurationStore: VoltraConfigurationStore
 
     private fun registryHolding(vararg placements: Pair<String, Int>) =
-        DynamicWidgetPlacementRegistry(application) {
-            placements.map { (widgetType, appWidgetId) -> DynamicWidgetPlacement(widgetType, appWidgetId, size) }
-        }
+        DynamicWidgetPlacementRegistry(
+            application,
+            { placements.map { (widgetType, appWidgetId) -> DynamicWidgetPlacement(widgetType, appWidgetId, size) } },
+            { upgraded },
+        )
 
     @Before
     fun createStore() {
