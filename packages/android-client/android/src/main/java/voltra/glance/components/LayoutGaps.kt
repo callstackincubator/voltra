@@ -45,8 +45,7 @@ internal object LayoutGaps {
     ): Boolean {
         val element = (node as? VoltraNode.Element)?.element ?: return false
         element.nativeVisibility()?.let { return it == "gone" }
-        // Visibility doesn't depend on the theme, so either side of a gradient pair will do.
-        return resolveElementStyle(element, sharedStyles, isNightMode = false)?.layout?.visibility == Visibility.Gone
+        return resolveElementStyle(element, sharedStyles)?.layout?.visibility == Visibility.Gone
     }
 
     /**

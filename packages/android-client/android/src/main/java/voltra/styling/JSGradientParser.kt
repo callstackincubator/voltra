@@ -44,26 +44,37 @@ object JSGradientParser {
         }
     }
 
-    /** The chosen side is not parsed here, so a typo in the other side never affects it. */
-    fun selectPairSide(
+    /**
+     * Parses both sides of a `{ day, night }` pair, so a broken side is reported when the style is
+     * converted rather than only once the device switches to it. Any invalid side drops the whole
+     * pair with one warning.
+     */
+    fun parsePair(
         pair: Map<*, *>,
         key: String,
-        isNightMode: Boolean,
-    ): String? {
-        val day = (pair["day"] as? String)?.takeIf { it.isNotBlank() }
-        val night = (pair["night"] as? String)?.takeIf { it.isNotBlank() }
-        if (day != null && night != null) return if (isNightMode) night else day
+    ): Pair<BackgroundImageValue, BackgroundImageValue>? {
+        val day = parsePairSide(pair, "day", key) ?: return null
+        val night = parsePairSide(pair, "night", key) ?: return null
+        return day to night
+    }
 
-        val side = if (day == null) "day" else "night"
+    private fun parsePairSide(
+        pair: Map<*, *>,
+        side: String,
+        key: String,
+    ): BackgroundImageValue? {
         val value = pair[side]
-        val got =
-            when {
-                side !in pair -> "nothing"
-                value is String -> "\"$value\""
-                else -> value.toString()
-            }
-        Log.w(TAG, "Ignoring invalid gradient pair for $key: $side must be a CSS gradient string, got $got")
-        return null
+        val gradient = (value as? String)?.let(::parse)
+        if (gradient == null) {
+            val got =
+                when {
+                    side !in pair -> "nothing"
+                    value is String -> "\"$value\""
+                    else -> value.toString()
+                }
+            Log.w(TAG, "Ignoring invalid gradient pair for $key: $side must be a CSS gradient string, got $got")
+        }
+        return gradient
     }
 
     private fun parseLinear(value: String): BackgroundImageValue? {

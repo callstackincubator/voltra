@@ -5,7 +5,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowLog
 
+@RunWith(RobolectricTestRunner::class)
 class StyleConverterTest {
     @Test
     fun parsesBackgroundImageFromCamelCaseStyleKey() {
@@ -55,7 +59,7 @@ class StyleConverterTest {
         assertTrue(style.layout.height is SizeValue.Fill)
     }
 
-    // MARK: - A `backgroundImage` `{ day, night }` pair is narrowed to one gradient by the night bit
+    // MARK: - Both sides of a `backgroundImage` `{ day, night }` pair are converted
 
     private val pair =
         mapOf(
@@ -69,26 +73,19 @@ class StyleConverterTest {
     private fun BackgroundImageValue?.firstStopColor() = this?.stops?.firstOrNull()?.color
 
     @Test
-    fun theDaySideIsConvertedWhenNotInNightMode() {
-        val image = StyleConverter.convert(pair, isNightMode = false).decoration.backgroundImage
+    fun theDaySideIsConverted() {
+        val image = StyleConverter.convert(pair).decoration.backgroundImage
 
         assertTrue(image.toString(), image is BackgroundImageValue.LinearGradient)
         assertEquals(VoltraColorValue.Static(Color.Red), image.firstStopColor())
     }
 
     @Test
-    fun theNightSideIsConvertedInNightMode() {
-        val image = StyleConverter.convert(pair, isNightMode = true).decoration.backgroundImage
+    fun theNightSideIsConverted() {
+        val image = StyleConverter.convert(pair).decoration.nightBackgroundImage
 
         assertTrue(image.toString(), image is BackgroundImageValue.RadialGradient)
         assertEquals(VoltraColorValue.Static(Color.Blue), image.firstStopColor())
-    }
-
-    @Test
-    fun conversionDefaultsToTheDaySide() {
-        val image = StyleConverter.convert(pair).decoration.backgroundImage
-
-        assertTrue(image.toString(), image is BackgroundImageValue.LinearGradient)
     }
 
     @Test
@@ -103,9 +100,29 @@ class StyleConverterTest {
                     ),
             )
 
-        val image = StyleConverter.convert(withExtra, isNightMode = true).decoration.backgroundImage
+        val image = StyleConverter.convert(withExtra).decoration.nightBackgroundImage
 
         assertEquals(VoltraColorValue.Static(Color.Blue), image.firstStopColor())
+    }
+
+    @Test
+    fun anInvalidNightGradientIsWarnedAboutAndDropsThePairWhenConverted() {
+        ShadowLog.clear()
+        val invalidNight =
+            mapOf(
+                "backgroundImage" to
+                    mapOf(
+                        "day" to "linear-gradient(to right, #ff0000, #ff0000)",
+                        "night" to "not a gradient",
+                    ),
+            )
+
+        val decoration = StyleConverter.convert(invalidNight).decoration
+
+        assertNull(decoration.backgroundImage)
+        val warnings = ShadowLog.getLogsForTag("JSGradientParser").map { it.msg }
+        assertEquals(1, warnings.size)
+        assertTrue(warnings.single(), warnings.single().contains("night"))
     }
 
     @Test

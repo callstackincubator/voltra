@@ -312,7 +312,6 @@ private fun RenderGapWrappedChild(
     }
 }
 
-@Composable
 private fun extractWeightFromChild(
     child: VoltraNode?,
     context: voltra.glance.VoltraRenderContext,

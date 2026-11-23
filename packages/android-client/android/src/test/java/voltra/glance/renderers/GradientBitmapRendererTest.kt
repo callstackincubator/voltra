@@ -298,15 +298,13 @@ class GradientBitmapRendererTest {
     }
 
     @Test
-    fun anUnparsableUnselectedSideDoesNotAffectTheSelectedOne() {
+    fun anUnparsableSideDropsThePairInBothSchemes() {
         val json = columnOverGreen("""{"day":"linear-gradient(to right, #ff0000, #ff0000)","night":"not a gradient"}""")
 
-        val day = GlanceRenderHelper.render(json, composeUnder = Scheme.DAY)
-        assertEquals(red, requireNotNull(day.imageBitmaps().singleOrNull()).centre())
-
-        // The night side fails like any unparsable gradient string: the background color shows.
-        val night = GlanceRenderHelper.render(json, composeUnder = Scheme.NIGHT)
-        assertEquals(emptyList<Bitmap>(), night.imageBitmaps())
-        assertEquals(listOf(0xFF00FF00.toInt()), night.backgroundColors())
+        for (scheme in listOf(Scheme.DAY, Scheme.NIGHT)) {
+            val view = GlanceRenderHelper.render(json, composeUnder = scheme)
+            assertEquals(scheme.name, emptyList<Bitmap>(), view.imageBitmaps())
+            assertEquals(scheme.name, listOf(0xFF00FF00.toInt()), view.backgroundColors())
+        }
     }
 }
