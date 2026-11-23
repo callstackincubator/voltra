@@ -140,7 +140,7 @@ import { AndroidDynamicColors, VoltraAndroid } from '@use-voltra/android'
 />
 ```
 
-If either side is missing or empty, the pair is dropped and `backgroundColor` shows instead. A gradient is drawn into a bitmap in the current theme's colors on every Android version, so it changes on the widget's next redraw.
+If either side is missing, empty or not a valid gradient, the pair is dropped and `backgroundColor` shows instead. A gradient is drawn into a bitmap in the current theme's colors on every Android version, so it changes on the widget's next redraw.
 
 ## Borders
 

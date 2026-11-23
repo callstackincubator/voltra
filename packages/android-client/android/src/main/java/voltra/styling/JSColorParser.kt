@@ -37,7 +37,7 @@ object JSColorParser {
      */
     fun parsePair(
         pair: Map<*, *>,
-        logKey: String? = null,
+        logKey: String?,
     ): VoltraColorValue.DayNight? {
         val missing = listOf("day", "night").firstOrNull { it !in pair }
         if (missing != null) {
