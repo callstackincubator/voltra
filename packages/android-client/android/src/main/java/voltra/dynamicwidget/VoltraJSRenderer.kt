@@ -16,7 +16,7 @@ import android.util.Log
  *
  * Thread safety: a single lock guards both evaluate and render, matching iOS's NSLock.
  */
-object VoltraJSRenderer {
+internal object VoltraJSRenderer {
     private const val TAG = "VoltraJSRenderer"
 
     init {
@@ -71,11 +71,14 @@ object VoltraJSRenderer {
      * The raw bundle ends with Metro's entry invocation `__r(<entryId>);`. We re-invoke that
      * entry and stash its exports in `globalThis.__voltraWidgets[<id>]` (Metro's `__r` caches
      * module exports, so the second invocation returns the already-evaluated module).
+     *
+     * @throws VoltraJSException with the JavaScript message and stack when evaluation fails, or
+     *   with the native error when the runtime cannot even be reached (ADR 0013).
      */
     fun evaluateBundle(
         source: String,
         widgetId: String,
-    ): Boolean =
+    ) {
         synchronized(lock) {
             val entryModuleId = extractEntryModuleId(source) ?: 0
             val wrapped =
@@ -93,32 +96,43 @@ object VoltraJSRenderer {
                     append(");\n")
                     append("})();\n")
                 }
-            val ok =
-                try {
-                    nativeEvaluateBundle(wrapped, "voltra/$widgetId.bundle", widgetId)
-                } catch (t: Throwable) {
-                    Log.e(TAG, "nativeEvaluateBundle threw for widgetId=$widgetId", t)
-                    false
+            try {
+                // The native side throws VoltraJSException itself; this is only a guard for a
+                // `false` that arrives without one.
+                if (!nativeEvaluateBundle(wrapped, "voltra/$widgetId.bundle", widgetId)) {
+                    throw VoltraJSException("bundle evaluation failed for widgetId=$widgetId", null)
                 }
-            ok
+            } catch (e: VoltraJSException) {
+                throw e
+            } catch (t: Throwable) {
+                Log.e(TAG, "nativeEvaluateBundle threw for widgetId=$widgetId", t)
+                throw VoltraJSException(t.toString(), null)
+            }
         }
+    }
 
     /**
      * Invoke the previously-evaluated widget's `render(propsJSON, envJSON)` and return its
-     * resolved JSON string. Returns null if the widget was not evaluated, the function throws,
-     * or it did not return a string.
+     * resolved JSON string.
+     *
+     * @throws VoltraJSException with the JavaScript message and stack when `render()` throws, when
+     *   the widget was not evaluated, or when it does not return a string (ADR 0013).
      */
     fun render(
         widgetId: String,
         propsJSON: String,
         envJSON: String,
-    ): String? =
+    ): String =
         synchronized(lock) {
             try {
+                // The native side throws VoltraJSException itself; the null case is only a guard.
                 nativeRender(widgetId, propsJSON, envJSON)
+                    ?: throw VoltraJSException("render() produced no result for widgetId=$widgetId", null)
+            } catch (e: VoltraJSException) {
+                throw e
             } catch (t: Throwable) {
                 Log.e(TAG, "nativeRender threw for widgetId=$widgetId", t)
-                null
+                throw VoltraJSException(t.toString(), null)
             }
         }
 

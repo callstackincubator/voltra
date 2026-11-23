@@ -21,6 +21,9 @@ using namespace facebook::react;
 
 - (instancetype)initWithFrame:(CGRect)frame {
   if (self = [super initWithFrame:frame]) {
+    static const auto defaultProps = std::make_shared<const VoltraViewProps>();
+    _props = defaultProps;
+
     _contentView = [[VoltraViewRoot alloc] initWithFrame:CGRectZero];
     [self addSubview:_contentView];
   }

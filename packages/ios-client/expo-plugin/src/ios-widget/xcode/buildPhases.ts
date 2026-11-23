@@ -108,9 +108,13 @@ export function ensureWidgetBundleScriptPhase(
       shellPath: '/bin/sh',
       shellScript: bundleShellScript(content),
     })
-    phase = Object.values(xcodeProject.hash.project.objects.PBXShellScriptBuildPhase || {}).find(
-      (candidate: any) => candidate?.name === quotedName
+    // Resolve the new phase through THIS target's own buildPhases: a project-wide name search would
+    // return another target's phase (e.g. the extension's) when that one was created first.
+    const phaseSection = xcodeProject.hash.project.objects.PBXShellScriptBuildPhase || {}
+    const addedEntry = target.buildPhases.find(
+      (entry: any) => phaseSection[normalizeRef(entry.value)]?.name === quotedName
     )
+    phase = addedEntry ? phaseSection[normalizeRef(addedEntry.value)] : undefined
   }
   if (phase) {
     // xcode's serializer expects an already PBX-quoted value when an existing

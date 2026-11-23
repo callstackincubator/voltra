@@ -3,7 +3,7 @@
     "target": "ES2020",
     "lib": ["ES2020"],
     "rootDir": "./src",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,

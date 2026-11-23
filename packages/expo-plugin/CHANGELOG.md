@@ -1,5 +1,33 @@
 # @use-voltra/expo-plugin
 
+## 2.7.0
+
+### Patch Changes
+
+- @use-voltra/compiler@2.7.0
+- @use-voltra/core@2.7.0
+
+## 2.6.1
+
+### Patch Changes
+
+- @use-voltra/compiler@2.6.1
+- @use-voltra/core@2.6.1
+
+## 2.6.0
+
+### Patch Changes
+
+- @use-voltra/compiler@2.6.0
+- @use-voltra/core@2.6.0
+
+## 2.5.0
+
+### Patch Changes
+
+- @use-voltra/compiler@2.5.0
+- @use-voltra/core@2.5.0
+
 ## 2.4.0
 
 ### Minor Changes

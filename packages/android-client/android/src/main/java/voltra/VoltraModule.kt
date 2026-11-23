@@ -27,6 +27,7 @@ import voltra.dynamicwidget.AndroidDynamicWidgetInstanceBoundary
 import voltra.dynamicwidget.DynamicWidgetInstanceRejection
 import voltra.dynamicwidget.DynamicWidgetInstanceResolver
 import voltra.dynamicwidget.DynamicWidgetLocaleStore
+import voltra.dynamicwidget.DynamicWidgetPlacementData
 import voltra.dynamicwidget.DynamicWidgetPropsStore
 import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
@@ -765,6 +766,7 @@ class VoltraModule(
         Log.d(TAG, "clearAndroidWidget called with widgetId=$widgetId")
         widgetManager.clearWidgetData(widgetId)
         dynamicWidgetPropsStore.clearDynamicWidgetProps(widgetId)
+        DynamicWidgetPlacementData.onWidgetCleared(reactApplicationContext, widgetId)
         runBlocking { widgetServerUpdateCoordinator.dropWidgetLayer(widgetId) }
         runBlocking {
             when (val resolution = VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)) {
@@ -793,6 +795,7 @@ class VoltraModule(
         Log.d(TAG, "clearAllAndroidWidgets called")
         widgetManager.clearAllWidgetData()
         dynamicWidgetPropsStore.clearAllDynamicWidgetProps()
+        DynamicWidgetPlacementData.onAllWidgetsCleared(reactApplicationContext)
         runBlocking {
             for (widgetId in VoltraWidgetServer.serverDrivenWidgetIds(reactApplicationContext)) {
                 widgetServerUpdateCoordinator.dropWidgetLayer(widgetId)

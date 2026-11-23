@@ -14,7 +14,10 @@ import androidx.glance.layout.*
 import androidx.glance.text.FontFamily
 import androidx.glance.unit.ColorProvider
 import androidx.glance.visibility
+import voltra.glance.renderers.renderBorderBitmap
 import voltra.glance.renderers.renderGradientBitmap
+import voltra.glance.renderers.resolveBorder
+import voltra.modifiers.NativeModifierSize
 import androidx.glance.text.TextDecoration as GlanceTextDecoration
 import androidx.glance.text.TextStyle as GlanceTextStyle
 
@@ -37,6 +40,7 @@ import androidx.glance.text.TextStyle as GlanceTextStyle
 fun GlanceModifier.applyStyle(
     style: CompositeStyle,
     widgetSize: DpSize? = null,
+    nativeSize: NativeModifierSize = NativeModifierSize(null, null),
 ): GlanceModifier {
     var modifier = this
 
@@ -44,7 +48,7 @@ fun GlanceModifier.applyStyle(
     modifier = modifier.applyLayout(style.layout)
 
     // 2. Apply Decoration (background, border)
-    modifier = modifier.applyDecoration(style.decoration, style.layout, widgetSize)
+    modifier = modifier.applyDecoration(style.decoration, style.layout, widgetSize, nativeSize)
 
     // 3. Apply Rendering (opacity - limited in Glance)
     modifier = modifier.applyRendering(style.rendering)
@@ -170,35 +174,49 @@ private fun GlanceModifier.applyDecoration(
     decoration: DecorationStyle,
     layout: LayoutStyle,
     widgetSize: DpSize?,
+    nativeSize: NativeModifierSize,
 ): GlanceModifier {
     var modifier = this
 
-    // A. Background image or color
-    if (decoration.backgroundImage != null) {
-        val context = LocalContext.current
+    // A. Border, background image or color.
+    // Glance has no border modifier, so a border is drawn into one bitmap together with the
+    // background; see BorderBitmapRenderer for why that needs a fixed width and height.
+    val context = LocalContext.current
+    val border =
+        decoration.border?.let { resolveBorder(it.width, it.color.resolveColor(context).toArgb(), layout, nativeSize) }
+
+    if (decoration.backgroundImage != null || border != null) {
         val backgroundArgb = decoration.backgroundColor?.resolveColor(context)?.toArgb() ?: 0x00000000
-        val colors =
-            decoration.backgroundImage.stops
-                .map { it.color.resolveColor(context).toArgb() }
-                .toIntArray()
-        val positions =
-            decoration.backgroundImage.stops
-                .map { it.location.coerceIn(0f, 1f) }
-                .toFloatArray()
+        // Resolved outside the try block: composable calls cannot sit inside one.
+        val stopColors =
+            decoration.backgroundImage
+                ?.stops
+                .orEmpty()
+                .map {
+                    it.color.resolveColor(context).toArgb()
+                }.toIntArray()
         try {
+            val fill =
+                decoration.backgroundImage?.let { gradient ->
+                    renderGradientBitmap(
+                        context = context,
+                        gradient = gradient,
+                        layout = layout,
+                        widgetSize = widgetSize,
+                        backgroundArgb = backgroundArgb,
+                        colors = stopColors,
+                        positions = gradient.stops.map { it.location.coerceIn(0f, 1f) }.toFloatArray(),
+                    )
+                }
             val bitmap =
-                renderGradientBitmap(
-                    context = context,
-                    gradient = decoration.backgroundImage,
-                    layout = layout,
-                    widgetSize = widgetSize,
-                    backgroundArgb = backgroundArgb,
-                    colors = colors,
-                    positions = positions,
-                )
+                if (border != null) {
+                    renderBorderBitmap(context, border, decoration.cornerRadius, backgroundArgb, fill)
+                } else {
+                    checkNotNull(fill)
+                }
             modifier = modifier.background(ImageProvider(bitmap), ContentScale.FillBounds)
         } catch (e: Exception) {
-            Log.w("StyleModifier", "Failed to render backgroundImage gradient", e)
+            Log.w("StyleModifier", "Failed to render background bitmap", e)
             if (decoration.backgroundColor != null) {
                 modifier = modifier.background(decoration.backgroundColor.toColorProvider())
             }
@@ -219,23 +237,17 @@ private fun GlanceModifier.applyDecoration(
         }
     }
 
-    // C. Border (not yet implemented in Glance)
-    if (decoration.border != null) {
-        Log.w("StyleModifier", "Border styling not yet implemented for Glance widgets")
-        // TODO: Implement using GlanceModifier.border() when available
-    }
-
-    // D. Shadow (not supported in Glance)
+    // C. Shadow (not supported in Glance)
     if (decoration.shadow != null) {
         Log.w("StyleModifier", "Shadow effects not supported in Glance widgets")
     }
 
-    // E. Overflow (not supported in Glance)
+    // D. Overflow (not supported in Glance)
     if (decoration.overflow != null) {
         Log.w("StyleModifier", "Overflow control not supported in Glance widgets")
     }
 
-    // F. Glass effect (iOS-specific, not supported)
+    // E. Glass effect (iOS-specific, not supported)
     if (decoration.glassEffect != null) {
         Log.w("StyleModifier", "Glass effects not supported in Glance widgets")
     }

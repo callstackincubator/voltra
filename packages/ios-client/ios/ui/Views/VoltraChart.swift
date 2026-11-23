@@ -793,6 +793,7 @@ private extension View {
       let decorationForLayout: DecorationStyle = hasClipping
         ? DecorationStyle(
           backgroundColor: decoration.backgroundColor,
+          backgroundImage: decoration.backgroundImage,
           cornerRadius: nil,
           border: decoration.border,
           shadow: decoration.shadow,
@@ -887,8 +888,7 @@ private extension View {
   }
 
   func axisGridStrokeStyle(_ gridStyle: AxisGridStyle?) -> StrokeStyle? {
-    guard let gridStyle else { return nil }
-    guard gridStyle.lineWidth != nil || (gridStyle.dash?.isEmpty == false) else { return nil }
+    guard let gridStyle, gridStyle.lineWidth != nil || (gridStyle.dash?.isEmpty == false) else { return nil }
     return StrokeStyle(lineWidth: gridStyle.lineWidth ?? 1, dash: gridStyle.dash ?? [])
   }
 

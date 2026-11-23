@@ -37,7 +37,8 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
-      <AppductTools />
+      {/* Appduct ships no native module in Release builds; mounting it there throws on launch. */}
+      {__DEV__ ? <AppductTools /> : null}
       <Stack screenOptions={STACK_SCREEN_OPTIONS}>
         <Stack.Screen name="ios/(tabs)" />
         <Stack.Screen name="android/(tabs)" />

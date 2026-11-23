@@ -633,10 +633,10 @@ enum JSGradientParser {
     guard !stops.isEmpty else { return [] }
 
     var positions = stops.map(\.position)
-    if positions.first == nil {
+    if positions[0] == nil {
       positions[0] = 0
     }
-    if positions.last == nil {
+    if positions[positions.count - 1] == nil {
       positions[positions.count - 1] = 1
     }
 
@@ -663,8 +663,7 @@ enum JSGradientParser {
       while end < positions.count, positions[end] == nil {
         end += 1
       }
-      guard start >= 0 else { return [] }
-      guard end < positions.count, let startPos = positions[start], let endPos = positions[end] else { return [] }
+      guard start >= 0, end < positions.count, let startPos = positions[start], let endPos = positions[end] else { return [] }
 
       let gaps = end - start
       for step in 1 ..< gaps {

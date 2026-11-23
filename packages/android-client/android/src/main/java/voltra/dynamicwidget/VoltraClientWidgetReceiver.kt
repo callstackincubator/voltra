@@ -3,10 +3,7 @@ package voltra.dynamicwidget
 import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
-import androidx.annotation.VisibleForTesting
 import androidx.glance.appwidget.GlanceAppWidget
-import kotlinx.coroutines.runBlocking
 import voltra.dynamicwidget.lifecycle.DynamicWidgetLifecycleEvents
 import voltra.dynamicwidget.lifecycle.DynamicWidgetPlacementRegistry
 import voltra.events.VoltraEventBus
@@ -21,10 +18,6 @@ import voltra.widget.VoltraWidgetReceiver
  * Generated Dynamic Widget receivers extend this and provide their `widgetId`.
  */
 abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
-    private companion object {
-        private const val TAG = "VoltraClientWidgetReceiver"
-    }
-
     override val widgetKind: VoltraWidgetKind = VoltraWidgetKind.Dynamic
 
     override fun createGlanceAppWidget(): GlanceAppWidget = VoltraClientGlanceWidget(widgetId)
@@ -34,31 +27,26 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     // re-render from).
 
     /**
-     * Drop the per-instance configuration of every placement the user removed (ADR 0006), so an
-     * `appWidgetId` the launcher later recycles starts from the widget-type values.
-     *
-     * The DataStore edit runs inside [runBlocking] rather than a launched coroutine — the pattern
-     * `VoltraServerDrivenClientWidgetReceiver.onUpdate` already uses for the same reason.
-     * `GlanceAppWidgetReceiver.onReceive` has already consumed the broadcast's `goAsync()`, so this
-     * override cannot claim one, and a coroutine launched without a keep-alive risks the process
-     * being reclaimed before the write lands.
-     *
-     * Failures are logged, never thrown: a broadcast receiver that throws crashes the app, and a
-     * missed cleanup is bounded — instance keys carry the widget id, so a recycled id can only ever
-     * surface values from a placement of this same widget.
+     * Drop the per-placement data of every placement the user removed: the instance configuration
+     * (ADR 0006), so an `appWidgetId` the launcher later recycles starts from the widget-type
+     * values, and the last good render (ADR 0013). See [DynamicWidgetPlacementData] for the
+     * threading and failure rules.
      *
      * After the cleanup, the placements leave the placement registry and each is reported as
      * `widgetRemoved`.
      *
      * `VoltraServerDrivenClientWidgetReceiver.onDeleted` calls `super.onDeleted`, so it inherits
      * this cleanup and the event, both before its schedule recompute.
+     *
+     * Robolectric has no widget host, so Glance's own `super.onDeleted` fails asynchronously there;
+     * the cleanup lives in [DynamicWidgetPlacementData], which the tests call directly.
      */
     override fun onDeleted(
         context: Context,
         appWidgetIds: IntArray,
     ) {
         super.onDeleted(context, appWidgetIds)
-        clearInstanceConfiguration(context, appWidgetIds)
+        DynamicWidgetPlacementData.onDeleted(context, widgetId, appWidgetIds)
         DynamicWidgetLifecycleEvents.onDeleted(widgetId, appWidgetIds, DynamicWidgetPlacementRegistry(context)) {
             VoltraEventBus.send(context, it)
         }
@@ -117,37 +105,10 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     }
 
     /**
-     * The cleanup itself, split out of [onDeleted] so it can be unit-tested: Robolectric has no
-     * widget host, so Glance's own `super.onDeleted` fails asynchronously there and would swamp the
-     * behaviour under test.
-     */
-    @VisibleForTesting
-    internal fun clearInstanceConfiguration(
-        context: Context,
-        appWidgetIds: IntArray,
-        // Injectable for the same reason the store's DataStore is: a test must not leave the
-        // process-wide DataStore singleton running past the Robolectric application that made it.
-        configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
-    ) {
-        try {
-            runBlocking {
-                configurationStore.clearInstances(widgetId, appWidgetIds.toList())
-            }
-        } catch (e: Exception) {
-            Log.w(
-                TAG,
-                "Could not clear instance configuration for widget '$widgetId' " +
-                    "(${appWidgetIds.joinToString()}): ${e.message}",
-                e,
-            )
-        }
-    }
-
-    /**
      * The launcher restored its layout (device restore, launcher backup) and gave every placement a
-     * new `appWidgetId`. Move each placement's instance configuration to its new id so a London
-     * widget is still London after the restore instead of falling back to the widget-type values.
-     * Same threading and failure rules as [onDeleted].
+     * new `appWidgetId`. Move each placement's data to its new id so a London widget is still
+     * London after the restore instead of falling back to the widget-type values. Same threading
+     * and failure rules as [onDeleted].
      *
      * After the remap, each placement the registry knew moves to its new id and is reported as
      * `widgetRestored`.
@@ -158,41 +119,12 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
         newWidgetIds: IntArray,
     ) {
         super.onRestored(context, oldWidgetIds, newWidgetIds)
-        remapInstanceConfiguration(context, oldWidgetIds, newWidgetIds)
+        DynamicWidgetPlacementData.onRestored(context, widgetId, oldWidgetIds, newWidgetIds)
         DynamicWidgetLifecycleEvents.onRestored(
             widgetId,
             oldWidgetIds,
             newWidgetIds,
             DynamicWidgetPlacementRegistry(context),
         ) { VoltraEventBus.send(context, it) }
-    }
-
-    /** The remap itself, split out of [onRestored] for the same reason as [clearInstanceConfiguration]. */
-    @VisibleForTesting
-    internal fun remapInstanceConfiguration(
-        context: Context,
-        oldWidgetIds: IntArray,
-        newWidgetIds: IntArray,
-        configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
-    ) {
-        if (oldWidgetIds.size != newWidgetIds.size) {
-            Log.w(
-                TAG,
-                "onRestored for '$widgetId' passed ${oldWidgetIds.size} old ids and ${newWidgetIds.size} new ids; skipping remap",
-            )
-            return
-        }
-        try {
-            runBlocking {
-                configurationStore.remapInstances(widgetId, oldWidgetIds.toList(), newWidgetIds.toList())
-            }
-        } catch (e: Exception) {
-            Log.w(
-                TAG,
-                "Could not remap instance configuration for widget '$widgetId' " +
-                    "(${oldWidgetIds.joinToString()} -> ${newWidgetIds.joinToString()}): ${e.message}",
-                e,
-            )
-        }
     }
 }

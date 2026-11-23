@@ -5,6 +5,8 @@ description: "Use CSS linear, radial, and conic gradient strings in backgroundCo
 
 The `backgroundColor` style property accepts CSS gradient strings in addition to solid colors. Gradients are rendered natively using SwiftUI gradient modifiers and are automatically clipped by `borderRadius`.
 
+The `backgroundImage` style property accepts the same CSS gradient strings, matching Android. A `backgroundImage` gradient is painted over `backgroundColor`, so transparent gradient pixels show the color behind them. Prefer `backgroundImage` for widgets that also target Android; `backgroundColor` gradients keep working on iOS.
+
 Invalid or unsupported gradient syntax is parsed in **strict mode** and results in **no gradient background** (instead of silent best-effort fallback).
 
 ## Linear gradients
