@@ -158,6 +158,45 @@ final class JSGradientParserTests: XCTestCase {
     XCTAssertNil(JSGradientParser.parse("radial-gradient(circle foo at center, red, blue)"))
   }
 
+  func testLinearGradientWithoutStopPositionsDistributesStopsEvenly() {
+    assertLinearGradient("linear-gradient(to right, red, blue)") { stops, _, _ in
+      XCTAssertEqual(stops.map(\.location), [0, 1])
+    }
+  }
+
+  func testRadialGradientWithoutStopPositionsParses() {
+    assertRadialGradient("radial-gradient(circle, red, blue)") { spec in
+      XCTAssertEqual(spec.gradient.stops.map(\.location), [0, 1])
+    }
+  }
+
+  func testConicGradientWithoutStopPositionsParses() {
+    assertConicGradient("conic-gradient(red, blue)") { stops, _, _ in
+      XCTAssertEqual(stops.map(\.location), [0, 1])
+    }
+  }
+
+  func testLinearGradientWithOnlyFirstStopPositionedDefaultsLastToEnd() {
+    assertLinearGradient("linear-gradient(to right, red 0%, blue)") { stops, _, _ in
+      XCTAssertEqual(stops.map(\.location), [0, 1])
+    }
+  }
+
+  func testLinearGradientWithOnlyMiddleStopMissingInterpolatesIt() {
+    assertLinearGradient("linear-gradient(to right, red 0%, green, blue 100%)") { stops, _, _ in
+      XCTAssertEqual(stops.count, 3)
+      XCTAssertEqual(stops[0].location, 0, accuracy: 0.0001)
+      XCTAssertEqual(stops[1].location, 0.5, accuracy: 0.0001)
+      XCTAssertEqual(stops[2].location, 1, accuracy: 0.0001)
+    }
+  }
+
+  func testLinearGradientExplicitStopPositionsAreUnchanged() {
+    assertLinearGradient("linear-gradient(to right, red 10%, green 30%, blue 80%)") { stops, _, _ in
+      XCTAssertEqual(stops.map(\.location), [0.1, 0.3, 0.8])
+    }
+  }
+
   func testConicStopsWithPercentAndAngleProduceExpandedStops() {
     assertConicGradient("conic-gradient(from 0deg at center, red 25% 90deg, blue 100%)") { stops, _, _ in
       XCTAssertEqual(stops.count, 3)

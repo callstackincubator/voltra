@@ -9,7 +9,6 @@ export {
   ANDROID_COMPONENT_ID_TO_NAME,
   ANDROID_COMPONENT_NAME_TO_ID,
 } from './payload/component-ids.js'
-export { renderAndroidLiveUpdateToJson, renderAndroidLiveUpdateToString } from './live-update/renderer.js'
 export { AndroidOngoingNotification } from './ongoing-notification/components.js'
 export { renderAndroidOngoingNotificationPayload } from './ongoing-notification/renderer.js'
 export { renderAndroidViewToJson, renderAndroidWidgetToJson, renderAndroidWidgetToString } from './widgets/renderer.js'
@@ -32,15 +31,6 @@ export type {
   AndroidDynamicColorRole,
   AndroidDynamicColorToken,
 } from './dynamic-colors.js'
-export type {
-  AndroidLiveUpdateJson,
-  AndroidLiveUpdateVariants,
-  AndroidLiveUpdateVariantsJson,
-  StartAndroidLiveUpdateOptions,
-  UpdateAndroidLiveUpdateOptions,
-  UseAndroidLiveUpdateOptions,
-  UseAndroidLiveUpdateResult,
-} from './live-update/types.js'
 export type {
   EventSubscription,
   PreloadImageFailure,

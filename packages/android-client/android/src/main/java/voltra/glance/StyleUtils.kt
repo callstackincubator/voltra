@@ -7,6 +7,7 @@ import androidx.glance.action.clickable
 import voltra.glance.renderers.getOnClickAction
 import voltra.models.VoltraElement
 import voltra.modifiers.applyNativeModifiers
+import voltra.modifiers.nativeModifierSize
 import voltra.payload.ComponentTypeID
 import voltra.styling.CompositeStyle
 import voltra.styling.StyleConverter
@@ -31,7 +32,7 @@ fun resolveAndApplyStyle(
     val compositeStyle = resolveElementStyle(element, sharedStyles)
     val styledModifier =
         if (compositeStyle != null) {
-            GlanceModifier.applyStyle(compositeStyle, renderContext.widgetSize)
+            GlanceModifier.applyStyle(compositeStyle, renderContext.widgetSize, element.nativeModifierSize())
         } else {
             GlanceModifier
         }
@@ -43,10 +44,13 @@ fun resolveAndApplyStyle(
 fun resolveElementStyle(
     element: VoltraElement,
     sharedStyles: List<Map<String, Any?>>?,
-): CompositeStyle? {
-    val isNightMode = LocalContext.current.isNightMode()
-    return resolveStyle(element.p, sharedStyles)?.let { StyleConverter.convert(it, isNightMode) }
-}
+): CompositeStyle? = resolveElementStyle(element, sharedStyles, LocalContext.current.isNightMode())
+
+fun resolveElementStyle(
+    element: VoltraElement,
+    sharedStyles: List<Map<String, Any?>>?,
+    isNightMode: Boolean,
+): CompositeStyle? = resolveStyle(element.p, sharedStyles)?.let { StyleConverter.convert(it, isNightMode) }
 
 /**
  * Resolve style reference to actual style map.

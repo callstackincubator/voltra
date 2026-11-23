@@ -11,7 +11,7 @@ final class DynamicWidgetRenderCoordinatorTests: XCTestCase {
     let dynamicWidgetEnvironmentJSON = #"{"widgetFamily":"systemMedium","locale":"pl-PL","configuration":{"station":"central"}}"#
     let runtimeOutput = #"{"type":"text","props":{"content":"21°C"}}"#
     let propsProvider = RecordingDynamicWidgetPropsProvider(provider: store.dynamicWidgetProps(for:))
-    let runtimeBoundary = RecordingDynamicWidgetRuntimeBoundary(output: runtimeOutput)
+    let runtimeBoundary = RecordingDynamicWidgetRuntimeBoundary(output: .success(runtimeOutput))
     let coordinator = DynamicWidgetRenderCoordinator(
       dynamicWidgetPropsProvider: propsProvider.dynamicWidgetProps,
       dynamicWidgetRuntimeBoundary: runtimeBoundary.render
@@ -25,7 +25,7 @@ final class DynamicWidgetRenderCoordinatorTests: XCTestCase {
     )
 
     let invocation = try XCTUnwrap(runtimeBoundary.invocations.first)
-    XCTAssertEqual(output, runtimeOutput)
+    XCTAssertEqual(output, .success(runtimeOutput))
     XCTAssertEqual(invocation.dynamicWidgetID, dynamicWidgetID)
     XCTAssertEqual(invocation.dynamicWidgetPropsJSON, propsProvider.providedPropsJSON.first)
     XCTAssertEqual(
@@ -57,7 +57,7 @@ final class DynamicWidgetRenderCoordinatorTests: XCTestCase {
 
     for testCase in cases {
       let store = DynamicWidgetPropsStore(storage: testCase.storage)
-      let runtimeBoundary = RecordingDynamicWidgetRuntimeBoundary(output: runtimeOutput)
+      let runtimeBoundary = RecordingDynamicWidgetRuntimeBoundary(output: .success(runtimeOutput))
       let coordinator = DynamicWidgetRenderCoordinator(
         dynamicWidgetPropsProvider: store.dynamicWidgetProps(for:),
         dynamicWidgetRuntimeBoundary: runtimeBoundary.render
@@ -69,13 +69,18 @@ final class DynamicWidgetRenderCoordinatorTests: XCTestCase {
       )
 
       let invocation = try XCTUnwrap(runtimeBoundary.invocations.first)
-      XCTAssertEqual(output, runtimeOutput)
+      XCTAssertEqual(output, .success(runtimeOutput))
       XCTAssertEqual(invocation.dynamicWidgetPropsJSON, "{}")
     }
   }
 
-  func testKeepsNilDynamicWidgetRuntimeOutputNilForCallerFallback() {
-    let runtimeBoundary = RecordingDynamicWidgetRuntimeBoundary(output: nil)
+  func testReturnsTheRuntimeBoundarysFailureWithItsStageMessageAndStack() {
+    let failure = DynamicWidgetRenderFailure(
+      stage: .render,
+      message: "TypeError: Cannot read property 'map' of undefined",
+      stack: "InboxWidget@inbox.tsx:31:22"
+    )
+    let runtimeBoundary = RecordingDynamicWidgetRuntimeBoundary(output: .failure(failure))
     let coordinator = DynamicWidgetRenderCoordinator(
       dynamicWidgetPropsProvider: { _ in #"{"status":"current"}"# },
       dynamicWidgetRuntimeBoundary: runtimeBoundary.render
@@ -86,7 +91,7 @@ final class DynamicWidgetRenderCoordinatorTests: XCTestCase {
       dynamicWidgetEnvironmentJSON: #"{"widgetFamily":"systemLarge"}"#
     )
 
-    XCTAssertNil(output)
+    XCTAssertEqual(output, .failure(failure))
     XCTAssertEqual(runtimeBoundary.invocations.count, 1)
   }
 }
@@ -113,10 +118,10 @@ private struct DynamicWidgetRuntimeInvocation {
 }
 
 private final class RecordingDynamicWidgetRuntimeBoundary {
-  private let output: String?
+  private let output: DynamicWidgetRenderOutcome
   private(set) var invocations: [DynamicWidgetRuntimeInvocation] = []
 
-  init(output: String?) {
+  init(output: DynamicWidgetRenderOutcome) {
     self.output = output
   }
 
@@ -124,7 +129,7 @@ private final class RecordingDynamicWidgetRuntimeBoundary {
     dynamicWidgetID: String,
     dynamicWidgetPropsJSON: String,
     dynamicWidgetEnvironmentJSON: String
-  ) -> String? {
+  ) -> DynamicWidgetRenderOutcome {
     invocations.append(
       DynamicWidgetRuntimeInvocation(
         dynamicWidgetID: dynamicWidgetID,

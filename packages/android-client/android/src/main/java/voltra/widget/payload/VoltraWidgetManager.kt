@@ -211,7 +211,7 @@ class VoltraWidgetManager(
                 if (refreshEnabled) {
                     RemoteViewsGenerator.generateWidgetRemoteViewsWithRefresh(context, payload, widgetId)
                 } else {
-                    RemoteViewsGenerator.generateWidgetRemoteViews(context, payload)
+                    RemoteViewsGenerator.generateWidgetRemoteViews(context, payload, widgetId)
                 }
 
             if (sizeMapping.isEmpty()) {

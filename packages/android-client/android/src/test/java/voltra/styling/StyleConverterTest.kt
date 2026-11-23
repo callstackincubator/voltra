@@ -107,4 +107,32 @@ class StyleConverterTest {
 
         assertEquals(VoltraColorValue.Static(Color.Blue), image.firstStopColor())
     }
+
+    @Test
+    fun parsesNumericGapToDp() {
+        val style = StyleConverter.convert(mapOf("gap" to 12))
+
+        assertEquals(12f, style.layout.gap?.value)
+    }
+
+    @Test
+    fun missingGapIsNull() {
+        val style = StyleConverter.convert(mapOf("width" to 100))
+
+        assertNull(style.layout.gap)
+    }
+
+    @Test
+    fun invalidGapIsNull() {
+        val style = StyleConverter.convert(mapOf("gap" to "not-a-number"))
+
+        assertNull(style.layout.gap)
+    }
+
+    @Test
+    fun negativeGapIsNull() {
+        val style = StyleConverter.convert(mapOf("gap" to -8))
+
+        assertNull(style.layout.gap)
+    }
 }

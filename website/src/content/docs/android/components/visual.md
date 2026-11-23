@@ -57,7 +57,7 @@ To add a background color when an image is missing, use `backgroundColor` in the
 />
 ```
 
-On Android 12 (API 31) and newer, the radius clips the image view. On older versions, Voltra rounds the bitmap itself so the picture looks the same, but only when the `Image` has a fixed numeric `width` and `height` and no padding; otherwise the radius is ignored. A `backgroundColor` on the `Image` keeps square corners on those older versions.
+On Android 12 (API 31) and newer, the radius clips the image view. On older versions, Voltra rounds the bitmap itself so the picture looks the same, but only when the `Image` has a fixed numeric `width` and `height` and no padding; otherwise the radius is ignored. A `backgroundColor` on the `Image` keeps square corners on those older versions, unless the `Image` also has a border.
 
 :::tip[Image Preloading]
 For dynamic images from remote URLs, use the [Image Preloading](/android/development/image-preloading) API to cache them locally for use in widgets.

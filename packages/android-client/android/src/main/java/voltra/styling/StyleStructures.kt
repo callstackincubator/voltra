@@ -37,6 +37,7 @@ data class LayoutStyle(
     val aspectRatio: Float? = null,
     // Spacing
     val padding: EdgeInsets? = null,
+    val gap: Dp? = null,
     // Positioning (not supported in Glance, but kept for API compatibility)
     val position: Offset? = null,
     val zIndex: Float? = null,

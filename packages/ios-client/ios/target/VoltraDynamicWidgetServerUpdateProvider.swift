@@ -189,7 +189,7 @@ enum VoltraDynamicWidgetTrialRender {
       configuration: configuration
     )
 
-    guard let resolved = VoltraJSRenderer.render(widgetId: widgetId, propsJSON: propsJSON, envJSON: envJSON),
+    guard case let .success(resolved) = VoltraJSRenderer.render(widgetId: widgetId, propsJSON: propsJSON, envJSON: envJSON),
           let json = try? JSONValue.parse(from: resolved)
     else {
       return false

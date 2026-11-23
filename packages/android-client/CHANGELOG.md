@@ -1,5 +1,63 @@
 # @use-voltra/android-client
 
+## 2.7.0
+
+### Patch Changes
+
+- b4b6e74: Server-driven Dynamic Widgets fetch once when placed and refresh immediately when server updates are re-enabled.
+  - @use-voltra/android@2.7.0
+  - @use-voltra/compiler@2.7.0
+  - @use-voltra/expo-plugin@2.7.0
+
+## 2.6.1
+
+### Patch Changes
+
+- @use-voltra/android@2.6.1
+- @use-voltra/compiler@2.6.1
+- @use-voltra/expo-plugin@2.6.1
+
+## 2.6.0
+
+### Minor Changes
+
+- 856ac2b: Android widgets now draw `borderWidth` and `borderColor`, following `borderRadius` and combining with `backgroundColor` or `backgroundImage`. The border is drawn inside the component's bounds without changing its layout, and only on components whose `width` and `height` are both fixed numbers.
+- 40b73c4: Android Dynamic Widgets no longer hide render failures. A debug build now shows an error view on the Home Screen with the widget id, the failing stage, the error message and the stack, and tapping it reloads the bundle from Metro and retries, so a Metro outage that began before the widget was placed no longer sticks for the rest of the widget's session. A release build keeps the last render of each placement and size that succeeded instead of falling back to the placeholder after a bad props update or locale change. Each failed render is logged under the `VoltraDynamicWidget` tag.
+- 775cd68: **Breaking:** removed the unused `renderAndroidLiveUpdateToJson()` and `renderAndroidLiveUpdateToString()` functions and the `AndroidLiveUpdate*` types from `@use-voltra/android`, and their re-exports from `@use-voltra/android-client`. They were left over from an abandoned renderer, and nothing on the device could ever display their output. Android 16 Live Updates through `requestPromotedOngoing` are unaffected.
+
+### Patch Changes
+
+- 258b2f8: `gap` on Android `Column`, `Row`, `LazyColumn`, and `LazyVerticalGrid` now spaces children apart, as it does on iOS. Before, Android ignored it. On a `LazyVerticalGrid` with adaptive columns, the grid's outer edge also gets half the gap.
+- dfe97cf: `LazyColumn` and `LazyVerticalGrid` now render in `VoltraWidgetPreview` instead of showing
+  nothing. On Android 12 (API 31) and older they render as a non-scrolling approximation, since
+  Glance's collection adapters require a real AppWidget host on those versions.
+- 775cd68: Tapping a button or toggle without a deep link in a payload widget without a refresh button now opens the app with the widget's real id instead of `"notification"`.
+- Updated dependencies [775cd68]
+  - @use-voltra/android@2.6.0
+  - @use-voltra/compiler@2.6.0
+  - @use-voltra/expo-plugin@2.6.0
+
+## 2.5.0
+
+### Patch Changes
+
+- 8a58341: `borderRadius` on an Android `Image` with a fixed `width` and `height` now rounds its corners on Android 11 and older too, instead of being ignored below Android 12. The corners match what Android 12+ draws for the same `contentScale`.
+- 58f0fd4: `useAndroidOngoingNotification()` now reports `isActive: false` when the user swipes the notification away, when it times out, or when other code in the app stops it. Before, it kept reporting the notification as active.
+
+  `startAndroidOngoingNotification()` and the hook's `start()` now post again after a dismissal or timeout, including with the same `notificationId`. Before, they returned `already_exists` until the notification was stopped. Updates and upserts still refuse to bring a dismissed notification back.
+
+  With `autoStart`, the hook posts when it mounts or when `autoStart` turns on. It no longer posts again right after a dismissal or after `end()` while the component stays mounted. On the next mount, it posts again.
+
+- bfe061f: Fixes a launch crash (`Failed to create an instance of class
+androidx.work.impl.WorkDatabase.canonicalName`) in R8-minified Android release
+  builds where R8 strips the constructors WorkManager creates by reflection, such
+  as builds with `android.r8.strictFullModeForKeepRules=true`. Voltra now ships
+  keep rules for them.
+- 8fbf6e9: Promoted ongoing notifications on Samsung One UI 8 no longer show the large icon flush against the card edge, where its rounded corner clipped the image.
+  - @use-voltra/android@2.5.0
+  - @use-voltra/compiler@2.5.0
+  - @use-voltra/expo-plugin@2.5.0
+
 ## 2.4.0
 
 ### Minor Changes

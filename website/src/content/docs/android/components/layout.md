@@ -18,6 +18,8 @@ A vertical container that arranges its children in a column.
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center-vertically"`, `"bottom"`.
 
+Supports the `gap` style to space children apart vertically.
+
 ---
 
 ### Row
@@ -32,6 +34,8 @@ A horizontal container that arranges its children in a row.
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center-vertically"`, `"bottom"`.
+
+Supports the `gap` style to space children apart horizontally.
 
 ---
 
@@ -84,9 +88,15 @@ A component that provides fixed spacing between elements.
 
 A scrollable vertical list that only renders visible items.
 
+`LazyColumn` renders in `VoltraWidgetPreview`. On Android 12 (API 31) and older it falls back
+to a non-scrolling approximation that renders every item eagerly, because Glance's collection
+adapters need a real AppWidget host on those versions. Inside a scrolling screen, the preview shows the list's items, but dragging scrolls the page, not the list.
+
 **Parameters:**
 
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
+
+Supports the `gap` style to space items apart vertically.
 
 ---
 
@@ -94,9 +104,15 @@ A scrollable vertical list that only renders visible items.
 
 A scrollable grid of items.
 
+`LazyVerticalGrid` renders in `VoltraWidgetPreview`. On Android 12 (API 31) and older it falls
+back to a non-scrolling approximation that renders every item eagerly, because Glance's
+collection adapters need a real AppWidget host on those versions. Inside a scrolling screen, the preview shows the grid's items, but dragging scrolls the page, not the grid.
+
 **Parameters:**
 
 - `columns` (number | `"adaptive"`): Number of columns or `"adaptive"` for an adaptive grid.
 - `minSize` (number, optional): Minimum size (in dp) for items in adaptive grid mode.
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
 - `verticalAlignment` (string, optional): `"top"`, `"center"`, `"bottom"`.
+
+Supports the `gap` style to space cells apart horizontally and vertically. With a fixed number of `columns`, the gap goes only between cells. With adaptive columns, the grid's outer edge also gets half the gap.

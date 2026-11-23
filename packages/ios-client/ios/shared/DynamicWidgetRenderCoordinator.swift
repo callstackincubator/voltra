@@ -5,7 +5,7 @@ struct DynamicWidgetRenderCoordinator {
     _ dynamicWidgetID: String,
     _ dynamicWidgetPropsJSON: String,
     _ dynamicWidgetEnvironmentJSON: String
-  ) -> String?
+  ) -> DynamicWidgetRenderOutcome
 
   private let dynamicWidgetPropsProvider: DynamicWidgetPropsProvider
   private let dynamicWidgetRuntimeBoundary: DynamicWidgetRuntimeBoundary
@@ -21,7 +21,7 @@ struct DynamicWidgetRenderCoordinator {
   func renderDynamicWidget(
     dynamicWidgetID: String,
     dynamicWidgetEnvironmentJSON: String
-  ) -> String? {
+  ) -> DynamicWidgetRenderOutcome {
     dynamicWidgetRuntimeBoundary(
       dynamicWidgetID,
       dynamicWidgetPropsProvider(dynamicWidgetID),
