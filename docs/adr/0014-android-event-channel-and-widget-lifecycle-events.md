@@ -124,8 +124,8 @@ payload widget package (ADR 0000), and payload-driven widgets emit nothing.
 
 - **Seeding.** The first time the registry is used (an upgrade to this version, or cleared app data),
   it records every current placement of every installed Dynamic receiver with its current size, and
-  emits nothing. A persisted `__seeded` flag marks it done. Seeding runs in `VoltraModule.initialize()`
-  and at the start of every lifecycle rule that finds the registry unseeded.
+  emits nothing. A persisted `__seeded` flag marks it done. The registry seeds itself inside whichever
+  of its methods runs first, so no caller seeds it explicitly.
 - **`widgetEnabled` is gated** on the registry holding no placement of that widget type. The system
   re-sends `onEnabled` at boot and after a package update for a type that already has placements;
   those placements are in the registry, so nothing is emitted. The re-sent `onUpdate` calls find
@@ -134,6 +134,10 @@ payload widget package (ADR 0000), and payload-driven widgets emit nothing.
   `AppWidgetManager.getAppWidgetIds` when the module starts. It could only repair a missed delete
   followed by a recycled id of the same widget type, which does not happen in practice, and silently
   adding ids would swallow a `widgetAdded` whose `onUpdate` is still on its way.
+- **The registry is one per-placement store.** `DynamicWidgetPlacementData` removes and moves its
+  entries next to the instance configuration and the last good render, each in its own guard. Its
+  `onRestored` returns the pairs the registry moved, and the receiver reports those. The stores know
+  nothing about events.
 - **Removal forgets the ids.** `onDeleted` removes the deleted ids from the registry before emitting,
   and `onDisabled` clears every entry of the widget type. If the launcher later reuses an id for the
   same widget type, that placement is reported as `widgetAdded` again.
@@ -184,7 +188,7 @@ Dynamic base receiver, so `VoltraServerDrivenClientWidgetReceiver` inherits them
   because the earlier pull already took those. The docs recommend subscribing to every lifecycle
   event the app needs in one place at the root of the app.
 - **Seeding caveat.** A placement made between the upgrade to this version and the registry's first
-  use (the next app launch or widget callback) is absorbed by the seed and never reported. #315
+  use (the next Dynamic Widget callback) is absorbed by the seed and never reported. #315
   accepts this; the docs say so and tell apps to reconcile with `getActiveWidgets()`.
 - **The placement types live in `@use-voltra/android`.** The spec put `VoltraWidgetPlacement`,
   `VoltraWidgetPlacementSize` and `VoltraWidgetPlacementWithSize` in `@use-voltra/android-client`,

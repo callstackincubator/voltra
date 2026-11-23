@@ -34,7 +34,6 @@ import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.dynamicwidget.VoltraConfigurationStore
 import voltra.dynamicwidget.WidgetPlacementSize
-import voltra.dynamicwidget.lifecycle.DynamicWidgetPlacementRegistry
 import voltra.dynamicwidget.serverupdate.DynamicWidgetServerUpdateScheduler
 import voltra.dynamicwidget.triggerDynamicWidgetConfigurationGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
@@ -191,11 +190,6 @@ class VoltraModule(
             VoltraEventBus.subscribe {
                 emitOnEventsAvailable(Arguments.createMap().apply { putString("type", "eventsAvailable") })
             }
-        try {
-            DynamicWidgetPlacementRegistry(reactApplicationContext).seedIfNeeded()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to seed the Dynamic Widget placement registry", e)
-        }
     }
 
     override fun invalidate() {

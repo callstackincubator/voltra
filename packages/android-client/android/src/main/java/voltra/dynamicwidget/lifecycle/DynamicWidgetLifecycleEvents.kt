@@ -20,7 +20,7 @@ internal object DynamicWidgetLifecycleEvents {
 
     /**
      * `widgetAdded` for each id the registry does not hold for [widgetType], which is then recorded
-     * with its size. Seeds an unseeded registry first, so pre-existing placements stay silent.
+     * with its size.
      */
     fun onPlacementsSeen(
         widgetType: String,
@@ -29,12 +29,6 @@ internal object DynamicWidgetLifecycleEvents {
         registry: DynamicWidgetPlacementRegistry,
         recordEvent: (VoltraEvent) -> Unit,
     ) {
-        try {
-            registry.seedIfNeeded()
-        } catch (e: Exception) {
-            Log.e(TAG, "Could not seed the placement registry", e)
-            return
-        }
         appWidgetIds.forEach { appWidgetId ->
             val added =
                 try {
@@ -62,7 +56,6 @@ internal object DynamicWidgetLifecycleEvents {
     ) {
         val (size, recorded) =
             try {
-                registry.seedIfNeeded()
                 WidgetPlacementSize.fromOptions(newOptions) to registry.sizeOf(widgetType, appWidgetId)
             } catch (e: Exception) {
                 Log.e(TAG, "Could not read placement '$widgetType' ($appWidgetId)", e)
@@ -89,45 +82,24 @@ internal object DynamicWidgetLifecycleEvents {
         ) { size.writeTo(this) }
     }
 
-    /**
-     * Forgets the removed placements, then emits one `widgetRemoved` per id, in array order,
-     * whether or not Voltra knew the id.
-     */
-    fun onDeleted(
+    /** One `widgetRemoved` per id, in array order, whether or not Voltra knew the id. */
+    fun reportRemoved(
         widgetType: String,
         appWidgetIds: IntArray,
-        registry: DynamicWidgetPlacementRegistry,
         recordEvent: (VoltraEvent) -> Unit,
     ) {
-        try {
-            registry.seedIfNeeded()
-            registry.remove(widgetType, appWidgetIds)
-        } catch (e: Exception) {
-            Log.e(TAG, "Could not remove placements of '$widgetType' from the registry", e)
-        }
         appWidgetIds.forEach { record("widgetRemoved", widgetType, it, recordEvent) }
     }
 
     /**
-     * `widgetRestored` per (old, new) pair whose old id the registry knew, after moving its entry.
-     * An unknown old id is left for the following `onUpdate` to report as `widgetAdded`.
+     * One `widgetRestored` per (old, new) pair the registry moved. An old id it did not know is left
+     * for the following `onUpdate` to report as `widgetAdded`.
      */
-    fun onRestored(
+    fun reportRestored(
         widgetType: String,
-        oldWidgetIds: IntArray,
-        newWidgetIds: IntArray,
-        registry: DynamicWidgetPlacementRegistry,
+        moved: List<Pair<Int, Int>>,
         recordEvent: (VoltraEvent) -> Unit,
     ) {
-        if (oldWidgetIds.size != newWidgetIds.size) return
-        val moved =
-            try {
-                registry.seedIfNeeded()
-                registry.move(widgetType, oldWidgetIds.zip(newWidgetIds))
-            } catch (e: Exception) {
-                Log.e(TAG, "Could not move placements of '$widgetType' in the registry", e)
-                return
-            }
         moved.forEach { (from, to) ->
             record("widgetRestored", widgetType, to, recordEvent) { put("previousAppWidgetId", from) }
         }
@@ -140,7 +112,6 @@ internal object DynamicWidgetLifecycleEvents {
     ) {
         val hasPlacements =
             try {
-                registry.seedIfNeeded()
                 registry.hasPlacements(widgetType)
             } catch (e: Exception) {
                 Log.e(TAG, "Could not read placements of '$widgetType' from the registry", e)
@@ -155,7 +126,6 @@ internal object DynamicWidgetLifecycleEvents {
         recordEvent: (VoltraEvent) -> Unit,
     ) {
         try {
-            registry.seedIfNeeded()
             registry.clear(widgetType)
         } catch (e: Exception) {
             Log.e(TAG, "Could not clear placements of '$widgetType' from the registry", e)

@@ -22,6 +22,10 @@ internal data class DynamicWidgetPlacement(
  * `appWidgetId` (a launcher can recycle an id across widget types). Glance has no "added"
  * callback, so an id missing here is what makes a placement new.
  *
+ * The first use of any method seeds the registry: it records every current placement, silently (an
+ * upgrade to a version with lifecycle events, or cleared app data), so a placement made before then
+ * is never reported as added. A seeding failure is thrown from that method, like a storage failure.
+ *
  * [currentPlacements] is what seeding records; injectable because Robolectric has no widget host.
  */
 internal class DynamicWidgetPlacementRegistry(
@@ -29,32 +33,31 @@ internal class DynamicWidgetPlacementRegistry(
     private val currentPlacements: () -> List<DynamicWidgetPlacement> = { installedDynamicPlacements(context) },
 ) {
     // Lazy so that building a registry never throws: receivers build one before their cleanup,
-    // and a storage failure must surface inside the lifecycle rules' own failure guards.
+    // and a storage or seeding failure must surface inside the callers' failure guards.
     private val preferences by lazy {
         context.applicationContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
-    /**
-     * Records every current placement, silently, the first time the registry is used (an upgrade
-     * to a version with lifecycle events, or cleared app data). A placement made before this runs
-     * is therefore never reported as added.
-     */
-    fun seedIfNeeded() {
+    private fun <T> seeded(block: () -> T): T =
         synchronized(lock) {
-            if (preferences.getBoolean(KEY_SEEDED, false)) return
-            val placements = currentPlacements()
-            val editor = preferences.edit()
-            placements.forEach { editor.putString(key(it.widgetType, it.appWidgetId), encode(it.size)) }
-            editor.putBoolean(KEY_SEEDED, true).commit()
-            Log.d(TAG, "Seeded placement registry with ${placements.size} placements")
+            seedIfNeeded()
+            block()
         }
+
+    private fun seedIfNeeded() {
+        if (preferences.getBoolean(KEY_SEEDED, false)) return
+        val placements = currentPlacements()
+        val editor = preferences.edit()
+        placements.forEach { editor.putString(key(it.widgetType, it.appWidgetId), encode(it.size)) }
+        editor.putBoolean(KEY_SEEDED, true).commit()
+        Log.d(TAG, "Seeded placement registry with ${placements.size} placements")
     }
 
     fun sizeOf(
         widgetType: String,
         appWidgetId: Int,
     ): WidgetPlacementSize? =
-        synchronized(lock) {
+        seeded {
             preferences.getString(key(widgetType, appWidgetId), null)?.let(::decode)
         }
 
@@ -63,7 +66,7 @@ internal class DynamicWidgetPlacementRegistry(
         appWidgetId: Int,
         size: WidgetPlacementSize,
     ) {
-        synchronized(lock) {
+        seeded {
             preferences.edit().putString(key(widgetType, appWidgetId), encode(size)).commit()
         }
     }
@@ -73,18 +76,21 @@ internal class DynamicWidgetPlacementRegistry(
         appWidgetId: Int,
         size: WidgetPlacementSize,
     ): Boolean =
-        synchronized(lock) {
+        seeded {
             val key = key(widgetType, appWidgetId)
-            if (preferences.contains(key)) return false
-            preferences.edit().putString(key, encode(size)).commit()
-            true
+            if (preferences.contains(key)) {
+                false
+            } else {
+                preferences.edit().putString(key, encode(size)).commit()
+                true
+            }
         }
 
     fun remove(
         widgetType: String,
         appWidgetIds: IntArray,
     ) {
-        synchronized(lock) {
+        seeded {
             val editor = preferences.edit()
             appWidgetIds.forEach { editor.remove(key(widgetType, it)) }
             editor.commit()
@@ -99,7 +105,7 @@ internal class DynamicWidgetPlacementRegistry(
         widgetType: String,
         pairs: List<Pair<Int, Int>>,
     ): List<Pair<Int, Int>> =
-        synchronized(lock) {
+        seeded {
             val known =
                 pairs.mapNotNull { pair ->
                     val value = preferences.getString(key(widgetType, pair.first), null)
@@ -113,12 +119,12 @@ internal class DynamicWidgetPlacementRegistry(
         }
 
     fun hasPlacements(widgetType: String): Boolean =
-        synchronized(lock) {
+        seeded {
             preferences.all.keys.any { it.startsWith("$widgetType:") }
         }
 
     fun clear(widgetType: String) {
-        synchronized(lock) {
+        seeded {
             val editor = preferences.edit()
             preferences.all.keys
                 .filter { it.startsWith("$widgetType:") }

@@ -32,7 +32,7 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
      * values, and the last good render (ADR 0013). See [DynamicWidgetPlacementData] for the
      * threading and failure rules.
      *
-     * After the cleanup, the placements leave the placement registry and each is reported as
+     * The placements also leave the placement registry there. Each is then reported as
      * `widgetRemoved`.
      *
      * `VoltraServerDrivenClientWidgetReceiver.onDeleted` calls `super.onDeleted`, so it inherits
@@ -47,9 +47,7 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     ) {
         super.onDeleted(context, appWidgetIds)
         DynamicWidgetPlacementData.onDeleted(context, widgetId, appWidgetIds)
-        DynamicWidgetLifecycleEvents.onDeleted(widgetId, appWidgetIds, DynamicWidgetPlacementRegistry(context)) {
-            VoltraEventBus.send(context, it)
-        }
+        DynamicWidgetLifecycleEvents.reportRemoved(widgetId, appWidgetIds) { VoltraEventBus.send(context, it) }
     }
 
     /**
@@ -110,7 +108,7 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
      * London after the restore instead of falling back to the widget-type values. Same threading
      * and failure rules as [onDeleted].
      *
-     * After the remap, each placement the registry knew moves to its new id and is reported as
+     * Each placement the registry knew moves to its new id there too, and is then reported as
      * `widgetRestored`.
      */
     override fun onRestored(
@@ -119,12 +117,7 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
         newWidgetIds: IntArray,
     ) {
         super.onRestored(context, oldWidgetIds, newWidgetIds)
-        DynamicWidgetPlacementData.onRestored(context, widgetId, oldWidgetIds, newWidgetIds)
-        DynamicWidgetLifecycleEvents.onRestored(
-            widgetId,
-            oldWidgetIds,
-            newWidgetIds,
-            DynamicWidgetPlacementRegistry(context),
-        ) { VoltraEventBus.send(context, it) }
+        val moved = DynamicWidgetPlacementData.onRestored(context, widgetId, oldWidgetIds, newWidgetIds)
+        DynamicWidgetLifecycleEvents.reportRestored(widgetId, moved) { VoltraEventBus.send(context, it) }
     }
 }

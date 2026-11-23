@@ -3,6 +3,7 @@ package voltra.dynamicwidget
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.runBlocking
+import voltra.dynamicwidget.lifecycle.DynamicWidgetPlacementRegistry
 
 /**
  * What a Dynamic Widget keeps per placement (`appWidgetId`) besides Glance's own state, and what
@@ -14,7 +15,9 @@ import kotlinx.coroutines.runBlocking
  * failure must not skip the next. A missed cleanup is bounded, because every key carries the widget
  * id and a recycled `appWidgetId` can only surface data from a placement of the same widget.
  *
- * Stores today: the per-instance configuration (ADR 0006) and the last good render (ADR 0013).
+ * Stores today: the per-instance configuration (ADR 0006), the last good render (ADR 0013) and the
+ * placement registry (ADR 0014). The stores know nothing about lifecycle events: the receiver
+ * reports them from what these calls return.
  *
  * The configuration edit runs inside [runBlocking] rather than a launched coroutine, the pattern
  * `VoltraServerDrivenClientWidgetReceiver.onUpdate` already uses: `GlanceAppWidgetReceiver.onReceive`
@@ -33,6 +36,7 @@ internal object DynamicWidgetPlacementData {
         // Robolectric application that made it.
         configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
         lastGoodStore: DynamicWidgetLastGoodStore = DynamicWidgetLastGoodStore(context),
+        registry: DynamicWidgetPlacementRegistry = DynamicWidgetPlacementRegistry(context),
     ) {
         val ids = appWidgetIds.toList()
 
@@ -42,9 +46,16 @@ internal object DynamicWidgetPlacementData {
         guarded("clear the last good render", widgetId, ids) {
             lastGoodStore.delete(widgetId, ids)
         }
+        guarded("remove the placements from the registry", widgetId, ids) {
+            registry.remove(widgetId, appWidgetIds)
+        }
     }
 
-    /** The launcher restored its layout and gave each placement a new id: move the data with it. */
+    /**
+     * The launcher restored its layout and gave each placement a new id: move the data with it.
+     * Returns the (old, new) pairs the registry knew and moved; empty if the move failed or the id
+     * lists differ in length.
+     */
     fun onRestored(
         context: Context,
         widgetId: String,
@@ -52,14 +63,15 @@ internal object DynamicWidgetPlacementData {
         newAppWidgetIds: IntArray,
         configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
         lastGoodStore: DynamicWidgetLastGoodStore = DynamicWidgetLastGoodStore(context),
-    ) {
+        registry: DynamicWidgetPlacementRegistry = DynamicWidgetPlacementRegistry(context),
+    ): List<Pair<Int, Int>> {
         if (oldAppWidgetIds.size != newAppWidgetIds.size) {
             Log.w(
                 TAG,
                 "onRestored for '$widgetId' passed ${oldAppWidgetIds.size} old ids and " +
                     "${newAppWidgetIds.size} new ids; skipping remap",
             )
-            return
+            return emptyList()
         }
         val oldIds = oldAppWidgetIds.toList()
         val newIds = newAppWidgetIds.toList()
@@ -70,6 +82,9 @@ internal object DynamicWidgetPlacementData {
         guarded("remap the last good render", widgetId, oldIds, newIds) {
             lastGoodStore.remap(widgetId, oldIds, newIds)
         }
+        return guarded("move the placements in the registry", widgetId, oldIds, newIds) {
+            registry.move(widgetId, oldIds.zip(newIds))
+        } ?: emptyList()
     }
 
     /** The app cleared one widget's content (`clearAndroidWidget`). */
@@ -90,12 +105,12 @@ internal object DynamicWidgetPlacementData {
         guarded("clear the last good render", widgetId = null) { lastGoodStore.clearAll() }
     }
 
-    private fun guarded(
+    private fun <T> guarded(
         what: String,
         widgetId: String?,
         vararg ids: List<Int>,
-        block: () -> Unit,
-    ) {
+        block: () -> T,
+    ): T? =
         try {
             block()
         } catch (e: Exception) {
@@ -106,6 +121,6 @@ internal object DynamicWidgetPlacementData {
                     "${if (placements.isEmpty()) "" else " ($placements)"}: ${e.message}",
                 e,
             )
+            null
         }
-    }
 }

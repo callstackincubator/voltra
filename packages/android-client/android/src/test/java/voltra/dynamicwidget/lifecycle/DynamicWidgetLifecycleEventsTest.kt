@@ -45,9 +45,8 @@ class DynamicWidgetLifecycleEventsTest {
 
         DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(1), { size }, failing, record)
         DynamicWidgetLifecycleEvents.onOptionsChanged("weather", 1, options, failing, record)
-        DynamicWidgetLifecycleEvents.onRestored("weather", intArrayOf(1), intArrayOf(2), failing, record)
         DynamicWidgetLifecycleEvents.onEnabled("weather", failing, record)
-        DynamicWidgetLifecycleEvents.onDeleted("weather", intArrayOf(1), failing, record)
+        DynamicWidgetLifecycleEvents.reportRemoved("weather", intArrayOf(1), record)
         DynamicWidgetLifecycleEvents.onDisabled("weather", failing, record)
 
         assertEquals(listOf("widgetRemoved:1", "widgetDisabled:-1"), recorded)
@@ -67,8 +66,8 @@ class DynamicWidgetLifecycleEventsTest {
         DynamicWidgetLifecycleEvents.onEnabled("weather", registry, keep)
         DynamicWidgetLifecycleEvents.onPlacementsSeen("weather", intArrayOf(1), { size }, registry, keep)
         DynamicWidgetLifecycleEvents.onOptionsChanged("weather", 1, larger, registry, keep)
-        DynamicWidgetLifecycleEvents.onRestored("weather", intArrayOf(1), intArrayOf(2), registry, keep)
-        DynamicWidgetLifecycleEvents.onDeleted("weather", intArrayOf(2), registry, keep)
+        DynamicWidgetLifecycleEvents.reportRestored("weather", listOf(1 to 2), keep)
+        DynamicWidgetLifecycleEvents.reportRemoved("weather", intArrayOf(2), keep)
         DynamicWidgetLifecycleEvents.onDisabled("weather", registry, keep)
 
         val sevenDays = 7 * 24 * 60 * 60 * 1000L
