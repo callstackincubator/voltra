@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Looper
 import android.util.SizeF
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -24,7 +25,8 @@ class VoltraClientWidgetReceiverLifecycleEventTest {
     ) : VoltraClientWidgetReceiver()
 
     private fun register(widgetId: String = "weather") {
-        application.registerReceiver(
+        ContextCompat.registerReceiver(
+            application,
             TestClientWidgetReceiver(widgetId),
             IntentFilter().apply {
                 addAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
@@ -32,6 +34,7 @@ class VoltraClientWidgetReceiverLifecycleEventTest {
                 addAction(AppWidgetManager.ACTION_APPWIDGET_RESTORED)
                 addAction(AppWidgetManager.ACTION_APPWIDGET_DELETED)
             },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
         )
     }
 

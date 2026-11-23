@@ -12,14 +12,14 @@ import java.util.concurrent.ConcurrentHashMap
  * into the top level of the event JavaScript receives; the queue adds `type`, `source` and
  * `timestamp`.
  */
-class VoltraEvent(
+internal class VoltraEvent(
     val type: String,
     val source: String,
     val fields: JSONObject = JSONObject(),
 )
 
 /** Told that an event was recorded. Carries no event data; the subscriber pops. */
-fun interface VoltraEventsAvailableListener {
+internal fun interface VoltraEventsAvailableListener {
     fun onEventsAvailable()
 }
 
@@ -31,7 +31,7 @@ fun interface VoltraEventsAvailableListener {
  * Each React Native instance subscribes with its own token, so an instance torn down after its
  * replacement subscribed (a reload) cannot remove the replacement's subscription.
  */
-object VoltraEventBus {
+internal object VoltraEventBus {
     private const val TAG = "VoltraEventBus"
 
     private val listeners = ConcurrentHashMap<String, VoltraEventsAvailableListener>()
