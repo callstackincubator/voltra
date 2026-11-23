@@ -44,7 +44,7 @@ The following React Native style properties are supported on Android:
 
 ### Day and night colors
 
-`backgroundColor` and text `color` also take a `{ day, night }` pair: one color for the light system theme and one for the dark. The type is `AndroidColorPair`, exported from `@use-voltra/android`:
+`backgroundColor` and text `color` also take a `{ day, night }` pair: one color for the light system theme and one for the dark. The pair follows the system light/dark setting, not the time of day. The type is `AndroidColorPair`, exported from `@use-voltra/android`:
 
 ```tsx
 import type { AndroidColorPair } from '@use-voltra/android'
@@ -59,7 +59,7 @@ const cardBackground: AndroidColorPair = { day: '#ffffff', night: 'rgba(32, 33, 
 On Android 12+ the launcher switches between the two colors itself when the theme changes. On older versions the color is picked when the widget is drawn.
 
 - Each side takes any literal color the string form accepts, including alpha (`#ffffff80`, `rgba()`, `hsla()`), color names and `transparent`. Alpha is kept per side.
-- `AndroidDynamicColors.*` tokens are not allowed inside a pair.
+- `AndroidDynamicColors.*` tokens are not allowed inside a pair and fail to compile. A side typed as plain `string` fails too, so pass a literal color.
 - A pair with a missing, empty or invalid side is dropped as a whole, and the property falls back to its default. Other keys are ignored.
 - Component color props, `borderColor` and `shadowColor` take pairs too. Borders and shadows are not drawn yet.
 - Gradients and charts can follow the theme too. See [Gradients in light and dark](#gradients-in-light-and-dark) and [Charts](/android/charts#colors-in-light-and-dark).

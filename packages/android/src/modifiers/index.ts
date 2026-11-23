@@ -1,9 +1,12 @@
-import type { AndroidColorValue } from '../dynamic-colors.js'
+import type { AndroidColorPair, AndroidColorValue } from '../dynamic-colors.js'
 import { createAndroidModifier } from './createAndroidModifier.js'
 
 export type { AndroidModifier } from './createAndroidModifier.js'
-// `DayNightColors` is the 2.4.0 name for `AndroidColorPair`, kept as an alias so existing imports still compile.
-export type { AndroidColorPair as DayNightColors, StaticColor } from '../dynamic-colors.js'
+export type { StaticColor } from '../dynamic-colors.js'
+
+// `DayNightColors` is the 2.4.0 name for `AndroidColorPair`. The type parameters are ignored; they stay so
+// existing `DayNightColors<Day, Night>` references still compile.
+export type DayNightColors<_Day extends string = string, _Night extends string = string> = AndroidColorPair
 
 export type PaddingValues = {
   all?: number
@@ -118,7 +121,7 @@ export const wrapContentSize = () => createAndroidModifier('wrapContentSize')
  *
  * @since Android 7.0
  */
-export const background = <Day extends string, Night extends string>(color: AndroidColorValue<Day, Night>) =>
+export const background = (color: AndroidColorValue) =>
   createAndroidModifier('background', typeof color === 'string' ? { color } : { day: color.day, night: color.night })
 
 /**
