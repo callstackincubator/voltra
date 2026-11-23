@@ -53,10 +53,12 @@ under "Rejected: deliver hot and persist only without a listener".
   Native instance torn down after its replacement subscribed cannot remove the replacement.
   `pop(context, types)` removes and returns the queued events of those types, oldest first.
   `restore(context, events)` puts events back at the front, in order.
-- **Queue.** `VoltraEventQueue` is a SharedPreferences file, `voltra_event_queue_v1`, holding one JSON
-  array whose order is the delivery order. Every write uses `commit()` under a process-wide lock,
-  because a receiver's process can be reclaimed as soon as the callback returns. Widget receivers
-  run in the app process, so a process lock is enough.
+- **Queue.** `VoltraEventQueue` is a file, `voltra_event_queue_v1.json` in `noBackupFilesDir`,
+  holding one JSON array whose order is the delivery order. Every write goes through `AtomicFile`,
+  whose `finishWrite` syncs the file, under a process-wide lock, because a receiver's process can be
+  reclaimed as soon as the callback returns. Widget receivers run in the app process, so a process
+  lock is enough. Why the queue is not in SharedPreferences is under "The queue is left out of
+  backup".
 - **Native module.** `VoltraModule` subscribes to the bus in `initialize()` and forwards each signal as
   the internal `onEventsAvailable` emitter, whose payload is the constant `{ type: 'eventsAvailable' }`.
   It unsubscribes with its token in `invalidate()`. `popEvents(types: string[]): string` returns a
@@ -114,6 +116,40 @@ events without editing the queue:
 
 **Envelope.** Every event carries `type`, `source` and `timestamp` (epoch milliseconds), plus its
 type-specific fields at the top level. Array order is the delivery order.
+
+### The queue is left out of backup
+
+Queued events describe placements on the device that recorded them. After an Auto Backup restore or
+a device-to-device transfer they would be delivered on a device where those placements never
+existed, so the queue must not be backed up. The placement registry stays in backup; restored
+entries are made safe by dropping unbound ones (below).
+
+- **A library cannot exclude its own file through backup rules.** `android:fullBackupContent` and
+  `android:dataExtractionRules` are single attributes on `<application>`, each naming one XML file,
+  and the manifest merger does not combine two rule files. A library that sets them takes over the
+  backup policy of an app that has none, and causes a merge conflict in an app that has its own,
+  which the app resolves with `tools:replace` and so drops the library's rules. Excluding the queue
+  on every API level would also need both attributes: `fullBackupContent` up to Android 11, and
+  `dataExtractionRules` with the exclusion in both `<cloud-backup>` and `<device-transfer>` from
+  Android 12, where `fullBackupContent` no longer covers device transfer. A custom `BackupAgent` is
+  one attribute too. `expo-secure-store` shows the same limit: it adds its exclusions with a config
+  plugin, and asks apps with their own rules to add them by hand.
+- **`noBackupFilesDir` is never backed up,** on every API level, for cloud backup and device
+  transfer, whatever rules or `allowBackup` value the app declares. SharedPreferences cannot be
+  placed there, so the queue is a plain file. The cache directory was rejected because the system
+  can clear it and silently lose events; device-protected storage was rejected because it has its
+  own backup domains.
+- **Migration.** On its first access the queue moves the events from the old
+  `voltra_event_queue_v1` SharedPreferences to the front of the file, then deletes the preferences.
+  The preferences are only deleted once the file write succeeds. A backup taken by an older version
+  can still bring the old preferences back; their events are then migrated, and retention bounds how
+  long they can live.
+- Host apps need no change.
+- Sources: [Auto Backup](https://developer.android.com/identity/data/autobackup),
+  [Android 12 backup changes](https://developer.android.com/about/versions/12/behavior-changes-12#backup-restore),
+  [manifest merging](https://developer.android.com/build/manage-manifests),
+  [`getNoBackupFilesDir`](<https://developer.android.com/reference/android/content/Context#getNoBackupFilesDir()>),
+  [`expo-secure-store`](https://docs.expo.dev/versions/latest/sdk/securestore/).
 
 ### A placement registry decides what is new
 
@@ -242,7 +278,7 @@ Dynamic base receiver, so `VoltraServerDrivenClientWidgetReceiver` inherits them
 - `getActiveWidgets()` gains `sizes`, and the placement types are shared by `WidgetInfo` and the
   events.
 - The queue is a hint. Events can be lost at most-once boundaries, after 7 days, past the cap, or to
-  the seeding caveat. The docs tell apps to reconcile with `getActiveWidgets()` at startup and treat
+  the seeding caveat. Queued events do not follow a backup or a device transfer. The docs tell apps to reconcile with `getActiveWidgets()` at startup and treat
   `getActiveWidgets()` as the source of truth.
 - Android now has two native-to-JavaScript paths: the internal, unqueued `onOngoingNotificationEnded`
   for state (ADR 0012), and this queued channel for events. New public Android events go through the

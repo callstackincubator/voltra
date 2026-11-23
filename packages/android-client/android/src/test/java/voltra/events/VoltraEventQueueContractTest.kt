@@ -1,6 +1,5 @@
 package voltra.events
 
-import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -8,6 +7,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import java.io.File
 
 /** The queue's bounds (ADR 0014): the cap, producer-set retention and coalescing, and corrupt entries. */
 @RunWith(RobolectricTestRunner::class)
@@ -140,11 +140,7 @@ class VoltraEventQueueContractTest {
                 .put(JSONObject().put("type", "widgetRemoved"))
                 .put(valid(3).apply { remove("__queue") })
                 .put(valid(2))
-        application
-            .getSharedPreferences("voltra_event_queue_v1", Context.MODE_PRIVATE)
-            .edit()
-            .putString("events", stored.toString())
-            .commit()
+        File(application.noBackupFilesDir, "voltra_event_queue_v1.json").writeText(stored.toString())
 
         assertEquals(
             listOf("widgetRemoved:1", "widgetRemoved:2"),

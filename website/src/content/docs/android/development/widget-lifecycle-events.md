@@ -84,6 +84,8 @@ Each event is delivered at most once: not again after a JavaScript reload or the
 
 The queue keeps lifecycle events for 7 days and holds at most 200 events, dropping the oldest.
 
+The queue is not part of your app's backup, and you don't need to configure anything for that. Events still waiting when a backup is taken are not restored, on the same device or another one.
+
 ## Reconcile with getActiveWidgets() first
 
 Treat the events as hints. `getActiveWidgets()` is the source of truth for which placements exist. At startup, read it and bring your app-side state in line with it, then let the events keep that state current:
