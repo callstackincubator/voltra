@@ -70,7 +70,10 @@ internal class VoltraConfigurationStore(
             } else {
                 readPrefixed(snapshot, instanceKeyPrefix(widgetId, appWidgetId))
             }
-        return resolveDynamicParameters(loadDefaults(widgetId) + typeValues + instanceValues, readOptions(snapshot, widgetId))
+        return resolveDynamicParameters(
+            loadDefaults(widgetId) + typeValues + instanceValues,
+            readOptions(snapshot, widgetId),
+        )
     }
 
     /**
@@ -88,7 +91,8 @@ internal class VoltraConfigurationStore(
     }
 
     /** Each dynamic parameter of [widgetId] with its stored choices, as (value, title) pairs. */
-    suspend fun options(widgetId: String): Map<String, List<Pair<String, String>>> = readOptions(dataStore.data.first(), widgetId)
+    suspend fun options(widgetId: String): Map<String, List<Pair<String, String>>> =
+        readOptions(dataStore.data.first(), widgetId)
 
     private fun readOptions(
         snapshot: Preferences,
@@ -96,7 +100,12 @@ internal class VoltraConfigurationStore(
     ): Map<String, List<Pair<String, String>>> =
         readPrefixed(snapshot, optionsKeyPrefix(widgetId)).mapValues { (_, json) ->
             val array = JSONArray(json)
-            List(array.length()) { array.getJSONObject(it).let { option -> option.getString("value") to option.getString("title") } }
+            List(array.length()) {
+                array.getJSONObject(it).let { option ->
+                    option.getString("value") to
+                        option.getString("title")
+                }
+            }
         }
 
     // As on iOS: no pick, or a pick no longer offered, means the first choice; no choices, no value.

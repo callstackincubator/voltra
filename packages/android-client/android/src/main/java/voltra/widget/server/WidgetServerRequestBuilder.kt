@@ -91,11 +91,12 @@ object WidgetServerRequestBuilder {
             return null
         }
 
+        val url = settings.url?.let { fillPlaceholders(it, configuration) } ?: return null
         val method = settings.method.uppercase()
 
         val builder =
             Uri
-                .parse(settings.url)
+                .parse(url)
                 .buildUpon()
                 .appendQueryParameter("widgetId", scope.widgetId)
                 .appendQueryParameter("platform", "android")

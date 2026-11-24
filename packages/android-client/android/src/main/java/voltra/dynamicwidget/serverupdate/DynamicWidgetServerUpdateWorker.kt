@@ -111,7 +111,9 @@ class DynamicWidgetServerUpdateWorker(
             // `{name}` in the URL is this instance's value, so each instance fetches its own.
             resolveSettings = { widgetScope ->
                 val settings = resolver.resolve(widgetScope)
-                settings.copy(url = settings.url?.let { WidgetServerRequestBuilder.fillPlaceholders(it, configuration) })
+                settings.copy(
+                    url = settings.url?.let { WidgetServerRequestBuilder.fillPlaceholders(it, configuration) },
+                )
             },
             currentRevision = { resolver.revision(it) },
             readEtag = { widgetScope, url -> etags.etag(widgetScope, url) },
