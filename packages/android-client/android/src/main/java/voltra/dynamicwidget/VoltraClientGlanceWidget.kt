@@ -253,7 +253,7 @@ class VoltraClientGlanceWidget(
                 family = widgetFamily(size),
                 isDev = isDynamicWidgetDev(context),
                 bundleState = DynamicWidgetBundleRecord.get(widgetId),
-                render = { renderNode(context, size, configuration, dynamicWidgetRenderInput) },
+                render = { renderNode(context, size, configuration, appWidgetId, dynamicWidgetRenderInput) },
                 lastGoodStore = lastGoodStore,
                 parseNode = ::parseNode,
                 placeholder = { placeholderNode(context) },
@@ -317,15 +317,21 @@ class VoltraClientGlanceWidget(
         context: Context,
         size: DpSize,
         configuration: Map<String, String>,
+        appWidgetId: Int?,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
     ): DynamicWidgetRenderOutcome {
         val envJson = buildEnvJson(context, widgetId, size, configuration, environmentSource)
         val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
-        return dynamicWidgetRenderCoordinator.renderDynamicWidget(
-            dynamicWidgetId = widgetId,
-            dynamicWidgetRenderInput = dynamicWidgetRenderInput,
-            dynamicWidgetEnvironmentJson = envJson,
-        )
+        val outcome =
+            dynamicWidgetRenderCoordinator.renderDynamicWidget(
+                dynamicWidgetId = widgetId,
+                dynamicWidgetRenderInput = dynamicWidgetRenderInput,
+                dynamicWidgetEnvironmentJson = envJson,
+            )
+        if (outcome is DynamicWidgetRenderOutcome.Success) {
+            DynamicWidgetTimelineAlarm.schedule(context, widgetId, appWidgetId, dynamicWidgetRenderInput.propsJson)
+        }
+        return outcome
     }
 
     /**

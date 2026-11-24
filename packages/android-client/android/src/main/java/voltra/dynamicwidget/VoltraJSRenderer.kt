@@ -1,6 +1,7 @@
 package voltra.dynamicwidget
 
 import android.util.Log
+import org.json.JSONArray
 
 /**
  * Standalone Hermes runtime for Voltra **Dynamic Widgets**.
@@ -89,11 +90,17 @@ internal object VoltraJSRenderer {
                     append('\n')
                     append(";(function () {\n")
                     append("  if (!globalThis.__voltraWidgets) { globalThis.__voltraWidgets = {}; }\n")
-                    append("  globalThis.__voltraWidgets[")
-                    append(jsStringLiteral(widgetId))
-                    append("] = __r(")
+                    append("  var widget = __r(")
                     append(entryModuleId)
                     append(");\n")
+                    append("  globalThis.__voltraWidgets[")
+                    append(jsStringLiteral(widgetId))
+                    append("] = widget;\n")
+                    // nativeRender calls an entry's `render`, so timeline() gets an entry of its own
+                    // rather than a second JNI function.
+                    append("  globalThis.__voltraWidgets[")
+                    append(jsStringLiteral(timelineEntryId(widgetId)))
+                    append("] = { render: widget.timeline };\n")
                     append("})();\n")
                 }
             try {
@@ -135,6 +142,24 @@ internal object VoltraJSRenderer {
                 throw VoltraJSException(t.toString(), null)
             }
         }
+
+    /**
+     * The epoch-ms dates the widget's optional `timeline(props)` export wants it drawn again at,
+     * the Android twin of iOS `timelineDates(widgetId:propsJSON:)`. No export, a throw or a
+     * non-array all mean no dates.
+     */
+    fun timelineDates(
+        widgetId: String,
+        propsJSON: String,
+    ): List<Long> =
+        try {
+            val dates = JSONArray(render(timelineEntryId(widgetId), propsJSON, "{}"))
+            List(dates.length()) { dates.optLong(it) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+    private fun timelineEntryId(widgetId: String): String = "$widgetId#timeline"
 
     /**
      * Find the entry module id Metro emitted in the bundle's trailing `__r(<id>);`. Every

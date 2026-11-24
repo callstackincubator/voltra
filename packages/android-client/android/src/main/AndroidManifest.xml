@@ -17,5 +17,14 @@
                 <action android:name="android.intent.action.LOCALE_CHANGED" />
             </intent-filter>
         </receiver>
+        <!-- Redraws a Dynamic Widget at its entry's timeline(props) dates, and every one when the
+             clock is changed. TIME_SET is on the implicit-broadcast exception list. -->
+        <receiver
+            android:name="voltra.dynamicwidget.DynamicWidgetTimelineReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

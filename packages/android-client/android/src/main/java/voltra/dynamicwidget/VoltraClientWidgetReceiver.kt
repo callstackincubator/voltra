@@ -39,6 +39,14 @@ abstract class VoltraClientWidgetReceiver : VoltraWidgetReceiver() {
     ) {
         super.onDeleted(context, appWidgetIds)
         DynamicWidgetPlacementData.onDeleted(context, widgetId, appWidgetIds)
+        // Removed placements stop redrawing at the widget's `timeline(props)` dates.
+        appWidgetIds.forEach { DynamicWidgetTimelineAlarm.cancel(context, widgetId, it) }
+    }
+
+    /** The last placement is gone, including any drawn without a known appWidgetId. */
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        DynamicWidgetTimelineAlarm.cancel(context, widgetId, null)
     }
 
     /**

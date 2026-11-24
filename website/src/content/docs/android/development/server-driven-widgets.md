@@ -221,6 +221,24 @@ curl "https://api.example.com/widgets/portfolio?widgetId=portfolio&platform=andr
 
 Returning a rendered Voltra payload from an endpoint whose widget has an `entry` is rejected with a log line naming the mismatch. The widget has an entry, so it wants the data, not the picture.
 
+### Changing at known times between fetches
+
+A widget that fetches props is drawn once per fetch, and WorkManager spaces periodic fetches 15 minutes or more apart. When the props already say when the widget has to change, such as a countdown that ends or the next item of a schedule starting, export `timeline` from the widget entry. It receives the current props and returns the times, as epoch milliseconds, to draw the widget at:
+
+```tsx
+export function timeline(props: { departures?: { at: number }[] }): number[] {
+  return (props.departures ?? []).map((departure) => departure.at)
+}
+
+export default function DeparturesWidget(props, env) {
+  const now = env.date.valueOf()
+  const next = props.departures?.find((departure) => departure.at > now)
+  // ...
+}
+```
+
+After each render, Voltra schedules one non-waking, inexact `AlarmManager.RTC` alarm per placement for the earliest future time returned by `timeline(props)` (requiring no exact-alarm permission). When that alarm fires, the widget redraws with `env.date` set to the current time and schedules the next date. Changing the device clock (`TIME_SET`) redraws all Dynamic Widgets so pending alarms are recalculated, and removing a placement cancels its alarm. Without a `timeline` export, the widget is drawn once per fetch, as before.
+
 ### Telling fresh data from stale
 
 The widget is never blanked by a failed fetch: it keeps rendering the last props that arrived, whether from the server or from `updateAndroidDynamicWidget`. `env.serverUpdate` says which:
