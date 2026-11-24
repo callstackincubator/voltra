@@ -282,6 +282,30 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     expect(swift).toContain('configuration: ["units": "imperial"])')
   })
 
+  it('turns dynamicOptions into an AppEntity whose query reads the choices the app set', () => {
+    const swift = __test__.generateWidgetBundleSwift([
+      {
+        ...configurableWidget,
+        id: 'masjid_times',
+        serverUpdate: { url: 'https://api.example.com/masjids/{masjid}/widget', intervalMinutes: 15, refresh: false },
+        appIntent: { parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true }] },
+      },
+    ])
+
+    expect(swift).toContain('struct VoltraWidget_masjid_times_masjid_Choice: AppEntity {')
+    expect(swift).toContain('struct VoltraWidget_masjid_times_masjid_ChoiceQuery: EntityQuery {')
+    expect(swift).toContain(
+      'VoltraWidgetDefaults.widgetParameterOptions(widgetId: "masjid_times", parameter: "masjid")'
+    )
+    expect(swift).toContain('DisplayRepresentation(title: "\\(title)")')
+    // No code default: the parameter is nil until picked, and falls back to the first choice.
+    expect(swift).toMatch(/@Parameter\(title: "Masjid"\)\s*var masjid: VoltraWidget_masjid_times_masjid_Choice\?/)
+    expect(swift).toContain(
+      '["masjid": (configuration.masjid?.id ?? VoltraWidget_masjid_times_masjid_ChoiceQuery().fallbackValue())]'
+    )
+    expect(swift).toContain('configuration: ["masjid": ""])')
+  })
+
   it('does NOT emit AppIntent code for a client widget without appIntent', () => {
     const swift = __test__.generateWidgetBundleSwift([plainClientWidget])
     expect(swift).toContain('VoltraClientWidgetProvider(')

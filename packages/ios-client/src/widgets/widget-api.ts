@@ -27,6 +27,25 @@ export const reloadWidgets = async (widgetIds?: string[]): Promise<void> => {
   return getNativeVoltra().reloadWidgets(widgetIds ?? null)
 }
 
+/**
+ * Sets the choices the Edit Widget sheet lists for a widget's `dynamicOptions` parameter, such as
+ * the places a user follows. The chosen option's `value` reaches the widget as
+ * `env.configuration[parameter]` and fills `{parameter}` in its `serverUpdate` URL. A placement
+ * whose choice is no longer listed falls back to the first option, and with no options it has no
+ * value. The widget reloads once the options are stored. Requires `groupIdentifier`.
+ */
+export const setWidgetParameterOptions = async (
+  widgetId: string,
+  parameter: string,
+  options: WidgetParameterOption[]
+): Promise<void> => {
+  if (!assertRunningOnApple()) return Promise.resolve()
+
+  return getNativeVoltra().setWidgetParameterOptions(widgetId, parameter, JSON.stringify(options))
+}
+
+export type WidgetParameterOption = { value: string; title: string }
+
 export const clearWidget = async (widgetId: string): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 

@@ -101,7 +101,13 @@ export function validateWidgetConfigurationCopy(
     if (typeof parameter !== 'object' || parameter === null) {
       throw new Error(`Widget '${widgetId}': ${context} must be an object`)
     }
-    const { name, title, default: defaultValue, options: parameterOptions } = parameter as Record<string, unknown>
+    const {
+      name,
+      title,
+      default: defaultValue,
+      options: parameterOptions,
+      dynamicOptions,
+    } = parameter as Record<string, unknown>
 
     if (typeof name !== 'string' || !name) {
       throw new Error(`Widget '${widgetId}': ${context}.name must be a non-empty string`)
@@ -126,6 +132,20 @@ export function validateWidgetConfigurationCopy(
 
     if (defaultValue !== undefined && typeof defaultValue !== 'string') {
       throw new Error(`Widget '${widgetId}': appIntent parameter '${name}' default must be a string`)
+    }
+
+    if (dynamicOptions !== undefined && typeof dynamicOptions !== 'boolean') {
+      throw new Error(`Widget '${widgetId}': appIntent parameter '${name}' dynamicOptions must be a boolean`)
+    }
+    if (dynamicOptions === true) {
+      // The app supplies the choices at runtime with setWidgetParameterOptions, and the first one is
+      // the default, so neither can be declared here.
+      if (parameterOptions !== undefined || defaultValue !== undefined) {
+        throw new Error(
+          `Widget '${widgetId}': appIntent parameter '${name}' has dynamicOptions, so it cannot also declare options or a default`
+        )
+      }
+      continue
     }
 
     if (parameterOptions === undefined) {

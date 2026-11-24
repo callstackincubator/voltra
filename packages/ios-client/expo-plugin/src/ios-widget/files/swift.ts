@@ -391,6 +391,54 @@ function sheetStringLiteral(label: WidgetLabel, key: string): string {
   return `"${escapeForSwiftStringLiteral(isWidgetLocalizedMap(label) ? key : label)}"`
 }
 
+function dynamicOptionEntityName(widgetId: string, parameterName: string): string {
+  return `VoltraWidget_${widgetId}_${parameterName}_Choice`
+}
+
+/**
+ * A `dynamicOptions` parameter lists choices the app sets at runtime with
+ * `setWidgetParameterOptions`, so it becomes an `AppEntity` whose query reads them from the App
+ * Group. The first choice is the default, and a placement whose choice went away falls back to it.
+ */
+function generateDynamicOptionEntity(widgetId: string, parameter: AppIntentParameter): string {
+  const entityName = dynamicOptionEntityName(widgetId, parameter.name)
+  const typeTitle = sheetStringLiteral(parameter.title, widgetParameterTitleKey(widgetId, parameter.name))
+
+  return [
+    '@available(iOS 17.0, *)',
+    `struct ${entityName}: AppEntity {`,
+    '  let id: String',
+    '  let title: String',
+    '',
+    `  static var typeDisplayRepresentation: TypeDisplayRepresentation = ${typeTitle}`,
+    `  static var defaultQuery = ${entityName}Query()`,
+    '',
+    '  var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\\(title)") }',
+    '}',
+    '',
+    '@available(iOS 17.0, *)',
+    `struct ${entityName}Query: EntityQuery {`,
+    `  func entities(for identifiers: [String]) async throws -> [${entityName}] {`,
+    '    choices().filter { identifiers.contains($0.id) }',
+    '  }',
+    '',
+    `  func suggestedEntities() async throws -> [${entityName}] { choices() }`,
+    '',
+    `  func defaultResult() async -> ${entityName}? { choices().first }`,
+    '',
+    '  /// The value a placement gets when its choice is gone, or "" when there are no choices.',
+    '  func fallbackValue() -> String { choices().first?.id ?? "" }',
+    '',
+    `  private func choices() -> [${entityName}] {`,
+    `    VoltraWidgetDefaults.widgetParameterOptions(widgetId: "${escapeForSwiftStringLiteral(
+      widgetId
+    )}", parameter: "${escapeForSwiftStringLiteral(parameter.name)}")`,
+    `      .map { ${entityName}(id: $0.value, title: $0.title) }`,
+    '  }',
+    '}',
+  ].join('\n')
+}
+
 function parameterOptionEnumName(widgetId: string, parameterName: string): string {
   return `VoltraWidget_${widgetId}_${parameterName}_Option`
 }
@@ -453,30 +501,43 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
 
   const hasOptions = (p: AppIntentParameter) => (p.options?.length ?? 0) > 0
-  // The raw default, as env.configuration sees it before the user configures anything.
+  const hasDynamicOptions = (p: AppIntentParameter) => p.dynamicOptions === true
+  // The raw default, as env.configuration sees it before the user configures anything. A
+  // dynamicOptions placeholder only renders before the app has set any choices.
   const swiftDefault = (p: AppIntentParameter) =>
-    hasOptions(p)
+    hasDynamicOptions(p)
+      ? '""'
+      : hasOptions(p)
       ? `"${escapeForSwiftStringLiteral(p.options![defaultOptionIndex(p)]!.value)}"`
       : `"${escapeForSwiftStringLiteral(p.default ?? '')}"`
-  const swiftType = (p: AppIntentParameter) => (hasOptions(p) ? parameterOptionEnumName(widget.id, p.name) : 'String')
+  const swiftType = (p: AppIntentParameter) =>
+    hasDynamicOptions(p)
+      ? `${dynamicOptionEntityName(widget.id, p.name)}?`
+      : hasOptions(p)
+      ? parameterOptionEnumName(widget.id, p.name)
+      : 'String'
   const parameterDefault = (p: AppIntentParameter) =>
     hasOptions(p) ? `.option${defaultOptionIndex(p)}` : swiftDefault(p)
+  // An entity parameter has no code default: it is nil until the user picks, and when the picked
+  // choice is no longer offered, so both fall back to the first choice.
   const configuredValue = (p: AppIntentParameter) =>
-    hasOptions(p) ? `configuration.${p.name}.rawValue` : `configuration.${p.name}`
+    hasDynamicOptions(p)
+      ? `(configuration.${p.name}?.id ?? ${dynamicOptionEntityName(widget.id, p.name)}Query().fallbackValue())`
+      : hasOptions(p)
+      ? `configuration.${p.name}.rawValue`
+      : `configuration.${p.name}`
   const dictLiteral = (entries: string[]) => (entries.length > 0 ? `[${entries.join(', ')}]` : '[:]')
 
-  const optionEnums = params
-    .filter(hasOptions)
-    .map((p) => generateParameterOptionEnum(widget.id, p))
-    .join('\n\n')
+  const optionEnums = [
+    ...params.filter(hasOptions).map((p) => generateParameterOptionEnum(widget.id, p)),
+    ...params.filter(hasDynamicOptions).map((p) => generateDynamicOptionEntity(widget.id, p)),
+  ].join('\n\n')
   const paramDecls = params
-    .map(
-      (p) =>
-        `  @Parameter(title: ${sheetStringLiteral(
-          p.title,
-          widgetParameterTitleKey(widget.id, p.name)
-        )}, default: ${parameterDefault(p)})\n  var ${p.name}: ${swiftType(p)}`
-    )
+    .map((p) => {
+      const title = sheetStringLiteral(p.title, widgetParameterTitleKey(widget.id, p.name))
+      const defaultArgument = hasDynamicOptions(p) ? '' : `, default: ${parameterDefault(p)}`
+      return `  @Parameter(title: ${title}${defaultArgument})\n  var ${p.name}: ${swiftType(p)}`
+    })
     .join('\n\n')
   const initParams = params.map((p) => `${p.name}: ${swiftType(p)}`).join(', ')
   const initBody = params.map((p) => `    self.${p.name} = ${p.name}`).join('\n')

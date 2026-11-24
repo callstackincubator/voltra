@@ -31,6 +31,24 @@ public enum WidgetServerRequestBuilder {
   /// going to be useful even if it eventually does.
   public static let timeoutSeconds: TimeInterval = 15
 
+  /// Fills each `{name}` in the URL with that configuration value, percent-encoded, so one widget
+  /// can fetch a different resource per placement (`/masjids/{masjid}/widget`). nil when a
+  /// placeholder has no value, as with a placement whose choice has not been made or went away:
+  /// there is then nothing to fetch.
+  static func fillPlaceholders(in url: String, from configuration: [String: String]) -> String? {
+    var filled = url
+    while let open = filled.range(of: "{"), let close = filled.range(of: "}", range: open.upperBound ..< filled.endIndex) {
+      let name = String(filled[open.upperBound ..< close.lowerBound])
+      guard let value = configuration[name], !value.isEmpty,
+            let encoded = value.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/")))
+      else {
+        return nil
+      }
+      filled.replaceSubrange(open.lowerBound ..< close.upperBound, with: encoded)
+    }
+    return filled
+  }
+
   /// - Parameter etag: from the last `200`, sent as `If-None-Match`. Callers pass nil when the
   ///   stored ETag belongs to a different URL than the one being fetched now.
   /// - Returns: nil when there is nothing to fetch — no URL, fetching is off, or the URL will not
@@ -46,7 +64,10 @@ public enum WidgetServerRequestBuilder {
     // back into the configuration that produced it.
     configuration: [String: String] = [:]
   ) -> URLRequest? {
-    guard settings.shouldFetch, let url = settings.url, var components = URLComponents(string: url) else {
+    guard settings.shouldFetch,
+          let url = settings.url.flatMap({ fillPlaceholders(in: $0, from: configuration) }),
+          var components = URLComponents(string: url)
+    else {
       return nil
     }
 

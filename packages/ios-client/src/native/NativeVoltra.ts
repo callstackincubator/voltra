@@ -157,6 +157,7 @@ export interface Spec extends TurboModule {
   updateWidget(widgetId: string, jsonString: string, options: UpdateWidgetOptions): Promise<void>
   scheduleWidget(widgetId: string, timelineJson: string): Promise<void>
   reloadWidgets(widgetIds?: string[] | null): Promise<void>
+  setWidgetParameterOptions(widgetId: string, parameter: string, optionsJson: string): Promise<void>
   clearWidget(widgetId: string): Promise<void>
   clearAllWidgets(): Promise<void>
   getActiveWidgets<T = unknown>(): Promise<T[]>

@@ -278,6 +278,22 @@ public enum VoltraErrors: Error, CustomNSError {
     }
   }
 
+  @objc public func setWidgetParameterOptions(
+    _ widgetId: String,
+    parameter: String,
+    optionsJson: String,
+    completion: @escaping (Error?) -> Void
+  ) {
+    Task {
+      do {
+        try await impl.setWidgetParameterOptions(widgetId: widgetId, parameter: parameter, optionsJson: optionsJson)
+        completion(nil)
+      } catch {
+        completion(error)
+      }
+    }
+  }
+
   @objc public func updateWidget(
     _ widgetId: String,
     jsonString: String,

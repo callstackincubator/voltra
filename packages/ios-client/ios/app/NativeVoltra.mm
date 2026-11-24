@@ -416,6 +416,24 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
   }];
 }
 
+- (void)setWidgetParameterOptions:(NSString *)widgetId
+                        parameter:(NSString *)parameter
+                      optionsJson:(NSString *)optionsJson
+                          resolve:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module setWidgetParameterOptions:widgetId
+                               parameter:parameter
+                             optionsJson:optionsJson
+                              completion:^(NSError *error) {
+    if (error) {
+      reject(@"setWidgetParameterOptions", error.localizedDescription, error);
+    } else {
+      resolve(nil);
+    }
+  }];
+}
+
 - (void)scheduleWidget:(NSString *)widgetId
           timelineJson:(NSString *)timelineJson
                resolve:(RCTPromiseResolveBlock)resolve

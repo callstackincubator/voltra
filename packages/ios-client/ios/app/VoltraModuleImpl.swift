@@ -407,6 +407,14 @@ public class VoltraModuleImpl {
     await VoltraDynamicLiveActivityRegistry.shared.reload(definitionIds: nil)
   }
 
+  /// Stores the choices of a widget's `dynamicOptions` Edit Widget parameter and reloads that
+  /// widget, so a placement whose choice went away falls back to the first one at once.
+  func setWidgetParameterOptions(widgetId: String, parameter: String, optionsJson: String) async throws {
+    let options = try JSONDecoder().decode([WidgetParameterOption].self, from: Data(optionsJson.utf8))
+    try VoltraWidgetDefaults.setWidgetParameterOptions(options, widgetId: widgetId, parameter: parameter)
+    VoltraWidgetService.reloadTimeline(for: widgetId)
+  }
+
   func updateWidget(widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws {
     try VoltraWidgetService.setWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
 

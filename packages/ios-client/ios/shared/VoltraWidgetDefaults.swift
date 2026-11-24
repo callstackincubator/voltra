@@ -54,6 +54,18 @@ public enum VoltraWidgetDefaults {
     return tag
   }
 
+  /// The choices the app last set with `setWidgetParameterOptions` for a `dynamicOptions` Edit
+  /// Widget parameter, in the app's order. Empty when it has set none, or without an App Group.
+  public static func widgetParameterOptions(widgetId: String, parameter: String) -> [WidgetParameterOption] {
+    guard let json = try? resolvedDefaults().string(forKey: VoltraStorageKeys.widgetParameterOptions(widgetId, parameter: parameter)),
+          let data = json.data(using: .utf8),
+          let options = try? JSONDecoder().decode([WidgetParameterOption].self, from: data)
+    else {
+      return []
+    }
+    return options
+  }
+
   // MARK: - Write
 
   public static func setWidgetJson(_ json: String, for widgetId: String, deepLinkUrl: String?) throws {
@@ -105,6 +117,16 @@ public enum VoltraWidgetDefaults {
     } else {
       defaults.removeObject(forKey: VoltraStorageKeys.dynamicWidgetLocale)
     }
+    defaults.synchronize()
+  }
+
+  /// Stores the choices of a `dynamicOptions` Edit Widget parameter, read by the generated
+  /// `EntityQuery` in the widget extension. Throws `WidgetError.appGroupNotConfigured` without a
+  /// `groupIdentifier`, since the extension could never read them.
+  public static func setWidgetParameterOptions(_ options: [WidgetParameterOption], widgetId: String, parameter: String) throws {
+    let defaults = try resolvedDefaults()
+    let data = try JSONEncoder().encode(options)
+    defaults.set(String(decoding: data, as: UTF8.self), forKey: VoltraStorageKeys.widgetParameterOptions(widgetId, parameter: parameter))
     defaults.synchronize()
   }
 

@@ -176,4 +176,52 @@ final class WidgetServerRequestBuilderTests: XCTestCase {
       "query key 'configuration' is reserved by Voltra and is sent on every request"
     )
   }
+
+  func testFillsAPlaceholderFromThePlacementsConfiguration() throws {
+    let request = try XCTUnwrap(WidgetServerRequestBuilder.build(
+      scope: scope,
+      settings: settings(url: "https://api.example.com/masjids/{masjid}/widget"),
+      context: context(),
+      configuration: ["masjid": "42"]
+    ))
+
+    XCTAssertEqual(request.url?.path, "/masjids/42/widget")
+  }
+
+  func testEncodesAFilledValueAsOnePathSegment() {
+    let url = WidgetServerRequestBuilder.fillPlaceholders(
+      in: "https://api.example.com/places/{place}",
+      from: ["place": "a/b c?d"]
+    )
+
+    XCTAssertEqual(url, "https://api.example.com/places/a%2Fb%20c%3Fd")
+  }
+
+  func testFillsEveryPlaceholder() {
+    let url = WidgetServerRequestBuilder.fillPlaceholders(
+      in: "https://api.example.com/{team}/{season}",
+      from: ["team": "red", "season": "2026"]
+    )
+
+    XCTAssertEqual(url, "https://api.example.com/red/2026")
+  }
+
+  func testBuildsNoRequestWhenAPlaceholderHasNoValue() {
+    let templated = settings(url: "https://api.example.com/masjids/{masjid}/widget")
+
+    XCTAssertNil(WidgetServerRequestBuilder.build(scope: scope, settings: templated, context: context()))
+    XCTAssertNil(WidgetServerRequestBuilder.build(
+      scope: scope,
+      settings: templated,
+      context: context(),
+      configuration: ["masjid": ""]
+    ))
+  }
+
+  func testLeavesAURLWithoutPlaceholdersAsItIs() {
+    XCTAssertEqual(
+      WidgetServerRequestBuilder.fillPlaceholders(in: "https://api.example.com/widgets/portfolio", from: [:]),
+      "https://api.example.com/widgets/portfolio"
+    )
+  }
 }
