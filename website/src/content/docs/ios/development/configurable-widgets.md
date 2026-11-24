@@ -139,6 +139,25 @@ Choice titles come from the app, so they are not translated by Voltra. The param
 
 For a server-driven widget, put `{team}` in the `serverUpdate` URL to fetch each placement's own data. See [Per-instance requests](/ios/development/server-driven-widgets#per-instance-requests).
 
+## Keep choices when moving an existing widget to Voltra
+
+iOS saves each placed widget's Edit Widget choices under the Swift type names of its `WidgetConfigurationIntent` and of the `AppEntity` values in it. Voltra generates its own names, `VoltraWidget_<id>_Intent` and `VoltraWidget_<id>_<name>_Choice`, so a widget you move from hand-written WidgetKit code to Voltra loses every choice users made, and each placement shows its default. Keep the widget's `kind` and extension first (see [Keeping the kind of an existing widget](/ios/api/plugin-configuration#keeping-the-kind-of-an-existing-widget)), then name the types after the old ones:
+
+```json
+"appIntent": {
+  "intentName": "SelectMasjidConfigurationAppIntent",
+  "parameters": [
+    { "name": "masjid", "title": "Masjid", "dynamicOptions": true, "entityName": "FollowedMasjid" }
+  ]
+}
+```
+
+- `intentName` names the intent. `entityName` names a `dynamicOptions` parameter's entity, and its query becomes `<entityName>Query`.
+- Widgets that used one intent can share it again: widgets with the same names use one intent and one entity, generated once. They must declare the same parameters, and a shared entity lists the choices set for the first of them.
+- The parameter `name` must match the old intent's property name too.
+
+The old entity's `id` type and the extension's module name don't have to match: a widget whose old entity had an `Int` id, in an extension with another module name, kept its choice after updating to the Voltra build.
+
 ## Translate the Edit Widget sheet
 
 iOS draws the Edit Widget sheet itself, so its text comes from `app.json` rather than from your widget code. `title` and `options[].title` accept locale maps, the same way `displayName` does. The sheet header shows the widget's `displayName`, so translate it the same way:

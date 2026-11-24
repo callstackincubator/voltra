@@ -306,6 +306,41 @@ describe('generateWidgetBundleSwift — AppIntent configuration', () => {
     expect(swift).toContain('configuration: ["masjid": ""])')
   })
 
+  it('names the intent and entity after a pre-Voltra widget, generating each once for widgets that share them', () => {
+    const appIntent = {
+      intentName: 'SelectMasjidConfigurationAppIntent',
+      parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true, entityName: 'FollowedMasjid' }],
+    }
+    const swift = __test__.generateWidgetBundleSwift([
+      { ...configurableWidget, id: 'prayer_times', appIntent },
+      { ...configurableWidget, id: 'prayer_times_lock_screen', appIntent },
+    ])
+    const count = (text: string) => swift.split(text).length - 1
+
+    expect(count('struct SelectMasjidConfigurationAppIntent: WidgetConfigurationIntent {')).toBe(1)
+    expect(count('struct FollowedMasjid: AppEntity {')).toBe(1)
+    expect(count('struct FollowedMasjidQuery: EntityQuery {')).toBe(1)
+    expect(count('intent: SelectMasjidConfigurationAppIntent.self')).toBe(2)
+    expect(count('typealias Intent = SelectMasjidConfigurationAppIntent')).toBe(2)
+    expect(swift).toMatch(/@Parameter\(title: "Masjid"\)\s*var masjid: FollowedMasjid\?/)
+    expect(swift).toContain('(configuration.masjid?.id ?? FollowedMasjidQuery().fallbackValue())')
+    expect(swift).not.toContain('VoltraWidget_prayer_times_Intent')
+    expect(swift).not.toContain('_masjid_Choice')
+  })
+
+  it('keeps the generated names per widget when no intent or entity name is set', () => {
+    const appIntent = { parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true }] }
+    const swift = __test__.generateWidgetBundleSwift([
+      { ...configurableWidget, id: 'first', appIntent },
+      { ...configurableWidget, id: 'second', appIntent },
+    ])
+
+    for (const id of ['first', 'second']) {
+      expect(swift).toContain(`struct VoltraWidget_${id}_Intent: WidgetConfigurationIntent {`)
+      expect(swift).toContain(`struct VoltraWidget_${id}_masjid_Choice: AppEntity {`)
+    }
+  })
+
   it('does NOT emit AppIntent code for a client widget without appIntent', () => {
     const swift = __test__.generateWidgetBundleSwift([plainClientWidget])
     expect(swift).toContain('VoltraClientWidgetProvider(')

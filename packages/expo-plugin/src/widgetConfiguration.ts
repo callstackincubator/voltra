@@ -94,6 +94,12 @@ export function validateWidgetConfigurationCopy(
   if (typeof appIntent !== 'object' || appIntent === null || !Array.isArray((appIntent as any).parameters)) {
     throw new Error(`Widget '${widgetId}': appIntent.parameters must be an array`)
   }
+  const { intentName } = appIntent as Record<string, unknown>
+  if (intentName !== undefined && !isSwiftTypeName(intentName)) {
+    throw new Error(
+      `Widget '${widgetId}': appIntent.intentName must start with a letter or underscore and contain only letters, digits and underscores`
+    )
+  }
 
   const names = new Set<string>()
   for (const [index, parameter] of (appIntent as { parameters: unknown[] }).parameters.entries()) {
@@ -107,6 +113,7 @@ export function validateWidgetConfigurationCopy(
       default: defaultValue,
       options: parameterOptions,
       dynamicOptions,
+      entityName,
     } = parameter as Record<string, unknown>
 
     if (typeof name !== 'string' || !name) {
@@ -136,6 +143,11 @@ export function validateWidgetConfigurationCopy(
 
     if (dynamicOptions !== undefined && typeof dynamicOptions !== 'boolean') {
       throw new Error(`Widget '${widgetId}': appIntent parameter '${name}' dynamicOptions must be a boolean`)
+    }
+    if (entityName !== undefined && (dynamicOptions !== true || !isSwiftTypeName(entityName))) {
+      throw new Error(
+        `Widget '${widgetId}': appIntent parameter '${name}' entityName needs dynamicOptions, and must start with a letter or underscore and contain only letters, digits and underscores`
+      )
     }
     if (dynamicOptions === true) {
       // The app supplies the choices at runtime with setWidgetParameterOptions, and the first one is
@@ -176,4 +188,8 @@ export function validateWidgetConfigurationCopy(
       )
     }
   }
+}
+
+function isSwiftTypeName(value: unknown): value is string {
+  return typeof value === 'string' && PARAMETER_NAME_PATTERN.test(value)
 }

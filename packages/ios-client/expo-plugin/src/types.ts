@@ -44,12 +44,25 @@ export interface AppIntentParameter {
    * `options`. The first one is the default, so a `default` cannot be declared alongside it.
    */
   dynamicOptions?: boolean
+  /**
+   * Swift type name of the `AppEntity` generated for a `dynamicOptions` parameter. Defaults to
+   * `VoltraWidget_<id>_<name>_Choice`. iOS saves a placed widget's choice under this name, so naming
+   * it after the entity of a widget the app shipped before Voltra keeps those choices.
+   */
+  entityName?: string
 }
 
 /**
  * AppIntent configuration for a user-configurable widget (iOS 17+).
  */
 export interface IOSWidgetAppIntentConfig {
+  /**
+   * Swift type name of the generated `WidgetConfigurationIntent`. Defaults to
+   * `VoltraWidget_<id>_Intent`. iOS saves a placed widget's configuration under this name, so naming
+   * it after the intent of a widget the app shipped before Voltra keeps those configurations. Widgets
+   * that use the same name share one intent, so they must declare the same parameters.
+   */
+  intentName?: string
   /** Parameters the user can edit via "Edit Widget"; surfaced as `env.configuration`. */
   parameters: AppIntentParameter[]
 }

@@ -88,6 +88,40 @@ describe('validateWidgetConfigurationCopy', () => {
     ).toThrow("appIntent parameter 'masjid' dynamicOptions must be a boolean")
   })
 
+  it('accepts intent and entity names that are Swift type names', () => {
+    const named = {
+      id: 'w',
+      appIntent: {
+        intentName: 'SelectMasjidConfigurationAppIntent',
+        parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true, entityName: 'FollowedMasjid' }],
+      },
+    }
+    expect(() => validateWidgetConfigurationCopy(named, { requireParameterTitle: true })).not.toThrow()
+  })
+
+  it('rejects an intent or entity name that is not a Swift type name, and an entity name without dynamicOptions', () => {
+    const withAppIntent = (appIntent: Record<string, unknown>) => ({ id: 'w', appIntent } as never)
+    const parameter = { name: 'masjid', title: 'Masjid', dynamicOptions: true }
+    const entityError = "appIntent parameter 'masjid' entityName needs dynamicOptions"
+
+    expect(() =>
+      validateWidgetConfigurationCopy(withAppIntent({ intentName: 'Select Masjid', parameters: [parameter] }), {
+        requireParameterTitle: true,
+      })
+    ).toThrow('appIntent.intentName must start with a letter or underscore')
+    expect(() =>
+      validateWidgetConfigurationCopy(withAppIntent({ parameters: [{ ...parameter, entityName: '1Masjid' }] }), {
+        requireParameterTitle: true,
+      })
+    ).toThrow(entityError)
+    expect(() =>
+      validateWidgetConfigurationCopy(
+        withAppIntent({ parameters: [{ name: 'masjid', title: 'Masjid', entityName: 'FollowedMasjid' }] }),
+        { requireParameterTitle: true }
+      )
+    ).toThrow(entityError)
+  })
+
   it('rejects duplicate option values, invalid names and bad locale maps', () => {
     const base = { id: 'w' }
     expect(() =>
