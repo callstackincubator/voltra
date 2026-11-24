@@ -223,6 +223,24 @@ One fetch serves every size and instance of the widget, so the request carries n
 
 Returning a rendered Voltra payload from an endpoint whose widget has an `entry` is rejected with a log line naming the mismatch. The widget has an entry, so it wants the data, not the picture.
 
+### Changing at known times between fetches
+
+A widget that fetches props is drawn once per fetch, and WidgetKit spaces fetches 15 minutes or more apart. When the props already say when the widget has to change, such as a countdown that ends or the next item of a schedule starting, export `timeline` from the widget entry. It receives the current props and returns the times, as epoch milliseconds, to draw the widget at:
+
+```tsx
+export function timeline(props: { departures?: { at: number }[] }): number[] {
+  return (props.departures ?? []).map((departure) => departure.at)
+}
+
+export default function DeparturesWidget(props, env) {
+  const now = env.date.valueOf()
+  const next = props.departures?.find((departure) => departure.at > now)
+  // ...
+}
+```
+
+Each future time becomes an entry in the widget's timeline, drawn with `env.date` set to that time, so the entry component picks what to show from `env.date` rather than from the clock. Past times are ignored, and at most 120 are kept. Entries are rendered only when WidgetKit shows them, so listing a time costs nothing until then. The next fetch replaces the whole timeline with one built from the new props. Without a `timeline` export the widget is drawn once per fetch, as before.
+
 ### Telling fresh data from stale
 
 The widget is never blanked by a failed fetch: it keeps rendering the last props that arrived, whether from the server or from `updateDynamicWidget`. `env.serverUpdate` says which:

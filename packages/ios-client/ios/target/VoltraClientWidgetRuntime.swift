@@ -69,6 +69,20 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     self.serverUpdateJSON = serverUpdateJSON
   }
 
+  /// The same entry, drawn at another date: WidgetKit shows it from `date` on, and the render sees
+  /// that date as `env.date`.
+  public func at(_ date: Date) -> VoltraClientWidgetEntry {
+    VoltraClientWidgetEntry(
+      date: date,
+      widgetId: widgetId,
+      bundleReady: bundleReady,
+      failure: failure,
+      configuration: configuration,
+      bundleSource: bundleSource,
+      serverUpdateJSON: serverUpdateJSON
+    )
+  }
+
   /// The same entry, told how the server side is doing.
   public func withServerUpdate(_ serverUpdateJSON: String?) -> VoltraClientWidgetEntry {
     VoltraClientWidgetEntry(

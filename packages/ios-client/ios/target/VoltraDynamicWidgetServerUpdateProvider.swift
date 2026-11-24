@@ -88,7 +88,26 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
     let entry = await localEntry(configuration: configuration)
     let nextUpdate = Date().addingTimeInterval(TimeInterval(nextIntervalMinutes * 60))
 
-    return Timeline(entries: [entry], policy: .after(nextUpdate))
+    return Timeline(entries: [entry] + upcomingEntries(after: entry, scope: scope), policy: .after(nextUpdate))
+  }
+
+  /// Most entries a timeline carries beyond the first. WidgetKit asks for a new timeline at the next
+  /// fetch anyway, so this only has to reach past that, and keeps the archived timeline small.
+  static let maxUpcomingEntries = 120
+
+  /// The same entry again at each date the widget's `timeline(props)` export asks to be drawn at, so it
+  /// changes on time between fetches, like a countdown passing an hour or a new day starting. Rendering
+  /// is lazy, so an entry costs a render only when WidgetKit shows it.
+  private func upcomingEntries(after entry: VoltraClientWidgetEntry, scope: WidgetScope) -> [VoltraClientWidgetEntry] {
+    guard entry.bundleReady else { return [] }
+
+    let propsJSON = DynamicWidgetPropsStore().dynamicWidgetProps(for: scope)
+    let upcomingDates = VoltraJSRenderer.timelineDates(widgetId: widgetId, propsJSON: propsJSON)
+      .filter { $0 > entry.date }
+      .sorted()
+      .prefix(Self.maxUpcomingEntries)
+
+    return upcomingDates.map { entry.at($0) }
   }
 
   /// Whether this timeline request should fetch, or ride on one that just happened.
