@@ -70,6 +70,11 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
 
     var nextIntervalMinutes = settings.intervalMinutes
 
+    // Loaded before the fetch, not after: the fetch trial-renders the new props, and in a freshly
+    // started extension process nothing has evaluated the bundle yet, so that render would fail with
+    // "no JSContext" and the props would never be committed.
+    let loadedEntry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: configuration)
+
     if await shouldFetch(scope) {
       let result = await runner(family: family, configuration: configuration).run(scope)
 
@@ -85,7 +90,7 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
       }
     }
 
-    let entry = await localEntry(configuration: configuration)
+    let entry = loadedEntry.withServerUpdate(DynamicWidgetServerPropsStore().status(for: scope).toJSON())
     let nextUpdate = Date().addingTimeInterval(TimeInterval(nextIntervalMinutes * 60))
 
     return Timeline(entries: [entry], policy: .after(nextUpdate))
