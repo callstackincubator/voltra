@@ -44,3 +44,48 @@ describe('configureAndroidManifest permissions', () => {
     expect(await notificationPermissions(true)).not.toContain('android.permission.USE_FULL_SCREEN_INTENT')
   })
 })
+
+describe('configureAndroidManifest configure activity', () => {
+  const runManifest = async (widgets: any[]) => {
+    const modResults: ManifestConfig = {
+      manifest: {
+        $: { 'xmlns:android': 'http://schemas.android.com/apk/res/android' },
+        'uses-permission': [],
+        application: [{ $: { 'android:name': '.MainApplication' } }],
+      },
+    }
+    const config = configureAndroidManifest({ mods: {} } as any, { enableNotifications: false, widgets })
+    const manifestMod = config.mods!.android!.manifest as (config: unknown) => Promise<unknown>
+    await manifestMod({ modResults, modRequest: {} })
+    return (modResults.manifest.application[0]?.activity as Array<{ $: Record<string, string> }> | undefined) ?? []
+  }
+
+  it('registers VoltraWidgetConfigureActivity when a widget uses dynamicOptions', async () => {
+    const activities = await runManifest([
+      {
+        id: 'masjid_times',
+        displayName: 'Prayer Times',
+        description: 'Prayer times',
+        targetCellWidth: 4,
+        targetCellHeight: 2,
+        appIntent: { parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true }] },
+      },
+    ])
+
+    expect(activities.map((a) => a.$['android:name'])).toEqual(['voltra.dynamicwidget.VoltraWidgetConfigureActivity'])
+  })
+
+  it('omits VoltraWidgetConfigureActivity when no widget uses dynamicOptions', async () => {
+    const activities = await runManifest([
+      {
+        id: 'plain',
+        displayName: 'Plain',
+        description: 'Plain',
+        targetCellWidth: 4,
+        targetCellHeight: 2,
+      },
+    ])
+
+    expect(activities).toEqual([])
+  })
+})

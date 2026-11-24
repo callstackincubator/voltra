@@ -24,6 +24,11 @@ export interface AppIntentParameter {
   default?: string
   /** Fixed values to pick from; titles are written as `…_param_<name>_option_<value>` strings. */
   options?: WidgetConfigurationOption[]
+  /**
+   * The app sets the values to pick from at runtime with `setWidgetParameterOptions`, in place of
+   * `options`. The first one is the default, so a `default` cannot be declared alongside it.
+   */
+  dynamicOptions?: boolean
 }
 
 export interface AndroidWidgetAppIntentConfig {

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 
@@ -69,7 +70,48 @@ internal class VoltraConfigurationStore(
             } else {
                 readPrefixed(snapshot, instanceKeyPrefix(widgetId, appWidgetId))
             }
-        return loadDefaults(widgetId) + typeValues + instanceValues
+        return resolveDynamicParameters(loadDefaults(widgetId) + typeValues + instanceValues, readOptions(snapshot, widgetId))
+    }
+
+    /**
+     * Store the choices of an `appIntent` parameter with `dynamicOptions`, a JSON array of
+     * `{ value, title }`. [get] resolves the parameter against them, so the render, the instance
+     * key and the server URL all see the same value.
+     */
+    suspend fun setOptions(
+        widgetId: String,
+        parameter: String,
+        optionsJson: String,
+    ) {
+        val prefKey = stringPreferencesKey(optionsKeyPrefix(widgetId) + parameter)
+        dataStore.edit { it[prefKey] = optionsJson }
+    }
+
+    /** Each dynamic parameter of [widgetId] with its stored choices, as (value, title) pairs. */
+    suspend fun options(widgetId: String): Map<String, List<Pair<String, String>>> = readOptions(dataStore.data.first(), widgetId)
+
+    private fun readOptions(
+        snapshot: Preferences,
+        widgetId: String,
+    ): Map<String, List<Pair<String, String>>> =
+        readPrefixed(snapshot, optionsKeyPrefix(widgetId)).mapValues { (_, json) ->
+            val array = JSONArray(json)
+            List(array.length()) { array.getJSONObject(it).let { option -> option.getString("value") to option.getString("title") } }
+        }
+
+    // As on iOS: no pick, or a pick no longer offered, means the first choice; no choices, no value.
+    private fun resolveDynamicParameters(
+        values: Map<String, String>,
+        options: Map<String, List<Pair<String, String>>>,
+    ): Map<String, String> {
+        val resolved = values.toMutableMap()
+        options.forEach { (parameter, choices) ->
+            if (choices.none { it.first == resolved[parameter] }) {
+                val first = choices.firstOrNull()?.first
+                if (first == null) resolved.remove(parameter) else resolved[parameter] = first
+            }
+        }
+        return resolved
     }
 
     /** Write one widget-type value: the default every placement without its own value renders. */
@@ -212,6 +254,8 @@ internal class VoltraConfigurationStore(
 
     private fun typeKeyPrefix(widgetId: String): String = "$TYPE_PREFIX$widgetId."
 
+    private fun optionsKeyPrefix(widgetId: String): String = "$OPTIONS_PREFIX$widgetId."
+
     private fun instanceKeyPrefix(
         widgetId: String,
         appWidgetId: Int,
@@ -224,6 +268,7 @@ internal class VoltraConfigurationStore(
         /** Unchanged since before the instance layer: stored values are never rewritten. */
         private const val TYPE_PREFIX = "voltra.config."
         private const val INSTANCE_PREFIX = "voltra.instance."
+        private const val OPTIONS_PREFIX = "voltra.options."
 
         @Volatile
         private var defaultsCache: Map<String, Map<String, String>>? = null

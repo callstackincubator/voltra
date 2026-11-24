@@ -21,6 +21,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.json.JSONArray
 import org.json.JSONObject
 import voltra.dynamicwidget.AndroidDynamicWidgetInstanceBoundary
 import voltra.dynamicwidget.DynamicWidgetInstanceRejection
@@ -487,6 +488,35 @@ class VoltraModule(
                 promise.resolve(null)
             } catch (e: Exception) {
                 Log.e(TAG, "setWidgetConfiguration failed", e)
+                promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
+            }
+        }
+    }
+
+    /**
+     * Store the choices of a `dynamicOptions` parameter and redraw every placement, which resolves
+     * its value against them, then reschedule fetches, since a placement's value may have moved.
+     */
+    override fun setWidgetParameterOptions(
+        widgetId: String,
+        parameter: String,
+        optionsJson: String,
+        promise: Promise,
+    ) {
+        runBlocking {
+            try {
+                // Read once here, so a bad shape is rejected now rather than thrown by every render.
+                val options = JSONArray(optionsJson)
+                for (i in 0 until options.length()) {
+                    options.getJSONObject(i).getString("value")
+                    options.getJSONObject(i).getString("title")
+                }
+                VoltraConfigurationStore(reactApplicationContext).setOptions(widgetId, parameter, optionsJson)
+                triggerDynamicWidgetConfigurationGlanceUpdate(reactApplicationContext, widgetId)
+                DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                Log.e(TAG, "setWidgetParameterOptions failed", e)
                 promise.reject("VOLTRA_WIDGET_CONFIG_ERROR", e.message, e)
             }
         }

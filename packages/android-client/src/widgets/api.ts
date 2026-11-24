@@ -69,6 +69,23 @@ export const setWidgetConfiguration = async (widgetId: string, key: string, valu
 }
 
 /**
+ * Sets the choices for a Dynamic Widget's `dynamicOptions` parameter, such as the places a user
+ * follows, and redraws its placements. The widget's configure screen lists them, and the picked
+ * `value` reaches the widget as `env.configuration[parameter]` and fills `{parameter}` in its
+ * `serverUpdate` URL. A placement with no pick, or whose pick is no longer listed, uses the first
+ * option, and with no options it has no value.
+ */
+export const setWidgetParameterOptions = async (
+  widgetId: string,
+  parameter: string,
+  options: WidgetParameterOption[]
+): Promise<void> => {
+  return getNativeVoltraAndroid().setWidgetParameterOptions(widgetId, parameter, JSON.stringify(options))
+}
+
+export type WidgetParameterOption = { value: string; title: string }
+
+/**
  * Read the configuration a Dynamic Widget's unconfigured placements render with: the defaults
  * declared in `appIntent.parameters`, overlaid with any values written by
  * {@link setWidgetConfiguration}. A placement's own values are not included — use

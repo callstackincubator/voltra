@@ -154,6 +154,14 @@ Configurations are meant for identifiers and short choices, not large payloads â
 
 A widget with no configuration parameters keeps behaving exactly as it did before: one request, one cached response, shared by every placement.
 
+To fetch a different endpoint per placement instead, put `{name}` in the URL. Each placement fills it with its own `env.configuration[name]`, encoded as one path segment:
+
+```json
+"serverUpdate": { "url": "https://api.example.com/teams/{team}/widget" }
+```
+
+A placement with no value for a placeholder fetches nothing, so it renders with no server props until one is set. Pair this with `dynamicOptions: true` on an `appIntent` parameter and `setWidgetParameterOptions(widgetId, parameter, options)` from `@use-voltra/android-client`: newly placed widgets default to the first choice, long-press **Reconfigure** (Android 12+) opens a native picker of the stored choices for that placement, and removing a picked choice falls back to the first choice.
+
 ## Returning data instead of UI
 
 Everything above assumes your server renders Voltra components and returns a UI payload, which means it has to run Node. If you give the widget an `entry`, it renders on the device instead and your server returns plain JSON â€” so it can be written in any language.

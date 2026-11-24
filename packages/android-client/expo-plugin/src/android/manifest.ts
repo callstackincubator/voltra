@@ -108,6 +108,30 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
       }
     }
 
+    const configureActivityName = 'voltra.dynamicwidget.VoltraWidgetConfigureActivity'
+    const hasDynamicOptions = widgets.some((widget) =>
+      widget.appIntent?.parameters?.some((parameter) => parameter.dynamicOptions === true)
+    )
+    if (
+      hasDynamicOptions &&
+      !(mainApplication.activity || []).some((activity: any) => activity.$?.['android:name'] === configureActivityName)
+    ) {
+      mainApplication.activity = mainApplication.activity || []
+      mainApplication.activity.push({
+        $: {
+          'android:name': configureActivityName,
+          'android:exported': 'true',
+          'android:excludeFromRecents': 'true',
+          'android:theme': '@android:style/Theme.Translucent.NoTitleBar',
+        },
+        'intent-filter': [
+          {
+            action: [{ $: { 'android:name': 'android.appwidget.action.APPWIDGET_CONFIGURE' } }],
+          },
+        ],
+      })
+    }
+
     return config
   })
 }
