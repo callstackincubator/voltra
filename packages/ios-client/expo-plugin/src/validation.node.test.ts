@@ -224,4 +224,71 @@ describe('validateIOSConfigPluginProps', () => {
     expect(getDynamicLiveActivityAttributesType('order_finished')).toBe('VoltraOrderFinishedLiveActivityAttributes')
     expect(getDynamicLiveActivityAttributesType('order__finished')).toBe('VoltraOrderFinishedLiveActivityAttributes')
   })
+
+  describe('shared intent and entity names', () => {
+    const masjid = { name: 'masjid', title: 'Masjid', dynamicOptions: true, entityName: 'FollowedMasjid' }
+    const widget = (id: string, appIntent: Record<string, unknown>) =>
+      ({ id, displayName: id, description: id, appIntent } as never)
+    const validate =
+      (...widgets: never[]) =>
+      () =>
+        validateIOSConfigPluginProps({ widgets })
+
+    it('accepts widgets that share an intent with the same parameters', () => {
+      const appIntent = { intentName: 'SelectMasjidIntent', parameters: [masjid] }
+      expect(validate(widget('a', appIntent), widget('b', appIntent))).not.toThrow()
+    })
+
+    it('rejects widgets that share an intent with different parameters', () => {
+      const shared = (parameters: unknown[]) => ({ intentName: 'SelectMasjidIntent', parameters })
+      const error = /share appIntent.intentName 'SelectMasjidIntent', so they must declare the same parameters/
+
+      expect(validate(widget('a', shared([masjid])), widget('b', shared([{ name: 'city', title: 'City' }])))).toThrow(
+        error
+      )
+      expect(
+        validate(widget('a', shared([masjid])), widget('b', shared([{ ...masjid, entityName: 'OtherMasjid' }])))
+      ).toThrow(error)
+      const units = (values: string[]) => ({
+        name: 'units',
+        title: 'Units',
+        options: values.map((value) => ({ value, title: value })),
+      })
+      expect(
+        validate(widget('a', shared([units(['metric'])])), widget('b', shared([units(['metric', 'imperial'])])))
+      ).toThrow(error)
+    })
+
+    it('rejects a dynamicOptions parameter without entityName in a shared intent', () => {
+      const appIntent = {
+        intentName: 'SelectMasjidIntent',
+        parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true }],
+      }
+      expect(validate(widget('a', appIntent), widget('b', appIntent))).toThrow(
+        "dynamicOptions parameter 'masjid' needs an entityName"
+      )
+    })
+
+    it('rejects an entity name used twice in one widget', () => {
+      const appIntent = { parameters: [masjid, { ...masjid, name: 'second' }] }
+      expect(validate(widget('a', appIntent))).toThrow(
+        "Widget 'a': two appIntent parameters use entityName 'FollowedMasjid'"
+      )
+    })
+
+    it('rejects a shared entity name on parameters with different names', () => {
+      expect(
+        validate(widget('a', { parameters: [masjid] }), widget('b', { parameters: [{ ...masjid, name: 'mosque' }] }))
+      ).toThrow("share entityName 'FollowedMasjid', so the parameter must have the same name")
+    })
+
+    it('rejects an intent name that is also an entity name or an entity query', () => {
+      const error = /and another intentName or entityName uses one of them/
+      expect(validate(widget('a', { intentName: 'FollowedMasjid', parameters: [masjid] }))).toThrow(error)
+      expect(validate(widget('a', { intentName: 'FollowedMasjidQuery', parameters: [masjid] }))).toThrow(error)
+      expect(
+        validate(widget('a', { parameters: [masjid, { ...masjid, name: 'query', entityName: 'FollowedMasjidQuery' }] }))
+      ).toThrow(error)
+    })
+  })
 })

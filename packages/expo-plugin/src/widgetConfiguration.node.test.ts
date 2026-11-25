@@ -122,6 +122,27 @@ describe('validateWidgetConfigurationCopy', () => {
     ).toThrow(entityError)
   })
 
+  it('rejects intent and entity names that are Swift keywords, generated-code types or Voltra types', () => {
+    const withAppIntent = (appIntent: Record<string, unknown>) => ({ id: 'w', appIntent } as never)
+    const parameter = { name: 'masjid', title: 'Masjid', dynamicOptions: true }
+
+    for (const intentName of ['Any', 'Self', 'class', '_', 'String', 'Timeline', 'VoltraWidget_w_Intent']) {
+      expect(() =>
+        validateWidgetConfigurationCopy(withAppIntent({ intentName, parameters: [parameter] }), {
+          requireParameterTitle: true,
+        })
+      ).toThrow('appIntent.intentName must start with a letter or underscore')
+    }
+    // `Entity` would generate `EntityQuery`, the AppIntents protocol it conforms to.
+    for (const entityName of ['String', 'Entity', 'VoltraClientWidgetEntry']) {
+      expect(() =>
+        validateWidgetConfigurationCopy(withAppIntent({ parameters: [{ ...parameter, entityName }] }), {
+          requireParameterTitle: true,
+        })
+      ).toThrow("appIntent parameter 'masjid' entityName needs dynamicOptions")
+    }
+  })
+
   it('rejects duplicate option values, invalid names and bad locale maps', () => {
     const base = { id: 'w' }
     expect(() =>

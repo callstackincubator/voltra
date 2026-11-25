@@ -153,8 +153,13 @@ iOS saves each placed widget's Edit Widget choices under the Swift type names of
 ```
 
 - `intentName` names the intent. `entityName` names a `dynamicOptions` parameter's entity, and its query becomes `<entityName>Query`.
-- Widgets that used one intent can share it again: widgets with the same names use one intent and one entity, generated once. They must declare the same parameters, and a shared entity lists the choices set for the first of them.
+- Widgets that used one intent can share it again: widgets with the same `intentName` use one intent, generated once. They must declare the same parameters, and each `dynamicOptions` parameter in it needs an `entityName`.
+- Widgets with the same `entityName` use one entity, generated once, which lists the choices set for the first widget in `widgets` that declares it. Set the choices on that widget. `setWidgetParameterOptions` reloads only the widget you pass, so reload the others with `reloadWidgets(['other_widget'])`.
 - The parameter `name` must match the old intent's property name too.
+- A static `options` parameter's `AppEnum` is always named `VoltraWidget_<id>_<name>_Option`, and its name can't be set. Only the intent and `dynamicOptions` entities keep the old names, so a static picker's choice is not kept.
+- A name can't be a Swift keyword, a type the generated Swift uses (such as `String`), or start with `Voltra`, and one name can't be used for two kinds of type. Expo Prebuild stops with an error if a name breaks these rules or widgets that share a name don't match.
+
+`intentName` and `entityName` are supported with Expo Prebuild only. Voltra Apply stops with an error if a widget sets them.
 
 The old entity's `id` type and the extension's module name don't have to match: a widget whose old entity had an `Int` id, in an extension with another module name, kept its choice after updating to the Voltra build.
 

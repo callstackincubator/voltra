@@ -6,6 +6,33 @@ import { validateWidgetLabel } from './validation'
 const PARAMETER_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
 /**
+ * Names an `intentName` or `entityName` cannot take: Swift keywords, which don't compile as type
+ * names, and the types the generated widget Swift refers to, which the new type would shadow. Names
+ * starting with `Voltra` are Voltra's own generated and runtime types.
+ */
+const RESERVED_SWIFT_TYPE_NAMES = new Set(
+  [
+    // Swift keywords
+    'associatedtype class deinit enum extension fileprivate func import init inout internal let operator private',
+    'precedencegroup protocol public rethrows static struct subscript typealias var break case catch continue',
+    'default defer do else fallthrough for guard if in repeat return throw switch where while as false is nil',
+    'self super throws true try Any Self _',
+    // Types and modules the generated Swift uses
+    'String Int Bool Double Date Data Timeline Context Entry Intent Parameter Widget WidgetBundle',
+    'WidgetConfiguration WidgetConfigurationIntent WidgetCenter StaticConfiguration',
+    'AppIntentConfiguration AppIntentTimelineProvider AppIntent AppEntity AppEnum EntityQuery IntentResult',
+    'DisplayRepresentation TypeDisplayRepresentation LocalizedStringResource Text Button AnyView',
+    'ActivityAttributes ActivityConfiguration ContentState NSObject Foundation SwiftUI WidgetKit AppIntents',
+    'ActivityKit',
+  ]
+    .join(' ')
+    .split(' ')
+)
+
+const SWIFT_TYPE_NAME_RULE =
+  "must start with a letter or underscore, contain only letters, digits and underscores, and not be a Swift keyword, a type the generated Swift uses, or start with 'Voltra'"
+
+/**
  * A string the operating system shows while the user configures a widget (ADR 0009 §6): a
  * parameter title or an option label. `key` is the same on both platforms, apart from the
  * resource-name sanitising Android needs.
@@ -96,9 +123,7 @@ export function validateWidgetConfigurationCopy(
   }
   const { intentName } = appIntent as Record<string, unknown>
   if (intentName !== undefined && !isSwiftTypeName(intentName)) {
-    throw new Error(
-      `Widget '${widgetId}': appIntent.intentName must start with a letter or underscore and contain only letters, digits and underscores`
-    )
+    throw new Error(`Widget '${widgetId}': appIntent.intentName ${SWIFT_TYPE_NAME_RULE}`)
   }
 
   const names = new Set<string>()
@@ -144,9 +169,13 @@ export function validateWidgetConfigurationCopy(
     if (dynamicOptions !== undefined && typeof dynamicOptions !== 'boolean') {
       throw new Error(`Widget '${widgetId}': appIntent parameter '${name}' dynamicOptions must be a boolean`)
     }
-    if (entityName !== undefined && (dynamicOptions !== true || !isSwiftTypeName(entityName))) {
+    // The entity's query is generated as `<entityName>Query`, so that name must be free too.
+    if (
+      entityName !== undefined &&
+      (dynamicOptions !== true || !isSwiftTypeName(entityName) || !isSwiftTypeName(`${entityName}Query`))
+    ) {
       throw new Error(
-        `Widget '${widgetId}': appIntent parameter '${name}' entityName needs dynamicOptions, and must start with a letter or underscore and contain only letters, digits and underscores`
+        `Widget '${widgetId}': appIntent parameter '${name}' entityName needs dynamicOptions, and ${SWIFT_TYPE_NAME_RULE}`
       )
     }
     if (dynamicOptions === true) {
@@ -191,5 +220,10 @@ export function validateWidgetConfigurationCopy(
 }
 
 function isSwiftTypeName(value: unknown): value is string {
-  return typeof value === 'string' && PARAMETER_NAME_PATTERN.test(value)
+  return (
+    typeof value === 'string' &&
+    PARAMETER_NAME_PATTERN.test(value) &&
+    !RESERVED_SWIFT_TYPE_NAMES.has(value) &&
+    !value.startsWith('Voltra')
+  )
 }
