@@ -213,7 +213,8 @@ final class WidgetServerRequestBuilderTests: XCTestCase {
       context: context(),
       configuration: ["team": "x&instance=zz"]
     ))
-    let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems ?? []
+    let url = try XCTUnwrap(request.url)
+    let items = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)).queryItems ?? []
 
     XCTAssertEqual(items.filter { $0.name == "instance" }.map(\.value), ["abc"])
     XCTAssertEqual(items.first { $0.name == "team" }?.value, "x&instance=zz")
