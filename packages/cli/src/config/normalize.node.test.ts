@@ -141,3 +141,23 @@ describe('appIntent dynamicOptions', () => {
     )
   })
 })
+
+describe('appIntent intentName and entityName', () => {
+  // Not in the CLI's config types: Voltra Apply generates its own type names.
+  function rejects(appIntent: unknown, key: string) {
+    assert.throws(
+      () => normalizeWidgets([{ ...weather, entry: './widgets/weather.tsx', appIntent } as unknown as IOSWidgetConfig]),
+      (error: unknown) =>
+        error instanceof VoltraConfigNormalizationError &&
+        error.message.includes(`${key} is supported with Expo prebuild only`)
+    )
+  }
+
+  test('rejects intentName', () => {
+    rejects({ intentName: 'SelectTeamIntent', parameters: [{ name: 'team', title: 'Team' }] }, 'appIntent.intentName')
+  })
+
+  test('rejects entityName', () => {
+    rejects({ parameters: [{ name: 'team', title: 'Team', entityName: 'Team' }] }, 'appIntent.parameters[0].entityName')
+  })
+})

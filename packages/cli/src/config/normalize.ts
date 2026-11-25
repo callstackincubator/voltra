@@ -275,12 +275,17 @@ function normalizeWidgetParameterName(value: unknown, context: string): string {
 /** Swift property names; the iOS generator declares one `@Parameter` per name. */
 const IOS_PARAMETER_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
-/** Voltra Apply does not generate the entity a `dynamicOptions` picker needs, so stop rather than drop it. */
-function rejectDynamicOptions(parameter: object, context: string): void {
-  if ('dynamicOptions' in parameter) {
-    throw new VoltraConfigNormalizationError(
-      `${context}.dynamicOptions is supported with Expo prebuild only, not Voltra Apply`
-    )
+/**
+ * Voltra Apply does not generate the entity a `dynamicOptions` picker needs, nor use the Swift type
+ * names `intentName` and `entityName` set, so stop rather than drop them.
+ */
+function rejectPrebuildOnlyKeys(value: object, keys: string[], context: string): void {
+  for (const key of keys) {
+    if (key in value) {
+      throw new VoltraConfigNormalizationError(
+        `${context}.${key} is supported with Expo prebuild only, not Voltra Apply`
+      )
+    }
   }
 }
 
@@ -338,7 +343,7 @@ function normalizeAndroidAppIntent(
   const parameters = value.parameters.map((parameter, index) => {
     const parameterContext = `${context}.parameters[${index}]`
     assertObject(parameter, parameterContext)
-    rejectDynamicOptions(parameter, parameterContext)
+    rejectPrebuildOnlyKeys(parameter, ['dynamicOptions'], parameterContext)
     const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
     const title =
       parameter.title === undefined ? undefined : normalizeLabel(parameter.title, `${parameterContext}.title`)
@@ -371,6 +376,7 @@ function normalizeIOSAppIntent(
   }
 
   assertObject(value, context)
+  rejectPrebuildOnlyKeys(value, ['intentName'], context)
 
   if (!Array.isArray(value.parameters)) {
     throw new VoltraConfigNormalizationError(`${context}.parameters must be an array`)
@@ -380,7 +386,7 @@ function normalizeIOSAppIntent(
   const parameters = value.parameters.map((parameter, index) => {
     const parameterContext = `${context}.parameters[${index}]`
     assertObject(parameter, parameterContext)
-    rejectDynamicOptions(parameter, parameterContext)
+    rejectPrebuildOnlyKeys(parameter, ['dynamicOptions', 'entityName'], parameterContext)
     const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
     if (!IOS_PARAMETER_NAME_PATTERN.test(name)) {
       throw new VoltraConfigNormalizationError(
