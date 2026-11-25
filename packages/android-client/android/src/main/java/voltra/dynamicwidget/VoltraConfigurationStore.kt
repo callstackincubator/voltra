@@ -149,7 +149,12 @@ internal class VoltraConfigurationStore(
     private fun readDynamicParameters(): Map<String, List<String>> {
         val root =
             try {
-                JSONObject(context.assets.open(DYNAMIC_PARAMETERS_ASSET_PATH).bufferedReader().use { it.readText() })
+                JSONObject(
+                    context.assets
+                        .open(DYNAMIC_PARAMETERS_ASSET_PATH)
+                        .bufferedReader()
+                        .use { it.readText() },
+                )
             } catch (e: IOException) {
                 return emptyMap()
             }
