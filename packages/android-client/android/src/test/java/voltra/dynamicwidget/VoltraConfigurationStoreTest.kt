@@ -37,6 +37,7 @@ class VoltraConfigurationStoreTest {
 
     private lateinit var dataStoreScope: CoroutineScope
     private lateinit var store: VoltraConfigurationStore
+    private val twoTeams = """[{"value":"ars","title":"Arsenal"},{"value":"che","title":"Chelsea"}]"""
 
     @Before
     fun createStore() {
@@ -58,6 +59,7 @@ class VoltraConfigurationStoreTest {
         // Process-wide, like the DataStore delegate: a seed left behind would leak into the rest
         // of the JVM.
         VoltraConfigurationStore.seedDefaultsForTesting(null)
+        VoltraConfigurationStore.seedDynamicParametersForTesting(null)
     }
 
     @Test
@@ -248,5 +250,43 @@ class VoltraConfigurationStoreTest {
 
             assertEquals("a-default", store.get("defaultsA")["label"])
             assertNull(store.get("defaultsB")["label"])
+        }
+
+    @Test
+    fun aDynamicParameterWithNoPickResolvesToTheFirstChoice() =
+        runBlocking {
+            store.setOptions("dynamicNoPick", "team", twoTeams)
+
+            assertEquals("ars", store.get("dynamicNoPick", appWidgetId = 1)["team"])
+        }
+
+    @Test
+    fun aDynamicParameterWhosePickIsNoLongerOfferedFallsBackToTheFirstChoice() =
+        runBlocking {
+            store.setInstanceValues("dynamicRemoved", 1, mapOf("team" to "che"))
+            store.setOptions("dynamicRemoved", "team", twoTeams)
+            assertEquals("che", store.get("dynamicRemoved", appWidgetId = 1)["team"])
+
+            store.setOptions("dynamicRemoved", "team", """[{"value":"ars","title":"Arsenal"}]""")
+
+            assertEquals("ars", store.get("dynamicRemoved", appWidgetId = 1)["team"])
+        }
+
+    @Test
+    fun aDynamicParameterWithNoChoicesIsEmpty() =
+        runBlocking {
+            store.setInstanceValues("dynamicEmpty", 1, mapOf("team" to "che"))
+            store.setOptions("dynamicEmpty", "team", "[]")
+
+            assertEquals("", store.get("dynamicEmpty", appWidgetId = 1)["team"])
+        }
+
+    @Test
+    fun aDeclaredDynamicParameterIsEmptyBeforeTheAppSetsChoices() =
+        runBlocking {
+            VoltraConfigurationStore.seedDynamicParametersForTesting(mapOf("dynamicNeverSet" to listOf("team")))
+
+            assertEquals("", store.get("dynamicNeverSet", appWidgetId = 1)["team"])
+            assertEquals("", store.get("dynamicNeverSet")["team"])
         }
 }

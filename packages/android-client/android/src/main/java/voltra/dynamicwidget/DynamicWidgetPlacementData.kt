@@ -15,6 +15,7 @@ import kotlinx.coroutines.runBlocking
  * id and a recycled `appWidgetId` can only surface data from a placement of the same widget.
  *
  * Stores today: the per-instance configuration (ADR 0006) and the last good render (ADR 0013).
+ * Clearing a widget also drops its `dynamicOptions` choices.
  *
  * The configuration edit runs inside [runBlocking] rather than a launched coroutine, the pattern
  * `VoltraServerDrivenClientWidgetReceiver.onUpdate` already uses: `GlanceAppWidgetReceiver.onReceive`
@@ -76,18 +77,27 @@ internal object DynamicWidgetPlacementData {
     fun onWidgetCleared(
         context: Context,
         widgetId: String,
+        configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
         lastGoodStore: DynamicWidgetLastGoodStore = DynamicWidgetLastGoodStore(context),
     ) {
         // Cleared content must not come back through a later render failure (ADR 0013).
         guarded("clear the last good render", widgetId) { lastGoodStore.clear(widgetId) }
+        // The `dynamicOptions` choices are the user's, so they go too, as on iOS.
+        guarded("clear the parameter choices", widgetId) {
+            runBlocking { configurationStore.clearOptions(widgetId) }
+        }
     }
 
     /** The app cleared every widget's content (`clearAllAndroidWidgets`). */
     fun onAllWidgetsCleared(
         context: Context,
+        configurationStore: VoltraConfigurationStore = VoltraConfigurationStore(context),
         lastGoodStore: DynamicWidgetLastGoodStore = DynamicWidgetLastGoodStore(context),
     ) {
         guarded("clear the last good render", widgetId = null) { lastGoodStore.clearAll() }
+        guarded("clear the parameter choices", widgetId = null) {
+            runBlocking { configurationStore.clearOptions(null) }
+        }
     }
 
     private fun guarded(

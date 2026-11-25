@@ -26,6 +26,7 @@ function widget(partial: Partial<AndroidWidgetConfig>): AndroidWidgetConfig {
 }
 
 const DEFAULTS_PATH = ['app', 'src', 'main', 'assets', 'voltra', 'widget_config_defaults.json']
+const DYNAMIC_PARAMETERS_PATH = ['app', 'src', 'main', 'assets', 'voltra', 'widget_dynamic_parameters.json']
 
 describe('generateAndroidConfigDefaults', () => {
   it('emits the declared defaults keyed by widget id', async () => {
@@ -63,6 +64,35 @@ describe('generateAndroidConfigDefaults', () => {
       })
 
       const file = path.join(platformProjectRoot, ...DEFAULTS_PATH)
+      expect(fs.existsSync(file)).toBe(false)
+    } finally {
+      cleanup()
+    }
+  })
+
+  it('lists the dynamicOptions parameters of each widget in declared order, and removes the list when none remain', async () => {
+    const { platformProjectRoot, cleanup } = makeTempProjectRoot()
+    const file = path.join(platformProjectRoot, ...DYNAMIC_PARAMETERS_PATH)
+    try {
+      await generateAndroidConfigDefaults({
+        platformProjectRoot,
+        widgets: [
+          widget({
+            id: 'scores',
+            appIntent: {
+              parameters: [
+                { name: 'team', title: 'Team', dynamicOptions: true },
+                { name: 'units', title: 'Units', default: 'metric' },
+                { name: 'league', title: 'League', dynamicOptions: true },
+              ],
+            },
+          }),
+          widget({ id: 'plain' }),
+        ],
+      })
+      expect(JSON.parse(fs.readFileSync(file, 'utf8'))).toEqual({ scores: ['team', 'league'] })
+
+      await generateAndroidConfigDefaults({ platformProjectRoot, widgets: [widget({ id: 'plain' })] })
       expect(fs.existsSync(file)).toBe(false)
     } finally {
       cleanup()

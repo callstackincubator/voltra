@@ -16,10 +16,13 @@ import voltra.widget.VoltraWidgetReceivers
 
 /**
  * What Android opens when a widget with a `dynamicOptions` parameter is added, and from long-press
- * Reconfigure on Android 12+: lists the choices `setWidgetParameterOptions` stored, and saves the
- * pick as that placement's own configuration. The config plugin declares it.
+ * Reconfigure on Android 12+: for each `dynamicOptions` parameter the widget declares, lists the
+ * choices `setWidgetParameterOptions` stored, and saves the picks as that placement's own
+ * configuration. The config plugin declares it.
  */
 class VoltraWidgetConfigureActivity : Activity() {
+    private val picks = mutableMapOf<String, String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
@@ -39,12 +42,23 @@ class VoltraWidgetConfigureActivity : Activity() {
         }
 
         val store = VoltraConfigurationStore(this)
-        val (parameter, choices) =
-            runBlocking { store.options(widgetId) }.entries.firstOrNull()?.toPair()
-                ?: (null to emptyList())
-        val title =
-            parameter?.let { parameterTitle(widgetId, it) } ?: applicationInfo.loadLabel(packageManager).toString()
-        var picked: String? = null
+        val options = runBlocking { store.options(widgetId) }
+        val current = runBlocking { store.get(widgetId, appWidgetId) }
+        ask(widgetId, appWidgetId, store.dynamicParameters(widgetId), options, current)
+    }
+
+    // One picker per declared `dynamicOptions` parameter, in declared order: dismissing one opens
+    // the next, and the last saves every pick at once.
+    private fun ask(
+        widgetId: String,
+        appWidgetId: Int,
+        parameters: List<String>,
+        options: Map<String, List<Pair<String, String>>>,
+        current: Map<String, String>,
+    ) {
+        val parameter = parameters.firstOrNull() ?: return saveAndFinish(widgetId, appWidgetId)
+        val choices = options[parameter].orEmpty()
+        val title = parameterTitle(widgetId, parameter) ?: applicationInfo.loadLabel(packageManager).toString()
 
         val night =
             resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
@@ -58,19 +72,15 @@ class VoltraWidgetConfigureActivity : Activity() {
                         android.R.style.Theme_DeviceDefault_Light_Dialog_Alert
                     },
                 ).setTitle(title)
-                .setOnDismissListener { saveAndFinish(widgetId, appWidgetId, parameter, picked) }
+                .setOnDismissListener { ask(widgetId, appWidgetId, parameters.drop(1), options, current) }
         if (choices.isEmpty()) {
             dialog.setMessage("No $title to choose from yet. Open the app to add one.")
         } else {
-            val current = runBlocking { store.get(widgetId, appWidgetId) }[parameter]
             dialog.setSingleChoiceItems(
                 choices.map { it.second }.toTypedArray(),
-                choices.indexOfFirst {
-                    it.first ==
-                        current
-                },
+                choices.indexOfFirst { it.first == current[parameter] },
             ) { shown, which ->
-                picked = choices[which].first
+                picks[parameter] = choices[which].first
                 shown.dismiss()
             }
         }
@@ -80,15 +90,13 @@ class VoltraWidgetConfigureActivity : Activity() {
     private fun saveAndFinish(
         widgetId: String,
         appWidgetId: Int,
-        parameter: String?,
-        value: String?,
     ) {
-        if (parameter != null && value != null) {
+        if (picks.isNotEmpty()) {
             runBlocking {
                 VoltraConfigurationStore(this@VoltraWidgetConfigureActivity).setInstanceValues(
                     widgetId,
                     appWidgetId,
-                    mapOf(parameter to value),
+                    picks,
                 )
             }
         }

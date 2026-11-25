@@ -160,7 +160,9 @@ To fetch a different endpoint per placement instead, put `{name}` in the URL. Ea
 "serverUpdate": { "url": "https://api.example.com/teams/{team}/widget" }
 ```
 
-A placement with no value for a placeholder fetches nothing, so it renders with no server props until one is set. Pair this with `dynamicOptions: true` on an `appIntent` parameter and `setWidgetParameterOptions(widgetId, parameter, options)` from `@use-voltra/android-client`: newly placed widgets default to the first choice, long-press **Reconfigure** (Android 12+) opens a native picker of the stored choices for that placement, and removing a picked choice falls back to the first choice.
+A placement with no value for a placeholder fetches nothing, so it renders with no server props until one is set. Pair this with `dynamicOptions: true` on an `appIntent` parameter and `setWidgetParameterOptions(widgetId, parameter, options)` from `@use-voltra/android-client`: newly placed widgets default to the first choice, long-press **Reconfigure** (Android 12+) opens a native picker of the stored choices for that placement, one per `dynamicOptions` parameter in declared order, and removing a picked choice falls back to the first choice. Until the app sets choices, `env.configuration[parameter]` is `""`. `clearAndroidWidget` and `clearAllAndroidWidgets` remove the stored choices.
+
+`dynamicOptions` is supported with Expo Prebuild only. Voltra Apply stops with an error if a parameter sets it.
 
 ## Returning data instead of UI
 

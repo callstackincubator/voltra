@@ -111,25 +111,33 @@ class DynamicWidgetPlacementDataTest {
         }
 
     @Test
-    fun clearingAWidgetDropsEveryPlacementOfItAndNoOtherWidget() {
-        lastGoodStore.write("pd-clear", 1, family, "a")
-        lastGoodStore.write("pd-clear", 2, family, "b")
-        lastGoodStore.write("pd-clear-other", 1, family, "c")
+    fun clearingAWidgetDropsEveryPlacementOfItAndNoOtherWidget() =
+        runBlocking {
+            lastGoodStore.write("pd-clear", 1, family, "a")
+            lastGoodStore.write("pd-clear", 2, family, "b")
+            lastGoodStore.write("pd-clear-other", 1, family, "c")
+            configurationStore.setOptions("pd-clear", "team", """[{"value":"a","title":"A"}]""")
+            configurationStore.setOptions("pd-clear-other", "team", """[{"value":"c","title":"C"}]""")
 
-        DynamicWidgetPlacementData.onWidgetCleared(application, "pd-clear", lastGoodStore)
+            DynamicWidgetPlacementData.onWidgetCleared(application, "pd-clear", configurationStore, lastGoodStore)
 
-        assertEquals(emptySet<Int>(), lastGoodStore.storedAppWidgetIds("pd-clear"))
-        assertEquals("c", lastGoodStore.read("pd-clear-other", 1, family))
-    }
+            assertEquals(emptySet<Int>(), lastGoodStore.storedAppWidgetIds("pd-clear"))
+            assertEquals("c", lastGoodStore.read("pd-clear-other", 1, family))
+            assertEquals(emptyMap<String, Any>(), configurationStore.options("pd-clear"))
+            assertEquals(listOf("c" to "C"), configurationStore.options("pd-clear-other")["team"])
+        }
 
     @Test
-    fun clearingEverythingDropsEveryWidget() {
-        lastGoodStore.write("pd-all-a", 1, family, "a")
-        lastGoodStore.write("pd-all-b", 1, family, "b")
+    fun clearingEverythingDropsEveryWidget() =
+        runBlocking {
+            lastGoodStore.write("pd-all-a", 1, family, "a")
+            lastGoodStore.write("pd-all-b", 1, family, "b")
+            configurationStore.setOptions("pd-all-a", "team", """[{"value":"a","title":"A"}]""")
 
-        DynamicWidgetPlacementData.onAllWidgetsCleared(application, lastGoodStore)
+            DynamicWidgetPlacementData.onAllWidgetsCleared(application, configurationStore, lastGoodStore)
 
-        assertNull(lastGoodStore.read("pd-all-a", 1, family))
-        assertNull(lastGoodStore.read("pd-all-b", 1, family))
-    }
+            assertNull(lastGoodStore.read("pd-all-a", 1, family))
+            assertNull(lastGoodStore.read("pd-all-b", 1, family))
+            assertEquals(emptyMap<String, Any>(), configurationStore.options("pd-all-a"))
+        }
 }

@@ -18,11 +18,16 @@ export interface GenerateConfigDefaultsOptions {
  *
  * Shape: `{ "<widgetId>": { "<paramName>": "<default>" } }`. Only parameters that declare a
  * `default` are emitted. No file is written when nothing declares defaults.
+ *
+ * Also emits `assets/voltra/widget_dynamic_parameters.json`, `{ "<widgetId>": ["<paramName>"] }`:
+ * each widget's `dynamicOptions` parameters in declared order, which the configure activity offers
+ * and which read as `""` until the app sets choices. Removed when nothing declares one.
  */
 export async function generateAndroidConfigDefaults(options: GenerateConfigDefaultsOptions): Promise<void> {
   const { widgets, platformProjectRoot } = options
 
   const defaults: Record<string, Record<string, string>> = {}
+  const dynamicParameters: Record<string, string[]> = {}
   for (const widget of widgets) {
     const params = widget.appIntent?.parameters ?? []
     const widgetDefaults: Record<string, string> = {}
@@ -34,13 +39,26 @@ export async function generateAndroidConfigDefaults(options: GenerateConfigDefau
     if (Object.keys(widgetDefaults).length > 0) {
       defaults[widget.id] = widgetDefaults
     }
+    const dynamicNames = params.filter((param) => param.dynamicOptions === true).map((param) => param.name)
+    if (dynamicNames.length > 0) {
+      dynamicParameters[widget.id] = dynamicNames
+    }
+  }
+
+  const voltraAssetsDir = path.join(platformProjectRoot, 'app', 'src', 'main', 'assets', 'voltra')
+  const dynamicParametersPath = path.join(voltraAssetsDir, 'widget_dynamic_parameters.json')
+  if (Object.keys(dynamicParameters).length > 0) {
+    fs.mkdirSync(voltraAssetsDir, { recursive: true })
+    fs.writeFileSync(dynamicParametersPath, JSON.stringify(dynamicParameters, null, 2))
+  } else {
+    // A stale list would keep offering, and blanking, parameters the app no longer declares.
+    fs.rmSync(dynamicParametersPath, { force: true })
   }
 
   if (Object.keys(defaults).length === 0) {
     return
   }
 
-  const voltraAssetsDir = path.join(platformProjectRoot, 'app', 'src', 'main', 'assets', 'voltra')
   fs.mkdirSync(voltraAssetsDir, { recursive: true })
   fs.writeFileSync(path.join(voltraAssetsDir, 'widget_config_defaults.json'), JSON.stringify(defaults, null, 2))
 
