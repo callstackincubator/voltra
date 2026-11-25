@@ -127,7 +127,9 @@ await setWidgetParameterOptions('scores_widget', 'team', [
 ])
 ```
 
-The choices are stored in the App Group, so this needs `groupIdentifier`. Setting them reloads the widget.
+The choices are stored in the App Group, so this needs `groupIdentifier`. Setting them reloads the widget. `clearWidget` and `clearAllWidgets` remove them.
+
+`dynamicOptions` is supported with Expo Prebuild only. Voltra Apply stops with an error if a parameter sets it.
 
 - A placement the user hasn't configured gets the first choice. The first choice is the default, so a `default` or `options` cannot be declared alongside `dynamicOptions`.
 - A placement whose choice is no longer listed falls back to the first choice.
