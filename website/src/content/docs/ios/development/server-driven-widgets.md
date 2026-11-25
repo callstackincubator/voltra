@@ -241,6 +241,8 @@ export default function DeparturesWidget(props, env) {
 
 Each future time becomes an entry in the widget's timeline, drawn with `env.date` set to that time, so the entry component picks what to show from `env.date` rather than from the clock. Past times are ignored, and at most 120 are kept. Entries are rendered only when WidgetKit shows them, so listing a time costs nothing until then. The next fetch replaces the whole timeline with one built from the new props. Without a `timeline` export the widget is drawn once per fetch, as before.
 
+The export is read only while the widget fetches. A Dynamic Widget without a `serverUpdate`, one whose URL is not set yet, and one the app has [taken over](#driving-a-widget-from-the-app) are drawn once per reload, and their `timeline` export is ignored.
+
 ### Telling fresh data from stale
 
 The widget is never blanked by a failed fetch: it keeps rendering the last props that arrived, whether from the server or from `updateDynamicWidget`. `env.serverUpdate` says which:

@@ -207,7 +207,7 @@ describe('@use-voltra/metro manifest registry', () => {
     })
   }
 
-  test('generated Dynamic Widget adapters return the dates of the entry timeline export, or none without one', () => {
+  test('generated Dynamic Widget adapters return the entry timeline export as epoch ms, or none without one', () => {
     const { projectRoot, cleanup } = makeTempProject({
       '.voltra/manifest.ios.json': JSON.stringify(
         { version: 1, platform: 'ios', widgets: [{ id: 'countdown', entry: 'widgets/countdown.js' }] },
@@ -256,6 +256,16 @@ describe('@use-voltra/metro manifest registry', () => {
         }
       )
       assert.deepEqual(JSON.parse(timeline(JSON.stringify({ startsAt: [1000, 2000] }))), [1000, 2000])
+
+      const timelineWithMixedValues = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        {
+          timeline: () => [new Date(1000), null, 2000, '3000', Number.NaN, new Date(Number.NaN), Infinity],
+        }
+      )
+      assert.deepEqual(JSON.parse(timelineWithMixedValues('{}')), [1000, 2000])
 
       const timelineWithoutExport = createTimeline(
         createElement,

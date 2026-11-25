@@ -155,7 +155,7 @@ Props do not have to come from the app. Add a `serverUpdate` alongside `entry` a
 
 The response object becomes the same first argument `updateDynamicWidget` passes, so the entry component does not change. Because the server returns data rather than a rendered payload, the backend can be written in any language.
 
-A server-driven Dynamic Widget can also export `timeline(props)` to be drawn again at known times between fetches; see [Changing at known times between fetches](/ios/development/server-driven-widgets#changing-at-known-times-between-fetches).
+A server-driven Dynamic Widget can also export `timeline(props)` to be drawn again at known times between fetches. On iOS this works only while the widget fetches: a widget without a `serverUpdate`, without a URL, or taken over by the app ignores the export. See [Changing at known times between fetches](/ios/development/server-driven-widgets#changing-at-known-times-between-fetches).
 
 `updateDynamicWidget` keeps working on a server-driven widget — the next fetch simply overwrites what you wrote. See [Server-driven widgets](/ios/development/server-driven-widgets) for the response contract, the `env.serverUpdate` fields, and how to take a widget over.
 
