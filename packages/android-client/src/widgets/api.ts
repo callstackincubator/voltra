@@ -73,13 +73,31 @@ export const setWidgetConfiguration = async (widgetId: string, key: string, valu
  * follows, and redraws its placements. The widget's configure screen lists them, and the picked
  * `value` reaches the widget as `env.configuration[parameter]` and fills `{parameter}` in its
  * `serverUpdate` URL. A placement with no pick, or whose pick is no longer listed, uses the first
- * option, and with no options it has no value.
+ * option, and with no options it is `""`.
+ *
+ * Throws if an option's `value` or `title` is not a string, or a `value` is empty or repeated.
  */
 export const setWidgetParameterOptions = async (
   widgetId: string,
   parameter: string,
   options: WidgetParameterOption[]
 ): Promise<void> => {
+  // A value is the choice's identity in the configure screen and fills the URL, so it must be a
+  // unique, non-empty string: an empty one would never fetch, and a duplicate could not be told apart.
+  const values = new Set<string>()
+  for (const option of options) {
+    if (typeof option?.value !== 'string' || typeof option.title !== 'string') {
+      throw new Error('[Voltra] [Android] setWidgetParameterOptions: each option needs a string value and title')
+    }
+    if (option.value === '') {
+      throw new Error('[Voltra] [Android] setWidgetParameterOptions: an option value cannot be empty')
+    }
+    if (values.has(option.value)) {
+      throw new Error(`[Voltra] [Android] setWidgetParameterOptions: duplicate option value "${option.value}"`)
+    }
+    values.add(option.value)
+  }
+
   return getNativeVoltraAndroid().setWidgetParameterOptions(widgetId, parameter, JSON.stringify(options))
 }
 
