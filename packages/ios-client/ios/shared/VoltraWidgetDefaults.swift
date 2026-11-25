@@ -171,6 +171,21 @@ public enum VoltraWidgetDefaults {
     defaults.synchronize()
   }
 
+  /// Removes the app's `dynamicOptions` choices for one widget, or for every widget with nil.
+  /// Called by `clearWidget` / `clearAllWidgets` only: the choices are the user's, so they go on
+  /// logout, but the orphan cleanup must keep them for a widget that has not been placed yet. The
+  /// parameter names live only in the generated extension code, hence the prefix match.
+  /// shortcut: clearing widget `a` also clears widget `a_b`'s choices; key with a separator widget
+  /// ids cannot contain if that ever matters.
+  public static func removeParameterOptions(for widgetId: String?) {
+    guard let defaults = try? resolvedDefaults() else { return }
+    let prefix = VoltraStorageKeys.widgetParameterOptionsPrefix + (widgetId.map { "\($0)_" } ?? "")
+    for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
+      defaults.removeObject(forKey: key)
+    }
+    defaults.synchronize()
+  }
+
   // MARK: - Private
 
   private static func resolvedDefaults() throws -> UserDefaults {

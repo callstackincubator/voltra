@@ -31,8 +31,10 @@ public enum VoltraStorageKeys {
   /// Choices the app supplied for a widget's `dynamicOptions` Edit Widget parameter, as JSON
   /// `[{ "value": ..., "title": ... }]`.
   public static func widgetParameterOptions(_ widgetId: String, parameter: String) -> String {
-    "Voltra_Widget_ParameterOptions_\(widgetId)_\(parameter)"
+    "\(widgetParameterOptionsPrefix)\(widgetId)_\(parameter)"
   }
+
+  public static let widgetParameterOptionsPrefix = "Voltra_Widget_ParameterOptions_"
 
   public static func dynamicWidgetPropsV1(_ dynamicWidgetId: String) -> String {
     "Voltra_DynamicWidget_Props_v1_\(dynamicWidgetId)"

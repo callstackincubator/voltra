@@ -31,6 +31,12 @@ public enum WidgetServerRequestBuilder {
   /// going to be useful even if it eventually does.
   public static let timeoutSeconds: TimeInterval = 15
 
+  /// What a filled value may keep unescaped: exactly what Android's `Uri.encode` keeps, so both
+  /// platforms send the same URL and a value cannot add a path segment or a query key.
+  private static let placeholderAllowed = CharacterSet(
+    charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~*'()"
+  )
+
   /// Fills each `{name}` in the URL with that configuration value, percent-encoded, so one widget
   /// can fetch a different resource per placement (`/masjids/{masjid}/widget`). nil when a
   /// placeholder has no value, as with a placement whose choice has not been made or went away:
@@ -40,7 +46,7 @@ public enum WidgetServerRequestBuilder {
     while let open = filled.range(of: "{"), let close = filled.range(of: "}", range: open.upperBound ..< filled.endIndex) {
       let name = String(filled[open.upperBound ..< close.lowerBound])
       guard let value = configuration[name], !value.isEmpty,
-            let encoded = value.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/")))
+            let encoded = value.addingPercentEncoding(withAllowedCharacters: placeholderAllowed)
       else {
         return nil
       }

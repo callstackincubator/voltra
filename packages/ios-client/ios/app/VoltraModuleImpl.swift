@@ -449,12 +449,14 @@ public class VoltraModuleImpl {
 
   func clearWidget(widgetId: String) async {
     VoltraWidgetService.removeAllData(for: widgetId)
+    VoltraWidgetDefaults.removeParameterOptions(for: widgetId)
     VoltraWidgetService.clearWidgetServerState(for: widgetId)
     VoltraWidgetService.reloadTimeline(for: widgetId)
   }
 
   func clearAllWidgets() async {
     VoltraWidgetService.removeAllWidgets()
+    VoltraWidgetDefaults.removeParameterOptions(for: nil)
 
     for widgetId in VoltraWidgetServer.serverDrivenWidgetIds {
       VoltraWidgetService.clearWidgetServerState(for: widgetId)

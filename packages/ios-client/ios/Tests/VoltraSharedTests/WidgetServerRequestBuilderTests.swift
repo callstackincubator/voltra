@@ -197,6 +197,28 @@ final class WidgetServerRequestBuilderTests: XCTestCase {
     XCTAssertEqual(url, "https://api.example.com/places/a%2Fb%20c%3Fd")
   }
 
+  func testEncodesAFilledValueLikeAndroidsUriEncode() {
+    let url = WidgetServerRequestBuilder.fillPlaceholders(
+      in: "https://api.example.com/w?team={team}",
+      from: ["team": "x&instance=zz+;:@-_.!~*'()"]
+    )
+
+    XCTAssertEqual(url, "https://api.example.com/w?team=x%26instance%3Dzz%2B%3B%3A%40-_.!~*'()")
+  }
+
+  func testAFilledQueryValueCannotAddQueryKeys() throws {
+    let request = try XCTUnwrap(WidgetServerRequestBuilder.build(
+      scope: .instance(id: "portfolio", key: "abc"),
+      settings: settings(url: "https://api.example.com/w?team={team}"),
+      context: context(),
+      configuration: ["team": "x&instance=zz"]
+    ))
+    let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems ?? []
+
+    XCTAssertEqual(items.filter { $0.name == "instance" }.map(\.value), ["abc"])
+    XCTAssertEqual(items.first { $0.name == "team" }?.value, "x&instance=zz")
+  }
+
   func testFillsEveryPlaceholder() {
     let url = WidgetServerRequestBuilder.fillPlaceholders(
       in: "https://api.example.com/{team}/{season}",

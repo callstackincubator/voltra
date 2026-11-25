@@ -137,7 +137,7 @@ GET https://api.example.com/widgets/weather
 - Both parameters are absent when the widget has no configuration parameters at all, so an existing server-driven widget's requests are unchanged by this feature.
 - `instance` and `configuration` are reserved query keys: a `query` you pass to `setWidgetServerUpdate` naming either is rejected.
 
-To fetch a different endpoint per placement instead, put `{name}` in the URL. Each placement fills it with its own `env.configuration[name]`, encoded as one path segment:
+To fetch a different endpoint per placement instead, put `{name}` in the URL. Each placement fills it with its own `env.configuration[name]`, percent-encoded so it stays one path segment or query value (only letters, digits and `-_.!~*'()` are left as they are):
 
 ```json
 "serverUpdate": { "url": "https://api.example.com/teams/{team}/widget" }

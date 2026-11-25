@@ -58,11 +58,12 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
 
   func timeline(family: WidgetFamily, configuration: [String: String]) async -> Timeline<VoltraClientWidgetEntry> {
     let scope = scope(for: configuration)
-    let settings = VoltraWidgetServer.resolver.resolve(scope)
+    let settings = resolveSettings(scope, configuration: configuration)
 
     guard settings.shouldFetch else {
-      // No URL yet, or the app has taken the widget over. Either way there is nothing to schedule:
-      // the app reloads the widget itself, and setting a URL later queues a reload of its own.
+      // No URL yet, no value for a URL placeholder, or the app has taken the widget over. Either
+      // way there is nothing to schedule: the app reloads the widget itself, and setting a URL,
+      // setting choices or editing the widget queues a reload of its own.
       DynamicWidgetServerPropsStore().markDisabledIfNeeded(enabled: settings.enabled, for: scope)
 
       return Timeline(entries: [await localEntry(configuration: configuration)], policy: .never)
@@ -89,6 +90,27 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
     let nextUpdate = Date().addingTimeInterval(TimeInterval(nextIntervalMinutes * 60))
 
     return Timeline(entries: [entry], policy: .after(nextUpdate))
+  }
+
+  /// The resolved settings, with no URL when a `{name}` in it has no value in this placement's
+  /// configuration (no choices set yet, or an empty text field). There is then nothing to fetch, so
+  /// the widget renders with no server props instead of reporting a network error, as on Android.
+  private func resolveSettings(_ scope: WidgetScope, configuration: [String: String]) -> ResolvedWidgetServerSettings {
+    let settings = VoltraWidgetServer.resolver.resolve(scope)
+
+    guard let url = settings.url, WidgetServerRequestBuilder.fillPlaceholders(in: url, from: configuration) == nil else {
+      return settings
+    }
+
+    return ResolvedWidgetServerSettings(
+      url: nil,
+      intervalMinutes: settings.intervalMinutes,
+      enabled: settings.enabled,
+      method: settings.method,
+      query: settings.query,
+      headers: settings.headers,
+      body: settings.body
+    )
   }
 
   /// Whether this timeline request should fetch, or ride on one that just happened.
@@ -123,7 +145,7 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
     let statuses = DynamicWidgetServerPropsStore()
 
     return DynamicWidgetServerUpdateRunner(
-      resolveSettings: { VoltraWidgetServer.resolver.resolve($0) },
+      resolveSettings: { resolveSettings($0, configuration: configuration) },
       currentRevision: { VoltraWidgetServer.resolver.revision($0) },
       readEtag: { WidgetServerEtagStore.etag(for: $0, url: $1) },
       fetch: { scope, settings, etag in
