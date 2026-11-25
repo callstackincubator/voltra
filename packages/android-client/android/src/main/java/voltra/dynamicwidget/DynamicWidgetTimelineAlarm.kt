@@ -21,6 +21,8 @@ private const val TAG = "DynamicWidgetGlanceUpdate"
  * causes sets the one after.
  */
 internal object DynamicWidgetTimelineAlarm {
+    internal const val WINDOW_MS = 60_000L
+
     fun schedule(
         context: Context,
         widgetId: String,
@@ -35,9 +37,10 @@ internal object DynamicWidgetTimelineAlarm {
             alarmManager.cancel(pendingIntent(context, widgetId, appWidgetId))
             return
         }
-        // Non-waking and inexact, so no exact-alarm permission: a sleeping phone redraws when it
-        // wakes, which is when the widget can be seen anyway.
-        alarmManager.set(AlarmManager.RTC, next, pendingIntent(context, widgetId, appWidgetId))
+        // Non-waking, so a sleeping phone redraws when it wakes, which is when the widget can be seen
+        // anyway. A window rather than set(), which may defer up to 75% of the wait (capped at an
+        // hour); without the exact-alarm permission Android 12+ stretches it to about 10 minutes.
+        alarmManager.setWindow(AlarmManager.RTC, next, WINDOW_MS, pendingIntent(context, widgetId, appWidgetId))
         Log.d(TAG, "Timeline redraw for '$widgetId' instance $appWidgetId set for $next (in ${next - now} ms)")
     }
 

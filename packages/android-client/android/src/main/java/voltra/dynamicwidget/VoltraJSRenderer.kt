@@ -156,6 +156,7 @@ internal object VoltraJSRenderer {
             val dates = JSONArray(render(timelineEntryId(widgetId), propsJSON, "{}"))
             List(dates.length()) { dates.optLong(it) }
         } catch (e: Exception) {
+            Log.w(TAG, "timeline() failed for widgetId=$widgetId", e)
             emptyList()
         }
 

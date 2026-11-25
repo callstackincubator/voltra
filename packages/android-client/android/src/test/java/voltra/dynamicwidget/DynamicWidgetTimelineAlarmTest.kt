@@ -34,6 +34,7 @@ class DynamicWidgetTimelineAlarmTest {
         assertEquals(1, scheduled.size)
         assertEquals(AlarmManager.RTC, scheduled[0].type)
         assertEquals(earlierFuture, scheduled[0].triggerAtTime)
+        assertEquals(DynamicWidgetTimelineAlarm.WINDOW_MS, scheduled[0].windowLengthMs)
     }
 
     @Test

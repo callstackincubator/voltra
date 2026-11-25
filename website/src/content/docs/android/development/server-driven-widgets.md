@@ -237,7 +237,9 @@ export default function DeparturesWidget(props, env) {
 }
 ```
 
-After each render, Voltra schedules one non-waking, inexact `AlarmManager.RTC` alarm per placement for the earliest future time returned by `timeline(props)` (requiring no exact-alarm permission). When that alarm fires, the widget redraws with `env.date` set to the current time and schedules the next date. Changing the device clock (`TIME_SET`) redraws all Dynamic Widgets so pending alarms are recalculated, and removing a placement cancels its alarm. Without a `timeline` export, the widget is drawn once per fetch, as before.
+After each render, Voltra schedules one non-waking, inexact `AlarmManager.RTC` alarm per placement for the earliest future time returned by `timeline(props)` (requiring no exact-alarm permission), so the widget may redraw up to about 10 minutes after the time, and a sleeping phone redraws when it wakes. When that alarm fires, the widget redraws with `env.date` set to the current time and schedules the next date. Changing the device clock (`TIME_SET`) redraws all Dynamic Widgets so pending alarms are recalculated, and removing a placement cancels its alarm. Without a `timeline` export, the widget is drawn once per fetch, as before.
+
+On Android this works for any Dynamic Widget, not only one that fetches: a widget without a `serverUpdate`, or one the app has [taken over](#driving-a-widget-from-the-app), also redraws at the times `timeline(props)` returns for the props `updateAndroidDynamicWidget` last wrote.
 
 ### Telling fresh data from stale
 
