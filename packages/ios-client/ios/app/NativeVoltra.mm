@@ -196,6 +196,12 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
       return;
     }
 
+    // A normal launch never has the key, and false is the implied default. Writing it would change the surface props
+    // and make React Native unmount and remount the whole tree.
+    if (!isHeadless && nextProperties[@"isHeadless"] == nil) {
+      return;
+    }
+
     nextProperties[@"isHeadless"] = nextValue;
     [rootView setValue:nextProperties forKey:@"appProperties"];
   };
