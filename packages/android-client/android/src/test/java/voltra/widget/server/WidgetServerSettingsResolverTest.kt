@@ -184,6 +184,17 @@ class WidgetServerSettingsResolverTest {
         }
 
     @Test
+    fun `an instance scope inherits the per-widget setting of its widget`() =
+        runTest {
+            val store = WidgetServerSettingsStore(RuntimeEnvironment.getApplication())
+            store.set(WidgetServerUpdateSettings(url = "https://example.com/per-widget"), WidgetScope.of("weather"))
+
+            val resolved = WidgetWidgetServerSettingsLayer(store).settings(WidgetScope.Instance("weather", "k1"))
+
+            assertEquals("https://example.com/per-widget", resolved?.url)
+        }
+
+    @Test
     fun `globalSettings returns the global layer's raw contents, with no defaulting`() =
         runTest {
             val store = WidgetServerSettingsStore(RuntimeEnvironment.getApplication())
