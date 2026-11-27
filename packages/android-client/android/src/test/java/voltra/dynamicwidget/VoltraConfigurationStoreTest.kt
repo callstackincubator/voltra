@@ -255,6 +255,7 @@ class VoltraConfigurationStoreTest {
     @Test
     fun aDynamicParameterWithNoPickResolvesToTheFirstChoice() =
         runBlocking {
+            VoltraConfigurationStore.seedDynamicParametersForTesting(mapOf("dynamicNoPick" to listOf("team")))
             store.setOptions("dynamicNoPick", "team", twoTeams)
 
             assertEquals("ars", store.get("dynamicNoPick", appWidgetId = 1)["team"])
@@ -263,6 +264,7 @@ class VoltraConfigurationStoreTest {
     @Test
     fun aDynamicParameterWhosePickIsNoLongerOfferedFallsBackToTheFirstChoice() =
         runBlocking {
+            VoltraConfigurationStore.seedDynamicParametersForTesting(mapOf("dynamicRemoved" to listOf("team")))
             store.setInstanceValues("dynamicRemoved", 1, mapOf("team" to "che"))
             store.setOptions("dynamicRemoved", "team", twoTeams)
             assertEquals("che", store.get("dynamicRemoved", appWidgetId = 1)["team"])
@@ -275,6 +277,7 @@ class VoltraConfigurationStoreTest {
     @Test
     fun aDynamicParameterWithNoChoicesIsEmpty() =
         runBlocking {
+            VoltraConfigurationStore.seedDynamicParametersForTesting(mapOf("dynamicEmpty" to listOf("team")))
             store.setInstanceValues("dynamicEmpty", 1, mapOf("team" to "che"))
             store.setOptions("dynamicEmpty", "team", "[]")
 
@@ -288,5 +291,15 @@ class VoltraConfigurationStoreTest {
 
             assertEquals("", store.get("dynamicNeverSet", appWidgetId = 1)["team"])
             assertEquals("", store.get("dynamicNeverSet")["team"])
+        }
+
+    @Test
+    fun choicesStoredForAnUndeclaredParameterNeverReachTheConfiguration() =
+        runBlocking {
+            VoltraConfigurationStore.seedDynamicParametersForTesting(mapOf("dynamicUndeclared" to listOf("team")))
+            store.setOptions("dynamicUndeclared", "typo", twoTeams)
+
+            assertNull(store.get("dynamicUndeclared", appWidgetId = 1)["typo"])
+            assertNull(store.get("dynamicUndeclared")["typo"])
         }
 }

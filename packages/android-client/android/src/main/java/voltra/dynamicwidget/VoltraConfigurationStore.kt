@@ -122,13 +122,14 @@ internal class VoltraConfigurationStore(
     }
 
     // As on iOS: no pick, or a pick no longer offered, means the first choice; no choices, "".
+    // Only declared parameters count, so stored choices can never add keys to the instance key.
     private fun resolveDynamicParameters(
         values: Map<String, String>,
         options: Map<String, List<Pair<String, String>>>,
         declared: List<String>,
     ): Map<String, String> {
         val resolved = values.toMutableMap()
-        (declared + options.keys).forEach { parameter ->
+        declared.forEach { parameter ->
             val choices = options[parameter].orEmpty()
             if (choices.none { it.first == resolved[parameter] }) {
                 resolved[parameter] = choices.firstOrNull()?.first ?: ""

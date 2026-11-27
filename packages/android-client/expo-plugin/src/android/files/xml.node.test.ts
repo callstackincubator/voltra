@@ -82,49 +82,6 @@ describe('generateWidgetInfoXml', () => {
       ].join('\n')
     )
   })
-
-  it('points a widget with a dynamicOptions parameter at the configure activity, as optional and reconfigurable', () => {
-    expect(
-      __test__.generateWidgetInfoXml({
-        id: 'scores',
-        displayName: 'Scores',
-        description: 'Live scores',
-        targetCellWidth: 2,
-        targetCellHeight: 2,
-        appIntent: { parameters: [{ name: 'team', title: 'Team', dynamicOptions: true }] },
-      })
-    ).toBe(
-      [
-        '<?xml version="1.0" encoding="utf-8"?>',
-        '<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"',
-        '    android:minWidth="130dp"',
-        '    android:minHeight="117dp"',
-        '    android:targetCellWidth="2"',
-        '    android:targetCellHeight="2"',
-        '    android:updatePeriodMillis="0"',
-        '    android:initialLayout="@layout/voltra_widget_placeholder"',
-        '    android:resizeMode="horizontal|vertical"',
-        '    android:widgetCategory="home_screen"',
-        '    android:description="@string/voltra_widget_scores_description"',
-        '    android:configure="voltra.dynamicwidget.VoltraWidgetConfigureActivity"',
-        '    android:widgetFeatures="reconfigurable|configuration_optional">',
-        '</appwidget-provider>',
-      ].join('\n')
-    )
-  })
-
-  it('leaves out the configure activity when no parameter has dynamicOptions', () => {
-    const xml = __test__.generateWidgetInfoXml({
-      id: 'scores',
-      displayName: 'Scores',
-      description: 'Live scores',
-      targetCellWidth: 2,
-      targetCellHeight: 2,
-      appIntent: { parameters: [{ name: 'team', title: 'Team', default: 'ars' }] },
-    })
-    expect(xml).not.toContain('android:configure')
-    expect(xml).not.toContain('android:widgetFeatures')
-  })
 })
 
 describe('configuration strings in voltra_widgets.xml', () => {

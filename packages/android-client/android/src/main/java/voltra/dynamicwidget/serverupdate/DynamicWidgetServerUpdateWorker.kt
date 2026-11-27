@@ -108,13 +108,7 @@ class DynamicWidgetServerUpdateWorker(
 
         return DynamicWidgetServerUpdateRunner(
             resolveKind = { id -> VoltraWidgetKindResolver.resolve(context, id) },
-            // `{name}` in the URL is this instance's value, so each instance fetches its own.
-            resolveSettings = { widgetScope ->
-                val settings = resolver.resolve(widgetScope)
-                settings.copy(
-                    url = settings.url?.let { WidgetServerRequestBuilder.fillPlaceholders(it, configuration) },
-                )
-            },
+            resolveSettings = { resolver.resolve(it) },
             currentRevision = { resolver.revision(it) },
             readEtag = { widgetScope, url -> etags.etag(widgetScope, url) },
             fetch = { widgetScope, settings, etag ->

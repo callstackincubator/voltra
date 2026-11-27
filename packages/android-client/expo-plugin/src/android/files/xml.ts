@@ -138,11 +138,6 @@ function generateWidgetInfoXml(
   const previewImageAttr = previewImageResourceName
     ? `\n    android:previewImage="@drawable/${previewImageResourceName}"`
     : ''
-  // A dynamicOptions parameter is picked per placement in Voltra's configure activity, which is
-  // optional when adding the widget and offered again from long-press Reconfigure.
-  const configureAttrs = widget.appIntent?.parameters?.some((parameter) => parameter.dynamicOptions === true)
-    ? `\n        android:configure="voltra.dynamicwidget.VoltraWidgetConfigureActivity"\n        android:widgetFeatures="reconfigurable|configuration_optional"`
-    : ''
   const previewLayoutAttr = previewLayoutResourceName
     ? `\n    android:previewLayout="@layout/${previewLayoutResourceName}"`
     : ''
@@ -157,7 +152,7 @@ ${sizingAttrs}
         android:widgetCategory="${widgetCategory}"
         android:description="@string/voltra_widget_${androidWidgetResourceId(
           widget.id
-        )}_description"${previewImageAttr}${previewLayoutAttr}${configureAttrs}>
+        )}_description"${previewImageAttr}${previewLayoutAttr}>
     </appwidget-provider>
   `
 }

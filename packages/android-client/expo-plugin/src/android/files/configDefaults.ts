@@ -20,8 +20,8 @@ export interface GenerateConfigDefaultsOptions {
  * `default` are emitted. No file is written when nothing declares defaults.
  *
  * Also emits `assets/voltra/widget_dynamic_parameters.json`, `{ "<widgetId>": ["<paramName>"] }`:
- * each widget's `dynamicOptions` parameters in declared order, which the configure activity offers
- * and which read as `""` until the app sets choices. Removed when nothing declares one.
+ * each widget's `dynamicOptions` parameters in declared order: the only parameters
+ * resolved against stored choices, which read as `""` until the app sets them. Removed when nothing declares one.
  */
 export async function generateAndroidConfigDefaults(options: GenerateConfigDefaultsOptions): Promise<void> {
   const { widgets, platformProjectRoot } = options
@@ -51,7 +51,7 @@ export async function generateAndroidConfigDefaults(options: GenerateConfigDefau
     fs.mkdirSync(voltraAssetsDir, { recursive: true })
     fs.writeFileSync(dynamicParametersPath, JSON.stringify(dynamicParameters, null, 2))
   } else {
-    // A stale list would keep offering, and blanking, parameters the app no longer declares.
+    // A stale list would keep blanking parameters the app no longer declares.
     fs.rmSync(dynamicParametersPath, { force: true })
   }
 

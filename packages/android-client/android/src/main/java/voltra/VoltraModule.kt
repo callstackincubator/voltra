@@ -503,6 +503,33 @@ class VoltraModule(
         optionsJson: String,
         promise: Promise,
     ) {
+        when (val resolution = VoltraWidgetKindResolver.resolve(reactApplicationContext, widgetId)) {
+            is VoltraWidgetKindResolution.Resolved -> {
+                if (resolution.kind != VoltraWidgetKind.Dynamic) {
+                    promise.reject(
+                        "VOLTRA_WIDGET_KIND_MISMATCH",
+                        "Widget '$widgetId' is a payload-driven widget and has no configuration. " +
+                            "setWidgetParameterOptions only applies to Dynamic Widgets.",
+                    )
+                    return
+                }
+            }
+
+            is VoltraWidgetKindResolution.Unresolved -> {
+                promise.reject("VOLTRA_WIDGET_NOT_FOUND", resolution.reason)
+                return
+            }
+        }
+
+        val store = VoltraConfigurationStore(reactApplicationContext)
+        if (parameter !in store.dynamicParameters(widgetId)) {
+            promise.reject(
+                "VOLTRA_WIDGET_PARAMETER_NOT_DECLARED",
+                "Widget '$widgetId' declares no appIntent parameter '$parameter' with dynamicOptions: true.",
+            )
+            return
+        }
+
         runBlocking {
             try {
                 // Read once here, so a bad shape is rejected now rather than thrown by every render.
@@ -511,7 +538,7 @@ class VoltraModule(
                     options.getJSONObject(i).getString("value")
                     options.getJSONObject(i).getString("title")
                 }
-                VoltraConfigurationStore(reactApplicationContext).setOptions(widgetId, parameter, optionsJson)
+                store.setOptions(widgetId, parameter, optionsJson)
                 triggerDynamicWidgetConfigurationGlanceUpdate(reactApplicationContext, widgetId)
                 DynamicWidgetServerUpdateScheduler.recompute(reactApplicationContext, widgetId)
                 promise.resolve(null)

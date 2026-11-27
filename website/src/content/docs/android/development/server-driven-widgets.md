@@ -154,13 +154,7 @@ Configurations are meant for identifiers and short choices, not large payloads â
 
 A widget with no configuration parameters keeps behaving exactly as it did before: one request, one cached response, shared by every placement.
 
-To fetch a different endpoint per placement instead, put `{name}` in the URL. Each placement fills it with its own `env.configuration[name]`, encoded as one path segment:
-
-```json
-"serverUpdate": { "url": "https://api.example.com/teams/{team}/widget" }
-```
-
-A placement with no value for a placeholder fetches nothing, so it renders with no server props until one is set. Pair this with `dynamicOptions: true` on an `appIntent` parameter and `setWidgetParameterOptions(widgetId, parameter, options)` from `@use-voltra/android-client`: newly placed widgets default to the first choice, long-press **Reconfigure** (Android 12+) opens a native picker of the stored choices for that placement, one per `dynamicOptions` parameter in declared order, and removing a picked choice falls back to the first choice. Until the app sets choices, `env.configuration[parameter]` is `""`. `clearAndroidWidget` and `clearAllAndroidWidgets` remove the stored choices.
+An `appIntent` parameter with `dynamicOptions: true` takes its choices from the app at runtime: call `setWidgetParameterOptions(widgetId, parameter, options)` from `@use-voltra/android-client`, and pick a placement's value with `setWidgetInstanceConfiguration`. A placement with no value, or whose value is no longer among the choices, uses the first choice, and until the app sets choices `env.configuration[parameter]` is `""`. The resolved value is part of `configuration` and `instance`, so each choice is fetched and cached separately. `setWidgetParameterOptions` rejects with `VOLTRA_WIDGET_PARAMETER_NOT_DECLARED` for a parameter the widget does not declare with `dynamicOptions`, and `clearAndroidWidget` and `clearAllAndroidWidgets` remove the stored choices. Android has no native picker for these choices yet.
 
 `dynamicOptions` is supported with Expo Prebuild only. Voltra Apply stops with an error if a parameter sets it.
 

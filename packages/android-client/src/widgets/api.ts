@@ -70,20 +70,21 @@ export const setWidgetConfiguration = async (widgetId: string, key: string, valu
 
 /**
  * Sets the choices for a Dynamic Widget's `dynamicOptions` parameter, such as the places a user
- * follows, and redraws its placements. The widget's configure screen lists them, and the picked
- * `value` reaches the widget as `env.configuration[parameter]` and fills `{parameter}` in its
- * `serverUpdate` URL. A placement with no pick, or whose pick is no longer listed, uses the first
- * option, and with no options it is `""`.
+ * follows, and redraws its placements. A placement's pick, set with `setWidgetInstanceConfiguration`,
+ * reaches the widget as `env.configuration[parameter]`. A placement with no pick, or whose pick is no
+ * longer listed, uses the first option, and with no options it is `""`.
  *
  * Throws if an option's `value` or `title` is not a string, or a `value` is empty or repeated.
+ * Rejects with `VOLTRA_WIDGET_NOT_FOUND`, `VOLTRA_WIDGET_KIND_MISMATCH` for a payload-driven widget,
+ * or `VOLTRA_WIDGET_PARAMETER_NOT_DECLARED` when the widget declares no such `dynamicOptions` parameter.
  */
 export const setWidgetParameterOptions = async (
   widgetId: string,
   parameter: string,
   options: WidgetParameterOption[]
 ): Promise<void> => {
-  // A value is the choice's identity in the configure screen and fills the URL, so it must be a
-  // unique, non-empty string: an empty one would never fetch, and a duplicate could not be told apart.
+  // A value is the choice's identity, so it must be a unique, non-empty string: an empty one reads as
+  // "no choices", and a duplicate could not be told apart.
   const values = new Set<string>()
   for (const option of options) {
     if (typeof option?.value !== 'string' || typeof option.title !== 'string') {

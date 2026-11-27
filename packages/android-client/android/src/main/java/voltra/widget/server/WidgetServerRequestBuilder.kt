@@ -53,23 +53,6 @@ object WidgetServerRequestBuilder {
 
     private const val CONNECT_TIMEOUT_MS = 15_000
     private const val READ_TIMEOUT_MS = 15_000
-    private val PLACEHOLDER = Regex("\\{([^{}]*)\\}")
-
-    /**
-     * [url] with each `{name}` replaced by `configuration[name]`, encoded as one path segment, as on
-     * iOS. Null when a placeholder has no value, which means there is nothing to fetch.
-     */
-    fun fillPlaceholders(
-        url: String,
-        configuration: Map<String, String>,
-    ): String? {
-        var filled = url
-        while (true) {
-            val match = PLACEHOLDER.find(filled) ?: return filled
-            val value = configuration[match.groupValues[1]]?.takeIf { it.isNotEmpty() } ?: return null
-            filled = filled.replaceRange(match.range, Uri.encode(value))
-        }
-    }
 
     /**
      * @param etag from the last `200`, sent as `If-None-Match`. Callers pass null when the stored
@@ -91,12 +74,11 @@ object WidgetServerRequestBuilder {
             return null
         }
 
-        val url = settings.url?.let { fillPlaceholders(it, configuration) } ?: return null
         val method = settings.method.uppercase()
 
         val builder =
             Uri
-                .parse(url)
+                .parse(settings.url)
                 .buildUpon()
                 .appendQueryParameter("widgetId", scope.widgetId)
                 .appendQueryParameter("platform", "android")
