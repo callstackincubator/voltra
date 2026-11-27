@@ -110,9 +110,7 @@ collection adapters need a real AppWidget host on those versions. Inside a scrol
 
 **Parameters:**
 
-- `columns` (number | `"adaptive"`): Number of columns or `"adaptive"` for an adaptive grid.
-- `minSize` (number, optional): Minimum size (in dp) for items in adaptive grid mode.
+- `columns` (number | `{ type: 'fixed', count: number }` | `{ type: 'adaptive', minSize: number }`, optional): Number of columns, from 1 to 5, or an adaptive grid whose cells are at least `minSize` dp wide. Defaults to 2. On Android 11 and older, an adaptive grid gets 2 columns.
 - `horizontalAlignment` (string, optional): `"start"`, `"center-horizontally"`, `"end"`.
-- `verticalAlignment` (string, optional): `"top"`, `"center"`, `"bottom"`.
 
 Supports the `gap` style to space cells apart horizontally and vertically. With a fixed number of `columns`, the gap goes only between cells. With adaptive columns, the grid's outer edge also gets half the gap.

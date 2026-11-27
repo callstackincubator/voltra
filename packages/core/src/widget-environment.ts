@@ -26,7 +26,9 @@ export type WidgetEnvironment<TConfig extends Record<string, unknown> | undefine
   date: Date
 
   /** Widget size family. iOS values: `systemSmall`, `systemMedium`, `systemLarge`, etc.
-   * Android values: synthesized from Glance `LocalSize` (e.g. `"200x200"`). */
+   * Android values: the widget's current size in dp as `"WIDTHxHEIGHT"` (e.g. `"180x110"`),
+   * from Glance `LocalSize`. Each dimension is truncated to a whole number, and the widget
+   * renders again when the user resizes it. */
   widgetFamily: string
 
   /** Current color scheme of the widget's environment. May be `undefined` if the platform
