@@ -38,6 +38,12 @@ internal object VoltraJSRenderer {
         envJSON: String,
     ): String?
 
+    /** Null when the widget has no `timeline` export. */
+    private external fun nativeTimeline(
+        widgetId: String,
+        propsJSON: String,
+    ): String?
+
     /**
      * Minimal global shims. The widget Metro bundle runs in a *bare* Hermes runtime (no RN
      * preamble — the widget Metro config strips polyfills), but React's dev build and a few
@@ -90,17 +96,11 @@ internal object VoltraJSRenderer {
                     append('\n')
                     append(";(function () {\n")
                     append("  if (!globalThis.__voltraWidgets) { globalThis.__voltraWidgets = {}; }\n")
-                    append("  var widget = __r(")
-                    append(entryModuleId)
-                    append(");\n")
                     append("  globalThis.__voltraWidgets[")
                     append(jsStringLiteral(widgetId))
-                    append("] = widget;\n")
-                    // nativeRender calls an entry's `render`, so timeline() gets an entry of its own
-                    // rather than a second JNI function.
-                    append("  globalThis.__voltraWidgets[")
-                    append(jsStringLiteral(timelineEntryId(widgetId)))
-                    append("] = { render: widget.timeline };\n")
+                    append("] = __r(")
+                    append(entryModuleId)
+                    append(");\n")
                     append("})();\n")
                 }
             try {
@@ -145,22 +145,26 @@ internal object VoltraJSRenderer {
 
     /**
      * The epoch-ms dates the widget's optional `timeline(props)` export wants it drawn again at,
-     * the Android twin of iOS `timelineDates(widgetId:propsJSON:)`. No export, a throw or a
-     * non-array all mean no dates.
+     * the Android twin of iOS `timelineDates(widgetId:propsJSON:)`. The Metro wrapper exports it
+     * only when the entry has one and has already turned the result into a number array.
+     *
+     * @return null when there is no export.
+     * @throws VoltraJSException when `timeline()` throws.
      */
     fun timelineDates(
         widgetId: String,
         propsJSON: String,
-    ): List<Long> =
-        try {
-            val dates = JSONArray(render(timelineEntryId(widgetId), propsJSON, "{}"))
-            List(dates.length()) { dates.optLong(it) }
-        } catch (e: Exception) {
-            Log.w(TAG, "timeline() failed for widgetId=$widgetId", e)
-            emptyList()
-        }
-
-    private fun timelineEntryId(widgetId: String): String = "$widgetId#timeline"
+    ): List<Long>? =
+        synchronized(lock) {
+            try {
+                nativeTimeline(widgetId, propsJSON)
+            } catch (e: VoltraJSException) {
+                throw e
+            } catch (t: Throwable) {
+                Log.e(TAG, "nativeTimeline threw for widgetId=$widgetId", t)
+                throw VoltraJSException(t.toString(), null)
+            }
+        }?.let { json -> JSONArray(json).let { dates -> List(dates.length()) { dates.getDouble(it).toLong() } } }
 
     /**
      * Find the entry module id Metro emitted in the bundle's trailing `__r(<id>);`. Every

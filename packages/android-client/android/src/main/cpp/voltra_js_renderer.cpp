@@ -17,9 +17,11 @@
 #include <jsi/jsi.h>
 
 #include <chrono>
+#include <initializer_list>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #define LOG_TAG "VoltraJSRenderer"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -167,57 +169,57 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeEvaluateBundle(
   }
 }
 
-// Invoke the previously-captured `render(propsJSON, envJSON)` for a widget.
-// Props/env cross the boundary as JSON strings (the JS entry parses them); the
-// entry returns a JSON string (the resolved Voltra node tree), so no JSON
-// marshaling is needed here. Any failure throws VoltraJSException (message + JS stack).
-extern "C" JNIEXPORT jstring JNICALL
-Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
-    JNIEnv *env, jobject /* this */, jstring jWidgetId, jstring jPropsJSON,
-    jstring jEnvJSON) {
+// Call the export `name` of a widget's captured entry with string arguments and return its
+// string result. Arguments and the result cross as JSON strings (the JS entry parses them), so
+// no JSON marshaling is needed here. When `optional` is set, a missing export returns nullptr
+// without throwing; any other failure throws VoltraJSException (message + JS stack).
+static jstring callWidgetExport(JNIEnv *env, jstring jWidgetId, const char *name,
+                                std::initializer_list<jstring> jArgs, bool optional) {
   std::lock_guard<std::mutex> lock(g_mutex);
   if (!g_runtime) {
-    LOGE("render called before evaluateBundle");
-    throwJsFailure(env, "render() was called before any bundle was evaluated", nullptr);
+    LOGE("%s called before evaluateBundle", name);
+    throwJsFailure(env, std::string(name) + "() was called before any bundle was evaluated", nullptr);
     return nullptr;
   }
   try {
     auto &rt = *g_runtime;
     const std::string widgetId = jstringToStd(env, jWidgetId);
-    const std::string propsJSON = jstringToStd(env, jPropsJSON);
-    const std::string envJSON = jstringToStd(env, jEnvJSON);
 
     auto registry = rt.global().getProperty(rt, "__voltraWidgets");
     if (!registry.isObject()) {
-      LOGE("render: __voltraWidgets missing (bundle not evaluated?)");
-      throwJsFailure(env, "render() was called before the bundle was evaluated (globalThis.__voltraWidgets is missing)", nullptr);
+      LOGE("%s: __voltraWidgets missing (bundle not evaluated?)", name);
+      throwJsFailure(env, std::string(name) + "() was called before the bundle was evaluated (globalThis.__voltraWidgets is missing)", nullptr);
       return nullptr;
     }
     auto widget = registry.asObject(rt).getProperty(rt, widgetId.c_str());
     if (!widget.isObject()) {
-      LOGE("render: no captured widget for widgetId=%s", widgetId.c_str());
+      LOGE("%s: no captured widget for widgetId=%s", name, widgetId.c_str());
       throwJsFailure(env, "No evaluated widget entry for widgetId=" + widgetId, nullptr);
       return nullptr;
     }
-    auto renderProp = widget.asObject(rt).getProperty(rt, "render");
-    if (!renderProp.isObject() ||
-        !renderProp.asObject(rt).isFunction(rt)) {
-      LOGE("render: render is not a function for widgetId=%s",
-           widgetId.c_str());
-      throwJsFailure(env, "The widget entry for widgetId=" + widgetId + " does not export a render function", nullptr);
+    auto exportProp = widget.asObject(rt).getProperty(rt, name);
+    if (!exportProp.isObject() || !exportProp.asObject(rt).isFunction(rt)) {
+      if (optional) {
+        return nullptr;
+      }
+      LOGE("%s is not a function for widgetId=%s", name, widgetId.c_str());
+      throwJsFailure(env, "The widget entry for widgetId=" + widgetId + " does not export a " + name + " function", nullptr);
       return nullptr;
     }
-    auto renderFn = renderProp.asObject(rt).asFunction(rt);
+    auto fn = exportProp.asObject(rt).asFunction(rt);
 
-    auto tRender = Clock::now();
-    jsi::Value result = renderFn.call(
-        rt, jsi::String::createFromUtf8(rt, propsJSON),
-        jsi::String::createFromUtf8(rt, envJSON));
-    LOGPERF("[perf] render: %.2f ms (widgetId=%s)", millisSince(tRender), widgetId.c_str());
+    std::vector<jsi::Value> args;
+    for (jstring jArg : jArgs) {
+      args.emplace_back(jsi::String::createFromUtf8(rt, jstringToStd(env, jArg)));
+    }
+
+    auto tCall = Clock::now();
+    jsi::Value result = fn.call(rt, static_cast<const jsi::Value *>(args.data()), args.size());
+    LOGPERF("[perf] %s: %.2f ms (widgetId=%s)", name, millisSince(tCall), widgetId.c_str());
 
     if (!result.isString()) {
-      LOGE("render: did not return a string for widgetId=%s", widgetId.c_str());
-      throwJsFailure(env, std::string("render() returned ") + jsTypeName(rt, result) +
+      LOGE("%s: did not return a string for widgetId=%s", name, widgetId.c_str());
+      throwJsFailure(env, std::string(name) + "() returned " + jsTypeName(rt, result) +
                               ", expected a JSON string",
                      nullptr);
       return nullptr;
@@ -225,17 +227,34 @@ Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
     std::string resultStr = result.asString(rt).utf8(rt);
     return env->NewStringUTF(resultStr.c_str());
   } catch (const jsi::JSError &e) {
-    LOGE("render JSError: %s", e.getMessage().c_str());
+    LOGE("%s JSError: %s", name, e.getMessage().c_str());
     const std::string stack = e.getStack();
     throwJsFailure(env, e.getMessage(), &stack);
     return nullptr;
   } catch (const std::exception &e) {
-    LOGE("render threw: %s", e.what());
+    LOGE("%s threw: %s", name, e.what());
     throwJsFailure(env, e.what(), nullptr);
     return nullptr;
   } catch (...) {
-    LOGE("render threw: unknown");
-    throwJsFailure(env, "Unknown native exception while rendering", nullptr);
+    LOGE("%s threw: unknown", name);
+    throwJsFailure(env, std::string("Unknown native exception while calling ") + name + "()", nullptr);
     return nullptr;
   }
+}
+
+// Invoke the previously-captured `render(propsJSON, envJSON)` for a widget; returns the resolved
+// Voltra node tree as a JSON string.
+extern "C" JNIEXPORT jstring JNICALL
+Java_voltra_dynamicwidget_VoltraJSRenderer_nativeRender(
+    JNIEnv *env, jobject /* this */, jstring jWidgetId, jstring jPropsJSON,
+    jstring jEnvJSON) {
+  return callWidgetExport(env, jWidgetId, "render", {jPropsJSON, jEnvJSON}, false);
+}
+
+// Invoke the optional `timeline(propsJSON)` export; returns its JSON array of epoch ms, or null
+// when the widget has no `timeline` export.
+extern "C" JNIEXPORT jstring JNICALL
+Java_voltra_dynamicwidget_VoltraJSRenderer_nativeTimeline(
+    JNIEnv *env, jobject /* this */, jstring jWidgetId, jstring jPropsJSON) {
+  return callWidgetExport(env, jWidgetId, "timeline", {jPropsJSON}, true);
 }

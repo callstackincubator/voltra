@@ -244,6 +244,12 @@ class VoltraClientGlanceWidget(
         val scope = placementScope(widgetId, configuration, appWidgetId)
         val dynamicWidgetRenderInput = currentDynamicWidgetRenderInput(context, widgetId, scope)
 
+        val bundleState = DynamicWidgetBundleRecord.get(widgetId)
+        // The dates depend only on the props, so a failed render does not stop later redraws.
+        if (bundleState is DynamicWidgetBundleState.Ready) {
+            DynamicWidgetTimelineAlarm.schedule(context, widgetId, appWidgetId, dynamicWidgetRenderInput.propsJson)
+        }
+
         val lastGoodStore = remember { DynamicWidgetLastGoodStore(context) }
         // The prerendered placeholder covers first paint and a release widget that never rendered.
         val shown =
@@ -252,8 +258,8 @@ class VoltraClientGlanceWidget(
                 appWidgetId = appWidgetId,
                 family = widgetFamily(size),
                 isDev = isDynamicWidgetDev(context),
-                bundleState = DynamicWidgetBundleRecord.get(widgetId),
-                render = { renderNode(context, size, configuration, appWidgetId, dynamicWidgetRenderInput) },
+                bundleState = bundleState,
+                render = { renderNode(context, size, configuration, dynamicWidgetRenderInput) },
                 lastGoodStore = lastGoodStore,
                 parseNode = ::parseNode,
                 placeholder = { placeholderNode(context) },
@@ -317,21 +323,15 @@ class VoltraClientGlanceWidget(
         context: Context,
         size: DpSize,
         configuration: Map<String, String>,
-        appWidgetId: Int?,
         dynamicWidgetRenderInput: DynamicWidgetRenderInput,
     ): DynamicWidgetRenderOutcome {
         val envJson = buildEnvJson(context, widgetId, size, configuration, environmentSource)
         val dynamicWidgetRenderCoordinator = DynamicWidgetRenderCoordinator()
-        val outcome =
-            dynamicWidgetRenderCoordinator.renderDynamicWidget(
-                dynamicWidgetId = widgetId,
-                dynamicWidgetRenderInput = dynamicWidgetRenderInput,
-                dynamicWidgetEnvironmentJson = envJson,
-            )
-        if (outcome is DynamicWidgetRenderOutcome.Success) {
-            DynamicWidgetTimelineAlarm.schedule(context, widgetId, appWidgetId, dynamicWidgetRenderInput.propsJson)
-        }
-        return outcome
+        return dynamicWidgetRenderCoordinator.renderDynamicWidget(
+            dynamicWidgetId = widgetId,
+            dynamicWidgetRenderInput = dynamicWidgetRenderInput,
+            dynamicWidgetEnvironmentJson = envJson,
+        )
     }
 
     /**

@@ -170,6 +170,28 @@ The response object becomes the same first argument `updateAndroidDynamicWidget`
 
 `updateAndroidDynamicWidget` keeps working on a server-driven widget — the next fetch simply overwrites what you wrote. See [Server-driven widgets](/android/development/server-driven-widgets) for the response contract, the `env.serverUpdate` fields, and how to take a widget over.
 
+## Changing at known times
+
+A Dynamic Widget is drawn when its props change, and server fetches are 15 minutes or more apart. When the props already say when the widget has to change, such as the next item of a schedule starting or a new day beginning, export `timeline` from the widget entry. It receives the current props and returns the times to draw the widget at, as `Date`s or epoch milliseconds:
+
+```tsx
+export function timeline(props: { departures?: { at: number }[] }): number[] {
+  return (props.departures ?? []).map((departure) => departure.at)
+}
+
+export default function DeparturesWidget(props, env) {
+  const now = env.date.valueOf()
+  const next = props.departures?.find((departure) => departure.at > now)
+  // ...
+}
+```
+
+Voltra keeps one alarm per placement for the earliest future time. It is a non-waking, inexact `AlarmManager.RTC` alarm that needs no exact-alarm permission, so a redraw can run up to 10 minutes after the listed time, and a sleeping phone redraws when it wakes. `env.date` is when the redraw actually runs, not the listed time, so pick what to show from `env.date`. Each redraw sets the alarm for the next time. This works for every Dynamic Widget, with or without a `serverUpdate`, using the props it last received. Removing a placement cancels its alarm. A widget without a `timeline` export is drawn as before and pays nothing for the feature.
+
+List the times at which the content actually changes, not one per minute: each one is a redraw, and the 10-minute window makes finer steps meaningless, so this does not suit a ticking countdown. Returning something other than an array throws and is logged, and elements that are neither a `Date` nor a finite number are dropped.
+
+Android clears alarms on reboot and force-stop. After a reboot, Android asks every placed widget to update, which redraws it for the current time and sets the alarm again. After a force-stop, the widget keeps what it last drew until its next props update or fetch.
+
 ## Configure each placed widget separately
 
 Every widget placed on the Home Screen has its own `appWidgetId`. Give one placement its own values and it renders them alone — the usual reason to place a widget twice, like one weather widget on London and another on New York. The widget code does not change: it still reads `env.configuration`, and now gets the values of the placement being drawn.
