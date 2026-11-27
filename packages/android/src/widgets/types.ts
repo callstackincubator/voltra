@@ -17,10 +17,8 @@ export type AndroidWidgetSizeVariant = {
   content: ReactNode
 }
 
-/**
- * Information about an active widget instance on Android
- */
-export type WidgetInfo = {
+export type VoltraWidgetPlacementSize = { width: number; height: number }
+export type VoltraWidgetPlacement = {
   /** The Voltra widget id, as defined in the config plugin (e.g. `"weather"`) */
   widgetType: string
   /**
@@ -29,6 +27,23 @@ export type WidgetInfo = {
    * configuration APIs to give one placement its own values.
    */
   appWidgetId: number
+}
+export type VoltraWidgetPlacementWithSize = VoltraWidgetPlacement & {
+  /** Minimum width option in dp, as reported by the system */
+  width: number
+  /** Minimum height option in dp, as reported by the system */
+  height: number
+  /**
+   * Sizes in dp the launcher may show this placement at: the launcher's own list on Android 12+,
+   * otherwise a portrait and a landscape estimate from the min/max bounds.
+   */
+  sizes: VoltraWidgetPlacementSize[]
+}
+
+/**
+ * Information about an active widget instance on Android
+ */
+export type WidgetInfo = VoltraWidgetPlacementWithSize & {
   /**
    * @deprecated Renamed to `widgetType`, which says what this field holds. Same value.
    */
@@ -43,9 +58,6 @@ export type WidgetInfo = {
   providerClassName: string
   /** Current labeling associated with the widget */
   label: string
-  /** Dimensions in dp as reported by the system */
-  width: number
-  height: number
 }
 
 /**

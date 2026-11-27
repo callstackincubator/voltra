@@ -48,6 +48,9 @@ export type {
   AndroidWidgetSizeVariant,
   AndroidWidgetVariants,
   UpdateAndroidWidgetOptions,
+  VoltraWidgetPlacement,
+  VoltraWidgetPlacementSize,
+  VoltraWidgetPlacementWithSize,
   WidgetInfo,
 } from './widgets/types.js'
 

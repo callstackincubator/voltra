@@ -143,8 +143,21 @@ type RequestPinGlanceAppWidgetOptionsSpec = Readonly<{
   previewHeight?: number
 }>
 
+/** An event was recorded in the native event queue. Carries no event data; call `popEvents`. */
+type VoltraEventsAvailableEvent = Readonly<{
+  type: string
+}>
+
 export interface Spec extends TurboModule {
   readonly onOngoingNotificationEnded: CodegenTypes.EventEmitter<AndroidOngoingNotificationEndedEvent>
+  readonly onEventsAvailable: CodegenTypes.EventEmitter<VoltraEventsAvailableEvent>
+  /** Internal: removes and returns the queued events of these types, oldest first, as a JSON array. */
+  popEvents(types: string[]): string
+  /**
+   * Internal: puts popped events (a JSON array) back at the front of the queue. Returns a value so
+   * codegen makes it synchronous and a pull right after it sees the events.
+   */
+  restoreEvents(eventsJson: string): boolean
   startAndroidOngoingNotification(
     payload: string,
     options: StartAndroidOngoingNotificationOptionsSpec

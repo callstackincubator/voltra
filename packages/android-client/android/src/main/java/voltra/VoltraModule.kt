@@ -21,6 +21,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import org.json.JSONArray
 import org.json.JSONObject
 import voltra.dynamicwidget.AndroidDynamicWidgetInstanceBoundary
 import voltra.dynamicwidget.DynamicWidgetInstanceRejection
@@ -32,10 +33,12 @@ import voltra.dynamicwidget.DynamicWidgetUpdateRejection
 import voltra.dynamicwidget.DynamicWidgetUpdateTrigger
 import voltra.dynamicwidget.DynamicWidgetUpdater
 import voltra.dynamicwidget.VoltraConfigurationStore
+import voltra.dynamicwidget.WidgetPlacementSize
 import voltra.dynamicwidget.serverupdate.DynamicWidgetServerUpdateScheduler
 import voltra.dynamicwidget.triggerDynamicWidgetConfigurationGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetGlanceUpdate
 import voltra.dynamicwidget.triggerDynamicWidgetInstanceConfigurationGlanceUpdate
+import voltra.events.VoltraEventBus
 import voltra.glance.renderers.arc.ArcBitmapCache
 import voltra.images.VoltraImageManager
 import voltra.ongoingnotification.VoltraNotificationException
@@ -177,13 +180,22 @@ class VoltraModule(
             )
         }
 
+    private var eventBusToken: String? = null
+
     override fun initialize() {
         super.initialize()
         reactApplicationContext.registerComponentCallbacks(configurationCallbacks)
         VoltraNotificationManager.addEndedListener(ongoingNotificationEndedListener)
+        DynamicWidgetPlacementData.onAppStarted(reactApplicationContext)
+        eventBusToken =
+            VoltraEventBus.subscribe {
+                emitOnEventsAvailable(Arguments.createMap().apply { putString("type", "eventsAvailable") })
+            }
     }
 
     override fun invalidate() {
+        eventBusToken?.let(VoltraEventBus::unsubscribe)
+        eventBusToken = null
         VoltraNotificationManager.removeEndedListener(ongoingNotificationEndedListener)
         try {
             reactApplicationContext.unregisterComponentCallbacks(configurationCallbacks)
@@ -192,6 +204,24 @@ class VoltraModule(
         }
         super.invalidate()
     }
+
+    override fun popEvents(types: ReadableArray): String =
+        try {
+            val wanted = (0 until types.size()).mapNotNull { types.getString(it) }.toSet()
+            VoltraEventBus.pop(reactApplicationContext, wanted).toString()
+        } catch (e: Exception) {
+            Log.e(TAG, "popEvents failed", e)
+            "[]"
+        }
+
+    override fun restoreEvents(eventsJson: String): Boolean =
+        try {
+            VoltraEventBus.restore(reactApplicationContext, JSONArray(eventsJson))
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "restoreEvents failed", e)
+            false
+        }
 
     /**
      * Settles [promise] with the block's result, or rejects it with a code: a
@@ -1090,9 +1120,7 @@ class VoltraModule(
         for (providerInfo in installedProviders) {
             val ids = manager.getAppWidgetIds(providerInfo.provider)
             for (id in ids) {
-                val opts = manager.getAppWidgetOptions(id)
-                val minWidth = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
-                val minHeight = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+                val size = WidgetPlacementSize.fromOptions(manager.getAppWidgetOptions(id))
                 val shortClassName = providerInfo.provider.shortClassName
                 val widgetType =
                     widgetIdsByComponent[providerInfo.provider]
@@ -1112,8 +1140,7 @@ class VoltraModule(
                         putInt("widgetId", id)
                         putString("providerClassName", shortClassName)
                         putString("label", providerInfo.loadLabel(reactApplicationContext.packageManager).toString())
-                        putInt("width", minWidth)
-                        putInt("height", minHeight)
+                        size.writeTo(this)
                     },
                 )
             }
