@@ -1,5 +1,16 @@
 # @use-voltra/ios-client
 
+## 2.7.1
+
+### Patch Changes
+
+- 2893304: Server-driven Dynamic Widgets now show the first fetch after their widget process starts, instead of discarding it and waiting for the next interval.
+- ff961f2: After a normal launch, the React tree on iOS no longer remounts on the first foreground or on the first `isHeadless()` / `useIsHeadless()` call.
+- 7462d5f: Settings passed to `setWidgetServerUpdate(..., { widgetId })` now apply to server-driven Dynamic Widgets that have configuration parameters. Before, those widgets ignored the widget's URL, interval, method, headers and body, and used the global or app.json values.
+  - @use-voltra/compiler@2.7.1
+  - @use-voltra/expo-plugin@2.7.1
+  - @use-voltra/ios@2.7.1
+
 ## 2.7.0
 
 ### Minor Changes

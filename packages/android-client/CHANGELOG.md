@@ -1,5 +1,18 @@
 # @use-voltra/android-client
 
+## 2.7.1
+
+### Patch Changes
+
+- d3b5282: An Android `ArcProgressIndicator` with `gradientColors` now draws each round cap in the color of its own end. Before, the cap where a clockwise arc starts, or where a counter-clockwise arc ends, took the color from the other end.
+- 7b2adde: Children hidden with `display: 'none'` or the `visibility('gone')` modifier no longer leave
+  an empty space in Column, Row, LazyColumn and LazyVerticalGrid on Android 11 and older.
+- 7462d5f: Settings passed to `setWidgetServerUpdate(..., { widgetId })` now apply to server-driven Dynamic Widgets that have configuration parameters. Before, those widgets ignored the widget's URL, interval, method, headers and body, and used the global or app.json values.
+- 2fbf978: The `color` prop on Android `Text` now takes effect and overrides `color` from the `style` prop.
+  - @use-voltra/android@2.7.1
+  - @use-voltra/compiler@2.7.1
+  - @use-voltra/expo-plugin@2.7.1
+
 ## 2.7.0
 
 ### Patch Changes

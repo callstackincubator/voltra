@@ -1,5 +1,11 @@
 # @use-voltra/android
 
+## 2.7.1
+
+### Patch Changes
+
+- @use-voltra/core@2.7.1
+
 ## 2.7.0
 
 ### Patch Changes

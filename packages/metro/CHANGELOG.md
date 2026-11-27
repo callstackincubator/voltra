@@ -1,5 +1,12 @@
 # @use-voltra/metro
 
+## 2.7.1
+
+### Patch Changes
+
+- @use-voltra/compiler@2.7.1
+- @use-voltra/expo-plugin@2.7.1
+
 ## 2.7.0
 
 ### Patch Changes
