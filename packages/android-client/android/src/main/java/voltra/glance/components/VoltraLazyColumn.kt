@@ -36,7 +36,6 @@ fun VoltraLazyColumn(
     val items =
         LayoutGaps.visibleItems(
             resolveLazyListItems(element.c, context.sharedElements),
-            gap,
             context.sharedStyles,
             context.sharedElements,
         )

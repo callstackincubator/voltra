@@ -126,46 +126,33 @@ class LayoutGapsTest {
     // --- visibleChildren ---
 
     @Test
-    fun visibleChildren_retainsGoneChildWhenGapIsNullOrZero() {
-        val visible = element()
-        val gone = element(mapOf("style" to mapOf("display" to "none")))
-        val children = listOf(visible, gone)
+    fun visibleChildren_dropsGoneChildren() {
+        val firstVisible = element()
+        val goneStyle = element(mapOf("style" to mapOf("display" to "none")))
+        val goneNative = elementWithVisibility("gone")
+        val secondVisible = text("after hidden children")
+        val children = listOf(firstVisible, goneStyle, secondVisible, goneNative)
 
-        assertEquals(children, LayoutGaps.visibleChildren(children, gap = null, sharedStyles = null))
-        assertEquals(children, LayoutGaps.visibleChildren(children, gap = 0.dp, sharedStyles = null))
-    }
-
-    @Test
-    fun visibleChildren_excludesGoneChildWhenGapIsPositive() {
-        val visible = element()
-        val gone = element(mapOf("style" to mapOf("display" to "none")))
-        val children = listOf(visible, gone)
-
-        assertEquals(listOf(visible), LayoutGaps.visibleChildren(children, gap = 8.dp, sharedStyles = null))
+        assertEquals(listOf(firstVisible, secondVisible), LayoutGaps.visibleChildren(children, sharedStyles = null))
     }
 
     // --- visibleItems ---
 
     @Test
-    fun visibleItems_dropsGoneItemsAndResolvesRefsWhenGapIsPositive() {
+    fun visibleItems_dropsGoneItemsAndResolvesRefs() {
         val shown = element()
         val goneStyle = element(mapOf("style" to mapOf("display" to "none")))
         val goneNative = elementWithVisibility("gone")
-        val sharedElements = listOf(goneNative)
-        val items = listOf(shown, goneStyle, VoltraNode.Ref(0), text("t"))
+        val shownRef = VoltraNode.Ref(1)
+        val sharedElements = listOf(goneNative, shown)
+        val label = text("t")
+        val unresolvedRef = VoltraNode.Ref(99)
+        val items = listOf(shown, goneStyle, goneNative, shownRef, VoltraNode.Ref(0), label, null, unresolvedRef)
 
         assertEquals(
-            listOf(shown, text("t")),
-            LayoutGaps.visibleItems(items, gap = 8.dp, sharedStyles = null, sharedElements = sharedElements),
+            listOf(shown, shownRef, label, null, unresolvedRef),
+            LayoutGaps.visibleItems(items, sharedStyles = null, sharedElements = sharedElements),
         )
-    }
-
-    @Test
-    fun visibleItems_keepsEverythingWithoutAPositiveGap() {
-        val items = listOf(element(), element(mapOf("style" to mapOf("display" to "none"))))
-
-        assertEquals(items, LayoutGaps.visibleItems(items, gap = null, sharedStyles = null, sharedElements = null))
-        assertEquals(items, LayoutGaps.visibleItems(items, gap = 0.dp, sharedStyles = null, sharedElements = null))
     }
 
     // --- gapInsets ---

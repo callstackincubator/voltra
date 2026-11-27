@@ -1,7 +1,6 @@
 package voltra.glance.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.Dp
 import androidx.glance.GlanceModifier
 import androidx.glance.layout.*
 import androidx.glance.text.Text
@@ -19,18 +18,16 @@ import voltra.styling.applyFlex
 /**
  * Computes the leaf children a Column/Row should render.
  *
- * When [gap] is null or non-positive, this is a no-op beyond flattening: no per-child
- * style resolution happens and Gone children are left in place, so rendering stays
- * identical to before the `gap` style existed. Only when [gap] is positive are Gone
- * children filtered out (see [LayoutGaps.visibleChildren]) so they don't get a gap.
+ * Gone children are always filtered out before gaps are calculated. On Android 11 and
+ * older, Glance can wrap a view with a fixed dp width or height in a size-holding
+ * container; `Visibility.Gone` hides the inner view but leaves that wrapper in the layout.
  */
 private fun resolveGapChildren(
     element: VoltraElement,
     context: VoltraRenderContext,
-    gap: Dp?,
 ): List<VoltraNode> {
     val allChildren = LayoutGaps.flattenChildren(element.c, context.sharedElements)
-    return LayoutGaps.visibleChildren(allChildren, gap, context.sharedStyles)
+    return LayoutGaps.visibleChildren(allChildren, context.sharedStyles)
 }
 
 @Composable
@@ -66,7 +63,7 @@ fun RenderColumn(
         }
 
     val gap = resolveElementStyle(element, context.sharedStyles)?.layout?.gap
-    val visibleChildren = resolveGapChildren(element, context, gap)
+    val visibleChildren = resolveGapChildren(element, context)
 
     Column(
         modifier = finalModifier,
@@ -117,7 +114,7 @@ fun RenderRow(
         }
 
     val gap = resolveElementStyle(element, context.sharedStyles)?.layout?.gap
-    val visibleChildren = resolveGapChildren(element, context, gap)
+    val visibleChildren = resolveGapChildren(element, context)
 
     Row(
         modifier = finalModifier,
