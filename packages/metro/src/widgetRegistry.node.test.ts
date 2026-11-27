@@ -154,7 +154,7 @@ describe('@use-voltra/metro manifest registry', () => {
           .filter((line) => !line.startsWith('import '))
           .join('\n')
           .replace('export function render(propsJSON, envJSON)', 'function render(propsJSON, envJSON)')
-          .replace('export function timeline(propsJSON)', 'function timeline(propsJSON)')
+          .replace('export const timeline =', 'const timeline =')
           .replace('export default render', 'return render')
 
         type DynamicWidgetRender = (propsJSON: string, envJSON: string) => string
@@ -207,7 +207,7 @@ describe('@use-voltra/metro manifest registry', () => {
     })
   }
 
-  test('generated Dynamic Widget adapters return the entry timeline export as epoch ms, or none without one', () => {
+  test('generated Dynamic Widget adapters return the entry timeline export as epoch ms, and export none without one', () => {
     const { projectRoot, cleanup } = makeTempProject({
       '.voltra/manifest.ios.json': JSON.stringify(
         { version: 1, platform: 'ios', widgets: [{ id: 'countdown', entry: 'widgets/countdown.js' }] },
@@ -230,7 +230,7 @@ describe('@use-voltra/metro manifest registry', () => {
         .filter((line) => !line.startsWith('import '))
         .join('\n')
         .replace('export function render(propsJSON, envJSON)', 'function render(propsJSON, envJSON)')
-        .replace('export function timeline(propsJSON)', 'function timeline(propsJSON)')
+        .replace('export const timeline =', 'const timeline =')
         .replace('export default render', 'return timeline')
 
       type DynamicWidgetTimeline = (propsJSON: string) => string
@@ -245,7 +245,7 @@ describe('@use-voltra/metro manifest registry', () => {
         renderVariantToJson: unknown,
         Widget: unknown,
         WidgetModule: Record<string, unknown>
-      ) => DynamicWidgetTimeline
+      ) => DynamicWidgetTimeline | undefined
 
       const timeline = createTimeline(
         createElement,
@@ -255,6 +255,7 @@ describe('@use-voltra/metro manifest registry', () => {
           timeline: (props: { startsAt: number[] }) => props.startsAt,
         }
       )
+      assert.ok(timeline)
       assert.deepEqual(JSON.parse(timeline(JSON.stringify({ startsAt: [1000, 2000] }))), [1000, 2000])
 
       const timelineWithMixedValues = createTimeline(
@@ -265,7 +266,17 @@ describe('@use-voltra/metro manifest registry', () => {
           timeline: () => [new Date(1000), null, 2000, '3000', Number.NaN, new Date(Number.NaN), Infinity],
         }
       )
+      assert.ok(timelineWithMixedValues)
       assert.deepEqual(JSON.parse(timelineWithMixedValues('{}')), [1000, 2000])
+
+      const timelineWithoutArray = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        { timeline: () => 1000 }
+      )
+      assert.ok(timelineWithoutArray)
+      assert.throws(() => timelineWithoutArray('{}'), /"countdown" timeline\(\) must return an array/)
 
       const timelineWithoutExport = createTimeline(
         createElement,
@@ -273,7 +284,7 @@ describe('@use-voltra/metro manifest registry', () => {
         () => null,
         {}
       )
-      assert.deepEqual(JSON.parse(timelineWithoutExport('{}')), [])
+      assert.equal(timelineWithoutExport, undefined)
     } finally {
       registry.close()
     }

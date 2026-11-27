@@ -173,9 +173,9 @@ public enum VoltraJSRenderer {
   }
 
   /// Dates at which the widget wants to be drawn again, from the optional `timeline(props)` export of
-  /// its entry module, as epoch milliseconds. Empty when the widget has no `timeline` export, when it
-  /// throws, or when it returns something other than an array: the widget then redraws only when it is
-  /// reloaded, as it always has. Elements that are not numbers are skipped.
+  /// its entry module. The Metro wrapper exports it only when the entry has one and has already
+  /// turned the result into an array of epoch milliseconds. Empty when there is no export or it
+  /// throws: the widget then redraws only when it is reloaded, as it always has.
   public static func timelineDates(widgetId: String, propsJSON: String) -> [Date] {
     lock.lock()
     defer { lock.unlock() }
@@ -199,23 +199,12 @@ public enum VoltraJSRenderer {
       return []
     }
 
-    guard let result, result.isString, let text = result.toString(),
-          let data = text.data(using: .utf8),
-          let elements = try? JSONSerialization.jsonObject(with: data) as? [Any]
+    guard let data = result?.toString()?.data(using: .utf8),
+          let timestamps = try? JSONDecoder().decode([Double].self, from: data)
     else {
-      VoltraLogger.widget.error("[\(TAG)] timeline widget id=\(widgetId): expected an array of epoch milliseconds")
       return []
     }
-
-    // One bad element, like a `null` from a missing field, should not cost the widget every other date.
-    let timestamps = elements.compactMap { $0 as? NSNumber }
-    if timestamps.count < elements.count {
-      VoltraLogger.widget.warning(
-        "[\(TAG)] timeline widget id=\(widgetId): skipped \(elements.count - timestamps.count) element(s) that are not epoch milliseconds"
-      )
-    }
-
-    return timestamps.map { Date(timeIntervalSince1970: $0.doubleValue / 1000) }
+    return timestamps.map { Date(timeIntervalSince1970: $0 / 1000) }
   }
 
   /// Render a Dynamic Live Activity from its separately registered definition.

@@ -25,15 +25,6 @@ final class VoltraJSRendererTimelineTests: XCTestCase {
     ])
   }
 
-  func testSkipsElementsThatAreNotNumbersAndKeepsTheRest() throws {
-    let id = try evaluate(timeline: #"function () { return JSON.stringify([1700000000000, null, "soon", 1700000060000]); }"#)
-
-    XCTAssertEqual(VoltraJSRenderer.timelineDates(widgetId: id, propsJSON: "{}"), [
-      Date(timeIntervalSince1970: 1_700_000_000),
-      Date(timeIntervalSince1970: 1_700_000_060),
-    ])
-  }
-
   func testIsEmptyForAWidgetWithoutATimelineExport() throws {
     let id = try evaluate(timeline: nil)
 
@@ -42,12 +33,6 @@ final class VoltraJSRendererTimelineTests: XCTestCase {
 
   func testIsEmptyWhenTheTimelineExportThrows() throws {
     let id = try evaluate(timeline: "function () { throw new Error('no dates'); }")
-
-    XCTAssertEqual(VoltraJSRenderer.timelineDates(widgetId: id, propsJSON: "{}"), [])
-  }
-
-  func testIsEmptyWhenTheTimelineExportReturnsSomethingOtherThanDates() throws {
-    let id = try evaluate(timeline: #"function () { return JSON.stringify({ at: 1700000000000 }); }"#)
 
     XCTAssertEqual(VoltraJSRenderer.timelineDates(widgetId: id, propsJSON: "{}"), [])
   }

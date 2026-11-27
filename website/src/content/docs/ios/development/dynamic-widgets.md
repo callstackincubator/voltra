@@ -155,9 +155,29 @@ Props do not have to come from the app. Add a `serverUpdate` alongside `entry` a
 
 The response object becomes the same first argument `updateDynamicWidget` passes, so the entry component does not change. Because the server returns data rather than a rendered payload, the backend can be written in any language.
 
-A server-driven Dynamic Widget can also export `timeline(props)` to be drawn again at known times between fetches. On iOS this works only while the widget fetches: a widget without a `serverUpdate`, without a URL, or taken over by the app ignores the export. See [Changing at known times between fetches](/ios/development/server-driven-widgets#changing-at-known-times-between-fetches).
-
 `updateDynamicWidget` keeps working on a server-driven widget — the next fetch simply overwrites what you wrote. See [Server-driven widgets](/ios/development/server-driven-widgets) for the response contract, the `env.serverUpdate` fields, and how to take a widget over.
+
+## Changing at known times
+
+A Dynamic Widget is drawn once per reload or fetch, and those are minutes to hours apart. When the props already say when the widget has to change, such as the next item of a schedule starting or a new day beginning, export `timeline` from the widget entry. It receives the current props and returns the times to draw the widget at, as `Date`s or epoch milliseconds:
+
+```tsx
+export function timeline(props: { departures?: { at: number }[] }): number[] {
+  return (props.departures ?? []).map((departure) => departure.at)
+}
+
+export default function DeparturesWidget(props, env) {
+  const now = env.date.valueOf()
+  const next = props.departures?.find((departure) => departure.at > now)
+  // ...
+}
+```
+
+Each future time becomes an entry in the widget's timeline, and the entry component is drawn with `env.date` set to that listed time, so pick what to show from `env.date` rather than from the clock. This works for every Dynamic Widget, with or without a `serverUpdate`. The next reload or fetch replaces the whole timeline with one built from the new props. A widget without a `timeline` export is drawn once per reload, as before, and pays nothing for the feature.
+
+List the times at which the content actually changes, not one per minute: past times are ignored and at most 120 are kept, which keeps the timeline WidgetKit stores small, and the next reload builds a new one anyway. For a countdown or a clock, use [`Timer`](/ios/components/status#timer), which ticks on its own. Returning something other than an array throws, and elements that are neither a `Date` nor a finite number are dropped.
+
+WidgetKit may render an upcoming entry ahead of its time. Such a render is not kept as the last good render, so a later render failure never falls back to content from the future.
 
 ## When a render fails
 

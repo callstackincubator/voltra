@@ -225,23 +225,7 @@ Returning a rendered Voltra payload from an endpoint whose widget has an `entry`
 
 ### Changing at known times between fetches
 
-A widget that fetches props is drawn once per fetch, and WidgetKit spaces fetches 15 minutes or more apart. When the props already say when the widget has to change, such as a countdown that ends or the next item of a schedule starting, export `timeline` from the widget entry. It receives the current props and returns the times, as epoch milliseconds, to draw the widget at:
-
-```tsx
-export function timeline(props: { departures?: { at: number }[] }): number[] {
-  return (props.departures ?? []).map((departure) => departure.at)
-}
-
-export default function DeparturesWidget(props, env) {
-  const now = env.date.valueOf()
-  const next = props.departures?.find((departure) => departure.at > now)
-  // ...
-}
-```
-
-Each future time becomes an entry in the widget's timeline, drawn with `env.date` set to that time, so the entry component picks what to show from `env.date` rather than from the clock. Past times are ignored, and at most 120 are kept. Entries are rendered only when WidgetKit shows them, so listing a time costs nothing until then. The next fetch replaces the whole timeline with one built from the new props. Without a `timeline` export the widget is drawn once per fetch, as before.
-
-The export is read only while the widget fetches. A Dynamic Widget without a `serverUpdate`, one whose URL is not set yet, and one the app has [taken over](#driving-a-widget-from-the-app) are drawn once per reload, and their `timeline` export is ignored.
+A widget that fetches props is drawn once per fetch. To change at known times in between, such as a countdown ending or the next item of a schedule starting, export `timeline` from the widget entry. See [Changing at known times](/ios/development/dynamic-widgets#changing-at-known-times).
 
 ### Telling fresh data from stale
 
