@@ -36,8 +36,9 @@ internal object LayoutGaps {
      * Native modifiers are applied after the style and win, so the last valid native
      * `visibility` modifier decides; without one, the style's `display: none` does.
      *
-     * This resolves each node's style (including a full style conversion), so it is only
-     * cheap to call on containers that actually need it - see [visibleChildren].
+     * On Android 11 and older, Glance can wrap a view with a fixed dp width or height in a
+     * size-holding container. `Visibility.Gone` hides the inner view but leaves that wrapper
+     * in the layout, so callers filter Gone nodes before rendering those layouts.
      */
     fun isGone(
         node: VoltraNode,
@@ -49,37 +50,32 @@ internal object LayoutGaps {
     }
 
     /**
-     * The items of a lazy list or grid that should be rendered. Like [visibleChildren], Gone
-     * items are always dropped so they do not occupy space, become an empty row, or
-     * consume a gap when [gap] is positive. Refs are resolved through [sharedElements]
-     * only to check visibility; the item itself is kept as is.
+     * The items of a lazy list or grid that should be rendered. Gone items are always
+     * dropped so they do not become empty rows or consume a gap. Refs are resolved through
+     * [sharedElements] only to check visibility; the item itself is kept as is.
      */
     fun visibleItems(
         items: List<VoltraNode?>,
-        gap: Dp?,
         sharedStyles: List<Map<String, Any?>>?,
         sharedElements: List<VoltraNode>?,
-    ): List<VoltraNode?> {
-        return items.filterNot { item ->
+    ): List<VoltraNode?> =
+        items.filterNot { item ->
             val resolved = if (item is VoltraNode.Ref) sharedElements?.getOrNull(item.ref) else item
             resolved != null && isGone(resolved, sharedStyles)
         }
-    }
 
     /**
      * The children a Column/Row should actually render, in order.
      *
-     * Gone children are always excluded: a Glance `Visibility.Gone` view still occupies
-     * space in the layout, and when [gap] is positive a Gone child would also get a gap
-     * of its own and consume one of Glance's 10 direct-child slots.
+     * Gone children are always excluded. On Android 11 and older, Glance can wrap a view
+     * with a fixed dp width or height in a size-holding container; `Visibility.Gone` hides
+     * the inner view but leaves that wrapper in the layout. Filtering also keeps hidden
+     * children from consuming one of Glance's 10 direct-child slots.
      */
     fun visibleChildren(
         children: List<VoltraNode>,
-        gap: Dp?,
         sharedStyles: List<Map<String, Any?>>?,
-    ): List<VoltraNode> {
-        return children.filterNot { isGone(it, sharedStyles) }
-    }
+    ): List<VoltraNode> = children.filterNot { isGone(it, sharedStyles) }
 
     /** Leading and trailing padding along a container's main axis that simulates `gap`. */
     data class GapInsets(
