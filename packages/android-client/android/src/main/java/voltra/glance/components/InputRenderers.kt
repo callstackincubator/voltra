@@ -41,17 +41,17 @@ fun RenderSwitch(
             null
         }
 
-    val thumbChecked = element.p?.get("thumbCheckedColor") as? String
-    val thumbUnchecked = element.p?.get("thumbUncheckedColor") as? String
-    val trackChecked = element.p?.get("trackCheckedColor") as? String
-    val trackUnchecked = element.p?.get("trackUncheckedColor") as? String
+    val thumbChecked = element.p?.get("thumbCheckedColor")
+    val thumbUnchecked = element.p?.get("thumbUncheckedColor")
+    val trackChecked = element.p?.get("trackCheckedColor")
+    val trackUnchecked = element.p?.get("trackUncheckedColor")
 
     val colors =
         if (thumbChecked != null && thumbUnchecked != null && trackChecked != null && trackUnchecked != null) {
-            val tc = JSColorParser.parse(thumbChecked)
-            val tuc = JSColorParser.parse(thumbUnchecked)
-            val trc = JSColorParser.parse(trackChecked)
-            val truc = JSColorParser.parse(trackUnchecked)
+            val tc = JSColorParser.parse(thumbChecked, "thumbCheckedColor")
+            val tuc = JSColorParser.parse(thumbUnchecked, "thumbUncheckedColor")
+            val trc = JSColorParser.parse(trackChecked, "trackCheckedColor")
+            val truc = JSColorParser.parse(trackUnchecked, "trackUncheckedColor")
 
             if (tc != null && tuc != null && trc != null && truc != null) {
                 SwitchDefaults.colors(
@@ -102,13 +102,13 @@ fun RenderRadioButton(
             null
         }
 
-    val checkedColor = element.p?.get("checkedColor") as? String
-    val uncheckedColor = element.p?.get("uncheckedColor") as? String
+    val checkedColor = element.p?.get("checkedColor")
+    val uncheckedColor = element.p?.get("uncheckedColor")
 
     val colors =
         if (checkedColor != null && uncheckedColor != null) {
-            val c = JSColorParser.parse(checkedColor)
-            val uc = JSColorParser.parse(uncheckedColor)
+            val c = JSColorParser.parse(checkedColor, "checkedColor")
+            val uc = JSColorParser.parse(uncheckedColor, "uncheckedColor")
             if (c != null && uc != null) {
                 RadioButtonDefaults.colors(c.toColorProvider(), uc.toColorProvider())
             } else {
@@ -153,13 +153,13 @@ fun RenderCheckBox(
             null
         }
 
-    val checkedColor = element.p?.get("checkedColor") as? String
-    val uncheckedColor = element.p?.get("uncheckedColor") as? String
+    val checkedColor = element.p?.get("checkedColor")
+    val uncheckedColor = element.p?.get("uncheckedColor")
 
     val colors =
         if (checkedColor != null && uncheckedColor != null) {
-            val c = JSColorParser.parse(checkedColor)
-            val uc = JSColorParser.parse(uncheckedColor)
+            val c = JSColorParser.parse(checkedColor, "checkedColor")
+            val uc = JSColorParser.parse(uncheckedColor, "uncheckedColor")
             if (c != null && uc != null) {
                 CheckboxDefaults.colors(c.toColorProvider(), uc.toColorProvider())
             } else {

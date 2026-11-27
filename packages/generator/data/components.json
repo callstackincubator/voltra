@@ -301,12 +301,12 @@
           "description": "Optional icon"
         },
         "backgroundColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Background color"
         },
         "contentColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Text/icon color"
         },
@@ -403,12 +403,12 @@
           "default": 1
         },
         "colorFilter": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Tint color filter"
         },
         "tintColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Legacy tint color alias for colorFilter"
         },
@@ -517,22 +517,22 @@
           "description": "Text label"
         },
         "thumbCheckedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Checked thumb color"
         },
         "thumbUncheckedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Unchecked thumb color"
         },
         "trackCheckedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Checked track color"
         },
         "trackUncheckedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Unchecked track color"
         },
@@ -566,12 +566,12 @@
           "description": "Text label"
         },
         "checkedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Checked color"
         },
         "uncheckedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Unchecked color"
         },
@@ -611,12 +611,12 @@
           "description": "Text label"
         },
         "checkedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Checked color"
         },
         "uncheckedColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Unchecked color"
         },
@@ -1089,12 +1089,12 @@
           "description": "Whether the button is enabled"
         },
         "backgroundColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Background color"
         },
         "contentColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Icon color"
         }
@@ -1107,7 +1107,7 @@
       "swiftAvailability": "Not available",
       "parameters": {
         "color": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Progress color"
         }
@@ -1181,12 +1181,12 @@
           "description": "Progress value from 0 to 1"
         },
         "color": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Progress color"
         },
         "backgroundColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Track background color"
         }
@@ -1216,7 +1216,7 @@
           "description": "Optional icon"
         },
         "contentColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Text/icon color"
         },
@@ -1256,7 +1256,7 @@
       "hasChildren": true,
       "parameters": {
         "backgroundColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Background color"
         },
@@ -1298,12 +1298,12 @@
           "description": "Whether the button is enabled"
         },
         "backgroundColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Background color"
         },
         "contentColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Icon color"
         }
@@ -1316,7 +1316,7 @@
       "swiftAvailability": "Not available",
       "parameters": {
         "color": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Text color"
         },
@@ -1350,12 +1350,12 @@
           "jsonEncoded": true
         },
         "iconColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Leading icon tint color"
         },
         "textColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Title text color"
         },
@@ -1507,12 +1507,12 @@
           "description": "Fill fraction from 0 to 1, clamped"
         },
         "color": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Stroke color of the filled arc"
         },
         "trackColor": {
-          "type": "string",
+          "type": "color",
           "optional": true,
           "description": "Stroke color of the unfilled arc; transparent hides the track"
         },

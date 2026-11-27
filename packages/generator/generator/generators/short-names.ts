@@ -24,6 +24,8 @@ const collectPropNames = (data: ComponentsData): Set<string> => {
   return propNames
 }
 
+const RESERVED_SHORT_NAMES = ['day', 'night']
+
 /**
  * Validate that all required names have short forms and there are no collisions
  */
@@ -65,7 +67,15 @@ export const validateShortNames = (data: ComponentsData): void => {
     }
   }
 
-  // 3. Short form should be shorter than original (warning only for now)
+  // 3. `day` and `night` are the keys of a color pair; a short name equal to either would be
+  //    expanded inside the pair on decompression
+  for (const [name, short] of Object.entries(shortNames)) {
+    if (RESERVED_SHORT_NAMES.includes(short)) {
+      errors.push(`"${name}" uses the reserved short name "${short}"`)
+    }
+  }
+
+  // 4. Short form should be shorter than original (warning only for now)
   for (const [name, short] of Object.entries(shortNames)) {
     if (short.length >= name.length) {
       console.warn(`Warning: "${short}" is not shorter than "${name}"`)

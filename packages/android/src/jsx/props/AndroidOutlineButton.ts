@@ -2,6 +2,7 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { AndroidColorValue } from '../../dynamic-colors'
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidOutlineButtonProps = VoltraBaseProps & {
@@ -12,7 +13,7 @@ export type AndroidOutlineButtonProps = VoltraBaseProps & {
   /** Optional icon */
   icon?: Record<string, any>
   /** Text/icon color */
-  contentColor?: string
+  contentColor?: AndroidColorValue
   /** Maximum lines for text */
   maxLines?: number
 }

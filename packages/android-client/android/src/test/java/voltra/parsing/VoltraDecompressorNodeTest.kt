@@ -1,5 +1,6 @@
 package voltra.parsing
 
+import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -7,6 +8,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import voltra.models.VoltraNode
+import voltra.styling.StyleConverter
+import voltra.styling.VoltraColorValue
 
 /**
  * Verifies [VoltraDecompressor.decompressNode] expands short keys in a standalone node tree —
@@ -53,5 +56,24 @@ class VoltraDecompressorNodeTest {
         val childStyle = (child as VoltraNode.Element).element.p?.get("style") as? Map<String, Any?>
         assertTrue("child prop 's' should expand to 'style'", childStyle != null)
         assertTrue("child style should contain expanded 'fontSize'", childStyle!!.containsKey("fontSize"))
+    }
+
+    @Test
+    fun deliversAColorPairOnEveryStyleColorKey() {
+        val pair = """{"day":"#ffffff","night":"#000000"}"""
+        val node =
+            json.decodeFromString<VoltraNode>(
+                """{"t":9,"p":{"s":{"bg":$pair,"c":$pair,"bw":1,"bc":$pair,"shc":$pair}}}""",
+            )
+
+        val root = (VoltraDecompressor.decompressNode(node) as VoltraNode.Element).element
+
+        @Suppress("UNCHECKED_CAST")
+        val style = StyleConverter.convert(root.p?.get("style") as Map<String, Any?>)
+        val expected = VoltraColorValue.DayNight(day = Color.White, night = Color.Black)
+        assertEquals(expected, style.decoration.backgroundColor)
+        assertEquals(expected, style.text.color)
+        assertEquals(expected, style.decoration.border?.color)
+        assertEquals(expected, style.decoration.shadow?.color)
     }
 }

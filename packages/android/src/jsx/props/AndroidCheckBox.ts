@@ -2,6 +2,7 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { AndroidColorValue } from '../../dynamic-colors'
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidCheckBoxProps = VoltraBaseProps & {
@@ -12,9 +13,9 @@ export type AndroidCheckBoxProps = VoltraBaseProps & {
   /** Text label */
   text?: string
   /** Checked color */
-  checkedColor?: string
+  checkedColor?: AndroidColorValue
   /** Unchecked color */
-  uncheckedColor?: string
+  uncheckedColor?: AndroidColorValue
   /** Maximum lines for text */
   maxLines?: number
 }

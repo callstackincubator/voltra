@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -26,7 +27,9 @@ data class AndroidImageParameters(
     /** Image opacity from 0 to 1 */
     val alpha: Double? = null,
     /** Tint color filter */
-    val colorFilter: String? = null,
+    @Contextual
+    val colorFilter: Any? = null,
     /** Legacy tint color alias for colorFilter */
-    val tintColor: String? = null,
+    @Contextual
+    val tintColor: Any? = null,
 )

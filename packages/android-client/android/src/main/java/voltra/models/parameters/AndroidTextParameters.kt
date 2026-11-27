@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -16,7 +17,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidTextParameters(
     /** Text color */
-    val color: String? = null,
+    @Contextual
+    val color: Any? = null,
     /** Font size */
     val fontSize: Double? = null,
     /** Maximum lines */

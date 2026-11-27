@@ -55,7 +55,7 @@ Pick the mark that fits your data: bars for comparing values across categories, 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
-- `color` (string, optional): Fill color.
+- `color` ([color value](#colors-in-light-and-dark), optional): Fill color.
 - `cornerRadius` (number, optional): Rounded bar corners.
 - `width` (number, optional): Fixed bar width.
 - `stacking` (string, optional): `"grouped"` for side-by-side bars in a multi-series chart.
@@ -81,7 +81,7 @@ Pick the mark that fits your data: bars for comparing values across categories, 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
-- `color` (string, optional): Line color.
+- `color` ([color value](#colors-in-light-and-dark), optional): Line color.
 - `lineWidth` (number, optional): Stroke width.
 - `interpolation` (string, optional): `"linear"`, `"monotone"`, `"catmullRom"`, `"cardinal"`, `"stepStart"`, `"stepCenter"`, or `"stepEnd"`.
 
@@ -109,7 +109,7 @@ Pick the mark that fits your data: bars for comparing values across categories, 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
-- `color` (string, optional): Fill color.
+- `color` ([color value](#colors-in-light-and-dark), optional): Fill color.
 - `interpolation` (string, optional): Same options as `LineMark`.
 
 ```tsx
@@ -132,7 +132,7 @@ Pick the mark that fits your data: bars for comparing values across categories, 
 **Parameters:**
 
 - `data` (ChartDataPoint[], required): The data points.
-- `color` (string, optional): Point color.
+- `color` ([color value](#colors-in-light-and-dark), optional): Point color.
 - `symbolSize` (number, optional): Point size.
 
 ```tsx
@@ -160,7 +160,7 @@ A horizontal or vertical reference line. Unlike other marks, RuleMark has no `da
 
 - `yValue` (number, optional): Draw a horizontal line at this y value.
 - `xValue` (string | number, optional): Draw a vertical line at this x value.
-- `color` (string, optional): Line color.
+- `color` ([color value](#colors-in-light-and-dark), optional): Line color.
 - `lineWidth` (number, optional): Stroke width.
 
 ```tsx
@@ -179,7 +179,7 @@ Pie and donut charts.
 **Parameters:**
 
 - `data` (SectorDataPoint[], required): Sector data with `value` and `category`.
-- `color` (string, optional): Fill color (overrides automatic coloring).
+- `color` ([color value](#colors-in-light-and-dark), optional): Fill color (overrides automatic coloring).
 - `innerRadius` (number, optional): `0` = pie chart, any value above `0` = donut chart. Values ≤ 1 are treated as a ratio of the max radius; values > 1 are treated as absolute dp.
 - `outerRadius` (number, optional): Same behavior as `innerRadius`.
 - `angularInset` (number, optional): Gap between sectors in degrees.
@@ -223,7 +223,7 @@ The `<VoltraAndroid.Chart>` container accepts these props in addition to the sta
 | `xAxisGridStyle` | `{ visible?: boolean }` | Show or hide x-axis grid lines |
 | `yAxisVisibility` | `"automatic" \| "visible" \| "hidden"` | Show or hide the y-axis |
 | `yAxisGridStyle` | `{ visible?: boolean }` | Show or hide y-axis grid lines |
-| `foregroundStyleScale` | `Record<string, string>` | Map series names to colors |
+| `foregroundStyleScale` | `Record<string, AndroidColorValue>` | Map series names to colors (strings, `AndroidDynamicColors.*` tokens, or `{ day, night }` pairs) |
 | `yScale` | `{ min?: number; max?: number }` | Pin the y-axis lower and/or upper bound |
 
 ## Multi-Series Charts
@@ -259,6 +259,25 @@ For side-by-side bars, set `stacking="grouped"`:
   <VoltraAndroid.BarMark data={data} stacking="grouped" cornerRadius={4} />
 </VoltraAndroid.Chart>
 ```
+
+## Colors in light and dark
+
+A mark's `color` and each `foregroundStyleScale` value is a color value: a color string, an `AndroidDynamicColors.*` token, or a `{ day, night }` pair with one color for the light system theme and one for the dark one. Pairs follow the same rules as [day and night style colors](/android/development/styling#day-and-night-colors):
+
+```tsx
+<VoltraAndroid.Chart
+  style={{ width: '100%', height: '100%' }}
+  foregroundStyleScale={{
+    Revenue: { day: '#1a73e8', night: '#8ab4f8' },
+    Expenses: { day: '#d93025', night: '#f28b82' },
+  }}
+>
+  <VoltraAndroid.BarMark data={data} stacking="grouped" />
+  <VoltraAndroid.RuleMark yValue={target} color={{ day: '#5f6368', night: '#bdc1c6' }} />
+</VoltraAndroid.Chart>
+```
+
+A chart is drawn as an image, so the side is picked when the widget is drawn, on every Android version. An invalid pair is ignored, and the mark or series falls back to its automatic color.
 
 ## Combining Marks
 

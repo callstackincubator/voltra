@@ -8,6 +8,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.GraphicsMode
+import voltra.glance.GlanceRenderHelper
+import voltra.glance.GlanceRenderHelper.Scheme
+import voltra.glance.imageBitmaps
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -291,4 +294,85 @@ class ChartBitmapRendererTest {
     private fun green(pixel: Int) = (pixel shr 8) and 0xFF
 
     private fun blue(pixel: Int) = pixel and 0xFF
+
+    // MARK: - `{ day, night }` chart colors
+
+    // A chart is a bitmap baked at composition on every API level, so each scheme is composed on
+    // its own.
+
+    private val opaqueRed = 0xFFFF0000.toInt()
+    private val opaqueBlue = 0xFF0000FF.toInt()
+
+    private val defaultColor = 0xFF4E79A7.toInt()
+
+    /**
+     * A 100x100 chart with axes and grids hidden, so the bars are the only opaque pixels. [marks] and
+     * [scale] are the JSON arrays the renderer encodes as strings.
+     */
+    private fun chart(
+        marks: String,
+        scale: String? = null,
+    ): String {
+        val scaleProp = scale?.let { ""","fss":"${it.escaped()}"""" } ?: ""
+        return """{"t":20,"p":{"s":{"w":100,"h":100},"mrk":"${marks.escaped()}"$scaleProp,""" +
+            """"xav":"hidden","yav":"hidden","xAxisGridVisible":false,"yAxisGridVisible":false}}"""
+    }
+
+    private fun String.escaped() = replace("\"", "\\\"")
+
+    private fun barColorsUnder(
+        json: String,
+        scheme: Scheme,
+    ): Set<String> =
+        GlanceRenderHelper
+            .render(json, composeUnder = scheme)
+            .imageBitmaps()
+            .single()
+            .opaqueColors()
+
+    /** Colors of the fully opaque pixels, which antialiasing leaves untouched inside the bars. */
+    private fun Bitmap.opaqueColors(): Set<String> {
+        val pixels = IntArray(width * height).also { getPixels(it, 0, width, 0, 0, width, height) }
+        return pixels.filter { it ushr 24 == 0xFF }.map(::hex).toSet()
+    }
+
+    private fun hex(color: Int) = Integer.toHexString(color)
+
+    @Test
+    fun barsFollowAMarkColorPairInEachScheme() {
+        val json = chart("""[["bar",[["a",1]],{"c":{"day":"#ff0000","night":"#0000ff"}}]]""")
+
+        assertEquals("day", setOf(hex(opaqueRed)), barColorsUnder(json, Scheme.DAY))
+        assertEquals("night", setOf(hex(opaqueBlue)), barColorsUnder(json, Scheme.NIGHT))
+    }
+
+    @Test
+    fun barsFollowAForegroundStyleScalePairInEachScheme() {
+        val json =
+            chart(
+                marks = """[["bar",[["a",1,"A"]],{}]]""",
+                scale = """[["A",{"day":"#ff0000","night":"#0000ff"}]]""",
+            )
+
+        assertEquals("day", setOf(hex(opaqueRed)), barColorsUnder(json, Scheme.DAY))
+        assertEquals("night", setOf(hex(opaqueBlue)), barColorsUnder(json, Scheme.NIGHT))
+    }
+
+    @Test
+    fun anInvalidMarkColorPairFallsBackToTheDefaultColor() {
+        val json = chart("""[["bar",[["a",1]],{"c":{"day":"#ff0000","night":"~p"}}]]""")
+
+        assertEquals(setOf(hex(defaultColor)), barColorsUnder(json, Scheme.DAY))
+    }
+
+    @Test
+    fun anInvalidForegroundStyleScalePairFallsBackToTheDefaultColor() {
+        val json =
+            chart(
+                marks = """[["bar",[["a",1,"A"]],{}]]""",
+                scale = """[["A",{"day":"#ff0000"}]]""",
+            )
+
+        assertEquals(setOf(hex(defaultColor)), barColorsUnder(json, Scheme.DAY))
+    }
 }

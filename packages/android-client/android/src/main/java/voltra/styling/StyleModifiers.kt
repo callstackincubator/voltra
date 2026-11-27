@@ -185,11 +185,18 @@ private fun GlanceModifier.applyDecoration(
     val border =
         decoration.border?.let { resolveBorder(it.width, it.color.resolveColor(context).toArgb(), layout, nativeSize) }
 
-    if (decoration.backgroundImage != null || border != null) {
+    val backgroundImage =
+        if (context.isNightMode()) {
+            decoration.nightBackgroundImage ?: decoration.backgroundImage
+        } else {
+            decoration.backgroundImage
+        }
+
+    if (backgroundImage != null || border != null) {
         val backgroundArgb = decoration.backgroundColor?.resolveColor(context)?.toArgb() ?: 0x00000000
         // Resolved outside the try block: composable calls cannot sit inside one.
         val stopColors =
-            decoration.backgroundImage
+            backgroundImage
                 ?.stops
                 .orEmpty()
                 .map {
@@ -197,7 +204,7 @@ private fun GlanceModifier.applyDecoration(
                 }.toIntArray()
         try {
             val fill =
-                decoration.backgroundImage?.let { gradient ->
+                backgroundImage?.let { gradient ->
                     renderGradientBitmap(
                         context = context,
                         gradient = gradient,

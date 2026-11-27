@@ -56,6 +56,8 @@ data class LayoutStyle(
 data class DecorationStyle(
     val backgroundColor: VoltraColorValue? = null,
     val backgroundImage: BackgroundImageValue? = null,
+    // Set only for a `{ day, night }` pair, whose day side is then in backgroundImage.
+    val nightBackgroundImage: BackgroundImageValue? = null,
     val cornerRadius: Dp? = null,
     val clipToOutline: Boolean = false,
     val border: BorderStyle? = null,

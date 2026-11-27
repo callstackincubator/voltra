@@ -2,6 +2,7 @@
 // DO NOT EDIT MANUALLY - Changes will be overwritten
 // Schema version: 1.0.0
 
+import type { AndroidColorValue } from '../../dynamic-colors'
 import type { VoltraBaseProps } from '../baseProps'
 
 export type AndroidSwitchProps = VoltraBaseProps & {
@@ -12,13 +13,13 @@ export type AndroidSwitchProps = VoltraBaseProps & {
   /** Text label */
   text?: string
   /** Checked thumb color */
-  thumbCheckedColor?: string
+  thumbCheckedColor?: AndroidColorValue
   /** Unchecked thumb color */
-  thumbUncheckedColor?: string
+  thumbUncheckedColor?: AndroidColorValue
   /** Checked track color */
-  trackCheckedColor?: string
+  trackCheckedColor?: AndroidColorValue
   /** Unchecked track color */
-  trackUncheckedColor?: string
+  trackUncheckedColor?: AndroidColorValue
   /** Maximum lines for text */
   maxLines?: number
 }

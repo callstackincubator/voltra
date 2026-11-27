@@ -7,6 +7,7 @@
 
 package voltra.models.parameters
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 /**
@@ -16,5 +17,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AndroidCircularProgressIndicatorParameters(
     /** Progress color */
-    val color: String? = null,
+    @Contextual
+    val color: Any? = null,
 )

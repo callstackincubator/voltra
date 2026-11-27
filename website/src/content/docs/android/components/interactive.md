@@ -25,8 +25,8 @@ Voltra also provides specialized button variants:
 - `enabled` (boolean, optional).
 - `deepLinkUrl` (string, optional).
 - `icon` (object, optional): `{ assetName: string }`.
-- `backgroundColor` (string, optional).
-- `contentColor` (string, optional).
+- `backgroundColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `contentColor` ([color value](/android/development/styling#day-and-night-colors), optional).
 - `maxLines` (number, optional).
 
 #### OutlineButton
@@ -34,7 +34,7 @@ Voltra also provides specialized button variants:
 - `enabled` (boolean, optional).
 - `deepLinkUrl` (string, optional).
 - `icon` (object, optional): `{ assetName: string }`.
-- `contentColor` (string, optional).
+- `contentColor` ([color value](/android/development/styling#day-and-night-colors), optional).
 - `maxLines` (number, optional).
 
 #### CircleIconButton & SquareIconButton
@@ -42,8 +42,8 @@ Voltra also provides specialized button variants:
 - `deepLinkUrl` (string, optional).
 - `icon` (object, optional): `{ assetName: string, base64: string }`.
 - `contentDescription` (string, optional).
-- `backgroundColor` (string, optional).
-- `contentColor` (string, optional).
+- `backgroundColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `contentColor` ([color value](/android/development/styling#day-and-night-colors), optional).
 
 ---
 
@@ -67,10 +67,10 @@ A toggle switch component.
 - `checked` (boolean, optional): Current state of the switch.
 - `deepLinkUrl` (string, optional): URL to open when clicked.
 - `text` (string, optional): Label displayed next to the switch.
-- `thumbCheckedColor` (string, optional).
-- `thumbUncheckedColor` (string, optional).
-- `trackCheckedColor` (string, optional).
-- `trackUncheckedColor` (string, optional).
+- `thumbCheckedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `thumbUncheckedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `trackCheckedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `trackUncheckedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
 - `maxLines` (number, optional): Maximum lines for the label.
 
 ---
@@ -85,8 +85,8 @@ Standard checkbox component.
 - `checked` (boolean, optional).
 - `deepLinkUrl` (string, optional).
 - `text` (string, optional).
-- `checkedColor` (string, optional).
-- `uncheckedColor` (string, optional).
+- `checkedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `uncheckedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
 - `maxLines` (number, optional).
 
 ---
@@ -102,6 +102,6 @@ Standard radio button component.
 - `enabled` (boolean, optional).
 - `deepLinkUrl` (string, optional).
 - `text` (string, optional).
-- `checkedColor` (string, optional).
-- `uncheckedColor` (string, optional).
+- `checkedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
+- `uncheckedColor` ([color value](/android/development/styling#day-and-night-colors), optional).
 - `maxLines` (number, optional).

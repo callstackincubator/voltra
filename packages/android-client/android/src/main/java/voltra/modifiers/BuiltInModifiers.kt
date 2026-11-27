@@ -7,7 +7,6 @@ import androidx.glance.Visibility
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
-import androidx.glance.color.ColorProvider
 import androidx.glance.layout.absolutePadding
 import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
@@ -23,7 +22,7 @@ import androidx.glance.semantics.contentDescription
 import androidx.glance.semantics.semantics
 import androidx.glance.semantics.testTag
 import androidx.glance.visibility
-import voltra.styling.VoltraColorValue
+import voltra.styling.JSColorParser
 
 /**
  * The built-in catalog. Each entry mirrors one factory in `packages/android/src/modifiers`, and the
@@ -137,9 +136,8 @@ private fun backgroundModifier(
         }
         return GlanceModifier.background(scope.colorProvider(params.requiredColor("color")))
     }
-    // Glance's day/night provider takes two concrete colors, so theme tokens are not accepted here.
-    val day = params.requiredColor("day") as? VoltraColorValue.Static ?: throw VoltraModifierException("Invalid day")
-    val night =
-        params.requiredColor("night") as? VoltraColorValue.Static ?: throw VoltraModifierException("Invalid night")
-    return GlanceModifier.background(ColorProvider(day = day.color, night = night.color))
+    val pair =
+        JSColorParser.parsePair(params, logKey = "background")
+            ?: throw VoltraModifierException("Invalid day/night pair")
+    return GlanceModifier.background(scope.colorProvider(pair))
 }

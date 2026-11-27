@@ -142,14 +142,10 @@ fun RenderImage(
         )
     val alpha = (element.p?.get("alpha") as? Number)?.toFloat() ?: 1.0f
 
-    val tintColorString = (element.p?.get("colorFilter") ?: element.p?.get("tintColor")) as? String
+    val tintKey = if (element.p?.get("colorFilter") != null) "colorFilter" else "tintColor"
     val colorFilter =
-        if (tintColorString != null) {
-            voltra.styling.JSColorParser.parse(tintColorString)?.let {
-                androidx.glance.ColorFilter.tint(it.toColorProvider())
-            }
-        } else {
-            null
+        JSColorParser.parse(element.p?.get(tintKey), tintKey)?.let {
+            androidx.glance.ColorFilter.tint(it.toColorProvider())
         }
 
     // Glance's cornerRadius needs API 31, so older versions get the corners baked into the bitmap.

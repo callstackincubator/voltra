@@ -1,10 +1,13 @@
 package voltra.styling
 
+import android.util.Log
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
 object JSGradientParser {
+    private const val TAG = "JSGradientParser"
+
     private data class ColorStopToken(
         val color: VoltraColorValue,
         val firstPosition: Float?,
@@ -39,6 +42,39 @@ object JSGradientParser {
             lower.startsWith("conic-gradient(") -> parseConic(raw)
             else -> null
         }
+    }
+
+    /**
+     * Parses both sides of a `{ day, night }` pair, so a broken side is reported when the style is
+     * converted rather than only once the device switches to it. Any invalid side drops the whole
+     * pair with one warning.
+     */
+    fun parsePair(
+        pair: Map<*, *>,
+        key: String,
+    ): Pair<BackgroundImageValue, BackgroundImageValue>? {
+        val day = parsePairSide(pair, "day", key) ?: return null
+        val night = parsePairSide(pair, "night", key) ?: return null
+        return day to night
+    }
+
+    private fun parsePairSide(
+        pair: Map<*, *>,
+        side: String,
+        key: String,
+    ): BackgroundImageValue? {
+        val value = pair[side]
+        val gradient = (value as? String)?.let(::parse)
+        if (gradient == null) {
+            val got =
+                when {
+                    side !in pair -> "nothing"
+                    value is String -> "\"$value\""
+                    else -> value.toString()
+                }
+            Log.w(TAG, "Ignoring invalid gradient pair for $key: $side must be a CSS gradient string, got $got")
+        }
+        return gradient
     }
 
     private fun parseLinear(value: String): BackgroundImageValue? {
