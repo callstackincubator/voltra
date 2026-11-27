@@ -60,10 +60,12 @@ public enum WidgetServerSettingsStore {
     WidgetServerSettingsCodec.decode(read(account: account(for: scope)))
   }
 
-  private static func account(for scope: WidgetScope?) -> String {
+  static func account(for scope: WidgetScope?) -> String {
     guard let scope else { return globalAccount }
 
-    return "\(widgetAccountPrefix)\(scope.storageKey)"
+    // Settings are stored per widget id, never per instance: an instance scope resolves to the
+    // same record as its widget, so it inherits the widget's settings (ADR 0007).
+    return "\(widgetAccountPrefix)\(scope.widgetId)"
   }
 
   // MARK: - Keychain
@@ -136,7 +138,7 @@ struct GlobalWidgetServerSettingsLayer: WidgetServerSettingsLayer {
   }
 }
 
-/// Settings the app set for one widget. Highest layer until instance scopes arrive.
+/// Settings the app set for one widget; an instance scope reads its widget's record.
 struct WidgetWidgetServerSettingsLayer: WidgetServerSettingsLayer {
   let name = "widget"
 

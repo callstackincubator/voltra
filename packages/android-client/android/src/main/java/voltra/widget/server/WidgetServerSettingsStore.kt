@@ -38,7 +38,7 @@ class WidgetServerSettingsStore(
                 prefs[KEY_GLOBAL] = encrypted
             } else {
                 prefs[widgetKey(scope)] = encrypted
-                prefs[KEY_WIDGET_SCOPES] = (prefs[KEY_WIDGET_SCOPES] ?: emptySet()) + scope.storageKey
+                prefs[KEY_WIDGET_SCOPES] = (prefs[KEY_WIDGET_SCOPES] ?: emptySet()) + scope.widgetId
             }
 
             prefs[KEY_REVISION] = (prefs[KEY_REVISION] ?: 0L) + 1L
@@ -52,7 +52,7 @@ class WidgetServerSettingsStore(
                 prefs.remove(KEY_GLOBAL)
             } else {
                 prefs.remove(widgetKey(scope))
-                prefs[KEY_WIDGET_SCOPES] = (prefs[KEY_WIDGET_SCOPES] ?: emptySet()) - scope.storageKey
+                prefs[KEY_WIDGET_SCOPES] = (prefs[KEY_WIDGET_SCOPES] ?: emptySet()) - scope.widgetId
             }
 
             prefs[KEY_REVISION] = (prefs[KEY_REVISION] ?: 0L) + 1L
@@ -106,7 +106,11 @@ class WidgetServerSettingsStore(
             null
         }
 
-    internal fun widgetKey(scope: WidgetScope) = stringPreferencesKey("$KEY_WIDGET_PREFIX${scope.storageKey}")
+    /**
+     * Settings are stored per widget id, never per instance: an instance scope resolves to the same
+     * record as its widget, so it inherits the widget's settings (ADR 0007).
+     */
+    internal fun widgetKey(scope: WidgetScope) = stringPreferencesKey("$KEY_WIDGET_PREFIX${scope.widgetId}")
 
     companion object {
         private const val TAG = "VoltraWidgetServerStore"
@@ -131,7 +135,7 @@ class GlobalWidgetServerSettingsLayer(
     suspend fun raw(): WidgetServerUpdateSettings? = store.read(WidgetServerSettingsStore.KEY_GLOBAL)
 }
 
-/** Settings the app set for one widget. Highest layer until instance scopes arrive. */
+/** Settings the app set for one widget; an instance scope reads its widget's record. */
 class WidgetWidgetServerSettingsLayer(
     private val store: WidgetServerSettingsStore,
 ) : WidgetServerSettingsLayer {
