@@ -62,7 +62,8 @@ fun RenderText(
 
     val text = extractTextFromNode(element.c)
     val renderAsBitmap = element.p?.get("renderAsBitmap") as? Boolean ?: false
-    val textStyle = resolvedStyle?.text ?: voltra.styling.TextStyle.Default
+    val styleText = resolvedStyle?.text ?: voltra.styling.TextStyle.Default
+    val textStyle = JSColorParser.parse(element.p?.get("color"))?.let { styleText.copy(color = it) } ?: styleText
     val maxLines =
         (element.p?.get("maxLines") as? Number)?.toInt()
             ?: textStyle.lineLimit

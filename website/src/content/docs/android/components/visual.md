@@ -11,6 +11,7 @@ Displays text content.
 
 **Parameters:**
 
+- `color` (string, optional): Text color. Overrides `color` in the style prop.
 - `maxLines` (number, optional): Maximum number of lines to display.
 - `renderAsBitmap` (boolean, optional): Renders text as a bitmap image to enable [custom fonts](/android/development/custom-fonts). Requires `fontFamily` in the style prop.
 
