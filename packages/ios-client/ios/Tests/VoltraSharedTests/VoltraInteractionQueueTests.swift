@@ -122,8 +122,13 @@ final class VoltraInteractionQueueTests: XCTestCase {
 
   func testFileStorageSerializesConcurrentWritersAndReaders() {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-    let writers = (0 ..< 20).map { _ in makeQueue(storage: VoltraInteractionFileStorage(directoryURL: directory)) }
-    let reader = makeQueue(storage: VoltraInteractionFileStorage(directoryURL: directory))
+    // The production lock timeout (0.25s) deliberately fails a transaction instead of blocking the
+    // JavaScript thread. Twenty-one contenders on a loaded CI runner can exceed it, which would drop
+    // a tap here. This test is about serialization, not the timeout, so it waits long enough.
+    let writers = (0 ..< 20).map { _ in
+      makeQueue(storage: VoltraInteractionFileStorage(directoryURL: directory, lockTimeout: 30))
+    }
+    let reader = makeQueue(storage: VoltraInteractionFileStorage(directoryURL: directory, lockTimeout: 30))
     let lock = NSLock()
     var popped: [VoltraInteraction] = []
 
