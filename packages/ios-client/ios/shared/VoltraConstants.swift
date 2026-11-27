@@ -28,13 +28,12 @@ public enum VoltraStorageKeys {
     "Voltra_Widget_ServerUrl_\(widgetId)"
   }
 
-  /// Choices the app supplied for a widget's `dynamicOptions` Edit Widget parameter, as JSON
-  /// `[{ "value": ..., "title": ... }]`.
-  public static func widgetParameterOptions(_ widgetId: String, parameter: String) -> String {
-    "\(widgetParameterOptionsPrefix)\(widgetId)_\(parameter)"
+  /// Choices the app supplied for a widget's `dynamicOptions` Edit Widget parameters, as JSON
+  /// `{ "<parameter>": [{ "value": ..., "title": ... }] }`. One key per widget, so no widget and
+  /// parameter pair can share a key with another.
+  public static func widgetParameterOptions(_ widgetId: String) -> String {
+    "Voltra_Widget_ParameterOptions_\(widgetId)"
   }
-
-  public static let widgetParameterOptionsPrefix = "Voltra_Widget_ParameterOptions_"
 
   public static func dynamicWidgetPropsV1(_ dynamicWidgetId: String) -> String {
     "Voltra_DynamicWidget_Props_v1_\(dynamicWidgetId)"
@@ -69,6 +68,8 @@ public enum VoltraStorageKeys {
   public static let widgetIds = "Voltra_WidgetIds"
   /// `{ widgetId: kind }` for widgets that pin a custom WidgetKit kind (plugin `kind` option)
   public static let widgetKinds = "Voltra_WidgetKinds"
+  /// `{ widgetId: [parameter] }`: every Dynamic Widget with its `dynamicOptions` parameter names
+  public static let dynamicWidgetParameters = "Voltra_DynamicWidgetParameters"
   public static let enablePushNotifications = "Voltra_EnablePushNotifications"
   public static let widgetServerUrls = "Voltra_WidgetServerUrls"
   public static let widgetServerIntervals = "Voltra_WidgetServerIntervals"

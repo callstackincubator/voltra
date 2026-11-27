@@ -127,7 +127,7 @@ await setWidgetParameterOptions('scores_widget', 'team', [
 ])
 ```
 
-The choices are stored in the App Group, so this needs `groupIdentifier`. Setting them reloads the widget. `clearWidget` and `clearAllWidgets` remove them.
+The choices are stored in the App Group, so this needs `groupIdentifier`. Setting them reloads the widget. `clearWidget` and `clearAllWidgets` remove them. `setWidgetParameterOptions` rejects with `VOLTRA_WIDGET_NOT_FOUND` for an unknown widget, `VOLTRA_WIDGET_KIND_MISMATCH` for a payload-driven widget, and `VOLTRA_WIDGET_PARAMETER_NOT_DECLARED` for a parameter the widget does not declare with `dynamicOptions`.
 
 `dynamicOptions` is supported with Expo Prebuild only. Voltra Apply stops with an error if a parameter sets it.
 
@@ -137,7 +137,7 @@ The choices are stored in the App Group, so this needs `groupIdentifier`. Settin
 
 Choice titles come from the app, so they are not translated by Voltra. The parameter `title` still is.
 
-For a server-driven widget, put `{team}` in the `serverUpdate` URL to fetch each placement's own data. See [Per-instance requests](/ios/development/server-driven-widgets#per-instance-requests).
+For a server-driven widget, each placement's choice is sent on its request in `configuration`, so the server can answer each one with its own data. See [Per-instance requests](/ios/development/server-driven-widgets#per-instance-requests).
 
 ## Translate the Edit Widget sheet
 

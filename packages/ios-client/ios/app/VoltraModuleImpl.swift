@@ -410,6 +410,15 @@ public class VoltraModuleImpl {
   /// Stores the choices of a widget's `dynamicOptions` Edit Widget parameter and reloads that
   /// widget, so a placement whose choice went away falls back to the first one at once.
   func setWidgetParameterOptions(widgetId: String, parameter: String, optionsJson: String) async throws {
+    if let targetError = WidgetParameterOptionsTargetError.check(
+      widgetId: widgetId,
+      parameter: parameter,
+      widgetIds: Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? [],
+      dynamicWidgetParameters: Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.dynamicWidgetParameters)
+        as? [String: [String]] ?? [:]
+    ) {
+      throw targetError
+    }
     let options = try JSONDecoder().decode([WidgetParameterOption].self, from: Data(optionsJson.utf8))
     try VoltraWidgetDefaults.setWidgetParameterOptions(options, widgetId: widgetId, parameter: parameter)
     VoltraWidgetService.reloadTimeline(for: widgetId)

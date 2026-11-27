@@ -57,13 +57,8 @@ public enum VoltraWidgetDefaults {
   /// The choices the app last set with `setWidgetParameterOptions` for a `dynamicOptions` Edit
   /// Widget parameter, in the app's order. Empty when it has set none, or without an App Group.
   public static func widgetParameterOptions(widgetId: String, parameter: String) -> [WidgetParameterOption] {
-    guard let json = try? resolvedDefaults().string(forKey: VoltraStorageKeys.widgetParameterOptions(widgetId, parameter: parameter)),
-          let data = json.data(using: .utf8),
-          let options = try? JSONDecoder().decode([WidgetParameterOption].self, from: data)
-    else {
-      return []
-    }
-    return options
+    guard let defaults = try? resolvedDefaults() else { return [] }
+    return storedParameterOptions(widgetId: widgetId, in: defaults)[parameter] ?? []
   }
 
   // MARK: - Write
@@ -125,8 +120,10 @@ public enum VoltraWidgetDefaults {
   /// `groupIdentifier`, since the extension could never read them.
   public static func setWidgetParameterOptions(_ options: [WidgetParameterOption], widgetId: String, parameter: String) throws {
     let defaults = try resolvedDefaults()
-    let data = try JSONEncoder().encode(options)
-    defaults.set(String(decoding: data, as: UTF8.self), forKey: VoltraStorageKeys.widgetParameterOptions(widgetId, parameter: parameter))
+    var stored = storedParameterOptions(widgetId: widgetId, in: defaults)
+    stored[parameter] = options
+    let data = try JSONEncoder().encode(stored)
+    defaults.set(String(decoding: data, as: UTF8.self), forKey: VoltraStorageKeys.widgetParameterOptions(widgetId))
     defaults.synchronize()
   }
 
@@ -173,20 +170,23 @@ public enum VoltraWidgetDefaults {
 
   /// Removes the app's `dynamicOptions` choices for one widget, or for every widget with nil.
   /// Called by `clearWidget` / `clearAllWidgets` only: the choices are the user's, so they go on
-  /// logout, but the orphan cleanup must keep them for a widget that has not been placed yet. The
-  /// parameter names live only in the generated extension code, hence the prefix match.
-  /// shortcut: clearing widget `a` also clears widget `a_b`'s choices; key with a separator widget
-  /// ids cannot contain if that ever matters.
+  /// logout, but the orphan cleanup must keep them for a widget that has not been placed yet.
   public static func removeParameterOptions(for widgetId: String?) {
     guard let defaults = try? resolvedDefaults() else { return }
-    let prefix = VoltraStorageKeys.widgetParameterOptionsPrefix + (widgetId.map { "\($0)_" } ?? "")
-    for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
-      defaults.removeObject(forKey: key)
+    let widgetIds = widgetId.map { [$0] }
+      ?? Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
+    for id in widgetIds {
+      defaults.removeObject(forKey: VoltraStorageKeys.widgetParameterOptions(id))
     }
     defaults.synchronize()
   }
 
   // MARK: - Private
+
+  private static func storedParameterOptions(widgetId: String, in defaults: UserDefaults) -> [String: [WidgetParameterOption]] {
+    guard let json = defaults.string(forKey: VoltraStorageKeys.widgetParameterOptions(widgetId)) else { return [:] }
+    return (try? JSONDecoder().decode([String: [WidgetParameterOption]].self, from: Data(json.utf8))) ?? [:]
+  }
 
   private static func resolvedDefaults() throws -> UserDefaults {
     guard let groupId = VoltraConfig.groupIdentifier() else {

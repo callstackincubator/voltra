@@ -31,4 +31,28 @@ final class WidgetParameterOptionTests: XCTestCase {
 
     XCTAssertThrowsError(try JSONDecoder().decode([WidgetParameterOption].self, from: Data(json.utf8)))
   }
+
+  func testChecksTheTargetWidgetAndParameter() {
+    func check(_ widgetId: String, _ parameter: String) -> WidgetParameterOptionsTargetError? {
+      WidgetParameterOptionsTargetError.check(
+        widgetId: widgetId,
+        parameter: parameter,
+        widgetIds: ["prayer", "prayer_times", "payload"],
+        dynamicWidgetParameters: ["prayer": ["masjid"], "prayer_times": []]
+      )
+    }
+
+    XCTAssertNil(check("prayer", "masjid"))
+    XCTAssertEqual(check("missing", "masjid"), .widgetNotFound(widgetId: "missing"))
+    XCTAssertEqual(check("payload", "masjid"), .kindMismatch(widgetId: "payload"))
+    XCTAssertEqual(check("prayer", "typo"), .parameterNotDeclared(widgetId: "prayer", parameter: "typo"))
+    XCTAssertEqual(check("prayer_times", "masjid"), .parameterNotDeclared(widgetId: "prayer_times", parameter: "masjid"))
+  }
+
+  func testATargetErrorCarriesTheCodeTheBridgeMaps() {
+    let error = WidgetParameterOptionsTargetError.parameterNotDeclared(widgetId: "w", parameter: "p") as NSError
+
+    XCTAssertEqual(error.domain, "com.callstack.voltra.widgetParameterOptions")
+    XCTAssertEqual(error.code, 3)
+  }
 }
