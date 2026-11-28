@@ -1,9 +1,10 @@
 import fs from 'fs'
 import path from 'path'
 
-import { logger } from '@use-voltra/expo-plugin'
+import { logger, widgetParameterOptionKey, widgetParameterTitleKey } from '@use-voltra/expo-plugin'
 
 import type { AndroidWidgetConfig } from '../../types'
+import { androidWidgetResourceId } from '../resourceName'
 
 export interface GenerateConfigDefaultsOptions {
   widgets: AndroidWidgetConfig[]
@@ -22,6 +23,11 @@ export interface GenerateConfigDefaultsOptions {
  * Also emits `assets/voltra/widget_dynamic_parameters.json`, `{ "<widgetId>": ["<paramName>"] }`:
  * each widget's `dynamicOptions` parameters in declared order: the only parameters
  * resolved against stored choices, which read as `""` until the app sets them. Removed when nothing declares one.
+ *
+ * And `assets/voltra/widget_configuration_screens.json` for widgets with `configurationScreen`:
+ * each `appIntent` parameter in declared order, with the `voltra_widgets.xml` string names of its
+ * title and option titles, so the configuration activity needs no copy of the resource-name rules.
+ * Removed when no widget opts in.
  */
 export async function generateAndroidConfigDefaults(options: GenerateConfigDefaultsOptions): Promise<void> {
   const { widgets, platformProjectRoot } = options
@@ -46,6 +52,16 @@ export async function generateAndroidConfigDefaults(options: GenerateConfigDefau
   }
 
   const voltraAssetsDir = path.join(platformProjectRoot, 'app', 'src', 'main', 'assets', 'voltra')
+
+  const screensPath = path.join(voltraAssetsDir, 'widget_configuration_screens.json')
+  const screens = configurationScreens(widgets)
+  if (Object.keys(screens).length > 0) {
+    fs.mkdirSync(voltraAssetsDir, { recursive: true })
+    fs.writeFileSync(screensPath, JSON.stringify(screens, null, 2))
+  } else {
+    // A stale file would keep offering a screen the app no longer declares.
+    fs.rmSync(screensPath, { force: true })
+  }
   const dynamicParametersPath = path.join(voltraAssetsDir, 'widget_dynamic_parameters.json')
   if (Object.keys(dynamicParameters).length > 0) {
     fs.mkdirSync(voltraAssetsDir, { recursive: true })
@@ -63,4 +79,34 @@ export async function generateAndroidConfigDefaults(options: GenerateConfigDefau
   fs.writeFileSync(path.join(voltraAssetsDir, 'widget_config_defaults.json'), JSON.stringify(defaults, null, 2))
 
   logger.info(`Generated widget_config_defaults.json for ${Object.keys(defaults).length} widget(s)`)
+}
+
+interface ConfigurationScreenParameter {
+  name: string
+  /** String resource name of the title, when the parameter declares one. */
+  title?: string
+  /** Fixed choices, each with the string resource name of its title. */
+  options?: { value: string; title: string }[]
+  dynamicOptions?: true
+}
+
+function configurationScreens(widgets: AndroidWidgetConfig[]): Record<string, ConfigurationScreenParameter[]> {
+  const screens: Record<string, ConfigurationScreenParameter[]> = {}
+  for (const widget of widgets) {
+    if (widget.configurationScreen !== true) continue
+    screens[widget.id] = (widget.appIntent?.parameters ?? []).map((parameter) => ({
+      name: parameter.name,
+      ...(parameter.title !== undefined && {
+        title: widgetParameterTitleKey(widget.id, parameter.name, androidWidgetResourceId),
+      }),
+      ...(parameter.options !== undefined && {
+        options: parameter.options.map((option) => ({
+          value: option.value,
+          title: widgetParameterOptionKey(widget.id, parameter.name, option.value, androidWidgetResourceId),
+        })),
+      }),
+      ...(parameter.dynamicOptions === true && { dynamicOptions: true as const }),
+    }))
+  }
+  return screens
 }

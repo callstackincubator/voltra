@@ -141,3 +141,26 @@ describe('appIntent dynamicOptions', () => {
     )
   })
 })
+
+describe('android configurationScreen', () => {
+  test('rejects configurationScreen', () => {
+    // Not in the CLI's config types: Voltra Apply does not declare the configuration activity.
+    const scores = {
+      id: 'scores',
+      displayName: 'Scores',
+      description: 'Team scores',
+      targetCellWidth: 2,
+      targetCellHeight: 2,
+      entry: './widgets/scores.tsx',
+      appIntent: { parameters: [{ name: 'team' }] },
+      configurationScreen: true,
+    } as AndroidWidgetConfig
+
+    assert.throws(
+      () => normalizeVoltraConfig({ config: { android: { widgets: [scores] } }, configDir: process.cwd() }),
+      (error: unknown) =>
+        error instanceof VoltraConfigNormalizationError &&
+        /android\.widgets\[scores\]\.configurationScreen is supported with Expo prebuild only/.test(error.message)
+    )
+  })
+})

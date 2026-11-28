@@ -1,6 +1,7 @@
 import { ConfigPlugin, withAndroidManifest } from '@expo/config-plugins'
 import { AndroidConfig } from 'expo/config-plugins'
 
+import { CONFIGURE_ACTIVITY_NAME } from '../constants'
 import type { AndroidWidgetConfig } from '../types'
 import { androidWidgetResourceId } from './resourceName'
 
@@ -107,6 +108,31 @@ export const configureAndroidManifest: ConfigPlugin<ConfigureAndroidManifestProp
         mainApplication.receiver.push(receiver)
       }
     }
+
+    // The configuration activity (ADR 0015), declared only while a widget opts in, so an app that
+    // does not use it exports no extra activity. Removed again when none does.
+    const activities = ((mainApplication.activity || []) as any[]).filter(
+      (activity: any) => activity.$?.['android:name'] !== CONFIGURE_ACTIVITY_NAME
+    )
+    if (widgets.some((widget) => widget.configurationScreen === true)) {
+      activities.push({
+        $: {
+          'android:name': CONFIGURE_ACTIVITY_NAME,
+          // The launcher starts it, so it must be exported; it checks the placement is ours.
+          'android:exported': 'true',
+          'android:excludeFromRecents': 'true',
+          'android:theme': '@android:style/Theme.Translucent.NoTitleBar',
+          // Keeps the open dialog and unsaved picks across rotation instead of recreating the screen.
+          'android:configChanges': 'orientation|screenSize|screenLayout|keyboardHidden',
+        },
+        'intent-filter': [
+          {
+            action: [{ $: { 'android:name': 'android.appwidget.action.APPWIDGET_CONFIGURE' } }],
+          },
+        ],
+      })
+    }
+    mainApplication.activity = activities
 
     return config
   })

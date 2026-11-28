@@ -509,6 +509,12 @@ function normalizeAndroidWidget(
   assertOptionalPositiveInteger(widget.maxResizeWidth, `android.widgets[${widget.id}].maxResizeWidth`)
   assertOptionalPositiveInteger(widget.maxResizeHeight, `android.widgets[${widget.id}].maxResizeHeight`)
 
+  // Voltra Apply does not declare the configuration activity, so stop rather than drop it.
+  if ('configurationScreen' in widget) {
+    throw new VoltraConfigNormalizationError(
+      `android.widgets[${widget.id}].configurationScreen is supported with Expo prebuild only, not Voltra Apply`
+    )
+  }
   const androidAppIntent = normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`)
   warnOnAppIntentWithoutEntry(androidAppIntent, widget.entry !== undefined, `android.widgets[${widget.id}]`, warnings)
 

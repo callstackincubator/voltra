@@ -35,3 +35,4 @@ Status values:
 | [0012](0012-android-ongoing-notification-dismissal-state.md)           | Android ongoing notification state after a dismissal         | Accepted |
 | [0013](0013-dynamic-widget-render-failures.md)                         | Render failures in Dynamic Widgets                           | Proposed |
 | [0014](0014-dynamic-widget-parameter-options.md)                       | Configuration choices the app sets at runtime                | Proposed |
+| [0015](0015-android-widget-configuration-screen.md)                    | A configuration screen for Android Dynamic Widgets           | Proposed |

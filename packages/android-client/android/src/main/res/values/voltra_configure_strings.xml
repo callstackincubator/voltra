@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown by the widget configuration screen for a dynamicOptions parameter the app has not set choices for yet (ADR 0015). -->
+    <string name="voltra_configure_no_choices">Nothing to choose from yet. Open the app to add some.</string>
+</resources>

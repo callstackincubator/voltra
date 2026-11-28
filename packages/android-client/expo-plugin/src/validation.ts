@@ -34,6 +34,17 @@ export function validateAndroidWidgetConfig(widget: AndroidWidgetConfig, project
   validateWidgetServerUpdate(widget.serverUpdate, widget.id, androidServerUpdateRules(widget))
   validateWidgetConfigurationCopy(widget, { requireParameterTitle: false, requireIdentifierName: false })
 
+  if (widget.configurationScreen !== undefined) {
+    if (typeof widget.configurationScreen !== 'boolean') {
+      throw new Error(`Widget '${widget.id}': configurationScreen must be a boolean`)
+    }
+    if (widget.configurationScreen && (widget.entry === undefined || !widget.appIntent?.parameters?.length)) {
+      throw new Error(
+        `Widget '${widget.id}': configurationScreen needs a Dynamic Widget (entry) that declares appIntent.parameters`
+      )
+    }
+  }
+
   if (typeof widget.targetCellWidth !== 'number') {
     throw new Error(`Widget '${widget.id}': targetCellWidth is required and must be a number`)
   }

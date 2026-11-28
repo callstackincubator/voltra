@@ -1,4 +1,9 @@
-import { __test__ } from './xml'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
+
+import type { AndroidWidgetConfig } from '../../types'
+import { __test__, generateWidgetPreviewLayouts } from './xml'
 
 describe('localeKeyToAndroidValuesQualifier', () => {
   it('maps plain language tags to classic Android qualifiers', () => {
@@ -81,6 +86,72 @@ describe('generateWidgetInfoXml', () => {
         '</appwidget-provider>',
       ].join('\n')
     )
+  })
+})
+
+describe('configuration screen widget info (xml-v31)', () => {
+  const scores = {
+    id: 'scores',
+    entry: './widgets/scores.tsx',
+    displayName: 'Scores',
+    description: 'Live scores',
+    targetCellWidth: 2,
+    targetCellHeight: 2,
+    appIntent: { parameters: [{ name: 'team', title: 'Team', dynamicOptions: true }] },
+  }
+
+  it('adds the configure activity as optional and reconfigurable', () => {
+    expect(__test__.generateWidgetInfoXml(scores, undefined, undefined, true)).toBe(
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"',
+        '    android:minWidth="130dp"',
+        '    android:minHeight="117dp"',
+        '    android:targetCellWidth="2"',
+        '    android:targetCellHeight="2"',
+        '    android:updatePeriodMillis="0"',
+        '    android:initialLayout="@layout/voltra_widget_placeholder"',
+        '    android:resizeMode="horizontal|vertical"',
+        '    android:widgetCategory="home_screen"',
+        '    android:description="@string/voltra_widget_scores_description"',
+        '    android:configure="voltra.dynamicwidget.VoltraWidgetConfigureActivity"',
+        '    android:widgetFeatures="reconfigurable|configuration_optional">',
+        '</appwidget-provider>',
+      ].join('\n')
+    )
+  })
+
+  it('writes res/xml-v31 only for opted-in widgets, leaves res/xml without the activity, and removes stale copies', async () => {
+    const platformProjectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'voltra-android-xml-v31-'))
+    const res = path.join(platformProjectRoot, 'app', 'src', 'main', 'res')
+    // generateWidgetInfoFiles creates res/xml first in a real prebuild.
+    fs.mkdirSync(path.join(res, 'xml'), { recursive: true })
+    const generate = (widgets: AndroidWidgetConfig[]) =>
+      generateWidgetPreviewLayouts({
+        platformProjectRoot,
+        projectRoot: platformProjectRoot,
+        widgets,
+        previewImageMap: new Map(),
+      })
+    try {
+      await generate([
+        { ...scores, configurationScreen: true },
+        { ...scores, id: 'plain' },
+      ])
+
+      expect(fs.readdirSync(path.join(res, 'xml-v31'))).toEqual(['voltra_widget_scores_info.xml'])
+      expect(fs.readFileSync(path.join(res, 'xml-v31', 'voltra_widget_scores_info.xml'), 'utf8')).toContain(
+        'android:configure="voltra.dynamicwidget.VoltraWidgetConfigureActivity"'
+      )
+      expect(fs.readFileSync(path.join(res, 'xml', 'voltra_widget_scores_info.xml'), 'utf8')).not.toContain(
+        'android:configure'
+      )
+
+      await generate([scores, { ...scores, id: 'plain' }])
+      expect(fs.existsSync(path.join(res, 'xml-v31'))).toBe(false)
+    } finally {
+      fs.rmSync(platformProjectRoot, { recursive: true, force: true })
+    }
   })
 })
 

@@ -175,4 +175,34 @@ describe('validateAndroidConfigPluginProps serverUpdate', () => {
       warn.mockRestore()
     }
   })
+
+  it('accepts configurationScreen on a Dynamic Widget with parameters, and rejects it otherwise', () => {
+    const base = {
+      id: 'scores',
+      displayName: 'Scores',
+      description: 'Scores',
+      targetCellWidth: 2,
+      targetCellHeight: 2,
+    }
+    const parameters = { parameters: [{ name: 'team' }] }
+
+    expect(() =>
+      validateAndroidConfigPluginProps({
+        widgets: [{ ...base, entry: './widgets/scores.tsx', appIntent: parameters, configurationScreen: true }],
+      })
+    ).not.toThrow()
+    expect(() =>
+      validateAndroidConfigPluginProps({ widgets: [{ ...base, appIntent: parameters, configurationScreen: true }] })
+    ).toThrow("Widget 'scores': configurationScreen needs a Dynamic Widget (entry) that declares appIntent.parameters")
+    expect(() =>
+      validateAndroidConfigPluginProps({
+        widgets: [{ ...base, entry: './widgets/scores.tsx', configurationScreen: true }],
+      })
+    ).toThrow('configurationScreen needs a Dynamic Widget')
+    expect(() =>
+      validateAndroidConfigPluginProps({
+        widgets: [{ ...base, entry: './widgets/scores.tsx', appIntent: parameters, configurationScreen: 'yes' as any }],
+      })
+    ).toThrow("Widget 'scores': configurationScreen must be a boolean")
+  })
 })
