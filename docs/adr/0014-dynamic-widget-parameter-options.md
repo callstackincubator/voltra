@@ -75,8 +75,10 @@ On iOS the choices live in one App Group `UserDefaults` key per widget,
 the generated `EntityQuery` in the extension reads it. Widget ids and
 parameter names may both contain `_`, so a key per widget and parameter could
 be shared by two pairs. On Android each parameter has its own DataStore key,
-`voltra.options.<widgetId>.<parameter>`, which cannot collide because neither
-part may contain `.`.
+`voltra.options.<widgetId>.<parameter>`. Android does not check parameter
+names, but the widget id cannot contain `.`, so the prefix
+`voltra.options.<widgetId>.` belongs to one widget and keys cannot collide
+across widgets.
 
 The choices belong to the user, so `clearWidget` and `clearAllWidgets` (and
 `clearAndroidWidget` and `clearAllAndroidWidgets`) remove them. The orphan

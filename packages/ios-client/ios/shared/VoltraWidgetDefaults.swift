@@ -120,12 +120,17 @@ public enum VoltraWidgetDefaults {
   /// `groupIdentifier`, since the extension could never read them.
   public static func setWidgetParameterOptions(_ options: [WidgetParameterOption], widgetId: String, parameter: String) throws {
     let defaults = try resolvedDefaults()
+    // Read-modify-write of one key per widget: two calls for different parameters must not drop each other's.
+    parameterOptionsLock.lock()
+    defer { parameterOptionsLock.unlock() }
     var stored = storedParameterOptions(widgetId: widgetId, in: defaults)
     stored[parameter] = options
     let data = try JSONEncoder().encode(stored)
     defaults.set(String(decoding: data, as: UTF8.self), forKey: VoltraStorageKeys.widgetParameterOptions(widgetId))
     defaults.synchronize()
   }
+
+  private static let parameterOptionsLock = NSLock()
 
   // MARK: - Remove
 
@@ -175,6 +180,8 @@ public enum VoltraWidgetDefaults {
     guard let defaults = try? resolvedDefaults() else { return }
     let widgetIds = widgetId.map { [$0] }
       ?? Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
+    parameterOptionsLock.lock()
+    defer { parameterOptionsLock.unlock() }
     for id in widgetIds {
       defaults.removeObject(forKey: VoltraStorageKeys.widgetParameterOptions(id))
     }
