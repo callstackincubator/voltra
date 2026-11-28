@@ -110,7 +110,7 @@ describe('@use-voltra/metro manifest registry', () => {
       const iosEntryImport = toPosix(
         path.relative(path.dirname(iosWidget!.generatedEntryPath), path.join(projectRoot, iosWidget!.entry))
       )
-      assert.ok(iosGenerated.includes(`import Widget from ${JSON.stringify(iosEntryImport)}`))
+      assert.ok(iosGenerated.includes(`import Widget, * as WidgetModule from ${JSON.stringify(iosEntryImport)}`))
       assert.ok(!iosGenerated.includes('import * as WidgetModule'))
       assert.ok(!iosGenerated.includes('export { Widget }'))
       assert.match(iosGenerated, /export function render\(propsJSON, envJSON\)/)
@@ -154,6 +154,7 @@ describe('@use-voltra/metro manifest registry', () => {
           .filter((line) => !line.startsWith('import '))
           .join('\n')
           .replace('export function render(propsJSON, envJSON)', 'function render(propsJSON, envJSON)')
+          .replace('export const timeline =', 'const timeline =')
           .replace('export default render', 'return render')
 
         type DynamicWidgetRender = (propsJSON: string, envJSON: string) => string
@@ -166,16 +167,24 @@ describe('@use-voltra/metro manifest registry', () => {
           props: Record<string, unknown>
         ) => DynamicWidgetElement
 
-        const createAdapter = new Function('createElement', 'renderVariantToJson', 'Widget', executableAdapter) as (
+        const createAdapter = new Function(
+          'createElement',
+          'renderVariantToJson',
+          'Widget',
+          'WidgetModule',
+          executableAdapter
+        ) as (
           createElement: CreateDynamicWidgetElement,
           renderVariantToJson: (element: DynamicWidgetElement) => unknown,
-          Widget: (props: Record<string, unknown>, env: Record<string, unknown>) => unknown
+          Widget: (props: Record<string, unknown>, env: Record<string, unknown>) => unknown,
+          WidgetModule: Record<string, unknown>
         ) => DynamicWidgetRender
 
         const render = createAdapter(
           createElement as unknown as CreateDynamicWidgetElement,
           (element) => element.type(element.props),
-          (props, env) => ({ props, env })
+          (props, env) => ({ props, env }),
+          {}
         )
         const dynamicWidgetProps = {
           key: 'primary-inbox',
@@ -197,6 +206,110 @@ describe('@use-voltra/metro manifest registry', () => {
       }
     })
   }
+
+  test('generated Dynamic Widget adapters return the entry timeline export as epoch ms, and export none without one', () => {
+    const { projectRoot, cleanup } = makeTempProject({
+      '.voltra/manifest.ios.json': JSON.stringify(
+        { version: 1, platform: 'ios', widgets: [{ id: 'countdown', entry: 'widgets/countdown.js' }] },
+        null,
+        2
+      ),
+      'widgets/countdown.js': 'export default function CountdownWidget() { return null }\n',
+    })
+    cleanups.push(cleanup)
+
+    const registry = createWidgetRegistry({ projectRoot })
+
+    try {
+      const dynamicWidget = registry.getWidget('ios', 'countdown')
+      assert.ok(dynamicWidget)
+
+      const generatedAdapter = fs.readFileSync(dynamicWidget.generatedEntryPath, 'utf8')
+      const executableAdapter = generatedAdapter
+        .split('\n')
+        .filter((line) => !line.startsWith('import '))
+        .join('\n')
+        .replace('export function render(propsJSON, envJSON)', 'function render(propsJSON, envJSON)')
+        .replace('export const timeline =', 'const timeline =')
+        .replace('export default render', 'return timeline')
+
+      type DynamicWidgetTimeline = (propsJSON: string) => string
+      const createTimeline = new Function(
+        'createElement',
+        'renderVariantToJson',
+        'Widget',
+        'WidgetModule',
+        executableAdapter
+      ) as (
+        createElement: unknown,
+        renderVariantToJson: unknown,
+        Widget: unknown,
+        WidgetModule: Record<string, unknown>
+      ) => DynamicWidgetTimeline | undefined
+
+      const timeline = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        {
+          timeline: (props: { startsAt: number[] }) => props.startsAt,
+        }
+      )
+      assert.ok(timeline)
+      assert.deepEqual(JSON.parse(timeline(JSON.stringify({ startsAt: [1000, 2000] }))), [1000, 2000])
+
+      const timelineWithDates = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        { timeline: () => [new Date(1000), 2000] }
+      )
+      assert.ok(timelineWithDates)
+      assert.deepEqual(JSON.parse(timelineWithDates('{}')), [1000, 2000])
+
+      const timelineWithIsoString = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        { timeline: () => [new Date(1000), '2026-01-01T00:00:00Z'] }
+      )
+      assert.ok(timelineWithIsoString)
+      assert.throws(
+        () => timelineWithIsoString('{}'),
+        /^Error: Voltra widget "countdown" timeline\(\) returned "2026-01-01T00:00:00Z" at index 1; expected a Date or epoch milliseconds\.$/
+      )
+
+      for (const invalid of [null, Number.NaN, Infinity, new Date(Number.NaN)]) {
+        const timelineWithInvalid = createTimeline(
+          createElement,
+          () => null,
+          () => null,
+          { timeline: () => [invalid] }
+        )
+        assert.ok(timelineWithInvalid)
+        assert.throws(() => timelineWithInvalid('{}'), /returned .* at index 0; expected a Date/)
+      }
+
+      const timelineWithoutArray = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        { timeline: () => 1000 }
+      )
+      assert.ok(timelineWithoutArray)
+      assert.throws(() => timelineWithoutArray('{}'), /"countdown" timeline\(\) must return an array/)
+
+      const timelineWithoutExport = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        {}
+      )
+      assert.equal(timelineWithoutExport, undefined)
+    } finally {
+      registry.close()
+    }
+  })
 
   test('surfaces a missing platform manifest when a widget is requested', () => {
     const { projectRoot, cleanup } = makeTempProject({

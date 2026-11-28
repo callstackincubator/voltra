@@ -65,7 +65,10 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
       // the app reloads the widget itself, and setting a URL later queues a reload of its own.
       DynamicWidgetServerPropsStore().markDisabledIfNeeded(enabled: settings.enabled, for: scope)
 
-      return Timeline(entries: [await localEntry(configuration: configuration)], policy: .never)
+      return Timeline(
+        entries: VoltraClientWidgetProvider.timelineEntries(from: await localEntry(configuration: configuration)),
+        policy: .never
+      )
     }
 
     var nextIntervalMinutes = settings.intervalMinutes
@@ -93,7 +96,7 @@ public struct VoltraDynamicWidgetServerUpdateProvider: TimelineProvider {
     let entry = loadedEntry.withServerUpdate(DynamicWidgetServerPropsStore().status(for: scope).toJSON())
     let nextUpdate = Date().addingTimeInterval(TimeInterval(nextIntervalMinutes * 60))
 
-    return Timeline(entries: [entry], policy: .after(nextUpdate))
+    return Timeline(entries: VoltraClientWidgetProvider.timelineEntries(from: entry), policy: .after(nextUpdate))
   }
 
   /// Whether this timeline request should fetch, or ride on one that just happened.

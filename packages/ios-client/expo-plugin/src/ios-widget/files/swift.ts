@@ -493,7 +493,7 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
         )`
     : dedent`
         let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDict})
-        return Timeline(entries: [entry], policy: .never)`
+        return Timeline(entries: VoltraClientWidgetProvider.timelineEntries(from: entry), policy: .never)`
 
   return dedent`
     // MARK: - Client-rendered AppIntent widget: ${widget.id}
