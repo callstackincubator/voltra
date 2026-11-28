@@ -50,6 +50,15 @@ export const configureInfoPlist: ConfigPlugin<ConfigureInfoPlistProps> = (config
       delete mod.modResults.Voltra_WidgetKinds
     }
 
+    // Every Dynamic Widget with its dynamicOptions parameter names, so setWidgetParameterOptions can
+    // reject an unknown widget, a payload widget or an undeclared parameter before storing anything.
+    const dynamicWidgetParameters = dynamicWidgetParameterNames(props.widgets)
+    if (dynamicWidgetParameters) {
+      mod.modResults.Voltra_DynamicWidgetParameters = dynamicWidgetParameters
+    } else {
+      delete mod.modResults.Voltra_DynamicWidgetParameters
+    }
+
     // Configure server update URLs and intervals for widgets
     if (props.widgets && props.widgets.length > 0) {
       const serverUrls: Record<string, string> = {}
@@ -88,4 +97,20 @@ export const configureInfoPlist: ConfigPlugin<ConfigureInfoPlistProps> = (config
 
     return mod
   })
+}
+
+/** `{ widgetId: [dynamicOptions parameter names] }` for every widget with an `entry`, or undefined. */
+export function dynamicWidgetParameterNames(
+  widgets: IOSWidgetConfig[] | undefined
+): Record<string, string[]> | undefined {
+  const dynamicWidgets = (widgets ?? []).filter((widget) => widget.entry !== undefined)
+  if (dynamicWidgets.length === 0) {
+    return undefined
+  }
+  return Object.fromEntries(
+    dynamicWidgets.map((widget) => [
+      widget.id,
+      (widget.appIntent?.parameters ?? []).filter((p) => p.dynamicOptions === true).map((p) => p.name),
+    ])
+  )
 }

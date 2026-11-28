@@ -54,6 +54,13 @@ public enum VoltraWidgetDefaults {
     return tag
   }
 
+  /// The choices the app last set with `setWidgetParameterOptions` for a `dynamicOptions` Edit
+  /// Widget parameter, in the app's order. Empty when it has set none, or without an App Group.
+  public static func widgetParameterOptions(widgetId: String, parameter: String) -> [WidgetParameterOption] {
+    guard let defaults = try? resolvedDefaults() else { return [] }
+    return storedParameterOptions(widgetId: widgetId, in: defaults)[parameter] ?? []
+  }
+
   // MARK: - Write
 
   public static func setWidgetJson(_ json: String, for widgetId: String, deepLinkUrl: String?) throws {
@@ -108,6 +115,23 @@ public enum VoltraWidgetDefaults {
     defaults.synchronize()
   }
 
+  /// Stores the choices of a `dynamicOptions` Edit Widget parameter, read by the generated
+  /// `EntityQuery` in the widget extension. Throws `WidgetError.appGroupNotConfigured` without a
+  /// `groupIdentifier`, since the extension could never read them.
+  public static func setWidgetParameterOptions(_ options: [WidgetParameterOption], widgetId: String, parameter: String) throws {
+    let defaults = try resolvedDefaults()
+    // Read-modify-write of one key per widget: two calls for different parameters must not drop each other's.
+    parameterOptionsLock.lock()
+    defer { parameterOptionsLock.unlock() }
+    var stored = storedParameterOptions(widgetId: widgetId, in: defaults)
+    stored[parameter] = options
+    let data = try JSONEncoder().encode(stored)
+    defaults.set(String(decoding: data, as: UTF8.self), forKey: VoltraStorageKeys.widgetParameterOptions(widgetId))
+    defaults.synchronize()
+  }
+
+  private static let parameterOptionsLock = NSLock()
+
   // MARK: - Remove
 
   /// Removes all persisted data (json, deepLinkUrl, timeline, Dynamic Widget props) for a single widget.
@@ -149,7 +173,27 @@ public enum VoltraWidgetDefaults {
     defaults.synchronize()
   }
 
+  /// Removes the app's `dynamicOptions` choices for one widget, or for every widget with nil.
+  /// Called by `clearWidget` / `clearAllWidgets` only: the choices are the user's, so they go on
+  /// logout, but the orphan cleanup must keep them for a widget that has not been placed yet.
+  public static func removeParameterOptions(for widgetId: String?) {
+    guard let defaults = try? resolvedDefaults() else { return }
+    let widgetIds = widgetId.map { [$0] }
+      ?? Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? []
+    parameterOptionsLock.lock()
+    defer { parameterOptionsLock.unlock() }
+    for id in widgetIds {
+      defaults.removeObject(forKey: VoltraStorageKeys.widgetParameterOptions(id))
+    }
+    defaults.synchronize()
+  }
+
   // MARK: - Private
+
+  private static func storedParameterOptions(widgetId: String, in defaults: UserDefaults) -> [String: [WidgetParameterOption]] {
+    guard let json = defaults.string(forKey: VoltraStorageKeys.widgetParameterOptions(widgetId)) else { return [:] }
+    return (try? JSONDecoder().decode([String: [WidgetParameterOption]].self, from: Data(json.utf8))) ?? [:]
+  }
 
   private static func resolvedDefaults() throws -> UserDefaults {
     guard let groupId = VoltraConfig.groupIdentifier() else {

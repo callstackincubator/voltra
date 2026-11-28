@@ -154,6 +154,8 @@ Configurations are meant for identifiers and short choices, not large payloads â
 
 A widget with no configuration parameters keeps behaving exactly as it did before: one request, one cached response, shared by every placement.
 
+A parameter with `dynamicOptions: true` takes its choices from the app with `setWidgetParameterOptions`; see [Choices the app sets at runtime](/android/development/dynamic-widgets#choices-the-app-sets-at-runtime). The resolved value is part of `configuration` and `instance`, so each choice is fetched and cached separately.
+
 ## Returning data instead of UI
 
 Everything above assumes your server renders Voltra components and returns a UI payload, which means it has to run Node. If you give the widget an `entry`, it renders on the device instead and your server returns plain JSON â€” so it can be written in any language.

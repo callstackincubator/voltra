@@ -39,6 +39,11 @@ export interface AppIntentParameter {
    * `title` instead of a free-text field; `env.configuration` receives the option's `value`.
    */
   options?: WidgetConfigurationOption[]
+  /**
+   * The app sets the values to pick from at runtime with `setWidgetParameterOptions`, in place of
+   * `options`. The first one is the default, so a `default` cannot be declared alongside it.
+   */
+  dynamicOptions?: boolean
 }
 
 /**

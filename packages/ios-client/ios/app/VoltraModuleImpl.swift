@@ -407,6 +407,23 @@ public class VoltraModuleImpl {
     await VoltraDynamicLiveActivityRegistry.shared.reload(definitionIds: nil)
   }
 
+  /// Stores the choices of a widget's `dynamicOptions` Edit Widget parameter and reloads that
+  /// widget, so a placement whose choice went away falls back to the first one at once.
+  func setWidgetParameterOptions(widgetId: String, parameter: String, optionsJson: String) async throws {
+    if let targetError = WidgetParameterOptionsTargetError.check(
+      widgetId: widgetId,
+      parameter: parameter,
+      widgetIds: Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.widgetIds) as? [String] ?? [],
+      dynamicWidgetParameters: Bundle.main.object(forInfoDictionaryKey: VoltraStorageKeys.dynamicWidgetParameters)
+        as? [String: [String]] ?? [:]
+    ) {
+      throw targetError
+    }
+    let options = try JSONDecoder().decode([WidgetParameterOption].self, from: Data(optionsJson.utf8))
+    try VoltraWidgetDefaults.setWidgetParameterOptions(options, widgetId: widgetId, parameter: parameter)
+    VoltraWidgetService.reloadTimeline(for: widgetId)
+  }
+
   func updateWidget(widgetId: String, jsonString: String, options: UpdateWidgetOptions?) async throws {
     try VoltraWidgetService.setWidgetData(widgetId: widgetId, jsonString: jsonString, deepLinkUrl: options?.deepLinkUrl)
 
@@ -441,12 +458,14 @@ public class VoltraModuleImpl {
 
   func clearWidget(widgetId: String) async {
     VoltraWidgetService.removeAllData(for: widgetId)
+    VoltraWidgetDefaults.removeParameterOptions(for: widgetId)
     VoltraWidgetService.clearWidgetServerState(for: widgetId)
     VoltraWidgetService.reloadTimeline(for: widgetId)
   }
 
   func clearAllWidgets() async {
     VoltraWidgetService.removeAllWidgets()
+    VoltraWidgetDefaults.removeParameterOptions(for: nil)
 
     for widgetId in VoltraWidgetServer.serverDrivenWidgetIds {
       VoltraWidgetService.clearWidgetServerState(for: widgetId)

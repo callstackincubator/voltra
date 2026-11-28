@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.first
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 
@@ -69,7 +70,98 @@ internal class VoltraConfigurationStore(
             } else {
                 readPrefixed(snapshot, instanceKeyPrefix(widgetId, appWidgetId))
             }
-        return loadDefaults(widgetId) + typeValues + instanceValues
+        return resolveDynamicParameters(
+            loadDefaults(widgetId) + typeValues + instanceValues,
+            readOptions(snapshot, widgetId),
+            dynamicParameters(widgetId),
+        )
+    }
+
+    /**
+     * Store the choices of an `appIntent` parameter with `dynamicOptions`, a JSON array of
+     * `{ value, title }`. [get] resolves the parameter against them, so the render, the instance
+     * key and the server URL all see the same value.
+     */
+    suspend fun setOptions(
+        widgetId: String,
+        parameter: String,
+        optionsJson: String,
+    ) {
+        val prefKey = stringPreferencesKey(optionsKeyPrefix(widgetId) + parameter)
+        dataStore.edit { it[prefKey] = optionsJson }
+    }
+
+    /** Each dynamic parameter of [widgetId] with its stored choices, as (value, title) pairs. */
+    suspend fun options(widgetId: String): Map<String, List<Pair<String, String>>> =
+        readOptions(dataStore.data.first(), widgetId)
+
+    private fun readOptions(
+        snapshot: Preferences,
+        widgetId: String,
+    ): Map<String, List<Pair<String, String>>> =
+        readPrefixed(snapshot, optionsKeyPrefix(widgetId)).mapValues { (_, json) ->
+            val array = JSONArray(json)
+            List(array.length()) {
+                array.getJSONObject(it).let { option ->
+                    option.getString("value") to
+                        option.getString("title")
+                }
+            }
+        }
+
+    /** Drop the stored choices of one widget, or of every widget when [widgetId] is null. */
+    suspend fun clearOptions(widgetId: String?) {
+        val prefix = widgetId?.let(::optionsKeyPrefix) ?: OPTIONS_PREFIX
+        dataStore.edit { preferences ->
+            preferences
+                .asMap()
+                .keys
+                .filter { it.name.startsWith(prefix) }
+                .forEach { preferences.remove(it) }
+        }
+    }
+
+    // As on iOS: no pick, or a pick no longer offered, means the first choice; no choices, "".
+    // Only declared parameters count, so stored choices can never add keys to the instance key.
+    private fun resolveDynamicParameters(
+        values: Map<String, String>,
+        options: Map<String, List<Pair<String, String>>>,
+        declared: List<String>,
+    ): Map<String, String> {
+        val resolved = values.toMutableMap()
+        declared.forEach { parameter ->
+            val choices = options[parameter].orEmpty()
+            if (choices.none { it.first == resolved[parameter] }) {
+                resolved[parameter] = choices.firstOrNull()?.first ?: ""
+            }
+        }
+        return resolved
+    }
+
+    /**
+     * The `dynamicOptions` parameters the config plugin declared for [widgetId], in declared order,
+     * from `assets/voltra/widget_dynamic_parameters.json`: `{ "<widgetId>": ["<name>"] }`.
+     */
+    fun dynamicParameters(widgetId: String): List<String> {
+        val all = dynamicParametersCache ?: readDynamicParameters().also { dynamicParametersCache = it }
+        return all[widgetId].orEmpty()
+    }
+
+    private fun readDynamicParameters(): Map<String, List<String>> {
+        val root =
+            try {
+                JSONObject(
+                    context.assets
+                        .open(DYNAMIC_PARAMETERS_ASSET_PATH)
+                        .bufferedReader()
+                        .use { it.readText() },
+                )
+            } catch (e: IOException) {
+                return emptyMap()
+            }
+        return root.keys().asSequence().associateWith { id ->
+            root.getJSONArray(id).let { names -> List(names.length()) { names.getString(it) } }
+        }
     }
 
     /** Write one widget-type value: the default every placement without its own value renders. */
@@ -212,6 +304,8 @@ internal class VoltraConfigurationStore(
 
     private fun typeKeyPrefix(widgetId: String): String = "$TYPE_PREFIX$widgetId."
 
+    private fun optionsKeyPrefix(widgetId: String): String = "$OPTIONS_PREFIX$widgetId."
+
     private fun instanceKeyPrefix(
         widgetId: String,
         appWidgetId: Int,
@@ -224,9 +318,21 @@ internal class VoltraConfigurationStore(
         /** Unchanged since before the instance layer: stored values are never rewritten. */
         private const val TYPE_PREFIX = "voltra.config."
         private const val INSTANCE_PREFIX = "voltra.instance."
+        private const val OPTIONS_PREFIX = "voltra.options."
+
+        private const val DYNAMIC_PARAMETERS_ASSET_PATH = "voltra/widget_dynamic_parameters.json"
 
         @Volatile
         private var defaultsCache: Map<String, Map<String, String>>? = null
+
+        @Volatile
+        private var dynamicParametersCache: Map<String, List<String>>? = null
+
+        /** Stand in for the plugin-emitted `dynamicOptions` list, as [seedDefaultsForTesting] does. */
+        @VisibleForTesting
+        internal fun seedDynamicParametersForTesting(parameters: Map<String, List<String>>?) {
+            dynamicParametersCache = parameters
+        }
 
         /**
          * Stand in for the plugin-emitted defaults asset, which a Robolectric application does not

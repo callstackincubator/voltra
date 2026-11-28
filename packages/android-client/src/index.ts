@@ -91,7 +91,9 @@ export {
   requestPinAndroidWidget,
   setWidgetConfiguration,
   setWidgetInstanceConfiguration,
+  setWidgetParameterOptions,
   updateAndroidWidget,
+  type WidgetParameterOption,
 } from './widgets/api.js'
 export type {
   AndroidWidgetSize,
