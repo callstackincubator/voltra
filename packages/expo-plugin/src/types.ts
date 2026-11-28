@@ -76,6 +76,7 @@ export interface WidgetConfigurationParameter {
   title?: WidgetLabel
   default?: string
   options?: WidgetConfigurationOption[]
+  dynamicOptions?: boolean
 }
 
 /** The widget fields that carry configuration-sheet copy. */

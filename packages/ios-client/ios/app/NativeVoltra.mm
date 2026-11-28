@@ -12,6 +12,14 @@ static NSString *VoltraPromiseErrorCode(NSString *fallbackCode, NSError *error)
   if ([error.domain isEqualToString:@"com.callstack.voltra"] && error.code == 4) {
     return @"VOLTRA_RENDERER_MISMATCH";
   }
+  // WidgetParameterOptionsTargetError, codes 1–3.
+  if ([error.domain isEqualToString:@"com.callstack.voltra.widgetParameterOptions"]) {
+    switch (error.code) {
+      case 1: return @"VOLTRA_WIDGET_NOT_FOUND";
+      case 2: return @"VOLTRA_WIDGET_KIND_MISMATCH";
+      case 3: return @"VOLTRA_WIDGET_PARAMETER_NOT_DECLARED";
+    }
+  }
   return fallbackCode;
 }
 
@@ -416,6 +424,24 @@ static void VoltraRejectPromise(RCTPromiseRejectBlock reject, NSString *fallback
   [self.module setDynamicWidgetLocale:tag completion:^(NSError *error) {
     if (error) {
       reject(@"setDynamicWidgetLocale", error.localizedDescription, error);
+    } else {
+      resolve(nil);
+    }
+  }];
+}
+
+- (void)setWidgetParameterOptions:(NSString *)widgetId
+                        parameter:(NSString *)parameter
+                      optionsJson:(NSString *)optionsJson
+                          resolve:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
+{
+  [self.module setWidgetParameterOptions:widgetId
+                               parameter:parameter
+                             optionsJson:optionsJson
+                              completion:^(NSError *error) {
+    if (error) {
+      VoltraRejectPromise(reject, @"setWidgetParameterOptions", error);
     } else {
       resolve(nil);
     }

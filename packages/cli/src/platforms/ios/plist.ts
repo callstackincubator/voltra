@@ -75,6 +75,15 @@ async function ensureSingleInfoPlist(
   // Widgets that pin a custom WidgetKit kind, so VoltraWidgetKind can map ids to kinds and back.
   setOrDeleteVoltraKey(infoPlist, 'Voltra_WidgetKinds', iosWidgetKindOverrides(ios.widgets))
 
+  // Every Dynamic Widget, so setWidgetParameterOptions can tell one from a payload widget. Voltra
+  // Apply rejects dynamicOptions, so no widget declares a parameter here.
+  const dynamicWidgetIds = ios.widgets.filter((widget) => widget.entry !== undefined).map((widget) => widget.id)
+  setOrDeleteVoltraKey(
+    infoPlist,
+    'Voltra_DynamicWidgetParameters',
+    dynamicWidgetIds.length > 0 ? Object.fromEntries(dynamicWidgetIds.map((id) => [id, []])) : undefined
+  )
+
   // Every server-driven widget gets an interval, so this dictionary's keys are the set of
   // server-driven widget ids the runtime settings store validates against. A URL is written only
   // when app.json set one; otherwise the app supplies it with setWidgetServerUpdate.
