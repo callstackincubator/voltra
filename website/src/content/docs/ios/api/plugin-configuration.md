@@ -111,7 +111,7 @@ Array of widget configurations for Home Screen widgets. Each widget will be avai
   - `url`: The Voltra SSR endpoint URL
   - `intervalMinutes`: Update interval in minutes (default: `15`)
   - `refresh`: Show a native refresh button (default: `false`, requires iOS 17+)
-- `appIntent`: (optional, Dynamic Widgets, iOS 17+) Parameters the user edits in the Edit Widget sheet. Each parameter has a `name`, a `title` (plain string or locale map), an optional `default`, and optional `options` (`[{ "value": "metric", "title": "Metric" }]`) that turn the field into a picker. See [Configurable Widgets](/ios/development/configurable-widgets)
+- `appIntent`: (optional, Dynamic Widgets, iOS 17+) Parameters the user edits in the Edit Widget sheet. Each parameter has a `name`, a `title` (plain string or locale map), an optional `default`, and optional `options` (`[{ "value": "metric", "title": "Metric" }]`) that turn the field into a picker. `dynamicOptions: true` instead makes a picker of choices the app sets at runtime with `setWidgetParameterOptions`. `appIntent.intentName` and a `dynamicOptions` parameter's `entityName` set the Swift type names of the generated intent and entity, to keep the choices of a widget the app shipped before Voltra. See [Configurable Widgets](/ios/development/configurable-widgets)
 
 **Example:**
 

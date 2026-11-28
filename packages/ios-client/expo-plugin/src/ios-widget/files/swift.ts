@@ -314,11 +314,11 @@ function widgetUsesAppIntent(widget: DetectedIOSWidget): boolean {
   return widget.clientRendered && !!widget.appIntent && widget.appIntent.parameters.length > 0
 }
 
-function generateWidgetStruct(widget: DetectedIOSWidget): string {
+function generateWidgetStruct(widget: DetectedIOSWidget, emittedTypes: Set<string>): string {
   // Client-rendered widgets with an appIntent config get a native "Edit Widget" sheet via
   // AppIntentConfiguration; the configured params flow into env.configuration.
   if (widgetUsesAppIntent(widget)) {
-    return generateClientAppIntentWidgetCode(widget)
+    return generateClientAppIntentWidgetCode(widget, emittedTypes)
   }
 
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
@@ -391,6 +391,66 @@ function sheetStringLiteral(label: WidgetLabel, key: string): string {
   return `"${escapeForSwiftStringLiteral(isWidgetLocalizedMap(label) ? key : label)}"`
 }
 
+function dynamicOptionEntityName(widgetId: string, parameter: AppIntentParameter): string {
+  return parameter.entityName ?? `VoltraWidget_${widgetId}_${parameter.name}_Choice`
+}
+
+/**
+ * Widgets share an intent or entity by giving it the same name, so the first widget that uses a name
+ * generates its type and the rest refer to it.
+ */
+function claimSwiftType(emittedTypes: Set<string>, name: string): boolean {
+  if (emittedTypes.has(name)) {
+    return false
+  }
+  emittedTypes.add(name)
+  return true
+}
+
+/**
+ * A `dynamicOptions` parameter lists choices the app sets at runtime with
+ * `setWidgetParameterOptions`, so it becomes an `AppEntity` whose query reads them from the App
+ * Group. The first choice is the default, and a placement whose choice went away falls back to it.
+ */
+function generateDynamicOptionEntity(widgetId: string, parameter: AppIntentParameter): string {
+  const entityName = dynamicOptionEntityName(widgetId, parameter)
+  const typeTitle = sheetStringLiteral(parameter.title, widgetParameterTitleKey(widgetId, parameter.name))
+
+  return [
+    '@available(iOS 17.0, *)',
+    `struct ${entityName}: AppEntity {`,
+    '  let id: String',
+    '  let title: String',
+    '',
+    `  static var typeDisplayRepresentation: TypeDisplayRepresentation = ${typeTitle}`,
+    `  static var defaultQuery = ${entityName}Query()`,
+    '',
+    '  var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\\(title)") }',
+    '}',
+    '',
+    '@available(iOS 17.0, *)',
+    `struct ${entityName}Query: EntityQuery {`,
+    `  func entities(for identifiers: [String]) async throws -> [${entityName}] {`,
+    '    choices().filter { identifiers.contains($0.id) }',
+    '  }',
+    '',
+    `  func suggestedEntities() async throws -> [${entityName}] { choices() }`,
+    '',
+    `  func defaultResult() async -> ${entityName}? { choices().first }`,
+    '',
+    '  /// The value a placement gets when its choice is gone, or "" when there are no choices.',
+    '  func fallbackValue() -> String { choices().first?.id ?? "" }',
+    '',
+    `  private func choices() -> [${entityName}] {`,
+    `    VoltraWidgetDefaults.widgetParameterOptions(widgetId: "${escapeForSwiftStringLiteral(
+      widgetId
+    )}", parameter: "${escapeForSwiftStringLiteral(parameter.name)}")`,
+    `      .map { ${entityName}(id: $0.value, title: $0.title) }`,
+    '  }',
+    '}',
+  ].join('\n')
+}
+
 function parameterOptionEnumName(widgetId: string, parameterName: string): string {
   return `VoltraWidget_${widgetId}_${parameterName}_Option`
 }
@@ -442,46 +502,76 @@ function defaultOptionIndex(parameter: AppIntentParameter): number {
  * bundle via the shared client runtime, and an AppIntentConfiguration widget. The configured
  * params are passed into the render as env.configuration; the native "Edit Widget" sheet edits them.
  */
-function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
+function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget, emittedTypes: Set<string>): string {
   const params = widget.appIntent!.parameters
   const families = widget.supportedFamilies ?? DEFAULT_WIDGET_FAMILIES
   const familiesSwift = families.map((f) => WIDGET_FAMILY_MAP[f]).join(', ')
-  const intentName = `VoltraWidget_${widget.id}_Intent`
+  const intentName = widget.appIntent!.intentName ?? `VoltraWidget_${widget.id}_Intent`
   const providerName = `VoltraWidget_${widget.id}_ClientProvider`
   const intentTitle = escapeForSwiftStringLiteral(`Configure ${widgetLabelEnglish(widget.displayName)}`)
   const displayNameExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'displayName', widget.displayName)
   const descriptionExpr = iosWidgetGalleryLabelSwiftExpr(widget.id, 'description', widget.description)
 
   const hasOptions = (p: AppIntentParameter) => (p.options?.length ?? 0) > 0
-  // The raw default, as env.configuration sees it before the user configures anything.
+  const hasDynamicOptions = (p: AppIntentParameter) => p.dynamicOptions === true
+  // The raw default, as env.configuration sees it before the user configures anything. A
+  // dynamicOptions placeholder only renders before the app has set any choices.
   const swiftDefault = (p: AppIntentParameter) =>
-    hasOptions(p)
+    hasDynamicOptions(p)
+      ? '""'
+      : hasOptions(p)
       ? `"${escapeForSwiftStringLiteral(p.options![defaultOptionIndex(p)]!.value)}"`
       : `"${escapeForSwiftStringLiteral(p.default ?? '')}"`
-  const swiftType = (p: AppIntentParameter) => (hasOptions(p) ? parameterOptionEnumName(widget.id, p.name) : 'String')
+  const swiftType = (p: AppIntentParameter) =>
+    hasDynamicOptions(p)
+      ? `${dynamicOptionEntityName(widget.id, p)}?`
+      : hasOptions(p)
+      ? parameterOptionEnumName(widget.id, p.name)
+      : 'String'
   const parameterDefault = (p: AppIntentParameter) =>
     hasOptions(p) ? `.option${defaultOptionIndex(p)}` : swiftDefault(p)
+  // An entity parameter has no code default: it is nil until the user picks, and when the picked
+  // choice is no longer offered, so both fall back to the first choice.
   const configuredValue = (p: AppIntentParameter) =>
-    hasOptions(p) ? `configuration.${p.name}.rawValue` : `configuration.${p.name}`
+    hasDynamicOptions(p)
+      ? `(configuration.${p.name}?.id ?? ${dynamicOptionEntityName(widget.id, p)}Query().fallbackValue())`
+      : hasOptions(p)
+      ? `configuration.${p.name}.rawValue`
+      : `configuration.${p.name}`
   const dictLiteral = (entries: string[]) => (entries.length > 0 ? `[${entries.join(', ')}]` : '[:]')
 
-  const optionEnums = params
-    .filter(hasOptions)
-    .map((p) => generateParameterOptionEnum(widget.id, p))
-    .join('\n\n')
+  const optionEnums = [
+    ...params.filter(hasOptions).map((p) => generateParameterOptionEnum(widget.id, p)),
+    ...params
+      .filter((p) => hasDynamicOptions(p) && claimSwiftType(emittedTypes, dynamicOptionEntityName(widget.id, p)))
+      .map((p) => generateDynamicOptionEntity(widget.id, p)),
+  ].join('\n\n')
   const paramDecls = params
-    .map(
-      (p) =>
-        `  @Parameter(title: ${sheetStringLiteral(
-          p.title,
-          widgetParameterTitleKey(widget.id, p.name)
-        )}, default: ${parameterDefault(p)})\n  var ${p.name}: ${swiftType(p)}`
-    )
+    .map((p) => {
+      const title = sheetStringLiteral(p.title, widgetParameterTitleKey(widget.id, p.name))
+      const defaultArgument = hasDynamicOptions(p) ? '' : `, default: ${parameterDefault(p)}`
+      return `  @Parameter(title: ${title}${defaultArgument})\n  var ${p.name}: ${swiftType(p)}`
+    })
     .join('\n\n')
   const initParams = params.map((p) => `${p.name}: ${swiftType(p)}`).join(', ')
   const initBody = params.map((p) => `    self.${p.name} = ${p.name}`).join('\n')
   const configuredDict = dictLiteral(params.map((p) => `"${p.name}": ${configuredValue(p)}`))
   const defaultDict = dictLiteral(params.map((p) => `"${p.name}": ${swiftDefault(p)}`))
+  const intentDecl = claimSwiftType(emittedTypes, intentName)
+    ? dedent`
+      @available(iOS 17.0, *)
+      struct ${intentName}: WidgetConfigurationIntent {
+        static var title: LocalizedStringResource = "${intentTitle}"
+
+      ${paramDecls}
+
+        init() {}
+        init(${initParams}) {
+      ${initBody}
+        }
+      }
+    ` + '\n\n'
+    : ''
   // A server-driven Dynamic Widget fetches on every timeline request and schedules the next one
   // from its resolved interval; a plain one has nothing to ask again for, so its policy is .never.
   const appIntentTimelineBody = widget.serverUpdate
@@ -498,19 +588,7 @@ function generateClientAppIntentWidgetCode(widget: DetectedIOSWidget): string {
   return dedent`
     // MARK: - Client-rendered AppIntent widget: ${widget.id}
     ${optionEnums ? `\n${optionEnums}\n` : ''}
-    @available(iOS 17.0, *)
-    struct ${intentName}: WidgetConfigurationIntent {
-      static var title: LocalizedStringResource = "${intentTitle}"
-
-    ${paramDecls}
-
-      init() {}
-      init(${initParams}) {
-    ${initBody}
-      }
-    }
-
-    @available(iOS 17.0, *)
+${intentDecl}    @available(iOS 17.0, *)
     private struct ${providerName}: AppIntentTimelineProvider {
       typealias Intent = ${intentName}
       typealias Entry = VoltraClientWidgetEntry
@@ -607,7 +685,8 @@ function generateWidgetBundleSwift(
   liveActivities: IOSDynamicLiveActivityConfig[] = []
 ): string {
   // Generate widget structs
-  const widgetStructs = widgets.map((w) => generateWidgetStruct(w)).join('\n\n')
+  const emittedTypes = new Set<string>()
+  const widgetStructs = widgets.map((w) => generateWidgetStruct(w, emittedTypes)).join('\n\n')
 
   // AppIntent widgets are iOS 17+, so their bundle entries are gated behind #available.
   const appIntentWidgets = widgets.filter(widgetUsesAppIntent)

@@ -137,6 +137,14 @@ GET https://api.example.com/widgets/weather
 - Both parameters are absent when the widget has no configuration parameters at all, so an existing server-driven widget's requests are unchanged by this feature.
 - `instance` and `configuration` are reserved query keys: a `query` you pass to `setWidgetServerUpdate` naming either is rejected.
 
+To fetch a different endpoint per placement instead, put `{name}` in the URL. Each placement fills it with its own `env.configuration[name]`, percent-encoded so it stays one path segment or query value (only letters, digits and `-_.!~*'()` are left as they are):
+
+```json
+"serverUpdate": { "url": "https://api.example.com/teams/{team}/widget" }
+```
+
+A placement with no value for a placeholder fetches nothing, so it renders with no server props until one is set. This pairs with [choices the app sets at runtime](/ios/development/configurable-widgets#choices-the-app-sets-at-runtime), where the app knows the IDs to pick from.
+
 Configurations are meant for identifiers and short choices, not large payloads — percent-encoding roughly triples the size of braces and quotes in the JSON.
 
 **Fetch count.** A server-driven widget fetches once per distinct configuration among its current placements, not once per placement. If ten placements of one widget each use a different value for a free-text parameter, that is ten fetches per interval (each still floored at 15 minutes) rather than one. A server can still stretch the interval per instance with `Cache-Control: max-age`, exactly as it can today.

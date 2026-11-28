@@ -58,6 +58,91 @@ describe('validateWidgetConfigurationCopy', () => {
     )
   })
 
+  it('accepts dynamicOptions, whose choices the app sets at runtime', () => {
+    const dynamic = { id: 'w', appIntent: { parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true }] } }
+    expect(() => validateWidgetConfigurationCopy(dynamic, { requireParameterTitle: true })).not.toThrow()
+  })
+
+  it('rejects dynamicOptions alongside options or a default, and a non-boolean dynamicOptions', () => {
+    const withParameter = (parameter: Record<string, unknown>) => ({
+      id: 'w',
+      appIntent: { parameters: [{ name: 'masjid', title: 'Masjid', ...parameter }] },
+    })
+    const conflict = "appIntent parameter 'masjid' has dynamicOptions, so it cannot also declare options or a default"
+
+    expect(() =>
+      validateWidgetConfigurationCopy(
+        withParameter({ dynamicOptions: true, options: [{ value: 'a', title: 'A' }] }) as never,
+        { requireParameterTitle: true }
+      )
+    ).toThrow(conflict)
+    expect(() =>
+      validateWidgetConfigurationCopy(withParameter({ dynamicOptions: true, default: 'a' }) as never, {
+        requireParameterTitle: true,
+      })
+    ).toThrow(conflict)
+    expect(() =>
+      validateWidgetConfigurationCopy(withParameter({ dynamicOptions: 'yes' }) as never, {
+        requireParameterTitle: true,
+      })
+    ).toThrow("appIntent parameter 'masjid' dynamicOptions must be a boolean")
+  })
+
+  it('accepts intent and entity names that are Swift type names', () => {
+    const named = {
+      id: 'w',
+      appIntent: {
+        intentName: 'SelectMasjidConfigurationAppIntent',
+        parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true, entityName: 'FollowedMasjid' }],
+      },
+    }
+    expect(() => validateWidgetConfigurationCopy(named, { requireParameterTitle: true })).not.toThrow()
+  })
+
+  it('rejects an intent or entity name that is not a Swift type name, and an entity name without dynamicOptions', () => {
+    const withAppIntent = (appIntent: Record<string, unknown>) => ({ id: 'w', appIntent } as never)
+    const parameter = { name: 'masjid', title: 'Masjid', dynamicOptions: true }
+    const entityError = "appIntent parameter 'masjid' entityName needs dynamicOptions"
+
+    expect(() =>
+      validateWidgetConfigurationCopy(withAppIntent({ intentName: 'Select Masjid', parameters: [parameter] }), {
+        requireParameterTitle: true,
+      })
+    ).toThrow('appIntent.intentName must start with a letter or underscore')
+    expect(() =>
+      validateWidgetConfigurationCopy(withAppIntent({ parameters: [{ ...parameter, entityName: '1Masjid' }] }), {
+        requireParameterTitle: true,
+      })
+    ).toThrow(entityError)
+    expect(() =>
+      validateWidgetConfigurationCopy(
+        withAppIntent({ parameters: [{ name: 'masjid', title: 'Masjid', entityName: 'FollowedMasjid' }] }),
+        { requireParameterTitle: true }
+      )
+    ).toThrow(entityError)
+  })
+
+  it('rejects intent and entity names that are Swift keywords, generated-code types or Voltra types', () => {
+    const withAppIntent = (appIntent: Record<string, unknown>) => ({ id: 'w', appIntent } as never)
+    const parameter = { name: 'masjid', title: 'Masjid', dynamicOptions: true }
+
+    for (const intentName of ['Any', 'Self', 'class', '_', 'String', 'Timeline', 'VoltraWidget_w_Intent']) {
+      expect(() =>
+        validateWidgetConfigurationCopy(withAppIntent({ intentName, parameters: [parameter] }), {
+          requireParameterTitle: true,
+        })
+      ).toThrow('appIntent.intentName must start with a letter or underscore')
+    }
+    // `Entity` would generate `EntityQuery`, the AppIntents protocol it conforms to.
+    for (const entityName of ['String', 'Entity', 'VoltraClientWidgetEntry']) {
+      expect(() =>
+        validateWidgetConfigurationCopy(withAppIntent({ parameters: [{ ...parameter, entityName }] }), {
+          requireParameterTitle: true,
+        })
+      ).toThrow("appIntent parameter 'masjid' entityName needs dynamicOptions")
+    }
+  })
+
   it('rejects duplicate option values, invalid names and bad locale maps', () => {
     const base = { id: 'w' }
     expect(() =>

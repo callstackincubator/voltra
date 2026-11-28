@@ -11,7 +11,13 @@ import { iosServerUpdateRules } from './ios/serverUpdate'
 import { getDynamicLiveActivityAttributesType } from '@use-voltra/expo-plugin'
 
 import { widgetKind } from './constants'
-import type { IOSConfigPluginProps, IOSDynamicLiveActivityConfig, IOSWidgetConfig, IOSWidgetFamily } from './types'
+import type {
+  AppIntentParameter,
+  IOSConfigPluginProps,
+  IOSDynamicLiveActivityConfig,
+  IOSWidgetConfig,
+  IOSWidgetFamily,
+} from './types'
 
 const VALID_FAMILIES: Set<IOSWidgetFamily> = new Set([
   'systemSmall',
@@ -74,6 +80,77 @@ export function validateIOSWidgetConfig(widget: IOSWidgetConfig, projectRoot?: s
   }
 }
 
+/** What a widget's intent declares; widgets that share an intent must declare the same. */
+function parameterShape(parameter: AppIntentParameter) {
+  const kind = parameter.dynamicOptions ? 'dynamicOptions' : parameter.options?.length ? 'options' : 'plain'
+  return [parameter.name, kind, parameter.options?.map((option) => option.value), parameter.entityName]
+}
+
+/**
+ * Widgets share an intent or entity by naming it the same, and the Swift generator emits each name
+ * once, from the first widget that uses it (`claimSwiftType`). So a name has to mean one type: a
+ * shared intent the same parameters, a shared entity the same parameter name, and no name two kinds
+ * of type.
+ */
+function validateSharedSwiftTypeNames(widgets: IOSWidgetConfig[]): void {
+  const intents = new Map<string, { widgetId: string; shape: string }>()
+  const entities = new Map<string, { widgetId: string; parameter: string }>()
+
+  for (const widget of widgets) {
+    const { intentName, parameters = [] } = widget.appIntent ?? {}
+    if (intentName !== undefined) {
+      const first = intents.get(intentName)
+      const shape = JSON.stringify(parameters.map(parameterShape))
+      if (first && first.shape !== shape) {
+        throw new Error(
+          `Widgets '${first.widgetId}' and '${widget.id}' share appIntent.intentName '${intentName}', so they must declare the same parameters (name, options or dynamicOptions, option values and entityName)`
+        )
+      }
+      // Without an entityName each widget would name its own entity, while the shared intent uses the first one's.
+      const unnamed = parameters.find((parameter) => parameter.dynamicOptions && parameter.entityName === undefined)
+      if (first && unnamed) {
+        throw new Error(
+          `Widgets '${first.widgetId}' and '${widget.id}' share appIntent.intentName '${intentName}', so dynamicOptions parameter '${unnamed.name}' needs an entityName`
+        )
+      }
+      if (!first) {
+        intents.set(intentName, { widgetId: widget.id, shape })
+      }
+    }
+
+    const widgetEntities = new Set<string>()
+    for (const parameter of parameters) {
+      const { entityName } = parameter
+      if (entityName === undefined) {
+        continue
+      }
+      if (widgetEntities.has(entityName)) {
+        throw new Error(`Widget '${widget.id}': two appIntent parameters use entityName '${entityName}'`)
+      }
+      widgetEntities.add(entityName)
+
+      const first = entities.get(entityName)
+      if (first && first.parameter !== parameter.name) {
+        throw new Error(
+          `Widgets '${first.widgetId}' and '${widget.id}' share entityName '${entityName}', so the parameter must have the same name, but they name it '${first.parameter}' and '${parameter.name}'`
+        )
+      }
+      if (!first) {
+        entities.set(entityName, { widgetId: widget.id, parameter: parameter.name })
+      }
+    }
+  }
+
+  for (const entityName of entities.keys()) {
+    const query = `${entityName}Query`
+    if (intents.has(entityName) || intents.has(query) || entities.has(query)) {
+      throw new Error(
+        `entityName '${entityName}' generates the types '${entityName}' and '${query}', and another intentName or entityName uses one of them`
+      )
+    }
+  }
+}
+
 export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projectRoot?: string): void {
   if (props.groupIdentifier !== undefined) {
     if (typeof props.groupIdentifier !== 'string') {
@@ -115,6 +192,8 @@ export function validateIOSConfigPluginProps(props: IOSConfigPluginProps, projec
       }
       seenKinds.add(kind)
     }
+
+    validateSharedSwiftTypeNames(props.widgets)
   }
 
   if (props.liveActivities !== undefined) {

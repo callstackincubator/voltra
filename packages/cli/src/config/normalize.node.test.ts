@@ -103,3 +103,61 @@ describe('appIntent without an entry', () => {
     assert.deepEqual(config.warnings, [])
   })
 })
+
+describe('appIntent dynamicOptions', () => {
+  // Not in the CLI's config types: Voltra Apply does not generate it.
+  const parameters = [{ name: 'team', title: 'Team', dynamicOptions: true }] as unknown as [
+    { name: string; title: string }
+  ]
+
+  function isDynamicOptionsError(error: unknown) {
+    return (
+      error instanceof VoltraConfigNormalizationError &&
+      /appIntent\.parameters\[0\]\.dynamicOptions is supported with Expo prebuild only/.test(error.message)
+    )
+  }
+
+  test('rejects dynamicOptions on ios', () => {
+    assert.throws(
+      () => normalizeWidgets([{ ...weather, entry: './widgets/weather.tsx', appIntent: { parameters } }]),
+      isDynamicOptionsError
+    )
+  })
+
+  test('rejects dynamicOptions on android', () => {
+    const scores: AndroidWidgetConfig = {
+      id: 'scores',
+      displayName: 'Scores',
+      description: 'Team scores',
+      targetCellWidth: 2,
+      targetCellHeight: 2,
+      entry: './widgets/scores.tsx',
+      appIntent: { parameters },
+    }
+
+    assert.throws(
+      () => normalizeVoltraConfig({ config: { android: { widgets: [scores] } }, configDir: process.cwd() }),
+      isDynamicOptionsError
+    )
+  })
+})
+
+describe('appIntent intentName and entityName', () => {
+  // Not in the CLI's config types: Voltra Apply generates its own type names.
+  function rejects(appIntent: unknown, key: string) {
+    assert.throws(
+      () => normalizeWidgets([{ ...weather, entry: './widgets/weather.tsx', appIntent } as unknown as IOSWidgetConfig]),
+      (error: unknown) =>
+        error instanceof VoltraConfigNormalizationError &&
+        error.message.includes(`${key} is supported with Expo prebuild only`)
+    )
+  }
+
+  test('rejects intentName', () => {
+    rejects({ intentName: 'SelectTeamIntent', parameters: [{ name: 'team', title: 'Team' }] }, 'appIntent.intentName')
+  })
+
+  test('rejects entityName', () => {
+    rejects({ parameters: [{ name: 'team', title: 'Team', entityName: 'Team' }] }, 'appIntent.parameters[0].entityName')
+  })
+})

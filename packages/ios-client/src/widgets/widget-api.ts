@@ -27,6 +27,43 @@ export const reloadWidgets = async (widgetIds?: string[]): Promise<void> => {
   return getNativeVoltra().reloadWidgets(widgetIds ?? null)
 }
 
+/**
+ * Sets the choices the Edit Widget sheet lists for a widget's `dynamicOptions` parameter, such as
+ * the places a user follows. The chosen option's `value` reaches the widget as
+ * `env.configuration[parameter]` and fills `{parameter}` in its `serverUpdate` URL. A placement
+ * whose choice is no longer listed falls back to the first option, and with no options it has no
+ * value. The widget reloads once the options are stored. Requires `groupIdentifier`.
+ *
+ * Throws if an option's `value` or `title` is not a string, or a `value` is empty or repeated.
+ */
+export const setWidgetParameterOptions = async (
+  widgetId: string,
+  parameter: string,
+  options: WidgetParameterOption[]
+): Promise<void> => {
+  if (!assertRunningOnApple()) return Promise.resolve()
+
+  // A value is the choice's identity in Edit Widget and fills the URL, so it must be a unique,
+  // non-empty string: an empty one would never fetch, and a duplicate could not be told apart.
+  const values = new Set<string>()
+  for (const option of options) {
+    if (typeof option?.value !== 'string' || typeof option.title !== 'string') {
+      throw new Error('[Voltra][iOS] setWidgetParameterOptions: each option needs a string value and title')
+    }
+    if (option.value === '') {
+      throw new Error('[Voltra][iOS] setWidgetParameterOptions: an option value cannot be empty')
+    }
+    if (values.has(option.value)) {
+      throw new Error(`[Voltra][iOS] setWidgetParameterOptions: duplicate option value "${option.value}"`)
+    }
+    values.add(option.value)
+  }
+
+  return getNativeVoltra().setWidgetParameterOptions(widgetId, parameter, JSON.stringify(options))
+}
+
+export type WidgetParameterOption = { value: string; title: string }
+
 export const clearWidget = async (widgetId: string): Promise<void> => {
   if (!assertRunningOnApple()) return Promise.resolve()
 

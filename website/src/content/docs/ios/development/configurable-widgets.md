@@ -19,6 +19,7 @@ Each parameter has:
 - `name`: key that appears in `env.configuration`
 - `title`: label shown in the Edit Widget sheet, as a plain string or a locale map
 - `default`: code-defined starting value before the user changes anything
+- `dynamicOptions` (optional): `true` to pick from values the app sets at runtime. See [Choices the app sets at runtime](#choices-the-app-sets-at-runtime).
 - `options` (optional): fixed values to pick from, each with a `value` and a `title`. The sheet shows a picker with the titles instead of a free-text field, and `env.configuration` receives the `value`. `default` must be one of the values; without a `default`, the first option is used.
 
 ## How to use it
@@ -104,6 +105,63 @@ When a parameter has a known set of values, list them as `options`. The sheet th
 `env.configuration.units` is `"metric"` or `"imperial"`, whichever the user picked.
 
 Expo Prebuild and Voltra Apply stop with an error that names the parameter if `default` is not one of the values, a value is empty or listed twice, or an option has no `title`.
+
+## Choices the app sets at runtime
+
+When the values come from the user's own data, like the teams they follow or the accounts they have, set `dynamicOptions: true` instead of `options`. The app then supplies the choices whenever they change:
+
+```json
+{
+  "name": "team",
+  "title": "Team",
+  "dynamicOptions": true
+}
+```
+
+```ts
+import { setWidgetParameterOptions } from '@use-voltra/ios-client'
+
+await setWidgetParameterOptions('scores_widget', 'team', [
+  { value: 'red', title: 'Red Lions' },
+  { value: 'blue', title: 'Blue Hawks' },
+])
+```
+
+The choices are stored in the App Group, so this needs `groupIdentifier`. Setting them reloads the widget. `clearWidget` and `clearAllWidgets` remove them.
+
+`dynamicOptions` is supported with Expo Prebuild only. Voltra Apply stops with an error if a parameter sets it.
+
+- A placement the user hasn't configured gets the first choice. The first choice is the default, so a `default` or `options` cannot be declared alongside `dynamicOptions`.
+- A placement whose choice is no longer listed falls back to the first choice.
+- With no choices, `env.configuration.team` is `""`. Use that to ask the user to set something up in the app.
+
+Choice titles come from the app, so they are not translated by Voltra. The parameter `title` still is.
+
+For a server-driven widget, put `{team}` in the `serverUpdate` URL to fetch each placement's own data. See [Per-instance requests](/ios/development/server-driven-widgets#per-instance-requests).
+
+## Keep choices when moving an existing widget to Voltra
+
+iOS saves each placed widget's Edit Widget choices under the Swift type names of its `WidgetConfigurationIntent` and of the `AppEntity` values in it. Voltra generates its own names, `VoltraWidget_<id>_Intent` and `VoltraWidget_<id>_<name>_Choice`, so a widget you move from hand-written WidgetKit code to Voltra loses every choice users made, and each placement shows its default. Keep the widget's `kind` and extension first (see [Keeping the kind of an existing widget](/ios/api/plugin-configuration#keeping-the-kind-of-an-existing-widget)), then name the types after the old ones:
+
+```json
+"appIntent": {
+  "intentName": "SelectMasjidConfigurationAppIntent",
+  "parameters": [
+    { "name": "masjid", "title": "Masjid", "dynamicOptions": true, "entityName": "FollowedMasjid" }
+  ]
+}
+```
+
+- `intentName` names the intent. `entityName` names a `dynamicOptions` parameter's entity, and its query becomes `<entityName>Query`.
+- Widgets that used one intent can share it again: widgets with the same `intentName` use one intent, generated once. They must declare the same parameters, and each `dynamicOptions` parameter in it needs an `entityName`.
+- Widgets with the same `entityName` use one entity, generated once, which lists the choices set for the first widget in `widgets` that declares it. Set the choices on that widget. `setWidgetParameterOptions` reloads only the widget you pass, so reload the others with `reloadWidgets(['other_widget'])`.
+- The parameter `name` must match the old intent's property name too.
+- A static `options` parameter's `AppEnum` is always named `VoltraWidget_<id>_<name>_Option`, and its name can't be set. Only the intent and `dynamicOptions` entities keep the old names, so a static picker's choice is not kept.
+- A name can't be a Swift keyword, a type the generated Swift uses (such as `String`), or start with `Voltra`, and one name can't be used for two kinds of type. Expo Prebuild stops with an error if a name breaks these rules or widgets that share a name don't match.
+
+`intentName` and `entityName` are supported with Expo Prebuild only. Voltra Apply stops with an error if a widget sets them.
+
+The old entity's `id` type and the extension's module name don't have to match: a widget whose old entity had an `Int` id, in an extension with another module name, kept its choice after updating to the Voltra build.
 
 ## Translate the Edit Widget sheet
 

@@ -176,4 +176,75 @@ final class WidgetServerRequestBuilderTests: XCTestCase {
       "query key 'configuration' is reserved by Voltra and is sent on every request"
     )
   }
+
+  func testFillsAPlaceholderFromThePlacementsConfiguration() throws {
+    let request = try XCTUnwrap(WidgetServerRequestBuilder.build(
+      scope: scope,
+      settings: settings(url: "https://api.example.com/masjids/{masjid}/widget"),
+      context: context(),
+      configuration: ["masjid": "42"]
+    ))
+
+    XCTAssertEqual(request.url?.path, "/masjids/42/widget")
+  }
+
+  func testEncodesAFilledValueAsOnePathSegment() {
+    let url = WidgetServerRequestBuilder.fillPlaceholders(
+      in: "https://api.example.com/places/{place}",
+      from: ["place": "a/b c?d"]
+    )
+
+    XCTAssertEqual(url, "https://api.example.com/places/a%2Fb%20c%3Fd")
+  }
+
+  func testEncodesAFilledValueLikeAndroidsUriEncode() {
+    let url = WidgetServerRequestBuilder.fillPlaceholders(
+      in: "https://api.example.com/w?team={team}",
+      from: ["team": "x&instance=zz+;:@-_.!~*'()"]
+    )
+
+    XCTAssertEqual(url, "https://api.example.com/w?team=x%26instance%3Dzz%2B%3B%3A%40-_.!~*'()")
+  }
+
+  func testAFilledQueryValueCannotAddQueryKeys() throws {
+    let request = try XCTUnwrap(WidgetServerRequestBuilder.build(
+      scope: .instance(id: "portfolio", key: "abc"),
+      settings: settings(url: "https://api.example.com/w?team={team}"),
+      context: context(),
+      configuration: ["team": "x&instance=zz"]
+    ))
+    let url = try XCTUnwrap(request.url)
+    let items = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)).queryItems ?? []
+
+    XCTAssertEqual(items.filter { $0.name == "instance" }.map(\.value), ["abc"])
+    XCTAssertEqual(items.first { $0.name == "team" }?.value, "x&instance=zz")
+  }
+
+  func testFillsEveryPlaceholder() {
+    let url = WidgetServerRequestBuilder.fillPlaceholders(
+      in: "https://api.example.com/{team}/{season}",
+      from: ["team": "red", "season": "2026"]
+    )
+
+    XCTAssertEqual(url, "https://api.example.com/red/2026")
+  }
+
+  func testBuildsNoRequestWhenAPlaceholderHasNoValue() {
+    let templated = settings(url: "https://api.example.com/masjids/{masjid}/widget")
+
+    XCTAssertNil(WidgetServerRequestBuilder.build(scope: scope, settings: templated, context: context()))
+    XCTAssertNil(WidgetServerRequestBuilder.build(
+      scope: scope,
+      settings: templated,
+      context: context(),
+      configuration: ["masjid": ""]
+    ))
+  }
+
+  func testLeavesAURLWithoutPlaceholdersAsItIs() {
+    XCTAssertEqual(
+      WidgetServerRequestBuilder.fillPlaceholders(in: "https://api.example.com/widgets/portfolio", from: [:]),
+      "https://api.example.com/widgets/portfolio"
+    )
+  }
 }

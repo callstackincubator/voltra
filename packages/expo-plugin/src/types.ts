@@ -76,12 +76,15 @@ export interface WidgetConfigurationParameter {
   title?: WidgetLabel
   default?: string
   options?: WidgetConfigurationOption[]
+  dynamicOptions?: boolean
+  /** Swift type name of the generated `AppEntity` for a `dynamicOptions` parameter. */
+  entityName?: string
 }
 
 /** The widget fields that carry configuration-sheet copy. */
 export interface WidgetConfigurationCopySource {
   id: string
-  appIntent?: { parameters: WidgetConfigurationParameter[] }
+  appIntent?: { intentName?: string; parameters: WidgetConfigurationParameter[] }
 }
 
 /**

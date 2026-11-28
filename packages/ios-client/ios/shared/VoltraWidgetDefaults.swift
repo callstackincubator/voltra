@@ -54,6 +54,18 @@ public enum VoltraWidgetDefaults {
     return tag
   }
 
+  /// The choices the app last set with `setWidgetParameterOptions` for a `dynamicOptions` Edit
+  /// Widget parameter, in the app's order. Empty when it has set none, or without an App Group.
+  public static func widgetParameterOptions(widgetId: String, parameter: String) -> [WidgetParameterOption] {
+    guard let json = try? resolvedDefaults().string(forKey: VoltraStorageKeys.widgetParameterOptions(widgetId, parameter: parameter)),
+          let data = json.data(using: .utf8),
+          let options = try? JSONDecoder().decode([WidgetParameterOption].self, from: data)
+    else {
+      return []
+    }
+    return options
+  }
+
   // MARK: - Write
 
   public static func setWidgetJson(_ json: String, for widgetId: String, deepLinkUrl: String?) throws {
@@ -108,6 +120,16 @@ public enum VoltraWidgetDefaults {
     defaults.synchronize()
   }
 
+  /// Stores the choices of a `dynamicOptions` Edit Widget parameter, read by the generated
+  /// `EntityQuery` in the widget extension. Throws `WidgetError.appGroupNotConfigured` without a
+  /// `groupIdentifier`, since the extension could never read them.
+  public static func setWidgetParameterOptions(_ options: [WidgetParameterOption], widgetId: String, parameter: String) throws {
+    let defaults = try resolvedDefaults()
+    let data = try JSONEncoder().encode(options)
+    defaults.set(String(decoding: data, as: UTF8.self), forKey: VoltraStorageKeys.widgetParameterOptions(widgetId, parameter: parameter))
+    defaults.synchronize()
+  }
+
   // MARK: - Remove
 
   /// Removes all persisted data (json, deepLinkUrl, timeline, Dynamic Widget props) for a single widget.
@@ -145,6 +167,21 @@ public enum VoltraWidgetDefaults {
       defaults.removeObject(forKey: VoltraStorageKeys.widgetTimeline(widgetId))
       try? dynamicWidgetPropsStore.clearDynamicWidgetProps(for: widgetId)
       DynamicWidgetLastGoodStore.shared?.remove(widgetId: widgetId)
+    }
+    defaults.synchronize()
+  }
+
+  /// Removes the app's `dynamicOptions` choices for one widget, or for every widget with nil.
+  /// Called by `clearWidget` / `clearAllWidgets` only: the choices are the user's, so they go on
+  /// logout, but the orphan cleanup must keep them for a widget that has not been placed yet. The
+  /// parameter names live only in the generated extension code, hence the prefix match.
+  /// shortcut: clearing widget `a` also clears widget `a_b`'s choices; key with a separator widget
+  /// ids cannot contain if that ever matters.
+  public static func removeParameterOptions(for widgetId: String?) {
+    guard let defaults = try? resolvedDefaults() else { return }
+    let prefix = VoltraStorageKeys.widgetParameterOptionsPrefix + (widgetId.map { "\($0)_" } ?? "")
+    for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
+      defaults.removeObject(forKey: key)
     }
     defaults.synchronize()
   }

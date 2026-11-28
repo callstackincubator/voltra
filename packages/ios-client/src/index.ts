@@ -81,6 +81,8 @@ export {
   reloadWidgets,
   type ScheduledWidgetEntry,
   scheduleWidget,
+  setWidgetParameterOptions,
+  type WidgetParameterOption,
   updateWidget,
   type UpdateWidgetOptions,
 } from './widgets/widget-api.js'
