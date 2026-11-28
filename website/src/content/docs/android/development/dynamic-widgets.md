@@ -188,7 +188,7 @@ export default function DeparturesWidget(props, env) {
 
 Voltra keeps one alarm per placement for the earliest future time. It is a non-waking, inexact `AlarmManager.RTC` alarm that needs no exact-alarm permission, so a redraw can run up to 10 minutes after the listed time, and a sleeping phone redraws when it wakes. `env.date` is when the redraw actually runs, not the listed time, so pick what to show from `env.date`. Each redraw sets the alarm for the next time. This works for every Dynamic Widget, with or without a `serverUpdate`, using the props it last received. Removing a placement cancels its alarm. A widget without a `timeline` export is drawn as before and pays nothing for the feature.
 
-List the times at which the content actually changes, not one per minute: each one is a redraw, and the 10-minute window makes finer steps meaningless, so this does not suit a ticking countdown. Returning something other than an array throws and is logged, and elements that are neither a `Date` nor a finite number are dropped.
+List the times at which the content actually changes, not one per minute: each one is a redraw, and the 10-minute window makes finer steps meaningless, so this does not suit a ticking countdown. Anything other than an array of `Date`s or epoch milliseconds throws and is logged, and the widget still renders without the extra times. Props arrive as JSON, so turn ISO date strings into `Date`s first, and filter out missing values before returning.
 
 Android clears alarms on reboot and force-stop. After a reboot, Android asks every placed widget to update, which redraws it for the current time and sets the alarm again. After a force-stop, the widget keeps what it last drew until its next props update or fetch.
 
