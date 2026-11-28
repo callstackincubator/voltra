@@ -58,6 +58,36 @@ describe('validateWidgetConfigurationCopy', () => {
     )
   })
 
+  it('accepts dynamicOptions, whose choices the app sets at runtime', () => {
+    const dynamic = { id: 'w', appIntent: { parameters: [{ name: 'masjid', title: 'Masjid', dynamicOptions: true }] } }
+    expect(() => validateWidgetConfigurationCopy(dynamic, { requireParameterTitle: true })).not.toThrow()
+  })
+
+  it('rejects dynamicOptions alongside options or a default, and a non-boolean dynamicOptions', () => {
+    const withParameter = (parameter: Record<string, unknown>) => ({
+      id: 'w',
+      appIntent: { parameters: [{ name: 'masjid', title: 'Masjid', ...parameter }] },
+    })
+    const conflict = "appIntent parameter 'masjid' has dynamicOptions, so it cannot also declare options or a default"
+
+    expect(() =>
+      validateWidgetConfigurationCopy(
+        withParameter({ dynamicOptions: true, options: [{ value: 'a', title: 'A' }] }) as never,
+        { requireParameterTitle: true }
+      )
+    ).toThrow(conflict)
+    expect(() =>
+      validateWidgetConfigurationCopy(withParameter({ dynamicOptions: true, default: 'a' }) as never, {
+        requireParameterTitle: true,
+      })
+    ).toThrow(conflict)
+    expect(() =>
+      validateWidgetConfigurationCopy(withParameter({ dynamicOptions: 'yes' }) as never, {
+        requireParameterTitle: true,
+      })
+    ).toThrow("appIntent parameter 'masjid' dynamicOptions must be a boolean")
+  })
+
   it('rejects duplicate option values, invalid names and bad locale maps', () => {
     const base = { id: 'w' }
     expect(() =>

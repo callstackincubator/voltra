@@ -78,6 +78,7 @@ let package = Package(
         "VoltraConstants.swift",
         "VoltraLocaleEnvironment.swift",
         "VoltraWidgetKind.swift",
+        "WidgetParameterOption.swift",
         "VoltraPayloadMigrator.swift",
         "VoltraRegion.swift",
         "ComponentTypeID.swift",

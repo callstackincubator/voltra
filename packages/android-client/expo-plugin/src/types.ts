@@ -24,6 +24,11 @@ export interface AppIntentParameter {
   default?: string
   /** Fixed values to pick from; titles are written as `…_param_<name>_option_<value>` strings. */
   options?: WidgetConfigurationOption[]
+  /**
+   * The app sets the values to pick from at runtime with `setWidgetParameterOptions`, in place of
+   * `options`. The first one is the default, so a `default` cannot be declared alongside it.
+   */
+  dynamicOptions?: boolean
 }
 
 export interface AndroidWidgetAppIntentConfig {
@@ -76,6 +81,13 @@ export interface AndroidWidgetConfig extends DynamicWidgetEntryConfig {
    * it before any runtime configuration; runtime values (set via `setWidgetConfiguration`) override.
    */
   appIntent?: AndroidWidgetAppIntentConfig
+  /**
+   * Offer Voltra's configuration screen from the launcher's Reconfigure action on Android 12+,
+   * listing every `appIntent` parameter and saving the picks as that placement's own values
+   * (ADR 0015). Adding the widget does not open it, and below Android 12 nothing changes: the app
+   * stays the only place to configure a placement. Needs `entry` and `appIntent.parameters`.
+   */
+  configurationScreen?: boolean
 }
 
 /**

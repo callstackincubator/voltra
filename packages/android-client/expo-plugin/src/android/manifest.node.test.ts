@@ -44,3 +44,54 @@ describe('configureAndroidManifest permissions', () => {
     expect(await notificationPermissions(true)).not.toContain('android.permission.USE_FULL_SCREEN_INTENT')
   })
 })
+
+describe('configureAndroidManifest configuration activity', () => {
+  const scores = {
+    id: 'scores',
+    entry: './widgets/scores.tsx',
+    displayName: 'Scores',
+    description: 'Live scores',
+    targetCellWidth: 2,
+    targetCellHeight: 2,
+    appIntent: { parameters: [{ name: 'team', title: 'Team' }] },
+  }
+
+  const activityNames = async (widgets: any[], existing: Array<{ $: Record<string, string> }> = []) => {
+    const modResults: ManifestConfig = {
+      manifest: {
+        $: { 'xmlns:android': 'http://schemas.android.com/apk/res/android' },
+        'uses-permission': [],
+        application: [{ $: { 'android:name': '.MainApplication' }, activity: existing }],
+      },
+    }
+    const config = configureAndroidManifest({ mods: {} } as any, { enableNotifications: false, widgets })
+    const manifestMod = config.mods!.android!.manifest as (config: unknown) => Promise<unknown>
+    await manifestMod({ modResults, modRequest: {} })
+    const activities = modResults.manifest.application[0]?.activity as Array<{ $: Record<string, string> }>
+    return activities.map((activity) => activity.$['android:name'])
+  }
+
+  it('declares the activity once when a widget opts in', async () => {
+    expect(
+      await activityNames(
+        [
+          { ...scores, configurationScreen: true },
+          { ...scores, id: 'more', configurationScreen: true },
+        ],
+        [{ $: { 'android:name': '.MainActivity' } }]
+      )
+    ).toEqual(['.MainActivity', 'voltra.dynamicwidget.VoltraWidgetConfigureActivity'])
+  })
+
+  it('removes the activity when no widget opts in any more', async () => {
+    expect(
+      await activityNames(
+        [scores],
+        [
+          { $: { 'android:name': '.MainActivity' } },
+          { $: { 'android:name': 'voltra.dynamicwidget.VoltraWidgetConfigureActivity' } },
+        ]
+      )
+    ).toEqual(['.MainActivity'])
+  })
+})

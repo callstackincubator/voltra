@@ -103,3 +103,64 @@ describe('appIntent without an entry', () => {
     assert.deepEqual(config.warnings, [])
   })
 })
+
+describe('appIntent dynamicOptions', () => {
+  // Not in the CLI's config types: Voltra Apply does not generate it.
+  const parameters = [{ name: 'team', title: 'Team', dynamicOptions: true }] as unknown as [
+    { name: string; title: string }
+  ]
+
+  function isDynamicOptionsError(error: unknown) {
+    return (
+      error instanceof VoltraConfigNormalizationError &&
+      /appIntent\.parameters\[0\]\.dynamicOptions is supported with Expo prebuild only/.test(error.message)
+    )
+  }
+
+  test('rejects dynamicOptions on ios', () => {
+    assert.throws(
+      () => normalizeWidgets([{ ...weather, entry: './widgets/weather.tsx', appIntent: { parameters } }]),
+      isDynamicOptionsError
+    )
+  })
+
+  test('rejects dynamicOptions on android', () => {
+    const scores: AndroidWidgetConfig = {
+      id: 'scores',
+      displayName: 'Scores',
+      description: 'Team scores',
+      targetCellWidth: 2,
+      targetCellHeight: 2,
+      entry: './widgets/scores.tsx',
+      appIntent: { parameters },
+    }
+
+    assert.throws(
+      () => normalizeVoltraConfig({ config: { android: { widgets: [scores] } }, configDir: process.cwd() }),
+      isDynamicOptionsError
+    )
+  })
+})
+
+describe('android configurationScreen', () => {
+  test('rejects configurationScreen', () => {
+    // Not in the CLI's config types: Voltra Apply does not declare the configuration activity.
+    const scores = {
+      id: 'scores',
+      displayName: 'Scores',
+      description: 'Team scores',
+      targetCellWidth: 2,
+      targetCellHeight: 2,
+      entry: './widgets/scores.tsx',
+      appIntent: { parameters: [{ name: 'team' }] },
+      configurationScreen: true,
+    } as AndroidWidgetConfig
+
+    assert.throws(
+      () => normalizeVoltraConfig({ config: { android: { widgets: [scores] } }, configDir: process.cwd() }),
+      (error: unknown) =>
+        error instanceof VoltraConfigNormalizationError &&
+        /android\.widgets\[scores\]\.configurationScreen is supported with Expo prebuild only/.test(error.message)
+    )
+  })
+})

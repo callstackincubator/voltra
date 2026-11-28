@@ -275,6 +275,15 @@ function normalizeWidgetParameterName(value: unknown, context: string): string {
 /** Swift property names; the iOS generator declares one `@Parameter` per name. */
 const IOS_PARAMETER_NAME_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
+/** Voltra Apply does not generate the entity a `dynamicOptions` picker needs, so stop rather than drop it. */
+function rejectDynamicOptions(parameter: object, context: string): void {
+  if ('dynamicOptions' in parameter) {
+    throw new VoltraConfigNormalizationError(
+      `${context}.dynamicOptions is supported with Expo prebuild only, not Voltra Apply`
+    )
+  }
+}
+
 function normalizeParameterOptions(
   value: unknown,
   defaultValue: string | undefined,
@@ -329,6 +338,7 @@ function normalizeAndroidAppIntent(
   const parameters = value.parameters.map((parameter, index) => {
     const parameterContext = `${context}.parameters[${index}]`
     assertObject(parameter, parameterContext)
+    rejectDynamicOptions(parameter, parameterContext)
     const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
     const title =
       parameter.title === undefined ? undefined : normalizeLabel(parameter.title, `${parameterContext}.title`)
@@ -370,6 +380,7 @@ function normalizeIOSAppIntent(
   const parameters = value.parameters.map((parameter, index) => {
     const parameterContext = `${context}.parameters[${index}]`
     assertObject(parameter, parameterContext)
+    rejectDynamicOptions(parameter, parameterContext)
     const name = normalizeWidgetParameterName(parameter.name, `${parameterContext}.name`)
     if (!IOS_PARAMETER_NAME_PATTERN.test(name)) {
       throw new VoltraConfigNormalizationError(
@@ -498,6 +509,12 @@ function normalizeAndroidWidget(
   assertOptionalPositiveInteger(widget.maxResizeWidth, `android.widgets[${widget.id}].maxResizeWidth`)
   assertOptionalPositiveInteger(widget.maxResizeHeight, `android.widgets[${widget.id}].maxResizeHeight`)
 
+  // Voltra Apply does not declare the configuration activity, so stop rather than drop it.
+  if ('configurationScreen' in widget) {
+    throw new VoltraConfigNormalizationError(
+      `android.widgets[${widget.id}].configurationScreen is supported with Expo prebuild only, not Voltra Apply`
+    )
+  }
   const androidAppIntent = normalizeAndroidAppIntent(widget.appIntent, `android.widgets[${widget.id}].appIntent`)
   warnOnAppIntentWithoutEntry(androidAppIntent, widget.entry !== undefined, `android.widgets[${widget.id}]`, warnings)
 

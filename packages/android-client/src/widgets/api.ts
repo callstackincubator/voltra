@@ -69,6 +69,42 @@ export const setWidgetConfiguration = async (widgetId: string, key: string, valu
 }
 
 /**
+ * Sets the choices for a Dynamic Widget's `dynamicOptions` parameter, such as the places a user
+ * follows, and redraws its placements. A placement's pick, set with `setWidgetInstanceConfiguration`,
+ * reaches the widget as `env.configuration[parameter]`. A placement with no pick, or whose pick is no
+ * longer listed, uses the first option, and with no options it is `""`.
+ *
+ * Throws if an option's `value` or `title` is not a string, or a `value` is empty or repeated.
+ * Rejects with `VOLTRA_WIDGET_NOT_FOUND`, `VOLTRA_WIDGET_KIND_MISMATCH` for a payload-driven widget,
+ * or `VOLTRA_WIDGET_PARAMETER_NOT_DECLARED` when the widget declares no such `dynamicOptions` parameter.
+ */
+export const setWidgetParameterOptions = async (
+  widgetId: string,
+  parameter: string,
+  options: WidgetParameterOption[]
+): Promise<void> => {
+  // A value is the choice's identity, so it must be a unique, non-empty string: an empty one reads as
+  // "no choices", and a duplicate could not be told apart.
+  const values = new Set<string>()
+  for (const option of options) {
+    if (typeof option?.value !== 'string' || typeof option.title !== 'string') {
+      throw new Error('[Voltra] [Android] setWidgetParameterOptions: each option needs a string value and title')
+    }
+    if (option.value === '') {
+      throw new Error('[Voltra] [Android] setWidgetParameterOptions: an option value cannot be empty')
+    }
+    if (values.has(option.value)) {
+      throw new Error(`[Voltra] [Android] setWidgetParameterOptions: duplicate option value "${option.value}"`)
+    }
+    values.add(option.value)
+  }
+
+  return getNativeVoltraAndroid().setWidgetParameterOptions(widgetId, parameter, JSON.stringify(options))
+}
+
+export type WidgetParameterOption = { value: string; title: string }
+
+/**
  * Read the configuration a Dynamic Widget's unconfigured placements render with: the defaults
  * declared in `appIntent.parameters`, overlaid with any values written by
  * {@link setWidgetConfiguration}. A placement's own values are not included — use

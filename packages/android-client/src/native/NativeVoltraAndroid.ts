@@ -178,6 +178,7 @@ export interface Spec extends TurboModule {
   /** Language override for Dynamic Widgets (`env.appLocale`); null clears it. */
   setDynamicWidgetLocale(tag: string | null): Promise<void>
   setWidgetConfiguration(widgetId: string, key: string, value: string): Promise<void>
+  setWidgetParameterOptions(widgetId: string, parameter: string, optionsJson: string): Promise<void>
   /** Values cross as a JSON object so several keys cost one bridge call and one re-render. */
   setWidgetInstanceConfiguration(appWidgetId: number, valuesJson: string): Promise<void>
   /** Result is a JSON object: the merged defaults, widget-type and instance values. */

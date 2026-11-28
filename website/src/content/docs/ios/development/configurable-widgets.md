@@ -19,6 +19,7 @@ Each parameter has:
 - `name`: key that appears in `env.configuration`
 - `title`: label shown in the Edit Widget sheet, as a plain string or a locale map
 - `default`: code-defined starting value before the user changes anything
+- `dynamicOptions` (optional): `true` to pick from values the app sets at runtime. See [Choices the app sets at runtime](#choices-the-app-sets-at-runtime).
 - `options` (optional): fixed values to pick from, each with a `value` and a `title`. The sheet shows a picker with the titles instead of a free-text field, and `env.configuration` receives the `value`. `default` must be one of the values; without a `default`, the first option is used.
 
 ## How to use it
@@ -104,6 +105,39 @@ When a parameter has a known set of values, list them as `options`. The sheet th
 `env.configuration.units` is `"metric"` or `"imperial"`, whichever the user picked.
 
 Expo Prebuild and Voltra Apply stop with an error that names the parameter if `default` is not one of the values, a value is empty or listed twice, or an option has no `title`.
+
+## Choices the app sets at runtime
+
+When the values come from the user's own data, like the teams they follow or the accounts they have, set `dynamicOptions: true` instead of `options`. The app then supplies the choices whenever they change:
+
+```json
+{
+  "name": "team",
+  "title": "Team",
+  "dynamicOptions": true
+}
+```
+
+```ts
+import { setWidgetParameterOptions } from '@use-voltra/ios-client'
+
+await setWidgetParameterOptions('scores_widget', 'team', [
+  { value: 'red', title: 'Red Lions' },
+  { value: 'blue', title: 'Blue Hawks' },
+])
+```
+
+The choices are stored in the App Group, so this needs `groupIdentifier`. Setting them reloads the widget. `clearWidget` and `clearAllWidgets` remove them. `setWidgetParameterOptions` rejects with `VOLTRA_WIDGET_NOT_FOUND` for an unknown widget, `VOLTRA_WIDGET_KIND_MISMATCH` for a payload-driven widget, and `VOLTRA_WIDGET_PARAMETER_NOT_DECLARED` for a parameter the widget does not declare with `dynamicOptions`.
+
+`dynamicOptions` is supported with Expo Prebuild only. Voltra Apply stops with an error if a parameter sets it.
+
+- A placement the user hasn't configured gets the first choice. The first choice is the default, so a `default` or `options` cannot be declared alongside `dynamicOptions`.
+- A placement whose choice is no longer listed falls back to the first choice.
+- With no choices, `env.configuration.team` is `""`. Use that to ask the user to set something up in the app.
+
+Choice titles come from the app, so they are not translated by Voltra. The parameter `title` still is.
+
+For a server-driven widget, each placement's choice is sent on its request in `configuration`, so the server can answer each one with its own data. See [Per-instance requests](/ios/development/server-driven-widgets#per-instance-requests).
 
 ## Translate the Edit Widget sheet
 

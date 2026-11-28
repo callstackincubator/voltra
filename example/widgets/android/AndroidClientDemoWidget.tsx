@@ -41,6 +41,8 @@ export default function AndroidClientDemoWidget(
 
   const config = env.configuration as Record<string, unknown> | undefined
   const configCity = typeof config?.city === 'string' ? config.city : '(unset)'
+  const configUnits = typeof config?.units === 'string' ? config.units : '(unset)'
+  const configTeam = typeof config?.team === 'string' && config.team !== '' ? config.team : '(no choices)'
   const serverCity = props.city ?? '(no server data)'
   const serverTemp = typeof props.temperature === 'number' ? `${props.temperature}°` : '(no server data)'
   const instanceKey = env.instance ?? '(no instance)'
@@ -83,8 +85,11 @@ export default function AndroidClientDemoWidget(
       </VoltraAndroid.Text>
       {/* Jetpack Glance truncates a Column past 10 direct children (see prebuild log warning), so
           this widget keeps only the rows this ADR 0007 demo needs — per-instance city/temperature
-          and the raw env.configuration.city / env.instance values — rather than every env field. */}
+          and the raw env.configuration.city / env.instance values — plus the units and team values
+          the configuration screen sets (ADR 0015), rather than every env field. */}
       {row('env.configuration.city:', configCity)}
+      {row('units:', configUnits)}
+      {row('team:', configTeam)}
       {row('env.instance:', instanceKey)}
       {row('server city:', serverCity)}
       {row('server temp:', serverTemp)}

@@ -13,6 +13,7 @@ import {
 } from '@use-voltra/expo-plugin'
 
 import type { AndroidWidgetConfig } from '../../types'
+import { CONFIGURE_ACTIVITY_NAME } from '../../constants'
 import { androidWidgetResourceId } from '../resourceName'
 import { androidWidgetSizingAttributes, androidWidgetSizingWarnings } from '../widgetSizing'
 
@@ -115,6 +116,52 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
     const widgetInfoContent = generateWidgetInfoXml(widget, previewImageResourceName, previewLayoutResourceName)
     fs.writeFileSync(widgetInfoPath, widgetInfoContent, 'utf8')
   }
+
+  writeConfigurationScreenWidgetInfo(
+    path.join(platformProjectRoot, 'app', 'src', 'main', 'res', 'xml-v31'),
+    widgets,
+    previewImageMap,
+    previewLayoutMap
+  )
+}
+
+/**
+ * Android 12+ copies of the widget info for widgets with `configurationScreen`, adding the
+ * configuration activity as optional and reconfigurable (ADR 0015). Before Android 12 the launcher
+ * ignores `widgetFeatures` and would open the screen on every add, and cancelling it would drop the
+ * widget, so older versions keep reading `res/xml/` without the activity. Copies for widgets that
+ * no longer opt in are removed.
+ */
+function writeConfigurationScreenWidgetInfo(
+  xmlV31Path: string,
+  widgets: AndroidWidgetConfig[],
+  previewImageMap: Map<string, string>,
+  previewLayoutMap: Map<string, string>
+): void {
+  const fileName = (widget: AndroidWidgetConfig) => `voltra_widget_${androidWidgetResourceId(widget.id)}_info.xml`
+  const optedIn = widgets.filter((widget) => widget.configurationScreen === true)
+  const keep = new Set(optedIn.map(fileName))
+
+  if (fs.existsSync(xmlV31Path)) {
+    for (const entry of fs.readdirSync(xmlV31Path)) {
+      if (/^voltra_widget_.+_info\.xml$/.test(entry) && !keep.has(entry)) {
+        fs.rmSync(path.join(xmlV31Path, entry), { force: true })
+      }
+    }
+    if (fs.readdirSync(xmlV31Path).length === 0) {
+      fs.rmdirSync(xmlV31Path)
+    }
+  }
+
+  if (optedIn.length === 0) return
+  fs.mkdirSync(xmlV31Path, { recursive: true })
+  for (const widget of optedIn) {
+    fs.writeFileSync(
+      path.join(xmlV31Path, fileName(widget)),
+      generateWidgetInfoXml(widget, previewImageMap.get(widget.id), previewLayoutMap.get(widget.id), true),
+      'utf8'
+    )
+  }
 }
 
 // ============================================================================
@@ -127,7 +174,8 @@ export async function generateWidgetPreviewLayouts(props: GenerateXmlFilesProps)
 function generateWidgetInfoXml(
   widget: AndroidWidgetConfig,
   previewImageResourceName?: string,
-  previewLayoutResourceName?: string
+  previewLayoutResourceName?: string,
+  withConfigurationScreen = false
 ): string {
   const resizeMode = widget.resizeMode || 'horizontal|vertical'
   const widgetCategory = widget.widgetCategory || 'home_screen'
@@ -142,6 +190,10 @@ function generateWidgetInfoXml(
     ? `\n    android:previewLayout="@layout/${previewLayoutResourceName}"`
     : ''
 
+  const configureAttrs = withConfigurationScreen
+    ? `\n        android:configure="${CONFIGURE_ACTIVITY_NAME}"\n        android:widgetFeatures="reconfigurable|configuration_optional"`
+    : ''
+
   return dedent`
     <?xml version="1.0" encoding="utf-8"?>
     <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
@@ -152,7 +204,7 @@ ${sizingAttrs}
         android:widgetCategory="${widgetCategory}"
         android:description="@string/voltra_widget_${androidWidgetResourceId(
           widget.id
-        )}_description"${previewImageAttr}${previewLayoutAttr}>
+        )}_description"${previewImageAttr}${previewLayoutAttr}${configureAttrs}>
     </appwidget-provider>
   `
 }
