@@ -172,6 +172,41 @@ public enum VoltraJSRenderer {
     render(id: widgetId, propsJSON: propsJSON, envJSON: envJSON, registryName: "__voltraWidgets", kind: "widget")
   }
 
+  /// Dates at which the widget wants to be drawn again, from the optional `timeline(props)` export of
+  /// its entry module. The Metro wrapper exports it only when the entry has one and has already
+  /// turned the result into an array of epoch milliseconds. Empty when there is no export or it
+  /// throws: the widget then redraws only when it is reloaded, as it always has.
+  public static func timelineDates(widgetId: String, propsJSON: String) -> [Date] {
+    lock.lock()
+    defer { lock.unlock() }
+
+    guard
+      let ctx = _context,
+      let registry = ctx.objectForKeyedSubscript("__voltraWidgets"),
+      !registry.isUndefined,
+      let entry = registry.objectForKeyedSubscript(widgetId),
+      !entry.isUndefined,
+      let timelineFn = entry.objectForKeyedSubscript("timeline"),
+      timelineFn.isObject
+    else {
+      return []
+    }
+
+    ctx.exception = nil
+    let result = timelineFn.call(withArguments: [propsJSON])
+    if let thrown = takeException(ctx) {
+      VoltraLogger.widget.error("[\(TAG)] timeline widget id=\(widgetId): \(thrown.message)")
+      return []
+    }
+
+    guard let data = result?.toString()?.data(using: .utf8),
+          let timestamps = try? JSONDecoder().decode([Double].self, from: data)
+    else {
+      return []
+    }
+    return timestamps.map { Date(timeIntervalSince1970: $0 / 1000) }
+  }
+
   /// Render a Dynamic Live Activity from its separately registered definition.
   public static func renderLiveActivity(
     definitionId: String,

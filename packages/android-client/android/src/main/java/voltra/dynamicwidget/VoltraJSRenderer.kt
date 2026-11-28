@@ -1,6 +1,7 @@
 package voltra.dynamicwidget
 
 import android.util.Log
+import org.json.JSONArray
 
 /**
  * Standalone Hermes runtime for Voltra **Dynamic Widgets**.
@@ -35,6 +36,12 @@ internal object VoltraJSRenderer {
         widgetId: String,
         propsJSON: String,
         envJSON: String,
+    ): String?
+
+    /** Null when the widget has no `timeline` export. */
+    private external fun nativeTimeline(
+        widgetId: String,
+        propsJSON: String,
     ): String?
 
     /**
@@ -102,6 +109,8 @@ internal object VoltraJSRenderer {
                 if (!nativeEvaluateBundle(wrapped, "voltra/$widgetId.bundle", widgetId)) {
                     throw VoltraJSException("bundle evaluation failed for widgetId=$widgetId", null)
                 }
+                // A new bundle may add, drop or fix the `timeline` export.
+                DynamicWidgetTimelineAlarm.forget(widgetId)
             } catch (e: VoltraJSException) {
                 throw e
             } catch (t: Throwable) {
@@ -135,6 +144,29 @@ internal object VoltraJSRenderer {
                 throw VoltraJSException(t.toString(), null)
             }
         }
+
+    /**
+     * The epoch-ms dates the widget's optional `timeline(props)` export wants it drawn again at,
+     * the Android twin of iOS `timelineDates(widgetId:propsJSON:)`. The Metro wrapper exports it
+     * only when the entry has one and has already turned the result into a number array.
+     *
+     * @return null when there is no export.
+     * @throws VoltraJSException when `timeline()` throws.
+     */
+    fun timelineDates(
+        widgetId: String,
+        propsJSON: String,
+    ): List<Long>? =
+        synchronized(lock) {
+            try {
+                nativeTimeline(widgetId, propsJSON)
+            } catch (e: VoltraJSException) {
+                throw e
+            } catch (t: Throwable) {
+                Log.e(TAG, "nativeTimeline threw for widgetId=$widgetId", t)
+                throw VoltraJSException(t.toString(), null)
+            }
+        }?.let { json -> JSONArray(json).let { dates -> List(dates.length()) { dates.getDouble(it).toLong() } } }
 
     /**
      * Find the entry module id Metro emitted in the bundle's trailing `__r(<id>);`. Every

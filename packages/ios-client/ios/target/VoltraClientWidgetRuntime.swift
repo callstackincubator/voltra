@@ -69,6 +69,20 @@ public struct VoltraClientWidgetEntry: TimelineEntry {
     self.serverUpdateJSON = serverUpdateJSON
   }
 
+  /// The same entry, drawn at another date: WidgetKit shows it from `date` on, and the render sees
+  /// that date as `env.date`.
+  public func at(_ date: Date) -> VoltraClientWidgetEntry {
+    VoltraClientWidgetEntry(
+      date: date,
+      widgetId: widgetId,
+      bundleReady: bundleReady,
+      failure: failure,
+      configuration: configuration,
+      bundleSource: bundleSource,
+      serverUpdateJSON: serverUpdateJSON
+    )
+  }
+
   /// The same entry, told how the server side is doing.
   public func withServerUpdate(_ serverUpdateJSON: String?) -> VoltraClientWidgetEntry {
     VoltraClientWidgetEntry(
@@ -127,8 +141,28 @@ public struct VoltraClientWidgetProvider: TimelineProvider {
   public func getTimeline(in _: Context, completion: @escaping (Timeline<VoltraClientWidgetEntry>) -> Void) {
     Task {
       let entry = await loadBundleEntry()
-      completion(Timeline(entries: [entry], policy: .never))
+      completion(Timeline(entries: VoltraClientWidgetProvider.timelineEntries(from: entry), policy: .never))
     }
+  }
+
+  /// Most entries a timeline carries beyond the first. The next reload builds a new timeline anyway,
+  /// so this only has to reach past it, and it keeps the archived timeline small.
+  public static let maxUpcomingEntries = 120
+
+  /// `entry`, then the same entry at each later date the widget's `timeline(props)` export lists, so
+  /// it changes on time between reloads, like a countdown passing an hour or a new day starting.
+  /// Every Dynamic Widget timeline is built with this, with or without a `serverUpdate`.
+  public static func timelineEntries(from entry: VoltraClientWidgetEntry) -> [VoltraClientWidgetEntry] {
+    guard entry.bundleReady else { return [entry] }
+
+    let scope = WidgetScope.of(entry.widgetId, configuration: entry.configuration)
+    let propsJSON = DynamicWidgetPropsStore().dynamicWidgetProps(for: scope)
+    let upcomingDates = VoltraJSRenderer.timelineDates(widgetId: entry.widgetId, propsJSON: propsJSON)
+      .filter { $0 > entry.date }
+      .sorted()
+      .prefix(maxUpcomingEntries)
+
+    return [entry] + upcomingDates.map { entry.at($0) }
   }
 
   private func loadBundleEntry() async -> VoltraClientWidgetEntry {
@@ -493,8 +527,12 @@ public struct VoltraClientWidgetContentView: View {
     guard let node = parseResolvedNode(jsonString: resolved) else {
       return .failure(DynamicWidgetRenderFailure(stage: .parse, message: "render() returned JSON that did not parse into a node"))
     }
-    // Written in every build so dev runs exercise the path; only release reads it back.
-    DynamicWidgetLastGoodStore.shared?.write(resolved, for: renderKey)
+    // Written in every build so dev runs exercise the path; only release reads it back. WidgetKit
+    // may render an upcoming timeline entry ahead of its date, and that must not become the
+    // fallback a later failure shows before its time.
+    if entry.date <= Date() {
+      DynamicWidgetLastGoodStore.shared?.write(resolved, for: renderKey)
+    }
     return .success(node)
   }
 

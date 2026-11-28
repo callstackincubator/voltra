@@ -491,7 +491,12 @@ What is rendered, in order:
 - A failure event to the app (`dynamicWidgetServerUpdateFailed`, one per
   widget per error kind, reusing the Dynamic Live Activity failure queue).
   `env.serverUpdate` is enough for widgets; the event is for dashboards.
-- Multi-entry timelines from the server (`[{date, props}]`).
+- Multi-entry timelines from the server (`[{date, props}]`). Partly covered
+  since: a Dynamic Widget entry can export `timeline(props)`, the times it
+  wants to be drawn at between reloads. Every timeline then repeats the one
+  entry at each listed time, with `env.date` set to it, on iOS and Android
+  alike, with or without a `serverUpdate`. Props still change only per fetch
+  or app write; a server-sent list of `{date, props}` is still out of scope.
 - A watchdog for a JS render that never returns. Helps every Dynamic Widget.
 - Runtime `refresh` toggle. Needs the button to be drawn from a runtime
   flag instead of generated code.

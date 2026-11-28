@@ -221,6 +221,10 @@ curl "https://api.example.com/widgets/portfolio?widgetId=portfolio&platform=andr
 
 Returning a rendered Voltra payload from an endpoint whose widget has an `entry` is rejected with a log line naming the mismatch. The widget has an entry, so it wants the data, not the picture.
 
+### Changing at known times between fetches
+
+A widget that fetches props is drawn once per fetch. To change at known times in between, such as the next item of a schedule starting, export `timeline` from the widget entry. See [Changing at known times](/android/development/dynamic-widgets#changing-at-known-times).
+
 ### Telling fresh data from stale
 
 The widget is never blanked by a failed fetch: it keeps rendering the last props that arrived, whether from the server or from `updateAndroidDynamicWidget`. `env.serverUpdate` says which:

@@ -17,5 +17,9 @@
                 <action android:name="android.intent.action.LOCALE_CHANGED" />
             </intent-filter>
         </receiver>
+        <!-- Redraws a Dynamic Widget at its entry's timeline(props) dates. -->
+        <receiver
+            android:name="voltra.dynamicwidget.DynamicWidgetTimelineReceiver"
+            android:exported="false" />
     </application>
 </manifest>

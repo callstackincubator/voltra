@@ -940,7 +940,7 @@ function generateClientAppIntentWidgetCode(
       ]
     : [
         `    let entry = await VoltraClientWidgetProvider.loadEntry(widgetId: widgetId, configuration: ${configuredDictionary})`,
-        '    return Timeline(entries: [entry], policy: .never)',
+        '    return Timeline(entries: VoltraClientWidgetProvider.timelineEntries(from: entry), policy: .never)',
         '  }',
       ]
 
