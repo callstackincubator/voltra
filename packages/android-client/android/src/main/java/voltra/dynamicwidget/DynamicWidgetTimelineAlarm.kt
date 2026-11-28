@@ -77,6 +77,15 @@ internal object DynamicWidgetTimelineAlarm {
         context.getSystemService(AlarmManager::class.java).cancel(pendingIntent(context, widgetId, appWidgetId))
     }
 
+    /**
+     * Drop what [schedule] remembered for every placement of [widgetId], so the next redraw asks the
+     * newly evaluated bundle again. Without it a dev reload that adds or fixes `timeline` has no
+     * effect until the props change, since "nothing to schedule" is remembered per props.
+     */
+    fun forget(widgetId: String) {
+        scheduled.keys.removeIf { it.startsWith("$widgetId#") }
+    }
+
     @VisibleForTesting
     internal fun clearForTesting() = scheduled.clear()
 

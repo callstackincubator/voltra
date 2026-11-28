@@ -109,6 +109,8 @@ internal object VoltraJSRenderer {
                 if (!nativeEvaluateBundle(wrapped, "voltra/$widgetId.bundle", widgetId)) {
                     throw VoltraJSException("bundle evaluation failed for widgetId=$widgetId", null)
                 }
+                // A new bundle may add, drop or fix the `timeline` export.
+                DynamicWidgetTimelineAlarm.forget(widgetId)
             } catch (e: VoltraJSException) {
                 throw e
             } catch (t: Throwable) {

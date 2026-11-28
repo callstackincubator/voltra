@@ -93,6 +93,28 @@ class DynamicWidgetTimelineAlarmTest {
     }
 
     @Test
+    fun forgetAsksTheReloadedBundleAgainForThatWidgetOnly() {
+        var calls = 0
+        val noExport: (String, String) -> List<Long>? = { _, _ ->
+            calls++
+            null
+        }
+        schedule(timelineDates = noExport)
+        DynamicWidgetTimelineAlarm.schedule(application, "other", 5, "{}", now, noExport)
+        assertEquals(2, calls)
+
+        DynamicWidgetTimelineAlarm.forget("countdown")
+
+        schedule { _, _ ->
+            calls++
+            listOf(now + 60_000L)
+        }
+        DynamicWidgetTimelineAlarm.schedule(application, "other", 5, "{}", now, noExport)
+        assertEquals(3, calls)
+        assertEquals(now + 60_000L, Shadows.shadowOf(alarmManager).nextScheduledAlarm!!.triggerAtTime)
+    }
+
+    @Test
     fun keepsOneAlarmPerPlacementAndCancelsOnlyTheRemovedOne() {
         val firstAt = now + 60_000L
         val secondAt = now + 120_000L
