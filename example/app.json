@@ -280,6 +280,26 @@
                     "name": "city",
                     "title": "City",
                     "default": "London"
+                  },
+                  {
+                    "name": "units",
+                    "title": "Units",
+                    "default": "metric",
+                    "options": [
+                      {
+                        "value": "metric",
+                        "title": "Metric"
+                      },
+                      {
+                        "value": "imperial",
+                        "title": "Imperial"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "team",
+                    "title": "Team",
+                    "dynamicOptions": true
                   }
                 ]
               },
@@ -287,7 +307,8 @@
                 "url": "http://10.0.2.2:3333",
                 "intervalMinutes": 15,
                 "refresh": true
-              }
+              },
+              "configurationScreen": true
             }
           ],
           "fonts": [
