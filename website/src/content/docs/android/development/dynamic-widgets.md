@@ -225,6 +225,36 @@ Removing a widget from the Home Screen drops that placement's values, so adding 
 
 These APIs reject when the `appWidgetId` is not a placement of one of your own Dynamic Widgets: `VOLTRA_WIDGET_INSTANCE_NOT_FOUND` when nothing of yours is placed with that id, `VOLTRA_WIDGET_KIND_MISMATCH` when the placement is a payload-driven widget, and `VOLTRA_WIDGET_NOT_FOUND` when the widget id cannot be resolved. Nothing is stored unless the call succeeds.
 
+### Choices the app sets at runtime
+
+When a parameter's values come from the user's own data, like the teams they follow or the accounts they have, declare it in `appIntent.parameters` with `dynamicOptions: true` instead of `options`, and supply the choices from the app whenever they change:
+
+```json
+{
+  "name": "team",
+  "title": "Team",
+  "dynamicOptions": true
+}
+```
+
+```typescript
+import { setWidgetParameterOptions, setWidgetInstanceConfiguration } from '@use-voltra/android-client'
+
+await setWidgetParameterOptions('scores_widget', 'team', [
+  { value: 'red', title: 'Red Lions' },
+  { value: 'blue', title: 'Blue Hawks' },
+])
+
+// Pick one placement's value.
+await setWidgetInstanceConfiguration(appWidgetId, 'team', 'blue')
+```
+
+A placement with no value, or whose value is no longer among the choices, renders with the first choice, and until the app sets choices `env.configuration.team` is `""`. Android has no native picker for these choices yet, so the app picks each placement's value with `setWidgetInstanceConfiguration`. `clearAndroidWidget` and `clearAllAndroidWidgets` remove the stored choices.
+
+`setWidgetParameterOptions` rejects with `VOLTRA_WIDGET_NOT_FOUND` for an unknown widget, `VOLTRA_WIDGET_KIND_MISMATCH` for a payload-driven widget, and `VOLTRA_WIDGET_PARAMETER_NOT_DECLARED` for a parameter the widget does not declare with `dynamicOptions`. It throws for an option without a string `value` and `title`, or a `value` that is empty or listed twice. Nothing is stored unless the call succeeds.
+
+`dynamicOptions` is supported with Expo Prebuild only. Voltra Apply stops with an error if a parameter sets it.
+
 ### Platform differences
 
 The Home Screen's own edit gesture does not open a Voltra configuration screen yet, so your app is the only place to change a placement's values on Android. On iOS the system Edit Widget sheet writes them instead, generated from the same `appIntent.parameters`, and the widget reads `env.configuration` exactly as it does here.
