@@ -258,16 +258,37 @@ describe('@use-voltra/metro manifest registry', () => {
       assert.ok(timeline)
       assert.deepEqual(JSON.parse(timeline(JSON.stringify({ startsAt: [1000, 2000] }))), [1000, 2000])
 
-      const timelineWithMixedValues = createTimeline(
+      const timelineWithDates = createTimeline(
         createElement,
         () => null,
         () => null,
-        {
-          timeline: () => [new Date(1000), null, 2000, '3000', Number.NaN, new Date(Number.NaN), Infinity],
-        }
+        { timeline: () => [new Date(1000), 2000] }
       )
-      assert.ok(timelineWithMixedValues)
-      assert.deepEqual(JSON.parse(timelineWithMixedValues('{}')), [1000, 2000])
+      assert.ok(timelineWithDates)
+      assert.deepEqual(JSON.parse(timelineWithDates('{}')), [1000, 2000])
+
+      const timelineWithIsoString = createTimeline(
+        createElement,
+        () => null,
+        () => null,
+        { timeline: () => [new Date(1000), '2026-01-01T00:00:00Z'] }
+      )
+      assert.ok(timelineWithIsoString)
+      assert.throws(
+        () => timelineWithIsoString('{}'),
+        /^Error: Voltra widget "countdown" timeline\(\) returned "2026-01-01T00:00:00Z" at index 1; expected a Date or epoch milliseconds\.$/
+      )
+
+      for (const invalid of [null, Number.NaN, Infinity, new Date(Number.NaN)]) {
+        const timelineWithInvalid = createTimeline(
+          createElement,
+          () => null,
+          () => null,
+          { timeline: () => [invalid] }
+        )
+        assert.ok(timelineWithInvalid)
+        assert.throws(() => timelineWithInvalid('{}'), /returned .* at index 0; expected a Date/)
+      }
 
       const timelineWithoutArray = createTimeline(
         createElement,
